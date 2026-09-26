@@ -110,7 +110,7 @@
 | **CLOSE BUY / CLOSE SELL** | إغلاق صفقات الشراء فقط / صفقات البيع فقط |
 | **CLOSE PROFITABLE / CLOSE LOSING** | إغلاق الرابحة فقط / الخاسرة فقط |
 | **BREAK EVEN** | نقل الـ SL إلى سعر الدخول + `BEOffsetPips` للصفقات التي تسمح أرباحها بذلك |
-| **TRAILING ON/OFF** | تشغيل أو إيقاف الـ Trailing Stop (`TrailStartPips` / `TrailDistancePips` / `TrailStepPips`) |
+| **SMART TRAIL ON/OFF** | تشغيل أو إيقاف الترايلنج الذكي (أو الكلاسيكي حسب `TrailMode`). راجع قسم Smart Trailing Stop |
 | **PARTIAL CLOSE** | إغلاق `PartialClosePercent`% من حجم كل صفقة |
 | **MODIFY SELECTED** | تطبيق SL/TP الحالية على الـ Ticket المحدد أو على كل الصفقات. الخانة الفارغة (0) تُبقي القيمة الحالية. مع Ticket لأمر معلّق وقيمة في Entry يُنقل سعر الأمر أيضًا |
 | **DELETE PENDING** | حذف الأوامر المعلّقة |
@@ -148,6 +148,40 @@
 | أسهم Buy / Sell | `ShowSignalArrows` |
 | اسم الاستراتيجية على كل إشارة | `ShowStrategyLabels` |
 | Comment أعلى الشارت (اسم الـ EA، الاستراتيجيات النشطة، حالة Auto، عدد الصفقات، Floating، آخر إشارة) | `ShowChartComment` |
+
+---
+
+## Smart Trailing Stop — الترايلنج الذكي
+
+الهدف: تأمين الربح **بدون** أن يضرب الـ SL بسبب حركة تصحيح عادية، ثم يكمل السعر في الاتجاه الصحيح. الترايلنج مفعّل افتراضيًا (`UseTrailingStop=true` و `TrailMode=TRAIL_SMART`)، ويمكن إيقافه أو تشغيله من زر **SMART TRAIL** في اللوحة.
+
+الـ **R** = مسافة الـ SL الأصلية لحظة فتح الصفقة. تُحفظ مرة واحدة ولا تتغير عند تحريك الـ SL أو عند الإغلاق الجزئي أو عند إعادة التشغيل. إذا فُتحت الصفقة بدون SL فإن R = ATR × `ST_DefaultRiskATR`.
+
+| المرحلة | متى تبدأ | ماذا يحدث |
+|---|---|---|
+| **0 — مساحة للتنفس** | أقل من `ST_BreakEvenAtR` | الـ SL لا يتحرك، حتى تأخذ الصفقة مساحتها الطبيعية |
+| **1 — Break Even** | الربح ≥ 1R | الـ SL يُنقل إلى الدخول + `ST_BreakEvenLockPips` + السبريد، فيكون الخروج صفريًا فعلًا وليس خسارة بقيمة السبريد |
+| **2 — تتبّع الهيكل + ATR** | الربح ≥ 1.5R | الـ SL يتتبع **آخر قاع صاعد (Higher Low) تكوّن بعد الدخول** ناقص هامش ATR. التصحيح الطبيعي يصنع قاعًا أعلى، فلا يضرب الـ SL. بالتوازي يُحسب Chandelier Stop = أفضل سعر وصل له الترند − ATR × معامل يبدأ واسعًا (3.0) ويضيق كلما زاد الربح بالـ R، حتى يصل إلى 1.5. `ST_Combine=LOOSER` يأخذ الأوسع بين الاثنين لتقليل الضرب بالضوضاء |
+| **3 — قفل نسبة من القمة** | أعلى ربح وصلت له الصفقة ≥ 2R | يُقفل حد أدنى من **أعلى ربح وصلت له الصفقة**: 40% عند 2R، ثم +10% لكل 1R إضافي، حتى 75% كحد أقصى. لو انعكس السعر فجأة تخرج بجزء كبير من المكسب |
+
+**حمايات ضد الضرب الكاذب:**
+- **الشمعة المغلقة فقط** (`ST_UpdateOnBarClose`): الـ SL يتحرك مرة واحدة مع كل شمعة جديدة، فالذيول والـ Spikes داخل الشمعة لا تحرّكه.
+- **تكيّف مع التقلب** (`ST_VolatilityAdapt`): إذا كان ATR السريع أكبر من ATR البطيء (أخبار أو حركة عنيفة)، تتوسع المسافة تلقائيًا حتى ×1.5.
+- **مسافة أمان:** الـ SL لا يقترب من السعر أقل من السبريد × `ST_MinDistanceSpreadMult` + StopLevel الخاص بالوسيط.
+- **Ratchet:** الـ SL يتحرك في اتجاه الربح فقط ولا يرجع أبدًا. كل تعديل يجب أن يحسّن الـ SL بمقدار `ST_MinStepPips` على الأقل.
+
+**تمديد الهدف** (`ST_ExtendTP`): عندما يقطع السعر 80% من طريقه إلى الـ TP، وكانت آخر شمعة قوية في نفس الاتجاه، والـ SL مؤمَّن فعلًا في منطقة الربح، يُمدَّد الـ TP بمقدار ATR × `ST_ExtendATRMult`. يتكرر ذلك حتى `ST_MaxTPExtensions` مرات، فيستمر الترند القوي بدل أن يُغلق مبكرًا.
+
+**الفريم:** `ST_Timeframe = CURRENT` يعني أن كل صفقة تُدار على فريم الاستراتيجية التي فتحتها (مثلًا S2 على M5)، والصفقات اليدوية على فريم الشارت.
+
+كل حركة تُسجَّل في Experts Log مع المرحلة، مثل: `SMART TRAIL #123 [STRUCTURE]: SL 1.08410 -> 1.08530 | profit 2.10R, peak 2.40R, vol x1.00`. وفي اللوحة الثانية يظهر بجانب كل صفقة مقدار المؤمَّن، مثل `[SL +0.8R locked]`.
+
+**ضبط الأسلوب:**
+- لتأمين أسرع: `ST_Combine=TIGHTER`، و`ST_ATRMultStart=2.0`، و`ST_ProfitLockStartR=1.5`.
+- لترك الترند يجري أكثر: `ST_TrailStartR=2.0`، و`ST_ATRMultMin=2.0`، و`ST_ProfitLockPct=30`.
+- للعودة للترايلنج العادي: `TrailMode=TRAIL_CLASSIC` (يستخدم `TrailStartPips` / `TrailDistancePips` / `TrailStepPips`).
+
+> لا يوجد ترايلنج يضمن عدم الضرب إطلاقًا. الهدف تقليل الضرب بالضوضاء مع تأمين أكبر جزء من الربح. اختبر الإعدادات في الباك تست على الرمز والفريم اللذين ستستخدمهما.
 
 ---
 
@@ -209,7 +243,9 @@
 | AutoManageScope | الصفقات التي يطبَّق عليها Trailing/BE التلقائي (صفقات الـ EA فقط، أو كل صفقات الرمز) |
 | PanelActionScope | الصفقات التي تتأثر بأزرار اللوحة |
 | StatsScope | الصفقات المحسوبة في الإحصائيات والرسم |
-| UseTrailingStop, TrailStartPips, TrailDistancePips, TrailStepPips | الـ Trailing Stop (يتحرك في اتجاه الربح فقط) |
+| UseTrailingStop, TrailMode | تشغيل الترايلنج ونوعه (SMART افتراضيًا) |
+| TrailStartPips, TrailDistancePips, TrailStepPips | إعدادات الترايلنج الكلاسيكي فقط |
+| ST_* | إعدادات الترايلنج الذكي (مشروحة في قسم Smart Trailing Stop) |
 | UseAutoBreakEven, BETriggerPips, BEOffsetPips | Break Even تلقائي |
 | PartialClosePercent | النسبة التي يغلقها زر PARTIAL CLOSE |
 

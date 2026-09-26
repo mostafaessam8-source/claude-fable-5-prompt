@@ -137,6 +137,18 @@ enum ENUM_S3_TP_MODE
    S3_TP_PARTIAL_BE = 2  // Partial close at xR + Break Even, rest at RR
   };
 
+enum ENUM_TRAIL_MODE
+  {
+   TRAIL_CLASSIC = 0, // Classic: fixed distance from price
+   TRAIL_SMART   = 1  // Smart: BE -> structure/ATR chandelier -> profit lock
+  };
+
+enum ENUM_TRAIL_COMBINE
+  {
+   COMBINE_LOOSER  = 0, // Use the LOOSER of structure / ATR stop (fewer noise hits)
+   COMBINE_TIGHTER = 1  // Use the TIGHTER of structure / ATR stop (locks more)
+  };
+
 enum ENUM_PRICE_UNIT
   {
    UNIT_PIPS  = 0, // Pips (distance)
@@ -203,14 +215,45 @@ input string   _g4 = "================ TRADE MANAGEMENT ================"; // --
 input ENUM_SCOPE AutoManageScope        = SCOPE_EA_ONLY;    // Orders managed by trailing/BE automation
 input ENUM_SCOPE PanelActionScope       = SCOPE_SYMBOL_ALL; // Orders affected by panel buttons
 input ENUM_SCOPE StatsScope             = SCOPE_EA_ONLY;    // Orders counted in the statistics panel
-input bool     UseTrailingStop          = false;     // Trailing stop ON at start (toggle on chart)
-input double   TrailStartPips           = 20.0;      // Trailing starts after this profit (pips)
-input double   TrailDistancePips        = 15.0;      // Trailing distance from price (pips)
-input double   TrailStepPips            = 2.0;       // Minimum SL improvement per modification (pips)
+input bool     UseTrailingStop          = true;      // Trailing stop ON at start (toggle on chart)
+input ENUM_TRAIL_MODE TrailMode         = TRAIL_SMART; // Trailing mode (Smart recommended)
+input double   TrailStartPips           = 20.0;      // [Classic] Trailing starts after this profit (pips)
+input double   TrailDistancePips        = 15.0;      // [Classic] Trailing distance from price (pips)
+input double   TrailStepPips            = 2.0;       // [Classic] Minimum SL improvement per modification (pips)
 input bool     UseAutoBreakEven         = false;     // Automatic break even
 input double   BETriggerPips            = 15.0;      // Break even trigger profit (pips)
 input double   BEOffsetPips             = 1.0;       // Break even offset (pips locked)
 input double   PartialClosePercent      = 50.0;      // PARTIAL CLOSE button: % of volume to close
+
+input string   _st = "================ SMART TRAILING STOP ================"; // ----- Smart trailing -----
+input ENUM_TIMEFRAMES ST_Timeframe      = PERIOD_CURRENT; // Trailing timeframe (CURRENT = timeframe of the strategy that opened the trade)
+input bool     ST_UpdateOnBarClose      = true;      // Move SL only on closed candles (ignores intrabar spikes)
+input double   ST_DefaultRiskATR        = 1.5;       // 1R for trades opened without SL = ATR x this
+input double   ST_BreakEvenAtR          = 1.0;       // Stage 1: move SL to break even at this R (0 = off)
+input double   ST_BreakEvenLockPips     = 1.0;       // Stage 1: pips locked above entry (+ current spread)
+input double   ST_TrailStartR           = 1.5;       // Stage 2: start structure/ATR trailing at this R
+input int      ST_ATRPeriod             = 14;        // Stage 2: ATR period
+input double   ST_ATRMultStart          = 3.0;       // Stage 2: chandelier ATR multiplier when trailing starts (wide)
+input double   ST_ATRMultMin            = 1.5;       // Stage 2: tightest ATR multiplier allowed
+input double   ST_ATRTightenPerR        = 0.5;       // Stage 2: multiplier reduction per extra 1R of profit
+input bool     ST_UseStructure          = true;      // Stage 2: also trail behind swing lows/highs formed after entry
+input int      ST_SwingStrength         = 2;         // Stage 2: swing strength (bars on each side)
+input double   ST_StructureBufferATR    = 0.3;       // Stage 2: buffer beyond the swing (x ATR)
+input ENUM_TRAIL_COMBINE ST_Combine     = COMBINE_LOOSER; // Stage 2: how to combine structure and ATR stops
+input bool     ST_VolatilityAdapt       = true;      // Widen the stop when volatility expands (news / spikes)
+input int      ST_VolFastPeriod         = 5;         // Volatility: fast ATR period
+input int      ST_VolSlowPeriod         = 50;        // Volatility: slow ATR period
+input double   ST_VolMaxBoost           = 1.5;       // Volatility: maximum widening factor
+input double   ST_ProfitLockStartR      = 2.0;       // Stage 3: start locking a % of the peak profit at this R (0 = off)
+input double   ST_ProfitLockPct         = 40.0;      // Stage 3: % of peak profit locked at start
+input double   ST_ProfitLockStepPerR    = 10.0;      // Stage 3: extra % locked per additional 1R
+input double   ST_ProfitLockPctMax      = 75.0;      // Stage 3: maximum % of peak profit locked
+input double   ST_MinDistanceSpreadMult = 2.0;       // Keep SL at least spread x this away from price (+ StopLevel)
+input double   ST_MinStepPips           = 1.0;       // Minimum SL improvement per modification (pips)
+input bool     ST_ExtendTP              = true;      // Extend TP when the trend is strong and SL is already in profit
+input double   ST_ExtendAtPctOfTP       = 80.0;      // Extend when this % of the TP distance is reached
+input double   ST_ExtendATRMult         = 1.0;       // TP extension size (x ATR)
+input int      ST_MaxTPExtensions       = 3;         // Maximum TP extensions per trade
 
 input string   _s1 = "================ STRATEGY 1: TRENDLINE + MARUBOZU BREAKOUT + RETEST ================"; // ----- Strategy 1 -----
 input ENUM_TIMEFRAMES S1_Timeframe      = PERIOD_CURRENT; // S1 timeframe
@@ -517,6 +560,11 @@ datetime  gHistDay = 0;
 // Partial close bookkeeping
 int       gPartialDone[];
 
+// Smart trailing bookkeeping (ticket -> last processed bar)
+int       gSTTicket[];
+datetime  gSTBar[];
+datetime  gSTCleanDay = 0;
+
 // Panel state
 bool      gTradeMin = false;          // trade panel minimized
 bool      gPerfVisible = true;        // performance panel visible
@@ -588,6 +636,7 @@ int OnInit()
    gHistCount = -1;
 
    InitRiskTracking();
+   CleanupTradeGlobals();
 
    if(!IsTesting())
       EventSetTimer(1);
@@ -2791,6 +2840,12 @@ int FindChildTicket(int oldTicket)
 void ManageOpenTrades()
   {
    RefreshRates();
+   datetime today = iTime(Symbol(), PERIOD_D1, 0);
+   if(today!=gSTCleanDay)
+     {
+      gSTCleanDay = today;
+      CleanupTradeGlobals();
+     }
    for(int i=OrdersTotal()-1; i>=0; i--)
      {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
@@ -2802,17 +2857,18 @@ void ManageOpenTrades()
       double op = OrderOpenPrice(), sl = OrderStopLoss(), tp = OrderTakeProfit();
       double cp = (type==OP_BUY ? Bid : Ask);
       double profitDist = (type==OP_BUY ? cp-op : op-cp);
+      // remember the ORIGINAL risk (1R) before any SL movement
+      double risk = InitialRisk(ticket);
 
       // --- S3 partial close at xR + break even
-      if(OrderMagicNumber()==MagicStrategy3 && S3_TPMode==S3_TP_PARTIAL_BE && sl>0 && !PartialDone(ticket) &&
+      if(OrderMagicNumber()==MagicStrategy3 && S3_TPMode==S3_TP_PARTIAL_BE && !PartialDone(ticket) &&
          StringFind(OrderComment(), "from #")<0)
         {
-         double risk = (type==OP_BUY ? op-sl : sl-op);
          if(risk>0 && profitDist>=risk*S3_PartialAtR)
            {
             double closeLots = NormalizeLotDown(OrderLots()*S3_PartialPercent/100.0);
             double minLot = MarketInfo(Symbol(), MODE_MINLOT);
-            double beSL = (type==OP_BUY ? op+Pips(S3_BEOffsetPips) : op-Pips(S3_BEOffsetPips));
+            double beSL = NP(type==OP_BUY ? op+Pips(S3_BEOffsetPips) : op-Pips(S3_BEOffsetPips));
             MarkPartialDone(ticket);
             if(closeLots>=minLot && OrderLots()-closeLots>=minLot-1e-9)
               {
@@ -2822,14 +2878,16 @@ void ManageOpenTrades()
                   if(child>0)
                     {
                      MarkPartialDone(child);
-                     ModifySLTP(child, beSL, tp);
+                     if(OrderSelect(child, SELECT_BY_TICKET) && IsBetterSL(type, beSL, OrderStopLoss()))
+                        ModifySLTP(child, beSL, OrderTakeProfit());
                     }
                   Notify(StringFormat("S3 partial close %.2f lots at %.1fR, SL -> BE (#%d)", closeLots, S3_PartialAtR, ticket));
                  }
               }
             else
               {
-               ModifySLTP(ticket, beSL, tp);   // volume too small to split - only move to BE
+               if(IsBetterSL(type, beSL, sl))
+                  ModifySLTP(ticket, beSL, tp);   // volume too small to split - only move to BE
                Log("S3 partial: volume too small to split - SL moved to BE only");
               }
             continue;
@@ -2851,14 +2909,307 @@ void ManageOpenTrades()
            }
         }
 
-      // --- trailing stop (ratchet: SL only moves in profit direction)
-      if(gTrailOn && profitDist>=Pips(TrailStartPips))
+      if(!gTrailOn)
+         continue;
+
+      // --- smart trailing (multi-stage, see SmartTrail)
+      if(TrailMode==TRAIL_SMART)
+        {
+         SmartTrail(ticket);
+         continue;
+        }
+
+      // --- classic trailing stop (ratchet: SL only moves in profit direction)
+      if(profitDist>=Pips(TrailStartPips))
         {
          double cand = (type==OP_BUY ? NP(cp-Pips(TrailDistancePips)) : NP(cp+Pips(TrailDistancePips)));
          bool better = (type==OP_BUY ? (sl==0 || cand>=sl+Pips(TrailStepPips)) : (sl==0 || cand<=sl-Pips(TrailStepPips)));
          if(better)
             ModifySLTP(ticket, cand, tp);
         }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| ================= SMART TRAILING STOP ========================== |
+//|                                                                  |
+//| Goal: protect profit without being stopped out by normal noise, |
+//| so the trade can keep running in the right direction.           |
+//|                                                                  |
+//| Stage 0  (< BreakEvenAtR)  : SL untouched - trade gets room.    |
+//| Stage 1  (>= BreakEvenAtR) : SL -> entry + lock + spread.       |
+//| Stage 2  (>= TrailStartR)  : SL trails behind                    |
+//|           a) the last swing low/high formed AFTER entry          |
+//|              (a normal pullback makes a higher low, not a hit)   |
+//|           b) an ATR chandelier from the best price reached,      |
+//|              wide at first, tightening as profit grows in R.     |
+//|           Volatility expansion widens the ATR stop automatically.|
+//| Stage 3  (peak >= ProfitLockStartR): a rising % of the PEAK      |
+//|           profit is always locked (floor), from 40% up to 75%.  |
+//| Always   : SL only moves in the profit direction (ratchet),      |
+//|           never closer than spread x mult + StopLevel,           |
+//|           evaluated on closed candles only (no spike hits).      |
+//| Bonus    : TP is extended by ATR while momentum is strong and    |
+//|           the SL already locks profit.                           |
+//+------------------------------------------------------------------+
+string RiskKey(int ticket) { return(PFX + "R_" + IntegerToString(ticket)); }
+string ExtKey(int ticket)  { return(PFX + "EXT_" + IntegerToString(ticket)); }
+
+//--- timeframe used to manage a trade
+int TradeTF(int magic)
+  {
+   if(ST_Timeframe!=PERIOD_CURRENT)
+      return(ST_Timeframe);
+   int s = MagicToStrat(magic);
+   if(s>=0 && s<STRAT_COUNT)
+      return(StratTF(s));
+   return(Period());
+  }
+
+//--- SL 'a' is better (more protective) than SL 'b' for the given order type
+bool IsBetterSL(int type, double a, double b)
+  {
+   if(a<=0)
+      return(false);
+   if(b<=0)
+      return(true);
+   return(type==OP_BUY ? a>b : a<b);
+  }
+
+//--- initial risk (1R) of a trade in price. Stored once in a Global Variable so it
+//    survives SL moves, partial closes (child tickets) and terminal restarts.
+double InitialRisk(int ticket)
+  {
+   string k = RiskKey(ticket);
+   if(GlobalVariableCheck(k))
+      return(GlobalVariableGet(k));
+   if(!OrderSelect(ticket, SELECT_BY_TICKET))
+      return(0);
+   double r = 0;
+   // child of a partial close -> inherit the parent's risk
+   int p = StringFind(OrderComment(), "from #");
+   if(p>=0)
+     {
+      string pk = RiskKey((int)StringToInteger(StringSubstr(OrderComment(), p+6)));
+      if(GlobalVariableCheck(pk))
+         r = GlobalVariableGet(pk);
+     }
+   if(r<=0)
+     {
+      double op = OrderOpenPrice(), sl = OrderStopLoss();
+      bool buy = (OrderType()==OP_BUY);
+      if(sl>0 && ((buy && sl<op) || (!buy && sl>op)))
+         r = MathAbs(op-sl);
+      else
+         r = iATR(Symbol(), TradeTF(OrderMagicNumber()), ST_ATRPeriod, 1)*ST_DefaultRiskATR;
+     }
+   if(r>0)
+      GlobalVariableSet(k, r);
+   if(!OrderSelect(ticket, SELECT_BY_TICKET))   // restore selection for the caller
+      return(r);
+   return(r);
+  }
+
+//--- process each ticket once per closed bar (when ST_UpdateOnBarClose)
+bool SmartBarDue(int ticket, datetime bar)
+  {
+   int n = ArraySize(gSTTicket);
+   for(int i=0; i<n; i++)
+      if(gSTTicket[i]==ticket)
+        {
+         if(gSTBar[i]==bar)
+            return(false);
+         gSTBar[i] = bar;
+         return(true);
+        }
+   if(n>500)
+     {
+      ArrayResize(gSTTicket, 0);
+      ArrayResize(gSTBar, 0);
+      n = 0;
+     }
+   ArrayResize(gSTTicket, n+1);
+   ArrayResize(gSTBar, n+1);
+   gSTTicket[n] = ticket;
+   gSTBar[n] = bar;
+   return(true);
+  }
+
+//--- current smart trailing stage (for the dashboard)
+string SmartStageText(int ticket)
+  {
+   if(!OrderSelect(ticket, SELECT_BY_TICKET) || OrderType()>OP_SELL)
+      return("");
+   double r = 0;
+   if(GlobalVariableCheck(RiskKey(ticket)))
+      r = GlobalVariableGet(RiskKey(ticket));
+   double sl = OrderStopLoss(), op = OrderOpenPrice();
+   if(r<=0)
+      return(sl>0 ? "" : "NO SL");
+   if(sl<=0)
+      return("NO SL");
+   double lockedR = (OrderType()==OP_BUY ? sl-op : op-sl)/r;
+   if(lockedR<0)
+      return("SL -" + DoubleToString(-lockedR, 1) + "R");
+   return("SL +" + DoubleToString(lockedR, 1) + "R locked");
+  }
+
+void SmartTrail(int ticket)
+  {
+   if(!OrderSelect(ticket, SELECT_BY_TICKET) || OrderCloseTime()!=0 || OrderType()>OP_SELL)
+      return;
+   int type = OrderType();
+   bool buy = (type==OP_BUY);
+   int tf = TradeTF(OrderMagicNumber());
+   if(ST_UpdateOnBarClose && !SmartBarDue(ticket, iTime(Symbol(), tf, 0)))
+      return;
+
+   double op = OrderOpenPrice(), sl = OrderStopLoss(), tp = OrderTakeProfit();
+   double r = InitialRisk(ticket);
+   if(r<=0 || !OrderSelect(ticket, SELECT_BY_TICKET))
+      return;
+   RefreshRates();
+   double cp = (buy ? Bid : Ask);
+   double spread = Ask-Bid;
+   double profit = (buy ? cp-op : op-cp);
+   double pr = profit/r;
+
+   // --- best price reached since entry: closed candles AFTER the entry candle + current price
+   //     (the entry candle itself is skipped - its high/low may predate the entry)
+   int openShift = iBarShift(Symbol(), tf, OrderOpenTime(), false);
+   double peak = cp;
+   if(openShift>=2)
+     {
+      if(buy)
+         peak = MathMax(cp, iHigh(Symbol(), tf, iHighest(Symbol(), tf, MODE_HIGH, openShift-1, 1)));
+      else
+         peak = MathMin(cp, iLow(Symbol(), tf, iLowest(Symbol(), tf, MODE_LOW, openShift-1, 1)));
+     }
+   double peakProfit = (buy ? peak-op : op-peak);
+   double peakR = peakProfit/r;
+
+   double atr = iATR(Symbol(), tf, ST_ATRPeriod, 1);
+   if(atr<=0)
+      return;
+   double boost = 1.0;
+   if(ST_VolatilityAdapt)
+     {
+      double fast = iATR(Symbol(), tf, ST_VolFastPeriod, 1), slow = iATR(Symbol(), tf, ST_VolSlowPeriod, 1);
+      if(slow>0)
+         boost = MathMax(1.0, MathMin(ST_VolMaxBoost, fast/slow));
+     }
+
+   double cand = sl;
+   string stage = "";
+
+   // --- Stage 1: break even (+ spread so a BE exit is really at zero cost)
+   if(ST_BreakEvenAtR>0 && pr>=ST_BreakEvenAtR)
+     {
+      double be = (buy ? op+Pips(ST_BreakEvenLockPips)+spread : op-Pips(ST_BreakEvenLockPips)-spread);
+      if(IsBetterSL(type, be, cand))
+        {
+         cand = be;
+         stage = "BE";
+        }
+     }
+
+   // --- Stage 2: structure + ATR chandelier trailing
+   if(pr>=ST_TrailStartR)
+     {
+      double mult = MathMax(ST_ATRMultMin, ST_ATRMultStart-ST_ATRTightenPerR*(pr-ST_TrailStartR))*boost;
+      double chand = (buy ? peak-atr*mult : peak+atr*mult);
+      double structSL = 0;
+      if(ST_UseStructure && openShift>ST_SwingStrength+1)
+        {
+         // swing low (buy) / swing high (sell) formed after the entry candle
+         int sw = FindSwing(tf, !buy, 1, openShift-1, ST_SwingStrength);
+         if(sw>0 && sw<openShift)
+            structSL = (buy ? iLow(Symbol(), tf, sw)-atr*ST_StructureBufferATR
+                        : iHigh(Symbol(), tf, sw)+atr*ST_StructureBufferATR);
+        }
+      double trail = chand;
+      if(structSL>0)
+        {
+         if(ST_Combine==COMBINE_LOOSER)
+            trail = (buy ? MathMin(chand, structSL) : MathMax(chand, structSL));
+         else
+            trail = (buy ? MathMax(chand, structSL) : MathMin(chand, structSL));
+        }
+      if(IsBetterSL(type, trail, cand))
+        {
+         cand = trail;
+         stage = (structSL>0 && MathAbs(trail-structSL)<Point ? "STRUCTURE" : "ATR x" + DoubleToString(mult, 1));
+        }
+     }
+
+   // --- Stage 3: profit lock floor (a rising % of the peak profit)
+   if(ST_ProfitLockStartR>0 && peakR>=ST_ProfitLockStartR)
+     {
+      double pct = MathMin(ST_ProfitLockPctMax, ST_ProfitLockPct+ST_ProfitLockStepPerR*(peakR-ST_ProfitLockStartR));
+      double lock = (buy ? op+peakProfit*pct/100.0 : op-peakProfit*pct/100.0);
+      if(IsBetterSL(type, lock, cand))
+        {
+         cand = lock;
+         stage = "LOCK " + DoubleToString(pct, 0) + "%";
+        }
+     }
+
+   // --- safety distance from current price (spread + StopLevel)
+   double minD = MathMax(spread*ST_MinDistanceSpreadMult, (MarketInfo(Symbol(), MODE_STOPLEVEL)+1)*Point);
+   if(cand>0)
+     {
+      if(buy && cp-cand<minD)
+         cand = cp-minD;
+      if(!buy && cand-cp<minD)
+         cand = cp+minD;
+     }
+   cand = NP(cand);
+
+   // --- TP extension while momentum is strong and profit is already locked
+   double newTP = tp;
+   if(ST_ExtendTP && tp>0)
+     {
+      double tpDist = MathAbs(tp-op);
+      int ext = (GlobalVariableCheck(ExtKey(ticket)) ? (int)GlobalVariableGet(ExtKey(ticket)) : 0);
+      double lockSL = (cand>0 ? cand : sl);
+      bool slInProfit = (lockSL>0 && (buy ? lockSL>op : lockSL<op));
+      double o1 = iOpen(Symbol(), tf, 1), c1 = iClose(Symbol(), tf, 1);
+      double rng1 = iHigh(Symbol(), tf, 1)-iLow(Symbol(), tf, 1);
+      bool momentum = rng1>0 && (buy ? c1>o1 : c1<o1) && MathAbs(c1-o1)/rng1>=0.5;
+      if(tpDist>0 && ext<ST_MaxTPExtensions && slInProfit && momentum && profit>=tpDist*ST_ExtendAtPctOfTP/100.0)
+        {
+         newTP = NP(buy ? tp+atr*ST_ExtendATRMult : tp-atr*ST_ExtendATRMult);
+         GlobalVariableSet(ExtKey(ticket), ext+1);
+         Log(StringFormat("SMART TRAIL #%d: strong momentum - TP extended %s -> %s (%d/%d)", ticket,
+                          PriceStr(tp), PriceStr(newTP), ext+1, ST_MaxTPExtensions));
+        }
+     }
+
+   // --- ratchet: apply only a real improvement
+   bool moveSL = IsBetterSL(type, cand, sl) && (sl<=0 || MathAbs(cand-sl)>=Pips(ST_MinStepPips));
+   if(!moveSL && newTP==tp)
+      return;
+   double finalSL = (moveSL ? cand : sl);
+   if(ModifySLTP(ticket, finalSL, newTP) && moveSL)
+      Log(StringFormat("SMART TRAIL #%d [%s]: SL %s -> %s | profit %.2fR, peak %.2fR, vol x%.2f", ticket, stage,
+                       PriceStr(sl), PriceStr(finalSL), pr, peakR, boost));
+  }
+
+//--- remove smart-trailing Global Variables of trades that are no longer open
+void CleanupTradeGlobals()
+  {
+   for(int i=GlobalVariablesTotal()-1; i>=0; i--)
+     {
+      string n = GlobalVariableName(i);
+      int tk = 0;
+      if(StringFind(n, PFX+"R_")==0)
+         tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"R_")));
+      if(StringFind(n, PFX+"EXT_")==0)
+         tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"EXT_")));
+      if(tk<=0)
+         continue;
+      if(!OrderSelect(tk, SELECT_BY_TICKET) || OrderCloseTime()!=0)
+         GlobalVariableDel(n);
      }
   }
 
@@ -3370,7 +3721,8 @@ void BuildTradePanel()
    UIButton(BTN("CLOSELOSS"), cx1, r, bw2, bh, "CLOSE LOSING", ButtonBgColor, ClrLoss);
    UIButton(BTN("BE"), cx2, r, bw2, bh, "BREAK EVEN", ButtonBgColor, ButtonTextColor);
    r += rowH;
-   UIButton(BTN("TRAIL"), cx1, r, bw2, bh, gTrailOn ? "TRAILING: ON" : "TRAILING: OFF", OnOff(gTrailOn), ButtonTextColor);
+   string trTxt = (TrailMode==TRAIL_SMART ? "SMART TRAIL: " : "TRAILING: ");
+   UIButton(BTN("TRAIL"), cx1, r, bw2, bh, trTxt + (gTrailOn ? "ON" : "OFF"), OnOff(gTrailOn), ButtonTextColor);
    UIButton(BTN("PARTIAL"), cx2, r, bw2, bh, "PARTIAL CLOSE " + DoubleToString(PartialClosePercent, 0) + "%", ButtonBgColor, ButtonTextColor);
    r += rowH;
    UIButton(BTN("MODIFY"), cx1, r, bw2, bh, "MODIFY SELECTED", ButtonBgColor, ButtonTextColor);
@@ -3485,7 +3837,7 @@ void PanelAction(string id)
    if(id=="TRAIL")
      {
       gTrailOn = !gTrailOn;
-      PanelMsg(gTrailOn ? "Trailing stop ON" : "Trailing stop OFF", ClrInfo);
+      PanelMsg((TrailMode==TRAIL_SMART ? "Smart trailing " : "Trailing stop ") + (gTrailOn ? "ON" : "OFF"), ClrInfo);
       return;
      }
 
@@ -4190,8 +4542,12 @@ void UpdatePerfPanel()
       string who = (st>=0 ? StratName(st) : "External");
       double pl = OrderProfit()+OrderSwap()+OrderCommission();
       bool buy = (OrderType()==OP_BUY || OrderType()==OP_BUYLIMIT || OrderType()==OP_BUYSTOP);
-      string txt = StringFormat("%s %.2f @%s  %s  P/L %s", OrderTypeName(OrderType()), OrderLots(),
-                                PriceStr(OrderOpenPrice()), who, Money(pl));
+      int otk = OrderTicket();
+      string stg = (OrderType()<=OP_SELL ? SmartStageText(otk) : "");
+      if(!OrderSelect(otk, SELECT_BY_TICKET))
+         continue;
+      string txt = StringFormat("%s %.2f @%s  %s  P/L %s%s", OrderTypeName(OrderType()), OrderLots(),
+                                PriceStr(OrderOpenPrice()), who, Money(pl), stg!="" ? "  [" + stg + "]" : "");
       PerfLine("#" + IntegerToString(OrderTicket()), txt, OrderType()>OP_SELL ? ClrInfo : (pl!=0 ? PLColor(pl) : (buy ? ClrProfit : ClrLoss)));
       shown++;
      }
