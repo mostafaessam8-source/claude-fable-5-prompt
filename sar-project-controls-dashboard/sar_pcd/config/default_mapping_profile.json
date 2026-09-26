@@ -1,0 +1,1095 @@
+{
+  "name": "SAR Default Mapping Profile",
+  "version": 1,
+  "categories": [
+    {
+      "name": "Engineering",
+      "keywords": [
+        {
+          "term": "engineering",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "eng",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "design",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "detailed design",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "technical",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "drawing",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "shop drawing",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "ifc",
+          "weight": 1.1,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "issued for construction",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "submittal",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "approval",
+          "weight": 0.4,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "review",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "design review",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "design development",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "design check",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "calculation",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "specification",
+          "weight": 0.7,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "model",
+          "weight": 0.4,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "bim",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        }
+      ],
+      "color": "#2a78d6"
+    },
+    {
+      "name": "Procurement",
+      "keywords": [
+        {
+          "term": "procurement",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "purchasing",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "purchase",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "purchase order",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "po",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "material",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": [
+            "design",
+            "engineering",
+            "support"
+          ]
+        },
+        {
+          "term": "vendor",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "supplier",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "supply",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "supply chain",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "manufacturing",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "fabrication",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "fat",
+          "weight": 1.2,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "factory acceptance",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "delivery",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "long lead",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "shipment",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "shipping",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "order placement",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "rfq",
+          "weight": 1.2,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "tender",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "arrival on site",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "site receipt",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "mat",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "lli",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "bulk",
+          "weight": 0.4,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "expediting",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "prc",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "proc",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        }
+      ],
+      "color": "#eb6834"
+    },
+    {
+      "name": "Construction",
+      "keywords": [
+        {
+          "term": "construction",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "civil",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "structural",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "earthworks",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "earthwork",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "excavation",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "backfill",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "concrete",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": [
+            "supply",
+            "contract"
+          ]
+        },
+        {
+          "term": "foundation",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "installation",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "install",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "erection",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "track",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": [
+            "design",
+            "drawing",
+            "supply"
+          ]
+        },
+        {
+          "term": "railway",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "station",
+          "weight": 0.4,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "building",
+          "weight": 0.7,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "mep",
+          "weight": 0.9,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "electrical",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "mechanical",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "architectural",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "site execution",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "formation",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "permanent way",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "ballast",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": [
+            "supply",
+            "batch"
+          ]
+        },
+        {
+          "term": "piling",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "footing",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "culvert",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "drainage",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "subgrade",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "sub ballast",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "tamping",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "laying",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "fit out",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "finishes",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "platform",
+          "weight": 0.6,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "superstructure",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "catenary",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "mobilization",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "mobilisation",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "cut and fill",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "building services",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "cns",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "site",
+          "weight": 0.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "works",
+          "weight": 0.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "eandm",
+          "weight": 0.6,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "pour",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "rebar",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "formwork",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "paving",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "asphalt",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        }
+      ],
+      "color": "#1baf7a"
+    },
+    {
+      "name": "Testing & Commissioning",
+      "keywords": [
+        {
+          "term": "testing",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "test",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "commissioning",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "tandc",
+          "weight": 1.5,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "sat",
+          "weight": 1.2,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "energization",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "energisation",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "power on",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "inspection",
+          "weight": 0.6,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "trial",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "trial running",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "trial operation",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "integration",
+          "weight": 0.9,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "integrated test",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "system testing",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "subsystem",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "safety certification",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "tc",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "tst",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "cx",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        }
+      ],
+      "color": "#eda100"
+    },
+    {
+      "name": "Handover",
+      "keywords": [
+        {
+          "term": "handover",
+          "weight": 1.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "hand over",
+          "weight": 1.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "ho",
+          "weight": 1.0,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "closeout",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "close out",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "completion",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "pac",
+          "weight": 1.3,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "fac",
+          "weight": 1.3,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "provisional acceptance",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "final acceptance",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "as built",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "record drawing",
+          "weight": 1.3,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "oandm",
+          "weight": 1.2,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "training",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "operator training",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "documentation",
+          "weight": 0.5,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "hnd",
+          "weight": 0.8,
+          "exact_only": true,
+          "suppress_if": []
+        },
+        {
+          "term": "snagging",
+          "weight": 1.0,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "punch list",
+          "weight": 1.2,
+          "exact_only": false,
+          "suppress_if": []
+        },
+        {
+          "term": "defects",
+          "weight": 0.8,
+          "exact_only": false,
+          "suppress_if": []
+        }
+      ],
+      "color": "#e87ba4"
+    }
+  ],
+  "synonyms": {
+    "dsgn": "design",
+    "rvw": "review",
+    "dwg": "drawing",
+    "dwgs": "drawing",
+    "mfg": "manufacturing",
+    "dlvry": "delivery",
+    "shpt": "shipment",
+    "fdn": "foundation",
+    "instl": "installation",
+    "constr": "construction",
+    "elec": "electrical",
+    "mech": "mechanical",
+    "arch": "architectural",
+    "fin": "finishes",
+    "trng": "training",
+    "compl": "complete",
+    "addl": "additional",
+    "comm": "commissioning",
+    "commiss": "commissioning",
+    "procure": "procurement",
+    "subm": "submittal",
+    "appr": "approval",
+    "insp": "inspection"
+  },
+  "dimensions": {
+    "Phase": [
+      "phase",
+      "stage",
+      "epc",
+      "project phase"
+    ],
+    "Discipline": [
+      "discipline",
+      "disc",
+      "trade",
+      "department",
+      "dept",
+      "specialty",
+      "speciality"
+    ],
+    "Location": [
+      "location",
+      "area",
+      "zone",
+      "section",
+      "site",
+      "loc",
+      "chainage",
+      "station"
+    ],
+    "Contractor": [
+      "contractor",
+      "subcontractor",
+      "subcon",
+      "company",
+      "responsible",
+      "responsibility",
+      "vendor"
+    ],
+    "Work Package": [
+      "work package",
+      "package",
+      "pkg",
+      "wp",
+      "contract package",
+      "cwp"
+    ]
+  },
+  "stages": {
+    "Procurement": [
+      [
+        "Site Receipt",
+        [
+          "site receipt",
+          "receipt",
+          "receiving",
+          "received"
+        ]
+      ],
+      [
+        "Delivery",
+        [
+          "delivery",
+          "arrival on site",
+          "deliver"
+        ]
+      ],
+      [
+        "Shipping",
+        [
+          "shipping",
+          "shipment",
+          "transport",
+          "freight"
+        ]
+      ],
+      [
+        "FAT",
+        [
+          "fat",
+          "factory acceptance"
+        ]
+      ],
+      [
+        "Manufacturing",
+        [
+          "manufacturing",
+          "fabrication",
+          "production"
+        ]
+      ],
+      [
+        "PO",
+        [
+          "purchase order",
+          "po",
+          "order placement",
+          "award"
+        ]
+      ],
+      [
+        "RFQ",
+        [
+          "rfq",
+          "request for quotation",
+          "tender",
+          "bid"
+        ]
+      ],
+      [
+        "Approval",
+        [
+          "approval",
+          "approve"
+        ]
+      ],
+      [
+        "Technical Submittal",
+        [
+          "technical submittal",
+          "tech sub",
+          "submittal",
+          "submission",
+          "vendor data"
+        ]
+      ]
+    ],
+    "Engineering": [
+      [
+        "Shop Drawings",
+        [
+          "shop drawing",
+          "shop dwg"
+        ]
+      ],
+      [
+        "IFC",
+        [
+          "ifc",
+          "issued for construction"
+        ]
+      ],
+      [
+        "Technical Submittals",
+        [
+          "submittal",
+          "tech sub",
+          "submission"
+        ]
+      ],
+      [
+        "Approval",
+        [
+          "approval",
+          "approve"
+        ]
+      ],
+      [
+        "Review",
+        [
+          "review",
+          "check",
+          "rvw"
+        ]
+      ],
+      [
+        "Design",
+        [
+          "design",
+          "dsgn",
+          "calculation",
+          "drawing"
+        ]
+      ]
+    ]
+  },
+  "signal_weights": {
+    "manual": 100.0,
+    "name": 2.0,
+    "wbs": 2.5,
+    "wbs_decay": 0.6,
+    "code_phase": 3.5,
+    "code": 1.5,
+    "id_prefix": 1.0,
+    "udf": 1.5,
+    "neighbor": 0.8,
+    "evidence_saturation": 3.0,
+    "fuzzy_min_ratio": 0.88
+  },
+  "high_threshold": 0.85,
+  "medium_threshold": 0.6,
+  "activity_overrides": {},
+  "wbs_overrides": {},
+  "code_value_overrides": {},
+  "code_type_dimensions": {},
+  "match_overrides": {}
+}

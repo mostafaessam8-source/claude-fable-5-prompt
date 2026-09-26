@@ -1,0 +1,979 @@
+ERMHDR	20.12	2025-11-02	Project	admin	SAR Demo	dbxDatabaseNoName	Project Management	SAR
+%T	CURRTYPE
+%F	curr_id	decimal_digit_cnt	curr_symbol	decimal_symbol	digit_group_symbol	pos_curr_fmt_type	neg_curr_fmt_type	curr_type	curr_short_name	group_digit_cnt	base_exch_rate
+%R	1	2	$	.	,	#1.1	(#1.1)	US Dollar	USD	3	1
+%T	PROJECT
+%F	proj_id	fy_start_month_num	rsrc_self_add_flag	allow_complete_flag	rsrc_multi_assign_flag	checkout_flag	project_flag	step_complete_flag	cost_qty_recalc_flag	batch_sum_flag	name_sep_char	def_complete_pct_type	proj_short_name	acct_id	orig_proj_id	source_proj_id	base_type_id	clndr_id	sum_base_proj_id	task_code_base	task_code_step	priority_num	wbs_max_sum_level	strgy_priority_num	last_checksum	critical_drtn_hr_cnt	def_cost_per_qty	last_recalc_date	plan_start_date	plan_end_date	scd_end_date	add_date	last_tasksum_date	fcst_start_date	def_duration_type	task_code_prefix	guid	def_qty_type	add_by_name	web_local_root_path	proj_url	def_rate_type	add_act_remain_flag	act_this_per_link_flag	def_task_type	act_pct_link_flag	critical_path_type	task_code_prefix_flag	def_rollup_dates_flag	use_project_baseline_flag	rem_target_link_flag	reset_planned_flag	allow_neg_act_flag	sum_assign_level	last_fin_dates_id	fintmpl_id	last_baseline_update_date	cr_external_key	apply_actuals_date	location_id	loaded_scope_level	export_flag	new_fin_dates_id	baselines_to_export	baseline_names_to_export	next_data_date	close_period_flag	sum_refresh_date	trsrcsum_loaded
+%R	265	1	Y	Y	Y	N	Y	N	Y	Y	.	CP_Phys	RAIL-A					2651		1000	10	10	0	100		0	100	2025-11-02 08:00	2025-01-05 08:00	2026-11-15 16:00	2027-01-19 16:00	2024-12-01 00:00	2025-11-02 08:00		DT_FixedDUR2			QT_Hour	admin			COST_PER_QTY	N	Y	TT_Task	N	CT_TotFloat	Y	Y	Y	Y	N	N	SL_Taskrsrc							7	Y							
+%T	CALENDAR
+%F	clndr_id	default_flag	clndr_name	proj_id	base_clndr_id	last_chng_date	clndr_type	day_hr_cnt	week_hr_cnt	month_hr_cnt	year_hr_cnt	rsrc_private	clndr_data
+%R	2651	N	RAIL-A Sun-Thu 8h				CA_Base	8	40	172	2000	N	(0||CalendarData()((0||DaysOfWeek()((0||1()((0||0(s|08:00|f|16:00)())))(0||2()((0||0(s|08:00|f|16:00)())))(0||3()((0||0(s|08:00|f|16:00)())))(0||4()((0||0(s|08:00|f|16:00)())))(0||5()((0||0(s|08:00|f|16:00)())))(0||6()())(0||7()())))(0||VIEW(ShowTotal|Y)())(0||Exceptions()((0||0(d|45746)())(0||1(d|45747)())(0||2(d|45748)())(0||3(d|45814)())(0||4(d|45816)())(0||5(d|45923)())(0||6(d|46075)())(0||7(d|46100)())(0||8(d|46103)())(0||9(d|46168)())(0||10(d|46169)())(0||11(d|46288)())))))
+%T	PROJWBS
+%F	wbs_id	proj_id	obs_id	seq_num	proj_node_flag	wbs_short_name	wbs_name	parent_wbs_id	status_code
+%R	265000	265	1	0	Y	RAIL-A	Northern Rail Extension (A) - Demo		WS_Open
+%R	265001	265	1	1	N	0	Key Milestones	265000	WS_Open
+%R	265002	265	1	2	N	1	Engineering	265000	WS_Open
+%R	265003	265	1	3	N	1	Detailed Design	265002	WS_Open
+%R	265004	265	1	4	N	2	Design Review & Approvals	265002	WS_Open
+%R	265005	265	1	5	N	2	Procurement	265000	WS_Open
+%R	265006	265	1	6	N	1	Long Lead Items	265005	WS_Open
+%R	265007	265	1	7	N	2	General Materials	265005	WS_Open
+%R	265008	265	1	8	N	3	Construction	265000	WS_Open
+%R	265009	265	1	9	N	1	Earthworks	265008	WS_Open
+%R	265010	265	1	10	N	2	Track Works	265008	WS_Open
+%R	265011	265	1	11	N	3	Stations & Structures	265008	WS_Open
+%R	265012	265	1	12	N	4	Systems Installation	265008	WS_Open
+%R	265013	265	1	13	N	4	Testing & Commissioning	265000	WS_Open
+%R	265014	265	1	14	N	5	Handover	265000	WS_Open
+%T	ACTVTYPE
+%F	actv_code_type_id	actv_short_len	seq_num	actv_code_type	proj_id	wbs_id	actv_code_type_scope
+%R	26501	10	26501	Discipline	265		AS_Project
+%R	26502	10	26502	Location	265		AS_Project
+%R	26503	10	26503	Contractor	265		AS_Project
+%R	26504	10	26504	Work Package	265		AS_Project
+%T	ACTVCODE
+%F	actv_code_id	parent_actv_code_id	actv_code_type_id	actv_code_name	short_name	seq_num	color	total_assignments
+%R	2650001		26501	Design	DES	1		0
+%R	2650002		26501	Procurement	PRC	2		0
+%R	2650003		26501	Civil	CIV	3		0
+%R	2650004		26501	Track Works	TRK	4		0
+%R	2650005		26501	Stations	STN	5		0
+%R	2650006		26501	Systems	SYS	6		0
+%R	2650007		26501	Testing & Commissioning	TNC	7		0
+%R	2650008		26501	Management	MGT	8		0
+%R	2650009		26502	Section A (km 0-40)	SEC-A	9		0
+%R	2650010		26502	Section B (km 40-85)	SEC-B	10		0
+%R	2650011		26502	Section C (km 85-120)	SEC-C	11		0
+%R	2650012		26502	North Station	STN-N	12		0
+%R	2650013		26502	Central Station	STN-C	13		0
+%R	2650014		26502	South Station	STN-S	14		0
+%R	2650015		26502	Route-wide	ALL	15		0
+%R	2650016		26503	Design Consultant	DC	16		0
+%R	2650017		26503	Main Civil Contractor	MC	17		0
+%R	2650018		26503	Systems Contractor	SC	18		0
+%R	2650019		26503	Suppliers	SUP	19		0
+%R	2650020		26504	WP01 Design	WP01	20		0
+%R	2650021		26504	WP02 Supply	WP02	21		0
+%R	2650022		26504	WP03 Civil & Track	WP03	22		0
+%R	2650023		26504	WP04 Stations	WP04	23		0
+%R	2650024		26504	WP05 Systems	WP05	24		0
+%R	2650025		26504	WP06 T&C and Handover	WP06	25		0
+%T	RSRC
+%F	rsrc_id	parent_rsrc_id	clndr_id	rsrc_seq_num	rsrc_short_name	rsrc_name	rsrc_type	active_flag
+%R	26501		2651	0	LAB-DES	DES Labour	RT_Labor	Y
+%R	26502		2651	1	LAB-PRC	PRC Labour	RT_Labor	Y
+%R	26503		2651	2	LAB-CIV	CIV Labour	RT_Labor	Y
+%R	26504		2651	3	LAB-TRK	TRK Labour	RT_Labor	Y
+%R	26505		2651	4	LAB-STN	STN Labour	RT_Labor	Y
+%R	26506		2651	5	LAB-SYS	SYS Labour	RT_Labor	Y
+%R	26507		2651	6	LAB-TNC	TNC Labour	RT_Labor	Y
+%R	26508		2651	7	LAB-MGT	MGT Labour	RT_Labor	Y
+%T	TASK
+%F	task_id	proj_id	wbs_id	clndr_id	phys_complete_pct	rev_fdbk_flag	est_wt	lock_plan_flag	auto_compute_act_flag	complete_pct_type	task_type	duration_type	status_code	task_code	task_name	rsrc_id	total_float_hr_cnt	free_float_hr_cnt	remain_drtn_hr_cnt	act_work_qty	remain_work_qty	target_work_qty	target_drtn_hr_cnt	target_equip_qty	act_equip_qty	remain_equip_qty	cstr_date	act_start_date	act_end_date	late_start_date	late_end_date	expect_end_date	early_start_date	early_end_date	restart_date	reend_date	target_start_date	target_end_date	rem_late_start_date	rem_late_end_date	cstr_type	priority_type	suspend_date	resume_date	float_path	float_path_order	guid	tmpl_guid	cstr_date2	cstr_type2	driving_path_flag	act_this_per_work_qty	act_this_per_equip_qty	external_early_start_date	external_late_end_date	create_date	update_date	create_user	update_user	location_id
+%R	50000	265	265001	2651	100	N	1	N	N	CP_Phys	TT_Mile	DT_FixedDUR2	TK_Complete	MS-1010	Notice to Proceed				0	0	0	0	0	0	0	0		2025-01-05 08:00	2025-01-05 08:00								2025-01-05 08:00	2025-01-05 08:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50001	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1010	Detailed Design - Section A				0	0	0	0	440	0	0	0		2025-01-05 08:00	2025-04-16 16:00								2025-01-05 08:00	2025-03-20 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50002	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1020	Design Review - Section A				0	0	0	0	160	0	0	0		2025-04-17 08:00	2025-05-15 16:00								2025-03-23 08:00	2025-04-22 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50003	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1030	IFC Drawings - Section A				0	0	0	0	80	0	0	0		2025-05-18 08:00	2025-06-01 16:00								2025-04-23 08:00	2025-05-06 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50004	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1040	Detailed Design - Section B				0	0	0	0	480	0	0	0		2025-01-05 08:00	2025-04-23 16:00								2025-01-05 08:00	2025-03-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50005	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1050	Design Review - Section B				0	0	0	0	160	0	0	0		2025-04-24 08:00	2025-05-28 16:00								2025-04-02 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50006	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1060	IFC Drawings - Section B				0	0	0	0	80	0	0	0		2025-05-29 08:00	2025-06-15 16:00								2025-04-30 08:00	2025-05-13 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50007	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1070	Detailed Design - Section C				0	0	0	0	520	0	0	0		2025-01-05 08:00	2025-04-28 16:00								2025-01-05 08:00	2025-04-08 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50008	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1080	Design Review - Section C				0	0	0	0	160	0	0	0		2025-04-29 08:00	2025-05-27 16:00								2025-04-09 08:00	2025-05-06 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50009	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1090	IFC Drawings - Section C				0	0	0	0	80	0	0	0		2025-05-28 08:00	2025-06-12 16:00								2025-05-07 08:00	2025-05-20 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50010	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1100	Detailed Design - North Station				0	0	0	0	560	0	0	0		2025-01-19 08:00	2025-05-20 16:00								2025-01-19 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50011	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1110	Design Review - North Station				0	0	0	0	160	0	0	0		2025-05-21 08:00	2025-06-25 16:00								2025-04-30 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50012	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1120	IFC Drawings - North Station				0	0	0	0	80	0	0	0		2025-06-26 08:00	2025-07-13 16:00								2025-05-28 08:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50013	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1130	Detailed Design - Central Station				0	0	0	0	560	0	0	0		2025-01-19 08:00	2025-05-13 16:00								2025-01-19 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50014	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1140	Design Review - Central Station				0	0	0	0	160	0	0	0		2025-05-14 08:00	2025-06-18 16:00								2025-04-30 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50015	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1150	IFC Drawings - Central Station				0	0	0	0	80	0	0	0		2025-06-19 08:00	2025-07-06 16:00								2025-05-28 08:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50016	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1160	Detailed Design - South Station				0	0	0	0	560	0	0	0		2025-01-19 08:00	2025-05-18 16:00								2025-01-19 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50017	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1170	Design Review - South Station				0	0	0	0	160	0	0	0		2025-05-19 08:00	2025-06-17 16:00								2025-04-30 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50018	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1180	IFC Drawings - South Station				0	0	0	0	80	0	0	0		2025-06-18 08:00	2025-07-02 16:00								2025-05-28 08:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50019	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1190	OCS Detailed Design				0	0	0	0	640	0	0	0		2025-01-05 08:00	2025-05-11 16:00								2025-01-05 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50020	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1200	Signalling Detailed Design				0	0	0	0	640	0	0	0		2025-01-05 08:00	2025-05-18 16:00								2025-01-05 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50021	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1215	Telecommunications System Detailed Design				0	0	0	0	640	0	0	0		2025-01-05 08:00	2025-05-22 16:00								2025-01-05 08:00	2025-05-22 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50022	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1220	Design Review - Systems				0	0	0	0	200	0	0	0		2025-05-25 08:00	2025-07-02 16:00								2025-04-30 08:00	2025-06-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50023	265	265003	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1230	Design Material Support				0	0	0	0	480	0	0	0		2025-06-01 08:00	2025-09-16 16:00								2025-05-07 08:00	2025-07-30 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50024	265	265004	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	ENG-1240	Shop Drawings - Track Works				0	0	0	0	200	0	0	0		2025-06-02 08:00	2025-07-09 16:00								2025-05-07 08:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50025	265	265001	2651	100	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_Complete	MS-1020	Design Complete				0	0	0	0	0	0	0	0		2025-07-13 16:00	2025-07-13 16:00								2025-06-11 16:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50026	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1010	Rails - Technical Submittal				0	0	0	0	120	0	0	0		2025-05-18 08:00	2025-06-04 16:00								2025-04-23 08:00	2025-05-13 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50027	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1020	Rails - Submittal Approval				0	0	0	0	80	0	0	0		2025-06-05 08:00	2025-06-22 16:00								2025-05-14 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50028	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1030	Rails - Purchase Order				0	0	0	0	40	0	0	0		2025-06-23 08:00	2025-06-29 16:00								2025-05-28 08:00	2025-06-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50029	265	265006	2651	92.6	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	PRC-1040	Rails - Manufacturing		-56	0	56	0	0	0	720	0	0	0		2025-06-30 08:00		2025-10-22 08:00	2025-10-30 16:00		2025-11-02 08:00	2025-11-10 16:00	2025-11-02 08:00	2025-11-10 16:00	2025-06-04 08:00	2025-10-09 16:00	2025-10-22 08:00	2025-10-30 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50030	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1050	Rails - FAT		-56	0	40	0	0	0	40	0	0	0				2025-11-02 08:00	2025-11-06 16:00		2025-11-11 08:00	2025-11-17 16:00	2025-11-11 08:00	2025-11-17 16:00	2025-10-12 08:00	2025-10-16 16:00	2025-11-02 08:00	2025-11-06 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50031	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1060	Rails - Shipping		-56	0	240	0	0	0	240	0	0	0				2025-11-09 08:00	2025-12-18 16:00		2025-11-18 08:00	2025-12-29 16:00	2025-11-18 08:00	2025-12-29 16:00	2025-10-19 08:00	2025-11-27 16:00	2025-11-09 08:00	2025-12-18 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50032	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1070	Rails - Delivery to Site		-56	0	80	0	0	0	80	0	0	0				2025-12-21 08:00	2026-01-01 16:00		2025-12-30 08:00	2026-01-12 16:00	2025-12-30 08:00	2026-01-12 16:00	2025-11-30 08:00	2025-12-11 16:00	2025-12-21 08:00	2026-01-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50033	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1080	Turnouts - Technical Submittal				0	0	0	0	120	0	0	0		2025-05-29 08:00	2025-06-19 16:00								2025-04-30 08:00	2025-05-20 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50034	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1090	Turnouts - Submittal Approval				0	0	0	0	80	0	0	0		2025-06-22 08:00	2025-07-06 16:00								2025-05-21 08:00	2025-06-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50035	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1100	Turnouts - Purchase Order				0	0	0	0	40	0	0	0		2025-07-07 08:00	2025-07-13 16:00								2025-06-04 08:00	2025-06-11 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50036	265	265006	2651	65	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	PRC-1110	Turnouts - Manufacturing		-336	0	336	0	0	0	800	0	0	0		2025-07-14 08:00		2025-09-02 08:00	2025-10-30 16:00		2025-11-02 08:00	2025-12-29 16:00	2025-11-02 08:00	2025-12-29 16:00	2025-06-12 08:00	2025-10-30 16:00	2025-09-02 08:00	2025-10-30 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50037	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1120	Turnouts - FAT		-336	0	40	0	0	0	40	0	0	0				2025-11-02 08:00	2025-11-06 16:00		2025-12-30 08:00	2026-01-05 16:00	2025-12-30 08:00	2026-01-05 16:00	2025-11-02 08:00	2025-11-06 16:00	2025-11-02 08:00	2025-11-06 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50038	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1130	Turnouts - Shipping		-336	0	240	0	0	0	240	0	0	0				2025-11-09 08:00	2025-12-18 16:00		2026-01-06 08:00	2026-02-16 16:00	2026-01-06 08:00	2026-02-16 16:00	2025-11-09 08:00	2025-12-18 16:00	2025-11-09 08:00	2025-12-18 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50039	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1140	Turnouts - Delivery to Site		-336	0	80	0	0	0	80	0	0	0				2025-12-21 08:00	2026-01-01 16:00		2026-02-17 08:00	2026-03-03 16:00	2026-02-17 08:00	2026-03-03 16:00	2025-12-21 08:00	2026-01-01 16:00	2025-12-21 08:00	2026-01-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50040	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1150	Signalling Equipment - Technical Submittal				0	0	0	0	120	0	0	0		2025-07-03 08:00	2025-07-22 16:00								2025-06-04 08:00	2025-06-25 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50041	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1160	Signalling Equipment - Submittal Approval				0	0	0	0	80	0	0	0		2025-07-23 08:00	2025-08-06 16:00								2025-06-26 08:00	2025-07-09 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50042	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1170	Signalling Equipment - Purchase Order				0	0	0	0	40	0	0	0		2025-08-07 08:00	2025-08-14 16:00								2025-07-10 08:00	2025-07-16 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50043	265	265006	2651	37	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	PRC-1180	Signalling Equipment - Manufacturing		-376	0	736	0	0	0	960	0	0	0		2025-08-17 08:00		2025-08-26 08:00	2026-01-01 16:00		2025-11-02 08:00	2026-03-10 16:00	2025-11-02 08:00	2026-03-10 16:00	2025-07-17 08:00	2026-01-01 16:00	2025-08-26 08:00	2026-01-01 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50044	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1190	Signalling Equipment - FAT		-376	0	40	0	0	0	40	0	0	0				2026-01-04 08:00	2026-01-08 16:00		2026-03-11 08:00	2026-03-17 16:00	2026-03-11 08:00	2026-03-17 16:00	2026-01-04 08:00	2026-01-08 16:00	2026-01-04 08:00	2026-01-08 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50045	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1200	Signalling Equipment - Shipping		-376	0	240	0	0	0	240	0	0	0				2026-01-11 08:00	2026-02-19 16:00		2026-03-18 08:00	2026-04-30 16:00	2026-03-18 08:00	2026-04-30 16:00	2026-01-11 08:00	2026-02-19 16:00	2026-01-11 08:00	2026-02-19 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50046	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1210	Signalling Equipment - Delivery to Site		-376	0	80	0	0	0	80	0	0	0				2026-02-23 08:00	2026-03-08 16:00		2026-05-03 08:00	2026-05-14 16:00	2026-05-03 08:00	2026-05-14 16:00	2026-02-23 08:00	2026-03-08 16:00	2026-02-23 08:00	2026-03-08 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50047	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1220	OCS Materials - Technical Submittal				0	0	0	0	120	0	0	0		2025-07-03 08:00	2025-07-24 16:00								2025-06-04 08:00	2025-06-25 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50048	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1230	OCS Materials - Submittal Approval				0	0	0	0	80	0	0	0		2025-07-27 08:00	2025-08-07 16:00								2025-06-26 08:00	2025-07-09 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50049	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1240	OCS Materials - Purchase Order				0	0	0	0	40	0	0	0		2025-08-10 08:00	2025-08-17 16:00								2025-07-10 08:00	2025-07-16 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50050	265	265006	2651	63.1	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	PRC-1250	OCS Materials - Manufacturing		152	0	248	0	0	0	640	0	0	0		2025-08-18 08:00		2025-11-27 08:00	2026-01-08 16:00		2025-11-02 08:00	2025-12-14 16:00	2025-11-02 08:00	2025-12-14 16:00	2025-07-17 08:00	2025-11-06 16:00	2025-11-27 08:00	2026-01-08 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50051	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1260	OCS Materials - FAT		152	0	40	0	0	0	40	0	0	0				2026-01-11 08:00	2026-01-15 16:00		2025-12-15 08:00	2025-12-21 16:00	2025-12-15 08:00	2025-12-21 16:00	2025-11-09 08:00	2025-11-13 16:00	2026-01-11 08:00	2026-01-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50052	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1270	OCS Materials - Shipping		152	0	240	0	0	0	240	0	0	0				2026-01-18 08:00	2026-03-01 16:00		2025-12-22 08:00	2026-02-01 16:00	2025-12-22 08:00	2026-02-01 16:00	2025-11-16 08:00	2025-12-25 16:00	2026-01-18 08:00	2026-03-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50053	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1280	OCS Materials - Delivery to Site		152	152	80	0	0	0	80	0	0	0				2026-03-02 08:00	2026-03-15 16:00		2026-02-02 08:00	2026-02-15 16:00	2026-02-02 08:00	2026-02-15 16:00	2025-12-28 08:00	2026-01-08 16:00	2026-03-02 08:00	2026-03-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50054	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1290	Station Steel - Technical Submittal				0	0	0	0	120	0	0	0		2025-05-18 08:00	2025-06-11 16:00								2025-04-23 08:00	2025-05-13 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50055	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1300	Station Steel - Submittal Approval				0	0	0	0	80	0	0	0		2025-06-12 08:00	2025-06-29 16:00								2025-05-14 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50056	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1310	Station Steel - Purchase Order				0	0	0	0	40	0	0	0		2025-06-30 08:00	2025-07-07 16:00								2025-05-28 08:00	2025-06-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50057	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1320	Station Steel - Manufacturing				0	0	0	0	480	0	0	0		2025-07-08 08:00	2025-10-06 16:00								2025-06-04 08:00	2025-08-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50058	265	265006	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1330	Station Steel - FAT				0	0	0	0	40	0	0	0		2025-10-07 08:00	2025-10-13 16:00								2025-08-28 08:00	2025-09-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50059	265	265006	2651	38.2	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	PRC-1340	Station Steel - Shipping		32	0	168	0	0	0	240	0	0	0		2025-10-14 08:00		2025-11-06 08:00	2025-12-04 16:00		2025-11-02 08:00	2025-11-30 16:00	2025-11-02 08:00	2025-11-30 16:00	2025-09-04 08:00	2025-10-16 16:00	2025-11-06 08:00	2025-12-04 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50060	265	265006	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	PRC-1350	Station Steel - Delivery to Site		32	0	80	0	0	0	80	0	0	0				2025-12-07 08:00	2025-12-18 16:00		2025-12-01 08:00	2025-12-14 16:00	2025-12-01 08:00	2025-12-14 16:00	2025-10-19 08:00	2025-10-30 16:00	2025-12-07 08:00	2025-12-18 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50061	265	265007	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1360	Concrete Supply Contract				0	0	0	0	160	0	0	0		2025-02-02 08:00	2025-03-04 16:00								2025-02-02 08:00	2025-02-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50062	265	265007	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1370	Ballast Supply - Batch 1				0	0	0	0	320	0	0	0		2025-03-05 08:00	2025-05-04 16:00								2025-03-02 08:00	2025-04-29 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50063	265	265007	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	PRC-1380	Ballast Supply - Batch 2				0	0	0	0	320	0	0	0		2025-04-07 08:00	2025-06-10 16:00								2025-04-02 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50064	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1010	Site Mobilization - Section A				0	0	0	0	120	0	0	0		2025-05-18 08:00	2025-06-04 16:00								2025-04-23 08:00	2025-05-13 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50065	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1020	Earthworks - Section A				0	0	0	0	640	0	0	0		2025-06-05 08:00	2025-10-13 16:00								2025-05-14 08:00	2025-09-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50066	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1030	Drainage & Culverts - Section A				0	0	0	0	400	0	0	0		2025-07-06 08:00	2025-09-16 16:00								2025-06-12 08:00	2025-08-20 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50067	265	265010	2651	43.3	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	CNS-1040	Sub-ballast - Section A		224	224	136	0	0	0	240	0	0	0		2025-10-14 08:00		2025-12-10 08:00	2026-01-01 16:00		2025-11-02 08:00	2025-11-24 16:00	2025-11-02 08:00	2025-11-24 16:00	2025-09-04 08:00	2025-10-16 16:00	2025-12-10 08:00	2026-01-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50068	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1050	Track Installation - Section A		-336	0	480	0	0	0	480	0	0	0				2026-01-04 08:00	2026-03-31 16:00		2026-03-04 08:00	2026-06-01 16:00	2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	2026-01-04 08:00	2026-03-31 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50069	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1060	Ballast & Tamping - Section A		-336	0	240	0	0	0	240	0	0	0				2026-02-01 08:00	2026-03-15 16:00		2026-04-05 08:00	2026-05-14 16:00	2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	2026-02-01 08:00	2026-03-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50070	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1070	Site Mobilization - Section B				0	0	0	0	120	0	0	0		2025-05-29 08:00	2025-06-18 16:00								2025-04-30 08:00	2025-05-20 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50071	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1080	Earthworks - Section B				0	0	0	0	760	0	0	0		2025-06-19 08:00	2025-10-20 16:00								2025-05-21 08:00	2025-09-10 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50072	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1090	Drainage & Culverts - Section B				0	0	0	0	400	0	0	0		2025-07-17 08:00	2025-09-29 16:00								2025-06-19 08:00	2025-08-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50073	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1995	Additional Drainage Works - Section B				0	0	0	0	200	0	0	0		2025-07-31 08:00	2025-09-08 16:00								2025-07-31 08:00	2025-09-08 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50074	265	265010	2651	29.6	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	CNS-1100	Sub-ballast - Section B		208	208	152	0	0	0	240	0	0	0		2025-10-21 08:00		2025-12-08 08:00	2026-01-01 16:00		2025-11-02 08:00	2025-11-26 16:00	2025-11-02 08:00	2025-11-26 16:00	2025-09-11 08:00	2025-10-23 16:00	2025-12-08 08:00	2026-01-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50075	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1110	Track Installation - Section B		-336	0	480	0	0	0	480	0	0	0				2026-01-04 08:00	2026-03-31 16:00		2026-03-04 08:00	2026-06-01 16:00	2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	2026-01-04 08:00	2026-03-31 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50076	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1120	Ballast & Tamping - Section B		-336	0	240	0	0	0	240	0	0	0				2026-02-01 08:00	2026-03-15 16:00		2026-04-05 08:00	2026-05-14 16:00	2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	2026-02-01 08:00	2026-03-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50077	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1130	Site Mobilization - Section C				0	0	0	0	120	0	0	0		2025-05-28 08:00	2025-06-19 16:00								2025-05-07 08:00	2025-05-27 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50078	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1140	Earthworks - Section C				0	0	0	0	640	0	0	0		2025-06-22 08:00	2025-10-01 16:00								2025-05-28 08:00	2025-09-17 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50079	265	265009	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1150	Drainage & Culverts - Section C				0	0	0	0	400	0	0	0		2025-07-20 08:00	2025-09-25 16:00								2025-06-26 08:00	2025-09-03 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50080	265	265010	2651	65.6	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Active	CNS-1160	Sub-ballast - Section C		272	272	88	0	0	0	240	0	0	0		2025-10-02 08:00		2025-12-18 08:00	2026-01-01 16:00		2025-11-02 08:00	2025-11-16 16:00	2025-11-02 08:00	2025-11-16 16:00	2025-09-18 08:00	2025-10-30 16:00	2025-12-18 08:00	2026-01-01 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50081	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1170	Track Installation - Section C		-336	0	480	0	0	0	480	0	0	0				2026-01-04 08:00	2026-03-31 16:00		2026-03-04 08:00	2026-06-01 16:00	2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	2026-01-04 08:00	2026-03-31 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50082	265	265010	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1180	Ballast & Tamping - Section C		-336	0	240	0	0	0	240	0	0	0				2026-02-01 08:00	2026-03-15 16:00		2026-04-05 08:00	2026-05-14 16:00	2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	2026-02-01 08:00	2026-03-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50083	265	265001	2651	100	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_Complete	MS-1030	Earthworks Complete				0	0	0	0	0	0	0	0		2025-10-20 16:00	2025-10-20 16:00								2025-09-17 16:00	2025-09-17 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50084	265	265001	2651	0	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_NotStart	MS-1040	Track Laying Complete		704	0	0	0	0	0	0	0	0	0				2026-09-17 16:00	2026-09-17 16:00		2026-05-14 16:00	2026-05-14 16:00	2026-05-14 16:00	2026-05-14 16:00	2026-03-15 16:00	2026-03-15 16:00	2026-09-17 16:00	2026-09-17 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50085	265	265011	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1190	Foundations - North Station				0	0	0	0	320	0	0	0		2025-07-14 08:00	2025-09-02 16:00								2025-06-12 08:00	2025-08-06 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50086	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1200	Station Structure - North Station		152	0	640	0	0	0	640	0	0	0				2026-01-11 08:00	2026-05-05 16:00		2025-12-15 08:00	2026-04-08 16:00	2025-12-15 08:00	2026-04-08 16:00	2025-11-02 08:00	2026-02-19 16:00	2026-01-11 08:00	2026-05-05 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50087	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1210	Architectural Finishes - North Station		152	152	480	0	0	0	480	0	0	0				2026-05-06 08:00	2026-07-30 16:00		2026-04-09 08:00	2026-07-05 16:00	2026-04-09 08:00	2026-07-05 16:00	2026-02-23 08:00	2026-05-19 16:00	2026-05-06 08:00	2026-07-30 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50088	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1220	MEP Installation - North Station		392	392	480	0	0	0	480	0	0	0				2026-04-22 08:00	2026-07-16 16:00		2026-02-09 08:00	2026-05-06 16:00	2026-02-09 08:00	2026-05-06 16:00	2025-12-28 08:00	2026-03-24 16:00	2026-04-22 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50089	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1230	Platform Finishes - North Station		152	152	240	0	0	0	240	0	0	0				2026-06-07 08:00	2026-07-16 16:00		2026-05-07 08:00	2026-06-21 16:00	2026-05-07 08:00	2026-06-21 16:00	2026-03-25 08:00	2026-05-05 16:00	2026-06-07 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50090	265	265011	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1240	Foundations - Central Station				0	0	0	0	320	0	0	0		2025-07-07 08:00	2025-08-27 16:00								2025-06-12 08:00	2025-08-06 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50091	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1251	Station Structure - Central Station - Part 1		32	0	360	0	0	0	360	0	0	0				2025-12-21 08:00	2026-02-19 16:00		2025-12-15 08:00	2026-02-15 16:00	2025-12-15 08:00	2026-02-15 16:00	2025-12-15 08:00	2026-02-15 16:00	2025-12-21 08:00	2026-02-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50092	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1252	Station Structure - Central Station - Part 2		32	0	360	0	0	0	360	0	0	0				2026-02-23 08:00	2026-04-28 16:00		2026-02-16 08:00	2026-04-22 16:00	2026-02-16 08:00	2026-04-22 16:00	2026-02-16 08:00	2026-04-22 16:00	2026-02-23 08:00	2026-04-28 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50093	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1260	Architectural Finishes - Central Station		72	72	480	0	0	0	480	0	0	0				2026-05-06 08:00	2026-07-30 16:00		2026-04-23 08:00	2026-07-19 16:00	2026-04-23 08:00	2026-07-19 16:00	2026-02-23 08:00	2026-05-19 16:00	2026-05-06 08:00	2026-07-30 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50094	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1270	MEP Installation - Central Station		32	32	480	0	0	0	480	0	0	0				2026-04-22 08:00	2026-07-16 16:00		2026-04-16 08:00	2026-07-12 16:00	2026-04-16 08:00	2026-07-12 16:00	2025-12-28 08:00	2026-03-24 16:00	2026-04-22 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50095	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1280	Platform Finishes - Central Station		32	32	240	0	0	0	240	0	0	0				2026-06-07 08:00	2026-07-16 16:00		2026-06-01 08:00	2026-07-12 16:00	2026-06-01 08:00	2026-07-12 16:00	2026-03-25 08:00	2026-05-05 16:00	2026-06-07 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50096	265	265011	2651	100	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_Complete	CNS-1290	Foundations - South Station				0	0	0	0	320	0	0	0		2025-07-03 08:00	2025-09-03 16:00								2025-06-12 08:00	2025-08-06 16:00				PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50097	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1300	Station Structure - South Station		152	0	640	0	0	0	640	0	0	0				2026-01-11 08:00	2026-05-05 16:00		2025-12-15 08:00	2026-04-08 16:00	2025-12-15 08:00	2026-04-08 16:00	2025-11-02 08:00	2026-02-19 16:00	2026-01-11 08:00	2026-05-05 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50098	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1310	Architectural Finishes - South Station		152	152	480	0	0	0	480	0	0	0				2026-05-06 08:00	2026-07-30 16:00		2026-04-09 08:00	2026-07-05 16:00	2026-04-09 08:00	2026-07-05 16:00	2026-02-23 08:00	2026-05-19 16:00	2026-05-06 08:00	2026-07-30 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50099	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1320	MEP Installation - South Station		392	392	480	0	0	0	480	0	0	0				2026-04-22 08:00	2026-07-16 16:00		2026-02-09 08:00	2026-05-06 16:00	2026-02-09 08:00	2026-05-06 16:00	2025-12-28 08:00	2026-03-24 16:00	2026-04-22 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50100	265	265011	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1330	Platform Finishes - South Station		152	152	240	0	0	0	240	0	0	0				2026-06-07 08:00	2026-07-16 16:00		2026-05-07 08:00	2026-06-21 16:00	2026-05-07 08:00	2026-06-21 16:00	2026-03-25 08:00	2026-05-05 16:00	2026-06-07 08:00	2026-07-16 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50101	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1340	OCS Installation - Section A		-336	0	360	0	0	0	360	0	0	0				2026-03-16 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-20 16:00	2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	2026-03-16 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50102	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1350	Signalling Installation - Section A		-376	0	400	0	0	0	400	0	0	0				2026-03-09 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-27 16:00	2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	2026-03-09 08:00	2026-05-19 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50103	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1360	Telecom Installation - Section A		-136	0	320	0	0	0	320	0	0	0				2026-03-25 08:00	2026-05-19 16:00		2026-04-19 08:00	2026-06-15 16:00	2026-04-19 08:00	2026-06-15 16:00	2026-02-15 08:00	2026-04-14 16:00	2026-03-25 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50104	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1370	OCS Installation - Section B		-336	0	360	0	0	0	360	0	0	0				2026-03-16 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-20 16:00	2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	2026-03-16 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50105	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1380	Signalling Installation - Section B		-376	0	400	0	0	0	400	0	0	0				2026-03-09 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-27 16:00	2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	2026-03-09 08:00	2026-05-19 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50106	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1390	Telecom Installation - Section B		-136	0	320	0	0	0	320	0	0	0				2026-03-25 08:00	2026-05-19 16:00		2026-04-19 08:00	2026-06-15 16:00	2026-04-19 08:00	2026-06-15 16:00	2026-02-15 08:00	2026-04-14 16:00	2026-03-25 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50107	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1400	OCS Installation - Section C		-336	0	360	0	0	0	360	0	0	0				2026-03-16 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-20 16:00	2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	2026-03-16 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50108	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1410	Signalling Installation - Section C		-376	0	400	0	0	0	400	0	0	0				2026-03-09 08:00	2026-05-19 16:00		2026-05-17 08:00	2026-07-27 16:00	2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	2026-03-09 08:00	2026-05-19 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50109	265	265012	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	CNS-1420	Telecom Installation - Section C		-136	0	320	0	0	0	320	0	0	0				2026-03-25 08:00	2026-05-19 16:00		2026-04-19 08:00	2026-06-15 16:00	2026-04-19 08:00	2026-06-15 16:00	2026-02-15 08:00	2026-04-14 16:00	2026-03-25 08:00	2026-05-19 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50110	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1010	System Testing - Section A		-376	0	240	0	0	0	240	0	0	0				2026-05-20 08:00	2026-07-02 16:00		2026-07-28 08:00	2026-09-07 16:00	2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	2026-05-20 08:00	2026-07-02 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50111	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1020	System Testing - Section B		-376	0	240	0	0	0	240	0	0	0				2026-05-20 08:00	2026-07-02 16:00		2026-07-28 08:00	2026-09-07 16:00	2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	2026-05-20 08:00	2026-07-02 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50112	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1030	System Testing - Section C		-376	0	240	0	0	0	240	0	0	0				2026-05-20 08:00	2026-07-02 16:00		2026-07-28 08:00	2026-09-07 16:00	2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	2026-05-20 08:00	2026-07-02 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50113	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1040	Energization		-376	0	80	0	0	0	80	0	0	0				2026-07-05 08:00	2026-07-16 16:00		2026-09-08 08:00	2026-09-21 16:00	2026-09-08 08:00	2026-09-21 16:00	2026-07-05 08:00	2026-07-16 16:00	2026-07-05 08:00	2026-07-16 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50114	265	265001	2651	0	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_NotStart	MS-1050	Systems Energized		304	304	0	0	0	0	0	0	0	0				2026-11-15 16:00	2026-11-15 16:00		2026-09-21 16:00	2026-09-21 16:00	2026-09-21 16:00	2026-09-21 16:00	2026-07-16 16:00	2026-07-16 16:00	2026-11-15 16:00	2026-11-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50115	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1050	Integration Testing		-376	0	320	0	0	0	320	0	0	0				2026-07-19 08:00	2026-09-10 16:00		2026-09-22 08:00	2026-11-17 16:00	2026-09-22 08:00	2026-11-17 16:00	2026-07-19 08:00	2026-09-10 16:00	2026-07-19 08:00	2026-09-10 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50116	265	265013	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	TST-1060	Trial Running		-376	0	360	0	0	0	360	0	0	0				2026-09-13 08:00	2026-11-15 16:00		2026-11-18 08:00	2027-01-19 16:00	2026-11-18 08:00	2027-01-19 16:00	2026-09-13 08:00	2026-11-15 16:00	2026-09-13 08:00	2026-11-15 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50117	265	265014	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	HND-1010	As-built Documentation		704	704	320	0	0	0	320	0	0	0				2026-09-20 08:00	2026-11-15 16:00		2026-05-17 08:00	2026-07-13 16:00	2026-05-17 08:00	2026-07-13 16:00	2026-03-16 08:00	2026-05-12 16:00	2026-09-20 08:00	2026-11-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50118	265	265014	2651	0	N	1	N	N	CP_Phys	TT_Task	DT_FixedDUR2	TK_NotStart	HND-1020	O&M Manuals & Training		-16	0	240	0	0	0	240	0	0	0				2026-10-05 08:00	2026-11-15 16:00		2026-10-07 08:00	2026-11-17 16:00	2026-10-07 08:00	2026-11-17 16:00	2026-08-02 08:00	2026-09-10 16:00	2026-10-05 08:00	2026-11-15 16:00		PT_Normal									N	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50119	265	265014	2651	0	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_NotStart	HND-1030	Provisional Acceptance (PAC)		-376	0	0	0	0	0	0	0	0	0				2026-11-15 16:00	2026-11-15 16:00		2027-01-19 16:00	2027-01-19 16:00	2027-01-19 16:00	2027-01-19 16:00	2026-11-15 16:00	2026-11-15 16:00	2026-11-15 16:00	2026-11-15 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%R	50120	265	265001	2651	0	N	1	N	N	CP_Phys	TT_FinMile	DT_FixedDUR2	TK_NotStart	MS-1060	Project Completion		-376	0	0	0	0	0	0	0	0	0				2026-11-15 16:00	2026-11-15 16:00		2027-01-19 16:00	2027-01-19 16:00	2027-01-19 16:00	2027-01-19 16:00	2026-11-15 16:00	2026-11-15 16:00	2026-11-15 16:00	2026-11-15 16:00		PT_Normal									Y	0	0			2024-12-01 00:00	2025-11-02 08:00	admin	admin	
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	proj_id	pred_proj_id	pred_type	lag_hr_cnt	comments	float_path	aref	arls
+%R	26500001	50001	50000	265	265	PR_FS	0				
+%R	26500002	50002	50001	265	265	PR_FS	0				
+%R	26500003	50003	50002	265	265	PR_FS	0				
+%R	26500004	50004	50000	265	265	PR_FS	0				
+%R	26500005	50005	50004	265	265	PR_FS	0				
+%R	26500006	50006	50005	265	265	PR_FS	0				
+%R	26500007	50007	50000	265	265	PR_FS	0				
+%R	26500008	50008	50007	265	265	PR_FS	0				
+%R	26500009	50009	50008	265	265	PR_FS	0				
+%R	26500010	50010	50000	265	265	PR_FS	80				
+%R	26500011	50011	50010	265	265	PR_FS	0				
+%R	26500012	50012	50011	265	265	PR_FS	0				
+%R	26500013	50013	50000	265	265	PR_FS	80				
+%R	26500014	50014	50013	265	265	PR_FS	0				
+%R	26500015	50015	50014	265	265	PR_FS	0				
+%R	26500016	50016	50000	265	265	PR_FS	80				
+%R	26500017	50017	50016	265	265	PR_FS	0				
+%R	26500018	50018	50017	265	265	PR_FS	0				
+%R	26500019	50019	50000	265	265	PR_FS	0				
+%R	26500020	50020	50000	265	265	PR_FS	0				
+%R	26500021	50021	50000	265	265	PR_FS	0				
+%R	26500022	50022	50019	265	265	PR_FS	0				
+%R	26500023	50022	50020	265	265	PR_FS	0				
+%R	26500024	50022	50021	265	265	PR_FS	0				
+%R	26500025	50023	50022	265	265	PR_SS	40				
+%R	26500026	50024	50003	265	265	PR_FS	0				
+%R	26500027	50025	50003	265	265	PR_FS	0				
+%R	26500028	50025	50006	265	265	PR_FS	0				
+%R	26500029	50025	50009	265	265	PR_FS	0				
+%R	26500030	50025	50012	265	265	PR_FS	0				
+%R	26500031	50025	50015	265	265	PR_FS	0				
+%R	26500032	50025	50018	265	265	PR_FS	0				
+%R	26500033	50025	50022	265	265	PR_FS	0				
+%R	26500034	50026	50002	265	265	PR_FS	0				
+%R	26500035	50027	50026	265	265	PR_FS	0				
+%R	26500036	50028	50027	265	265	PR_FS	0				
+%R	26500037	50029	50028	265	265	PR_FS	0				
+%R	26500038	50030	50029	265	265	PR_FS	0				
+%R	26500039	50031	50030	265	265	PR_FS	0				
+%R	26500040	50032	50031	265	265	PR_FS	0				
+%R	26500041	50033	50005	265	265	PR_FS	0				
+%R	26500042	50034	50033	265	265	PR_FS	0				
+%R	26500043	50035	50034	265	265	PR_FS	0				
+%R	26500044	50036	50035	265	265	PR_FS	0				
+%R	26500045	50037	50036	265	265	PR_FS	0				
+%R	26500046	50038	50037	265	265	PR_FS	0				
+%R	26500047	50039	50038	265	265	PR_FS	0				
+%R	26500048	50040	50022	265	265	PR_FS	0				
+%R	26500049	50041	50040	265	265	PR_FS	0				
+%R	26500050	50042	50041	265	265	PR_FS	0				
+%R	26500051	50043	50042	265	265	PR_FS	0				
+%R	26500052	50044	50043	265	265	PR_FS	0				
+%R	26500053	50045	50044	265	265	PR_FS	0				
+%R	26500054	50046	50045	265	265	PR_FS	0				
+%R	26500055	50047	50022	265	265	PR_FS	0				
+%R	26500056	50048	50047	265	265	PR_FS	0				
+%R	26500057	50049	50048	265	265	PR_FS	0				
+%R	26500058	50050	50049	265	265	PR_FS	0				
+%R	26500059	50051	50050	265	265	PR_FS	0				
+%R	26500060	50052	50051	265	265	PR_FS	0				
+%R	26500061	50053	50052	265	265	PR_FS	0				
+%R	26500062	50054	50002	265	265	PR_FS	0				
+%R	26500063	50055	50054	265	265	PR_FS	0				
+%R	26500064	50056	50055	265	265	PR_FS	0				
+%R	26500065	50057	50056	265	265	PR_FS	0				
+%R	26500066	50058	50057	265	265	PR_FS	0				
+%R	26500067	50059	50058	265	265	PR_FS	0				
+%R	26500068	50060	50059	265	265	PR_FS	0				
+%R	26500069	50061	50000	265	265	PR_FS	160				
+%R	26500070	50062	50061	265	265	PR_FS	0				
+%R	26500071	50063	50061	265	265	PR_FS	160				
+%R	26500072	50064	50003	265	265	PR_SS	0				
+%R	26500073	50065	50064	265	265	PR_FS	0				
+%R	26500074	50065	50003	265	265	PR_FS	0				
+%R	26500075	50066	50065	265	265	PR_SS	160				
+%R	26500076	50067	50065	265	265	PR_FS	0				
+%R	26500077	50067	50066	265	265	PR_FF	0				
+%R	26500078	50068	50067	265	265	PR_FS	0				
+%R	26500079	50068	50032	265	265	PR_FS	0				
+%R	26500080	50068	50039	265	265	PR_FS	0				
+%R	26500081	50068	50024	265	265	PR_FS	0				
+%R	26500082	50069	50068	265	265	PR_SS	160				
+%R	26500083	50069	50062	265	265	PR_FS	0				
+%R	26500084	50070	50006	265	265	PR_SS	0				
+%R	26500085	50071	50070	265	265	PR_FS	0				
+%R	26500086	50071	50006	265	265	PR_FS	0				
+%R	26500087	50072	50071	265	265	PR_SS	160				
+%R	26500088	50073	50071	265	265	PR_SS	240				
+%R	26500089	50074	50071	265	265	PR_FS	0				
+%R	26500090	50074	50072	265	265	PR_FF	0				
+%R	26500091	50074	50073	265	265	PR_FS	0				
+%R	26500092	50075	50074	265	265	PR_FS	0				
+%R	26500093	50075	50032	265	265	PR_FS	0				
+%R	26500094	50075	50039	265	265	PR_FS	0				
+%R	26500095	50075	50024	265	265	PR_FS	0				
+%R	26500096	50076	50075	265	265	PR_SS	160				
+%R	26500097	50076	50063	265	265	PR_FS	0				
+%R	26500098	50077	50009	265	265	PR_SS	0				
+%R	26500099	50078	50077	265	265	PR_FS	0				
+%R	26500100	50078	50009	265	265	PR_FS	0				
+%R	26500101	50079	50078	265	265	PR_SS	160				
+%R	26500102	50080	50078	265	265	PR_FS	0				
+%R	26500103	50080	50079	265	265	PR_FF	0				
+%R	26500104	50081	50080	265	265	PR_FS	0				
+%R	26500105	50081	50032	265	265	PR_FS	0				
+%R	26500106	50081	50039	265	265	PR_FS	0				
+%R	26500107	50081	50024	265	265	PR_FS	0				
+%R	26500108	50082	50081	265	265	PR_SS	160				
+%R	26500109	50082	50063	265	265	PR_FS	0				
+%R	26500110	50083	50065	265	265	PR_FS	0				
+%R	26500111	50083	50071	265	265	PR_FS	0				
+%R	26500112	50083	50078	265	265	PR_FS	0				
+%R	26500113	50084	50069	265	265	PR_FS	0				
+%R	26500114	50084	50076	265	265	PR_FS	0				
+%R	26500115	50084	50082	265	265	PR_FS	0				
+%R	26500116	50085	50012	265	265	PR_FS	0				
+%R	26500117	50085	50061	265	265	PR_FS	0				
+%R	26500118	50086	50085	265	265	PR_FS	0				
+%R	26500119	50086	50060	265	265	PR_FS	0				
+%R	26500120	50087	50086	265	265	PR_FS	0				
+%R	26500121	50088	50086	265	265	PR_SS	320				
+%R	26500122	50089	50087	265	265	PR_SS	160				
+%R	26500123	50089	50088	265	265	PR_FF	0				
+%R	26500124	50090	50015	265	265	PR_FS	0				
+%R	26500125	50090	50061	265	265	PR_FS	0				
+%R	26500126	50091	50090	265	265	PR_FS	0				
+%R	26500127	50091	50060	265	265	PR_FS	0				
+%R	26500128	50092	50091	265	265	PR_FS	0				
+%R	26500129	50093	50092	265	265	PR_FS	0				
+%R	26500130	50094	50092	265	265	PR_SS	320				
+%R	26500131	50095	50093	265	265	PR_SS	160				
+%R	26500132	50095	50094	265	265	PR_FF	0				
+%R	26500133	50096	50018	265	265	PR_FS	0				
+%R	26500134	50096	50061	265	265	PR_FS	0				
+%R	26500135	50097	50096	265	265	PR_FS	0				
+%R	26500136	50097	50060	265	265	PR_FS	0				
+%R	26500137	50098	50097	265	265	PR_FS	0				
+%R	26500138	50099	50097	265	265	PR_SS	320				
+%R	26500139	50100	50098	265	265	PR_SS	160				
+%R	26500140	50100	50099	265	265	PR_FF	0				
+%R	26500141	50101	50069	265	265	PR_FS	0				
+%R	26500142	50101	50053	265	265	PR_FS	0				
+%R	26500143	50102	50069	265	265	PR_SS	80				
+%R	26500144	50102	50046	265	265	PR_FS	0				
+%R	26500145	50103	50069	265	265	PR_SS	80				
+%R	26500146	50104	50076	265	265	PR_FS	0				
+%R	26500147	50104	50053	265	265	PR_FS	0				
+%R	26500148	50105	50076	265	265	PR_SS	80				
+%R	26500149	50105	50046	265	265	PR_FS	0				
+%R	26500150	50106	50076	265	265	PR_SS	80				
+%R	26500151	50107	50082	265	265	PR_FS	0				
+%R	26500152	50107	50053	265	265	PR_FS	0				
+%R	26500153	50108	50082	265	265	PR_SS	80				
+%R	26500154	50108	50046	265	265	PR_FS	0				
+%R	26500155	50109	50082	265	265	PR_SS	80				
+%R	26500156	50110	50101	265	265	PR_FS	0				
+%R	26500157	50110	50102	265	265	PR_FS	0				
+%R	26500158	50110	50103	265	265	PR_FS	0				
+%R	26500159	50111	50104	265	265	PR_FS	0				
+%R	26500160	50111	50105	265	265	PR_FS	0				
+%R	26500161	50111	50106	265	265	PR_FS	0				
+%R	26500162	50112	50107	265	265	PR_FS	0				
+%R	26500163	50112	50108	265	265	PR_FS	0				
+%R	26500164	50112	50109	265	265	PR_FS	0				
+%R	26500165	50113	50110	265	265	PR_FS	0				
+%R	26500166	50113	50111	265	265	PR_FS	0				
+%R	26500167	50113	50112	265	265	PR_FS	0				
+%R	26500168	50114	50113	265	265	PR_FS	0				
+%R	26500169	50115	50113	265	265	PR_FS	0				
+%R	26500170	50115	50089	265	265	PR_FS	0				
+%R	26500171	50115	50095	265	265	PR_FS	0				
+%R	26500172	50115	50100	265	265	PR_FS	0				
+%R	26500173	50116	50115	265	265	PR_FS	0				
+%R	26500174	50117	50084	265	265	PR_FS	0				
+%R	26500175	50118	50115	265	265	PR_SS	80				
+%R	26500176	50119	50116	265	265	PR_FS	0				
+%R	26500177	50119	50117	265	265	PR_FS	0				
+%R	26500178	50119	50118	265	265	PR_FS	0				
+%R	26500179	50120	50119	265	265	PR_FS	0				
+%R	26500180	50120	50114	265	265	PR_FS	0				
+%R	26500181	50120	50025	265	265	PR_FS	0				
+%T	TASKRSRC
+%F	taskrsrc_id	task_id	proj_id	cost_qty_link_flag	role_id	acct_id	rsrc_id	pobs_id	skill_level	remain_qty	target_qty	remain_qty_per_hr	target_lag_drtn_hr_cnt	target_qty_per_hr	act_ot_qty	act_reg_qty	relag_drtn_hr_cnt	ot_factor	cost_per_qty	target_cost	act_reg_cost	act_ot_cost	remain_cost	act_start_date	act_end_date	restart_date	reend_date	target_start_date	target_end_date	rem_late_start_date	rem_late_end_date	rollup_dates_flag	target_crv	remain_crv	actual_crv	ts_pend_act_end_flag	guid	rate_type	act_this_per_cost	act_this_per_qty	curv_id	rsrc_type	cost_per_qty_source_type	create_user	create_date	has_rsrchours	taskrsrc_sum_id
+%R	26500001	50001	265	Y			26501			0	880	2	0	2	0	927.9993	0		562.5	495000	521999.594	0	0	2025-01-05 08:00	2025-04-16 16:00			2025-01-05 08:00	2025-04-16 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500002	50002	265	Y			26501			0	320	2	0	2	0	341.6452	0		375	120000	128116.946	0	0	2025-04-17 08:00	2025-05-15 16:00			2025-04-17 08:00	2025-05-15 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500003	50003	265	Y			26501			0	160	2	0	2	0	170.4151	0		250	40000	42603.7782	0	0	2025-05-18 08:00	2025-06-01 16:00			2025-05-18 08:00	2025-06-01 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500004	50004	265	Y			26501			0	960	2	0	2	0	1013.9832	0		562.5	540000	570365.5696	0	0	2025-01-05 08:00	2025-04-23 16:00			2025-01-05 08:00	2025-04-23 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500005	50005	265	Y			26501			0	320	2	0	2	0	326.2658	0		375	120000	122349.6766	0	0	2025-04-24 08:00	2025-05-28 16:00			2025-04-24 08:00	2025-05-28 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500006	50006	265	Y			26501			0	160	2	0	2	0	155.8921	0		250	40000	38973.0145	0	0	2025-05-29 08:00	2025-06-15 16:00			2025-05-29 08:00	2025-06-15 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500007	50007	265	Y			26501			0	1040	2	0	2	0	1130.5862	0		562.5	585000	635954.7118	0	0	2025-01-05 08:00	2025-04-28 16:00			2025-01-05 08:00	2025-04-28 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500008	50008	265	Y			26501			0	320	2	0	2	0	322.1773	0		375	120000	120816.4965	0	0	2025-04-29 08:00	2025-05-27 16:00			2025-04-29 08:00	2025-05-27 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500009	50009	265	Y			26501			0	160	2	0	2	0	157.6279	0		250	40000	39406.9874	0	0	2025-05-28 08:00	2025-06-12 16:00			2025-05-28 08:00	2025-06-12 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500010	50010	265	Y			26501			0	1120	2	0	2	0	1202.9118	0		500	560000	601455.8878	0	0	2025-01-19 08:00	2025-05-20 16:00			2025-01-19 08:00	2025-05-20 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500011	50011	265	Y			26501			0	320	2	0	2	0	330.2701	0		312.5	100000	103209.4197	0	0	2025-05-21 08:00	2025-06-25 16:00			2025-05-21 08:00	2025-06-25 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500012	50012	265	Y			26501			0	160	2	0	2	0	160.7867	0		187.5	30000	30147.5147	0	0	2025-06-26 08:00	2025-07-13 16:00			2025-06-26 08:00	2025-07-13 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500013	50013	265	Y			26501			0	1120	2	0	2	0	1169.7869	0		500	560000	584893.452	0	0	2025-01-19 08:00	2025-05-13 16:00			2025-01-19 08:00	2025-05-13 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500014	50014	265	Y			26501			0	320	2	0	2	0	348.6512	0		312.5	100000	108953.5008	0	0	2025-05-14 08:00	2025-06-18 16:00			2025-05-14 08:00	2025-06-18 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500015	50015	265	Y			26501			0	160	2	0	2	0	165.733	0		187.5	30000	31074.9312	0	0	2025-06-19 08:00	2025-07-06 16:00			2025-06-19 08:00	2025-07-06 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500016	50016	265	Y			26501			0	1120	2	0	2	0	1163.3277	0		500	560000	581663.8652	0	0	2025-01-19 08:00	2025-05-18 16:00			2025-01-19 08:00	2025-05-18 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500017	50017	265	Y			26501			0	320	2	0	2	0	334.1758	0		312.5	100000	104429.9306	0	0	2025-05-19 08:00	2025-06-17 16:00			2025-05-19 08:00	2025-06-17 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500018	50018	265	Y			26501			0	160	2	0	2	0	155.5918	0		187.5	30000	29173.4614	0	0	2025-06-18 08:00	2025-07-02 16:00			2025-06-18 08:00	2025-07-02 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500019	50019	265	Y			26501			0	1280	2	0	2	0	1308.0745	0		625	800000	817546.5405	0	0	2025-01-05 08:00	2025-05-11 16:00			2025-01-05 08:00	2025-05-11 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500020	50020	265	Y			26501			0	1280	2	0	2	0	1384.169	0		625	800000	865105.6018	0	0	2025-01-05 08:00	2025-05-18 16:00			2025-01-05 08:00	2025-05-18 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500021	50021	265	Y			26501			0	1280	2	0	2	0	1296.2435	0		625	800000	810152.2148	0	0	2025-01-05 08:00	2025-05-22 16:00			2025-01-05 08:00	2025-05-22 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500022	50022	265	Y			26501			0	400	2	0	2	0	410.9054	0		375	150000	154089.5232	0	0	2025-05-25 08:00	2025-07-02 16:00			2025-05-25 08:00	2025-07-02 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500023	50023	265	Y			26501			0	960	2	0	2	0	964.9082	0		156.25	150000	150766.9071	0	0	2025-06-01 08:00	2025-09-16 16:00			2025-06-01 08:00	2025-09-16 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500024	50024	265	Y			26501			0	400	2	0	2	0	430.3968	0		187.5	75000	80699.4053	0	0	2025-06-02 08:00	2025-07-09 16:00			2025-06-02 08:00	2025-07-09 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500025	50026	265	Y			26502			0	240	2	0	2	0	233.0043	0		93.75	22500	21844.1577	0	0	2025-05-18 08:00	2025-06-04 16:00			2025-05-18 08:00	2025-06-04 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500026	50027	265	Y			26502			0	160	2	0	2	0	155.286	0		62.5	10000	9705.3733	0	0	2025-06-05 08:00	2025-06-22 16:00			2025-06-05 08:00	2025-06-22 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500027	50028	265	Y			26502			0	80	2	0	2	0	78.1065	0		62.5	5000	4881.6551	0	0	2025-06-23 08:00	2025-06-29 16:00			2025-06-23 08:00	2025-06-29 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500028	50029	265	Y			26502			106.56	1440	2	0	2	0	1341.5135	0		1250	1800000	1676891.8181	0	133200	2025-06-30 08:00				2025-11-02 08:00	2025-11-10 16:00	2025-10-22 08:00	2025-10-30 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500029	50030	265	Y			26502			80	80	2	0	2	0	0	0		187.5	15000	0	0	15000					2025-11-11 08:00	2025-11-17 16:00	2025-11-02 08:00	2025-11-06 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500030	50031	265	Y			26502			480	480	2	0	2	0	0	0		250	120000	0	0	120000					2025-11-18 08:00	2025-12-29 16:00	2025-11-09 08:00	2025-12-18 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500031	50032	265	Y			26502			160	160	2	0	2	0	0	0		125	20000	0	0	20000					2025-12-30 08:00	2026-01-12 16:00	2025-12-21 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500032	50033	265	Y			26502			0	240	2	0	2	0	233.208	0		93.75	22500	21863.249	0	0	2025-05-29 08:00	2025-06-19 16:00			2025-05-29 08:00	2025-06-19 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500033	50034	265	Y			26502			0	160	2	0	2	0	165.2322	0		62.5	10000	10327.0099	0	0	2025-06-22 08:00	2025-07-06 16:00			2025-06-22 08:00	2025-07-06 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500034	50035	265	Y			26502			0	80	2	0	2	0	81.5146	0		62.5	5000	5094.6648	0	0	2025-07-07 08:00	2025-07-13 16:00			2025-07-07 08:00	2025-07-13 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500035	50036	265	Y			26502			560	1600	2	0	2	0	1118.5309	0		1250	2000000	1398163.6527	0	700000	2025-07-14 08:00				2025-11-02 08:00	2025-12-29 16:00	2025-09-02 08:00	2025-10-30 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500036	50037	265	Y			26502			80	80	2	0	2	0	0	0		187.5	15000	0	0	15000					2025-12-30 08:00	2026-01-05 16:00	2025-11-02 08:00	2025-11-06 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500037	50038	265	Y			26502			480	480	2	0	2	0	0	0		250	120000	0	0	120000					2026-01-06 08:00	2026-02-16 16:00	2025-11-09 08:00	2025-12-18 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500038	50039	265	Y			26502			160	160	2	0	2	0	0	0		125	20000	0	0	20000					2026-02-17 08:00	2026-03-03 16:00	2025-12-21 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500039	50040	265	Y			26502			0	240	2	0	2	0	245.4487	0		93.75	22500	23010.8191	0	0	2025-07-03 08:00	2025-07-22 16:00			2025-07-03 08:00	2025-07-22 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500040	50041	265	Y			26502			0	160	2	0	2	0	156.0281	0		62.5	10000	9751.7549	0	0	2025-07-23 08:00	2025-08-06 16:00			2025-07-23 08:00	2025-08-06 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500041	50042	265	Y			26502			0	80	2	0	2	0	79.293	0		62.5	5000	4955.8139	0	0	2025-08-07 08:00	2025-08-14 16:00			2025-08-07 08:00	2025-08-14 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500042	50043	265	Y			26502			1209.6	1920	2	0	2	0	762.2747	0		1250	2400000	952843.3945	0	1512000	2025-08-17 08:00				2025-11-02 08:00	2026-03-10 16:00	2025-08-26 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500043	50044	265	Y			26502			80	80	2	0	2	0	0	0		187.5	15000	0	0	15000					2026-03-11 08:00	2026-03-17 16:00	2026-01-04 08:00	2026-01-08 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500044	50045	265	Y			26502			480	480	2	0	2	0	0	0		250	120000	0	0	120000					2026-03-18 08:00	2026-04-30 16:00	2026-01-11 08:00	2026-02-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500045	50046	265	Y			26502			160	160	2	0	2	0	0	0		125	20000	0	0	20000					2026-05-03 08:00	2026-05-14 16:00	2026-02-23 08:00	2026-03-08 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500046	50047	265	Y			26502			0	240	2	0	2	0	234.8587	0		93.75	22500	22018.0064	0	0	2025-07-03 08:00	2025-07-24 16:00			2025-07-03 08:00	2025-07-24 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500047	50048	265	Y			26502			0	160	2	0	2	0	161.0008	0		62.5	10000	10062.5505	0	0	2025-07-27 08:00	2025-08-07 16:00			2025-07-27 08:00	2025-08-07 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500048	50049	265	Y			26502			0	80	2	0	2	0	79.0807	0		62.5	5000	4942.5465	0	0	2025-08-10 08:00	2025-08-17 16:00			2025-08-10 08:00	2025-08-17 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500049	50050	265	Y			26502			472.32	1280	2	0	2	0	789.1828	0		1250	1600000	986478.4583	0	590400	2025-08-18 08:00				2025-11-02 08:00	2025-12-14 16:00	2025-11-27 08:00	2026-01-08 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500050	50051	265	Y			26502			80	80	2	0	2	0	0	0		187.5	15000	0	0	15000					2025-12-15 08:00	2025-12-21 16:00	2026-01-11 08:00	2026-01-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500051	50052	265	Y			26502			480	480	2	0	2	0	0	0		250	120000	0	0	120000					2025-12-22 08:00	2026-02-01 16:00	2026-01-18 08:00	2026-03-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500052	50053	265	Y			26502			160	160	2	0	2	0	0	0		125	20000	0	0	20000					2026-02-02 08:00	2026-02-15 16:00	2026-03-02 08:00	2026-03-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500053	50054	265	Y			26502			0	240	2	0	2	0	244.4058	0		93.75	22500	22913.0457	0	0	2025-05-18 08:00	2025-06-11 16:00			2025-05-18 08:00	2025-06-11 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500054	50055	265	Y			26502			0	160	2	0	2	0	159.3751	0		62.5	10000	9960.9458	0	0	2025-06-12 08:00	2025-06-29 16:00			2025-06-12 08:00	2025-06-29 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500055	50056	265	Y			26502			0	80	2	0	2	0	84.4687	0		62.5	5000	5279.2917	0	0	2025-06-30 08:00	2025-07-07 16:00			2025-06-30 08:00	2025-07-07 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500056	50057	265	Y			26502			0	960	2	0	2	0	939.9039	0		1250	1200000	1174879.9291	0	0	2025-07-08 08:00	2025-10-06 16:00			2025-07-08 08:00	2025-10-06 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500057	50058	265	Y			26502			0	80	2	0	2	0	86.9706	0		187.5	15000	16306.993	0	0	2025-10-07 08:00	2025-10-13 16:00			2025-10-07 08:00	2025-10-13 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500058	50059	265	Y			26502			296.64	480	2	0	2	0	188.2508	0		250	120000	47062.6882	0	74160	2025-10-14 08:00				2025-11-02 08:00	2025-11-30 16:00	2025-11-06 08:00	2025-12-04 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500059	50060	265	Y			26502			160	160	2	0	2	0	0	0		125	20000	0	0	20000					2025-12-01 08:00	2025-12-14 16:00	2025-12-07 08:00	2025-12-18 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500060	50061	265	Y			26502			0	320	2	0	2	0	327.4688	0		93.75	30000	30700.2041	0	0	2025-02-02 08:00	2025-03-04 16:00			2025-02-02 08:00	2025-03-04 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500061	50062	265	Y			26502			0	640	2	0	2	0	679.6138	0		500	320000	339806.8908	0	0	2025-03-05 08:00	2025-05-04 16:00			2025-03-05 08:00	2025-05-04 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500062	50063	265	Y			26502			0	640	2	0	2	0	687.4435	0		500	320000	343721.7516	0	0	2025-04-07 08:00	2025-06-10 16:00			2025-04-07 08:00	2025-06-10 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500063	50064	265	Y			26503			0	240	2	0	2	0	260.0758	0		312.5	75000	81273.6977	0	0	2025-05-18 08:00	2025-06-04 16:00			2025-05-18 08:00	2025-06-04 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500064	50065	265	Y			26503			0	1280	2	0	2	0	1293.1203	0		1875	2400000	2424600.4724	0	0	2025-06-05 08:00	2025-10-13 16:00			2025-06-05 08:00	2025-10-13 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500065	50066	265	Y			26503			0	800	2	0	2	0	805.1227	0		750	600000	603842.0231	0	0	2025-07-06 08:00	2025-09-16 16:00			2025-07-06 08:00	2025-09-16 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500066	50067	265	Y			26503			272.16	480	2	0	2	0	217.4048	0		937.5	450000	203816.9828	0	255150	2025-10-14 08:00				2025-11-02 08:00	2025-11-24 16:00	2025-12-10 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500067	50068	265	Y			26504			960	960	2	0	2	0	0	0		2187.5	2100000	0	0	2100000					2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500068	50069	265	Y			26504			480	480	2	0	2	0	0	0		625	300000	0	0	300000					2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500069	50070	265	Y			26503			0	240	2	0	2	0	255.4951	0		312.5	75000	79842.2122	0	0	2025-05-29 08:00	2025-06-18 16:00			2025-05-29 08:00	2025-06-18 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500070	50071	265	Y			26503			0	1520	2	0	2	0	1593.4297	0		1875	2850000	2987680.6614	0	0	2025-06-19 08:00	2025-10-20 16:00			2025-06-19 08:00	2025-10-20 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500071	50072	265	Y			26503			0	800	2	0	2	0	859.004	0		750	600000	644252.982	0	0	2025-07-17 08:00	2025-09-29 16:00			2025-07-17 08:00	2025-09-29 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500072	50073	265	Y			26503			0	400	2	0	2	0	420.2964	0		562.5	225000	236416.7528	0	0	2025-07-31 08:00	2025-09-08 16:00			2025-07-31 08:00	2025-09-08 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500073	50074	265	Y			26503			337.92	480	2	0	2	0	151.9355	0		937.5	450000	142439.5158	0	316800	2025-10-21 08:00				2025-11-02 08:00	2025-11-26 16:00	2025-12-08 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500074	50075	265	Y			26504			960	960	2	0	2	0	0	0		2187.5	2100000	0	0	2100000					2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500075	50076	265	Y			26504			480	480	2	0	2	0	0	0		625	300000	0	0	300000					2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500076	50077	265	Y			26503			0	240	2	0	2	0	257.2702	0		312.5	75000	80396.9463	0	0	2025-05-28 08:00	2025-06-19 16:00			2025-05-28 08:00	2025-06-19 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500077	50078	265	Y			26503			0	1280	2	0	2	0	1312.1403	0		1875	2400000	2460263.0244	0	0	2025-06-22 08:00	2025-10-01 16:00			2025-06-22 08:00	2025-10-01 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500078	50079	265	Y			26503			0	800	2	0	2	0	802.6841	0		750	600000	602013.0645	0	0	2025-07-20 08:00	2025-09-25 16:00			2025-07-20 08:00	2025-09-25 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500079	50080	265	Y			26503			165.12	480	2	0	2	0	309.4926	0		937.5	450000	290149.3279	0	154800	2025-10-02 08:00				2025-11-02 08:00	2025-11-16 16:00	2025-12-18 08:00	2026-01-01 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500080	50081	265	Y			26504			960	960	2	0	2	0	0	0		2187.5	2100000	0	0	2100000					2026-03-04 08:00	2026-06-01 16:00	2026-01-04 08:00	2026-03-31 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500081	50082	265	Y			26504			480	480	2	0	2	0	0	0		625	300000	0	0	300000					2026-04-05 08:00	2026-05-14 16:00	2026-02-01 08:00	2026-03-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500082	50085	265	Y			26505			0	640	2	0	2	0	662.5569	0		1250	800000	828196.0809	0	0	2025-07-14 08:00	2025-09-02 16:00			2025-07-14 08:00	2025-09-02 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500083	50086	265	Y			26505			1280	1280	2	0	2	0	0	0		1875	2400000	0	0	2400000					2025-12-15 08:00	2026-04-08 16:00	2026-01-11 08:00	2026-05-05 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500084	50087	265	Y			26505			960	960	2	0	2	0	0	0		937.5	900000	0	0	900000					2026-04-09 08:00	2026-07-05 16:00	2026-05-06 08:00	2026-07-30 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500085	50088	265	Y			26505			960	960	2	0	2	0	0	0		1125	1080000	0	0	1080000					2026-02-09 08:00	2026-05-06 16:00	2026-04-22 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500086	50089	265	Y			26505			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-05-07 08:00	2026-06-21 16:00	2026-06-07 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500087	50090	265	Y			26505			0	640	2	0	2	0	628.5045	0		1250	800000	785630.6006	0	0	2025-07-07 08:00	2025-08-27 16:00			2025-07-07 08:00	2025-08-27 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500088	50091	265	Y			26505			720	720	2	0	2	0	0	0		1875	1350000	0	0	1350000					2025-12-15 08:00	2026-02-15 16:00	2025-12-21 08:00	2026-02-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500089	50092	265	Y			26505			720	720	2	0	2	0	0	0		1875	1350000	0	0	1350000					2026-02-16 08:00	2026-04-22 16:00	2026-02-23 08:00	2026-04-28 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500090	50093	265	Y			26505			960	960	2	0	2	0	0	0		937.5	900000	0	0	900000					2026-04-23 08:00	2026-07-19 16:00	2026-05-06 08:00	2026-07-30 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500091	50094	265	Y			26505			960	960	2	0	2	0	0	0		1125	1080000	0	0	1080000					2026-04-16 08:00	2026-07-12 16:00	2026-04-22 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500092	50095	265	Y			26505			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-06-01 08:00	2026-07-12 16:00	2026-06-07 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500093	50096	265	Y			26505			0	640	2	0	2	0	629.8156	0		1250	800000	787269.4453	0	0	2025-07-03 08:00	2025-09-03 16:00			2025-07-03 08:00	2025-09-03 16:00			Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500094	50097	265	Y			26505			1280	1280	2	0	2	0	0	0		1875	2400000	0	0	2400000					2025-12-15 08:00	2026-04-08 16:00	2026-01-11 08:00	2026-05-05 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500095	50098	265	Y			26505			960	960	2	0	2	0	0	0		937.5	900000	0	0	900000					2026-04-09 08:00	2026-07-05 16:00	2026-05-06 08:00	2026-07-30 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500096	50099	265	Y			26505			960	960	2	0	2	0	0	0		1125	1080000	0	0	1080000					2026-02-09 08:00	2026-05-06 16:00	2026-04-22 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500097	50100	265	Y			26505			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-05-07 08:00	2026-06-21 16:00	2026-06-07 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500098	50101	265	Y			26506			720	720	2	0	2	0	0	0		1375	990000	0	0	990000					2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500099	50102	265	Y			26506			800	800	2	0	2	0	0	0		1562.5	1250000	0	0	1250000					2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500100	50103	265	Y			26506			640	640	2	0	2	0	0	0		750	480000	0	0	480000					2026-04-19 08:00	2026-06-15 16:00	2026-03-25 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500101	50104	265	Y			26506			720	720	2	0	2	0	0	0		1375	990000	0	0	990000					2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500102	50105	265	Y			26506			800	800	2	0	2	0	0	0		1562.5	1250000	0	0	1250000					2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500103	50106	265	Y			26506			640	640	2	0	2	0	0	0		750	480000	0	0	480000					2026-04-19 08:00	2026-06-15 16:00	2026-03-25 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500104	50107	265	Y			26506			720	720	2	0	2	0	0	0		1375	990000	0	0	990000					2026-05-17 08:00	2026-07-20 16:00	2026-03-16 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500105	50108	265	Y			26506			800	800	2	0	2	0	0	0		1562.5	1250000	0	0	1250000					2026-05-17 08:00	2026-07-27 16:00	2026-03-09 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500106	50109	265	Y			26506			640	640	2	0	2	0	0	0		750	480000	0	0	480000					2026-04-19 08:00	2026-06-15 16:00	2026-03-25 08:00	2026-05-19 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500107	50110	265	Y			26507			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500108	50111	265	Y			26507			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500109	50112	265	Y			26507			480	480	2	0	2	0	0	0		562.5	270000	0	0	270000					2026-07-28 08:00	2026-09-07 16:00	2026-05-20 08:00	2026-07-02 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500110	50113	265	Y			26507			160	160	2	0	2	0	0	0		375	60000	0	0	60000					2026-09-08 08:00	2026-09-21 16:00	2026-07-05 08:00	2026-07-16 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500111	50115	265	Y			26507			640	640	2	0	2	0	0	0		625	400000	0	0	400000					2026-09-22 08:00	2026-11-17 16:00	2026-07-19 08:00	2026-09-10 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500112	50116	265	Y			26507			720	720	2	0	2	0	0	0		500	360000	0	0	360000					2026-11-18 08:00	2027-01-19 16:00	2026-09-13 08:00	2026-11-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500113	50117	265	Y			26508			640	640	2	0	2	0	0	0		187.5	120000	0	0	120000					2026-05-17 08:00	2026-07-13 16:00	2026-09-20 08:00	2026-11-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%R	26500114	50118	265	Y			26508			480	480	2	0	2	0	0	0		250	120000	0	0	120000					2026-10-07 08:00	2026-11-17 16:00	2026-10-05 08:00	2026-11-15 16:00	Y				N		COST_PER_QTY	0	0		RT_Labor	Q_Rsrc	admin	2024-12-01 00:00	N	
+%T	TASKACTV
+%F	task_id	actv_code_type_id	actv_code_id	proj_id
+%R	50000	26502	2650015	265
+%R	50000	26503	2650017	265
+%R	50000	26504	2650020	265
+%R	50000	26501	2650008	265
+%R	50001	26502	2650009	265
+%R	50001	26503	2650016	265
+%R	50001	26504	2650020	265
+%R	50001	26501	2650001	265
+%R	50002	26502	2650009	265
+%R	50002	26503	2650016	265
+%R	50002	26504	2650020	265
+%R	50002	26501	2650001	265
+%R	50003	26502	2650009	265
+%R	50003	26503	2650016	265
+%R	50003	26504	2650020	265
+%R	50003	26501	2650001	265
+%R	50004	26502	2650010	265
+%R	50004	26503	2650016	265
+%R	50004	26504	2650020	265
+%R	50004	26501	2650001	265
+%R	50005	26502	2650010	265
+%R	50005	26503	2650016	265
+%R	50005	26504	2650020	265
+%R	50005	26501	2650001	265
+%R	50006	26502	2650010	265
+%R	50006	26503	2650016	265
+%R	50006	26504	2650020	265
+%R	50006	26501	2650001	265
+%R	50007	26502	2650011	265
+%R	50007	26503	2650016	265
+%R	50007	26504	2650020	265
+%R	50007	26501	2650001	265
+%R	50008	26502	2650011	265
+%R	50008	26503	2650016	265
+%R	50008	26504	2650020	265
+%R	50008	26501	2650001	265
+%R	50009	26502	2650011	265
+%R	50009	26503	2650016	265
+%R	50009	26504	2650020	265
+%R	50009	26501	2650001	265
+%R	50010	26502	2650012	265
+%R	50010	26503	2650016	265
+%R	50010	26504	2650020	265
+%R	50010	26501	2650001	265
+%R	50011	26502	2650012	265
+%R	50011	26503	2650016	265
+%R	50011	26504	2650020	265
+%R	50011	26501	2650001	265
+%R	50012	26502	2650012	265
+%R	50012	26503	2650016	265
+%R	50012	26504	2650020	265
+%R	50012	26501	2650001	265
+%R	50013	26502	2650013	265
+%R	50013	26503	2650016	265
+%R	50013	26504	2650020	265
+%R	50013	26501	2650001	265
+%R	50014	26502	2650013	265
+%R	50014	26503	2650016	265
+%R	50014	26504	2650020	265
+%R	50014	26501	2650001	265
+%R	50015	26502	2650013	265
+%R	50015	26503	2650016	265
+%R	50015	26504	2650020	265
+%R	50015	26501	2650001	265
+%R	50016	26502	2650014	265
+%R	50016	26503	2650016	265
+%R	50016	26504	2650020	265
+%R	50016	26501	2650001	265
+%R	50017	26502	2650014	265
+%R	50017	26503	2650016	265
+%R	50017	26504	2650020	265
+%R	50017	26501	2650001	265
+%R	50018	26502	2650014	265
+%R	50018	26503	2650016	265
+%R	50018	26504	2650020	265
+%R	50018	26501	2650001	265
+%R	50019	26502	2650015	265
+%R	50019	26503	2650016	265
+%R	50019	26504	2650020	265
+%R	50019	26501	2650001	265
+%R	50020	26502	2650015	265
+%R	50020	26503	2650016	265
+%R	50020	26504	2650020	265
+%R	50020	26501	2650001	265
+%R	50021	26502	2650015	265
+%R	50021	26503	2650016	265
+%R	50021	26504	2650020	265
+%R	50021	26501	2650001	265
+%R	50022	26502	2650015	265
+%R	50022	26503	2650016	265
+%R	50022	26504	2650020	265
+%R	50022	26501	2650001	265
+%R	50023	26502	2650015	265
+%R	50023	26503	2650016	265
+%R	50023	26504	2650020	265
+%R	50023	26501	2650001	265
+%R	50024	26502	2650015	265
+%R	50024	26503	2650017	265
+%R	50024	26504	2650020	265
+%R	50024	26501	2650001	265
+%R	50025	26502	2650015	265
+%R	50025	26503	2650017	265
+%R	50025	26504	2650020	265
+%R	50025	26501	2650008	265
+%R	50026	26502	2650015	265
+%R	50026	26503	2650019	265
+%R	50026	26504	2650021	265
+%R	50026	26501	2650002	265
+%R	50027	26502	2650015	265
+%R	50027	26503	2650019	265
+%R	50027	26504	2650021	265
+%R	50027	26501	2650002	265
+%R	50028	26502	2650015	265
+%R	50028	26503	2650019	265
+%R	50028	26504	2650021	265
+%R	50028	26501	2650002	265
+%R	50029	26502	2650015	265
+%R	50029	26503	2650019	265
+%R	50029	26504	2650021	265
+%R	50029	26501	2650002	265
+%R	50030	26502	2650015	265
+%R	50030	26503	2650019	265
+%R	50030	26504	2650021	265
+%R	50030	26501	2650002	265
+%R	50031	26502	2650015	265
+%R	50031	26503	2650019	265
+%R	50031	26504	2650021	265
+%R	50031	26501	2650002	265
+%R	50032	26502	2650015	265
+%R	50032	26503	2650019	265
+%R	50032	26504	2650021	265
+%R	50032	26501	2650002	265
+%R	50033	26502	2650015	265
+%R	50033	26503	2650019	265
+%R	50033	26504	2650021	265
+%R	50033	26501	2650002	265
+%R	50034	26502	2650015	265
+%R	50034	26503	2650019	265
+%R	50034	26504	2650021	265
+%R	50034	26501	2650002	265
+%R	50035	26502	2650015	265
+%R	50035	26503	2650019	265
+%R	50035	26504	2650021	265
+%R	50035	26501	2650002	265
+%R	50036	26502	2650015	265
+%R	50036	26503	2650019	265
+%R	50036	26504	2650021	265
+%R	50036	26501	2650002	265
+%R	50037	26502	2650015	265
+%R	50037	26503	2650019	265
+%R	50037	26504	2650021	265
+%R	50037	26501	2650002	265
+%R	50038	26502	2650015	265
+%R	50038	26503	2650019	265
+%R	50038	26504	2650021	265
+%R	50038	26501	2650002	265
+%R	50039	26502	2650015	265
+%R	50039	26503	2650019	265
+%R	50039	26504	2650021	265
+%R	50039	26501	2650002	265
+%R	50040	26502	2650015	265
+%R	50040	26503	2650019	265
+%R	50040	26504	2650021	265
+%R	50040	26501	2650002	265
+%R	50041	26502	2650015	265
+%R	50041	26503	2650019	265
+%R	50041	26504	2650021	265
+%R	50041	26501	2650002	265
+%R	50042	26502	2650015	265
+%R	50042	26503	2650019	265
+%R	50042	26504	2650021	265
+%R	50042	26501	2650002	265
+%R	50043	26502	2650015	265
+%R	50043	26503	2650019	265
+%R	50043	26504	2650021	265
+%R	50043	26501	2650002	265
+%R	50044	26502	2650015	265
+%R	50044	26503	2650019	265
+%R	50044	26504	2650021	265
+%R	50044	26501	2650002	265
+%R	50045	26502	2650015	265
+%R	50045	26503	2650019	265
+%R	50045	26504	2650021	265
+%R	50045	26501	2650002	265
+%R	50046	26502	2650015	265
+%R	50046	26503	2650019	265
+%R	50046	26504	2650021	265
+%R	50046	26501	2650002	265
+%R	50047	26502	2650015	265
+%R	50047	26503	2650019	265
+%R	50047	26504	2650021	265
+%R	50047	26501	2650002	265
+%R	50048	26502	2650015	265
+%R	50048	26503	2650019	265
+%R	50048	26504	2650021	265
+%R	50048	26501	2650002	265
+%R	50049	26502	2650015	265
+%R	50049	26503	2650019	265
+%R	50049	26504	2650021	265
+%R	50049	26501	2650002	265
+%R	50050	26502	2650015	265
+%R	50050	26503	2650019	265
+%R	50050	26504	2650021	265
+%R	50050	26501	2650002	265
+%R	50051	26502	2650015	265
+%R	50051	26503	2650019	265
+%R	50051	26504	2650021	265
+%R	50051	26501	2650002	265
+%R	50052	26502	2650015	265
+%R	50052	26503	2650019	265
+%R	50052	26504	2650021	265
+%R	50052	26501	2650002	265
+%R	50053	26502	2650015	265
+%R	50053	26503	2650019	265
+%R	50053	26504	2650021	265
+%R	50053	26501	2650002	265
+%R	50054	26502	2650015	265
+%R	50054	26503	2650019	265
+%R	50054	26504	2650021	265
+%R	50054	26501	2650002	265
+%R	50055	26502	2650015	265
+%R	50055	26503	2650019	265
+%R	50055	26504	2650021	265
+%R	50055	26501	2650002	265
+%R	50056	26502	2650015	265
+%R	50056	26503	2650019	265
+%R	50056	26504	2650021	265
+%R	50056	26501	2650002	265
+%R	50057	26502	2650015	265
+%R	50057	26503	2650019	265
+%R	50057	26504	2650021	265
+%R	50057	26501	2650002	265
+%R	50058	26502	2650015	265
+%R	50058	26503	2650019	265
+%R	50058	26504	2650021	265
+%R	50058	26501	2650002	265
+%R	50059	26502	2650015	265
+%R	50059	26503	2650019	265
+%R	50059	26504	2650021	265
+%R	50059	26501	2650002	265
+%R	50060	26502	2650015	265
+%R	50060	26503	2650019	265
+%R	50060	26504	2650021	265
+%R	50060	26501	2650002	265
+%R	50061	26502	2650015	265
+%R	50061	26503	2650019	265
+%R	50061	26504	2650021	265
+%R	50061	26501	2650002	265
+%R	50062	26502	2650015	265
+%R	50062	26503	2650019	265
+%R	50062	26504	2650021	265
+%R	50062	26501	2650002	265
+%R	50063	26502	2650015	265
+%R	50063	26503	2650019	265
+%R	50063	26504	2650021	265
+%R	50063	26501	2650002	265
+%R	50064	26502	2650009	265
+%R	50064	26503	2650017	265
+%R	50064	26504	2650022	265
+%R	50064	26501	2650003	265
+%R	50065	26502	2650009	265
+%R	50065	26503	2650017	265
+%R	50065	26504	2650022	265
+%R	50065	26501	2650003	265
+%R	50066	26502	2650009	265
+%R	50066	26503	2650017	265
+%R	50066	26504	2650022	265
+%R	50066	26501	2650003	265
+%R	50067	26502	2650009	265
+%R	50067	26503	2650017	265
+%R	50067	26504	2650022	265
+%R	50067	26501	2650003	265
+%R	50068	26502	2650009	265
+%R	50068	26503	2650017	265
+%R	50068	26504	2650022	265
+%R	50068	26501	2650004	265
+%R	50069	26502	2650009	265
+%R	50069	26503	2650017	265
+%R	50069	26504	2650022	265
+%R	50069	26501	2650004	265
+%R	50070	26502	2650010	265
+%R	50070	26503	2650017	265
+%R	50070	26504	2650022	265
+%R	50070	26501	2650003	265
+%R	50071	26502	2650010	265
+%R	50071	26503	2650017	265
+%R	50071	26504	2650022	265
+%R	50071	26501	2650003	265
+%R	50072	26502	2650010	265
+%R	50072	26503	2650017	265
+%R	50072	26504	2650022	265
+%R	50072	26501	2650003	265
+%R	50073	26502	2650010	265
+%R	50073	26503	2650017	265
+%R	50073	26504	2650022	265
+%R	50073	26501	2650003	265
+%R	50074	26502	2650010	265
+%R	50074	26503	2650017	265
+%R	50074	26504	2650022	265
+%R	50074	26501	2650003	265
+%R	50075	26502	2650010	265
+%R	50075	26503	2650017	265
+%R	50075	26504	2650022	265
+%R	50075	26501	2650004	265
+%R	50076	26502	2650010	265
+%R	50076	26503	2650017	265
+%R	50076	26504	2650022	265
+%R	50076	26501	2650004	265
+%R	50077	26502	2650011	265
+%R	50077	26503	2650017	265
+%R	50077	26504	2650022	265
+%R	50077	26501	2650003	265
+%R	50078	26502	2650011	265
+%R	50078	26503	2650017	265
+%R	50078	26504	2650022	265
+%R	50078	26501	2650003	265
+%R	50079	26502	2650011	265
+%R	50079	26503	2650017	265
+%R	50079	26504	2650022	265
+%R	50079	26501	2650003	265
+%R	50080	26502	2650011	265
+%R	50080	26503	2650017	265
+%R	50080	26504	2650022	265
+%R	50080	26501	2650003	265
+%R	50081	26502	2650011	265
+%R	50081	26503	2650017	265
+%R	50081	26504	2650022	265
+%R	50081	26501	2650004	265
+%R	50082	26502	2650011	265
+%R	50082	26503	2650017	265
+%R	50082	26504	2650022	265
+%R	50082	26501	2650004	265
+%R	50083	26502	2650015	265
+%R	50083	26503	2650017	265
+%R	50083	26504	2650022	265
+%R	50083	26501	2650008	265
+%R	50084	26502	2650015	265
+%R	50084	26503	2650017	265
+%R	50084	26504	2650022	265
+%R	50084	26501	2650008	265
+%R	50085	26502	2650012	265
+%R	50085	26503	2650017	265
+%R	50085	26504	2650023	265
+%R	50085	26501	2650005	265
+%R	50086	26502	2650012	265
+%R	50086	26503	2650017	265
+%R	50086	26504	2650023	265
+%R	50086	26501	2650005	265
+%R	50087	26502	2650012	265
+%R	50087	26503	2650017	265
+%R	50087	26504	2650023	265
+%R	50087	26501	2650005	265
+%R	50088	26502	2650012	265
+%R	50088	26503	2650017	265
+%R	50088	26504	2650023	265
+%R	50088	26501	2650005	265
+%R	50089	26502	2650012	265
+%R	50089	26503	2650017	265
+%R	50089	26504	2650023	265
+%R	50089	26501	2650005	265
+%R	50090	26502	2650013	265
+%R	50090	26503	2650017	265
+%R	50090	26504	2650023	265
+%R	50090	26501	2650005	265
+%R	50091	26502	2650013	265
+%R	50091	26503	2650017	265
+%R	50091	26504	2650023	265
+%R	50091	26501	2650005	265
+%R	50092	26502	2650013	265
+%R	50092	26503	2650017	265
+%R	50092	26504	2650023	265
+%R	50092	26501	2650005	265
+%R	50093	26502	2650013	265
+%R	50093	26503	2650017	265
+%R	50093	26504	2650023	265
+%R	50093	26501	2650005	265
+%R	50094	26502	2650013	265
+%R	50094	26503	2650017	265
+%R	50094	26504	2650023	265
+%R	50094	26501	2650005	265
+%R	50095	26502	2650013	265
+%R	50095	26503	2650017	265
+%R	50095	26504	2650023	265
+%R	50095	26501	2650005	265
+%R	50096	26502	2650014	265
+%R	50096	26503	2650017	265
+%R	50096	26504	2650023	265
+%R	50096	26501	2650005	265
+%R	50097	26502	2650014	265
+%R	50097	26503	2650017	265
+%R	50097	26504	2650023	265
+%R	50097	26501	2650005	265
+%R	50098	26502	2650014	265
+%R	50098	26503	2650017	265
+%R	50098	26504	2650023	265
+%R	50098	26501	2650005	265
+%R	50099	26502	2650014	265
+%R	50099	26503	2650017	265
+%R	50099	26504	2650023	265
+%R	50099	26501	2650005	265
+%R	50100	26502	2650014	265
+%R	50100	26503	2650017	265
+%R	50100	26504	2650023	265
+%R	50100	26501	2650005	265
+%R	50101	26502	2650009	265
+%R	50101	26503	2650018	265
+%R	50101	26504	2650024	265
+%R	50101	26501	2650006	265
+%R	50102	26502	2650009	265
+%R	50102	26503	2650018	265
+%R	50102	26504	2650024	265
+%R	50102	26501	2650006	265
+%R	50103	26502	2650009	265
+%R	50103	26503	2650018	265
+%R	50103	26504	2650024	265
+%R	50103	26501	2650006	265
+%R	50104	26502	2650010	265
+%R	50104	26503	2650018	265
+%R	50104	26504	2650024	265
+%R	50104	26501	2650006	265
+%R	50105	26502	2650010	265
+%R	50105	26503	2650018	265
+%R	50105	26504	2650024	265
+%R	50105	26501	2650006	265
+%R	50106	26502	2650010	265
+%R	50106	26503	2650018	265
+%R	50106	26504	2650024	265
+%R	50106	26501	2650006	265
+%R	50107	26502	2650011	265
+%R	50107	26503	2650018	265
+%R	50107	26504	2650024	265
+%R	50107	26501	2650006	265
+%R	50108	26502	2650011	265
+%R	50108	26503	2650018	265
+%R	50108	26504	2650024	265
+%R	50108	26501	2650006	265
+%R	50109	26502	2650011	265
+%R	50109	26503	2650018	265
+%R	50109	26504	2650024	265
+%R	50109	26501	2650006	265
+%R	50110	26502	2650009	265
+%R	50110	26503	2650018	265
+%R	50110	26504	2650025	265
+%R	50110	26501	2650007	265
+%R	50111	26502	2650010	265
+%R	50111	26503	2650018	265
+%R	50111	26504	2650025	265
+%R	50111	26501	2650007	265
+%R	50112	26502	2650011	265
+%R	50112	26503	2650018	265
+%R	50112	26504	2650025	265
+%R	50112	26501	2650007	265
+%R	50113	26502	2650015	265
+%R	50113	26503	2650018	265
+%R	50113	26504	2650025	265
+%R	50113	26501	2650007	265
+%R	50114	26502	2650015	265
+%R	50114	26503	2650017	265
+%R	50114	26504	2650022	265
+%R	50114	26501	2650008	265
+%R	50115	26502	2650015	265
+%R	50115	26503	2650018	265
+%R	50115	26504	2650025	265
+%R	50115	26501	2650007	265
+%R	50116	26502	2650015	265
+%R	50116	26503	2650018	265
+%R	50116	26504	2650025	265
+%R	50116	26501	2650007	265
+%R	50117	26502	2650015	265
+%R	50117	26503	2650017	265
+%R	50117	26504	2650025	265
+%R	50117	26501	2650008	265
+%R	50118	26502	2650015	265
+%R	50118	26503	2650018	265
+%R	50118	26504	2650025	265
+%R	50118	26501	2650008	265
+%R	50119	26502	2650015	265
+%R	50119	26503	2650017	265
+%R	50119	26504	2650025	265
+%R	50119	26501	2650008	265
+%R	50120	26502	2650015	265
+%R	50120	26503	2650017	265
+%R	50120	26504	2650025	265
+%R	50120	26501	2650008	265
+%E

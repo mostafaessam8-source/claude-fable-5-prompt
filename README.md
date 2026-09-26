@@ -22,6 +22,10 @@ You can integrate this prompt library directly into your own workflow:
 
 Want to push these prompts further? Our detailed guide breaks down how to pair them with **Advanced Task Agents** to unlock maximum performance on complex, multi-step work — read it here: [Getting the most out of the Claude Fable 5 prompt](https://www.moely.ai/resources/claude-fable-5-prompt).
 
+## 🚆 SAR Project Controls Dashboard
+
+This repository also contains [`sar-project-controls-dashboard/`](sar-project-controls-dashboard/README.md), a standalone Windows desktop application that analyzes a Primavera P6 **Approved Baseline XER** against the **Current Update XER** and produces an auditable SAR Project Controls Dashboard with PDF and Excel reporting. See its [README](sar-project-controls-dashboard/README.md) and [build instructions](sar-project-controls-dashboard/docs/BUILD.md).
+
 ## 📄 License
 
 Provided for research and reference. The original Fable 5 prompt is the property of Anthropic; the generalized adaptations are offered as-is for your own projects.

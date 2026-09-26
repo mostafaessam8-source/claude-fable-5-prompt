@@ -43,13 +43,13 @@ def _kw(spec) -> Keyword:
 
 
 DEFAULT_CATEGORIES = {
-    "Engineering": ("#1F6FB2", [
+    "Engineering": ("#2a78d6", [
         ("engineering", 1.0), ("eng", 1.0, True), ("design", 1.0), ("detailed design", 1.2), ("technical", 0.5),
         ("drawing", 0.9), ("shop drawing", 1.2), ("ifc", 1.1, True), ("issued for construction", 1.3),
         ("submittal", 0.5), ("approval", 0.4), ("review", 0.8), ("design review", 1.2), ("design development", 1.2),
         ("design check", 1.2), ("calculation", 0.8), ("specification", 0.7), ("model", 0.4), ("bim", 0.8, True),
     ]),
-    "Procurement": ("#E08A1E", [
+    "Procurement": ("#eb6834", [
         ("procurement", 1.2), ("purchasing", 1.0), ("purchase", 1.0), ("purchase order", 1.3), ("po", 1.0, True),
         ("material", 0.8, False, ["design", "engineering", "support"]), ("vendor", 0.8), ("supplier", 0.9),
         ("supply", 0.9), ("supply chain", 1.3), ("manufacturing", 1.0), ("fabrication", 0.9), ("fat", 1.2, True),
@@ -58,7 +58,7 @@ DEFAULT_CATEGORIES = {
         ("site receipt", 1.2), ("mat", 1.0, True), ("lli", 1.0, True), ("bulk", 0.4), ("expediting", 1.0),
         ("prc", 0.8, True), ("proc", 0.8, True),
     ]),
-    "Construction": ("#2E8B57", [
+    "Construction": ("#1baf7a", [
         ("construction", 1.2), ("civil", 1.0), ("structural", 0.8), ("earthworks", 1.0), ("earthwork", 1.0),
         ("excavation", 1.0), ("backfill", 1.0), ("concrete", 0.9, False, ["supply", "contract"]),
         ("foundation", 1.0), ("installation", 1.0), ("install", 1.0), ("erection", 1.0),
@@ -71,14 +71,14 @@ DEFAULT_CATEGORIES = {
         ("cut and fill", 1.2), ("building services", 1.2), ("cns", 0.8, True), ("site", 0.3), ("works", 0.3),
         ("eandm", 0.6, True), ("pour", 0.8), ("rebar", 0.8), ("formwork", 1.0), ("paving", 1.0), ("asphalt", 1.0),
     ]),
-    "Testing & Commissioning": ("#8E44AD", [
+    "Testing & Commissioning": ("#eda100", [
         ("testing", 1.0), ("test", 1.0), ("commissioning", 1.2), ("tandc", 1.5, True), ("sat", 1.2, True),
         ("energization", 1.2), ("energisation", 1.2), ("power on", 1.2), ("inspection", 0.6), ("trial", 1.0),
         ("trial running", 1.3), ("trial operation", 1.3), ("integration", 0.9), ("integrated test", 1.3),
         ("system testing", 1.3), ("subsystem", 0.5), ("safety certification", 1.0), ("tc", 1.0, True),
         ("tst", 0.8, True), ("cx", 1.0, True),
     ]),
-    "Handover": ("#C0392B", [
+    "Handover": ("#e87ba4", [
         ("handover", 1.5), ("hand over", 1.5), ("ho", 1.0, True), ("closeout", 1.3), ("close out", 1.3),
         ("completion", 0.5), ("pac", 1.3, True), ("fac", 1.3, True), ("provisional acceptance", 1.3),
         ("final acceptance", 1.3), ("as built", 1.2), ("record drawing", 1.3), ("oandm", 1.2, True),

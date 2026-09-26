@@ -1,0 +1,45 @@
+name: SAR PCD - Windows build
+
+on:
+  push:
+    paths: ["sar-project-controls-dashboard/**", ".github/workflows/sar-pcd-windows.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: sar-project-controls-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Build EXE (PyInstaller)
+        run: pyinstaller build/sar_pcd.spec --noconfirm --distpath dist --workpath build/out
+      - name: Smoke test frozen CLI
+        run: |
+          dist\SAR_Project_Controls_Dashboard\SAR_PCD_CLI.exe analyze --baseline samples\Demo_Baseline_Rev0.xer --current samples\Demo_Update_2025-11.xer --risks samples\Demo_Risk_Register.csv --pdf dist\smoke_exec.pdf --excel dist\smoke.xlsx
+        shell: cmd
+      - name: Build installer (Inno Setup)
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" build\installer.iss
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SAR_Project_Controls_Dashboard_portable
+          path: sar-project-controls-dashboard/dist/SAR_Project_Controls_Dashboard
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SAR_Project_Controls_Dashboard_installer
+          path: sar-project-controls-dashboard/dist/installer/*.exe
