@@ -184,6 +184,7 @@ input double   DailyLossLimitPercent    = 5.0;       // Daily loss limit % of da
 input double   DailyLossLimitMoney      = 0.0;       // Daily loss limit in money (0 = off)
 input double   MaxDrawdownPercent       = 20.0;      // Max drawdown % from equity peak (0 = off)
 input bool     CloseAllOnRiskLimit      = false;     // Close EA trades when a risk limit is hit
+input bool     ResetPeakOnStart         = true;      // Max DD measured from equity when the EA starts (false = keep stored peak)
 input int      MaxOpenTrades            = 5;         // Maximum open trades (all EA magics, this symbol)
 input int      MaxTradesPerStrategy     = 2;         // Maximum open trades per strategy
 input bool     AllowHedging             = false;     // Allow Buy and Sell at the same time
@@ -606,6 +607,15 @@ int OnInit()
      }
    if(TF(EntryTimeframe)>=TF(ReferenceTimeframe))
       Print(EA_NAME, ": WARNING - EntryTimeframe should be lower than ReferenceTimeframe.");
+   if(IsTesting())
+     {
+      if(EnableStrategy1 && TF(S1_Timeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart ", TFName(Period()), " is higher than S1 timeframe - run the test on ", TFName(TF(S1_Timeframe)));
+      if(EnableStrategy2 && TF(EntryTimeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart ", TFName(Period()), " is higher than S2 EntryTimeframe - run S2 tests on ", TFName(TF(EntryTimeframe)));
+      if(EnableStrategy3 && TF(S3_Timeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart ", TFName(Period()), " is higher than S3 timeframe - run the test on ", TFName(TF(S3_Timeframe)));
+     }
 
    gPip = PipSize();
    gDrawUI = (!IsTesting() || IsVisualMode()) && !IsOptimization();
@@ -714,7 +724,12 @@ void RunStrategies()
 
       int tf = StratTF(s);
       datetime bt = iTime(Symbol(), tf, 0);
-      if(bt==0 || bt==gLastBar[s])
+      if(bt==0)
+        {
+         SetCond(s, "no " + TFName(tf) + " data - open that chart/History Center (tester: run on " + TFName(tf) + ")");
+         continue;
+        }
+      if(bt==gLastBar[s])
          continue;                     // evaluate once per new bar only
       if(iBars(Symbol(), tf) < 100)
         {
@@ -800,8 +815,17 @@ double PipSize()
   {
    if(PipSizeOverride>0.0)
       return(PipSizeOverride);
+   string sym = Symbol();
+   StringToUpper(sym);
+   if(StringFind(sym, "XAU")>=0 || StringFind(sym, "GOLD")>=0)
+      return(0.1);                        // gold: 1 pip = 0.10
+   if(StringFind(sym, "XAG")>=0 || StringFind(sym, "SILVER")>=0)
+      return(0.01);                       // silver: 1 pip = 0.01
+   double px = MarketInfo(Symbol(), MODE_BID);
+   if(Digits<=2 && px>=1000.0)
+      return(1.0);                        // crypto / indices: 1 pip = 1.0
    if(Digits==3 || Digits==5)
-      return(Point*10.0);
+      return(Point*10.0);                 // forex 3/5 digits
    return(Point);
   }
 
@@ -949,6 +973,83 @@ bool AskConfirm(string msg)
    if(!ConfirmPanelActions || IsTesting())
       return(true);
    return(MessageBox(msg, EA_NAME, MB_YESNO|MB_ICONQUESTION)==IDYES);
+  }
+
+//+------------------------------------------------------------------+
+//| ================= PERSISTENT STORAGE =========================== |
+//| Live/demo: terminal Global Variables (survive restarts).        |
+//| Strategy Tester: in-memory only, so every test run starts clean |
+//| and never inherits live values (peak equity, traded setups...). |
+//+------------------------------------------------------------------+
+string    gKVKey[];
+double    gKVVal[];
+
+int KVFind(string k)
+  {
+   for(int i=ArraySize(gKVKey)-1; i>=0; i--)
+      if(gKVKey[i]==k)
+         return(i);
+   return(-1);
+  }
+
+bool KVCheck(string k)
+  {
+   if(!IsTesting())
+      return(GlobalVariableCheck(k));
+   return(KVFind(k)>=0);
+  }
+
+double KVGet(string k)
+  {
+   if(!IsTesting())
+      return(GlobalVariableGet(k));
+   int i = KVFind(k);
+   return(i>=0 ? gKVVal[i] : 0.0);
+  }
+
+void KVSet(string k, double v)
+  {
+   if(!IsTesting())
+     {
+      GlobalVariableSet(k, v);
+      return;
+     }
+   int i = KVFind(k);
+   if(i<0)
+     {
+      i = ArraySize(gKVKey);
+      ArrayResize(gKVKey, i+1);
+      ArrayResize(gKVVal, i+1);
+      gKVKey[i] = k;
+     }
+   gKVVal[i] = v;
+  }
+
+void KVDel(string k)
+  {
+   if(!IsTesting())
+     {
+      GlobalVariableDel(k);
+      return;
+     }
+   int i = KVFind(k);
+   if(i<0)
+      return;
+   int last = ArraySize(gKVKey)-1;
+   gKVKey[i] = gKVKey[last];
+   gKVVal[i] = gKVVal[last];
+   ArrayResize(gKVKey, last);
+   ArrayResize(gKVVal, last);
+  }
+
+int KVTotal()
+  {
+   return(IsTesting() ? ArraySize(gKVKey) : GlobalVariablesTotal());
+  }
+
+string KVName(int i)
+  {
+   return(IsTesting() ? gKVKey[i] : GlobalVariableName(i));
   }
 
 //+------------------------------------------------------------------+
@@ -2248,7 +2349,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
 
    // --- duplicate protection: same setup key already traded (survives restarts)
    string gv = PFX + Symbol() + "_" + IntegerToString(magic) + "_" + (dir>0 ? "B" : "S");
-   if(GlobalVariableCheck(gv) && (datetime)GlobalVariableGet(gv)==key)
+   if(KVCheck(gv) && (datetime)KVGet(gv)==key)
      {
       Log(StratShort(s) + ": duplicate signal ignored (setup already traded)");
       return(-1);
@@ -2269,7 +2370,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
      {
       if(AlertSignalsWhenAutoOff)
          Notify("SIGNAL (auto trading OFF): " + sigTxt);
-      GlobalVariableSet(gv, (double)key);
+      KVSet(gv, (double)key);
       return(-1);
      }
 
@@ -2349,7 +2450,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    int ticket = SendOrder(type, lots, price, sl, tp, magic, cmt);
    if(ticket>0)
      {
-      GlobalVariableSet(gv, (double)key);
+      KVSet(gv, (double)key);
       Notify("OPENED #" + IntegerToString(ticket) + " " + D2S(lots) + " lots: " + sigTxt);
       return(ticket);
      }
@@ -2981,8 +3082,8 @@ bool IsBetterSL(int type, double a, double b)
 double InitialRisk(int ticket)
   {
    string k = RiskKey(ticket);
-   if(GlobalVariableCheck(k))
-      return(GlobalVariableGet(k));
+   if(KVCheck(k))
+      return(KVGet(k));
    if(!OrderSelect(ticket, SELECT_BY_TICKET))
       return(0);
    double r = 0;
@@ -2991,8 +3092,8 @@ double InitialRisk(int ticket)
    if(p>=0)
      {
       string pk = RiskKey((int)StringToInteger(StringSubstr(OrderComment(), p+6)));
-      if(GlobalVariableCheck(pk))
-         r = GlobalVariableGet(pk);
+      if(KVCheck(pk))
+         r = KVGet(pk);
      }
    if(r<=0)
      {
@@ -3004,7 +3105,7 @@ double InitialRisk(int ticket)
          r = iATR(Symbol(), TradeTF(OrderMagicNumber()), ST_ATRPeriod, 1)*ST_DefaultRiskATR;
      }
    if(r>0)
-      GlobalVariableSet(k, r);
+      KVSet(k, r);
    if(!OrderSelect(ticket, SELECT_BY_TICKET))   // restore selection for the caller
       return(r);
    return(r);
@@ -3041,8 +3142,8 @@ string SmartStageText(int ticket)
    if(!OrderSelect(ticket, SELECT_BY_TICKET) || OrderType()>OP_SELL)
       return("");
    double r = 0;
-   if(GlobalVariableCheck(RiskKey(ticket)))
-      r = GlobalVariableGet(RiskKey(ticket));
+   if(KVCheck(RiskKey(ticket)))
+      r = KVGet(RiskKey(ticket));
    double sl = OrderStopLoss(), op = OrderOpenPrice();
    if(r<=0)
       return(sl>0 ? "" : "NO SL");
@@ -3170,7 +3271,7 @@ void SmartTrail(int ticket)
    if(ST_ExtendTP && tp>0)
      {
       double tpDist = MathAbs(tp-op);
-      int ext = (GlobalVariableCheck(ExtKey(ticket)) ? (int)GlobalVariableGet(ExtKey(ticket)) : 0);
+      int ext = (KVCheck(ExtKey(ticket)) ? (int)KVGet(ExtKey(ticket)) : 0);
       double lockSL = (cand>0 ? cand : sl);
       bool slInProfit = (lockSL>0 && (buy ? lockSL>op : lockSL<op));
       double o1 = iOpen(Symbol(), tf, 1), c1 = iClose(Symbol(), tf, 1);
@@ -3179,7 +3280,7 @@ void SmartTrail(int ticket)
       if(tpDist>0 && ext<ST_MaxTPExtensions && slInProfit && momentum && profit>=tpDist*ST_ExtendAtPctOfTP/100.0)
         {
          newTP = NP(buy ? tp+atr*ST_ExtendATRMult : tp-atr*ST_ExtendATRMult);
-         GlobalVariableSet(ExtKey(ticket), ext+1);
+         KVSet(ExtKey(ticket), ext+1);
          Log(StringFormat("SMART TRAIL #%d: strong momentum - TP extended %s -> %s (%d/%d)", ticket,
                           PriceStr(tp), PriceStr(newTP), ext+1, ST_MaxTPExtensions));
         }
@@ -3198,9 +3299,9 @@ void SmartTrail(int ticket)
 //--- remove smart-trailing Global Variables of trades that are no longer open
 void CleanupTradeGlobals()
   {
-   for(int i=GlobalVariablesTotal()-1; i>=0; i--)
+   for(int i=KVTotal()-1; i>=0; i--)
      {
-      string n = GlobalVariableName(i);
+      string n = KVName(i);
       int tk = 0;
       if(StringFind(n, PFX+"R_")==0)
          tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"R_")));
@@ -3209,10 +3310,9 @@ void CleanupTradeGlobals()
       if(tk<=0)
          continue;
       if(!OrderSelect(tk, SELECT_BY_TICKET) || OrderCloseTime()!=0)
-         GlobalVariableDel(n);
+         KVDel(n);
      }
   }
-
 double NormalizeLotDown(double lot)
   {
    double step = MarketInfo(Symbol(), MODE_LOTSTEP);
@@ -3231,10 +3331,12 @@ string AcctKey() { return(IntegerToString(AccountNumber())); }
 void InitRiskTracking()
   {
    string pk = PFX + "PEAK_" + AcctKey();
-   if(GlobalVariableCheck(pk))
-      gPeakEquity = MathMax(GlobalVariableGet(pk), AccountEquity());
+   if(!ResetPeakOnStart && KVCheck(pk))
+      gPeakEquity = MathMax(KVGet(pk), AccountEquity());
    else
       gPeakEquity = AccountEquity();
+   KVSet(pk, gPeakEquity);
+   gMaxDDPct = 0;
    gDay = 0;
    UpdateRiskTracking();
   }
@@ -3249,19 +3351,19 @@ void UpdateRiskTracking()
      {
       gDay = today;
       string dk = PFX + "DAY_" + AcctKey() + "_" + IntegerToString((long)today);
-      if(GlobalVariableCheck(dk))
-         gDayStartEquity = GlobalVariableGet(dk);
+      if(KVCheck(dk))
+         gDayStartEquity = KVGet(dk);
       else
         {
          gDayStartEquity = eq;
-         GlobalVariableSet(dk, eq);
+         KVSet(dk, eq);
         }
       gDayMaxDD = 0;
      }
    if(eq>gPeakEquity)
      {
       gPeakEquity = eq;
-      GlobalVariableSet(PFX + "PEAK_" + AcctKey(), eq);
+      KVSet(PFX + "PEAK_" + AcctKey(), eq);
      }
    double dayLoss = gDayStartEquity-eq;
    if(dayLoss>gDayMaxDD)
