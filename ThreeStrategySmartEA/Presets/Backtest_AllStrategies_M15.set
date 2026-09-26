@@ -1,0 +1,38 @@
+; Three Strategy Smart Trading EA - all three strategies together
+; Chart: EURUSD M15 | Model: Every tick | needs M5, H1 and D1 history
+; S2 uses its own EntryTimeframe (M5) and ReferenceTimeframe (H1) independently of the chart.
+; WARNING: backtest results do not guarantee future profits.
+EnableAutoTrading=true
+EnableStrategy1=true
+EnableStrategy2=true
+EnableStrategy3=true
+LotMode=1
+RiskPercent=1.0
+MinimumLot=0.01
+MaximumLot=5.0
+DailyLossLimitPercent=5.0
+MaxDrawdownPercent=30.0
+CloseAllOnRiskLimit=false
+AllowHedging=false
+MaxSpreadPips=3.0
+MinStopLossPips=5.0
+UseLossMultiplier=false
+SlippagePoints=30
+MaxRetries=3
+UseAlerts=false
+UsePushNotifications=false
+UseSoundAlerts=false
+LogConditionMessages=false
+ConfirmPanelActions=false
+TradeDirection=0
+MaxOpenTrades=3
+MaxTradesPerStrategy=1
+S1_Timeframe=0
+S3_Timeframe=0
+ReferenceTimeframe=60
+EntryTimeframe=5
+ReferenceCandleMode=2
+TradingSession=0
+S1_TPMode=0
+S2_TPMode=0
+S3_TPMode=0

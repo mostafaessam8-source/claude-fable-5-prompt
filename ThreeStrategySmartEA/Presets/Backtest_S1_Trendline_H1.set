@@ -1,0 +1,47 @@
+; Three Strategy Smart Trading EA - Strategy 1 only
+; Chart: EURUSD (or any major) H1 | Model: Every tick | Period: 1-2 years
+; WARNING: backtest results do not guarantee future profits.
+EnableAutoTrading=true
+EnableStrategy1=true
+EnableStrategy2=false
+EnableStrategy3=false
+LotMode=1
+RiskPercent=1.0
+MinimumLot=0.01
+MaximumLot=5.0
+DailyLossLimitPercent=5.0
+MaxDrawdownPercent=30.0
+CloseAllOnRiskLimit=false
+MaxOpenTrades=3
+MaxTradesPerStrategy=1
+AllowHedging=false
+MaxSpreadPips=3.0
+MinStopLossPips=5.0
+UseLossMultiplier=false
+SlippagePoints=30
+MaxRetries=3
+UseAlerts=false
+UsePushNotifications=false
+UseSoundAlerts=false
+LogConditionMessages=false
+ConfirmPanelActions=false
+TradeDirection=0
+S1_Timeframe=0
+S1_SwingStrength=3
+S1_SwingLookback=120
+S1_MinSwingSeparation=5
+S1_RequireStructureTrend=true
+MinBodyToRangeRatio=0.60
+S1_MinBreakDistancePips=0.5
+S1_RetestMode=2
+S1_RetestTolerancePips=3.0
+S1_MaxBarsForRetest=15
+S1_ConfirmMode=0
+S1_ConfirmMinBodyRatio=0.40
+S1_AllowSameBarConfirm=true
+S1_MaxBarsForConfirm=5
+S1_InvalidationPips=5.0
+S1_SLMode=0
+S1_SLBufferPips=3.0
+S1_TPMode=0
+S1_RiskReward=2.0
