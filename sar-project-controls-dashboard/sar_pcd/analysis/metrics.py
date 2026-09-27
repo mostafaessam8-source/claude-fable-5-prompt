@@ -211,10 +211,12 @@ def evm(ctx: ProjectContext, rows: list[ActRow]) -> dict:
     weightable = [r.bl for r in rows if r.bl is not None and not (r.bl.is_milestone or r.bl.is_loe or r.bl.is_wbs_summary)]
     cov = sum(1 for b in weightable if b.budget_cost > 0) / len(weightable) if weightable else 0.0
     res["cost_coverage"] = cov
-    res["cost_reliable"] = cov >= ctx.settings.weighting_coverage
+    # Cost-based EV drives SPI/CPI only when progress itself is cost-weighted, so SPI = EV/PV is consistent
+    # with Actual % / Planned % on the same dashboard.
+    res["cost_reliable"] = ctx.weighting == "Cost"
     if not res["cost_reliable"]:
         res["notes"].append(
-            f"Baseline cost loading covers only {cov:.0%} of activities (threshold {ctx.settings.weighting_coverage:.0%}). "
+            f"Progress is weighted by {ctx.weighting}, not cost (baseline cost loading covers {cov:.0%} of activities). "
             "Cost-based EV / PV / SPI / CPI are shown for reference only and are not used on the KPI cards.")
     res["SV"] = ev - pv
     res["SPI"] = ev / pv if pv > 0 else None
@@ -240,7 +242,7 @@ def spi_cpi_kpis(ctx: ProjectContext, rows: list[ActRow], prog: dict) -> tuple[K
     e = evm(ctx, rows)
     keys = [r.key for r in rows if r.cur is not None or r.bl is not None]
     cost_ok = bool(e.get("available") and e.get("cost_reliable"))
-    cov_note = (f"Cost-based EV not used: baseline cost loading covers only {e.get('cost_coverage', 0):.0%} of activities."
+    cov_note = (f"Cost-based EV not used because progress is weighted by {ctx.weighting} (select Cost weighting in Settings to use EV)."
                 if e.get("available") and not cost_ok else "")
     if cost_ok and e.get("SPI") is not None:
         spi = e["SPI"]
@@ -268,7 +270,7 @@ def spi_cpi_kpis(ctx: ProjectContext, rows: list[ActRow], prog: dict) -> tuple[K
         if not e.get("available"):
             reason = "Cost Data Not Available"
         elif not cost_ok:
-            reason = f"Cost Loading Incomplete ({e.get('cost_coverage', 0):.0%} of activities)"
+            reason = f"Progress not cost-weighted (weighting: {ctx.weighting})"
         else:
             reason = "Actual Cost Not Available"
         cpi_k = KPI.unavailable("cpi", "CPI", f"CPI = N/A - {reason}. CPI is never derived from schedule data.", "CPI = EV / AC")

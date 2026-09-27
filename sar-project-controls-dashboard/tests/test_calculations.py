@@ -140,11 +140,24 @@ def test_s_curve_consistent_with_kpis(demo_ctx):
     assert planned == sorted(planned)
 
 
-def test_partial_cost_loading_does_not_drive_spi_cpi(small):
-    """Only activity A is cost-loaded (50% coverage < 80%): SPI must be progress-based, CPI N/A."""
+def test_partial_cost_loading_uses_cost_weights(small):
+    """Only A is cost-loaded: Auto still weights by cost (B carries zero weight) and SPI/CPI use EV."""
     prog = {"MS-1": {"as": 0, "af": 0, "rem": 0, "pct": 100}, "A-1": {"as": 0, "af": None, "rem": 5, "pct": 50.0}}
     ctx = small(progress=prog, dd=5, rate_b=0)
+    assert ctx.weighting == "Cost"
     d = build(ctx)
-    assert d.evm["cost_reliable"] is False and d.evm["cost_coverage"] == pytest.approx(0.5)
+    assert d.kpis["progress_actual"].value == pytest.approx(50.0)   # only A has weight
+    assert d.kpis["progress_planned"].value == pytest.approx(50.0)
+    assert "EV / PV" in d.kpis["spi"].formula and d.kpis["cpi"].available
+    from sar_pcd.services.dashboard import ContextCache
+    assert any(f.category == "Cost Weighting" for f in ContextCache(ctx).validation[0])
+
+
+def test_non_cost_weighting_does_not_use_ev_for_spi(small):
+    from sar_pcd.analysis.context import ProjectContext
+    prog = {"MS-1": {"as": 0, "af": 0, "rem": 0, "pct": 100}, "A-1": {"as": 0, "af": None, "rem": 5, "pct": 50.0}}
+    base = small(progress=prog, dd=5)
+    ctx = ProjectContext(base.bl, base.cur, base.profile, AnalysisSettings(weighting="Original Duration"))
+    d = build(ctx)
     assert "progress-based" in d.kpis["spi"].formula
-    assert d.kpis["cpi"].available is False and "Cost Loading Incomplete" in d.kpis["cpi"].notes[0]
+    assert d.kpis["cpi"].available is False and "not cost-weighted" in d.kpis["cpi"].notes[0]

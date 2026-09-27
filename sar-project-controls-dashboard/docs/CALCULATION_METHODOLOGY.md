@@ -12,7 +12,7 @@ This document is generated from `sar_pcd/analysis/methodology.py`, the same sour
    * Cost is never inferred from duration; risks are never inferred from activities.
    * Activities that cannot be mapped are shown as *Not Mapped*, never forced into a category.
 3. **Never assume equal weights** - progress is always weighted; the method is chosen automatically
-   from data coverage (Cost → Resource Units → Original Duration) or explicitly by the user.
+   (Cost when both schedules are cost-loaded → Resource Units → Original Duration) or explicitly by the user.
    "Activity Count" weighting exists only as an explicit user choice and is labelled as such.
 4. **Zero float ≠ Longest Path** - the Longest Path comes from P6's flag or from tracing driving logic.
 5. **Separation of data** - *source data* (XER values), *derived data* (formulas below), *user mapping*
@@ -25,13 +25,13 @@ This document is generated from `sar_pcd/analysis/methodology.py`, the same sour
 |---|---|---|
 | Data Date | PROJECT.last_recalc_date of the Current XER | All time-phased values (planned progress, S-curve, lookahead, PV) are evaluated at the Current Data Date. The Baseline Data Date is shown for reference only. |
 | Activity % Complete | Physical: TASK.phys_complete_pct · Duration: (Original − Remaining) / Original · Units: Actual / (Actual + Remaining) units | Selected in Settings. 'Auto' uses each activity's P6 % complete type (TASK.complete_pct_type). Completed activities count as 100%. Units % falls back to Duration % where an activity has no resource units. |
-| Weights | Cost: budget cost (TASKRSRC.target_cost + PROJCOST.target_cost) · Resource Units: budgeted units · Original Duration: TASK.target_drtn_hr_cnt / calendar hours per day · Activity Count: 1 · Custom: numeric UDF | 'Auto' selects Cost when ≥ 80% of weightable activities in both schedules are cost-loaded, otherwise Resource Units on the same test, otherwise Original Duration. The chosen method and the coverage figures are shown with every progress KPI. Milestones, LOE and WBS Summary activities have zero weight. Activity percentages are never averaged. |
+| Weights | Cost: budget cost (TASKRSRC.target_cost + PROJCOST.target_cost) · Resource Units: budgeted units · Original Duration: TASK.target_drtn_hr_cnt / calendar hours per day · Activity Count: 1 · Custom: numeric UDF | 'Auto' selects Cost when both schedules are cost-loaded (activities without cost carry zero weight), otherwise Resource Units when both carry units, otherwise Original Duration. The chosen method and the coverage figures are shown with every progress KPI. Milestones, LOE and WBS Summary activities have zero weight. Activity percentages are never averaged. |
 | Actual Progress | Σ(weight_i × %complete_i) / Σ weight_i over current activities | Weights from the current schedule. |
 | Planned Progress | Σ(BL weight_i × planned fraction_i(Data Date)) / Σ BL weight_i over baseline activities | Planned fraction = working days of the baseline activity elapsed before the Data Date / working days of the baseline activity (baseline calendar, linear distribution). Deleted baseline activities remain in the plan; added activities have no baseline and are excluded. No resource curves are read from the XER. |
 | Progress Variance | Actual Progress − Planned Progress | Percentage points. |
 | Earned Value (cost) | BAC = Σ BL budget · PV = Σ BL budget × planned fraction · EV = Σ BL budget × %complete · AC = Σ actual cost | EV follows P6: baseline budget × performance % complete. Activities without a 1:1 baseline (added / split parts) earn on their current budget and are listed. AC = TASKRSRC actual regular + overtime cost + PROJCOST actual cost. |
-| SPI | EV / PV (cost-based) - or, when the baseline is not cost-loaded, Actual Progress % / Planned Progress % (progress-based) | The KPI card states which variant is shown. |
-| CPI | EV / AC | Only when Actual Cost exists in the Current XER. Never inferred from schedule data. Otherwise 'CPI = N/A'. |
+| SPI | EV / PV (cost-based) when progress is cost-weighted - otherwise Actual Progress % / Planned Progress % (progress-based) | The KPI card states which variant is shown. |
+| CPI | EV / AC | Only when progress is cost-weighted and Actual Cost exists in the Current XER. Never inferred from schedule data. Otherwise 'CPI = N/A'. |
 | CV / SV | CV = EV − AC · SV = EV − PV |  |
 | EAC / ETC / VAC | EAC = BAC / CPI · ETC = EAC − AC · VAC = BAC − EAC; bottom-up EAC = AC + Σ remaining cost | Both EAC figures are reported. |
 | Baseline / Forecast Finish | Latest finish of all baseline activities / latest (actual or early) finish of all current activities | PROJECT.scd_end_date is shown alongside for reference. |

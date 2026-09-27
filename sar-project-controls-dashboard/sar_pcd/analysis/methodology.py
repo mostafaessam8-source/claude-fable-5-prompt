@@ -12,8 +12,8 @@ METHODOLOGY: list[tuple[str, str, str]] = [
     ("Weights",
      "Cost: budget cost (TASKRSRC.target_cost + PROJCOST.target_cost) · Resource Units: budgeted units · "
      "Original Duration: TASK.target_drtn_hr_cnt / calendar hours per day · Activity Count: 1 · Custom: numeric UDF",
-     "'Auto' selects Cost when ≥ 80% of weightable activities in both schedules are cost-loaded, otherwise Resource Units "
-     "on the same test, otherwise Original Duration. The chosen method and the coverage figures are shown with every "
+     "'Auto' selects Cost when both schedules are cost-loaded (activities without cost carry zero weight), otherwise "
+     "Resource Units when both carry units, otherwise Original Duration. The chosen method and the coverage figures are shown with every "
      "progress KPI. Milestones, LOE and WBS Summary activities have zero weight. Activity percentages are never averaged."),
     ("Actual Progress",
      "Σ(weight_i × %complete_i) / Σ weight_i over current activities",
@@ -29,10 +29,10 @@ METHODOLOGY: list[tuple[str, str, str]] = [
      "EV follows P6: baseline budget × performance % complete. Activities without a 1:1 baseline (added / split parts) "
      "earn on their current budget and are listed. AC = TASKRSRC actual regular + overtime cost + PROJCOST actual cost."),
     ("SPI",
-     "EV / PV (cost-based) - or, when the baseline is not cost-loaded, Actual Progress % / Planned Progress % (progress-based)",
+     "EV / PV (cost-based) when progress is cost-weighted - otherwise Actual Progress % / Planned Progress % (progress-based)",
      "The KPI card states which variant is shown."),
     ("CPI", "EV / AC",
-     "Only when Actual Cost exists in the Current XER. Never inferred from schedule data. Otherwise 'CPI = N/A'."),
+     "Only when progress is cost-weighted and Actual Cost exists in the Current XER. Never inferred from schedule data. Otherwise 'CPI = N/A'."),
     ("CV / SV", "CV = EV − AC · SV = EV − PV", ""),
     ("EAC / ETC / VAC",
      "EAC = BAC / CPI · ETC = EAC − AC · VAC = BAC − EAC; bottom-up EAC = AC + Σ remaining cost",

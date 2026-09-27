@@ -79,6 +79,11 @@ def validate(ctx) -> tuple[list[Finding], float]:
     elif not cur.availability.get("actual_cost"):
         f.append(Finding(WARNING, "Missing Actual Cost", "Budget cost exists but Actual Cost is missing; CPI is not calculated.",
                          penalty=5))
+    cc, bc = getattr(ctx, "cost_coverage", (1.0, 1.0))
+    if ctx.weighting == "Cost" and min(cc, bc) < ctx.settings.weighting_coverage:
+        f.append(Finding(INFO, "Cost Weighting",
+                         f"Progress is cost-weighted; {cc:.0%} of current and {bc:.0%} of baseline activities carry budget cost. "
+                         "Activities without cost carry zero weight.", impact="Change the weighting in Settings if needed."))
     if not bl.availability.get("budget_cost") and cur.availability.get("budget_cost"):
         f.append(Finding(WARNING, "Missing Baseline Cost", "Baseline XER has no cost loading; PV/SPI (cost) unavailable.", penalty=5))
     if not cur.availability.get("resources"):

@@ -137,16 +137,24 @@ class ProjectContext:
         bl_cost_cov = sum(1 for a in bl_acts if a.budget_cost > 0) / nb
         unit_cov = sum(1 for a in acts if a.budget_units > 0) / n
         bl_unit_cov = sum(1 for a in bl_acts if a.budget_units > 0) / nb
+        self.cost_coverage = (cost_cov, bl_cost_cov)
         if w == "Auto":
-            if cost_cov >= cov and bl_cost_cov >= cov:
+            # A cost-loaded schedule normally leaves admin / approval / milestone activities without cost:
+            # they simply carry zero weight. Cost is therefore used whenever BOTH schedules are cost-loaded.
+            if cost_cov > 0 and bl_cost_cov > 0:
                 w = "Cost"
-            elif unit_cov >= cov and bl_unit_cov >= cov:
+            elif unit_cov > 0 and bl_unit_cov > 0:
                 w = "Resource Units"
             else:
                 w = "Original Duration"
             self.method_notes.append(
                 f"Weighting (Auto): {w}. Budget cost on {cost_cov:.0%} of current / {bl_cost_cov:.0%} of baseline activities, "
-                f"resource units on {unit_cov:.0%} / {bl_unit_cov:.0%} (threshold {cov:.0%}).")
+                f"resource units on {unit_cov:.0%} / {bl_unit_cov:.0%}. Order: Cost, then Resource Units (when both "
+                "schedules carry them), otherwise Original Duration.")
+            if w == "Cost" and min(cost_cov, bl_cost_cov) < cov:
+                self.method_notes.append(
+                    f"NOTE: activities without budget cost ({1 - cost_cov:.0%} of current activities) carry zero weight. "
+                    "Choose another weighting in Settings if that is not intended.")
         else:
             self.method_notes.append(f"Weighting selected by user: {w}.")
             if w == "Cost" and cost_cov < cov:

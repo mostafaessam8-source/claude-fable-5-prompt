@@ -194,8 +194,8 @@ def export_dynamic(path, d) -> dict:
     dash["D9"].font = F_BOLD
     dash["F9"] = "Yes" if (ev_all.get("available") and ev_all.get("cost_reliable")) else "No"
     dash["F9"].comment = Comment(
-        f"Baseline cost loading covers {ev_all.get('cost_coverage', 0):.0%} of activities "
-        f"(threshold {ctx.settings.weighting_coverage:.0%}). When 'No', SPI is progress-based and CPI shows N/A.", APP_NAME)
+        f"'Yes' when progress is cost-weighted (weighting: {ctx.weighting}). When 'No', SPI is progress-based "
+        "and CPI shows N/A.", APP_NAME)
     _name(wb, "CostEV", "Dashboard!$F$9")
 
     # ------------------------------------------------------------------ Data sheet
@@ -293,7 +293,7 @@ def export_dynamic(path, d) -> dict:
         _name(wb, nm, ref)
     kpi("A18", "SPI", "=IFERROR(IF(CostEV=\"Yes\",K_EV/K_PV,K_Actual/K_Planned),\"N/A\")", "0.00",
         "EV / PV when the baseline is reliably cost-loaded (F9 = Yes), otherwise Actual % / Planned % (progress-based)")
-    kpi("B18", "CPI", "=IF(CostEV<>\"Yes\",\"N/A - Cost Loading Incomplete\",IF(K_AC>0,IFERROR(K_EV/K_AC,\"N/A\"),"
+    kpi("B18", "CPI", "=IF(CostEV<>\"Yes\",\"N/A - Progress not cost-weighted\",IF(K_AC>0,IFERROR(K_EV/K_AC,\"N/A\"),"
         "\"N/A - Actual Cost Not Available\"))", "0.00",
         "EV / AC - only when cost loading is reliable and actual cost exists; never inferred from schedule data")
     kpi("C18", "Baseline Finish", "=SUMPRODUCT(MAX(D_Inc*D_BLFin))", "dd-mmm-yyyy", "Latest baseline finish in the filter")
