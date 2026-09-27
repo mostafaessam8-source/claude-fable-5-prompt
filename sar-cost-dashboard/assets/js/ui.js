@@ -374,6 +374,7 @@
   /* ----------------------------- charts --------------------------------- */
   var charts = [];
   function destroyCharts() { charts.forEach(function (c) { c.destroy(); }); charts = []; }
+  function eachChart(fn) { charts.forEach(fn); }
 
   if (window.Chart) {
     Chart.defaults.font.family = getComputedStyle(document.documentElement).getPropertyValue("--font") || "Segoe UI, Arial, sans-serif";
@@ -528,7 +529,7 @@
     C: C, SERIES: SERIES, fmt: fmt, esc: esc, el: el, uniq: uniq, sum: sum, toNum: toNum, isoWeek: isoWeek,
     badge: badge, statusClass: statusClass, tile: tile, info: info, panel: panel, meter: meter,
     table: table, multiSelect: multiSelect, select: select,
-    chart: chart, destroyCharts: destroyCharts, barDs: barDs, lineDs: lineDs,
+    chart: chart, destroyCharts: destroyCharts, eachChart: eachChart, barDs: barDs, lineDs: lineDs,
     moneyAxis: moneyAxis, shortLabel: shortLabel, fade: fade, hl: hl, clickable: clickable, pctAxis: pctAxis, catAxis: catAxis, wrapLabel: wrapLabel,
     moneyTooltip: moneyTooltip, pctTooltip: pctTooltip,
     modal: modal, recordModal: recordModal, toast: toast

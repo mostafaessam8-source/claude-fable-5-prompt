@@ -43,7 +43,13 @@ opened straight from disk.
 * **Tables**: search, CSV export and **multi-column sort**. Click a header to sort by it, and
   **Shift + click** other headers to add sort levels. You can also use **⇅ Sort** to build the levels,
   like Excel's custom sort.
-* **Print / PDF** prints the current page.
+* **Print A4**: prints the current page, with any active filters, on **one A4 sheet**. Every table row and
+  the whole Gantt are expanded (nothing is hidden behind scrollbars). The page is scaled to fit, and
+  portrait or landscape is picked automatically. The sheet gets a SAR header with the page title, report
+  date, active filters and print time. **Ctrl + P** does the same.
+  The **▾** next to the button offers **A4 — full size, multiple sheets**, which prints at readable size
+  across as many pages as needed. Use it for very long pages such as the full issue register. Choose
+  **Save as PDF** in the print dialog to get a PDF.
 
 ## Updating the data
 
@@ -91,6 +97,7 @@ assets/js/store.js         IndexedDB persistence of imports
 assets/js/ui.js            formatters, tables, slicers, KPI tiles, chart defaults
 assets/js/pages.js         one renderer per page
 assets/js/app.js           dataset, routing, navigation, import page
+assets/js/print.js         A4 one-page / multi-page printing
 assets/img/                SAR logos (from the Power BI report)
 assets/vendor/             SheetJS, JSZip, Chart.js (+ datalabels)
 tools/build-default-data.js baseline data builder

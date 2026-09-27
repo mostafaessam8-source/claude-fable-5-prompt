@@ -135,7 +135,7 @@
       state: pageState[page.id] || (pageState[page.id] = {}),
       rerender: function () { var y = window.scrollY; render(page); window.scrollTo(0, y); }
     };
-    ctx.actions.appendChild(U.el('<button class="icon-btn ghost" type="button" onclick="window.print()">Print / PDF</button>'));
+    ctx.actions.appendChild(SARPrint.button());
     try {
       if (page.id === "import") renderImport(ctx);
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
