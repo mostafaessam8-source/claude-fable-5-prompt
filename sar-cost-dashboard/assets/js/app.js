@@ -238,7 +238,18 @@
   /* ----------------------------- boot ----------------------------------- */
   document.getElementById("menuToggle").addEventListener("click", function () { document.body.classList.toggle("nav-open"); });
   window.addEventListener("hashchange", route);
-  window.SARApp = { D: D, PAGES: PAGES };
+  /** Navigate to a page with preset state, e.g. go("issues", { f: { code: ["0214"] } }). */
+  function go(id, patch) {
+    var st = pageState[id] || (pageState[id] = {});
+    patch = patch || {};
+    Object.keys(patch).forEach(function (k) {
+      if (k === "f") { st.f = {}; Object.keys(patch.f).forEach(function (fk) { st.f[fk] = patch.f[fk].slice(); }); }
+      else st[k] = patch[k];
+    });
+    if (location.hash === "#/" + id) route(); else location.hash = "#/" + id;
+    window.scrollTo(0, 0);
+  }
+  window.SARApp = { D: D, PAGES: PAGES, go: go };
 
   SARStore.load().then(function (stored) {
     mergeDataset(stored);

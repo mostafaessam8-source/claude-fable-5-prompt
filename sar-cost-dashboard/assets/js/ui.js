@@ -106,6 +106,7 @@
   }
 
   /* ----------------------------- data table ----------------------------- */
+  var openPop = null; // the one open popover (slicer or sort panel)
   var TYPE_FMT = { money: fmt.money, num: fmt.num, int: fmt.int, dec: fmt.dec, pct: fmt.pct, date: fmt.date, text: fmt.text, m: fmt.m };
   var NUMERIC = { money: 1, num: 1, int: 1, dec: 1, pct: 1, m: 1 };
 
@@ -130,10 +131,10 @@
    * opts: { columns, rows, search, totals, onRow, exportName, autoHeight, emptyText, sort:{key,dir} }
    */
   function table(host, opts) {
-    var state = { q: "", sortIdx: -1, dir: 1 };
+    // sorts: ordered list of { i: columnIndex, dir: 1 | -1 } — first entry is the primary sort
+    var state = { q: "", sorts: [] };
     if (opts.sort) {
-      opts.columns.forEach(function (c, i) { if ((c.key || c.label) === opts.sort.key) state.sortIdx = i; });
-      state.dir = opts.sort.dir || 1;
+      opts.columns.forEach(function (c, i) { if ((c.key || c.label) === opts.sort.key) state.sorts = [{ i: i, dir: opts.sort.dir || 1 }]; });
     }
     var wrap = el('<div class="dt-host"></div>');
     var tools = el('<div class="table-tools"></div>');
@@ -142,6 +143,9 @@
       inp.addEventListener("input", function () { state.q = inp.value.toLowerCase(); draw(); });
       tools.appendChild(inp);
     }
+    var sortWrap = el('<div class="sort-wrap"><button class="link-btn sort-btn" type="button" title="Sort by one or more columns">⇅ Sort</button></div>');
+    sortWrap.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); toggleSortPanel(); });
+    tools.appendChild(sortWrap);
     var count = el('<span class="count"></span>');
     tools.appendChild(count);
     if (opts.exportName !== false) {
@@ -155,34 +159,93 @@
     wrap.appendChild(box);
     host.appendChild(wrap);
 
+    function val(c, r) { return c.get ? c.get(r) : r[c.key]; }
+    function cmp(c, a, b, dir) {
+      var x = val(c, a), y = val(c, b);
+      var ex = x == null || x === "", ey = y == null || y === "";
+      if (ex && ey) return 0; if (ex) return 1; if (ey) return -1; // blanks always last
+      var nx = toNum(x), ny = toNum(y);
+      if (nx !== null && ny !== null) return (nx - ny) * dir;
+      return String(x).localeCompare(String(y), undefined, { numeric: true }) * dir;
+    }
     function current() {
       var rows = opts.rows.slice();
       if (state.q) {
         rows = rows.filter(function (r) {
           return opts.columns.some(function (c) {
-            var v = c.get ? c.get(r) : r[c.key];
+            var v = val(c, r);
             var s = (TYPE_FMT[c.type] || fmt.text)(v);
             return String(s).toLowerCase().indexOf(state.q) >= 0 || String(v == null ? "" : v).toLowerCase().indexOf(state.q) >= 0;
           });
         });
       }
-      if (state.sortIdx >= 0) {
-        var c = opts.columns[state.sortIdx];
+      if (state.sorts.length) {
+        rows = rows.map(function (r, i) { return [r, i]; });
         rows.sort(function (a, b) {
-          var x = c.get ? c.get(a) : a[c.key], y = c.get ? c.get(b) : b[c.key];
-          if (x == null || x === "") return 1; if (y == null || y === "") return -1;
-          var nx = toNum(x), ny = toNum(y);
-          if (nx !== null && ny !== null) return (nx - ny) * state.dir;
-          return String(x).localeCompare(String(y), undefined, { numeric: true }) * state.dir;
+          for (var k = 0; k < state.sorts.length; k++) {
+            var s = state.sorts[k], d = cmp(opts.columns[s.i], a[0], b[0], s.dir);
+            if (d) return d;
+          }
+          return a[1] - b[1];
         });
+        rows = rows.map(function (p) { return p[0]; });
       }
       return rows;
+    }
+
+    /* Header click: plain click = sort by that column only (click again to reverse);
+       Shift/Ctrl + click = add it as the next sort level (click again to reverse). */
+    function headerSort(i, add) {
+      var at = -1;
+      state.sorts.forEach(function (s, k) { if (s.i === i) at = k; });
+      if (add) {
+        if (at >= 0) state.sorts[at].dir = -state.sorts[at].dir; else state.sorts.push({ i: i, dir: 1 });
+      } else if (at === 0 && state.sorts.length === 1) state.sorts[0].dir = -state.sorts[0].dir;
+      else state.sorts = [{ i: i, dir: 1 }];
+      draw();
+    }
+
+    function toggleSortPanel() {
+      var old = sortWrap.querySelector(".sort-pop");
+      if (old) { old.__close(); return; }
+      if (openPop) openPop.__close();
+      var pop = el('<div class="ms-pop sort-pop"><div class="sort-title">Sort levels <span class="muted">— first level wins, next levels break ties</span></div><div class="sort-levels"></div>' +
+        '<div class="ms-actions"><button type="button" data-a="add">+ Add level</button><button type="button" data-a="clear">Clear sort</button></div></div>');
+      pop.addEventListener("click", function (e) { e.stopPropagation(); });
+      var levels = pop.querySelector(".sort-levels");
+      function colOptions(sel) {
+        return opts.columns.map(function (c, i) { return '<option value="' + i + '"' + (i === sel ? " selected" : "") + ">" + esc(c.label) + "</option>"; }).join("");
+      }
+      function paint() {
+        if (!state.sorts.length) { levels.innerHTML = '<div class="muted" style="padding:6px 12px;font-size:12px">No sort applied — add a level.</div>'; return; }
+        levels.innerHTML = state.sorts.map(function (s, k) {
+          return '<div class="sort-level" data-k="' + k + '"><span class="lvl">' + (k === 0 ? "Sort by" : "Then by") + '</span><select data-f="col">' + colOptions(s.i) +
+            '</select><select data-f="dir"><option value="1"' + (s.dir > 0 ? " selected" : "") + '>A → Z / Low → High</option><option value="-1"' + (s.dir < 0 ? " selected" : "") +
+            '>Z → A / High → Low</option></select><button type="button" class="x" title="Remove level">×</button></div>';
+        }).join("");
+        levels.querySelectorAll(".sort-level").forEach(function (row) {
+          var k = +row.getAttribute("data-k");
+          row.querySelector('[data-f="col"]').addEventListener("change", function (e) { state.sorts[k].i = +e.target.value; draw(); });
+          row.querySelector('[data-f="dir"]').addEventListener("change", function (e) { state.sorts[k].dir = +e.target.value; draw(); });
+          row.querySelector(".x").addEventListener("click", function () { state.sorts.splice(k, 1); paint(); draw(); });
+        });
+      }
+      pop.querySelector('[data-a="add"]').addEventListener("click", function () {
+        var used = state.sorts.map(function (s) { return s.i; }), next = 0;
+        while (used.indexOf(next) >= 0 && next < opts.columns.length - 1) next++;
+        state.sorts.push({ i: next, dir: 1 }); paint(); draw();
+      });
+      pop.querySelector('[data-a="clear"]').addEventListener("click", function () { state.sorts = []; paint(); draw(); });
+      paint();
+      sortWrap.appendChild(pop);
+      pop.__close = function () { pop.remove(); openPop = null; };
+      openPop = pop;
     }
 
     function exportCsv(rows) {
       var lines = [opts.columns.map(function (c) { return csvCell(c.label); }).join(",")];
       rows.forEach(function (r) {
-        lines.push(opts.columns.map(function (c) { return csvCell(c.get ? c.get(r) : r[c.key]); }).join(","));
+        lines.push(opts.columns.map(function (c) { return csvCell(val(c, r)); }).join(","));
       });
       var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
       var a = document.createElement("a");
@@ -195,18 +258,25 @@
     function draw() {
       var rows = current();
       count.textContent = rows.length + " of " + opts.rows.length + " rows";
+      var sb = sortWrap.querySelector(".sort-btn");
+      sb.textContent = state.sorts.length ? "⇅ Sort (" + state.sorts.length + ")" : "⇅ Sort";
+      sb.classList.toggle("on", state.sorts.length > 0);
       var h = '<table class="dt"><thead><tr>';
       opts.columns.forEach(function (c, i) {
-        var arrow = state.sortIdx === i ? (state.dir > 0 ? "▲" : "▼") : "";
-        h += '<th data-i="' + i + '" class="' + (NUMERIC[c.type] ? "num" : "") + '" title="Sort by ' + esc(c.label) + '">' + esc(c.label) + '<span class="arrow">' + arrow + "</span></th>";
+        var arrow = "", lvl = -1;
+        state.sorts.forEach(function (s, k) { if (s.i === i) { lvl = k; arrow = s.dir > 0 ? "▲" : "▼"; } });
+        var badgeN = lvl >= 0 && state.sorts.length > 1 ? '<sup class="sort-n">' + (lvl + 1) + "</sup>" : "";
+        h += '<th data-i="' + i + '" class="' + (NUMERIC[c.type] ? "num" : "") + (lvl >= 0 ? " sorted" : "") + '" title="Click to sort · Shift+click to add as another sort level">' +
+          esc(c.label) + '<span class="arrow">' + arrow + badgeN + "</span></th>";
       });
       h += "</tr></thead><tbody>";
       if (!rows.length) h += '<tr><td colspan="' + opts.columns.length + '"><div class="empty">' + esc(opts.emptyText || "No rows match the current filters.") + "</div></td></tr>";
       rows.forEach(function (r, ri) {
-        h += '<tr data-r="' + ri + '"' + (opts.onRow ? ' class="clickable" title="Click for full details"' : "") + ">";
+        var rc = [opts.onRow ? "clickable" : "", opts.rowClass ? opts.rowClass(r) || "" : ""].join(" ").trim();
+        h += '<tr data-r="' + ri + '"' + (rc ? ' class="' + rc + '"' : "") + (opts.onRow ? ' title="' + esc(opts.rowTitle || "Click for full details") + '"' : "") + ">";
         opts.columns.forEach(function (c) {
           var cls = [NUMERIC[c.type] ? "num" : "", c.wrap ? "wrap" : "", c.type === "date" || c.nowrap ? "nowrap" : ""];
-          if (c.cls) cls.push(c.cls(c.get ? c.get(r) : r[c.key], r) || "");
+          if (c.cls) cls.push(c.cls(val(c, r), r) || "");
           h += '<td class="' + cls.join(" ").trim() + '">' + cellHtml(c, r) + "</td>";
         });
         h += "</tr>";
@@ -226,14 +296,10 @@
       h += "</table>";
       box.innerHTML = h;
       box.querySelectorAll("th").forEach(function (th) {
-        th.addEventListener("click", function () {
-          var i = +th.getAttribute("data-i");
-          if (state.sortIdx === i) state.dir = -state.dir; else { state.sortIdx = i; state.dir = 1; }
-          draw();
-        });
+        th.addEventListener("click", function (e) { headerSort(+th.getAttribute("data-i"), e.shiftKey || e.ctrlKey || e.metaKey); });
       });
       if (opts.onRow) box.querySelectorAll("tbody tr[data-r]").forEach(function (tr) {
-        tr.addEventListener("click", function () { opts.onRow(rows[+tr.getAttribute("data-r")]); });
+        tr.addEventListener("click", function (e) { opts.onRow(rows[+tr.getAttribute("data-r")], e); });
       });
     }
     draw();
@@ -241,7 +307,6 @@
   }
 
   /* ----------------------------- slicers -------------------------------- */
-  var openPop = null;
   document.addEventListener("click", function (e) {
     if (openPop && !openPop.contains(e.target)) { openPop.__close(); }
   });
@@ -253,8 +318,9 @@
     var sel = o.selected;
     function caption() {
       btn.classList.toggle("active", sel.length > 0);
-      btn.textContent = !sel.length ? "All" : sel.length === 1 ? String(sel[0]) : sel.length + " selected";
-      btn.title = sel.length ? sel.join(", ") : "All";
+      var d = o.display || String;
+      btn.textContent = !sel.length ? "All" : sel.length === 1 ? d(sel[0]) : sel.length + " selected";
+      btn.title = sel.length ? sel.map(d).join(", ") : "All";
     }
     caption();
     btn.addEventListener("click", function (e) {
@@ -266,7 +332,8 @@
       function list() {
         var term = q.value.toLowerCase();
         ul.innerHTML = o.options.filter(function (v) { return String(v).toLowerCase().indexOf(term) >= 0; }).map(function (v) {
-          return '<li><label><input type="checkbox" value="' + esc(v) + '"' + (sel.indexOf(v) >= 0 ? " checked" : "") + "><span>" + esc(o.display ? o.display(v) : v) + "</span></label></li>";
+          return '<li><label><input type="checkbox" value="' + esc(v) + '"' + (sel.indexOf(v) >= 0 ? " checked" : "") + "><span>" + esc(o.display ? o.display(v) : v) + "</span>" +
+            (o.counts ? '<em class="ms-n">' + (o.counts[v] || 0) + "</em>" : "") + "</label></li>";
         }).join("") || '<li><label class="muted">No matches</label></li>';
         ul.querySelectorAll("input").forEach(function (cb, idx) {
           cb.addEventListener("change", function () {
@@ -320,6 +387,18 @@
     Chart.defaults.plugins.legend.labels.boxWidth = 12;
     Chart.defaults.plugins.legend.labels.boxHeight = 12;
     Chart.defaults.plugins.legend.labels.padding = 14;
+    // Legend swatches always show the solid series colour, even when some bars are dimmed by a selection.
+    var baseLabels = Chart.defaults.plugins.legend.labels.generateLabels;
+    Chart.defaults.plugins.legend.labels.generateLabels = function (chart) {
+      return baseLabels(chart).map(function (l) {
+        var ds = chart.data.datasets[l.datasetIndex], bg = ds && ds.backgroundColor;
+        if (Array.isArray(bg)) {
+          var solid = bg.filter(function (c) { return typeof c === "string" && c.length === 7; })[0] || String(bg[0]).slice(0, 7);
+          l.fillStyle = solid; l.strokeStyle = solid;
+        }
+        return l;
+      });
+    };
     Chart.defaults.plugins.tooltip.backgroundColor = C.black;
     Chart.defaults.plugins.tooltip.titleFont = { weight: "700" };
     Chart.defaults.plugins.tooltip.padding = 10;
@@ -377,6 +456,28 @@
     return c;
   }
 
+  /** Hex colour at reduced opacity — used to dim the bars that are not selected. */
+  function fade(hex) { return hex.length === 7 ? hex + "40" : hex; }
+  /** Per-bar colours: selected (or all, when nothing is selected) keep `color`, others fade. */
+  function hl(color, keys, selected) {
+    if (!selected || !selected.length) return color;
+    return keys.map(function (k) { return selected.indexOf(k) >= 0 ? color : fade(color); });
+  }
+  /** Make a chart clickable: onPick(index, nativeEvent, datasetIndex). Adds a pointer cursor over marks. */
+  function clickable(cfg, onPick) {
+    cfg.options = cfg.options || {};
+    cfg.options.onClick = function (evt, els) {
+      if (!els.length) return;
+      onPick(els[0].index, evt.native || evt, els[0].datasetIndex);
+    };
+    cfg.options.onHover = function (evt, els) {
+      var t = evt.native && evt.native.target; if (t) t.style.cursor = els.length ? "pointer" : "default";
+    };
+    // pick the bar under the pointer, not the whole index column
+    cfg.options.interaction = Object.assign({ mode: "nearest", intersect: true, axis: cfg.options.indexAxis === "y" ? "y" : "x" }, cfg.options.interaction || {});
+    return cfg;
+  }
+
   function moneyTooltip() {
     return { callbacks: { label: function (ctx) { return " " + ctx.dataset.label + ": " + fmt.money(ctx.parsed[ctx.chart.options.indexAxis === "y" ? "x" : "y"]) + " SAR"; } } };
   }
@@ -385,8 +486,8 @@
   }
 
   /* ----------------------------- modal / toast -------------------------- */
-  function modal(title, bodyHtml) {
-    var m = el('<div class="modal-back" role="dialog" aria-modal="true"><div class="modal"><header><h3>' + esc(title) +
+  function modal(title, bodyHtml, wide) {
+    var m = el('<div class="modal-back" role="dialog" aria-modal="true"><div class="modal' + (wide ? " wide" : "") + '"><header><h3>' + esc(title) +
       '</h3><button type="button" aria-label="Close">×</button></header><div class="body">' + bodyHtml + "</div></div></div>");
     function close() { m.remove(); document.removeEventListener("keydown", onKey); }
     function onKey(e) { if (e.key === "Escape") close(); }
@@ -394,6 +495,9 @@
     m.querySelector("header button").addEventListener("click", close);
     document.addEventListener("keydown", onKey);
     document.body.appendChild(m);
+    var body = m.querySelector(".body");
+    body.close = close;
+    return body;
   }
   /** Modal listing every non-empty field of a record, formatted by value shape. */
   function recordModal(title, row, groups) {
@@ -425,7 +529,7 @@
     badge: badge, statusClass: statusClass, tile: tile, info: info, panel: panel, meter: meter,
     table: table, multiSelect: multiSelect, select: select,
     chart: chart, destroyCharts: destroyCharts, barDs: barDs, lineDs: lineDs,
-    moneyAxis: moneyAxis, shortLabel: shortLabel, pctAxis: pctAxis, catAxis: catAxis, wrapLabel: wrapLabel,
+    moneyAxis: moneyAxis, shortLabel: shortLabel, fade: fade, hl: hl, clickable: clickable, pctAxis: pctAxis, catAxis: catAxis, wrapLabel: wrapLabel,
     moneyTooltip: moneyTooltip, pctTooltip: pctTooltip,
     modal: modal, recordModal: recordModal, toast: toast
   };

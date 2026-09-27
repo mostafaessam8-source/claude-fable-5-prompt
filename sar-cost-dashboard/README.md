@@ -28,9 +28,22 @@ opened straight from disk.
 | Abbreviations | Abbreviations | `ABBREVIATIONS`, `ABBREVIATIONS_2` |
 | Data Import | — | — |
 
-The slicers from Power BI (Project Name, ID, Fund Type, Project Phase, WBS, Issue Status/Rate …) are
-available as filters. Every table can be sorted, searched and exported to CSV. Clicking a row in the cost
-register, weekly summary or issue register opens the full record. **Print / PDF** prints the current page.
+## Interactivity
+
+* **Slicers**: the Power BI slicers (Project, ID, Fund Type, Phase, Month, WBS, Issue Status/Rate …) plus
+  extra ones (Performance, Contractor, Project Size, Issue Category, KPI Group, Managed by). The slicers
+  cascade, so each list only offers values that still have data and shows a row count for each. Active
+  filters appear as chips; click a chip's × to remove it.
+* **Cross-filtering**: clicking a bar, month or table row filters the whole page, like Power BI. The chart
+  you clicked keeps showing every bar and dims the ones that aren't selected. **Ctrl + click** selects
+  several values, and clicking a selected value again clears it.
+* **Drill-down**: every KPI tile opens its breakdown ("Details ›"). Project bars and rows open a project
+  quick view, which links to that project's progress, timeline, S-curve, cost analysis and issues. Months
+  on the S-curves open that month's spend by project. Gantt headings open the project timeline.
+* **Tables**: search, CSV export and **multi-column sort**. Click a header to sort by it, and
+  **Shift + click** other headers to add sort levels. You can also use **⇅ Sort** to build the levels,
+  like Excel's custom sort.
+* **Print / PDF** prints the current page.
 
 ## Updating the data
 
