@@ -95,8 +95,9 @@ enum ENUM_RM_LAUNCH
 enum ENUM_RM_OTHER_EA
   {
    RM_OTHER_KEEP              = 0, // Do not disable
-   RM_OTHER_CLOSE_SAME_SYMBOL = 1, // Close other EA charts on this symbol
-   RM_OTHER_CLOSE_ALL_EA      = 2  // Close all other EA charts
+   RM_OTHER_CLOSE_SAME_SYMBOL = 1, // Close other charts of this symbol
+   RM_OTHER_CLOSE_ALL_EA      = 2  // Close all other charts
+   // MQL4 cannot tell which chart hosts an EA, so charts are chosen by symbol only
   };
 
 enum ENUM_RM_SIGNAL
@@ -1134,7 +1135,7 @@ void RM_PlanReduce(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta
    double alloc[RM_MAX_LEGS];
    bool blocked[RM_MAX_LEGS];
    bool winnerUsed[RM_MAX_LEGS];
-   for(int i = 0; i < b.n; i++) { alloc[i] = 0.0; blocked[i] = false; winnerUsed[i] = false; }
+   for(int i = 0; i < RM_MAX_LEGS; i++) { alloc[i] = 0.0; blocked[i] = false; winnerUsed[i] = false; }
    double bufPerLot = MathMax(0.0, c.execBufferPoints) * mpp;
    double cum = 0.0;
    int guard = 0;
@@ -1215,6 +1216,8 @@ void RM_PlanReduce(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta
          // bring in whole profitable legs until the step is financed
          double extra = 0.0;
          int added[RM_MAX_LEGS];
+         for(int z = 0; z < RM_MAX_LEGS; z++)
+            added[z] = -1;
          int nAdded = 0;
          while(cum + extra + dL < -1e-9)
            {
@@ -3928,6 +3931,8 @@ void RM_TryAverage(int dir)
 void RM_TryNewBasket()
   {
    bool can[2];
+   can[0] = false;
+   can[1] = false;
    for(int d = 0; d < 2; d++)
      {
       int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
@@ -4182,15 +4187,16 @@ void RM_PreviewChartClosure(bool execute)
       long nextId = ChartNext(id);
       if(id != g_chartId)
         {
-         string ea = ChartGetString(id, CHART_EXPERT_NAME);
+         // MQL4 exposes no "expert name" chart property: selection is by symbol only
          bool sameSym = (ChartSymbol(id) == g_sym);
-         if(ea != "" && (InpOtherEAs == RM_OTHER_CLOSE_ALL_EA || sameSym))
+         if(InpOtherEAs == RM_OTHER_CLOSE_ALL_EA || sameSym)
            {
-            g_chartPreview += ChartSymbol(id) + ":" + ea + " ";
+            string desc = ChartSymbol(id) + "/" + IntegerToString(ChartPeriod(id));
+            g_chartPreview += desc + " ";
             n++;
             if(execute)
               {
-               RM_Audit("CHART_CLOSED", 0, 0, 0, ChartSymbol(id) + " " + ea);
+               RM_Audit("CHART_CLOSED", 0, 0, 0, desc);
                ChartClose(id);
               }
            }

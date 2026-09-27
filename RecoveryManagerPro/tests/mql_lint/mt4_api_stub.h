@@ -41,7 +41,7 @@ MT4C(ERR_TRADE_CONTEXT_BUSY) MT4C(ERR_TRADE_DISABLED) MT4C(ERR_TRADE_TIMEOUT)
 MT4C(ALIGN_CENTER) MT4C(ANCHOR_LEFT_LOWER) MT4C(ANCHOR_LEFT_UPPER) MT4C(ANCHOR_RIGHT_UPPER) MT4C(BORDER_FLAT)
 MT4C(CHARTEVENT_CHART_CHANGE) MT4C(CHARTEVENT_OBJECT_CLICK) MT4C(CHARTEVENT_OBJECT_DRAG) MT4C(CHARTEVENT_OBJECT_ENDEDIT)
 MT4C(CHART_COLOR_BACKGROUND) MT4C(CHART_COLOR_CANDLE_BEAR) MT4C(CHART_COLOR_CANDLE_BULL) MT4C(CHART_COLOR_CHART_DOWN)
-MT4C(CHART_COLOR_CHART_UP) MT4C(CHART_COLOR_FOREGROUND) MT4C(CHART_COLOR_GRID) MT4C(CHART_EXPERT_NAME)
+MT4C(CHART_COLOR_CHART_UP) MT4C(CHART_COLOR_FOREGROUND) MT4C(CHART_COLOR_GRID)
 MT4C(CHART_HEIGHT_IN_PIXELS) MT4C(CHART_WIDTH_IN_PIXELS) MT4C(CORNER_LEFT_UPPER)
 MT4C(FILE_ANSI) MT4C(FILE_READ) MT4C(FILE_REWRITE) MT4C(FILE_SHARE_READ) MT4C(FILE_TXT) MT4C(FILE_WRITE)
 MT4C(INIT_FAILED) MT4C(INIT_PARAMETERS_INCORRECT) MT4C(INIT_SUCCEEDED) MT4C(INVALID_HANDLE)
@@ -108,7 +108,7 @@ datetime GlobalVariableSet(string n, double v);
 // ---- charts / objects
 long ChartID(); long ChartFirst(); long ChartNext(long id); bool ChartClose(long id); string ChartSymbol(long id);
 void ChartRedraw(long id = 0); long ChartGetInteger(long id, int prop, int sub = 0);
-string ChartGetString(long id, int prop); bool ChartSetInteger(long id, int prop, long v);
+int ChartPeriod(long id); bool ChartSetInteger(long id, int prop, long v);
 bool ChartTimePriceToXY(long id, int sub, datetime t, double p, int &x, int &y);
 bool ChartXYToTimePrice(long id, int x, int y, int &sub, datetime &t, double &p);
 bool ObjectCreate(long id, string name, int type, int sub, datetime t1, double p1);

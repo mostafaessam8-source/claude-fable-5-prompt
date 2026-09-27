@@ -408,7 +408,7 @@ void RM_PlanReduce(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta
    double alloc[RM_MAX_LEGS];
    bool blocked[RM_MAX_LEGS];
    bool winnerUsed[RM_MAX_LEGS];
-   for(int i = 0; i < b.n; i++) { alloc[i] = 0.0; blocked[i] = false; winnerUsed[i] = false; }
+   for(int i = 0; i < RM_MAX_LEGS; i++) { alloc[i] = 0.0; blocked[i] = false; winnerUsed[i] = false; }
    double bufPerLot = MathMax(0.0, c.execBufferPoints) * mpp;
    double cum = 0.0;
    int guard = 0;
@@ -489,6 +489,8 @@ void RM_PlanReduce(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta
          // bring in whole profitable legs until the step is financed
          double extra = 0.0;
          int added[RM_MAX_LEGS];
+         for(int z = 0; z < RM_MAX_LEGS; z++)
+            added[z] = -1;
          int nAdded = 0;
          while(cum + extra + dL < -1e-9)
            {

@@ -61,7 +61,7 @@ const int CORNER_LEFT_UPPER = 0, ANCHOR_LEFT_UPPER = 0, ANCHOR_LEFT_LOWER = 2, A
 const int CHARTEVENT_OBJECT_CLICK = 1, CHARTEVENT_OBJECT_DRAG = 2, CHARTEVENT_OBJECT_ENDEDIT = 3, CHARTEVENT_CHART_CHANGE = 9;
 const int CHART_COLOR_BACKGROUND = 21, CHART_COLOR_FOREGROUND = 22, CHART_COLOR_GRID = 23, CHART_COLOR_CHART_UP = 25,
           CHART_COLOR_CHART_DOWN = 26, CHART_COLOR_CANDLE_BULL = 28, CHART_COLOR_CANDLE_BEAR = 29,
-          CHART_WIDTH_IN_PIXELS = 105, CHART_HEIGHT_IN_PIXELS = 106, CHART_EXPERT_NAME = 200;
+          CHART_WIDTH_IN_PIXELS = 105, CHART_HEIGHT_IN_PIXELS = 106;
 const int REASON_REMOVE = 1, REASON_RECOMPILE = 2, REASON_CHARTCHANGE = 3, REASON_CHARTCLOSE = 4, REASON_PARAMETERS = 5,
           REASON_ACCOUNT = 6, REASON_CLOSE = 9, REASON_INITFAILED = 8;
 const int INIT_SUCCEEDED = 0, INIT_FAILED = 1, INIT_PARAMETERS_INCORRECT = 2, INVALID_HANDLE = -1;
@@ -382,7 +382,7 @@ inline bool ChartClose(long) { return true; }
 inline string ChartSymbol(long) { return S.sym; }
 inline void ChartRedraw(long = 0) {}
 inline long ChartGetInteger(long, int prop, int = 0) { return prop == CHART_WIDTH_IN_PIXELS ? 1400 : (prop == CHART_HEIGHT_IN_PIXELS ? 800 : 0); }
-inline string ChartGetString(long, int) { return ""; }
+inline int ChartPeriod(long) { return 60; }
 inline bool ChartSetInteger(long, int, long) { return true; }
 inline bool ChartTimePriceToXY(long, int, datetime, double, int &x, int &y) { x = 500; y = 300; return true; }
 inline bool ChartXYToTimePrice(long, int, int, int &sub, datetime &t, double &p) { sub = 0; t = S.now; p = S.bid; return true; }

@@ -70,8 +70,9 @@ enum ENUM_RM_LAUNCH
 enum ENUM_RM_OTHER_EA
   {
    RM_OTHER_KEEP              = 0, // Do not disable
-   RM_OTHER_CLOSE_SAME_SYMBOL = 1, // Close other EA charts on this symbol
-   RM_OTHER_CLOSE_ALL_EA      = 2  // Close all other EA charts
+   RM_OTHER_CLOSE_SAME_SYMBOL = 1, // Close other charts of this symbol
+   RM_OTHER_CLOSE_ALL_EA      = 2  // Close all other charts
+   // MQL4 cannot tell which chart hosts an EA, so charts are chosen by symbol only
   };
 
 enum ENUM_RM_SIGNAL

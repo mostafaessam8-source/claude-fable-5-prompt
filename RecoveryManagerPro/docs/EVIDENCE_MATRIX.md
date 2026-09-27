@@ -33,7 +33,7 @@ The test IDs are `Cxx` for the calculation-test case names in `tests/test_calc.c
 | 15 | Launch drawdown = max(0, −managed floating P/L); % uses balance; zero-balance guard | PROPOSED | — | `RM_Drawdown`, `RM_DrawdownPercent` | C "T04" |
 | 16 | Launch fires exactly once per session | PROPOSED | — | `g_launchDone` persisted at ARMED→PREPARING | C "state machine", S10 |
 | 17 | Disable other EAs: "Do not disable" | VIDEO | 00:13–00:15 | `RM_OTHER_KEEP` default | V05 |
-| 18 | Other-EA handling closes charts, previewed, needs separate enablement, excludes own chart | PROPOSED | — | `RM_PreviewChartClosure`, `InpAllowChartClosure` validation | V05 |
+| 18 | Other-EA handling closes charts (selected by symbol only, because MQL4 cannot see which chart hosts an EA), previewed, needs separate enablement, excludes own chart | PROPOSED | — | `RM_PreviewChartClosure`, `InpAllowChartClosure` validation | V05 |
 | 19 | Close profitable orders at launch: On | VIDEO | 00:13–00:15 | `InpCloseProfitable` | S17 |
 | 20 | …interpreted as profit-financed loser reduction with net ≥ 0 | PROPOSED | — | `RM_PlanReduce(matched=false, RM_PLAN_LAUNCH)` | C "Reduce/launch financing", S17 |
 | 21 | Delete pending orders at launch: On | VIDEO | 00:13–00:15 | `RM_DoPrepare` | S04 |

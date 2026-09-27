@@ -542,6 +542,8 @@ void RM_TryAverage(int dir)
 void RM_TryNewBasket()
   {
    bool can[2];
+   can[0] = false;
+   can[1] = false;
    for(int d = 0; d < 2; d++)
      {
       int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
@@ -796,15 +798,16 @@ void RM_PreviewChartClosure(bool execute)
       long nextId = ChartNext(id);
       if(id != g_chartId)
         {
-         string ea = ChartGetString(id, CHART_EXPERT_NAME);
+         // MQL4 exposes no "expert name" chart property: selection is by symbol only
          bool sameSym = (ChartSymbol(id) == g_sym);
-         if(ea != "" && (InpOtherEAs == RM_OTHER_CLOSE_ALL_EA || sameSym))
+         if(InpOtherEAs == RM_OTHER_CLOSE_ALL_EA || sameSym)
            {
-            g_chartPreview += ChartSymbol(id) + ":" + ea + " ";
+            string desc = ChartSymbol(id) + "/" + IntegerToString(ChartPeriod(id));
+            g_chartPreview += desc + " ";
             n++;
             if(execute)
               {
-               RM_Audit("CHART_CLOSED", 0, 0, 0, ChartSymbol(id) + " " + ea);
+               RM_Audit("CHART_CLOSED", 0, 0, 0, desc);
                ChartClose(id);
               }
            }

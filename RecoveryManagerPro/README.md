@@ -97,7 +97,7 @@ The three "portable" headers contain no MT4 API calls, so the same files also co
 |---|---|---|
 | IDLE | no main position ("No orders to recover") | an eligible order appears → ARMED |
 | ARMED | orders adopted, waiting for the launch condition | instant / drawdown threshold reached → PREPARING (**exactly once per session**, persisted) |
-| PREPARING | once-only launch actions: close other-EA charts (only if explicitly enabled), delete pending orders, remove SL/TP, close profitable orders to finance loser reduction | all flags done → LOCKING (locking on) or RECOVERING |
+| PREPARING | once-only launch actions: close other charts (only if explicitly enabled), delete pending orders, remove SL/TP, close profitable orders to finance loser reduction | all flags done → LOCKING (locking on) or RECOVERING |
 | LOCKING | hedge `NetMainLots = MainBuyLots − MainSellLots` (recovery excluded), one order per tick, re-reading broker truth each time | balanced, or only an un-hedgeable residual remains (shown as "NOT neutral") → RECOVERING |
 | RECOVERING | planner closes qualifying groups; grid opens recovery orders | basket empty → COMPLETE; main unequal + re-lock → LOCKING |
 | PAUSED | Stop Recovery: automated opening **and** closing stopped; manual controls still work | Resume → previous state; Close All / emergency close-all → CLOSING |
@@ -324,7 +324,7 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 **Notes on specific inputs**
 
 - `InpDeleteSLTP`: *launch only* is the documented interpretation of the reference switch. *Continuous* is an **enhancement** that keeps removing SL/TP from ORIGINAL orders while recovering. The EA offers no manual SL/TP editor, because per-ticket stops would break the lock.
-- `InpOtherEAs`: this closes whole **charts** that host an EA. It cannot switch off another EA's internal logic. It excludes this EA's own chart and needs the separate `InpAllowChartClosure=true`. A preview of affected charts is written to the log at start (`CHART_PREVIEW`). It is ignored in the tester.
+- `InpOtherEAs`: this closes whole **charts**. It cannot switch off another EA's internal logic, and MQL4 has no way to tell which chart hosts an EA, so charts are chosen **by symbol only**: *other charts of this symbol* or *all other charts*. It always excludes this EA's own chart and needs the separate `InpAllowChartClosure=true`. A preview of the affected charts (symbol/period) is written to the log at start (`CHART_PREVIEW`). It is ignored in the tester.
 - `InpFullCommission` (**PROPOSED** mapping): *true* assumes the exit side costs as much again as the booked commission. `InpExtraCommPerLot` adds an explicit per-lot exit cost for brokers that charge on close.
 - `InpTPBasis`: which lots convert the TP points into money. It defaults to the lots of the recovery orders being closed (**PROPOSED**).
 - Test seeds work only when `IsTesting()` is true, `InpEnableTestSeeds=true` and a scenario is selected. Seeds use the comment `TEST SEED` and magic `InpTestSeedMagic`. They are ignored, with a log line, outside the tester.

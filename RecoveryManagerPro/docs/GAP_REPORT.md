@@ -21,7 +21,7 @@ This report says which parts of the reference workflow Recovery Manager Pro repr
 | Grid index after an overlap | Not established. | RECOUNT (default) or CONTINUE. |
 | "Close profitable orders at launch" | The switch is visible, but its mechanics are not. | A profit-financed reduction of losing orders, executed only with a non-negative expected net. |
 | "Full commission calculation" | The switch is visible, but its meaning is not. | *true* assumes the exit side costs as much again as the booked commission. |
-| "Disable other EAs" | The mechanism is not established. | Closing other EA charts, off by default, previewed and requiring a second enablement. |
+| "Disable other EAs" | The mechanism is not established. | Closing other charts, selected by symbol only because MQL4 cannot identify EA charts. Off by default, previewed and requiring a second enablement. |
 | Candle filter (BullsBears) | Formula unknown. | "RM Candle Reversal", a documented two-bar reversal rule that is **not** BullsBears. |
 | Trend filter (AW Trend Predictor) | Formula unknown. | "RM Swing Trend", a documented N-bar midpoint + momentum rule that is **not** AW Trend Predictor. |
 | Delete SL/TP | Launch-only or continuous is not established. | Launch-only by default. Continuous is available as a labelled enhancement. |
