@@ -39,9 +39,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
    if(!isHedge)
      {
-      int sp = RM_SpreadPoints();
-      if(sp > InpMaxSpread)
-        { why = "spread " + IntegerToString(sp) + " > max " + IntegerToString(InpMaxSpread) + " points"; return true; }
+      if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
+         return true;
       if(RM_QuoteStale(why))
          return true;
       if(!RM_InSession())

@@ -18,6 +18,7 @@
 #include <sstream>
 #include <initializer_list>
 #include <algorithm>
+#include <cctype>
 
 typedef std::string string;
 typedef long long datetime;
@@ -46,7 +47,7 @@ const int OP_BUY = 0, OP_SELL = 1, OP_BUYLIMIT = 2, OP_SELLLIMIT = 3;
 const int SELECT_BY_POS = 0, SELECT_BY_TICKET = 1, MODE_TRADES = 0, MODE_HISTORY = 1;
 const int MODE_LOW = 1, MODE_HIGH = 2, MODE_TIME = 5, MODE_BID = 9, MODE_ASK = 10, MODE_POINT = 11, MODE_DIGITS = 12,
           MODE_TICKVALUE = 16, MODE_TICKSIZE = 17, MODE_TRADEALLOWED = 22, MODE_MINLOT = 23, MODE_LOTSTEP = 24,
-          MODE_MAXLOT = 25, MODE_FREEZELEVEL = 33;
+          MODE_MAXLOT = 25, MODE_FREEZELEVEL = 33, MODE_PROFITCALCMODE = 27;
 const int ERR_NO_RESULT = 1, ERR_COMMON_ERROR = 2, ERR_SERVER_BUSY = 4, ERR_NO_CONNECTION = 6, ERR_TRADE_TIMEOUT = 128,
           ERR_INVALID_PRICE = 129, ERR_INVALID_TRADE_VOLUME = 131, ERR_MARKET_CLOSED = 132, ERR_TRADE_DISABLED = 133,
           ERR_NOT_ENOUGH_MONEY = 134, ERR_PRICE_CHANGED = 135, ERR_OFF_QUOTES = 136, ERR_BROKER_BUSY = 137,
@@ -115,6 +116,8 @@ struct Sim
    int chartW = 1400, chartH = 800;
    int tradeMode = 4;                   // SYMBOL_TRADE_MODE_FULL
    int failDeletes = 0;                 // next N OrderDelete calls fail
+   string baseCcy = "EUR", profitCcy = "USD";
+   int calcMode = 0;                    // MODE_PROFITCALCMODE: 0 Forex, 1 CFD
    double tradeAllowedInfo = 1;         // MarketInfo(MODE_TRADEALLOWED); tester often reports 0   // broker that does not write "from #<ticket>"
   } S;
 
@@ -198,9 +201,12 @@ inline double MarketInfo(string sym, int t)
       case MODE_MAXLOT: return S.maxLot;
       case MODE_FREEZELEVEL: return 0;
       case MODE_TIME: return (double)S.now;
+      case MODE_PROFITCALCMODE: return S.calcMode;
      }
    return 0;
   }
+const int SYMBOL_CURRENCY_BASE = 101, SYMBOL_CURRENCY_PROFIT = 102;
+inline string SymbolInfoString(string, int p) { return p == SYMBOL_CURRENCY_BASE ? S.baseCcy : (p == SYMBOL_CURRENCY_PROFIT ? S.profitCcy : string("")); }
 const int SYMBOL_TRADE_MODE = 3, SYMBOL_TRADE_MODE_DISABLED = 0, SYMBOL_TRADE_MODE_CLOSEONLY = 3;
 inline long SymbolInfoInteger(string, int) { return S.tradeMode; }
 inline datetime iTime(string, int, int shift) { return SimBar(S.now) - (datetime)shift * 3600; }
@@ -380,6 +386,7 @@ inline string StringSubstr(string s, int start, int len = -1)
 inline double StringToDouble(string s) { return std::atof(s.c_str()); }
 inline long long StringToInteger(string s) { return std::atoll(s.c_str()); }
 inline string StringTrimLeft(string s) { size_t p = s.find_first_not_of(" \t\r\n"); return p == string::npos ? "" : s.substr(p); }
+inline bool StringToUpper(string &s) { for(auto &c : s) c = (char)std::toupper((unsigned char)c); return true; }
 inline string StringTrimRight(string s) { size_t p = s.find_last_not_of(" \t\r\n"); return p == string::npos ? "" : s.substr(0, p + 1); }
 inline double MathLog10(double v) { return std::log10(v); }
 

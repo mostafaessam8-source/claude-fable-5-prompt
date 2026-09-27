@@ -195,17 +195,19 @@ static void S05_ClosureFailureAndRestartMidTransaction()
    double realizedBefore = g_realizedSession;
    // stop just before the group qualifies (previews are computed from the same snapshot)
    bool ready = false;
-   InpPartialTPPoints = 100000;                            // hold closures while walking up
+   // hold closures while walking up: the ACTIVE cycle's stored TP distance is what counts
+   double storedTP = g_ctxRec.partialTPPrice;
+   EXPECT(g_ctxRec.active && std::fabs(storedTP - 30 * S.point) < 1e-12);
+   g_ctxRec.partialTPPrice = 100000 * S.point;
    for(int i = 0; i < 400 && !ready; i++)
      {
       Tick(S.bid + 0.00010, 120);
       g_cfg.partialTPPoints = 30;
       RM_UpdatePreviews(true);
       ready = g_curGroup.qualifies;
-      g_cfg.partialTPPoints = 100000;
      }
    EXPECT(ready);
-   g_cfg.partialTPPoints = 30;
+   g_ctxRec.partialTPPrice = storedTP;
    // first leg (most profitable: recovery) succeeds, all retries of leg 2 fail
    S.failCloseErr = ERR_REQUOTE;
    g_simFailAfterOk = 1; g_simFailCount = 3;              // RM_Close retries 3x per attempt
@@ -1035,6 +1037,223 @@ static void S36_ThreeMAOnlyNeverRecovers()
   }
 
 //====================================================================
+// Distance units: broker precision / symbol profiles
+//====================================================================
+static void SetGold(int digits)
+  {
+   S.sym = "XAUUSD"; S.baseCcy = "XAU"; S.profitCcy = "USD"; S.calcMode = 1;
+   S.digits = digits;
+   S.point = (digits == 3) ? 0.001 : 0.01;
+   S.tickSize = S.point;
+   S.tickValue = 100.0 * S.point;                           // 100 oz per lot
+   S.spreadPts = 0.30 / S.point;                            // 0.30 price spread
+   S.bid = 2650.0;
+  }
+static void UnitInputs()
+  {
+   VideoInputs();
+   InpConfigVersion = 2; InpDistanceUnitMode = RM_DU_STANDARDIZED;
+   InpGridStepPoints = 100; InpStepMultiplier = 1.0;
+   InpMaxSpread = 7500; InpMaxSlippage = 30; InpPartialTPPoints = 30;
+   InpCloseProfitable = false;
+  }
+// open the original, lock, and the first recovery BUY filled at exactly ask = 2650.000
+static int GoldFirstRecovery()
+  {
+   SimOpen(OP_BUY, 0.10, 12345, "manual");
+   S.bid = 2649.700 + 0.0;                                  // ask = 2650.000
+   Hold(1, 10);
+   Hold(5, 10);
+   for(auto &o : S.open) if(o.magic == InpRecoveryMagic) return o.ticket;
+   return -1;
+  }
+
+static void S37_GoldGridBothPrecisions()
+  {
+   for(int dg = 3; dg >= 2; dg--)
+     {
+      SetGold(dg);
+      UnitInputs();
+      S.fileDir = "/tmp/rmp_sim_files_gold" + std::to_string(dg); Clean(); mkdir(S.fileDir.c_str(), 0777);
+      S.open.clear(); S.hist.clear(); S.log.clear();
+      EXPECT(Init());
+      EXPECT(g_dist.valid && g_dist.profile == RM_PROF_XAUUSD && std::fabs(g_dist.unitPrice - 0.01) < 1e-12);
+      int r = GoldFirstRecovery();
+      EXPECT(r > 0);
+      EXPECT(std::fabs(SimFindOpen(r)->openPrice - 2650.000) < 1e-9);
+      EXPECT(std::fabs(g_nextLevel[RM_BUY] - 2649.000) < 1e-9);     // not 2649.900
+      EXPECT(std::fabs(g_recEffSpacing[RM_BUY] - 1.000) < 1e-9);
+      EXPECT(std::fabs(RM_PriceToBrokerPoints(g_recEffSpacing[RM_BUY], S.point) - (dg == 3 ? 1000 : 100)) < 1e-6);
+      int cnt = CountMagic(InpRecoveryMagic);
+      S.now = SimBar(S.now) + 3600 + 5;
+      Tick(2649.001 - 0.30, 1);                                    // ask 2649.001: just before the level
+      EXPECT(CountMagic(InpRecoveryMagic) == cnt);
+      Tick(2649.000 - 0.30, 1);                                    // ask 2649.000: at the level
+      EXPECT(CountMagic(InpRecoveryMagic) == cnt + 1);
+      // beyond (a gap) in the same bar: one order per bar, no catch-up burst
+      Tick(2640.000, 1);
+      EXPECT(CountMagic(InpRecoveryMagic) == cnt + 1);
+      // spread and slippage converted from units at the API boundary
+      EXPECT(RM_Slippage() == (dg == 3 ? 300 : 30));                 // 30 units = 0.30 price
+      OnDeinit(REASON_REMOVE);
+     }
+  }
+
+static void S38_NormalAndRecoveryIdentical()
+  {
+   SetGold(3);
+   UnitInputs();
+   CombinedInputs();
+   InpConfigVersion = 2; InpDistanceUnitMode = RM_DU_STANDARDIZED;
+   InpGridStepPoints = 100; InpNormalAvgStepPoints = 100; InpNormalAveraging = true;
+   InpNormalLot = 0.10; InpNormalMaxSpread = 7500; InpNormalTPPoints = 5000;
+   InpRecoveryTriggerMode = RM_TRIG_MONEY; InpLaunchDrawdown = 5000;
+   EXPECT(Init());
+   Tick(2650.0);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   EXPECT(t > 0);
+   double fill = SimFindOpen(t)->openPrice;
+   EXPECT(std::fabs(RM_NormStepPrice() - RM_RecStepRequestedPrice(1)) < 1e-12);   // same service, same result
+   EXPECT(std::fabs(RM_NormStepPrice() - 1.000) < 1e-12);
+   EXPECT(std::fabs(g_normNextLevel[RM_BUY] - RM_AlignToTick(fill - 1.000, 0.001, RM_ALIGN_DOWN)) < 1e-9);
+   // normal averaging triggers at the same executable boundary
+   int n0 = CountMagic(InpNormalMagic);
+   S.now = SimBar(S.now) + 3600 + 5;
+   Tick(g_normNextLevel[RM_BUY] + 0.001 - 0.30, 1);
+   EXPECT(CountMagic(InpNormalMagic) == n0);
+   Tick(g_normNextLevel[RM_BUY] - 0.30, 1);
+   EXPECT(CountMagic(InpNormalMagic) == n0 + 1);
+   EXPECT(g_ctxNorm.active && std::fabs(g_ctxNorm.unitPrice - 0.01) < 1e-12);
+  }
+
+static void S39_UnknownSymbolNeedsExplicitUnits()
+  {
+   S.sym = "US30.cash"; S.baseCcy = "USD"; S.profitCcy = "USD"; S.calcMode = 1;
+   S.digits = 2; S.point = 0.01; S.tickSize = 0.01; S.tickValue = 0.01; S.spreadPts = 200; S.bid = 39000.0;
+   UnitInputs();
+   InpMinMarginLevel = 0;
+   EXPECT(Init());
+   EXPECT(!g_dist.valid && g_dist.profile == RM_PROF_NONE);
+   EXPECT(g_dist.why == RM_UNDEFINED_MSG);
+   EXPECT(LogCount("UNITS_UNDEFINED") == 1);
+   SimOpen(OP_BUY, 0.10, 12345, "manual");
+   Hold(8, 10);
+   EXPECT(CountMagic(InpLockMagic) == 0 && CountMagic(InpRecoveryMagic) == 0);   // nothing guessed
+   EXPECT(g_state == RM_ST_ARMED && g_status.find(RM_UNDEFINED_MSG) != string::npos);
+   RM_DashRefresh(true);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "U_CHIPT", OBJPROP_TEXT) == "UNDEFINED");
+   // an explicit per-symbol override resolves it
+   OnDeinit(REASON_PARAMETERS);
+   InpUnitOverrides = "US30.cash:1";
+   EXPECT(Init());
+   EXPECT(g_dist.valid && g_dist.profile == RM_PROF_OVERRIDE && std::fabs(g_dist.unitPrice - 1.0) < 1e-12);
+   Hold(6, 10);
+   EXPECT(CountMagic(InpLockMagic) == 1);
+   EXPECT(std::fabs(g_ctxRec.stepBasePrice - 100.0) < 1e-9);     // 100 units x 1.0
+   // explicit PRICE_DISTANCE also works, but applies only to the NEXT cycle
+   OnDeinit(REASON_PARAMETERS);
+   InpUnitOverrides = ""; InpDistanceUnitMode = RM_DU_PRICE;
+   EXPECT(Init());
+   EXPECT(g_dist.valid && std::fabs(g_dist.unitPrice - 1.0) < 1e-12);
+  }
+
+static void S40_RestartKeepsActiveBasketUnits()
+  {
+   S.testing = false;
+   SetGold(3);
+   UnitInputs();
+   EXPECT(Init());
+   int r = GoldFirstRecovery();
+   EXPECT(r > 0 && std::fabs(g_nextLevel[RM_BUY] - 2649.000) < 1e-9);
+   OnDeinit(REASON_PARAMETERS);
+   InpGridStepPoints = 500;                                     // input changed mid-cycle
+   InpDistanceUnitMode = RM_DU_PRICE;                           // mode changed mid-cycle
+   EXPECT(Init());
+   Tick(S.bid, 1);
+   EXPECT(std::fabs(g_nextLevel[RM_BUY] - 2649.000) < 1e-9);    // spacing unchanged
+   EXPECT(LogCount("active cycle keeps") >= 1);
+   OnDeinit(REASON_PARAMETERS);
+   InpApplyUnitsToActiveCycle = true;                           // explicit operator request
+   InpDistanceUnitMode = RM_DU_STANDARDIZED;
+   EXPECT(Init());
+   Tick(S.bid, 1);
+   EXPECT(std::fabs(g_nextLevel[RM_BUY] - 2645.000) < 1e-9);    // 500 x 0.01
+   EXPECT(LogCount("re-applied current units to the ACTIVE cycle") == 1);
+   OnDeinit(REASON_REMOVE);
+   Clean();
+  }
+
+static void S41_NonStandardTickSize()
+  {
+   S.sym = "DE40"; S.baseCcy = "EUR"; S.profitCcy = "EUR"; S.calcMode = 1;
+   S.digits = 2; S.point = 0.01; S.tickSize = 0.05; S.tickValue = 0.05; S.spreadPts = 20; S.bid = 18000.00;
+   UnitInputs();
+   InpDistanceUnitMode = RM_DU_CUSTOM; InpCustomUnitPrice = 0.1; InpGridStepPoints = 12.3; // 1.23 price
+   InpMinMarginLevel = 0;
+   EXPECT(Init());
+   EXPECT(g_dist.valid && std::fabs(g_dist.tickPrice - 0.05) < 1e-12);
+   SimOpen(OP_BUY, 0.10, 12345, "manual");
+   S.bid = 17999.80;                                            // ask 18000.00
+   Hold(6, 10);
+   int r = -1;
+   for(auto &o : S.open) if(o.magic == InpRecoveryMagic) r = o.ticket;
+   EXPECT(r > 0);
+   EXPECT(std::fabs(g_recReqSpacing[RM_BUY] - 1.23) < 1e-9);
+   EXPECT(std::fabs(g_recEffSpacing[RM_BUY] - 1.25) < 1e-9);  // rounded UP to whole ticks
+   double lv = g_nextLevel[RM_BUY];
+   EXPECT(std::fabs(lv / 0.05 - std::round(lv / 0.05)) < 1e-6);   // executable target
+   EXPECT(SimFindOpen(r)->openPrice - lv >= 1.23 - 1e-9);          // never smaller than requested
+   EXPECT(std::fabs(lv - 17998.75) < 1e-9);
+  }
+
+static void S42_LegacyMigrationPreview()
+  {
+   SetGold(3);
+   UnitInputs();
+   InpConfigVersion = 0;                                        // an old .set without the new keys
+   InpGridStepPoints = 1000;                                    // meant as broker points = 1.000
+   InpWriteMigrationPreview = true;
+   EXPECT(Init());
+   EXPECT(g_dist.mode == RM_DU_BROKER_POINTS && std::fabs(g_dist.unitPrice - 0.001) < 1e-12);
+   EXPECT(LogCount("CONFIG_LEGACY") == 1);
+   EXPECT(LogCount("InpGridStepPoints=100.00") >= 1);          // preview keeps 1.000 price
+   std::ifstream f(SimPath("RecoveryManagerPro\\XAUUSD_units_v2_preview.set"));
+   std::stringstream ss; ss << f.rdbuf();
+   EXPECT(ss.str().find("InpConfigVersion=2") != string::npos);
+   EXPECT(ss.str().find("InpGridStepPoints=100.00") != string::npos);
+   int r = GoldFirstRecovery();
+   EXPECT(r > 0 && std::fabs(g_nextLevel[RM_BUY] - 2649.000) < 1e-9);   // old spacing preserved exactly
+   RM_DashRefresh(true);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "U_CHIPT", OBJPROP_TEXT) == "LEGACY");
+  }
+
+static void S43_SymbolVariantsResolve()
+  {
+   UnitInputs();
+   InpSymbolProfileMap = "GOLD:XAUUSD"; InpSymbolSuffix = "m";
+   S.sym = "GOLDm"; S.baseCcy = "USD"; S.profitCcy = "USD"; S.calcMode = 1;   // CFD metadata without XAU
+   S.digits = 2; S.point = 0.01; S.tickSize = 0.01; S.tickValue = 1.0; S.bid = 2650.0;
+   EXPECT(Init());
+   EXPECT(g_dist.profile == RM_PROF_XAUUSD && g_dist.source == RM_PSRC_MAP && std::fabs(g_dist.unitPrice - 0.01) < 1e-12);
+   OnDeinit(REASON_PARAMETERS);
+   S.sym = "XAUUSD.a"; S.baseCcy = "XAU"; S.profitCcy = "USD"; S.digits = 3; S.point = 0.001; S.tickSize = 0.001;
+   EXPECT(Init());
+   EXPECT(g_dist.profile == RM_PROF_XAUUSD && g_dist.source == RM_PSRC_METADATA);
+   EXPECT(std::fabs(DistanceToPrice("XAUUSD.a", 250) - 2.50) < 1e-12);
+   OnDeinit(REASON_PARAMETERS);
+   S.sym = "GBPUSD.ecn"; S.baseCcy = "GBP"; S.profitCcy = "USD"; S.calcMode = 0; S.digits = 4; S.point = 0.0001; S.tickSize = 0.0001;
+   EXPECT(Init());
+   EXPECT(g_dist.profile == RM_PROF_FX && std::fabs(DistanceToPrice("GBPUSD.ecn", 100) - 0.0010) < 1e-12);
+   EXPECT(std::fabs(PriceDistanceToBrokerPoints("GBPUSD.ecn", 0.0010) - 10.0) < 1e-9);
+   OnDeinit(REASON_PARAMETERS);
+   S.sym = "USDJPY"; S.baseCcy = "USD"; S.profitCcy = "JPY"; S.digits = 2; S.point = 0.01; S.tickSize = 0.01; S.bid = 150.0;
+   EXPECT(Init());
+   EXPECT(g_dist.profile == RM_PROF_FXJPY && std::fabs(DistanceToPrice("USDJPY", 100) - 0.10) < 1e-12);
+   EXPECT(std::fabs(AlignPriceToTick("USDJPY", 150.123, RM_ALIGN_DOWN) - 150.12) < 1e-9);
+  }
+
+//====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
 static Scenario g_scen[] = {
@@ -1075,6 +1294,13 @@ static Scenario g_scen[] = {
    {"S34 combined: account-scope DD without basket blocks entries only", S34_AccountScopeNoBasket},
    {"S35 combined: Start Recovery confirm, Normal button cannot bypass latch", S35_OperatorStartAndNormalButtonNoBypass},
    {"S36 THREE_MA_ONLY: recovery never trades", S36_ThreeMAOnlyNeverRecovers},
+   {"S37 units: gold 3- and 2-digit grid 100 -> 1.00, boundaries, slippage", S37_GoldGridBothPrecisions},
+   {"S38 units: normal and recovery modules convert identically", S38_NormalAndRecoveryIdentical},
+   {"S39 units: unknown symbol blocks entries until explicit units", S39_UnknownSymbolNeedsExplicitUnits},
+   {"S40 units: restart/input change keep the active basket's units", S40_RestartKeepsActiveBasketUnits},
+   {"S41 units: non-standard tick size gives executable targets", S41_NonStandardTickSize},
+   {"S42 units: legacy config keeps broker points + migration preview", S42_LegacyMigrationPreview},
+   {"S43 units: suffix / alias / metadata resolution in the EA", S43_SymbolVariantsResolve},
 };
 
 int main(int argc, char **argv)

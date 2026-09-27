@@ -1688,6 +1688,399 @@ int RM_NextState(const RM_StateInput &in)
   }
 
 
+//==== inlined: Include/RecoveryManagerPro/RM_Distance.mqh
+//+------------------------------------------------------------------+
+//| RM_Distance.mqh - portable distance-unit core (pure functions).   |
+//|                                                                   |
+//| Separates four representations that must never be mixed:         |
+//|   *Units    : what the user typed (in the selected distance mode) |
+//|   *Price    : a price difference (e.g. 1.00 on gold)              |
+//|   *BrokerPts: price / broker Point of the order symbol            |
+//|   money     : account currency (never produced here)              |
+//|                                                                   |
+//| STANDARDIZED_POINTS are THIS PROJECT's conventions, not universal |
+//| pip definitions and not a claim of equal monetary exposure:       |
+//|   non-JPY Forex : 0.00001  per unit                               |
+//|   JPY-quoted FX : 0.001    per unit                               |
+//|   XAUUSD (gold) : 0.01     per unit                               |
+//| Anything else needs PRICE_DISTANCE, CUSTOM_UNIT, a per-symbol     |
+//| override, or an explicit BROKER_POINTS choice - never a guess.    |
+//|                                                                   |
+//| Portable MQL4/C++ subset: string helpers used here exist in both  |
+//| (tests/mql4_shim_str.h provides them natively).                   |
+//+------------------------------------------------------------------+
+
+enum ENUM_RM_DIST_MODE
+  {
+   RM_DU_STANDARDIZED  = 0, // Standardized points (project convention per profile)
+   RM_DU_BROKER_POINTS = 1, // Broker points (legacy / compatibility)
+   RM_DU_PRICE         = 2, // Price distance (1 unit = 1.0 price)
+   RM_DU_CUSTOM        = 3  // Custom unit price
+  };
+
+// instrument profiles
+#define RM_PROF_NONE     0
+#define RM_PROF_FX       1   // non-JPY Forex
+#define RM_PROF_FXJPY    2   // JPY-quoted Forex
+#define RM_PROF_XAUUSD   3   // USD-quoted gold
+#define RM_PROF_OVERRIDE 4   // per-symbol unit override
+
+// where the profile came from
+#define RM_PSRC_NONE     0
+#define RM_PSRC_OVERRIDE 1
+#define RM_PSRC_MAP      2
+#define RM_PSRC_METADATA 3
+
+// alignment directions
+#define RM_ALIGN_DOWN   -1
+#define RM_ALIGN_NEAREST 0
+#define RM_ALIGN_UP      1
+
+double RM_ProfileUnitPrice(int prof)
+  {
+   if(prof == RM_PROF_FX)     return 0.00001;
+   if(prof == RM_PROF_FXJPY)  return 0.001;
+   if(prof == RM_PROF_XAUUSD) return 0.01;
+   return 0.0;
+  }
+
+string RM_ProfileName(int prof)
+  {
+   if(prof == RM_PROF_FX)       return "FX";
+   if(prof == RM_PROF_FXJPY)    return "FXJPY";
+   if(prof == RM_PROF_XAUUSD)   return "XAUUSD";
+   if(prof == RM_PROF_OVERRIDE) return "OVERRIDE";
+   return "UNDEFINED";
+  }
+
+string RM_Upper(string s)
+  {
+   string u = s;
+   StringToUpper(u);
+   return u;
+  }
+
+int RM_ProfileFromName(string name)
+  {
+   string u = RM_Upper(name);
+   if(u == "FX")     return RM_PROF_FX;
+   if(u == "FXJPY")  return RM_PROF_FXJPY;
+   if(u == "XAUUSD") return RM_PROF_XAUUSD;
+   return RM_PROF_NONE;
+  }
+
+bool RM_IsAlpha3(string s)
+  {
+   if(StringLen(s) != 3)
+      return false;
+   for(int i = 0; i < 3; i++)
+     {
+      int c = StringGetCharacter(s, i);
+      if(c < 'A' || c > 'Z')
+         return false;
+     }
+   return true;
+  }
+
+bool RM_IsMetalCcy(string c)
+  {
+   return c == "XAU" || c == "XAG" || c == "XPT" || c == "XPD";
+  }
+
+//+------------------------------------------------------------------+
+//| Classification from broker METADATA (currencies + calc mode),     |
+//| never from Digits or a loose substring of the symbol name.        |
+//| calcMode: MarketInfo(MODE_PROFITCALCMODE), 0 = Forex              |
+//+------------------------------------------------------------------+
+int RM_ProfileFromMetadata(string baseCcy, string profitCcy, int calcMode)
+  {
+   string b = RM_Upper(baseCcy), p = RM_Upper(profitCcy);
+   if(b == "XAU" && p == "USD")
+      return RM_PROF_XAUUSD;
+   if(calcMode == 0 && RM_IsAlpha3(b) && RM_IsAlpha3(p) && b != p && !RM_IsMetalCcy(b) && !RM_IsMetalCcy(p))
+      return (p == "JPY") ? RM_PROF_FXJPY : RM_PROF_FX;
+   return RM_PROF_NONE;
+  }
+
+//+------------------------------------------------------------------+
+//| Remove an explicitly configured prefix / suffix (case-insensitive)|
+//+------------------------------------------------------------------+
+string RM_StripAffixes(string sym, string prefix, string suffix)
+  {
+   string s = sym;
+   string us = RM_Upper(s);
+   int lp = StringLen(prefix), ls = StringLen(suffix);
+   if(lp > 0 && StringLen(s) > lp && StringFind(us, RM_Upper(prefix)) == 0)
+     {
+      s = StringSubstr(s, lp);
+      us = RM_Upper(s);
+     }
+   if(ls > 0 && StringLen(s) > ls && StringSubstr(us, StringLen(us) - ls) == RM_Upper(suffix))
+      s = StringSubstr(s, 0, StringLen(s) - ls);
+   return s;
+  }
+
+//+------------------------------------------------------------------+
+//| "KEY:VALUE;KEY2=VALUE2,..." exact, case-insensitive key lookup.   |
+//| Separators between entries: ';' or ','. Key/value: ':' or '='.    |
+//+------------------------------------------------------------------+
+bool RM_ListLookup(string list, string key, string &value)
+  {
+   string uk = RM_Upper(key);
+   int n = StringLen(list);
+   int start = 0;
+   while(start < n)
+     {
+      int end = start;
+      while(end < n)
+        {
+         int c = StringGetCharacter(list, end);
+         if(c == ';' || c == ',')
+            break;
+         end++;
+        }
+      string entry = StringSubstr(list, start, end - start);
+      int sep = -1;
+      for(int i = 0; i < StringLen(entry); i++)
+        {
+         int c2 = StringGetCharacter(entry, i);
+         if(c2 == ':' || c2 == '=')
+           { sep = i; break; }
+        }
+      if(sep > 0)
+        {
+         string k = StringSubstr(entry, 0, sep);
+         string v = StringSubstr(entry, sep + 1);
+         // trim spaces
+         while(StringLen(k) > 0 && StringGetCharacter(k, 0) == ' ') k = StringSubstr(k, 1);
+         while(StringLen(k) > 0 && StringGetCharacter(k, StringLen(k) - 1) == ' ') k = StringSubstr(k, 0, StringLen(k) - 1);
+         while(StringLen(v) > 0 && StringGetCharacter(v, 0) == ' ') v = StringSubstr(v, 1);
+         while(StringLen(v) > 0 && StringGetCharacter(v, StringLen(v) - 1) == ' ') v = StringSubstr(v, 0, StringLen(v) - 1);
+         if(RM_Upper(k) == uk)
+           {
+            value = v;
+            return true;
+           }
+        }
+      start = end + 1;
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Validate a list; numeric = values must be positive numbers,       |
+//| otherwise values must be profile names. err describes a problem.  |
+//+------------------------------------------------------------------+
+bool RM_ListValid(string list, bool numeric, string &err)
+  {
+   int n = StringLen(list);
+   int start = 0;
+   while(start < n)
+     {
+      int end = start;
+      while(end < n && StringGetCharacter(list, end) != ';' && StringGetCharacter(list, end) != ',')
+         end++;
+      string entry = StringSubstr(list, start, end - start);
+      bool blank = true;
+      for(int i = 0; i < StringLen(entry); i++)
+         if(StringGetCharacter(entry, i) != ' ')
+            blank = false;
+      if(!blank)
+        {
+         int sep = -1;
+         for(int j = 0; j < StringLen(entry); j++)
+           {
+            int c = StringGetCharacter(entry, j);
+            if(c == ':' || c == '=')
+              { sep = j; break; }
+           }
+         if(sep <= 0)
+           { err = "entry '" + entry + "' needs SYMBOL:VALUE"; return false; }
+         string v = "";
+         RM_ListLookup(entry, StringSubstr(entry, 0, sep), v);
+         if(numeric && StringToDouble(v) <= 0.0)
+           { err = "entry '" + entry + "' needs a positive unit price"; return false; }
+         if(!numeric && RM_ProfileFromName(v) == RM_PROF_NONE)
+           { err = "entry '" + entry + "': profile must be FX, FXJPY or XAUUSD"; return false; }
+        }
+      start = end + 1;
+     }
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| Resolve the instrument profile. Order: per-symbol override,       |
+//| explicit profile map (full name, then name without the configured |
+//| prefix/suffix), broker metadata. Nothing else.                    |
+//+------------------------------------------------------------------+
+int RM_ResolveProfile(string sym, string profileMap, string prefix, string suffix, string overrides,
+                      string baseCcy, string profitCcy, int calcMode, double &overrideUnit, int &source)
+  {
+   overrideUnit = 0.0;
+   source = RM_PSRC_NONE;
+   string core = RM_StripAffixes(sym, prefix, suffix);
+   string v = "";
+   if(RM_ListLookup(overrides, sym, v) || RM_ListLookup(overrides, core, v))
+     {
+      double u = StringToDouble(v);
+      if(u > 0.0)
+        {
+         overrideUnit = u;
+         source = RM_PSRC_OVERRIDE;
+         return RM_PROF_OVERRIDE;
+        }
+     }
+   if(RM_ListLookup(profileMap, sym, v) || RM_ListLookup(profileMap, core, v))
+     {
+      int p = RM_ProfileFromName(v);
+      if(p != RM_PROF_NONE)
+        {
+         source = RM_PSRC_MAP;
+         return p;
+        }
+     }
+   int m = RM_ProfileFromMetadata(baseCcy, profitCcy, calcMode);
+   if(m != RM_PROF_NONE)
+      source = RM_PSRC_METADATA;
+   return m;
+  }
+
+//+------------------------------------------------------------------+
+//| Price value of ONE configured distance unit. 0 = undefined.       |
+//| Per-symbol overrides apply in STANDARDIZED and CUSTOM modes;      |
+//| BROKER_POINTS and PRICE_DISTANCE are fixed by definition.         |
+//+------------------------------------------------------------------+
+double RM_ResolveUnitPrice(int mode, int prof, double overrideUnit, double brokerPoint, double customUnit)
+  {
+   if(mode == RM_DU_BROKER_POINTS)
+      return (brokerPoint > 0.0) ? brokerPoint : 0.0;
+   if(mode == RM_DU_PRICE)
+      return 1.0;
+   if(prof == RM_PROF_OVERRIDE && overrideUnit > 0.0)
+      return overrideUnit;
+   if(mode == RM_DU_CUSTOM)
+      return (customUnit > 0.0) ? customUnit : 0.0;
+   return RM_ProfileUnitPrice(prof);
+  }
+
+//+------------------------------------------------------------------+
+//| Metadata sanity: point > 0, tick > 0, tick an integer multiple of |
+//| the point (tick smaller than a point is inconsistent).            |
+//+------------------------------------------------------------------+
+bool RM_MetaValid(double brokerPoint, double tickPrice, string &why)
+  {
+   if(brokerPoint <= 0.0)
+     { why = "broker Point is missing or zero"; return false; }
+   if(tickPrice <= 0.0)
+     { why = "tick size is missing or zero"; return false; }
+   double k = tickPrice / brokerPoint;
+   if(k < 1.0 - 1e-6 || MathAbs(k - MathRound(k)) > 1e-6)
+     { why = "tick size is not a whole multiple of the Point"; return false; }
+   return true;
+  }
+
+double RM_DistUnitsToPrice(double units, double unitPrice)
+  {
+   return units * unitPrice;                      // unrounded: align once, at the end
+  }
+
+double RM_PriceToDistUnits(double priceDiff, double unitPrice)
+  {
+   return (unitPrice > 0.0) ? priceDiff / unitPrice : 0.0;
+  }
+
+double RM_PriceToBrokerPoints(double priceDiff, double brokerPoint)
+  {
+   return (brokerPoint > 0.0) ? priceDiff / brokerPoint : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Align a price to the executable tick grid (tick in PRICE units).  |
+//+------------------------------------------------------------------+
+double RM_AlignToTick(double price, double tickPrice, int direction)
+  {
+   if(tickPrice <= 0.0)
+      return price;
+   double k = price / tickPrice;
+   double steps;
+   if(direction > 0)
+      steps = MathCeil(k - 1e-7);
+   else if(direction < 0)
+      steps = MathFloor(k + 1e-7);
+   else
+      steps = MathRound(k);
+   return NormalizeDouble(steps * tickPrice, 10);
+  }
+
+//+------------------------------------------------------------------+
+//| Requested spacing rounded UP to a whole number of ticks, so the   |
+//| executable spacing is never smaller than requested.               |
+//+------------------------------------------------------------------+
+double RM_EffectiveSpacing(double requestedPrice, double tickPrice)
+  {
+   if(requestedPrice <= 0.0)
+      return 0.0;
+   return RM_AlignToTick(requestedPrice, tickPrice, RM_ALIGN_UP);
+  }
+
+//+------------------------------------------------------------------+
+//| Adverse grid target from the last confirmed fill:                 |
+//| BUY below (rounded down), SELL above (rounded up).                |
+//+------------------------------------------------------------------+
+double RM_GridTargetPrice(int dir, double anchorFill, double effSpacingPrice, double tickPrice)
+  {
+   if(dir == RM_BUY)
+      return RM_AlignToTick(anchorFill - effSpacingPrice, tickPrice, RM_ALIGN_DOWN);
+   return RM_AlignToTick(anchorFill + effSpacingPrice, tickPrice, RM_ALIGN_UP);
+  }
+
+//+------------------------------------------------------------------+
+//| Favourable TP target from an average: BUY above (up), SELL below. |
+//+------------------------------------------------------------------+
+double RM_TPTargetPrice(int dir, double avgPrice, double tpPrice, double tickPrice)
+  {
+   if(dir == RM_BUY)
+      return RM_AlignToTick(avgPrice + tpPrice, tickPrice, RM_ALIGN_UP);
+   return RM_AlignToTick(avgPrice - tpPrice, tickPrice, RM_ALIGN_DOWN);
+  }
+
+bool RM_TPTargetReached(int dir, double target, double bid, double ask)
+  {
+   if(target <= 0.0)
+      return false;
+   if(dir == RM_BUY)
+      return bid >= target - RM_EPS;
+   return ask <= target + RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| A MAXIMUM limit given in distance units -> broker points for an   |
+//| API that needs them (slippage). Rounded DOWN: never looser.       |
+//+------------------------------------------------------------------+
+int RM_MaxLimitBrokerPoints(double limitPrice, double brokerPoint)
+  {
+   if(brokerPoint <= 0.0 || limitPrice <= 0.0)
+      return 0;
+   return (int)MathFloor(limitPrice / brokerPoint + 1e-7);
+  }
+
+bool RM_SpreadTooWide(double bid, double ask, double limitPrice)
+  {
+   return (ask - bid) > limitPrice + 1e-12;
+  }
+
+//+------------------------------------------------------------------+
+//| Settings migration keeping the ORIGINAL price distance:           |
+//| OldPrice = OldInput * OldBrokerPoint ; NewInput = OldPrice / Unit |
+//+------------------------------------------------------------------+
+double RM_MigrateDistance(double oldInput, double oldBrokerPoint, double newUnitPrice)
+  {
+   if(newUnitPrice <= 0.0)
+      return 0.0;
+   return oldInput * oldBrokerPoint / newUnitPrice;
+  }
+
+
 
 //====================================================================
 // INPUTS  (units in brackets; ranges validated in RM_Config.mqh)
@@ -1712,7 +2105,7 @@ input bool               InpDeletePending      = true;                 // Delete
 
 input string             S_Partial             = "===== 3. Partial closing =====";
 input double             InpPartialLots        = 0.01;                 // Partial-close volume per main side [lots]
-input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [points, NOT pips/money]
+input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [distance units, section 13]
 input ENUM_RM_TP_BASIS   InpTPBasis            = RM_TPB_RECOVERY_LOTS; // TP points-to-money lot basis (PROPOSED)
 input int                InpOverlapThreshold   = 2;                    // Overlap threshold [recovery orders, 0 = off]
 input ENUM_RM_OVERLAP_CMP InpOverlapCompare    = RM_OVL_GE;            // Overlap comparison (UNRESOLVED in reference)
@@ -1725,12 +2118,12 @@ input ENUM_RM_SIGNAL     InpSignalMode         = RM_SIG_SIMPLE_GRID;   // Recove
 input ENUM_RM_DIRS       InpRecoveryDirs       = RM_DIRS_BOTH;         // Allowed recovery directions
 input double             InpFirstLot           = 0.01;                 // First recovery order volume [lots]
 input double             InpLotMultiplier      = 1.2;                  // Volume multiplier [x, >= 1]
-input double             InpGridStepPoints     = 300;                  // Grid step [points]
+input double             InpGridStepPoints     = 300;                  // Recovery grid step [distance units, section 13]
 input double             InpStepMultiplier     = 1.0;                  // Step multiplier [x]
 input bool               InpOnePerBar          = true;                 // One recovery order per bar
 input bool               InpMultidirectional   = false;                // Multidirectional recovery
-input int                InpMaxSlippage        = 30;                   // Maximum slippage [points]
-input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [points]
+input int                InpMaxSlippage        = 30;                   // Maximum slippage [distance units, section 13]
+input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [distance units]
 input double             InpMaxRecoveryLot     = 1.0;                  // Maximum recovery order volume [lots]
 input int                InpMaxRecoveryCount   = 12;                   // Maximum recovery orders (both directions)
 input int                InpRecoveryMagic      = 9751421;              // Recovery magic number
@@ -1744,7 +2137,7 @@ input bool               InpRelockOnImbalance  = true;                 // Re-loc
 input string             S_Costs               = "===== 5. Costs =====";
 input bool               InpFullCommission     = false;                // Full commission calc (exit = booked again)
 input double             InpExtraCommPerLot    = 0.0;                  // Extra unbooked exit commission [money/lot]
-input double             InpExecBufferPoints   = 0.0;                  // Execution buffer [points per closed lot]
+input double             InpExecBufferPoints   = 0.0;                  // Execution buffer [distance units per closed lot]
 
 input string             S_Notify              = "===== 6. Notifications =====";
 input ENUM_RM_NOTIFY     InpNotify             = RM_NOTIFY_OFF;        // Launch / end notifications
@@ -1826,16 +2219,27 @@ input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initia
 input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
 input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
 input bool               InpNormalAveraging    = false;                // Normal averaging enabled
-input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [points]
+input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [distance units]
 input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
 input int                InpNormalMaxPerDir    = 5;                    // Maximum normal orders per direction
 input double             InpNormalMaxLots      = 1.0;                  // Maximum total normal exposure [lots, 0 = off]
-input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [points, 0 = off]
+input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [distance units, 0 = off]
 input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
 input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
-input double             InpNormalOverlapTPPoints = 50;                // Overlap target [points x lots of the two orders]
-input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [points]
-input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [points]
+input double             InpNormalOverlapTPPoints = 50;                // Overlap target [distance units x lots of the two orders]
+input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [distance units]
+input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [distance units]
+
+input string             S_Units               = "===== 13. Distance units (price-distance normalisation) =====";
+input int                InpConfigVersion      = 0;                    // Config version: 0/1 legacy = broker points, 2 = unit mode below
+input ENUM_RM_DIST_MODE  InpDistanceUnitMode   = RM_DU_STANDARDIZED;   // Distance unit mode (used from config version 2)
+input double             InpCustomUnitPrice    = 0.0;                  // CUSTOM_UNIT: price value of one unit
+input string             InpSymbolProfileMap   = "GOLD:XAUUSD";        // Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD)
+input string             InpSymbolPrefix       = "";                   // Broker symbol prefix stripped for map lookup
+input string             InpSymbolSuffix       = "";                   // Broker symbol suffix stripped for map lookup
+input string             InpUnitOverrides      = "";                   // Per-symbol unit price SYMBOL:PRICE (e.g. XAGUSD:0.001)
+input bool               InpApplyUnitsToActiveCycle = false;           // Operator: re-apply current units to an ACTIVE basket
+input bool               InpWriteMigrationPreview = true;              // Legacy config: write a migration preview .set
 
 //====================================================================
 // MODULES
@@ -1969,6 +2373,45 @@ long     g_normLastAvgBar[2];           // per direction: signal candle of the l
 double   g_normalRealized = 0.0;        // realised net of normal-strategy closures (session)
 string   g_lastReason = "";             // last handover / block reason
 int      g_journalActor = RM_ACTOR_NONE; // actor that owns the open journal
+
+//--- distance-unit service state (see RM_DistanceSvc.mqh)
+struct RM_DistInfo
+  {
+   string            symbol;
+   int               profile;
+   int               source;
+   int               mode;
+   double            unitPrice;       // price value of ONE configured unit (0 = undefined)
+   double            brokerPoint;     // price value of one broker point
+   double            tickPrice;       // executable tick size in PRICE units
+   int               digits;
+   bool              metaValid;       // point/tick usable for orders
+   bool              valid;           // metaValid AND unit defined
+   string            why;
+  };
+
+struct RM_DistCtx
+  {
+   bool              active;
+   int               mode;
+   int               profile;
+   double            unitPrice;
+   double            stepBasePrice;   // recovery: base grid step / normal: averaging step (price)
+   double            stepMult;        // recovery only
+   double            tpPrice;         // normal virtual TP (price)
+   double            overlapPrice;    // normal overlap target distance (price)
+   double            partialTPPrice;  // recovery partial-close TP distance (price)
+   double            bufferPrice;     // recovery execution buffer (price per closed lot)
+   long              since;
+  };
+
+RM_DistInfo g_dist;
+RM_DistCtx  g_ctxRec;                 // unit context of the active recovery cycle
+RM_DistCtx  g_ctxNorm;                // unit context of the open normal basket
+double      g_recReqSpacing[2];       // last requested recovery spacing (price) per direction
+double      g_recEffSpacing[2];       // last effective (tick-rounded) spacing
+double      g_normNextLevel[2];       // next normal averaging level per direction
+string      g_migrationText = "";
 
 
 //==== inlined: Include/RecoveryManagerPro/RM_Log.mqh
@@ -2269,6 +2712,19 @@ bool RM_ValidateInputs(string &err)
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
+   // ---- distance units
+   if(InpConfigVersion < 0 || InpConfigVersion > 2)
+     { err = "InpConfigVersion must be 0/1 (legacy broker points) or 2 (distance unit mode)"; return false; }
+   if(InpConfigVersion >= 2 && InpDistanceUnitMode == RM_DU_CUSTOM && InpCustomUnitPrice <= 0.0)
+     { err = "CUSTOM_UNIT needs InpCustomUnitPrice > 0 (price value of one unit)"; return false; }
+   if(InpCustomUnitPrice < 0.0)
+     { err = "InpCustomUnitPrice must be >= 0"; return false; }
+   string lerr = "";
+   if(!RM_ListValid(InpSymbolProfileMap, false, lerr))
+     { err = "InpSymbolProfileMap: " + lerr; return false; }
+   if(!RM_ListValid(InpUnitOverrides, true, lerr))
+     { err = "InpUnitOverrides: " + lerr; return false; }
+
    // ---- Three-MA normal strategy and combined operation
    if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
      {
@@ -2365,6 +2821,7 @@ void RM_RefreshMeta()
    if(g_meta.lotStep <= 0.0)
       g_meta.lotStep = 0.01;
    g_mpp = RM_MoneyPerPointPerLot(g_meta.tickValue, g_meta.tickSize, g_meta.point);
+   RM_DistRefresh();                          // distance-unit service (validated metadata, no fallbacks)
   }
 
 //+------------------------------------------------------------------+
@@ -2389,9 +2846,12 @@ int RM_SpreadPoints()
    return (int)MathRound((RM_Ask() - RM_Bid()) / g_meta.point);
   }
 
+//+------------------------------------------------------------------+
+//| Executable price: nearest tick (price units), then digits         |
+//+------------------------------------------------------------------+
 double RM_NormPrice(double p)
   {
-   return NormalizeDouble(p, g_digits);
+   return NormalizeDouble(RM_AlignToTick(p, g_dist.tickPrice, RM_ALIGN_NEAREST), g_digits);
   }
 
 //+------------------------------------------------------------------+
@@ -2501,9 +2961,15 @@ bool RM_Gate(int op, int magic, int ticket, string &err)
    return false;
   }
 
+//+------------------------------------------------------------------+
+//| Slippage in broker points, converted from distance units at the   |
+//| API boundary and floored (never looser than configured).          |
+//+------------------------------------------------------------------+
 int RM_Slippage()
   {
-   return (g_actor == RM_ACTOR_NORMAL) ? InpNormalSlippage : InpMaxSlippage;
+   if(g_actor == RM_ACTOR_NORMAL)
+      return RM_SlippageBrokerPts(InpNormalSlippage, RM_NormUnit());
+   return RM_SlippageBrokerPts(InpMaxSlippage, RM_RecUnit());
   }
 
 //+------------------------------------------------------------------+
@@ -2579,6 +3045,8 @@ int RM_Send(int type, double lots, int magic, string comment, string tag, string
   {
    if(!RM_Gate(RM_OPK_OPEN, magic, 0, err))
       return -1;
+   if(!g_dist.metaValid)
+     { err = g_dist.why; return -1; }                // never trade on invalid conversion values
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return -1; }
@@ -2801,6 +3269,365 @@ bool RM_DeletePending(int ticket, string &err)
   }
 
 
+//==== inlined: Include/RecoveryManagerPro/RM_DistanceSvc.mqh
+//+------------------------------------------------------------------+
+//| RM_DistanceSvc.mqh - symbol-distance service (MT4 side).          |
+//|                                                                   |
+//| Every user-facing distance goes through here:                     |
+//|   RequestedPriceDistance = InputDistance * ResolvedUnitPrice      |
+//| then is rounded UP to the executable tick (price units) once.     |
+//| Properties are read for the symbol passed in, never from the      |
+//| chart's Point/Digits when another symbol is processed.            |
+//|                                                                   |
+//| Active baskets keep the unit/spacing captured when they started   |
+//| (persisted): changing inputs, chart or profile applies to the     |
+//| NEXT cycle unless InpApplyUnitsToActiveCycle is set.              |
+//|                                                                   |
+//| This is PRICE-DISTANCE normalisation only. It does not equalise   |
+//| money risk, volatility exposure or profitability across symbols.  |
+//+------------------------------------------------------------------+
+
+#define RM_UNDEFINED_MSG "Distance unit is undefined for this symbol. Select a symbol profile or custom unit."
+
+// RM_DistInfo / RM_DistCtx and their globals live in RM_Globals.mqh (declared before use)
+
+int RM_EffectiveDistMode()
+  {
+   // legacy configurations (no/old version) keep their broker-point meaning
+   return (InpConfigVersion >= 2) ? (int)InpDistanceUnitMode : RM_DU_BROKER_POINTS;
+  }
+
+string RM_DistModeName(int m)
+  {
+   switch(m)
+     {
+      case RM_DU_STANDARDIZED:  return "Standardized points";
+      case RM_DU_BROKER_POINTS: return "Broker points";
+      case RM_DU_PRICE:         return "Price distance";
+      case RM_DU_CUSTOM:        return "Custom unit";
+     }
+   return "?";
+  }
+
+string RM_ProfileSourceName(int s)
+  {
+   if(s == RM_PSRC_OVERRIDE) return "override";
+   if(s == RM_PSRC_MAP)      return "map";
+   if(s == RM_PSRC_METADATA) return "metadata";
+   return "unresolved";
+  }
+
+//+------------------------------------------------------------------+
+//| Resolve everything for one symbol and one mode                    |
+//+------------------------------------------------------------------+
+void RM_ResolveDistanceFor(string symbol, int mode, RM_DistInfo &d)
+  {
+   d.symbol = symbol;
+   d.mode = mode;
+   d.brokerPoint = MarketInfo(symbol, MODE_POINT);
+   d.tickPrice = MarketInfo(symbol, MODE_TICKSIZE);      // MQL4 returns tick size in PRICE units
+   d.digits = (int)MarketInfo(symbol, MODE_DIGITS);
+   string baseCcy = SymbolInfoString(symbol, SYMBOL_CURRENCY_BASE);
+   string profitCcy = SymbolInfoString(symbol, SYMBOL_CURRENCY_PROFIT);
+   int calcMode = (int)MarketInfo(symbol, MODE_PROFITCALCMODE);
+   double ov = 0.0;
+   int src = RM_PSRC_NONE;
+   d.profile = RM_ResolveProfile(symbol, InpSymbolProfileMap, InpSymbolPrefix, InpSymbolSuffix, InpUnitOverrides,
+                                 baseCcy, profitCcy, calcMode, ov, src);
+   d.source = src;
+   d.unitPrice = RM_ResolveUnitPrice(mode, d.profile, ov, d.brokerPoint, InpCustomUnitPrice);
+   string w = "";
+   d.metaValid = RM_MetaValid(d.brokerPoint, d.tickPrice, w);
+   d.valid = d.metaValid && d.unitPrice > 0.0;
+   d.why = "";
+   if(!d.metaValid)
+      d.why = "invalid symbol metadata: " + w;
+   else if(d.unitPrice <= 0.0)
+      d.why = (mode == RM_DU_CUSTOM) ? "Custom unit price must be > 0. Select a symbol profile or custom unit." : RM_UNDEFINED_MSG;
+  }
+
+//+------------------------------------------------------------------+
+//| Requested service API                                              |
+//+------------------------------------------------------------------+
+double GetDistanceUnitPrice(string symbol, int mode)
+  {
+   RM_DistInfo d;
+   RM_ResolveDistanceFor(symbol, mode, d);
+   return d.valid ? d.unitPrice : 0.0;
+  }
+
+double DistanceToPrice(string symbol, double inputDistance)
+  {
+   return RM_DistUnitsToPrice(inputDistance, GetDistanceUnitPrice(symbol, RM_EffectiveDistMode()));
+  }
+
+double PriceToDistanceUnits(string symbol, double priceDifference)
+  {
+   return RM_PriceToDistUnits(priceDifference, GetDistanceUnitPrice(symbol, RM_EffectiveDistMode()));
+  }
+
+double PriceDistanceToBrokerPoints(string symbol, double priceDifference)
+  {
+   return RM_PriceToBrokerPoints(priceDifference, MarketInfo(symbol, MODE_POINT));
+  }
+
+double AlignPriceToTick(string symbol, double price, int roundingDirection)
+  {
+   return RM_AlignToTick(price, MarketInfo(symbol, MODE_TICKSIZE), roundingDirection);
+  }
+
+//+------------------------------------------------------------------+
+//| Current symbol (the EA trades its chart symbol only)              |
+//+------------------------------------------------------------------+
+void RM_DistRefresh()
+  {
+   RM_ResolveDistanceFor(g_sym, RM_EffectiveDistMode(), g_dist);
+  }
+
+double RM_TickPrice()
+  {
+   return g_dist.tickPrice;
+  }
+
+//+------------------------------------------------------------------+
+//| Unit contexts                                                     |
+//+------------------------------------------------------------------+
+void RM_CtxClear(RM_DistCtx &c)
+  {
+   c.active = false; c.mode = 0; c.profile = 0; c.unitPrice = 0; c.stepBasePrice = 0; c.stepMult = 1;
+   c.tpPrice = 0; c.overlapPrice = 0; c.partialTPPrice = 0; c.bufferPrice = 0; c.since = 0;
+  }
+
+string RM_CtxText(const RM_DistCtx &c)
+  {
+   return RM_DistModeName(c.mode) + ", profile " + RM_ProfileName(c.profile) + ", unit " + DoubleToString(c.unitPrice, 8);
+  }
+
+bool RM_CtxCaptureRec(string why)
+  {
+   if(!g_dist.valid)
+      return false;
+   g_ctxRec.active = true;
+   g_ctxRec.mode = g_dist.mode;
+   g_ctxRec.profile = g_dist.profile;
+   g_ctxRec.unitPrice = g_dist.unitPrice;
+   g_ctxRec.stepBasePrice = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   g_ctxRec.stepMult = InpStepMultiplier;
+   g_ctxRec.partialTPPrice = RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice);
+   g_ctxRec.bufferPrice = RM_DistUnitsToPrice(InpExecBufferPoints, g_dist.unitPrice);
+   g_ctxRec.tpPrice = 0; g_ctxRec.overlapPrice = 0;
+   g_ctxRec.since = (long)TimeCurrent();
+   RM_Audit("UNITS_RECOVERY", 0, 0, g_ctxRec.stepBasePrice, why + ": " + RM_CtxText(g_ctxRec) +
+            ", base step " + DoubleToString(g_ctxRec.stepBasePrice, g_dist.digits) + " price");
+   return true;
+  }
+
+bool RM_CtxCaptureNorm(string why)
+  {
+   if(!g_dist.valid)
+      return false;
+   g_ctxNorm.active = true;
+   g_ctxNorm.mode = g_dist.mode;
+   g_ctxNorm.profile = g_dist.profile;
+   g_ctxNorm.unitPrice = g_dist.unitPrice;
+   g_ctxNorm.stepBasePrice = RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice);
+   g_ctxNorm.stepMult = 1.0;
+   g_ctxNorm.tpPrice = RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice);
+   g_ctxNorm.overlapPrice = RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice);
+   g_ctxNorm.partialTPPrice = 0; g_ctxNorm.bufferPrice = 0;
+   g_ctxNorm.since = (long)TimeCurrent();
+   RM_Audit("UNITS_NORMAL", 0, 0, g_ctxNorm.stepBasePrice, why + ": " + RM_CtxText(g_ctxNorm));
+   return true;
+  }
+
+//--- recovery accessors (persisted context first, current config otherwise)
+bool RM_RecDistanceUsable()
+  {
+   return g_ctxRec.active || g_dist.valid;
+  }
+
+double RM_RecUnit()
+  {
+   if(g_ctxRec.active)
+      return g_ctxRec.unitPrice;
+   return g_dist.valid ? g_dist.unitPrice : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Requested recovery spacing (price) before grid index n >= 1.      |
+//| Multiplier applied to the UNROUNDED base; aligned once later.     |
+//+------------------------------------------------------------------+
+double RM_RecStepRequestedPrice(int n)
+  {
+   double base = 0.0, mult = InpStepMultiplier;
+   if(g_ctxRec.active)
+     {
+      base = g_ctxRec.stepBasePrice;
+      mult = g_ctxRec.stepMult;
+     }
+   else if(g_dist.valid)
+      base = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   return RM_GridStepPoints(base, mult, n);          // generic: base * mult^(n-1)
+  }
+
+//+------------------------------------------------------------------+
+//| Profit model inputs: distance -> PRICE -> the existing validated  |
+//| money-per-broker-point model (lot basis/commission unchanged).    |
+//| -1 = undefined.                                                   |
+//+------------------------------------------------------------------+
+double RM_RecPartialTPBrokerPts()
+  {
+   double price = g_ctxRec.active ? g_ctxRec.partialTPPrice
+                  : (g_dist.valid ? RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice) : -1.0);
+   if(price < 0.0 || g_meta.point <= 0.0)
+      return -1.0;
+   return RM_PriceToBrokerPoints(price, g_meta.point);
+  }
+
+double RM_RecBufferBrokerPts()
+  {
+   double price = g_ctxRec.active ? g_ctxRec.bufferPrice
+                  : (g_dist.valid ? RM_DistUnitsToPrice(InpExecBufferPoints, g_dist.unitPrice) : 0.0);
+   return (g_meta.point > 0.0) ? RM_PriceToBrokerPoints(price, g_meta.point) : 0.0;
+  }
+
+//--- normal accessors
+bool RM_NormDistanceUsable()
+  {
+   return g_ctxNorm.active || g_dist.valid;
+  }
+
+double RM_NormUnit()
+  {
+   if(g_ctxNorm.active)
+      return g_ctxNorm.unitPrice;
+   return g_dist.valid ? g_dist.unitPrice : 0.0;
+  }
+
+double RM_NormStepPrice()
+  {
+   if(g_ctxNorm.active)
+      return g_ctxNorm.stepBasePrice;
+   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice) : 0.0;
+  }
+
+double RM_NormTPPrice()
+  {
+   if(g_ctxNorm.active)
+      return g_ctxNorm.tpPrice;
+   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice) : 0.0;
+  }
+
+double RM_NormOverlapBrokerPts()
+  {
+   double price = g_ctxNorm.active ? g_ctxNorm.overlapPrice
+                  : (g_dist.valid ? RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice) : 0.0);
+   return (g_meta.point > 0.0) ? RM_PriceToBrokerPoints(price, g_meta.point) : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Spread limit in distance units -> price at the comparison.        |
+//| Undefined units block new exposure (reason returned).             |
+//+------------------------------------------------------------------+
+bool RM_SpreadExceeds(double limitUnits, double unitPrice, string &why)
+  {
+   if(unitPrice <= 0.0)
+     {
+      why = (g_dist.why != "") ? g_dist.why : RM_UNDEFINED_MSG;
+      return true;
+     }
+   double limitPrice = RM_DistUnitsToPrice(limitUnits, unitPrice);
+   double bid = RM_Bid(), ask = RM_Ask();
+   if(RM_SpreadTooWide(bid, ask, limitPrice))
+     {
+      why = "spread " + DoubleToString(ask - bid, g_dist.digits) + " (" +
+            DoubleToString(RM_PriceToDistUnits(ask - bid, unitPrice), 1) + " units) > max " +
+            DoubleToString(limitUnits, 1) + " units";
+      return true;
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Slippage for OrderSend/OrderClose (broker points), floored so it  |
+//| is never looser than the configured maximum.                      |
+//+------------------------------------------------------------------+
+int RM_SlippageBrokerPts(double limitUnits, double unitPrice)
+  {
+   if(unitPrice <= 0.0)
+      return 0;
+   return RM_MaxLimitBrokerPoints(RM_DistUnitsToPrice(limitUnits, unitPrice), g_dist.brokerPoint);
+  }
+
+//+------------------------------------------------------------------+
+//| Legacy configuration: notice + migration preview                  |
+//+------------------------------------------------------------------+
+string RM_MigLine(string name, double oldInput, double stdUnit)
+  {
+   double v = RM_MigrateDistance(oldInput, g_dist.brokerPoint, stdUnit);
+   return name + "=" + DoubleToString(v, 2);
+  }
+
+//--- integer MAXIMUM limits (spread, slippage): floored so the limit is never loosened
+string RM_MigLineMaxInt(string name, double oldInput, double stdUnit)
+  {
+   double v = RM_MigrateDistance(oldInput, g_dist.brokerPoint, stdUnit);
+   return name + "=" + IntegerToString((long)MathFloor(v + 1e-7));
+  }
+
+void RM_MigrationPreview()
+  {
+   g_migrationText = "";
+   if(InpConfigVersion >= 2)
+      return;
+   double stdUnit = GetDistanceUnitPrice(g_sym, RM_DU_STANDARDIZED);
+   RM_Audit("CONFIG_LEGACY", 0, 0, InpConfigVersion,
+            "legacy configuration: distance inputs are BROKER POINTS (Point " + DoubleToString(g_dist.brokerPoint, 8) +
+            "). Set InpConfigVersion=2 to use InpDistanceUnitMode.");
+   if(stdUnit <= 0.0)
+     {
+      g_migrationText = "Legacy units; no standardized profile - migrate with PRICE_DISTANCE or CUSTOM_UNIT";
+      RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "no standardized profile for " + g_sym + ": choose PRICE_DISTANCE, CUSTOM_UNIT or an override");
+      return;
+     }
+   string lines[10];
+   lines[0] = RM_MigLine("InpGridStepPoints", InpGridStepPoints, stdUnit);
+   lines[1] = RM_MigLine("InpPartialTPPoints", InpPartialTPPoints, stdUnit);
+   lines[2] = RM_MigLine("InpExecBufferPoints", InpExecBufferPoints, stdUnit);
+   lines[3] = RM_MigLineMaxInt("InpMaxSpread", InpMaxSpread, stdUnit);
+   lines[4] = RM_MigLineMaxInt("InpMaxSlippage", InpMaxSlippage, stdUnit);
+   lines[5] = RM_MigLine("InpNormalAvgStepPoints", InpNormalAvgStepPoints, stdUnit);
+   lines[6] = RM_MigLine("InpNormalTPPoints", InpNormalTPPoints, stdUnit);
+   lines[7] = RM_MigLine("InpNormalOverlapTPPoints", InpNormalOverlapTPPoints, stdUnit);
+   lines[8] = RM_MigLineMaxInt("InpNormalMaxSpread", InpNormalMaxSpread, stdUnit);
+   lines[9] = RM_MigLineMaxInt("InpNormalSlippage", InpNormalSlippage, stdUnit);
+   string summary = "";
+   for(int i = 0; i < 10; i++)
+     {
+      RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, lines[i] + " (same price distance, standardized unit " + DoubleToString(stdUnit, 5) + ")");
+      summary += lines[i] + " ";
+     }
+   g_migrationText = "Legacy units. Preview: grid " + lines[0];
+   if(InpWriteMigrationPreview)
+     {
+      string fn = "RecoveryManagerPro\\" + g_sym + "_units_v2_preview.set";
+      int h = FileOpen(fn, FILE_WRITE | FILE_TXT | FILE_ANSI);
+      if(h != INVALID_HANDLE)
+        {
+         FileWriteString(h, "; Recovery Manager Pro - distance-unit migration PREVIEW for " + g_sym + "\r\n");
+         FileWriteString(h, "; Preserves each original price distance: NewInput = OldInput * " +
+                         DoubleToString(g_dist.brokerPoint, 8) + " / " + DoubleToString(stdUnit, 8) + "\r\n");
+         FileWriteString(h, "; Review, then load it over your current settings to apply. Nothing is applied automatically.\r\n");
+         FileWriteString(h, "InpConfigVersion=2\r\nInpDistanceUnitMode=0\r\n");
+         for(int k = 0; k < 10; k++)
+            FileWriteString(h, lines[k] + "\r\n");
+         FileClose(h);
+         RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "written to MQL4/Files/" + fn);
+        }
+     }
+  }
+
+
 //==== inlined: Include/RecoveryManagerPro/RM_Persist.mqh
 //+------------------------------------------------------------------+
 //| RM_Persist.mqh - state file (MQL4/Files/RecoveryManagerPro/) and  |
@@ -2872,6 +3699,33 @@ void RM_ReleaseInstanceLock()
 
 string RM_B(bool b) { return b ? "1" : "0"; }
 
+string RM_CtxSerialize(const RM_DistCtx &c)
+  {
+   return RM_B(c.active) + "," + IntegerToString(c.mode) + "," + IntegerToString(c.profile) + "," +
+          DoubleToString(c.unitPrice, 10) + "," + DoubleToString(c.stepBasePrice, 10) + "," +
+          DoubleToString(c.stepMult, 8) + "," + DoubleToString(c.tpPrice, 10) + "," +
+          DoubleToString(c.overlapPrice, 10) + "," + DoubleToString(c.partialTPPrice, 10) + "," +
+          DoubleToString(c.bufferPrice, 10) + "," + IntegerToString(c.since);
+  }
+
+void RM_CtxDeserialize(string val, RM_DistCtx &c)
+  {
+   string f[];
+   if(StringSplit(val, StringGetCharacter(",", 0), f) < 11)
+      return;
+   c.active = (f[0] == "1");
+   c.mode = (int)StringToInteger(f[1]);
+   c.profile = (int)StringToInteger(f[2]);
+   c.unitPrice = StringToDouble(f[3]);
+   c.stepBasePrice = StringToDouble(f[4]);
+   c.stepMult = StringToDouble(f[5]);
+   c.tpPrice = StringToDouble(f[6]);
+   c.overlapPrice = StringToDouble(f[7]);
+   c.partialTPPrice = StringToDouble(f[8]);
+   c.bufferPrice = StringToDouble(f[9]);
+   c.since = StringToInteger(f[10]);
+  }
+
 //+------------------------------------------------------------------+
 void RM_SaveState()
   {
@@ -2934,6 +3788,9 @@ void RM_SaveState()
    FileWriteString(h, "NREAL=" + DoubleToString(g_normalRealized, 2) + "\r\n");
    FileWriteString(h, "JACT=" + IntegerToString(g_journalActor) + "\r\n");
    FileWriteString(h, "REASON=" + RM_CsvSafe(g_lastReason) + "\r\n");
+   // distance-unit contexts of active baskets (never reinterpreted mid-cycle)
+   FileWriteString(h, "CTXR=" + RM_CtxSerialize(g_ctxRec) + "\r\n");
+   FileWriteString(h, "CTXN=" + RM_CtxSerialize(g_ctxNorm) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -3029,6 +3886,8 @@ bool RM_LoadState()
       else if(key == "NREAL") g_normalRealized = StringToDouble(val);
       else if(key == "JACT") g_journalActor = (int)StringToInteger(val);
       else if(key == "REASON") g_lastReason = val;
+      else if(key == "CTXR") RM_CtxDeserialize(val, g_ctxRec);
+      else if(key == "CTXN") RM_CtxDeserialize(val, g_ctxNorm);
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];
@@ -3671,9 +4530,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
    if(!isHedge)
      {
-      int sp = RM_SpreadPoints();
-      if(sp > InpMaxSpread)
-        { why = "spread " + IntegerToString(sp) + " > max " + IntegerToString(InpMaxSpread) + " points"; return true; }
+      if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
+         return true;
       if(RM_QuoteStale(why))
          return true;
       if(!RM_InSession())
@@ -3991,6 +4849,8 @@ void RM_InitRuntime()
    g_engineCycleEnded = false; g_cycleOutcome = RM_OUT_NONE; g_cycleEmergency = false; g_cycleManual = false;
    g_normalEnabled = true; g_normalHalted = false; g_operatorResume = false; g_forceStart = false;
    g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
+   RM_CtxClear(g_ctxRec);
+   RM_CtxClear(g_ctxNorm);
   }
 
 void RM_ResetSession()
@@ -4005,6 +4865,7 @@ void RM_ResetSession()
    g_lockResidual = 0.0;
    g_emgLatched = false;
    g_peakDrawdown = 0.0;
+   RM_CtxClear(g_ctxRec);                     // next cycle uses the current units
   }
 
 int RM_MainCount()
@@ -4052,7 +4913,11 @@ void RM_EnterState(int ns)
    RM_Audit("STATE", 0, 0, g_managedNet, RM_StateName(old) + " -> " + RM_StateName(ns) +
             (ns == RM_ST_ERROR_HOLD ? " (" + g_errorText + ")" : ""));
    if(ns == RM_ST_PREPARING)
+     {
       g_forceStart = false;
+      if(!g_ctxRec.active)
+         RM_CtxCaptureRec("recovery cycle launched");   // the cycle keeps these units until COMPLETE
+     }
    if(ns == RM_ST_COMPLETE)
      {
       g_engineCycleEnded = true;             // the controller verifies and closes the cycle
@@ -4091,6 +4956,10 @@ void RM_Engine()
    int prevActor = g_actor;
    g_actor = RM_ACTOR_RECOVERY;             // every engine operation passes the gate as RECOVERY
    RM_RefreshMeta();
+   // point-based profit inputs: distance units -> PRICE -> existing money-per-broker-point model
+   double ptp = RM_RecPartialTPBrokerPts();
+   g_cfg.partialTPPoints = (ptp >= 0.0) ? ptp : 1e12;        // undefined units: no automatic group close
+   g_cfg.execBufferPoints = RM_RecBufferBrokerPts();
    datetime bar0 = iTime(g_sym, 0, 0);
    if(bar0 != g_lastBarSeen)
      {
@@ -4154,6 +5023,11 @@ void RM_Engine()
    else
       // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
       si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
+   if(si.launchTriggered && !g_launchDone && !g_dist.valid)
+     {
+      si.launchTriggered = false;             // a new cycle needs defined distance units
+      g_block = g_dist.why;
+     }
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
    si.lockDone = g_lockDone;
@@ -4187,6 +5061,8 @@ void RM_Engine()
             g_status = "Armed: drawdown " + RM_Money(g_drawdown) + " / launch at " + RM_Money(InpLaunchDrawdown);
          else
             g_status = "Armed: launching";
+         if(!g_dist.valid)
+            g_status = "Armed, launch blocked: " + g_dist.why;
          break;
       case RM_ST_PREPARING:  RM_DoPrepare();  break;
       case RM_ST_LOCKING:    RM_DoLock();     break;
@@ -4462,6 +5338,12 @@ void RM_GridEntries()
       g_status = "Main position closed - remaining recovery orders close at target";
       return;
      }
+   if(!RM_RecDistanceUsable())
+     {
+      g_block = g_dist.why;                  // no persisted context and no defined units
+      g_status = g_block;
+      return;
+     }
    double lv, lres; int ldir;
    if(InpLocking && RM_LockGap(lv, ldir, lres))
      {
@@ -4489,8 +5371,18 @@ void RM_TryAverage(int dir)
    if(last < 0)
       return;
    int idx = RM_NextGridIndex(dir);
-   double step = RM_GridStepPoints(InpGridStepPoints, InpStepMultiplier, idx);
-   double level = RM_GridNextLevel(dir, g_book.openPrice[last], step, g_meta.point);
+   // units -> requested price (multiplier on the unrounded base) -> tick-rounded spacing -> target
+   double reqPrice = RM_RecStepRequestedPrice(idx);
+   if(reqPrice <= 0.0)
+     {
+      g_nextLevel[dir] = 0;
+      g_block = RM_UNDEFINED_MSG;
+      return;
+     }
+   double effPrice = RM_EffectiveSpacing(reqPrice, RM_TickPrice());
+   double level = RM_GridTargetPrice(dir, g_book.openPrice[last], effPrice, RM_TickPrice());
+   g_recReqSpacing[dir] = reqPrice;
+   g_recEffSpacing[dir] = effPrice;
    g_nextLevel[dir] = level;
    if(!RM_GridTriggered(dir, RM_Bid(), RM_Ask(), level))
       return;
@@ -4858,13 +5750,13 @@ int    g_labelY[RM_MAX_LABELS];
 string g_labelName[RM_MAX_LABELS];
 int    g_labelN = 0;
 // panel rectangles published by the dashboard (x, y, w, h)
-int    g_panelRect[4][4];
+int    g_panelRect[5][4];
 color  g_savedColors[8];
 bool   g_colorsSaved = false;
 
 bool RM_PointInPanels(int x, int y)
   {
-   for(int i = 0; i < 4; i++)
+   for(int i = 0; i < 5; i++)
      {
       if(g_panelRect[i][2] <= 0)
          continue;
@@ -5311,7 +6203,7 @@ void RM_DashRelayout()
    g_lastChartW = cw;
    g_lastChartH = ch;
    ObjectsDeleteAll(0, RM_DPFX);
-   for(int i = 0; i < 4; i++)
+   for(int i = 0; i < 5; i++)
       for(int j = 0; j < 4; j++)
          g_panelRect[i][j] = 0;
    double sc = (g_panelSize == RM_PANEL_LARGE) ? 1.3 : 1.0;
@@ -5333,6 +6225,7 @@ void RM_DashRelayout()
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
       RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
+      RM_BuildUnits(cw);                       // panel E: distance units
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);
@@ -5635,8 +6528,10 @@ void RM_DashRefresh(bool force)
          bool link = IsTesting() || IsConnected();
          RM_Row4Set("M_A1", "", RM_Money(AccountBalance()), RM_Money(AccountEquity()), C_TEXT);
          RM_Row4Set("M_A2", "", RM_Money(AccountFreeMargin()), ml > 0 ? DoubleToString(ml, 0) + "%" : "-", C_TEXT);
-         int sp = RM_SpreadPoints();
-         RM_Set("M_A3_2", IntegerToString(sp) + " pt", sp > InpMaxSpread ? C_RED : C_TEXT);
+         int sp = RM_SpreadPoints();                    // broker points (display only)
+         double spUnits = RM_PriceToDistUnits(RM_Ask() - RM_Bid(), RM_RecUnit());
+         bool wide = RM_RecUnit() > 0.0 && RM_SpreadTooWide(RM_Bid(), RM_Ask(), RM_DistUnitsToPrice(InpMaxSpread, RM_RecUnit()));
+         RM_Set("M_A3_2", DoubleToString(spUnits, 1) + "u/" + IntegerToString(sp) + "p", wide ? C_RED : C_TEXT);
          RM_Set("M_A3_3", link ? "connected" : "DISCONNECTED", link ? C_GREEN : C_RED);
          RM_Row4Set("M_A4", "", RM_Money(g_realizedSession), RM_Money(g_realizedDay), RM_PLColor(g_realizedDay));
          double accFloat = AccountEquity() - AccountBalance();
@@ -5647,6 +6542,7 @@ void RM_DashRefresh(bool force)
       RM_RefreshGroup(cur);
       RM_RefreshManual();
       RM_RefreshCycle();
+      RM_RefreshUnits();
      }
    ChartRedraw();
   }
@@ -5691,7 +6587,7 @@ void RM_RefreshGroup(string cur)
    RM_Row4Set("G_T", "", RM_Lots(lots), RM_Money(g_curGroup.expectedNet), RM_PLColor(g_curGroup.expectedNet));
    RM_Set("G_KIND", (g_curGroup.isOverlap ? "OVERLAP first+last" : (g_curGroup.isFinal ? "FINAL slice" : "GROUP")), C_DIM);
    RM_Set("G_TARGET", "Target " + RM_Money(g_curGroup.target) + " " + cur + " (" + DoubleToString(InpPartialTPPoints, 0) +
-          " pt) " + (g_curGroup.qualifies ? "- READY" : "- waiting"), g_curGroup.qualifies ? C_GREEN : C_DIM);
+          " units) " + RM_Pick(g_curGroup.qualifies, "- READY", "- waiting"), g_curGroup.qualifies ? C_GREEN : C_DIM);
   }
 
 void RM_RefreshManual()
@@ -6091,6 +6987,14 @@ void RM_NormalScan()
       g_normalLots += g_ns[d2].lots;
      }
    g_normalLots = RM_Clean(g_normalLots);
+   for(int d3 = 0; d3 < 2; d3++)
+      g_normNextLevel[d3] = InpNormalAveraging ? RM_NormalAvgLevel(d3) : 0.0;
+   // an empty basket releases its unit context: the next basket uses the current units
+   if(g_normalCnt == 0 && g_ctxNorm.active && !RM_JournalOpen())
+     {
+      RM_CtxClear(g_ctxNorm);
+      RM_SaveState();
+     }
   }
 
 int RM_NormalPendingCount()
@@ -6167,9 +7071,8 @@ double RM_NormalLotFor(int n, double &raw)
 //+------------------------------------------------------------------+
 bool RM_NormalExposureBlocked(int dir, double lot, string &why)
   {
-   int sp = RM_SpreadPoints();
-   if(sp > InpNormalMaxSpread)
-     { why = "spread " + IntegerToString(sp) + " > normal max " + IntegerToString(InpNormalMaxSpread); return true; }
+   if(RM_SpreadExceeds(InpNormalMaxSpread, RM_NormUnit(), why))
+      return true;
    if(RM_QuoteStale(why))
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
@@ -6197,6 +7100,10 @@ bool RM_NormalOpen(int dir, int n, string what)
    // fresh prices and the drawdown trigger immediately before every entry/averaging
    if(RM_TriggerCheckNow())
       return false;
+   if(n == 0 && !g_dist.valid)
+     { g_normalBlock = what + " blocked: " + g_dist.why; return false; }       // new basket needs defined units
+   if(n > 0 && !RM_NormDistanceUsable())
+     { g_normalBlock = what + " blocked: " + RM_UNDEFINED_MSG; return false; }
    double raw = 0;
    double lot = RM_NormalLotFor(n, raw);
    if(lot <= 0.0)
@@ -6217,6 +7124,8 @@ bool RM_NormalOpen(int dir, int n, string what)
       return false;
      }
    RM_Audit(n == 0 ? "NORMAL_ENTRY" : "NORMAL_AVERAGE", t, lot, raw, RM_Side(dir) + " " + what);
+   if(!g_ctxNorm.active)
+      RM_CtxCaptureNorm("normal basket opened");      // basket keeps these units until it is empty
    RM_SaveState();
    RM_NormalScan();
    return true;
@@ -6232,7 +7141,9 @@ bool RM_NormalManage()
      {
       if(g_ns[d].cnt == 0)
          continue;
-      if(RM_BasketTPReached(d, g_ns[d].wavg, InpNormalTPPoints, g_meta.point, RM_Bid(), RM_Ask()))
+      double tpPrice = RM_NormTPPrice();
+      double tpTarget = (tpPrice > 0.0) ? RM_TPTargetPrice(d, g_ns[d].wavg, RM_EffectiveSpacing(tpPrice, RM_TickPrice()), RM_TickPrice()) : 0.0;
+      if(RM_TPTargetReached(d, tpTarget, RM_Bid(), RM_Ask()))
         {
          RM_IndexList L;
          L.n = 0;
@@ -6241,8 +7152,8 @@ bool RM_NormalManage()
                L.idx[L.n++] = i;
          RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_TP, L, -1.0, g_plan);
          RM_Audit("NORMAL_TP", 0, g_ns[d].lots, g_plan.expectedNet,
-                  RM_Side(d) + " basket reached " + DoubleToString(InpNormalTPPoints, 0) + " pt from average " +
-                  DoubleToString(g_ns[d].wavg, g_digits));
+                  RM_Side(d) + " basket reached TP " + DoubleToString(tpTarget, g_digits) + " (" +
+                  DoubleToString(tpPrice, g_digits) + " price from average " + DoubleToString(g_ns[d].wavg, g_digits) + ")");
          RM_StartPlan(g_plan);
          return true;
         }
@@ -6251,7 +7162,7 @@ bool RM_NormalManage()
          int f = g_ns[d].firstIdx, l = g_ns[d].lastIdx;
          if(f >= 0 && l >= 0 && f != l &&
             RM_NormalOverlapHit(RM_LegNet(g_nbook, f), RM_LegNet(g_nbook, l), g_nbook.lots[f], g_nbook.lots[l],
-                                InpNormalOverlapTPPoints, g_mpp))
+                                RM_NormOverlapBrokerPts(), g_mpp))
            {
             RM_IndexList L2;
             L2.n = 2; L2.idx[0] = f; L2.idx[1] = l;
@@ -6262,6 +7173,21 @@ bool RM_NormalManage()
         }
      }
    return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Next normal averaging level: same service and rounding as the     |
+//| recovery grid (last confirmed fill -/+ tick-rounded spacing).     |
+//+------------------------------------------------------------------+
+double RM_NormalAvgLevel(int d)
+  {
+   if(g_ns[d].cnt == 0 || g_ns[d].lastIdx < 0)
+      return 0.0;
+   double req = RM_NormStepPrice();
+   if(req <= 0.0)
+      return 0.0;
+   double eff = RM_EffectiveSpacing(req, RM_TickPrice());
+   return RM_GridTargetPrice(d, g_nbook.openPrice[g_ns[d].lastIdx], eff, RM_TickPrice());
   }
 
 //+------------------------------------------------------------------+
@@ -6279,10 +7205,8 @@ void RM_NormalEntries(bool newBar, int sig)
             continue;
          if(g_normLastAvgBar[d] == bar1)
             continue;                                   // one averaging order per signal candle
-         double lastPrice = g_nbook.openPrice[g_ns[d].lastIdx];
-         bool adverse = (d == RM_BUY) ? RM_Ask() <= lastPrice - InpNormalAvgStepPoints * g_meta.point
-                                      : RM_Bid() >= lastPrice + InpNormalAvgStepPoints * g_meta.point;
-         if(!adverse)
+         double level = RM_NormalAvgLevel(d);
+         if(level <= 0.0 || !RM_GridTriggered(d, RM_Bid(), RM_Ask(), level))
             continue;
          if(RM_NormalOpen(d, cnt, "averaging #" + IntegerToString(cnt)))
            {
@@ -6862,6 +7786,40 @@ bool RM_CmdCloseBasket(string &msg)
    return true;
   }
 
+//+------------------------------------------------------------------+
+//| Startup: keep or (explicitly) re-apply the unit context of active |
+//| baskets, and preview a migration for legacy configurations.       |
+//+------------------------------------------------------------------+
+void RM_DistStartup()
+  {
+   RM_RefreshMeta();
+   bool recActive = g_launchDone && g_regCount > 0;
+   if(recActive && g_ctxRec.active && InpApplyUnitsToActiveCycle)
+     {
+      RM_CtxClear(g_ctxRec);
+      RM_CtxCaptureRec("operator re-applied current units to the ACTIVE cycle");
+     }
+   else if(recActive && !g_ctxRec.active)
+      RM_CtxCaptureRec("active cycle had no stored units (captured at restart)");
+   else if(g_ctxRec.active)
+      RM_Audit("UNITS_RECOVERY", 0, 0, g_ctxRec.stepBasePrice, "active cycle keeps " + RM_CtxText(g_ctxRec));
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      RM_NormalScan();
+      if(g_normalCnt > 0 && g_ctxNorm.active && InpApplyUnitsToActiveCycle)
+        {
+         RM_CtxClear(g_ctxNorm);
+         RM_CtxCaptureNorm("operator re-applied current units to the open normal basket");
+        }
+      else if(g_normalCnt > 0 && !g_ctxNorm.active)
+         RM_CtxCaptureNorm("open normal basket had no stored units (captured at restart)");
+     }
+   if(!g_dist.valid)
+      RM_Audit("UNITS_UNDEFINED", 0, 0, 0, g_dist.why + " New entries are blocked; existing baskets keep their stored units.");
+   RM_MigrationPreview();
+   RM_SaveState();
+  }
+
 
 //==== inlined: Include/RecoveryManagerPro/RM_DashCycle.mqh
 //+------------------------------------------------------------------+
@@ -7154,6 +8112,114 @@ void RM_ExecuteCyclePending(int act)
   }
 
 
+//==== inlined: Include/RecoveryManagerPro/RM_DashUnits.mqh
+//+------------------------------------------------------------------+
+//| RM_DashUnits.mqh - panel E "DISTANCE UNITS" (all modes).           |
+//| Shows how configured distances become executable prices for the   |
+//| chart symbol. Price-distance normalisation only: it does not      |
+//| claim equal money risk, volatility or profitability.              |
+//+------------------------------------------------------------------+
+
+void RM_BuildUnits(int chartW)
+  {
+   int w = g_mw, rh = g_rh;
+   int h = 11 * rh + 12;
+   int x, y;
+   if(g_panelRect[3][2] > 0)
+     {
+      // beside the cycle panel when there is room, else below it
+      x = g_panelRect[3][0] - w - 8;
+      y = g_py;
+      if(x < g_px + g_mw + 8)
+        {
+         x = g_panelRect[3][0];
+         y = g_panelRect[3][1] + g_panelRect[3][3] + 6;
+        }
+     }
+   else
+     {
+      x = (int)MathMax(g_px + g_mw + 8, chartW - w - 60);
+      y = g_py;
+     }
+   RM_Rect("U_BG", x, y, w, h, C_BG, C_BORDER);
+   RM_Rect("U_HEAD", x, y, w, rh + 4, C_HEAD, C_BORDER);
+   RM_Text("U_TITLE", x + 8, y + 3, "DISTANCE UNITS", C_TEXT, false, true);
+   RM_Rect("U_CHIP", x + w - 108, y + 4, 100, rh - 4, C_GREEN, C_GREEN);
+   RM_Text("U_CHIPT", x + w - 102, y + 4, "", C_BG, false, true);
+   int r = y + rh + 8;
+   string keys[] = {"U_SYM", "U_META", "U_MODE", "U_GRID", "U_BPTS", "U_NORM", "U_LVL", "U_MSG", "U_NOTE"};
+   for(int i = 0; i < ArraySize(keys); i++)
+     {
+      RM_Text(keys[i], x + 8, r, "", C_TEXT, false, false);
+      r += rh;
+     }
+   g_panelRect[4][0] = x; g_panelRect[4][1] = y; g_panelRect[4][2] = w; g_panelRect[4][3] = h;
+  }
+
+string RM_Px(double v)
+  {
+   return DoubleToString(v, (int)MathMax(g_dist.digits, 2));
+  }
+
+void RM_RefreshUnits()
+  {
+   if(ObjectFind(0, RM_DPFX + "U_BG") < 0)
+      return;
+   bool legacy = (InpConfigVersion < 2);
+   string chip = "OK";
+   color cc = C_GREEN;
+   if(!g_dist.valid) { chip = "UNDEFINED"; cc = C_RED; }
+   else if(legacy)   { chip = "LEGACY"; cc = C_AMBER; }
+   RM_SetBg("U_CHIP", cc);
+   RM_Set("U_CHIPT", chip, C_BG);
+   RM_Set("U_SYM", "Symbol " + g_sym + " | profile " + RM_ProfileName(g_dist.profile) + " (" +
+          RM_ProfileSourceName(g_dist.source) + ")", C_TEXT);
+   RM_Set("U_META", "Digits " + IntegerToString(g_dist.digits) + " | Point " + DoubleToString(g_dist.brokerPoint, 8) +
+          " | tick " + DoubleToString(g_dist.tickPrice, 8), C_DIM);
+   string modeTxt = RM_DistModeName(g_dist.mode) + RM_Pick(legacy, " (legacy)", "") + " | unit " +
+                    (g_dist.unitPrice > 0.0 ? DoubleToString(g_dist.unitPrice, 8) : "undefined");
+   RM_Set("U_MODE", modeTxt, g_dist.unitPrice > 0.0 ? C_TEXT : C_RED);
+   // recovery grid (stored cycle units first)
+   double req = RM_RecStepRequestedPrice(1);
+   double eff = RM_EffectiveSpacing(req, RM_TickPrice());
+   string src = g_ctxRec.active ? " [cycle units]" : "";
+   if(req > 0.0)
+     {
+      RM_Set("U_GRID", "Grid " + DoubleToString(InpGridStepPoints, 1) + " -> req " + RM_Px(req) + " | eff " + RM_Px(eff) + src, C_TEXT);
+      RM_Set("U_BPTS", "Equivalent broker points " + DoubleToString(RM_PriceToBrokerPoints(eff, g_dist.brokerPoint), 1), C_DIM);
+     }
+   else
+     {
+      RM_Set("U_GRID", "Grid " + DoubleToString(InpGridStepPoints, 1) + " -> undefined", C_RED);
+      RM_Set("U_BPTS", "Equivalent broker points -", C_DIM);
+     }
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      double ns = RM_NormStepPrice(), tp = RM_NormTPPrice();
+      RM_Set("U_NORM", "Normal avg " + (ns > 0 ? RM_Px(RM_EffectiveSpacing(ns, RM_TickPrice())) : "-") + " | TP " +
+             (tp > 0 ? RM_Px(RM_EffectiveSpacing(tp, RM_TickPrice())) : "-") + RM_Pick(g_ctxNorm.active, " [basket units]", ""), C_DIM);
+     }
+   else
+      RM_Set("U_NORM", "Normal strategy not used (RECOVERY_ONLY)", C_DIM);
+   double lb = g_nextLevel[RM_BUY], ls = g_nextLevel[RM_SELL];
+   string which = "Rec";
+   if(lb <= 0.0 && ls <= 0.0 && InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      lb = g_normNextLevel[RM_BUY];
+      ls = g_normNextLevel[RM_SELL];
+      which = "Norm";
+     }
+   RM_Set("U_LVL", which + " next BUY " + (lb > 0 ? RM_Px(lb) : "-") + " | SELL " + (ls > 0 ? RM_Px(ls) : "-"), C_TEXT);
+   string msg = "";
+   if(!g_dist.valid)
+      msg = g_dist.why;
+   else if(legacy)
+      msg = g_migrationText;
+   RM_Set("U_MSG", RM_Cut(msg, 64), !g_dist.valid ? C_RED : C_AMBER);
+   RM_Set("U_NOTE", "Price-distance normalisation only - not equal risk", C_DIM);
+  }
+
+
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -7183,6 +8249,7 @@ int OnInit()
       RM_Audit("INIT", 0, 0, 0, "state restored: " + RM_StateName(g_state));
    RM_ReconcileRegistry();      // broker truth wins over the file
    RM_CtlReconcileOnStart();    // restore the recovery latch before either engine may act
+   RM_DistStartup();            // unit contexts of active baskets + legacy migration preview
    RM_PreviewChartClosure(false);
    if(InpApplyChartColors)
       RM_ApplyChartColors();

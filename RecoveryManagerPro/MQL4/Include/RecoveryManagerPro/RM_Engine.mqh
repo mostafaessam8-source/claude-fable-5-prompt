@@ -38,6 +38,8 @@ void RM_InitRuntime()
    g_engineCycleEnded = false; g_cycleOutcome = RM_OUT_NONE; g_cycleEmergency = false; g_cycleManual = false;
    g_normalEnabled = true; g_normalHalted = false; g_operatorResume = false; g_forceStart = false;
    g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
+   RM_CtxClear(g_ctxRec);
+   RM_CtxClear(g_ctxNorm);
   }
 
 void RM_ResetSession()
@@ -52,6 +54,7 @@ void RM_ResetSession()
    g_lockResidual = 0.0;
    g_emgLatched = false;
    g_peakDrawdown = 0.0;
+   RM_CtxClear(g_ctxRec);                     // next cycle uses the current units
   }
 
 int RM_MainCount()
@@ -99,7 +102,11 @@ void RM_EnterState(int ns)
    RM_Audit("STATE", 0, 0, g_managedNet, RM_StateName(old) + " -> " + RM_StateName(ns) +
             (ns == RM_ST_ERROR_HOLD ? " (" + g_errorText + ")" : ""));
    if(ns == RM_ST_PREPARING)
+     {
       g_forceStart = false;
+      if(!g_ctxRec.active)
+         RM_CtxCaptureRec("recovery cycle launched");   // the cycle keeps these units until COMPLETE
+     }
    if(ns == RM_ST_COMPLETE)
      {
       g_engineCycleEnded = true;             // the controller verifies and closes the cycle
@@ -138,6 +145,10 @@ void RM_Engine()
    int prevActor = g_actor;
    g_actor = RM_ACTOR_RECOVERY;             // every engine operation passes the gate as RECOVERY
    RM_RefreshMeta();
+   // point-based profit inputs: distance units -> PRICE -> existing money-per-broker-point model
+   double ptp = RM_RecPartialTPBrokerPts();
+   g_cfg.partialTPPoints = (ptp >= 0.0) ? ptp : 1e12;        // undefined units: no automatic group close
+   g_cfg.execBufferPoints = RM_RecBufferBrokerPts();
    datetime bar0 = iTime(g_sym, 0, 0);
    if(bar0 != g_lastBarSeen)
      {
@@ -201,6 +212,11 @@ void RM_Engine()
    else
       // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
       si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
+   if(si.launchTriggered && !g_launchDone && !g_dist.valid)
+     {
+      si.launchTriggered = false;             // a new cycle needs defined distance units
+      g_block = g_dist.why;
+     }
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
    si.lockDone = g_lockDone;
@@ -234,6 +250,8 @@ void RM_Engine()
             g_status = "Armed: drawdown " + RM_Money(g_drawdown) + " / launch at " + RM_Money(InpLaunchDrawdown);
          else
             g_status = "Armed: launching";
+         if(!g_dist.valid)
+            g_status = "Armed, launch blocked: " + g_dist.why;
          break;
       case RM_ST_PREPARING:  RM_DoPrepare();  break;
       case RM_ST_LOCKING:    RM_DoLock();     break;
@@ -509,6 +527,12 @@ void RM_GridEntries()
       g_status = "Main position closed - remaining recovery orders close at target";
       return;
      }
+   if(!RM_RecDistanceUsable())
+     {
+      g_block = g_dist.why;                  // no persisted context and no defined units
+      g_status = g_block;
+      return;
+     }
    double lv, lres; int ldir;
    if(InpLocking && RM_LockGap(lv, ldir, lres))
      {
@@ -536,8 +560,18 @@ void RM_TryAverage(int dir)
    if(last < 0)
       return;
    int idx = RM_NextGridIndex(dir);
-   double step = RM_GridStepPoints(InpGridStepPoints, InpStepMultiplier, idx);
-   double level = RM_GridNextLevel(dir, g_book.openPrice[last], step, g_meta.point);
+   // units -> requested price (multiplier on the unrounded base) -> tick-rounded spacing -> target
+   double reqPrice = RM_RecStepRequestedPrice(idx);
+   if(reqPrice <= 0.0)
+     {
+      g_nextLevel[dir] = 0;
+      g_block = RM_UNDEFINED_MSG;
+      return;
+     }
+   double effPrice = RM_EffectiveSpacing(reqPrice, RM_TickPrice());
+   double level = RM_GridTargetPrice(dir, g_book.openPrice[last], effPrice, RM_TickPrice());
+   g_recReqSpacing[dir] = reqPrice;
+   g_recEffSpacing[dir] = effPrice;
    g_nextLevel[dir] = level;
    if(!RM_GridTriggered(dir, RM_Bid(), RM_Ask(), level))
       return;

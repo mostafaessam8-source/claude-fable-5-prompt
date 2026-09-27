@@ -35,7 +35,7 @@ template<typename T> int ArrayResize(MqlArray<T> &a, int n);
 MT4C(OP_BUY) MT4C(OP_SELL) MT4C(SELECT_BY_POS) MT4C(SELECT_BY_TICKET) MT4C(MODE_TRADES) MT4C(MODE_HISTORY)
 MT4C(MODE_ASK) MT4C(MODE_BID) MT4C(MODE_DIGITS) MT4C(MODE_FREEZELEVEL) MT4C(MODE_HIGH) MT4C(MODE_LOTSTEP)
 MT4C(MODE_LOW) MT4C(MODE_MAXLOT) MT4C(MODE_MINLOT) MT4C(MODE_POINT) MT4C(MODE_TICKSIZE) MT4C(MODE_TICKVALUE)
-MT4C(MODE_TIME) MT4C(MODE_TRADEALLOWED) MT4C(SYMBOL_TRADE_MODE) MT4C(SYMBOL_TRADE_MODE_DISABLED) MT4C(SYMBOL_TRADE_MODE_CLOSEONLY)
+MT4C(MODE_TIME) MT4C(MODE_TRADEALLOWED) MT4C(MODE_PROFITCALCMODE) MT4C(SYMBOL_CURRENCY_BASE) MT4C(SYMBOL_CURRENCY_PROFIT) MT4C(SYMBOL_TRADE_MODE) MT4C(SYMBOL_TRADE_MODE_DISABLED) MT4C(SYMBOL_TRADE_MODE_CLOSEONLY)
 MT4C(ERR_BROKER_BUSY) MT4C(ERR_COMMON_ERROR) MT4C(ERR_INVALID_PRICE) MT4C(ERR_INVALID_TRADE_VOLUME)
 MT4C(ERR_MARKET_CLOSED) MT4C(ERR_NOT_ENOUGH_MONEY) MT4C(ERR_NO_CONNECTION) MT4C(ERR_NO_RESULT) MT4C(ERR_OFF_QUOTES)
 MT4C(ERR_PRICE_CHANGED) MT4C(ERR_REQUOTE) MT4C(ERR_SERVER_BUSY) MT4C(ERR_TOO_FREQUENT_REQUESTS)
@@ -76,7 +76,7 @@ template<typename E> string EnumToString(E e);
 bool EventSetMillisecondTimer(int ms); void EventKillTimer();
 
 // ---- market info / series
-double MarketInfo(string symbol, int type); long SymbolInfoInteger(string symbol, int prop);
+double MarketInfo(string symbol, int type); string SymbolInfoString(string symbol, int prop); long SymbolInfoInteger(string symbol, int prop);
 datetime iTime(string s, int tf, int shift); double iOpen(string s, int tf, int shift); double iClose(string s, int tf, int shift);
 double iHigh(string s, int tf, int shift); double iLow(string s, int tf, int shift); int iBars(string s, int tf);
 int iHighest(string s, int tf, int type, int count, int start); int iLowest(string s, int tf, int type, int count, int start);
@@ -100,7 +100,7 @@ string DoubleToString(double v, int digits); string IntegerToString(long v);
 int StringFind(string s, string m, int start = 0); ushort StringGetCharacter(string s, int pos); int StringLen(string s);
 int StringReplace(string &s, string find, string rep); int StringSplit(string s, ushort sep, MqlArray<string> &out);
 string StringSubstr(string s, int start, int len = -1); double StringToDouble(string s); long StringToInteger(string s);
-string StringTrimLeft(string s); string StringTrimRight(string s);
+string StringTrimLeft(string s); string StringTrimRight(string s); bool StringToUpper(string &s);
 double MathLog10(double v);
 
 // ---- files / global variables

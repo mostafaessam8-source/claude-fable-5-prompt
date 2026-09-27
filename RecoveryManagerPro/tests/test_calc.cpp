@@ -13,6 +13,8 @@
 #include "RM_Types.mqh"
 #include "RM_Calc.mqh"
 #include "RM_Planner.mqh"
+#include "mql4_shim_str.h"
+#include "RM_Distance.mqh"
 
 static int g_pass = 0, g_fail = 0;
 static std::string g_case;
@@ -538,6 +540,130 @@ int main()
       CHECK(P.ticket[0] == 3);                                     // profitable leg first
       RM_PlanListed(B, c, 1.0, RM_PLAN_NORMAL_TP, L, 6.0, P);
       CHECK(!P.qualifies);
+   }
+
+   CASE("D01 standardized points: required conversions on 4/5-digit FX, 2/3-digit JPY and gold");
+   {
+      // unit price never depends on the broker Point in STANDARDIZED mode
+      double gbp5 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_FX, 0, 0.00001, 0);
+      double gbp4 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_FX, 0, 0.0001, 0);
+      CHECK(NEAR(RM_DistUnitsToPrice(100, gbp5), 0.00100));
+      CHECK(NEAR(RM_DistUnitsToPrice(100, gbp4), 0.0010));
+      double jpy3 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_FXJPY, 0, 0.001, 0);
+      double jpy2 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_FXJPY, 0, 0.01, 0);
+      CHECK(NEAR(RM_DistUnitsToPrice(100, jpy3), 0.100));
+      CHECK(NEAR(RM_DistUnitsToPrice(100, jpy2), 0.10));
+      double xau3 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_XAUUSD, 0, 0.001, 0);
+      double xau2 = RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_XAUUSD, 0, 0.01, 0);
+      CHECK(NEAR(RM_DistUnitsToPrice(100, xau3), 1.000));
+      CHECK(NEAR(RM_DistUnitsToPrice(100, xau2), 1.00));
+      CHECK(NEAR(RM_DistUnitsToPrice(250, xau3), 2.50) && NEAR(RM_DistUnitsToPrice(250, xau2), 2.50));
+      CHECK(NEAR(RM_PriceToBrokerPoints(1.0, 0.001), 1000.0));     // 3-digit gold: 1.00 = 1000 broker points
+      CHECK(NEAR(RM_PriceToBrokerPoints(1.0, 0.01), 100.0));
+      CHECK(NEAR(RM_PriceToDistUnits(1.0, xau3), 100.0));
+      // the old defect: 100 x Point on 3-digit gold
+      CHECK(NEAR(100 * 0.001, 0.1) && !NEAR(100 * 0.001, RM_DistUnitsToPrice(100, xau3)));
+   }
+
+   CASE("D02 gold BUY grid anchored at 2650.000, 100 standardized points -> 2649.000");
+   {
+      double eff3 = RM_EffectiveSpacing(RM_DistUnitsToPrice(100, 0.01), 0.001);
+      CHECK(NEAR(eff3, 1.0));
+      CHECK(NEAR(RM_GridTargetPrice(RM_BUY, 2650.000, eff3, 0.001), 2649.000));
+      CHECK(!NEAR(RM_GridTargetPrice(RM_BUY, 2650.000, eff3, 0.001), 2649.900));
+      CHECK(NEAR(RM_GridTargetPrice(RM_SELL, 2650.000, eff3, 0.001), 2651.000));
+      double eff2 = RM_EffectiveSpacing(RM_DistUnitsToPrice(100, 0.01), 0.01);
+      CHECK(NEAR(RM_GridTargetPrice(RM_BUY, 2650.00, eff2, 0.01), 2649.00));    // same level on 2 digits
+      // trigger boundaries: BUY compares Ask with the level
+      double lv = 2649.000;
+      CHECK(!RM_GridTriggered(RM_BUY, 2648.970, 2649.001, lv));               // just before
+      CHECK(RM_GridTriggered(RM_BUY, 2648.970, 2649.000, lv));                // at
+      CHECK(RM_GridTriggered(RM_BUY, 2640.000, 2640.030, lv));                // beyond (gap)
+      double ls = 2651.000;                                                  // SELL compares Bid
+      CHECK(!RM_GridTriggered(RM_SELL, 2650.999, 2651.029, ls));
+      CHECK(RM_GridTriggered(RM_SELL, 2651.000, 2651.030, ls));
+      CHECK(RM_GridTriggered(RM_SELL, 2660.000, 2660.030, ls));
+   }
+
+   CASE("D03 custom unit, price distance, broker points, per-symbol override");
+   {
+      CHECK(NEAR(RM_DistUnitsToPrice(4, RM_ResolveUnitPrice(RM_DU_CUSTOM, RM_PROF_NONE, 0, 0.01, 0.25)), 1.00));
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_PRICE, RM_PROF_NONE, 0, 0.01, 0), 1.0));
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_BROKER_POINTS, RM_PROF_XAUUSD, 0, 0.001, 0), 0.001));
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_OVERRIDE, 0.5, 0.01, 0), 0.5));
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_CUSTOM, RM_PROF_OVERRIDE, 0.5, 0.01, 0.25), 0.5));   // symbol beats global
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_PRICE, RM_PROF_OVERRIDE, 0.5, 0.01, 0), 1.0));       // fixed by definition
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_STANDARDIZED, RM_PROF_NONE, 0, 0.01, 0), 0.0));      // undefined
+      CHECK(NEAR(RM_ResolveUnitPrice(RM_DU_CUSTOM, RM_PROF_NONE, 0, 0.01, 0), 0.0));            // custom not set
+   }
+
+   CASE("D04 executable tick size: requested 0.12 with tick 0.05 -> effective 0.15");
+   {
+      CHECK(NEAR(RM_EffectiveSpacing(0.12, 0.05), 0.15));
+      CHECK(NEAR(RM_EffectiveSpacing(0.15, 0.05), 0.15));                     // already a multiple
+      CHECK(NEAR(RM_EffectiveSpacing(1.2, 0.25), 1.25));
+      double tb = RM_GridTargetPrice(RM_BUY, 100.00, 0.15, 0.05);
+      double ts = RM_GridTargetPrice(RM_SELL, 100.05, 0.15, 0.05);
+      CHECK(NEAR(tb, 99.85) && NEAR(ts, 100.20));
+      CHECK(std::fabs(tb / 0.05 - std::round(tb / 0.05)) < 1e-9);             // executable
+      // an off-grid anchor still yields spacing >= requested and a valid tick
+      double t2 = RM_GridTargetPrice(RM_BUY, 100.03, 0.15, 0.05);
+      CHECK(NEAR(t2, 99.85) && 100.03 - t2 >= 0.15 - 1e-9);
+      double t3 = RM_GridTargetPrice(RM_SELL, 100.03, 0.15, 0.05);
+      CHECK(NEAR(t3, 100.20) && t3 - 100.03 >= 0.15 - 1e-9);
+      CHECK(NEAR(RM_TPTargetPrice(RM_BUY, 100.03, 0.12, 0.05), 100.15));
+      CHECK(NEAR(RM_TPTargetPrice(RM_SELL, 100.03, 0.12, 0.05), 99.90));
+      std::string why;
+      CHECK(RM_MetaValid(0.01, 0.25, why));
+      CHECK(!RM_MetaValid(0.01, 0.0, why));                                   // missing tick
+      CHECK(!RM_MetaValid(0.0, 0.01, why));                                   // missing point
+      CHECK(!RM_MetaValid(0.01, 0.005, why));                                 // tick below point
+      CHECK(!RM_MetaValid(0.01, 0.015, why));                                 // not a whole multiple
+   }
+
+   CASE("D05 symbol resolution: metadata, suffixes, explicit map, overrides, unknown");
+   {
+      double ov; int src;
+      CHECK(RM_ResolveProfile("XAUUSD", "", "", "", "", "XAU", "USD", 1, ov, src) == RM_PROF_XAUUSD && src == RM_PSRC_METADATA);
+      CHECK(RM_ResolveProfile("XAUUSD.a", "", "", "", "", "XAU", "USD", 1, ov, src) == RM_PROF_XAUUSD);
+      CHECK(RM_ResolveProfile("XAUUSDm", "", "", "", "", "XAU", "USD", 0, ov, src) == RM_PROF_XAUUSD);
+      CHECK(RM_ResolveProfile("GBPUSD.ecn", "", "", "", "", "GBP", "USD", 0, ov, src) == RM_PROF_FX);
+      CHECK(RM_ResolveProfile("USDJPY-pro", "", "", "", "", "USD", "JPY", 0, ov, src) == RM_PROF_FXJPY);
+      // GOLD alias with CFD metadata that does not say XAU: only an explicit map resolves it
+      CHECK(RM_ResolveProfile("GOLD", "", "", "", "", "USD", "USD", 1, ov, src) == RM_PROF_NONE);
+      CHECK(RM_ResolveProfile("GOLD", "GOLD:XAUUSD", "", "", "", "USD", "USD", 1, ov, src) == RM_PROF_XAUUSD && src == RM_PSRC_MAP);
+      CHECK(RM_ResolveProfile("GOLDm", "GOLD:XAUUSD", "", "m", "", "USD", "USD", 1, ov, src) == RM_PROF_XAUUSD);
+      CHECK(RM_ResolveProfile("pro.GOLD", "gold=xauusd", "pro.", "", "", "", "", 1, ov, src) == RM_PROF_XAUUSD);
+      CHECK(RM_ResolveProfile("GOLDEN", "GOLD:XAUUSD", "", "", "", "", "", 1, ov, src) == RM_PROF_NONE);  // no loose substring
+      // no Digits-based guessing: silver, indices, crypto stay undefined
+      CHECK(RM_ResolveProfile("XAGUSD", "", "", "", "", "XAG", "USD", 1, ov, src) == RM_PROF_NONE);
+      CHECK(RM_ResolveProfile("US30.cash", "", "", "", "", "USD", "USD", 1, ov, src) == RM_PROF_NONE);
+      CHECK(RM_ResolveProfile("BTCUSD", "", "", "", "", "BTC", "USD", 1, ov, src) == RM_PROF_NONE);      // not Forex calc mode
+      // per-symbol override wins
+      CHECK(RM_ResolveProfile("XAGUSD", "", "", "", "XAGUSD:0.001;US30.cash=1", "XAG", "USD", 1, ov, src) == RM_PROF_OVERRIDE
+            && NEAR(ov, 0.001) && src == RM_PSRC_OVERRIDE);
+      CHECK(RM_ResolveProfile("US30.cash", "", "", "", "XAGUSD:0.001; US30.cash = 1", "USD", "USD", 1, ov, src) == RM_PROF_OVERRIDE && NEAR(ov, 1.0));
+      std::string err;
+      CHECK(RM_ListValid("GOLD:XAUUSD;GOLD.x=XAUUSD", false, err));
+      CHECK(!RM_ListValid("GOLD:SILVER", false, err));
+      CHECK(!RM_ListValid("XAGUSD:-1", true, err));
+      CHECK(!RM_ListValid("XAGUSD", true, err));
+      CHECK(RM_ListValid("", true, err));
+   }
+
+   CASE("D06 migration keeps the original price distance; max limits never loosen");
+   {
+      // legacy GBPUSD 4-digit input 30 broker points = 0.0030 -> 300 standardized
+      CHECK(NEAR(RM_MigrateDistance(30, 0.0001, 0.00001), 300));
+      // legacy 3-digit gold input 1000 broker points = 1.000 -> 100 standardized
+      CHECK(NEAR(RM_MigrateDistance(1000, 0.001, 0.01), 100));
+      CHECK(NEAR(RM_MigrateDistance(1000, 0.001, 0.01) * 0.01, 1000 * 0.001));
+      CHECK(NEAR(RM_MigrateDistance(200, 0.00001, 0.00001), 200));            // 5-digit FX unchanged
+      CHECK(RM_MaxLimitBrokerPoints(0.30, 0.001) == 300);
+      CHECK(RM_MaxLimitBrokerPoints(0.0305, 0.001) == 30);                    // floored, never 31
+      CHECK(RM_MaxLimitBrokerPoints(0.0005, 0.001) == 0);
+      CHECK(RM_SpreadTooWide(2650.000, 2650.301, 0.30));
+      CHECK(!RM_SpreadTooWide(2650.000, 2650.300, 0.30));
    }
 
    CASE("Break-even / possible-close price solve");

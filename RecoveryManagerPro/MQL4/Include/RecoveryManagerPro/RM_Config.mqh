@@ -123,6 +123,19 @@ bool RM_ValidateInputs(string &err)
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
+   // ---- distance units
+   if(InpConfigVersion < 0 || InpConfigVersion > 2)
+     { err = "InpConfigVersion must be 0/1 (legacy broker points) or 2 (distance unit mode)"; return false; }
+   if(InpConfigVersion >= 2 && InpDistanceUnitMode == RM_DU_CUSTOM && InpCustomUnitPrice <= 0.0)
+     { err = "CUSTOM_UNIT needs InpCustomUnitPrice > 0 (price value of one unit)"; return false; }
+   if(InpCustomUnitPrice < 0.0)
+     { err = "InpCustomUnitPrice must be >= 0"; return false; }
+   string lerr = "";
+   if(!RM_ListValid(InpSymbolProfileMap, false, lerr))
+     { err = "InpSymbolProfileMap: " + lerr; return false; }
+   if(!RM_ListValid(InpUnitOverrides, true, lerr))
+     { err = "InpUnitOverrides: " + lerr; return false; }
+
    // ---- Three-MA normal strategy and combined operation
    if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
      {

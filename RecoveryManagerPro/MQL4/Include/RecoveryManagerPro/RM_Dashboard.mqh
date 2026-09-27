@@ -232,7 +232,7 @@ void RM_DashRelayout()
    g_lastChartW = cw;
    g_lastChartH = ch;
    ObjectsDeleteAll(0, RM_DPFX);
-   for(int i = 0; i < 4; i++)
+   for(int i = 0; i < 5; i++)
       for(int j = 0; j < 4; j++)
          g_panelRect[i][j] = 0;
    double sc = (g_panelSize == RM_PANEL_LARGE) ? 1.3 : 1.0;
@@ -254,6 +254,7 @@ void RM_DashRelayout()
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
       RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
+      RM_BuildUnits(cw);                       // panel E: distance units
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);
@@ -556,8 +557,10 @@ void RM_DashRefresh(bool force)
          bool link = IsTesting() || IsConnected();
          RM_Row4Set("M_A1", "", RM_Money(AccountBalance()), RM_Money(AccountEquity()), C_TEXT);
          RM_Row4Set("M_A2", "", RM_Money(AccountFreeMargin()), ml > 0 ? DoubleToString(ml, 0) + "%" : "-", C_TEXT);
-         int sp = RM_SpreadPoints();
-         RM_Set("M_A3_2", IntegerToString(sp) + " pt", sp > InpMaxSpread ? C_RED : C_TEXT);
+         int sp = RM_SpreadPoints();                    // broker points (display only)
+         double spUnits = RM_PriceToDistUnits(RM_Ask() - RM_Bid(), RM_RecUnit());
+         bool wide = RM_RecUnit() > 0.0 && RM_SpreadTooWide(RM_Bid(), RM_Ask(), RM_DistUnitsToPrice(InpMaxSpread, RM_RecUnit()));
+         RM_Set("M_A3_2", DoubleToString(spUnits, 1) + "u/" + IntegerToString(sp) + "p", wide ? C_RED : C_TEXT);
          RM_Set("M_A3_3", link ? "connected" : "DISCONNECTED", link ? C_GREEN : C_RED);
          RM_Row4Set("M_A4", "", RM_Money(g_realizedSession), RM_Money(g_realizedDay), RM_PLColor(g_realizedDay));
          double accFloat = AccountEquity() - AccountBalance();
@@ -568,6 +571,7 @@ void RM_DashRefresh(bool force)
       RM_RefreshGroup(cur);
       RM_RefreshManual();
       RM_RefreshCycle();
+      RM_RefreshUnits();
      }
    ChartRedraw();
   }
@@ -612,7 +616,7 @@ void RM_RefreshGroup(string cur)
    RM_Row4Set("G_T", "", RM_Lots(lots), RM_Money(g_curGroup.expectedNet), RM_PLColor(g_curGroup.expectedNet));
    RM_Set("G_KIND", (g_curGroup.isOverlap ? "OVERLAP first+last" : (g_curGroup.isFinal ? "FINAL slice" : "GROUP")), C_DIM);
    RM_Set("G_TARGET", "Target " + RM_Money(g_curGroup.target) + " " + cur + " (" + DoubleToString(InpPartialTPPoints, 0) +
-          " pt) " + (g_curGroup.qualifies ? "- READY" : "- waiting"), g_curGroup.qualifies ? C_GREEN : C_DIM);
+          " units) " + RM_Pick(g_curGroup.qualifies, "- READY", "- waiting"), g_curGroup.qualifies ? C_GREEN : C_DIM);
   }
 
 void RM_RefreshManual()

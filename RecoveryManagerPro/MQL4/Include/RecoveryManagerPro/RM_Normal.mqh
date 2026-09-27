@@ -114,6 +114,14 @@ void RM_NormalScan()
       g_normalLots += g_ns[d2].lots;
      }
    g_normalLots = RM_Clean(g_normalLots);
+   for(int d3 = 0; d3 < 2; d3++)
+      g_normNextLevel[d3] = InpNormalAveraging ? RM_NormalAvgLevel(d3) : 0.0;
+   // an empty basket releases its unit context: the next basket uses the current units
+   if(g_normalCnt == 0 && g_ctxNorm.active && !RM_JournalOpen())
+     {
+      RM_CtxClear(g_ctxNorm);
+      RM_SaveState();
+     }
   }
 
 int RM_NormalPendingCount()
@@ -190,9 +198,8 @@ double RM_NormalLotFor(int n, double &raw)
 //+------------------------------------------------------------------+
 bool RM_NormalExposureBlocked(int dir, double lot, string &why)
   {
-   int sp = RM_SpreadPoints();
-   if(sp > InpNormalMaxSpread)
-     { why = "spread " + IntegerToString(sp) + " > normal max " + IntegerToString(InpNormalMaxSpread); return true; }
+   if(RM_SpreadExceeds(InpNormalMaxSpread, RM_NormUnit(), why))
+      return true;
    if(RM_QuoteStale(why))
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
@@ -220,6 +227,10 @@ bool RM_NormalOpen(int dir, int n, string what)
    // fresh prices and the drawdown trigger immediately before every entry/averaging
    if(RM_TriggerCheckNow())
       return false;
+   if(n == 0 && !g_dist.valid)
+     { g_normalBlock = what + " blocked: " + g_dist.why; return false; }       // new basket needs defined units
+   if(n > 0 && !RM_NormDistanceUsable())
+     { g_normalBlock = what + " blocked: " + RM_UNDEFINED_MSG; return false; }
    double raw = 0;
    double lot = RM_NormalLotFor(n, raw);
    if(lot <= 0.0)
@@ -240,6 +251,8 @@ bool RM_NormalOpen(int dir, int n, string what)
       return false;
      }
    RM_Audit(n == 0 ? "NORMAL_ENTRY" : "NORMAL_AVERAGE", t, lot, raw, RM_Side(dir) + " " + what);
+   if(!g_ctxNorm.active)
+      RM_CtxCaptureNorm("normal basket opened");      // basket keeps these units until it is empty
    RM_SaveState();
    RM_NormalScan();
    return true;
@@ -255,7 +268,9 @@ bool RM_NormalManage()
      {
       if(g_ns[d].cnt == 0)
          continue;
-      if(RM_BasketTPReached(d, g_ns[d].wavg, InpNormalTPPoints, g_meta.point, RM_Bid(), RM_Ask()))
+      double tpPrice = RM_NormTPPrice();
+      double tpTarget = (tpPrice > 0.0) ? RM_TPTargetPrice(d, g_ns[d].wavg, RM_EffectiveSpacing(tpPrice, RM_TickPrice()), RM_TickPrice()) : 0.0;
+      if(RM_TPTargetReached(d, tpTarget, RM_Bid(), RM_Ask()))
         {
          RM_IndexList L;
          L.n = 0;
@@ -264,8 +279,8 @@ bool RM_NormalManage()
                L.idx[L.n++] = i;
          RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_TP, L, -1.0, g_plan);
          RM_Audit("NORMAL_TP", 0, g_ns[d].lots, g_plan.expectedNet,
-                  RM_Side(d) + " basket reached " + DoubleToString(InpNormalTPPoints, 0) + " pt from average " +
-                  DoubleToString(g_ns[d].wavg, g_digits));
+                  RM_Side(d) + " basket reached TP " + DoubleToString(tpTarget, g_digits) + " (" +
+                  DoubleToString(tpPrice, g_digits) + " price from average " + DoubleToString(g_ns[d].wavg, g_digits) + ")");
          RM_StartPlan(g_plan);
          return true;
         }
@@ -274,7 +289,7 @@ bool RM_NormalManage()
          int f = g_ns[d].firstIdx, l = g_ns[d].lastIdx;
          if(f >= 0 && l >= 0 && f != l &&
             RM_NormalOverlapHit(RM_LegNet(g_nbook, f), RM_LegNet(g_nbook, l), g_nbook.lots[f], g_nbook.lots[l],
-                                InpNormalOverlapTPPoints, g_mpp))
+                                RM_NormOverlapBrokerPts(), g_mpp))
            {
             RM_IndexList L2;
             L2.n = 2; L2.idx[0] = f; L2.idx[1] = l;
@@ -285,6 +300,21 @@ bool RM_NormalManage()
         }
      }
    return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Next normal averaging level: same service and rounding as the     |
+//| recovery grid (last confirmed fill -/+ tick-rounded spacing).     |
+//+------------------------------------------------------------------+
+double RM_NormalAvgLevel(int d)
+  {
+   if(g_ns[d].cnt == 0 || g_ns[d].lastIdx < 0)
+      return 0.0;
+   double req = RM_NormStepPrice();
+   if(req <= 0.0)
+      return 0.0;
+   double eff = RM_EffectiveSpacing(req, RM_TickPrice());
+   return RM_GridTargetPrice(d, g_nbook.openPrice[g_ns[d].lastIdx], eff, RM_TickPrice());
   }
 
 //+------------------------------------------------------------------+
@@ -302,10 +332,8 @@ void RM_NormalEntries(bool newBar, int sig)
             continue;
          if(g_normLastAvgBar[d] == bar1)
             continue;                                   // one averaging order per signal candle
-         double lastPrice = g_nbook.openPrice[g_ns[d].lastIdx];
-         bool adverse = (d == RM_BUY) ? RM_Ask() <= lastPrice - InpNormalAvgStepPoints * g_meta.point
-                                      : RM_Bid() >= lastPrice + InpNormalAvgStepPoints * g_meta.point;
-         if(!adverse)
+         double level = RM_NormalAvgLevel(d);
+         if(level <= 0.0 || !RM_GridTriggered(d, RM_Bid(), RM_Ask(), level))
             continue;
          if(RM_NormalOpen(d, cnt, "averaging #" + IntegerToString(cnt)))
            {

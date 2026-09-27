@@ -127,3 +127,15 @@ InpNormalOverlapMinOrders=3
 InpNormalOverlapTPPoints=50
 InpNormalMaxSpread=50
 InpNormalSlippage=30
+; --- 13. Distance units: explicitly migrated to config version 2 (standardized points).
+;     Values above were written for 5-digit Forex, where 1 standardized point = 1 broker point,
+;     so every price distance is unchanged. On XAUUSD, 100 = 1.00 price on 2- and 3-digit quotes.
+InpConfigVersion=2
+InpDistanceUnitMode=0
+InpCustomUnitPrice=0.0
+InpSymbolProfileMap=GOLD:XAUUSD
+InpSymbolPrefix=
+InpSymbolSuffix=
+InpUnitOverrides=
+InpApplyUnitsToActiveCycle=0
+InpWriteMigrationPreview=1

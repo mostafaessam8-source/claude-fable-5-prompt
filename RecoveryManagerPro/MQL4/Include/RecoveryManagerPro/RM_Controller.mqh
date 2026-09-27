@@ -553,4 +553,38 @@ bool RM_CmdCloseBasket(string &msg)
    return true;
   }
 
+//+------------------------------------------------------------------+
+//| Startup: keep or (explicitly) re-apply the unit context of active |
+//| baskets, and preview a migration for legacy configurations.       |
+//+------------------------------------------------------------------+
+void RM_DistStartup()
+  {
+   RM_RefreshMeta();
+   bool recActive = g_launchDone && g_regCount > 0;
+   if(recActive && g_ctxRec.active && InpApplyUnitsToActiveCycle)
+     {
+      RM_CtxClear(g_ctxRec);
+      RM_CtxCaptureRec("operator re-applied current units to the ACTIVE cycle");
+     }
+   else if(recActive && !g_ctxRec.active)
+      RM_CtxCaptureRec("active cycle had no stored units (captured at restart)");
+   else if(g_ctxRec.active)
+      RM_Audit("UNITS_RECOVERY", 0, 0, g_ctxRec.stepBasePrice, "active cycle keeps " + RM_CtxText(g_ctxRec));
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      RM_NormalScan();
+      if(g_normalCnt > 0 && g_ctxNorm.active && InpApplyUnitsToActiveCycle)
+        {
+         RM_CtxClear(g_ctxNorm);
+         RM_CtxCaptureNorm("operator re-applied current units to the open normal basket");
+        }
+      else if(g_normalCnt > 0 && !g_ctxNorm.active)
+         RM_CtxCaptureNorm("open normal basket had no stored units (captured at restart)");
+     }
+   if(!g_dist.valid)
+      RM_Audit("UNITS_UNDEFINED", 0, 0, 0, g_dist.why + " New entries are blocked; existing baskets keep their stored units.");
+   RM_MigrationPreview();
+   RM_SaveState();
+  }
+
 #endif

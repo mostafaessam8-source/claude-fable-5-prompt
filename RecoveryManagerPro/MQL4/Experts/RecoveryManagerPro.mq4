@@ -22,6 +22,7 @@
 #include <RecoveryManagerPro/RM_Types.mqh>
 #include <RecoveryManagerPro/RM_Calc.mqh>
 #include <RecoveryManagerPro/RM_Planner.mqh>
+#include <RecoveryManagerPro/RM_Distance.mqh>
 
 //====================================================================
 // INPUTS  (units in brackets; ranges validated in RM_Config.mqh)
@@ -46,7 +47,7 @@ input bool               InpDeletePending      = true;                 // Delete
 
 input string             S_Partial             = "===== 3. Partial closing =====";
 input double             InpPartialLots        = 0.01;                 // Partial-close volume per main side [lots]
-input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [points, NOT pips/money]
+input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [distance units, section 13]
 input ENUM_RM_TP_BASIS   InpTPBasis            = RM_TPB_RECOVERY_LOTS; // TP points-to-money lot basis (PROPOSED)
 input int                InpOverlapThreshold   = 2;                    // Overlap threshold [recovery orders, 0 = off]
 input ENUM_RM_OVERLAP_CMP InpOverlapCompare    = RM_OVL_GE;            // Overlap comparison (UNRESOLVED in reference)
@@ -59,12 +60,12 @@ input ENUM_RM_SIGNAL     InpSignalMode         = RM_SIG_SIMPLE_GRID;   // Recove
 input ENUM_RM_DIRS       InpRecoveryDirs       = RM_DIRS_BOTH;         // Allowed recovery directions
 input double             InpFirstLot           = 0.01;                 // First recovery order volume [lots]
 input double             InpLotMultiplier      = 1.2;                  // Volume multiplier [x, >= 1]
-input double             InpGridStepPoints     = 300;                  // Grid step [points]
+input double             InpGridStepPoints     = 300;                  // Recovery grid step [distance units, section 13]
 input double             InpStepMultiplier     = 1.0;                  // Step multiplier [x]
 input bool               InpOnePerBar          = true;                 // One recovery order per bar
 input bool               InpMultidirectional   = false;                // Multidirectional recovery
-input int                InpMaxSlippage        = 30;                   // Maximum slippage [points]
-input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [points]
+input int                InpMaxSlippage        = 30;                   // Maximum slippage [distance units, section 13]
+input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [distance units]
 input double             InpMaxRecoveryLot     = 1.0;                  // Maximum recovery order volume [lots]
 input int                InpMaxRecoveryCount   = 12;                   // Maximum recovery orders (both directions)
 input int                InpRecoveryMagic      = 9751421;              // Recovery magic number
@@ -78,7 +79,7 @@ input bool               InpRelockOnImbalance  = true;                 // Re-loc
 input string             S_Costs               = "===== 5. Costs =====";
 input bool               InpFullCommission     = false;                // Full commission calc (exit = booked again)
 input double             InpExtraCommPerLot    = 0.0;                  // Extra unbooked exit commission [money/lot]
-input double             InpExecBufferPoints   = 0.0;                  // Execution buffer [points per closed lot]
+input double             InpExecBufferPoints   = 0.0;                  // Execution buffer [distance units per closed lot]
 
 input string             S_Notify              = "===== 6. Notifications =====";
 input ENUM_RM_NOTIFY     InpNotify             = RM_NOTIFY_OFF;        // Launch / end notifications
@@ -160,16 +161,27 @@ input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initia
 input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
 input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
 input bool               InpNormalAveraging    = false;                // Normal averaging enabled
-input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [points]
+input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [distance units]
 input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
 input int                InpNormalMaxPerDir    = 5;                    // Maximum normal orders per direction
 input double             InpNormalMaxLots      = 1.0;                  // Maximum total normal exposure [lots, 0 = off]
-input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [points, 0 = off]
+input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [distance units, 0 = off]
 input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
 input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
-input double             InpNormalOverlapTPPoints = 50;                // Overlap target [points x lots of the two orders]
-input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [points]
-input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [points]
+input double             InpNormalOverlapTPPoints = 50;                // Overlap target [distance units x lots of the two orders]
+input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [distance units]
+input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [distance units]
+
+input string             S_Units               = "===== 13. Distance units (price-distance normalisation) =====";
+input int                InpConfigVersion      = 0;                    // Config version: 0/1 legacy = broker points, 2 = unit mode below
+input ENUM_RM_DIST_MODE  InpDistanceUnitMode   = RM_DU_STANDARDIZED;   // Distance unit mode (used from config version 2)
+input double             InpCustomUnitPrice    = 0.0;                  // CUSTOM_UNIT: price value of one unit
+input string             InpSymbolProfileMap   = "GOLD:XAUUSD";        // Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD)
+input string             InpSymbolPrefix       = "";                   // Broker symbol prefix stripped for map lookup
+input string             InpSymbolSuffix       = "";                   // Broker symbol suffix stripped for map lookup
+input string             InpUnitOverrides      = "";                   // Per-symbol unit price SYMBOL:PRICE (e.g. XAGUSD:0.001)
+input bool               InpApplyUnitsToActiveCycle = false;           // Operator: re-apply current units to an ACTIVE basket
+input bool               InpWriteMigrationPreview = true;              // Legacy config: write a migration preview .set
 
 //====================================================================
 // MODULES
@@ -178,6 +190,7 @@ input int                InpNormalSlippage     = 30;                   // Normal
 #include <RecoveryManagerPro/RM_Log.mqh>
 #include <RecoveryManagerPro/RM_Config.mqh>
 #include <RecoveryManagerPro/RM_Broker.mqh>
+#include <RecoveryManagerPro/RM_DistanceSvc.mqh>
 #include <RecoveryManagerPro/RM_Persist.mqh>
 #include <RecoveryManagerPro/RM_Registry.mqh>
 #include <RecoveryManagerPro/RM_Signals.mqh>
@@ -189,6 +202,7 @@ input int                InpNormalSlippage     = 30;                   // Normal
 #include <RecoveryManagerPro/RM_Normal.mqh>
 #include <RecoveryManagerPro/RM_Controller.mqh>
 #include <RecoveryManagerPro/RM_DashCycle.mqh>
+#include <RecoveryManagerPro/RM_DashUnits.mqh>
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -218,6 +232,7 @@ int OnInit()
       RM_Audit("INIT", 0, 0, 0, "state restored: " + RM_StateName(g_state));
    RM_ReconcileRegistry();      // broker truth wins over the file
    RM_CtlReconcileOnStart();    // restore the recovery latch before either engine may act
+   RM_DistStartup();            // unit contexts of active baskets + legacy migration preview
    RM_PreviewChartClosure(false);
    if(InpApplyChartColors)
       RM_ApplyChartColors();

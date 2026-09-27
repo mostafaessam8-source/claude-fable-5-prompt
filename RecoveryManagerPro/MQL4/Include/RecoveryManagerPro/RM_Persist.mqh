@@ -70,6 +70,33 @@ void RM_ReleaseInstanceLock()
 
 string RM_B(bool b) { return b ? "1" : "0"; }
 
+string RM_CtxSerialize(const RM_DistCtx &c)
+  {
+   return RM_B(c.active) + "," + IntegerToString(c.mode) + "," + IntegerToString(c.profile) + "," +
+          DoubleToString(c.unitPrice, 10) + "," + DoubleToString(c.stepBasePrice, 10) + "," +
+          DoubleToString(c.stepMult, 8) + "," + DoubleToString(c.tpPrice, 10) + "," +
+          DoubleToString(c.overlapPrice, 10) + "," + DoubleToString(c.partialTPPrice, 10) + "," +
+          DoubleToString(c.bufferPrice, 10) + "," + IntegerToString(c.since);
+  }
+
+void RM_CtxDeserialize(string val, RM_DistCtx &c)
+  {
+   string f[];
+   if(StringSplit(val, StringGetCharacter(",", 0), f) < 11)
+      return;
+   c.active = (f[0] == "1");
+   c.mode = (int)StringToInteger(f[1]);
+   c.profile = (int)StringToInteger(f[2]);
+   c.unitPrice = StringToDouble(f[3]);
+   c.stepBasePrice = StringToDouble(f[4]);
+   c.stepMult = StringToDouble(f[5]);
+   c.tpPrice = StringToDouble(f[6]);
+   c.overlapPrice = StringToDouble(f[7]);
+   c.partialTPPrice = StringToDouble(f[8]);
+   c.bufferPrice = StringToDouble(f[9]);
+   c.since = StringToInteger(f[10]);
+  }
+
 //+------------------------------------------------------------------+
 void RM_SaveState()
   {
@@ -132,6 +159,9 @@ void RM_SaveState()
    FileWriteString(h, "NREAL=" + DoubleToString(g_normalRealized, 2) + "\r\n");
    FileWriteString(h, "JACT=" + IntegerToString(g_journalActor) + "\r\n");
    FileWriteString(h, "REASON=" + RM_CsvSafe(g_lastReason) + "\r\n");
+   // distance-unit contexts of active baskets (never reinterpreted mid-cycle)
+   FileWriteString(h, "CTXR=" + RM_CtxSerialize(g_ctxRec) + "\r\n");
+   FileWriteString(h, "CTXN=" + RM_CtxSerialize(g_ctxNorm) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -227,6 +257,8 @@ bool RM_LoadState()
       else if(key == "NREAL") g_normalRealized = StringToDouble(val);
       else if(key == "JACT") g_journalActor = (int)StringToInteger(val);
       else if(key == "REASON") g_lastReason = val;
+      else if(key == "CTXR") RM_CtxDeserialize(val, g_ctxRec);
+      else if(key == "CTXN") RM_CtxDeserialize(val, g_ctxNorm);
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];

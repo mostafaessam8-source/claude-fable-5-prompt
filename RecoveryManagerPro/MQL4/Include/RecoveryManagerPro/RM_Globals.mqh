@@ -129,4 +129,43 @@ double   g_normalRealized = 0.0;        // realised net of normal-strategy closu
 string   g_lastReason = "";             // last handover / block reason
 int      g_journalActor = RM_ACTOR_NONE; // actor that owns the open journal
 
+//--- distance-unit service state (see RM_DistanceSvc.mqh)
+struct RM_DistInfo
+  {
+   string            symbol;
+   int               profile;
+   int               source;
+   int               mode;
+   double            unitPrice;       // price value of ONE configured unit (0 = undefined)
+   double            brokerPoint;     // price value of one broker point
+   double            tickPrice;       // executable tick size in PRICE units
+   int               digits;
+   bool              metaValid;       // point/tick usable for orders
+   bool              valid;           // metaValid AND unit defined
+   string            why;
+  };
+
+struct RM_DistCtx
+  {
+   bool              active;
+   int               mode;
+   int               profile;
+   double            unitPrice;
+   double            stepBasePrice;   // recovery: base grid step / normal: averaging step (price)
+   double            stepMult;        // recovery only
+   double            tpPrice;         // normal virtual TP (price)
+   double            overlapPrice;    // normal overlap target distance (price)
+   double            partialTPPrice;  // recovery partial-close TP distance (price)
+   double            bufferPrice;     // recovery execution buffer (price per closed lot)
+   long              since;
+  };
+
+RM_DistInfo g_dist;
+RM_DistCtx  g_ctxRec;                 // unit context of the active recovery cycle
+RM_DistCtx  g_ctxNorm;                // unit context of the open normal basket
+double      g_recReqSpacing[2];       // last requested recovery spacing (price) per direction
+double      g_recEffSpacing[2];       // last effective (tick-rounded) spacing
+double      g_normNextLevel[2];       // next normal averaging level per direction
+string      g_migrationText = "";
+
 #endif

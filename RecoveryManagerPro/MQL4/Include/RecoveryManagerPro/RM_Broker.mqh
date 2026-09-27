@@ -23,6 +23,7 @@ void RM_RefreshMeta()
    if(g_meta.lotStep <= 0.0)
       g_meta.lotStep = 0.01;
    g_mpp = RM_MoneyPerPointPerLot(g_meta.tickValue, g_meta.tickSize, g_meta.point);
+   RM_DistRefresh();                          // distance-unit service (validated metadata, no fallbacks)
   }
 
 //+------------------------------------------------------------------+
@@ -47,9 +48,12 @@ int RM_SpreadPoints()
    return (int)MathRound((RM_Ask() - RM_Bid()) / g_meta.point);
   }
 
+//+------------------------------------------------------------------+
+//| Executable price: nearest tick (price units), then digits         |
+//+------------------------------------------------------------------+
 double RM_NormPrice(double p)
   {
-   return NormalizeDouble(p, g_digits);
+   return NormalizeDouble(RM_AlignToTick(p, g_dist.tickPrice, RM_ALIGN_NEAREST), g_digits);
   }
 
 //+------------------------------------------------------------------+
@@ -159,9 +163,15 @@ bool RM_Gate(int op, int magic, int ticket, string &err)
    return false;
   }
 
+//+------------------------------------------------------------------+
+//| Slippage in broker points, converted from distance units at the   |
+//| API boundary and floored (never looser than configured).          |
+//+------------------------------------------------------------------+
 int RM_Slippage()
   {
-   return (g_actor == RM_ACTOR_NORMAL) ? InpNormalSlippage : InpMaxSlippage;
+   if(g_actor == RM_ACTOR_NORMAL)
+      return RM_SlippageBrokerPts(InpNormalSlippage, RM_NormUnit());
+   return RM_SlippageBrokerPts(InpMaxSlippage, RM_RecUnit());
   }
 
 //+------------------------------------------------------------------+
@@ -237,6 +247,8 @@ int RM_Send(int type, double lots, int magic, string comment, string tag, string
   {
    if(!RM_Gate(RM_OPK_OPEN, magic, 0, err))
       return -1;
+   if(!g_dist.metaValid)
+     { err = g_dist.why; return -1; }                // never trade on invalid conversion values
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return -1; }
