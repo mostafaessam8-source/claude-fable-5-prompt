@@ -1,0 +1,5 @@
+node_modules/
+# Project data is generated locally from the Excel files and is not committed
+# (this repository is public). See README → "Baseline data".
+data/default-data.js
+*.xlsx

@@ -1,0 +1,14 @@
+{
+  "name": "sar-nsr-cost-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PD-NSR 2026 cost control dashboard (SAR theme) fed from the Excel source workbooks",
+  "scripts": {
+    "build-data": "node tools/build-default-data.js",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.1",
+    "xlsx": "0.18.5"
+  }
+}
