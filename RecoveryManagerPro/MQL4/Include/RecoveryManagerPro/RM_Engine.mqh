@@ -1,0 +1,846 @@
+//+------------------------------------------------------------------+
+//| RM_Engine.mqh - state machine driver, launch preparation, lock,   |
+//| grid engine, closure dispatch and operator actions.               |
+//|                                                                   |
+//| Per call order (tick, or init):                                   |
+//|  1 refresh metadata, build book from broker truth                 |
+//|  2 continue any open transaction journal                          |
+//|  3 emergency / basket-TP / launch evaluation                      |
+//|  4 pure state transition (RM_NextState) + side effects            |
+//|  5 state action (prepare / lock / recover / close)                |
+//|  6 previews for the dashboard (same snapshot)                     |
+//+------------------------------------------------------------------+
+#ifndef RM_ENGINE_MQH
+#define RM_ENGINE_MQH
+
+double g_nextLevel[2];          // next prospective grid entry per direction (0 = none)
+int    g_prepTries = 0;
+uint   g_lastPreviewMs = 0;
+bool   g_emgLatched = false;
+
+//+------------------------------------------------------------------+
+void RM_InitRuntime()
+  {
+   g_state = RM_ST_IDLE;
+   g_stateBeforePause = RM_ST_RECOVERING;
+   g_lastEntryBar[0] = 0; g_lastEntryBar[1] = 0;
+   g_highIndex[0] = -1;   g_highIndex[1] = -1;
+   g_nextLevel[0] = 0;    g_nextLevel[1] = 0;
+   RM_JournalClear(g_journal);
+   RM_PlanReset(g_curGroup, RM_PLAN_NONE);
+   RM_PlanReset(g_reducePreview, RM_PLAN_REDUCE);
+   RM_PlanReset(g_confirmPlan, RM_PLAN_NONE);
+   g_regCount = 0;
+   g_pendCount = 0;
+   RM_DayRoll();
+  }
+
+void RM_ResetSession()
+  {
+   g_regCount = 0;
+   g_pendCount = 0;
+   g_sessionId = 0;
+   g_launchDone = false; g_prepDone = false; g_lockDone = false;
+   g_pendingsDone = false; g_sltpDone = false; g_financeDone = false; g_chartsDone = false;
+   g_closeRequested = false; g_launchNotified = false;
+   g_highIndex[0] = -1; g_highIndex[1] = -1;
+   g_lockResidual = 0.0;
+   g_emgLatched = false;
+   g_peakDrawdown = 0.0;
+  }
+
+int RM_MainCount()
+  {
+   return g_tot.mainBuyCnt + g_tot.mainSellCnt;
+  }
+
+//+------------------------------------------------------------------+
+//| Executable hedge still missing on the main position?              |
+//+------------------------------------------------------------------+
+bool RM_LockGap(double &vol, int &dir, double &residual)
+  {
+   vol = RM_LockVolume(g_tot.mainBuyLots, g_tot.mainSellLots, g_meta, dir, residual);
+   return vol > 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Side effects of entering a new state                              |
+//+------------------------------------------------------------------+
+void RM_EnterState(int ns)
+  {
+   int old = g_state;
+   if(ns == RM_ST_PAUSED && old != RM_ST_PAUSED)
+      g_stateBeforePause = old;
+   if(ns == RM_ST_PREPARING && !g_launchDone)
+     {
+      g_launchDone = true;                     // launch fires exactly once per session
+      g_sessionId = (long)TimeCurrent();
+      g_realizedSession = 0.0;
+      g_prepTries = 0;
+      if(!g_launchNotified)
+        {
+         RM_Notify("recovery launched, managed P/L " + RM_Money(g_managedNet) + " " + AccountCurrency());
+         g_launchNotified = true;
+        }
+     }
+   if(ns == RM_ST_LOCKING && old == RM_ST_RECOVERING)
+      g_lockDone = false;                      // explicit re-lock after an imbalance
+   if(old == RM_ST_ERROR_HOLD && ns != RM_ST_ERROR_HOLD)
+     {
+      g_errorCondition = false;
+      g_errorText = "";
+     }
+   g_state = ns;
+   RM_Audit("STATE", 0, 0, g_managedNet, RM_StateName(old) + " -> " + RM_StateName(ns) +
+            (ns == RM_ST_ERROR_HOLD ? " (" + g_errorText + ")" : ""));
+   if(ns == RM_ST_COMPLETE)
+     {
+      RM_Notify("recovery complete, session realised " + RM_Money(g_realizedSession) + " " + AccountCurrency());
+      RM_Audit("SESSION_END", 0, 0, g_realizedSession, "managed basket empty");
+      RM_ResetSession();
+     }
+   RM_SaveState();
+  }
+
+//+------------------------------------------------------------------+
+//| Operator resume from ERROR_HOLD: explicitly accept unresolved      |
+//| lineage (the parent entry is dropped and logged).                 |
+//+------------------------------------------------------------------+
+void RM_AcceptErrorResolution()
+  {
+   for(int i = g_pendCount - 1; i >= 0; i--)
+     {
+      int p = g_pendParent[i];
+      RM_Audit("LINEAGE_DROPPED", p, 0, 0, "operator resumed; remainder of #" + IntegerToString(p) + " is no longer tracked");
+      RM_RegRemove(p);
+      RM_PendRemove(p);
+     }
+   g_errorCondition = false;
+   g_errorText = "";
+  }
+
+//+------------------------------------------------------------------+
+//| Main driver                                                       |
+//+------------------------------------------------------------------+
+void RM_Engine()
+  {
+   if(g_busy)
+      return;
+   g_busy = true;
+   RM_RefreshMeta();
+   datetime bar0 = iTime(g_sym, 0, 0);
+   if(bar0 != g_lastBarSeen)
+     {
+      g_lastBarSeen = bar0;
+      g_testBars++;
+     }
+   g_entriesThisTick = 0;
+   g_status = "";
+   int tradesAtStart = g_tradeEvents;
+   if(RM_BuildBook())
+      RM_SaveState();
+
+   if(RM_JournalOpen() && g_state != RM_ST_ERROR_HOLD)
+      RM_RunJournal();
+
+   // ---- emergency stop (precedence: emergency > pause > automation)
+   string ew = "";
+   bool emg = RM_EmergencyHit(ew);
+   bool emgEligible = (g_state == RM_ST_ARMED || g_state == RM_ST_PREPARING || g_state == RM_ST_LOCKING ||
+                       g_state == RM_ST_RECOVERING || (g_state == RM_ST_PAUSED && InpEmergencyOverPause));
+   if(emg && emgEligible && !g_emgLatched)
+     {
+      g_emgLatched = true;
+      RM_Audit("EMERGENCY", 0, 0, g_managedNet, ew);
+      RM_Notify("EMERGENCY: " + ew);
+      if(InpEmergencyAction == RM_EMGA_CLOSE_ALL)
+         g_closeRequested = true;
+      else if(g_state != RM_ST_PAUSED)
+         g_pauseRequested = true;
+     }
+   if(!emg)
+      g_emgLatched = false;
+
+   // ---- whole-basket exit
+   if(InpBasketTP && !g_closeRequested && !RM_JournalOpen() &&
+      (g_state == RM_ST_RECOVERING || g_state == RM_ST_LOCKING))
+     {
+      RM_PlanAll(g_book, g_cfg, g_mpp, RM_PLAN_BASKET, InpBasketTPMoney, g_plan);
+      if(g_plan.qualifies && g_plan.n > 0)
+        {
+         g_closeRequested = true;
+         RM_Audit("BASKET_TP", 0, 0, g_plan.expectedNet, "whole basket expected net reaches " + RM_Money(InpBasketTPMoney));
+        }
+     }
+
+   // ---- state transition
+   double lv, lres; int ldir;
+   bool gap = RM_LockGap(lv, ldir, lres);
+   RM_StateInput in;
+   in.state = g_state;
+   in.hasManaged = (g_tot.totalCnt > 0);
+   in.hasMain = (RM_MainCount() > 0);
+   in.launchDone = g_launchDone;
+   in.launchTriggered = RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
+                                           InpLaunchDrawdown, g_tot.origCnt > 0);
+   in.prepDone = g_prepDone;
+   in.lockingEnabled = InpLocking;
+   in.lockDone = g_lockDone;
+   in.mainImbalanced = gap;
+   in.relockOnImbalance = InpRelockOnImbalance;
+   in.journalOpen = RM_JournalOpen();
+   in.closeRequested = g_closeRequested;
+   in.pauseRequested = g_pauseRequested;
+   in.resumeRequested = g_resumeRequested;
+   in.errorCondition = g_errorCondition && !g_resumeRequested;
+   in.stateBeforePause = g_stateBeforePause;
+   if(g_state == RM_ST_ERROR_HOLD && g_resumeRequested)
+      RM_AcceptErrorResolution();
+   int ns = RM_NextState(in);
+   g_pauseRequested = false;
+   g_resumeRequested = false;
+   if(ns != g_state)
+      RM_EnterState(ns);
+
+   // ---- state action
+   switch(g_state)
+     {
+      case RM_ST_IDLE:
+         g_status = (g_tot.totalCnt == 0) ? "No orders to recover" :
+                    "Recovery orders without a main position - Close All or Close Current Group";
+         break;
+      case RM_ST_ARMED:
+         if(InpLaunchMode == RM_LAUNCH_DD_PERCENT)
+            g_status = "Armed: drawdown " + DoubleToString(g_ddPct, 2) + "% / launch at " + DoubleToString(InpLaunchDrawdown, 2) + "%";
+         else if(InpLaunchMode == RM_LAUNCH_DD_MONEY)
+            g_status = "Armed: drawdown " + RM_Money(g_drawdown) + " / launch at " + RM_Money(InpLaunchDrawdown);
+         else
+            g_status = "Armed: launching";
+         break;
+      case RM_ST_PREPARING:  RM_DoPrepare();  break;
+      case RM_ST_LOCKING:    RM_DoLock();     break;
+      case RM_ST_RECOVERING: RM_DoRecover();  break;
+      case RM_ST_CLOSING:    RM_DoClosing();  break;
+      case RM_ST_PAUSED:
+         g_status = "Paused: automated opening and closing stopped";
+         break;
+      case RM_ST_ERROR_HOLD:
+         g_status = "ERROR HOLD: " + g_errorText + " - press Resume after checking the orders";
+         break;
+     }
+   // trades this tick changed the book: refresh so panel and previews show broker truth
+   if(g_tradeEvents != tradesAtStart)
+      RM_BuildBook();
+   RM_UpdatePreviews(g_tradeEvents != tradesAtStart);
+   RM_AnnotLevels();
+   g_busy = false;
+  }
+
+//+------------------------------------------------------------------+
+//| PREPARING: one-time launch actions, each flag persisted           |
+//+------------------------------------------------------------------+
+void RM_DoPrepare()
+  {
+   g_prepTries++;
+   if(!g_chartsDone)
+     {
+      if(InpOtherEAs != RM_OTHER_KEEP && InpAllowChartClosure)
+         RM_PreviewChartClosure(true);
+      g_chartsDone = true;
+      RM_SaveState();
+     }
+   if(!g_pendingsDone)
+     {
+      bool allOk = true;
+      if(InpDeletePending)
+         for(int i = OrdersTotal() - 1; i >= 0; i--)
+           {
+            if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+               continue;
+            if(OrderSymbol() != g_sym || OrderType() <= OP_SELL)
+               continue;
+            if(!RM_InScope(OrderMagicNumber()) || RM_ForeignRmpComment(OrderComment()))
+               continue;
+            int t = OrderTicket();
+            double pl = OrderLots();
+            string err = "";
+            if(RM_DeletePending(t, err))
+               RM_Audit("PENDING_DELETED", t, pl, 0, "launch clean-up");
+            else
+              {
+               allOk = false;
+               RM_Audit("PENDING_DELETE_FAILED", t, 0, 0, err);
+              }
+           }
+      if(allOk || g_prepTries > 10)
+        {
+         g_pendingsDone = true;
+         RM_SaveState();
+        }
+      else
+        {
+         g_status = "Preparing: deleting pending orders";
+         return;
+        }
+     }
+   if(!g_sltpDone)
+     {
+      bool ok2 = true;
+      if(InpDeleteSLTP != RM_SLTP_KEEP)
+         ok2 = RM_ClearManagedSLTP();
+      if(ok2 || g_prepTries > 20)
+        {
+         g_sltpDone = true;
+         RM_SaveState();
+        }
+      else
+        {
+         g_status = "Preparing: removing SL/TP";
+         return;
+        }
+     }
+   if(!g_financeDone)
+     {
+      if(RM_JournalOpen())
+        {
+         g_status = "Preparing: closing profitable orders";
+         return;
+        }
+      if(InpCloseProfitable)
+        {
+         RM_PlanReduce(g_book, g_cfg, g_meta, g_mpp, false, RM_PLAN_LAUNCH, g_plan);
+         if(g_plan.qualifies && g_plan.n > 0)
+            RM_StartPlan(g_plan);
+         else
+            RM_Audit("LAUNCH_FINANCE", 0, 0, 0, "nothing affordable (" + RM_ReasonName(g_plan.reason) + ")");
+        }
+      g_financeDone = true;
+      RM_SaveState();
+      if(RM_JournalOpen())
+         return;
+     }
+   if(RM_JournalOpen())
+      return;
+   g_prepDone = true;
+   RM_SaveState();
+   g_status = "Prepared";
+  }
+
+//+------------------------------------------------------------------+
+//| Remove SL/TP from ORIGINAL orders; true when none remain.         |
+//+------------------------------------------------------------------+
+bool RM_ClearManagedSLTP()
+  {
+   bool ok = true;
+   for(int i = 0; i < g_book.n; i++)
+     {
+      if(g_book.role[i] != RM_ROLE_ORIGINAL)
+         continue;
+      int t = g_book.ticket[i];
+      if(!OrderSelect(t, SELECT_BY_TICKET) || OrderCloseTime() != 0)
+         continue;
+      if(OrderStopLoss() == 0.0 && OrderTakeProfit() == 0.0)
+         continue;
+      string err = "";
+      if(RM_ClearSLTP(t, err))
+         RM_Audit("SLTP_REMOVED", t, OrderLots(), 0, "");
+      else
+        {
+         ok = false;
+         RM_Audit("SLTP_REMOVE_FAILED", t, 0, 0, err);
+        }
+     }
+   return ok;
+  }
+
+//+------------------------------------------------------------------+
+//| LOCKING: hedge the NET main exposure only (recovery excluded).    |
+//| One order per call; the next tick re-reads broker truth before    |
+//| any further hedge, so a partial/uncertain fill is never doubled.  |
+//+------------------------------------------------------------------+
+void RM_DoLock()
+  {
+   if(RM_JournalOpen())
+      return;
+   if(!InpLocking)
+     {
+      g_lockDone = true;
+      RM_SaveState();
+      return;
+     }
+   double vol, residual; int dir;
+   if(!RM_LockGap(vol, dir, residual))
+     {
+      g_lockDone = true;
+      g_lockResidual = residual;
+      if(residual > RM_EPS)
+         RM_Audit("LOCK_RESIDUAL", 0, residual, 0, "main exposure NOT neutral: " + RM_Lots(residual) + " lots cannot be hedged (below lot step/minimum)");
+      else
+         RM_Audit("LOCKED", 0, g_tot.mainBuyLots, g_tot.mainSellLots, "main BUY lots == main SELL lots");
+      RM_SaveState();
+      return;
+     }
+   double chunk = vol;
+   double maxL = RM_NormalizeLot(g_meta.maxLot, g_meta, RM_ROUND_DOWN);
+   if(maxL > 0.0 && chunk > maxL)
+      chunk = maxL;
+   string why = "";
+   if(RM_NewExposureBlocked(dir, chunk, true, why))
+     {
+      g_status = "Lock blocked: " + why;
+      g_block = g_status;
+      return;
+     }
+   g_reqSeq++;
+   string tag = "#" + IntegerToString(g_reqSeq);
+   string cmt = RM_CommentPrefix() + "L " + tag;
+   RM_SaveState();                    // persist the tag counter before sending
+   string err = "";
+   int t = RM_Send(dir, chunk, InpLockMagic, cmt, tag, err);
+   if(t > 0)
+     {
+      if(OrderSelect(t, SELECT_BY_TICKET))
+         RM_RegAdd(t, RM_ROLE_LOCK, dir, OrderLots(), 0, 0, OrderOpenPrice(), (long)OrderOpenTime());
+      RM_Audit("LOCK_OPEN", t, chunk, 0, RM_Side(dir) + " hedge for net main exposure");
+      RM_SaveState();
+     }
+   else
+     {
+      g_status = "Lock failed: " + err;
+      RM_Audit("LOCK_FAILED", 0, chunk, 0, err);
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| RECOVERING: closures first, then entries                          |
+//+------------------------------------------------------------------+
+void RM_DoRecover()
+  {
+   if(RM_JournalOpen())
+     {
+      g_status = "Completing closure transaction";
+      return;
+     }
+   if(InpDeleteSLTP == RM_SLTP_CONTINUOUS)
+      RM_ClearManagedSLTP();
+   g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   // ---- automatic closure: best qualifying group
+   int best = -1;
+   double bestSurplus = 0.0;
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      if(cnt == 0)
+         continue;
+      RM_PlanGroup(g_book, g_cfg, g_meta, g_mpp, d, g_plan);
+      if(!g_plan.qualifies)
+         continue;
+      double surplus = g_plan.expectedNet - g_plan.target;
+      if(best < 0 || surplus > bestSurplus)
+        {
+         best = d;
+         bestSurplus = surplus;
+        }
+     }
+   if(best >= 0)
+     {
+      RM_PlanGroup(g_book, g_cfg, g_meta, g_mpp, best, g_plan);
+      RM_StartPlan(g_plan);
+      return;
+     }
+   RM_GridEntries();
+  }
+
+//+------------------------------------------------------------------+
+//| Last (most recent) recovery order of a direction                  |
+//+------------------------------------------------------------------+
+int RM_LastRecovery(int dir)
+  {
+   int best = -1;
+   for(int i = 0; i < g_book.n; i++)
+     {
+      if(g_book.role[i] != RM_ROLE_RECOVERY || g_book.type[i] != dir)
+         continue;
+      if(best < 0 || g_book.openTime[i] > g_book.openTime[best] ||
+         (g_book.openTime[i] == g_book.openTime[best] && g_book.ticket[i] > g_book.ticket[best]))
+         best = i;
+     }
+   return best;
+  }
+
+int RM_NextGridIndex(int dir)
+  {
+   int cnt = (dir == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+   if(cnt == 0)
+      return 0;
+   if(InpOverlapIndex == RM_OVIDX_CONTINUE)
+      return MathMax(cnt, g_highIndex[dir] + 1);
+   return cnt;
+  }
+
+//+------------------------------------------------------------------+
+//| Grid entry engine (PROPOSED adverse-move anchor rule)             |
+//+------------------------------------------------------------------+
+void RM_GridEntries()
+  {
+   g_block = "";
+   g_nextLevel[0] = 0; g_nextLevel[1] = 0;
+   if(RM_MainCount() == 0)
+     {
+      g_status = "Main position closed - remaining recovery orders close at target";
+      return;
+     }
+   double lv, lres; int ldir;
+   if(InpLocking && RM_LockGap(lv, ldir, lres))
+     {
+      g_block = "main exposure unequal by " + RM_Lots(lv) + " lots - entries blocked until re-locked";
+      g_status = g_block;
+      return;
+     }
+   // continue existing baskets
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      if(cnt > 0)
+         RM_TryAverage(d);
+     }
+   // start new basket(s)
+   if(g_entriesThisTick < InpMaxEntriesPerEvent)
+      RM_TryNewBasket();
+   if(g_status == "")
+      g_status = (g_block != "") ? g_block : "Recovering: waiting for grid level / close target";
+  }
+
+void RM_TryAverage(int dir)
+  {
+   int last = RM_LastRecovery(dir);
+   if(last < 0)
+      return;
+   int idx = RM_NextGridIndex(dir);
+   double step = RM_GridStepPoints(InpGridStepPoints, InpStepMultiplier, idx);
+   double level = RM_GridNextLevel(dir, g_book.openPrice[last], step, g_meta.point);
+   g_nextLevel[dir] = level;
+   if(!RM_GridTriggered(dir, RM_Bid(), RM_Ask(), level))
+      return;
+   if(g_entriesThisTick >= InpMaxEntriesPerEvent)
+      return;
+   if(!RM_DirectionAllowed(dir, InpRecoveryDirs, false, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt))
+      return;
+   if(!RM_BarGateOpen(InpOnePerBar, g_lastEntryBar[dir], (long)iTime(g_sym, 0, 0)))
+     {
+      g_block = RM_Side(dir) + " level reached - one order per bar";
+      return;
+     }
+   if(!RM_SignalAllows(dir, false))
+     {
+      g_block = RM_Side(dir) + " level reached - waiting for " + RM_SignalName();
+      return;
+     }
+   RM_OpenRecovery(dir, idx, false, 0.0);
+  }
+
+void RM_TryNewBasket()
+  {
+   bool can[2];
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      can[d] = (cnt == 0) &&
+               RM_DirectionAllowed(d, InpRecoveryDirs, false, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt) &&
+               RM_BarGateOpen(InpOnePerBar, g_lastEntryBar[d], (long)iTime(g_sym, 0, 0)) &&
+               RM_SignalAllows(d, true);
+     }
+   if(!can[0] && !can[1])
+      return;
+   if(can[0] && can[1] && !InpMultidirectional)
+     {
+      int pick = RM_BUY;
+      if(InpFirstDirection == RM_FD_SELL)
+         pick = RM_SELL;
+      else if(InpFirstDirection == RM_FD_LAST_CANDLE)
+         pick = (iClose(g_sym, 0, 1) >= iOpen(g_sym, 0, 1)) ? RM_BUY : RM_SELL;
+      can[1 - pick] = false;
+     }
+   for(int d2 = 0; d2 < 2; d2++)
+      if(can[d2] && g_entriesThisTick < InpMaxEntriesPerEvent)
+         RM_OpenRecovery(d2, 0, false, 0.0);
+  }
+
+//+------------------------------------------------------------------+
+//| Open one recovery order. manualLot > 0 overrides the grid lot.    |
+//+------------------------------------------------------------------+
+bool RM_OpenRecovery(int dir, int idx, bool manual, double manualLot)
+  {
+   double raw = manual ? manualLot : RM_GridRawLot(InpFirstLot, InpLotMultiplier, idx);
+   if(InpCapBehavior == RM_CAP_REFUSE && raw > g_meta.maxLot + RM_EPS)
+     {
+      g_block = "recovery lot " + DoubleToString(raw, 3) + " exceeds broker maximum - refused";
+      return false;
+     }
+   double lot = RM_NormalizeLot(raw, g_meta, InpLotRounding);
+   if(lot <= 0.0)
+     {
+      g_block = "recovery lot " + DoubleToString(raw, 3) + " below broker minimum";
+      return false;
+     }
+   if(RM_LotExceedsCap(lot, InpMaxRecoveryLot))
+     {
+      if(InpCapBehavior == RM_CAP_REFUSE)
+        {
+         g_block = "recovery lot " + RM_Lots(lot) + " exceeds maximum " + RM_Lots(InpMaxRecoveryLot) + " - refused";
+         RM_Audit("ENTRY_REFUSED", 0, lot, 0, g_block);
+         return false;
+        }
+      lot = RM_NormalizeLot(InpMaxRecoveryLot, g_meta, RM_ROUND_DOWN);
+      if(lot <= 0.0)
+         return false;
+     }
+   if(g_tot.recBuyCnt + g_tot.recSellCnt >= InpMaxRecoveryCount)
+     {
+      g_block = "maximum recovery order count " + IntegerToString(InpMaxRecoveryCount) + " reached";
+      return false;
+     }
+   if(InpMaxRecoveryLotsSum > 0.0 && g_tot.recBuyLots + g_tot.recSellLots + lot > InpMaxRecoveryLotsSum + RM_EPS)
+     {
+      g_block = "maximum total recovery lots " + RM_Lots(InpMaxRecoveryLotsSum) + " reached";
+      return false;
+     }
+   string why = "";
+   if(RM_NewExposureBlocked(dir, lot, false, why))
+     {
+      g_block = why;
+      return false;
+     }
+   g_reqSeq++;
+   string tag = "#" + IntegerToString(g_reqSeq);
+   string cmt = RM_CommentPrefix() + "R " + (dir == RM_BUY ? "B" : "S") + " " + IntegerToString(idx) + " " + tag;
+   long barId = (long)iTime(g_sym, 0, 0);
+   RM_SaveState();
+   string err = "";
+   int t = RM_Send(dir, lot, InpRecoveryMagic, cmt, tag, err);
+   if(t <= 0 && StringFind(err, "uncertain") >= 0 && !manual)
+     {
+      // may exist: consume the bar so a retry cannot add a second order
+      g_lastEntryBar[dir] = barId;
+      RM_SaveState();
+     }
+   if(t <= 0)
+     {
+      g_block = "entry failed: " + err;
+      RM_Audit("ENTRY_FAILED", 0, lot, 0, RM_Side(dir) + " idx " + IntegerToString(idx) + ": " + err);
+      return false;
+     }
+   if(OrderSelect(t, SELECT_BY_TICKET))
+      RM_RegAdd(t, RM_ROLE_RECOVERY, dir, OrderLots(), idx, 0, OrderOpenPrice(), (long)OrderOpenTime());
+   if(!manual)
+      g_lastEntryBar[dir] = barId;
+   if(idx > g_highIndex[dir])
+      g_highIndex[dir] = idx;
+   g_entriesThisTick++;
+   RM_Audit(manual ? "MANUAL_RECOVERY" : "ENTRY", t, lot, raw,
+            RM_Side(dir) + " idx " + IntegerToString(idx) + " raw lot " + DoubleToString(raw, 4));
+   RM_SaveState();
+   RM_BuildBook();
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| CLOSING: close every managed ticket through the journal           |
+//+------------------------------------------------------------------+
+void RM_DoClosing()
+  {
+   g_status = "Closing all managed orders";
+   if(RM_JournalOpen())
+      return;
+   if(g_tot.totalCnt == 0)
+      return;
+   RM_PlanAll(g_book, g_cfg, g_mpp, RM_PLAN_CLOSE_ALL, -1.0, g_plan);
+   if(g_plan.n > 0)
+      RM_StartPlan(g_plan);
+  }
+
+//+------------------------------------------------------------------+
+//| Dashboard previews computed from the same snapshot                |
+//+------------------------------------------------------------------+
+void RM_UpdatePreviews(bool force)
+  {
+   uint now = GetTickCount();
+   if(!force && now - g_lastPreviewMs < 250 && !IsTesting())
+      return;
+   g_lastPreviewMs = now;
+   g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   RM_PlanReset(g_curGroup, RM_PLAN_NONE);
+   bool have = false;
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      if(cnt == 0)
+         continue;
+      RM_PlanGroup(g_book, g_cfg, g_meta, g_mpp, d, g_plan);
+      if(!have || g_plan.expectedNet - g_plan.target > g_curGroup.expectedNet - g_curGroup.target)
+        {
+         g_curGroup = g_plan;
+         have = true;
+        }
+     }
+   RM_PlanReduce(g_book, g_cfg, g_meta, g_mpp, g_cfg.matchedMain, RM_PLAN_REDUCE, g_reducePreview);
+  }
+
+//+------------------------------------------------------------------+
+//| Operator actions                                                  |
+//+------------------------------------------------------------------+
+bool RM_ManualAllowed(string &why)
+  {
+   if(g_state == RM_ST_CLOSING)
+     { why = "closing in progress"; return false; }
+   if(g_state == RM_ST_ERROR_HOLD)
+     { why = "error hold - resolve first"; return false; }
+   if(RM_JournalOpen())
+     { why = "a closure transaction is still open"; return false; }
+   return true;
+  }
+
+bool RM_ActionOpen(int dir, bool asRecovery, double lotInput, string &msg)
+  {
+   string why = "";
+   if(!RM_ManualAllowed(why))
+     { msg = why; return false; }
+   double lot = RM_NormalizeLot(lotInput, g_meta, RM_ROUND_DOWN);
+   if(lot <= 0.0)
+     { msg = "volume below broker minimum " + RM_Lots(g_meta.minLot); return false; }
+   if(MathAbs(lot - lotInput) > RM_EPS)
+     { msg = "volume must be a multiple of the lot step " + DoubleToString(g_meta.lotStep, 2); return false; }
+   if(asRecovery)
+     {
+      if(!RM_DirectionAllowed(dir, InpRecoveryDirs, true, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt))
+        { msg = "multidirectional recovery is off and the opposite basket is active"; return false; }
+      if(RM_MainCount() == 0)
+        { msg = "no main position to recover"; return false; }
+      bool ok = RM_OpenRecovery(dir, RM_NextGridIndex(dir), true, lot);
+      msg = ok ? "manual RECOVERY " + RM_Side(dir) + " " + RM_Lots(lot) + " opened" : g_block;
+      return ok;
+     }
+   if(RM_NewExposureBlocked(dir, lot, false, why))
+     { msg = why; return false; }
+   g_reqSeq++;
+   string tag = "#" + IntegerToString(g_reqSeq);
+   string cmt = RM_CommentPrefix() + "O " + tag;
+   RM_SaveState();
+   string err = "";
+   int t = RM_Send(dir, lot, InpManualOriginalMagic, cmt, tag, err);
+   if(t <= 0)
+     { msg = "open failed: " + err; RM_Audit("MANUAL_FAILED", 0, lot, 0, err); return false; }
+   if(OrderSelect(t, SELECT_BY_TICKET))
+      RM_RegAdd(t, RM_ROLE_ORIGINAL, dir, OrderLots(), 0, 0, OrderOpenPrice(), (long)OrderOpenTime());
+   RM_Audit("MANUAL_ORIGINAL", t, lot, 0, RM_Side(dir));
+   RM_SaveState();
+   msg = "manual ORIGINAL " + RM_Side(dir) + " " + RM_Lots(lot) + " opened (#" + IntegerToString(t) + ")";
+   return true;
+  }
+
+void RM_ActionStopResume()
+  {
+   if(g_state == RM_ST_PAUSED || g_state == RM_ST_ERROR_HOLD)
+     {
+      g_resumeRequested = true;
+      RM_Audit("OPERATOR", 0, 0, 0, "resume requested");
+     }
+   else
+     {
+      g_pauseRequested = true;
+      RM_Audit("OPERATOR", 0, 0, 0, "stop recovery requested");
+     }
+   RM_Engine();
+  }
+
+bool RM_ActionCloseAll(string &msg)
+  {
+   if(g_tot.totalCnt == 0)
+     { msg = "nothing to close"; return false; }
+   g_closeRequested = true;
+   RM_Audit("OPERATOR", 0, g_tot.totalLots, g_tot.totalPL, "close all managed orders");
+   RM_SaveState();
+   RM_Engine();
+   msg = "closing all managed orders";
+   return true;
+  }
+
+bool RM_ActionExecutePlan(RM_Plan &p, string &msg)
+  {
+   string why = "";
+   if(!RM_ManualAllowed(why))
+     { msg = why; return false; }
+   if(p.n == 0)
+     { msg = "nothing to close (" + RM_ReasonName(p.reason) + ")"; return false; }
+   RM_Audit("OPERATOR", 0, 0, p.expectedNet, "execute " + RM_PlanKindName(p.kind));
+   RM_StartPlan(p);
+   msg = RM_PlanKindName(p.kind) + " sent, estimated " + RM_Money(p.expectedNet) + " " + AccountCurrency();
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| Other-EA charts: preview (always) and closure (explicit only)     |
+//+------------------------------------------------------------------+
+void RM_PreviewChartClosure(bool execute)
+  {
+   g_chartPreview = "";
+   if(InpOtherEAs == RM_OTHER_KEEP || IsTesting())
+      return;
+   long id = ChartFirst();
+   int n = 0;
+   while(id >= 0)
+     {
+      long nextId = ChartNext(id);
+      if(id != g_chartId)
+        {
+         string ea = ChartGetString(id, CHART_EXPERT_NAME);
+         bool sameSym = (ChartSymbol(id) == g_sym);
+         if(ea != "" && (InpOtherEAs == RM_OTHER_CLOSE_ALL_EA || sameSym))
+           {
+            g_chartPreview += ChartSymbol(id) + ":" + ea + " ";
+            n++;
+            if(execute)
+              {
+               RM_Audit("CHART_CLOSED", 0, 0, 0, ChartSymbol(id) + " " + ea);
+               ChartClose(id);
+              }
+           }
+        }
+      id = nextId;
+     }
+   if(!execute)
+      RM_Audit("CHART_PREVIEW", 0, 0, n, "at launch would close: " + (n > 0 ? g_chartPreview : "none"));
+  }
+
+//+------------------------------------------------------------------+
+//| Strategy Tester only: deterministic seed orders                   |
+//+------------------------------------------------------------------+
+void RM_TestSeeds()
+  {
+   if(!InpEnableTestSeeds || g_seedDone || InpTestSeedScenario == RM_SEED_NONE)
+      return;
+   if(!IsTesting())
+     {
+      if(!g_seedDone)
+         Print("RMP: test seeds are ignored outside the Strategy Tester");
+      g_seedDone = true;
+      return;
+     }
+   if(g_testBars < InpTestSeedBar)
+      return;
+   g_seedDone = true;
+   double l = RM_NormalizeLot(InpTestSeedLots, g_meta, RM_ROUND_DOWN);
+   string err = "";
+   if(InpTestSeedScenario == RM_SEED_ONE_BUY || InpTestSeedScenario == RM_SEED_BALANCED_HEDGE)
+      RM_Send(OP_BUY, l, InpTestSeedMagic, "TEST SEED B #s1", "#s1", err);
+   if(InpTestSeedScenario == RM_SEED_ONE_SELL || InpTestSeedScenario == RM_SEED_BALANCED_HEDGE)
+      RM_Send(OP_SELL, l, InpTestSeedMagic, "TEST SEED S #s2", "#s2", err);
+   if(InpTestSeedScenario == RM_SEED_UNBALANCED_MIX)
+     {
+      RM_Send(OP_BUY, RM_NormalizeLot(l * 2.0, g_meta, RM_ROUND_DOWN), InpTestSeedMagic, "TEST SEED B #s3", "#s3", err);
+      RM_Send(OP_SELL, l, InpTestSeedMagic, "TEST SEED S #s4", "#s4", err);
+     }
+   Print("RMP TEST SEED scenario ", EnumToString(InpTestSeedScenario), " opened (", err, ")");
+  }
+
+#endif
