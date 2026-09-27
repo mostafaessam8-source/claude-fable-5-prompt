@@ -81,3 +81,28 @@ The test IDs are `Cxx` for the calculation-test case names in `tests/test_calc.c
 | 63 | Account metrics, realised session/day, peak DD, lots per role, caps, margin gates, emergency, daily lockout, session, CSV audit | ENHANCEMENT | — | `RM_Risk.mqh`, account block, `RM_Log.mqh` | S08, S11 |
 | 64 | Test-only seed orders, tester-gated | PROPOSED | — | `RM_TestSeeds` | V00 |
 | 65 | No DLL, licensing, expiry or internet dependency | PROPOSED | — | code contains none | lint (API list) |
+
+## Extension: Three-MA normal trading with drawdown handover
+
+Classes used here:
+- **SPEC** means the requirement comes from this project's own task specification.
+- **DOCUMENTED** refers to the public AW Three MA description (mql5.com product 63484), as summarised in the task. The page itself was not reachable from the build environment.
+
+| # | Requirement | Class | Implementation | Test |
+|---|---|---|---|---|
+| 66 | Fast/slow MA crossover | DOCUMENTED | `RM_MASignal`, `RM_NormalSignalEval` | C21, S23 |
+| 67 | Optional third MA filtering direction | DOCUMENTED | `InpUseFilterMA`, filter rule in `RM_MASignal` | C21 |
+| 68 | Exact closed-candle formulas (Fast[2] ≤ Slow[2] & Fast[1] > Slow[1], …) | SPEC | `RM_MASignal` | C21 |
+| 69 | Once per closed signal candle, persisted | SPEC | `LASTSIGBAR` | S23, S28 |
+| 70 | MA defaults | PROPOSED (project defaults, not the reference's) | inputs section 12 | — |
+| 71 | Lot sizing, averaging, virtual basket TP, first/last overlap | DOCUMENTED (concepts) | `RM_Normal.mqh` | C22, C24, S23, S26 |
+| 72 | Exact averaging, TP and overlap rules | PROPOSED (documented in COMBINED_MODE.md) | `RM_NormalEntries`, `RM_NormalManage` | C22 |
+| 73 | NORMAL → handover → recovery → completion → normal cycle, latch | SPEC | `RM_Controller.mqh` | S24, S28, S31 |
+| 74 | Trigger formulas (managed / account, balance-relative floating) | SPEC | `RM_TriggerMetrics`, `RM_TriggerHit` | C20, S24, S34 |
+| 75 | Single threshold (reuse `InpLaunchDrawdown`) | SPEC | `RM_TriggerCheckNow` | S28 (threshold change) |
+| 76 | Central permission gate for all order operations | SPEC | `RM_Permit` | S26, S35, S36 |
+| 77 | Handover steps 1–9 with persistence and failure handling | SPEC | `RM_StartHandover`, `RM_CtlHandoverStep` | S27, S27b |
+| 78 | Completion definition, cycle accounting, outcome | SPEC | `RM_CtlCheckCompletion` | S30, S31, S32 |
+| 79 | Cooldown, auto-resume, fresh signal, no stale crossover | SPEC | `RM_CtlCooldown`, `RM_ResumeAllowed`, `RM_SignalIsFresh` | C23, S31 |
+| 80 | Emergency-loss limit distinct from the launch threshold | SPEC | validation + `RM_NormalEmergency` + engine emergency | S32 |
+| 81 | Dashboard additions and controls | SPEC | `RM_DashCycle.mqh` | S33, S35 |

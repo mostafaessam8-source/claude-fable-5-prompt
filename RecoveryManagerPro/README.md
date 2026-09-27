@@ -5,7 +5,8 @@ Recovery Manager Pro is an independently written MetaTrader 4 Expert Advisor tha
 > **Risk.** Recovery trading can realise losses, add exposure and consume margin. No setting guarantees recovery. Run it on a demo account first. The reference video's backtest figures (net profit 587.07, maximal drawdown 35.42 %) are observations of someone else's run, not targets or evidence of live profitability.
 
 - What it does: it adopts eligible orders, can hedge (lock) their net exposure, and opens a separate recovery grid. Each partial reduction of the losing main position is paid for by the recovery grid's realised profit, and the cycle repeats until the managed basket is empty or the operator stops it.
-- What it does not do: it has no standalone entry strategy. **With no eligible orders it stays idle** and shows "No orders to recover".
+- What it does not do in the default `RECOVERY_ONLY` mode: it has no entry strategy of its own. **With no eligible orders it stays idle** and shows "No orders to recover".
+- **Optional Three-MA normal trading** (`InpOperatingMode`): `THREE_MA_ONLY` trades an independent three-moving-average strategy. `THREE_MA_WITH_RECOVERY` trades it until a drawdown threshold, then hands the basket to the recovery engine under a persisted latch, and resumes only after a verified completion, a cooldown and a fresh signal. See [`docs/COMBINED_MODE.md`](docs/COMBINED_MODE.md).
 
 ---
 
@@ -47,6 +48,11 @@ Recovery Manager Pro is an independently written MetaTrader 4 Expert Advisor tha
 | Dashboard | `RM_Dashboard.mqh` | three panels, confirmations, tester button polling |
 | Annotations | `RM_Annotations.mqh` | profit labels, connectors, levels, chart colours |
 | Log | `RM_Log.mqh` | names, CSV audit, notifications |
+| Normal strategy | `RM_Normal.mqh` | independent Three-MA module: signals, lots, own averaging, virtual TP, overlap |
+| Controller | `RM_Controller.mqh` | single authority for NORMAL → HANDOVER → RECOVERY → COOLDOWN, latch, trigger, restart |
+| Cycle panel | `RM_DashCycle.mqh` | dashboard panel D and its buttons |
+
+Every order operation passes one permission gate (`RM_Permit` in `RM_Broker.mqh`), keyed by the calling actor (recovery, normal, operator, emergency, handover, test). That gate is what keeps the normal strategy and the recovery engine from ever managing the same basket.
 
 The three "portable" headers contain no MT4 API calls, so the same files also compile natively with g++ for the calculation tests (see §10).
 
@@ -187,141 +193,189 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 
 #### 1. Managed orders
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpRecoveryPriority` | ENUM_RM_PRIORITY | `RM_PRIO_EASY_FIRST` | `0` | `0` | Recovery priority |
-| `InpScope` | ENUM_RM_SCOPE | `RM_SCOPE_ALL_SYMBOL` | `0` | `1` | Managed-order scope (this symbol only) |
-| `InpMagicList` | string | `"0"` | `12345,54321,0` | `0` | Magic allowlist, comma separated (MAGIC_LIST scope) |
-| `InpExcludeMagics` | string | (empty) | (empty) | (empty) | Magics never adopted (any scope) |
-| `InpAdoptPolicy` | ENUM_RM_ADOPT | `RM_ADOPT_UNTIL_LAUNCH` | `0` | `0` | Adoption of newly arriving orders |
-| `InpFirstRecoveryTicket` | int | `0` | `0` | `0` | First ticket to recover (0 = unused) |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpRecoveryPriority` | ENUM_RM_PRIORITY | `RM_PRIO_EASY_FIRST` | `0` | `0` | `0` | Recovery priority |
+| `InpScope` | ENUM_RM_SCOPE | `RM_SCOPE_ALL_SYMBOL` | `0` | `1` | `0` | Managed-order scope (this symbol only) |
+| `InpMagicList` | string | `"0"` | `12345,54321,0` | `0` | `0` | Magic allowlist, comma separated (MAGIC_LIST scope) |
+| `InpExcludeMagics` | string | (empty) | (empty) | (empty) | (empty) | Magics never adopted (any scope) |
+| `InpAdoptPolicy` | ENUM_RM_ADOPT | `RM_ADOPT_UNTIL_LAUNCH` | `0` | `0` | `0` | Adoption of newly arriving orders |
+| `InpFirstRecoveryTicket` | int | `0` | `0` | `0` | `0` | First ticket to recover (0 = unused) |
 
 #### 2. Launch
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpLocking` | bool | `true` | `1` | `1` | Lock (hedge) the main position |
-| `InpDeleteSLTP` | ENUM_RM_SLTP | `RM_SLTP_LAUNCH_ONLY` | `1` | `1` | Delete SL and TP of managed orders |
-| `InpLaunchMode` | ENUM_RM_LAUNCH | `RM_LAUNCH_INSTANT` | `0` | `1` | Launch mode |
-| `InpLaunchDrawdown` | double | `35.0` | `35.0` | `5.0` | Launch drawdown [% of balance or account currency] |
-| `InpOtherEAs` | ENUM_RM_OTHER_EA | `RM_OTHER_KEEP` | `0` | `0` | Other EAs at launch (closes charts!) |
-| `InpAllowChartClosure` | bool | `false` | `0` | `0` | Operator enablement for chart closure |
-| `InpCloseProfitable` | bool | `true` | `1` | `1` | Close profitable orders at launch (finance losers) |
-| `InpDeletePending` | bool | `true` | `1` | `1` | Delete in-scope pending orders at launch |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpLocking` | bool | `true` | `1` | `1` | `1` | Lock (hedge) the main position |
+| `InpDeleteSLTP` | ENUM_RM_SLTP | `RM_SLTP_LAUNCH_ONLY` | `1` | `1` | `1` | Delete SL and TP of managed orders |
+| `InpLaunchMode` | ENUM_RM_LAUNCH | `RM_LAUNCH_INSTANT` | `0` | `1` | `0` | Launch mode |
+| `InpLaunchDrawdown` | double | `35.0` | `35.0` | `5.0` | `10.0` | Launch drawdown [% of balance or account currency] |
+| `InpOtherEAs` | ENUM_RM_OTHER_EA | `RM_OTHER_KEEP` | `0` | `0` | `0` | Other EAs at launch (closes charts!) |
+| `InpAllowChartClosure` | bool | `false` | `0` | `0` | `0` | Operator enablement for chart closure |
+| `InpCloseProfitable` | bool | `true` | `1` | `1` | `0` | Close profitable orders at launch (finance losers) |
+| `InpDeletePending` | bool | `true` | `1` | `1` | `1` | Delete in-scope pending orders at launch |
 
 #### 3. Partial closing
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpPartialLots` | double | `0.01` | `0.03` | `0.01` | Partial-close volume per main side [lots] |
-| `InpPartialTPPoints` | double | `30.0` | `30` | `30` | Partial-close TP [points, NOT pips/money] |
-| `InpTPBasis` | ENUM_RM_TP_BASIS | `RM_TPB_RECOVERY_LOTS` | `0` | `0` | TP points-to-money lot basis (PROPOSED) |
-| `InpOverlapThreshold` | int | `2` | `2` | `3` | Overlap threshold [recovery orders, 0 = off] |
-| `InpOverlapCompare` | ENUM_RM_OVERLAP_CMP | `RM_OVL_GE` | `0` | `0` | Overlap comparison (UNRESOLVED in reference) |
-| `InpOverlapIndex` | ENUM_RM_OVERLAP_INDEX | `RM_OVIDX_RECOUNT` | `0` | `0` | Grid index after overlap closure |
-| `InpBasketTP` | bool | `false` | `0` | `0` | Whole-basket TP enabled |
-| `InpBasketTPMoney` | double | `25.0` | `25.0` | `25.0` | Whole-basket TP [account currency] |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpPartialLots` | double | `0.01` | `0.03` | `0.01` | `0.01` | Partial-close volume per main side [lots] |
+| `InpPartialTPPoints` | double | `30.0` | `30` | `30` | `30` | Partial-close TP [points, NOT pips/money] |
+| `InpTPBasis` | ENUM_RM_TP_BASIS | `RM_TPB_RECOVERY_LOTS` | `0` | `0` | `0` | TP points-to-money lot basis (PROPOSED) |
+| `InpOverlapThreshold` | int | `2` | `2` | `3` | `3` | Overlap threshold [recovery orders, 0 = off] |
+| `InpOverlapCompare` | ENUM_RM_OVERLAP_CMP | `RM_OVL_GE` | `0` | `0` | `0` | Overlap comparison (UNRESOLVED in reference) |
+| `InpOverlapIndex` | ENUM_RM_OVERLAP_INDEX | `RM_OVIDX_RECOUNT` | `0` | `0` | `0` | Grid index after overlap closure |
+| `InpBasketTP` | bool | `false` | `0` | `0` | `0` | Whole-basket TP enabled |
+| `InpBasketTPMoney` | double | `25.0` | `25.0` | `25.0` | `25.0` | Whole-basket TP [account currency] |
 
 #### 4. Recovery orders
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpSignalMode` | ENUM_RM_SIGNAL | `RM_SIG_SIMPLE_GRID` | `0` | `0` | Recovery filter |
-| `InpRecoveryDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | Allowed recovery directions |
-| `InpFirstLot` | double | `0.01` | `0.06` | `0.01` | First recovery order volume [lots] |
-| `InpLotMultiplier` | double | `1.2` | `1.3` | `1.2` | Volume multiplier [x, >= 1] |
-| `InpGridStepPoints` | double | `300` | `200` | `300` | Grid step [points] |
-| `InpStepMultiplier` | double | `1.0` | `1.0` | `1.1` | Step multiplier [x] |
-| `InpOnePerBar` | bool | `true` | `1` | `1` | One recovery order per bar |
-| `InpMultidirectional` | bool | `false` | `0` | `0` | Multidirectional recovery |
-| `InpMaxSlippage` | int | `30` | `30` | `30` | Maximum slippage [points] |
-| `InpMaxSpread` | int | `50` | `7500` | `50` | Maximum spread for NEW exposure [points] |
-| `InpMaxRecoveryLot` | double | `1.0` | `100.0` | `0.10` | Maximum recovery order volume [lots] |
-| `InpMaxRecoveryCount` | int | `12` | `100` | `10` | Maximum recovery orders (both directions) |
-| `InpRecoveryMagic` | int | `9751421` | `9751421` | `9751421` | Recovery magic number |
-| `InpLockMagic` | int | `9751422` | `9751422` | `9751422` | Lock (hedge) magic number (PROPOSED) |
-| `InpLotRounding` | ENUM_RM_LOT_ROUND | `RM_ROUND_DOWN` | `0` | `0` | Final lot normalisation |
-| `InpCapBehavior` | ENUM_RM_CAP | `RM_CAP_REFUSE` | `0` | `0` | Lot above maximum: refuse or clamp |
-| `InpFirstDirection` | ENUM_RM_FIRST_DIR | `RM_FD_LAST_CANDLE` | `0` | `0` | First basket direction (unfiltered, PROPOSED) |
-| `InpMaxEntriesPerEvent` | int | `1` | `1` | `1` | Max recovery entries per tick (gap guard) |
-| `InpRelockOnImbalance` | bool | `true` | `1` | `1` | Re-lock automatically if main becomes unequal |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpSignalMode` | ENUM_RM_SIGNAL | `RM_SIG_SIMPLE_GRID` | `0` | `0` | `0` | Recovery filter |
+| `InpRecoveryDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | `0` | Allowed recovery directions |
+| `InpFirstLot` | double | `0.01` | `0.06` | `0.01` | `0.01` | First recovery order volume [lots] |
+| `InpLotMultiplier` | double | `1.2` | `1.3` | `1.2` | `1.2` | Volume multiplier [x, >= 1] |
+| `InpGridStepPoints` | double | `300` | `200` | `300` | `300` | Grid step [points] |
+| `InpStepMultiplier` | double | `1.0` | `1.0` | `1.1` | `1.1` | Step multiplier [x] |
+| `InpOnePerBar` | bool | `true` | `1` | `1` | `1` | One recovery order per bar |
+| `InpMultidirectional` | bool | `false` | `0` | `0` | `0` | Multidirectional recovery |
+| `InpMaxSlippage` | int | `30` | `30` | `30` | `30` | Maximum slippage [points] |
+| `InpMaxSpread` | int | `50` | `7500` | `50` | `50` | Maximum spread for NEW exposure [points] |
+| `InpMaxRecoveryLot` | double | `1.0` | `100.0` | `0.10` | `0.10` | Maximum recovery order volume [lots] |
+| `InpMaxRecoveryCount` | int | `12` | `100` | `10` | `10` | Maximum recovery orders (both directions) |
+| `InpRecoveryMagic` | int | `9751421` | `9751421` | `9751421` | `9751421` | Recovery magic number |
+| `InpLockMagic` | int | `9751422` | `9751422` | `9751422` | `9751422` | Lock (hedge) magic number (PROPOSED) |
+| `InpLotRounding` | ENUM_RM_LOT_ROUND | `RM_ROUND_DOWN` | `0` | `0` | `0` | Final lot normalisation |
+| `InpCapBehavior` | ENUM_RM_CAP | `RM_CAP_REFUSE` | `0` | `0` | `0` | Lot above maximum: refuse or clamp |
+| `InpFirstDirection` | ENUM_RM_FIRST_DIR | `RM_FD_LAST_CANDLE` | `0` | `0` | `0` | First basket direction (unfiltered, PROPOSED) |
+| `InpMaxEntriesPerEvent` | int | `1` | `1` | `1` | `1` | Max recovery entries per tick (gap guard) |
+| `InpRelockOnImbalance` | bool | `true` | `1` | `1` | `1` | Re-lock automatically if main becomes unequal |
 
 #### 5. Costs
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpFullCommission` | bool | `false` | `0` | `0` | Full commission calc (exit = booked again) |
-| `InpExtraCommPerLot` | double | `0.0` | `0.0` | `0.0` | Extra unbooked exit commission [money/lot] |
-| `InpExecBufferPoints` | double | `0.0` | `0.0` | `5.0` | Execution buffer [points per closed lot] |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpFullCommission` | bool | `false` | `0` | `0` | `0` | Full commission calc (exit = booked again) |
+| `InpExtraCommPerLot` | double | `0.0` | `0.0` | `0.0` | `0.0` | Extra unbooked exit commission [money/lot] |
+| `InpExecBufferPoints` | double | `0.0` | `0.0` | `5.0` | `5.0` | Execution buffer [points per closed lot] |
 
 #### 6. Notifications
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpNotify` | ENUM_RM_NOTIFY | `RM_NOTIFY_OFF` | `0` | `1` | Launch / end notifications |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpNotify` | ENUM_RM_NOTIFY | `RM_NOTIFY_OFF` | `0` | `1` | `1` | Launch / end notifications |
 
 #### 7. Panel and graphics
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpPanelOpensRecovery` | bool | `false` | `0` | `0` | Manual panel default role: true = RECOVERY |
-| `InpManualLot` | double | `0.10` | `0.10` | `0.01` | Manual panel initial volume [lots] |
-| `InpConfirmActions` | bool | `true` | `1` | `1` | Two-click confirmation for destructive actions |
-| `InpTheme` | ENUM_RM_THEME | `RM_THEME_DARK` | `0` | `0` | Panel theme |
-| `InpAnnotations` | ENUM_RM_ANNOT | `RM_ANNOT_CHART` | `1` | `1` | Closed-profit annotations |
-| `InpPanelSize` | ENUM_RM_PANEL_SIZE | `RM_PANEL_NORMAL` | `1` | `1` | Panel size |
-| `InpFontSize` | int | `8` | `6` | `8` | Font size [5..14] (reference: 6) |
-| `InpShowCloseLine` | bool | `false` | `0` | `1` | Possible-close-zone line |
-| `InpShowGridLevels` | bool | `true` | `1` | `1` | Next recovery entry levels |
-| `InpDrawConnectors` | bool | `true` | `1` | `1` | Dotted open->close connectors |
-| `InpApplyChartColors` | bool | `false` | `1` | `0` | Black chart / green candles scheme |
-| `InpPanelX` | int | `8` | `8` | `8` | Main panel X offset [px] |
-| `InpPanelY` | int | `22` | `22` | `22` | Main panel Y offset [px] |
-| `InpShowAccountBlock` | bool | `true` | `0` | `1` | ENHANCEMENT: account & session metrics |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpPanelOpensRecovery` | bool | `false` | `0` | `0` | `0` | Manual panel default role: true = RECOVERY |
+| `InpManualLot` | double | `0.10` | `0.10` | `0.01` | `0.01` | Manual panel initial volume [lots] |
+| `InpConfirmActions` | bool | `true` | `1` | `1` | `1` | Two-click confirmation for destructive actions |
+| `InpTheme` | ENUM_RM_THEME | `RM_THEME_DARK` | `0` | `0` | `0` | Panel theme |
+| `InpAnnotations` | ENUM_RM_ANNOT | `RM_ANNOT_CHART` | `1` | `1` | `1` | Closed-profit annotations |
+| `InpPanelSize` | ENUM_RM_PANEL_SIZE | `RM_PANEL_NORMAL` | `1` | `1` | `1` | Panel size |
+| `InpFontSize` | int | `8` | `6` | `8` | `8` | Font size [5..14] (reference: 6) |
+| `InpShowCloseLine` | bool | `false` | `0` | `1` | `1` | Possible-close-zone line |
+| `InpShowGridLevels` | bool | `true` | `1` | `1` | `1` | Next recovery entry levels |
+| `InpDrawConnectors` | bool | `true` | `1` | `1` | `1` | Dotted open->close connectors |
+| `InpApplyChartColors` | bool | `false` | `1` | `0` | `0` | Black chart / green candles scheme |
+| `InpPanelX` | int | `8` | `8` | `8` | `8` | Main panel X offset [px] |
+| `InpPanelY` | int | `22` | `22` | `22` | `22` | Main panel Y offset [px] |
+| `InpShowAccountBlock` | bool | `true` | `0` | `1` | `1` | ENHANCEMENT: account & session metrics |
 
 #### 8. Signal filters
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpTrendTF` | ENUM_TIMEFRAMES | `PERIOD_CURRENT` | `0` | `0` | Filter timeframe |
-| `InpTrendAmplitude` | int | `4` | `4` | `4` | Trend amplitude [bars] |
-| `InpTrendFirst` | ENUM_RM_TREND_FIRST | `RM_TF_WITH_TREND` | `0` | `0` | Initial entry vs trend |
-| `InpTrendNext` | ENUM_RM_TREND_NEXT | `RM_TN_ANY` | `0` | `0` | Subsequent averaging vs trend |
-| `InpExtIndicator` | string | (empty) | (empty) | (empty) | External adapter: indicator name (licensed) |
-| `InpExtBuyBuffer` | int | `0` | `0` | `0` | External adapter: BUY buffer index |
-| `InpExtSellBuffer` | int | `1` | `1` | `1` | External adapter: SELL buffer index |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpTrendTF` | ENUM_TIMEFRAMES | `PERIOD_CURRENT` | `0` | `0` | `0` | Filter timeframe |
+| `InpTrendAmplitude` | int | `4` | `4` | `4` | `4` | Trend amplitude [bars] |
+| `InpTrendFirst` | ENUM_RM_TREND_FIRST | `RM_TF_WITH_TREND` | `0` | `0` | `0` | Initial entry vs trend |
+| `InpTrendNext` | ENUM_RM_TREND_NEXT | `RM_TN_ANY` | `0` | `0` | `0` | Subsequent averaging vs trend |
+| `InpExtIndicator` | string | (empty) | (empty) | (empty) | (empty) | External adapter: indicator name (licensed) |
+| `InpExtBuyBuffer` | int | `0` | `0` | `0` | `0` | External adapter: BUY buffer index |
+| `InpExtSellBuffer` | int | `1` | `1` | `1` | `1` | External adapter: SELL buffer index |
 
 #### 9. Risk (ENHANCEMENTS)
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpMaxManagedLots` | double | `0.0` | `0.0` | `1.0` | Max combined managed lots [0 = off] |
-| `InpMaxRecoveryLotsSum` | double | `0.0` | `0.0` | `0.50` | Max total recovery lots [0 = off] |
-| `InpMinFreeMargin` | double | `0.0` | `0.0` | `0.0` | Min free margin for new entries [money] |
-| `InpMinMarginLevel` | double | `200.0` | `0.0` | `300.0` | Min margin level for new entries [%] |
-| `InpEmergencyMode` | ENUM_RM_EMERGENCY | `RM_EMG_OFF` | `0` | `2` | Emergency stop measure |
-| `InpEmergencyValue` | double | `30.0` | `30.0` | `15.0` | Emergency threshold [money or %] |
-| `InpEmergencyAction` | ENUM_RM_EMG_ACTION | `RM_EMGA_PAUSE` | `0` | `0` | Emergency action |
-| `InpEmergencyOverPause` | bool | `true` | `1` | `1` | Emergency also acts while paused |
-| `InpDailyLossLimit` | double | `0.0` | `0.0` | `0.0` | Daily realised loss lockout [money, 0 = off] |
-| `InpSessionStartHour` | int | `0` | `0` | `0` | New entries from hour [server, 0-23] |
-| `InpSessionEndHour` | int | `24` | `24` | `24` | New entries until hour [server, 1-24] |
-| `InpStaleQuoteSeconds` | int | `0` | `0` | `60` | Block entries if last quote older [s, 0 = off] |
-| `InpAuditCsv` | bool | `true` | `1` | `1` | CSV audit export |
-| `InpInstanceId` | int | `1` | `1` | `1` | Strategy / instance id (lock key) |
-| `InpManualOriginalMagic` | int | `0` | `0` | `0` | Magic for manual ORIGINAL orders |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpMaxManagedLots` | double | `0.0` | `0.0` | `1.0` | `1.0` | Max combined managed lots [0 = off] |
+| `InpMaxRecoveryLotsSum` | double | `0.0` | `0.0` | `0.50` | `0.50` | Max total recovery lots [0 = off] |
+| `InpMinFreeMargin` | double | `0.0` | `0.0` | `0.0` | `0.0` | Min free margin for new entries [money] |
+| `InpMinMarginLevel` | double | `200.0` | `0.0` | `300.0` | `300.0` | Min margin level for new entries [%] |
+| `InpEmergencyMode` | ENUM_RM_EMERGENCY | `RM_EMG_OFF` | `0` | `2` | `2` | Emergency stop measure |
+| `InpEmergencyValue` | double | `30.0` | `30.0` | `15.0` | `25.0` | Emergency threshold [money or %] |
+| `InpEmergencyAction` | ENUM_RM_EMG_ACTION | `RM_EMGA_PAUSE` | `0` | `0` | `1` | Emergency action |
+| `InpEmergencyOverPause` | bool | `true` | `1` | `1` | `1` | Emergency also acts while paused |
+| `InpDailyLossLimit` | double | `0.0` | `0.0` | `0.0` | `0.0` | Daily realised loss lockout [money, 0 = off] |
+| `InpSessionStartHour` | int | `0` | `0` | `0` | `0` | New entries from hour [server, 0-23] |
+| `InpSessionEndHour` | int | `24` | `24` | `24` | `24` | New entries until hour [server, 1-24] |
+| `InpStaleQuoteSeconds` | int | `0` | `0` | `60` | `60` | Block entries if last quote older [s, 0 = off] |
+| `InpAuditCsv` | bool | `true` | `1` | `1` | `1` | CSV audit export |
+| `InpInstanceId` | int | `1` | `1` | `1` | `1` | Strategy / instance id (lock key) |
+| `InpManualOriginalMagic` | int | `0` | `0` | `0` | `0` | Magic for manual ORIGINAL orders |
 
 #### 10. Strategy Tester only
 
-| Input | Type | Default | Video preset | Conservative | Meaning [unit] |
-|---|---|---|---|---|---|
-| `InpEnableTestSeeds` | bool | `false` | `0` | `0` | Enable deterministic seed orders (tester only) |
-| `InpTestSeedScenario` | ENUM_RM_TEST_SEED | `RM_SEED_NONE` | `0` | `0` | Seed scenario |
-| `InpTestSeedLots` | double | `0.10` | `0.10` | `0.10` | Seed volume [lots] |
-| `InpTestSeedBar` | int | `5` | `5` | `5` | Open seeds on this bar count |
-| `InpTestSeedMagic` | int | `12345` | `12345` | `12345` | Seed magic number |
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpEnableTestSeeds` | bool | `false` | `0` | `0` | `0` | Enable deterministic seed orders (tester only) |
+| `InpTestSeedScenario` | ENUM_RM_TEST_SEED | `RM_SEED_NONE` | `0` | `0` | `0` | Seed scenario |
+| `InpTestSeedLots` | double | `0.10` | `0.10` | `0.10` | `0.10` | Seed volume [lots] |
+| `InpTestSeedBar` | int | `5` | `5` | `5` | `5` | Open seeds on this bar count |
+| `InpTestSeedMagic` | int | `12345` | `12345` | `12345` | `12345` | Seed magic number |
+
+#### 11. Operating mode and recovery handover
+
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpOperatingMode` | ENUM_RM_OPMODE | `RM_OP_RECOVERY_ONLY` | `0` | `0` | `2` | Operating mode |
+| `InpRecoveryTriggerMode` | ENUM_RM_TRIG_MODE | `RM_TRIG_PERCENT` | `0` | `0` | `0` | Handover trigger unit (threshold = InpLaunchDrawdown) |
+| `InpRecoveryTriggerScope` | ENUM_RM_TRIG_SCOPE | `RM_TSCOPE_MANAGED` | `0` | `0` | `0` | Handover trigger scope |
+| `InpAutoResumeAfterRecovery` | bool | `true` | `1` | `1` | `1` | Resume normal trading automatically after a completed cycle |
+| `InpResumeCooldownBars` | int | `3` | `3` | `3` | `3` | Cooldown after cycle end [signal-timeframe bars] |
+| `InpRequireFreshSignalAfterRecovery` | bool | `true` | `1` | `1` | `1` | Only crossovers whose candle opens after the cycle |
+| `InpCombinedAdoptOthers` | bool | `false` | `0` | `0` | `0` | Also hand over orders in the section-1 scope (normally only own normal trades) |
+
+#### 12. Three-MA normal strategy (project defaults, not the reference EA's)
+
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpNormalMagic` | int | `7351001` | `7351001` | `7351001` | `7351001` | Normal-strategy magic number |
+| `InpSignalTF` | ENUM_TIMEFRAMES | `PERIOD_CURRENT` | `0` | `0` | `0` | Signal timeframe |
+| `InpFastPeriod` | int | `10` | `10` | `10` | `10` | Fast MA period [bars] |
+| `InpFastMethod` | ENUM_MA_METHOD | `MODE_EMA` | `1` | `1` | `1` | Fast MA method |
+| `InpFastPrice` | ENUM_APPLIED_PRICE | `PRICE_CLOSE` | `0` | `0` | `0` | Fast MA applied price |
+| `InpSlowPeriod` | int | `30` | `30` | `30` | `30` | Slow MA period [bars] |
+| `InpSlowMethod` | ENUM_MA_METHOD | `MODE_EMA` | `1` | `1` | `1` | Slow MA method |
+| `InpSlowPrice` | ENUM_APPLIED_PRICE | `PRICE_CLOSE` | `0` | `0` | `0` | Slow MA applied price |
+| `InpUseFilterMA` | bool | `true` | `1` | `1` | `1` | Third (filter) MA enabled |
+| `InpFilterPeriod` | int | `100` | `100` | `100` | `100` | Filter MA period [bars] |
+| `InpFilterMethod` | ENUM_MA_METHOD | `MODE_SMA` | `0` | `0` | `0` | Filter MA method |
+| `InpFilterPrice` | ENUM_APPLIED_PRICE | `PRICE_CLOSE` | `0` | `0` | `0` | Filter MA applied price |
+| `InpNormalDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | `0` | Allowed normal directions |
+| `InpNormalOneBasket` | bool | `true` | `1` | `1` | `1` | Ignore new signals while any normal basket is open |
+| `InpNormalLotMode` | ENUM_RM_NLOT | `RM_NLOT_FIXED` | `0` | `0` | `0` | Initial lot: fixed or balance-based |
+| `InpNormalLot` | double | `0.01` | `0.01` | `0.01` | `0.01` | Initial lot [lots] (per InpNormalLotPerBalance in balance mode) |
+| `InpNormalLotPerBalance` | double | `1000.0` | `1000.0` | `1000.0` | `1000` | Balance per InpNormalLot [account currency] |
+| `InpNormalAveraging` | bool | `false` | `0` | `0` | `1` | Normal averaging enabled |
+| `InpNormalAvgStepPoints` | double | `300` | `300` | `300` | `300` | Minimum averaging spacing from last fill [points] |
+| `InpNormalAvgMultiplier` | double | `1.5` | `1.5` | `1.5` | `1.5` | Averaging lot multiplier [x] |
+| `InpNormalMaxPerDir` | int | `5` | `5` | `5` | `4` | Maximum normal orders per direction |
+| `InpNormalMaxLots` | double | `1.0` | `1.0` | `1.0` | `0.20` | Maximum total normal exposure [lots, 0 = off] |
+| `InpNormalTPPoints` | double | `200` | `200` | `200` | `200` | Virtual basket TP from weighted average [points, 0 = off] |
+| `InpNormalOverlap` | bool | `false` | `0` | `0` | `0` | First/last-order overlap for normal baskets |
+| `InpNormalOverlapMinOrders` | int | `3` | `3` | `3` | `3` | Overlap from this many orders in a direction |
+| `InpNormalOverlapTPPoints` | double | `50` | `50` | `50` | `50` | Overlap target [points x lots of the two orders] |
+| `InpNormalMaxSpread` | int | `50` | `50` | `50` | `50` | Maximum spread for normal entries [points] |
+| `InpNormalSlippage` | int | `30` | `30` | `30` | `30` | Normal-strategy slippage [points] |
 
 **Notes on specific inputs**
+
+- `InpLaunchDrawdown` is the single drawdown threshold. In `RECOVERY_ONLY` its unit comes from `InpLaunchMode`. In `THREE_MA_WITH_RECOVERY` its unit comes from `InpRecoveryTriggerMode`, `InpLaunchMode` (including *Instant start*) is ignored, and only the controller's latch starts recovery. Changing it during an active cycle does not cancel the cycle.
+- `InpEmergency*` is the **emergency-loss limit**. It is a separate control from the recovery-launch threshold: in combined mode validation requires it to be larger when both use the same unit, and an emergency close never restarts normal trading automatically.
 
 - `InpDeleteSLTP`: *launch only* is the documented interpretation of the reference switch. *Continuous* is an **enhancement** that keeps removing SL/TP from ORIGINAL orders while recovering. The EA offers no manual SL/TP editor, because per-ticket stops would break the lock.
 - `InpOtherEAs`: this closes whole **charts**. It cannot switch off another EA's internal logic, and MQL4 has no way to tell which chart hosts an EA, so charts are chosen **by symbol only**: *other charts of this symbol* or *all other charts*. It always excludes this EA's own chart and needs the separate `InpAllowChartClosure=true`. A preview of the affected charts (symbol/period) is written to the log at start (`CHART_PREVIEW`). It is ignored in the tester.
@@ -341,10 +395,10 @@ Run all automated checks (needs `g++` and `python3`):
 
 | Layer | What it proves | What it does not prove |
 |---|---|---|
-| `tests/test_calc.cpp` (169 checks) | the real `RM_Types/RM_Calc/RM_Planner.mqh` compiled natively: lot maths, point→money for Forex and non-standard tick sizes, the worked +3.50 example, remainders, overlap boundaries, priority, reduce planner, journal idempotency, state transitions | MT4 API behaviour |
+| `tests/test_calc.cpp` (216 checks) | the real `RM_Types/RM_Calc/RM_Planner.mqh` compiled natively: lot maths, point→money for Forex and non-standard tick sizes, the worked +3.50 example, remainders, overlap boundaries, priority, reduce planner, journal idempotency, state transitions | MT4 API behaviour |
 | `tests/mql_lint/mql_lint.py` | the whole EA, after rewriting MQL-only syntax, passes `g++ -fsyntax-only` against a declared MT4 API: no undeclared names, typos, argument-count or gross type errors | MetaEditor acceptance |
-| `--sim tests/test_engine_sim.cpp` (20 scenarios) | the EA source runs `OnInit/OnTick/OnDeinit` and the button handlers against an in-memory broker with partial-close lineage, history, files, globals and fault injection | real broker timing, tester modelling, visual rendering |
-| `--presets` | both `.set` files pass the EA's own validation and run | profitability |
+| `--sim tests/test_engine_sim.cpp` (37 scenarios) | the EA source runs `OnInit/OnTick/OnDeinit` and the button handlers against an in-memory broker with partial-close lineage, history, files, globals and fault injection | real broker timing, tester modelling, visual rendering |
+| `--presets` | all three `.set` files (no duplicate or missing keys) pass the EA's own validation and run | profitability |
 
 See [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md) for the recorded output, and [`docs/VISUAL_TEST_PROCEDURES.md`](docs/VISUAL_TEST_PROCEDURES.md) for MT4 Strategy Tester procedures and what to record.
 
@@ -369,6 +423,8 @@ See [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md) for the recorded output, and 
 
 ## 12. Documentation
 
+- [`docs/COMBINED_MODE.md`](docs/COMBINED_MODE.md): Three-MA normal trading, the drawdown handover, the latch, completion and resumption.
+- [`CHANGES.md`](CHANGES.md): change summary.
 - [`docs/EVIDENCE_MATRIX.md`](docs/EVIDENCE_MATRIX.md): each requirement with its evidence class (VIDEO / DOCUMENTED / PROPOSED / UNRESOLVED), implementation and test.
 - [`docs/GAP_REPORT.md`](docs/GAP_REPORT.md): what is reproduced, independently approximated, or blocked.
 - [`docs/VISUAL_TEST_PROCEDURES.md`](docs/VISUAL_TEST_PROCEDURES.md): MT4 procedures for the 18 acceptance items.
