@@ -33,6 +33,23 @@
 | THREE_MA_ONLY never trades recovery | S36 |
 | RECOVERY_ONLY unchanged | S01–S22 |
 
+## Distance-unit tests (quote precision)
+
+| Required check | Test(s) |
+|---|---|
+| GBPUSD 5 digits, 100 → 0.00100; 4 digits → 0.0010 | D01, S43 |
+| USDJPY 3 digits, 100 → 0.100; 2 digits → 0.10 | D01, S43 |
+| XAUUSD 3 digits, 100 → 1.000; 2 digits → 1.00; 250 → 2.50 either way | D01, S37, S43 |
+| BUY anchored at 2650.000, 100 standardized → 2649.000 (not 2649.900) | D02, S37 |
+| Custom unit 0.25 × 4 → 1.00 | D03 |
+| Non-standard tick size: valid executable targets, spacing ≥ requested | D04, S41 |
+| Symbol suffixes / aliases resolve to the configured profile | D05, S43 |
+| Unknown symbols require explicit units (no silent guessing) | D05, S39 |
+| Restart / input change preserves the active basket's convention | S40 |
+| Normal and recovery modules produce identical conversions | S38 |
+| Existing broker-point profiles keep their previous spacing | S01–S36 unchanged (legacy default), S42 |
+| Trigger boundaries just before, at and beyond the level | D02, S37, S38 |
+
 ## Defects found and fixed by these tests
 
 - *(first delivery)* `RM_BuildBook` read a remainder's volume after a nested `OrderSelect` of the parent. Fixed and covered by S06.
@@ -40,13 +57,15 @@
 - *(this extension)* Two `#define`s were used before their definition, and some literal+ternary string concatenations were found. Both were caught by the lint and fixed (`RM_Pick`).
 - *(this extension)* Controller fields kept stale in-memory values when a re-init found no state file, because MQL4 keeps globals across re-init. They are now reset before loading. Covered by S28.
 - *(this extension)* The audit briefly logged `RECOVERY_CLOSING -> HANDOVER` at completion. Fixed and covered by S31.
+- *(distance fix)* A test expectation assumed 1.2 is not a multiple of 0.05. The EA was right, and the test now uses 1.23 → 1.25.
+- *(distance fix)* The lint caught the unit structs and `g_dist` being used before their declaration. They were moved to `RM_Globals.mqh`.
 - *(this extension)* The preset generator produced duplicate keys, one of which silently changed the conservative threshold. Fixed, and the preset check now rejects duplicate or missing keys.
 
 ## Output
 
 ```
 == 1. calculation tests
-Result: 216 passed, 0 failed
+Result: 289 passed, 0 failed
 == 2. MQL4 lint (g++ -fsyntax-only)
 mql_lint: OK
 == 3. simulator scenarios
@@ -54,7 +73,7 @@ S01 no eligible orders: EA stays idle                                          o
 S02 one losing BUY: lock, grid lots, one-per-bar, group close, lineage         ok (23 checks)
 S03 unbalanced mix + unrelated symbol/magic untouched + close all scope        ok (10 checks)
 S04 restart mid-lock does not repeat launch actions                            ok (11 checks)
-S05 closure failure after 1 leg + disconnect + restart: profit counted once    ok (14 checks)
+S05 closure failure after 1 leg + disconnect + restart: profit counted once    ok (15 checks)
 S06 external partial close + external lock close: lineage and re-lock          ok (11 checks)
 S07 pause blocks automation; resume without catch-up burst                     ok (7 checks)
 S08 emergency close-all overrides pause                                        ok (5 checks)
@@ -87,16 +106,23 @@ S33 combined: dashboard figures reconcile with orders                          o
 S34 combined: account-scope DD without basket blocks entries only              ok (7 checks)
 S35 combined: Start Recovery confirm, Normal button cannot bypass latch        ok (10 checks)
 S36 THREE_MA_ONLY: recovery never trades                                       ok (4 checks)
-sim scenarios: 37/37 passed
+S37 units: gold 3- and 2-digit grid 100 -> 1.00, boundaries, slippage          ok (22 checks)
+S38 units: normal and recovery modules convert identically                     ok (9 checks)
+S39 units: unknown symbol blocks entries until explicit units                  ok (13 checks)
+S40 units: restart/input change keep the active basket's units                 ok (8 checks)
+S41 units: non-standard tick size gives executable targets                     ok (8 checks)
+S42 units: legacy config keeps broker points + migration preview               ok (8 checks)
+S43 units: suffix / alias / metadata resolution in the EA                      ok (11 checks)
+sim scenarios: 44/44 passed
 == 4. presets
 Conservative_Demo.set    validate=ok init=ok state=ARMED managed=1 lock=0.00 recovery=0 Armed: drawdown 0.61% / launch at 5.00%
 Three_MA_With_Recovery.set validate=ok init=ok state=IDLE managed=0 lock=0.00 recovery=0 No orders to recover
 Video_Reference.set      validate=ok init=ok state=RECOVERING managed=5 lock=0.10 recovery=3 Recovering: waiting for grid level / close target
 presets: 3/3 valid
 == 5. standalone single-file build (rebuilt, linted and simulated)
-written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 7256 lines
+written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 8323 lines
 mql_lint: OK
-sim scenarios: 37/37 passed
+sim scenarios: 44/44 passed
 ```
 
 ### Calculation test case list
@@ -128,7 +154,13 @@ Recovery Manager Pro - calculation tests
 - C22 normal lot sizing, virtual basket TP, overlap
 - C23 resume rules: cooldown, auto-resume, emergency/manual need operator, fresh signal
 - C24 normal basket closure plan lists only the requested legs
+- D01 standardized points: required conversions on 4/5-digit FX, 2/3-digit JPY and gold
+- D02 gold BUY grid anchored at 2650.000, 100 standardized points -> 2649.000
+- D03 custom unit, price distance, broker points, per-symbol override
+- D04 executable tick size: requested 0.12 with tick 0.05 -> effective 0.15
+- D05 symbol resolution: metadata, suffixes, explicit map, overrides, unknown
+- D06 migration keeps the original price distance; max limits never loosen
 - Break-even / possible-close price solve
 
-Result: 216 passed, 0 failed
+Result: 289 passed, 0 failed
 ```

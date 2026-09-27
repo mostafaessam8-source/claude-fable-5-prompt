@@ -1,5 +1,26 @@
 # Changes
 
+## Distance units across symbols and quote precision
+
+**Defect.** Distance inputs were converted as `input × chart Point`, so the same input meant ten times less price distance on 3-digit XAUUSD or 4-digit Forex. The error also reached point-based money targets, the spread and slippage limits, and order prices, which were not aligned to the tick size.
+
+**Fix.**
+- `RM_Distance.mqh` (portable, unit-tested) and `RM_DistanceSvc.mqh` (MT4 service) provide:
+  - the modes STANDARDIZED_POINTS / BROKER_POINTS / PRICE_DISTANCE / CUSTOM_UNIT;
+  - the profiles FX 0.00001, FXJPY 0.001 and XAUUSD 0.01;
+  - resolution from broker metadata plus an explicit alias map, prefix/suffix and per-symbol overrides;
+  - tick alignment, with spacing rounded up and targets rounded direction-aware;
+  - maximum limits floored;
+  - the requested API: `GetDistanceUnitPrice`, `DistanceToPrice`, `PriceToDistanceUnits`, `PriceDistanceToBrokerPoints`, `AlignPriceToTick`.
+- Recovery grid, normal averaging, normal virtual TP and overlap, partial-TP and buffer money inputs, spread limits, slippage and order prices now all use the service. Recovery and normal modules call the same functions.
+- Undefined units block new entries and new cycles only. Existing baskets keep being managed with their persisted units.
+- The unit context of each active basket is stored in the state file and survives input, chart, profile and restart changes. `InpApplyUnitsToActiveCycle` is the explicit override.
+- `InpConfigVersion`: legacy configurations (0/1, the default) keep broker points, with a log notice, a dashboard LEGACY chip and a migration preview `.set`. The shipped presets were migrated to v2, with no change in price distance.
+- Dashboard panel E "Distance units".
+- Tests: 73 new calculation checks (289 total) and 7 new simulator scenarios (44 total). The simulator gained currency metadata, calc mode and `StringToUpper`.
+
+**Not done:** MetaEditor compilation, because no MT4 terminal was available.
+
 ## Three-MA normal trading with drawdown handover
 
 The EA was extended; nothing was rebuilt. With the default `InpOperatingMode = RECOVERY_ONLY` the behaviour is unchanged, and all 22 earlier simulator scenarios pass without modification.

@@ -106,3 +106,19 @@ Classes used here:
 | 79 | Cooldown, auto-resume, fresh signal, no stale crossover | SPEC | `RM_CtlCooldown`, `RM_ResumeAllowed`, `RM_SignalIsFresh` | C23, S31 |
 | 80 | Emergency-loss limit distinct from the launch threshold | SPEC | validation + `RM_NormalEmergency` + engine emergency | S32 |
 | 81 | Dashboard additions and controls | SPEC | `RM_DashCycle.mqh` | S33, S35 |
+
+## Distance units (quote precision)
+
+| # | Requirement | Class | Implementation | Test |
+|---|---|---|---|---|
+| 82 | Same input keeps its price distance when Digits change | SPEC | `RM_ResolveUnitPrice`, `RM_DistUnitsToPrice` | D01, S37 |
+| 83 | Standardized conventions FX 0.00001 / JPY 0.001 / XAUUSD 0.01 | SPEC (project convention) | `RM_ProfileUnitPrice` | D01 |
+| 84 | Resolution by metadata + explicit map/affixes/overrides, no Digits/substring guessing | SPEC | `RM_ResolveProfile` | D05, S43 |
+| 85 | Unknown symbols require explicit units; entries blocked with the prescribed message | SPEC | `RM_DistanceSvc`, engine/normal gates | D03, S39 |
+| 86 | Tick-size alignment, spacing rounded up, direction-aware targets | SPEC | `RM_EffectiveSpacing`, `RM_GridTargetPrice`, `RM_TPTargetPrice` | D04, S41 |
+| 87 | Multiplier on unrounded base, aligned once | SPEC | `RM_RecStepRequestedPrice` | D02, S37 |
+| 88 | Max limits never loosened by rounding | SPEC | `RM_MaxLimitBrokerPoints`, `RM_SpreadTooWide` | D06, S37 |
+| 89 | Point-based profit model fed via price, lot basis unchanged | SPEC | `RM_RecPartialTPBrokerPts`, `RM_NormOverlapBrokerPts` | S05, S30 |
+| 90 | Config version, legacy broker points, migration preview | SPEC | `InpConfigVersion`, `RM_MigrationPreview` | D06, S42 |
+| 91 | Active basket keeps its unit convention | SPEC | `g_ctxRec` / `g_ctxNorm`, `CTXR`/`CTXN` | S40, S05 |
+| 92 | Dashboard distance information | SPEC | `RM_DashUnits.mqh` | S39, S42 |

@@ -51,6 +51,9 @@ Recovery Manager Pro is an independently written MetaTrader 4 Expert Advisor tha
 | Normal strategy | `RM_Normal.mqh` | independent Three-MA module: signals, lots, own averaging, virtual TP, overlap |
 | Controller | `RM_Controller.mqh` | single authority for NORMAL → HANDOVER → RECOVERY → COOLDOWN, latch, trigger, restart |
 | Cycle panel | `RM_DashCycle.mqh` | dashboard panel D and its buttons |
+| Distance core (portable) | `RM_Distance.mqh` | unit modes, profiles, symbol resolution, tick alignment, migration formula |
+| Distance service | `RM_DistanceSvc.mqh` | per-symbol conversion API, persisted unit contexts of active baskets, migration preview |
+| Units panel | `RM_DashUnits.mqh` | dashboard panel E (distance information) |
 
 Every order operation passes one permission gate (`RM_Permit` in `RM_Broker.mqh`), keyed by the calling actor (recovery, normal, operator, emergency, handover, test). That gate is what keeps the normal strategy and the recovery engine from ever managing the same basket.
 
@@ -220,7 +223,7 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
 |---|---|---|---|---|---|---|
 | `InpPartialLots` | double | `0.01` | `0.03` | `0.01` | `0.01` | Partial-close volume per main side [lots] |
-| `InpPartialTPPoints` | double | `30.0` | `30` | `30` | `30` | Partial-close TP [points, NOT pips/money] |
+| `InpPartialTPPoints` | double | `30.0` | `30` | `30` | `30` | Partial-close TP [distance units, section 13] |
 | `InpTPBasis` | ENUM_RM_TP_BASIS | `RM_TPB_RECOVERY_LOTS` | `0` | `0` | `0` | TP points-to-money lot basis (PROPOSED) |
 | `InpOverlapThreshold` | int | `2` | `2` | `3` | `3` | Overlap threshold [recovery orders, 0 = off] |
 | `InpOverlapCompare` | ENUM_RM_OVERLAP_CMP | `RM_OVL_GE` | `0` | `0` | `0` | Overlap comparison (UNRESOLVED in reference) |
@@ -236,12 +239,12 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | `InpRecoveryDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | `0` | Allowed recovery directions |
 | `InpFirstLot` | double | `0.01` | `0.06` | `0.01` | `0.01` | First recovery order volume [lots] |
 | `InpLotMultiplier` | double | `1.2` | `1.3` | `1.2` | `1.2` | Volume multiplier [x, >= 1] |
-| `InpGridStepPoints` | double | `300` | `200` | `300` | `300` | Grid step [points] |
+| `InpGridStepPoints` | double | `300` | `200` | `300` | `300` | Recovery grid step [distance units, section 13] |
 | `InpStepMultiplier` | double | `1.0` | `1.0` | `1.1` | `1.1` | Step multiplier [x] |
 | `InpOnePerBar` | bool | `true` | `1` | `1` | `1` | One recovery order per bar |
 | `InpMultidirectional` | bool | `false` | `0` | `0` | `0` | Multidirectional recovery |
-| `InpMaxSlippage` | int | `30` | `30` | `30` | `30` | Maximum slippage [points] |
-| `InpMaxSpread` | int | `50` | `7500` | `50` | `50` | Maximum spread for NEW exposure [points] |
+| `InpMaxSlippage` | int | `30` | `30` | `30` | `30` | Maximum slippage [distance units, section 13] |
+| `InpMaxSpread` | int | `50` | `7500` | `50` | `50` | Maximum spread for NEW exposure [distance units] |
 | `InpMaxRecoveryLot` | double | `1.0` | `100.0` | `0.10` | `0.10` | Maximum recovery order volume [lots] |
 | `InpMaxRecoveryCount` | int | `12` | `100` | `10` | `10` | Maximum recovery orders (both directions) |
 | `InpRecoveryMagic` | int | `9751421` | `9751421` | `9751421` | `9751421` | Recovery magic number |
@@ -258,7 +261,7 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 |---|---|---|---|---|---|---|
 | `InpFullCommission` | bool | `false` | `0` | `0` | `0` | Full commission calc (exit = booked again) |
 | `InpExtraCommPerLot` | double | `0.0` | `0.0` | `0.0` | `0.0` | Extra unbooked exit commission [money/lot] |
-| `InpExecBufferPoints` | double | `0.0` | `0.0` | `5.0` | `5.0` | Execution buffer [points per closed lot] |
+| `InpExecBufferPoints` | double | `0.0` | `0.0` | `5.0` | `5.0` | Execution buffer [distance units per closed lot] |
 
 #### 6. Notifications
 
@@ -361,18 +364,34 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | `InpNormalLot` | double | `0.01` | `0.01` | `0.01` | `0.01` | Initial lot [lots] (per InpNormalLotPerBalance in balance mode) |
 | `InpNormalLotPerBalance` | double | `1000.0` | `1000.0` | `1000.0` | `1000` | Balance per InpNormalLot [account currency] |
 | `InpNormalAveraging` | bool | `false` | `0` | `0` | `1` | Normal averaging enabled |
-| `InpNormalAvgStepPoints` | double | `300` | `300` | `300` | `300` | Minimum averaging spacing from last fill [points] |
+| `InpNormalAvgStepPoints` | double | `300` | `300` | `300` | `300` | Minimum averaging spacing from last fill [distance units] |
 | `InpNormalAvgMultiplier` | double | `1.5` | `1.5` | `1.5` | `1.5` | Averaging lot multiplier [x] |
 | `InpNormalMaxPerDir` | int | `5` | `5` | `5` | `4` | Maximum normal orders per direction |
 | `InpNormalMaxLots` | double | `1.0` | `1.0` | `1.0` | `0.20` | Maximum total normal exposure [lots, 0 = off] |
-| `InpNormalTPPoints` | double | `200` | `200` | `200` | `200` | Virtual basket TP from weighted average [points, 0 = off] |
+| `InpNormalTPPoints` | double | `200` | `200` | `200` | `200` | Virtual basket TP from weighted average [distance units, 0 = off] |
 | `InpNormalOverlap` | bool | `false` | `0` | `0` | `0` | First/last-order overlap for normal baskets |
 | `InpNormalOverlapMinOrders` | int | `3` | `3` | `3` | `3` | Overlap from this many orders in a direction |
-| `InpNormalOverlapTPPoints` | double | `50` | `50` | `50` | `50` | Overlap target [points x lots of the two orders] |
-| `InpNormalMaxSpread` | int | `50` | `50` | `50` | `50` | Maximum spread for normal entries [points] |
-| `InpNormalSlippage` | int | `30` | `30` | `30` | `30` | Normal-strategy slippage [points] |
+| `InpNormalOverlapTPPoints` | double | `50` | `50` | `50` | `50` | Overlap target [distance units x lots of the two orders] |
+| `InpNormalMaxSpread` | int | `50` | `50` | `50` | `50` | Maximum spread for normal entries [distance units] |
+| `InpNormalSlippage` | int | `30` | `30` | `30` | `30` | Normal-strategy slippage [distance units] |
+
+#### 13. Distance units (price-distance normalisation)
+
+| Input | Type | Default | Video | Conservative | Three-MA example | Meaning [unit] |
+|---|---|---|---|---|---|---|
+| `InpConfigVersion` | int | `0` | `2` | `2` | `2` | Config version: 0/1 legacy = broker points, 2 = unit mode below |
+| `InpDistanceUnitMode` | ENUM_RM_DIST_MODE | `RM_DU_STANDARDIZED` | `0` | `0` | `0` | Distance unit mode (used from config version 2) |
+| `InpCustomUnitPrice` | double | `0.0` | `0.0` | `0.0` | `0.0` | CUSTOM_UNIT: price value of one unit |
+| `InpSymbolProfileMap` | string | `"GOLD:XAUUSD"` | `GOLD:XAUUSD` | `GOLD:XAUUSD` | `GOLD:XAUUSD` | Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD) |
+| `InpSymbolPrefix` | string | (empty) | (empty) | (empty) | (empty) | Broker symbol prefix stripped for map lookup |
+| `InpSymbolSuffix` | string | (empty) | (empty) | (empty) | (empty) | Broker symbol suffix stripped for map lookup |
+| `InpUnitOverrides` | string | (empty) | (empty) | (empty) | (empty) | Per-symbol unit price SYMBOL:PRICE (e.g. XAGUSD:0.001) |
+| `InpApplyUnitsToActiveCycle` | bool | `false` | `0` | `0` | `0` | Operator: re-apply current units to an ACTIVE basket |
+| `InpWriteMigrationPreview` | bool | `true` | `1` | `1` | `1` | Legacy config: write a migration preview .set |
 
 **Notes on specific inputs**
+
+- **Distance units.** Every input marked *[distance units]* (grid step, partial-close TP, execution buffer, spread and slippage limits, normal averaging, TP and overlap) is converted as `input × unit price` for the chart symbol. From `InpConfigVersion=2` the unit is set by `InpDistanceUnitMode`. With version 0/1 (legacy, the default) inputs stay **broker points**, a notice is logged and a migration preview is written. See [`docs/DISTANCE_UNITS.md`](docs/DISTANCE_UNITS.md). Example: on XAUUSD, 100 standardized points = 1.00 price on both 2- and 3-digit quotes.
 
 - `InpLaunchDrawdown` is the single drawdown threshold. In `RECOVERY_ONLY` its unit comes from `InpLaunchMode`. In `THREE_MA_WITH_RECOVERY` its unit comes from `InpRecoveryTriggerMode`, `InpLaunchMode` (including *Instant start*) is ignored, and only the controller's latch starts recovery. Changing it during an active cycle does not cancel the cycle.
 - `InpEmergency*` is the **emergency-loss limit**. It is a separate control from the recovery-launch threshold: in combined mode validation requires it to be larger when both use the same unit, and an emergency close never restarts normal trading automatically.
@@ -395,9 +414,9 @@ Run all automated checks (needs `g++` and `python3`):
 
 | Layer | What it proves | What it does not prove |
 |---|---|---|
-| `tests/test_calc.cpp` (216 checks) | the real `RM_Types/RM_Calc/RM_Planner.mqh` compiled natively: lot maths, point→money for Forex and non-standard tick sizes, the worked +3.50 example, remainders, overlap boundaries, priority, reduce planner, journal idempotency, state transitions | MT4 API behaviour |
+| `tests/test_calc.cpp` (289 checks) | the real `RM_Types/RM_Calc/RM_Planner.mqh` compiled natively: lot maths, point→money for Forex and non-standard tick sizes, the worked +3.50 example, remainders, overlap boundaries, priority, reduce planner, journal idempotency, state transitions | MT4 API behaviour |
 | `tests/mql_lint/mql_lint.py` | the whole EA, after rewriting MQL-only syntax, passes `g++ -fsyntax-only` against a declared MT4 API: no undeclared names, typos, argument-count or gross type errors | MetaEditor acceptance |
-| `--sim tests/test_engine_sim.cpp` (37 scenarios) | the EA source runs `OnInit/OnTick/OnDeinit` and the button handlers against an in-memory broker with partial-close lineage, history, files, globals and fault injection | real broker timing, tester modelling, visual rendering |
+| `--sim tests/test_engine_sim.cpp` (44 scenarios) | the EA source runs `OnInit/OnTick/OnDeinit` and the button handlers against an in-memory broker with partial-close lineage, history, files, globals and fault injection | real broker timing, tester modelling, visual rendering |
 | `--presets` | all three `.set` files (no duplicate or missing keys) pass the EA's own validation and run | profitability |
 
 See [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md) for the recorded output, and [`docs/VISUAL_TEST_PROCEDURES.md`](docs/VISUAL_TEST_PROCEDURES.md) for MT4 Strategy Tester procedures and what to record.
@@ -424,6 +443,7 @@ See [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md) for the recorded output, and 
 ## 12. Documentation
 
 - [`docs/COMBINED_MODE.md`](docs/COMBINED_MODE.md): Three-MA normal trading, the drawdown handover, the latch, completion and resumption.
+- [`docs/DISTANCE_UNITS.md`](docs/DISTANCE_UNITS.md): distance units, symbol profiles, the conversion service, replaced calculations and migration.
 - [`CHANGES.md`](CHANGES.md): change summary.
 - [`docs/EVIDENCE_MATRIX.md`](docs/EVIDENCE_MATRIX.md): each requirement with its evidence class (VIDEO / DOCUMENTED / PROPOSED / UNRESOLVED), implementation and test.
 - [`docs/GAP_REPORT.md`](docs/GAP_REPORT.md): what is reproduced, independently approximated, or blocked.
