@@ -1,5 +1,27 @@
 # Changes
 
+## Restructure: 25 clear settings, no stop at the first loss
+
+- **Settings.** The input window shows 25 settings in 7 numbered groups (README section 0). All other inputs are advanced and hidden (`ADV`). Uncomment `#define RMP_SHOW_ADVANCED` to show them.
+- **ATR distances** (`InpSpacingMode = ATR`). The normal TP, normal averaging, recovery grid, partial TP and overlap distances are ATR(14) multiples, so they behave the same on any symbol or digit count. `UNITS` keeps the distance-unit inputs.
+- **No hard stop on a loss.**
+  - The account-drawdown **pause** (`InpFreezeDDPct` 20 %, resume below 15 %) blocks only new exposure. Open trades keep being managed and nothing is closed.
+  - The emergency close (50 %, 0 = off) now resumes automatically after `InpEmergencyCooldownBars` (24).
+  - Only the operator's Stop halts trading permanently.
+- **Recovery follows the trend** (Swing Trend filter for first and next orders) and trades **both directions** (`InpMultidirectional = true`). Scenario S45 showed that one-directional recovery could stay stuck in a range.
+- **Trend-filter confirmation** (`InpSignalConfirmBars` 20). A fast/slow crossover arms its direction and fires once, when both MAs are on the filter's side, within 20 candles. Previously the crossover and the filter had to agree on the same candle, which rejected nearly every crossover.
+- **Sizing.**
+  - Lot per balance: 0.01 per 1,000.
+  - Handover at 8 %.
+  - The total lots cap (0.50) now covers normal and recovery orders together.
+  - `InpNormalMaxSpread` was removed; `InpMaxSpread` applies to all entries.
+- **Tests.**
+  - New calculation cases for the confirmation signal (301 in total).
+  - New scenarios S44–S46 on 3-digit gold with the untouched defaults.
+  - `tests/make_default_preset.py` regenerates the default preset.
+  - The Video and Conservative presets carry keys that keep their previous behaviour.
+- No MetaEditor compilation was performed (none available); run the tester on demo first. No setting guarantees profit.
+
 ## Built-in defaults = Three_MA_With_Recovery.set
 
 The 22 input defaults that differed now equal the example preset. That includes `InpOperatingMode = THREE_MA_WITH_RECOVERY`, `InpConfigVersion = 2`, a 10 % handover threshold, the 25 % emergency close, normal averaging on, and the lot and exposure caps. A fresh attach therefore trades the Three-MA strategy with standardized distance units.

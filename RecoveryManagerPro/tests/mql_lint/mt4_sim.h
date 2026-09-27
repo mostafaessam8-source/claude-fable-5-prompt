@@ -257,6 +257,17 @@ inline double iMA(string, int, int period, int, int method, int price, int shift
    for(int i = 0; i < period; i++) s += SimPrice(price, shift + i);
    return s / period;
   }
+inline double iATR(string, int, int period, int shift)
+  {
+   double s = 0;
+   for(int i = shift; i < shift + period; i++)
+     {
+      double h = SimSeries(S.bh, i), l = SimSeries(S.bl, i), pc = SimSeries(S.bc, i + 1);
+      s += std::max(h - l, std::max(std::fabs(h - pc), std::fabs(l - pc)));
+     }
+   return s / period;
+  }
+inline int PeriodSeconds(int = 0) { return 3600; }
 inline int iBarShift(string, int, datetime t, bool = false)
   {
    if(t <= 0) return -1;

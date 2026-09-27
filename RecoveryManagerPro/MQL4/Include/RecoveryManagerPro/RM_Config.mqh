@@ -108,7 +108,7 @@ bool RM_ValidateInputs(string &err)
      { err = "external adapter selected but no indicator name supplied"; return false; }
    if(InpMaxManagedLots < 0.0 || InpMaxRecoveryLotsSum < 0.0 || InpMinFreeMargin < 0.0 || InpMinMarginLevel < 0.0)
      { err = "risk limits must be >= 0"; return false; }
-   if(InpEmergencyMode != RM_EMG_OFF && InpEmergencyValue <= 0.0)
+   if(InpEmergencyValue < 0.0)
      { err = "emergency threshold must be > 0 when enabled"; return false; }
    if(InpEmergencyMode == RM_EMG_PERCENT && InpEmergencyValue > 100.0)
      { err = "emergency percentage must be <= 100"; return false; }
@@ -122,6 +122,14 @@ bool RM_ValidateInputs(string &err)
      { err = "test seed volume must be > 0"; return false; }
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
+
+   // ---- account protection
+   if(InpFreezeDDPct < 0.0 || InpFreezeDDPct > 100.0 || InpFreezeResumePct < 0.0)
+     { err = "pause-new-trades drawdown must be 0 (off) .. 100 %"; return false; }
+   if(InpFreezeDDPct > 0.0 && InpFreezeResumePct >= InpFreezeDDPct)
+     { err = "resume level must be below the pause level"; return false; }
+   if(InpFreezeDDPct > 0.0 && InpEmergencyValue > 0.0 && InpEmergencyMode == RM_EMG_PERCENT && InpEmergencyValue <= InpFreezeDDPct)
+     { err = "close-all drawdown must be larger than the pause-new-trades drawdown"; return false; }
 
    // ---- distance units
    if(InpConfigVersion < 0 || InpConfigVersion > 2)
@@ -160,8 +168,10 @@ bool RM_ValidateInputs(string &err)
         { err = "normal limits: max orders per direction >= 1, max lots >= 0, TP >= 0"; return false; }
       if(InpNormalOverlap && (InpNormalOverlapMinOrders < 2 || InpNormalOverlapTPPoints <= 0.0))
         { err = "normal overlap needs at least 2 orders and a target > 0 points"; return false; }
-      if(InpNormalMaxSpread <= 0 || InpNormalSlippage < 0)
-        { err = "normal spread limit must be > 0 and slippage >= 0"; return false; }
+      if(InpNormalSlippage < 0)
+        { err = "normal slippage must be >= 0"; return false; }
+      if(InpSpacingMode == RM_SPACE_ATR && (InpNormalTPATR < 0.0 || InpNormalAvgATR <= 0.0 || InpGridATR <= 0.0 || InpATRPeriod < 2))
+        { err = "ATR factors must be > 0 (take profit may be 0 = off) and the ATR period >= 2"; return false; }
       if(InpResumeCooldownBars < 0)
         { err = "resume cooldown must be >= 0 bars"; return false; }
      }
@@ -174,7 +184,7 @@ bool RM_ValidateInputs(string &err)
         { err = "percentage handover threshold must be <= 100"; return false; }
       bool sameUnit = (InpEmergencyMode == RM_EMG_PERCENT && InpRecoveryTriggerMode == RM_TRIG_PERCENT) ||
                       (InpEmergencyMode == RM_EMG_MONEY && InpRecoveryTriggerMode == RM_TRIG_MONEY);
-      if(sameUnit && InpEmergencyValue <= InpLaunchDrawdown)
+      if(sameUnit && InpEmergencyValue > 0.0 && InpEmergencyValue <= InpLaunchDrawdown)
         { err = "emergency-loss limit must be larger than the recovery-launch threshold (they are different controls)"; return false; }
      }
 

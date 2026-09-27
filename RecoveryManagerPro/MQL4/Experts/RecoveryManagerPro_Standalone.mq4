@@ -252,6 +252,12 @@ enum ENUM_RM_NLOT
    RM_NLOT_BALANCE = 1  // Initial lot scaled by balance
   };
 
+enum ENUM_RM_SPACING
+  {
+   RM_SPACE_ATR   = 0, // ATR x factor (adapts to each symbol automatically)
+   RM_SPACE_UNITS = 1  // Fixed distance in points (distance units)
+  };
+
 // controller (cycle) states
 #define RM_CTL_NORMAL           0
 #define RM_CTL_HANDOVER         1
@@ -846,6 +852,40 @@ int RM_MASignal(double f2, double s2, double f1, double s1, bool useFilter, doub
    if(sig == -1 && f1 < flt1 && s1 < flt1)
       return -1;
    return 0;
+  }
+
+//+------------------------------------------------------------------+
+//| Crossover with delayed trend confirmation.                        |
+//| A fast/slow crossover ARMS its direction. The signal fires on the |
+//| first closed candle where the armed direction is still aligned   |
+//| and both MAs are on the filter's side, within maxAge candles.    |
+//| An opposite crossover re-arms; a broken alignment disarms. Each  |
+//| crossover can fire at most once. armed/age persist between calls.|
+//+------------------------------------------------------------------+
+int RM_MASignalConfirm(double f2, double s2, double f1, double s1, bool useFilter, double flt1,
+                       int maxAge, int &armed, int &age)
+  {
+   int cross = 0;
+   if(f2 <= s2 && f1 > s1)
+      cross = 1;
+   else if(f2 >= s2 && f1 < s1)
+      cross = -1;
+   if(cross != 0)
+     { armed = cross; age = 0; }
+   else if(armed != 0)
+      age++;
+   if(armed == 0)
+      return 0;
+   if((armed == 1 && f1 <= s1) || (armed == -1 && f1 >= s1) || age > maxAge)
+     { armed = 0; age = 0; return 0; }
+   bool ok = !useFilter ||
+             (armed == 1 && f1 > flt1 && s1 > flt1) ||
+             (armed == -1 && f1 < flt1 && s1 < flt1);
+   if(!ok)
+      return 0;
+   int sig = armed;
+   armed = 0; age = 0;
+   return sig;
   }
 
 //+------------------------------------------------------------------+
@@ -2083,163 +2123,190 @@ double RM_MigrateDistance(double oldInput, double oldBrokerPoint, double newUnit
 
 
 //====================================================================
-// INPUTS  (units in brackets; ranges validated in RM_Config.mqh)
+// INPUTS - only the essentials are shown in the dialog.
+// Advanced settings keep safe fixed values below. To show them in the
+// dialog too, remove the // in front of the next #define and recompile.
 //====================================================================
-input string             S_Scope               = "===== 1. Managed orders =====";
-input ENUM_RM_PRIORITY   InpRecoveryPriority   = RM_PRIO_EASY_FIRST;   // Recovery priority
-input ENUM_RM_SCOPE      InpScope              = RM_SCOPE_ALL_SYMBOL;  // Managed-order scope (this symbol only)
-input string             InpMagicList          = "0";                  // Magic allowlist, comma separated (MAGIC_LIST scope)
-input string             InpExcludeMagics      = "";                   // Magics never adopted (any scope)
-input ENUM_RM_ADOPT      InpAdoptPolicy        = RM_ADOPT_UNTIL_LAUNCH;// Adoption of newly arriving orders
-input int                InpFirstRecoveryTicket= 0;                    // First ticket to recover (0 = unused)
+//#define RMP_SHOW_ADVANCED
+#ifdef RMP_SHOW_ADVANCED
+   #define ADV input
+#else
+   #define ADV
+#endif
 
-input string             S_Launch              = "===== 2. Launch =====";
-input bool               InpLocking            = true;                 // Lock (hedge) the main position
-input ENUM_RM_SLTP       InpDeleteSLTP         = RM_SLTP_LAUNCH_ONLY;  // Delete SL and TP of managed orders
-input ENUM_RM_LAUNCH     InpLaunchMode         = RM_LAUNCH_INSTANT;    // Launch mode
-input double             InpLaunchDrawdown     = 10.0;                 // Launch drawdown [% of balance or account currency]
-input ENUM_RM_OTHER_EA   InpOtherEAs           = RM_OTHER_KEEP;        // Other EAs at launch (closes charts!)
-input bool               InpAllowChartClosure  = false;                // Operator enablement for chart closure
-input bool               InpCloseProfitable    = false;                 // Close profitable orders at launch (finance losers)
-input bool               InpDeletePending      = true;                 // Delete in-scope pending orders at launch
+input string S_MODE = "===== 1. MODE =====";
+input ENUM_RM_OPMODE         InpOperatingMode           = RM_OP_THREE_MA_WITH_RECOVERY; // Mode
 
-input string             S_Partial             = "===== 3. Partial closing =====";
-input double             InpPartialLots        = 0.01;                 // Partial-close volume per main side [lots]
-input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [distance units, section 13]
-input ENUM_RM_TP_BASIS   InpTPBasis            = RM_TPB_RECOVERY_LOTS; // TP points-to-money lot basis (PROPOSED)
-input int                InpOverlapThreshold   = 3;                    // Overlap threshold [recovery orders, 0 = off]
-input ENUM_RM_OVERLAP_CMP InpOverlapCompare    = RM_OVL_GE;            // Overlap comparison (UNRESOLVED in reference)
-input ENUM_RM_OVERLAP_INDEX InpOverlapIndex    = RM_OVIDX_RECOUNT;     // Grid index after overlap closure
-input bool               InpBasketTP           = false;                // Whole-basket TP enabled
-input double             InpBasketTPMoney      = 25.0;                 // Whole-basket TP [account currency]
+input string S_ENTRYSIGNALm = "===== 2. ENTRY SIGNAL (moving averages) =====";
+input ENUM_TIMEFRAMES        InpSignalTF                = PERIOD_CURRENT; // Signal timeframe
+input int                    InpFastPeriod              = 10; // Fast MA period
+input int                    InpSlowPeriod              = 30; // Slow MA period
+input bool                   InpUseFilterMA             = true; // Trend filter MA on
+input int                    InpFilterPeriod            = 100; // Trend filter MA period
+ADV   int                    InpSignalConfirmBars       = 20; // Wait up to N candles for the filter to confirm a crossover (0 = same candle only)
 
-input string             S_Recovery            = "===== 4. Recovery orders =====";
-input ENUM_RM_SIGNAL     InpSignalMode         = RM_SIG_SIMPLE_GRID;   // Recovery filter
-input ENUM_RM_DIRS       InpRecoveryDirs       = RM_DIRS_BOTH;         // Allowed recovery directions
-input double             InpFirstLot           = 0.01;                 // First recovery order volume [lots]
-input double             InpLotMultiplier      = 1.2;                  // Volume multiplier [x, >= 1]
-input double             InpGridStepPoints     = 300;                  // Recovery grid step [distance units, section 13]
-input double             InpStepMultiplier     = 1.1;                  // Step multiplier [x]
-input bool               InpOnePerBar          = true;                 // One recovery order per bar
-input bool               InpMultidirectional   = false;                // Multidirectional recovery
-input int                InpMaxSlippage        = 30;                   // Maximum slippage [distance units, section 13]
-input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [distance units]
-input double             InpMaxRecoveryLot     = 0.10;                  // Maximum recovery order volume [lots]
-input int                InpMaxRecoveryCount   = 10;                   // Maximum recovery orders (both directions)
-input int                InpRecoveryMagic      = 9751421;              // Recovery magic number
-input int                InpLockMagic          = 9751422;              // Lock (hedge) magic number (PROPOSED)
-input ENUM_RM_LOT_ROUND  InpLotRounding        = RM_ROUND_DOWN;        // Final lot normalisation
-input ENUM_RM_CAP        InpCapBehavior        = RM_CAP_REFUSE;        // Lot above maximum: refuse or clamp
-input ENUM_RM_FIRST_DIR  InpFirstDirection     = RM_FD_LAST_CANDLE;    // First basket direction (unfiltered, PROPOSED)
-input int                InpMaxEntriesPerEvent = 1;                    // Max recovery entries per tick (gap guard)
-input bool               InpRelockOnImbalance  = true;                 // Re-lock automatically if main becomes unequal
+input string S_LOTSIZE = "===== 3. LOT SIZE =====";
+input ENUM_RM_NLOT           InpNormalLotMode           = RM_NLOT_BALANCE; // Lot mode (fixed / per balance)
+input double                 InpNormalLot               = 0.01; // Lot (per 1000 balance in balance mode)
 
-input string             S_Costs               = "===== 5. Costs =====";
-input bool               InpFullCommission     = false;                // Full commission calc (exit = booked again)
-input double             InpExtraCommPerLot    = 0.0;                  // Extra unbooked exit commission [money/lot]
-input double             InpExecBufferPoints   = 5.0;                  // Execution buffer [distance units per closed lot]
+input string S_TAKEPROFITAN = "===== 4. TAKE PROFIT AND AVERAGING =====";
+input ENUM_RM_SPACING        InpSpacingMode             = RM_SPACE_ATR; // Distances: ATR (auto per symbol) or fixed points
+input double                 InpNormalTPATR             = 1.0; // Take profit = ATR x
+input bool                   InpNormalAveraging         = true; // Averaging on
+input double                 InpNormalAvgATR            = 1.5; // Averaging step = ATR x
+input double                 InpNormalAvgMultiplier     = 1.3; // Averaging lot multiplier
+input int                    InpNormalMaxPerDir         = 3; // Max orders per direction
 
-input string             S_Notify              = "===== 6. Notifications =====";
-input ENUM_RM_NOTIFY     InpNotify             = RM_NOTIFY_ALERT;        // Launch / end notifications
+input string S_RECOVERY = "===== 5. RECOVERY =====";
+input double                 InpLaunchDrawdown          = 8.0; // Start recovery at drawdown (% of balance)
+input double                 InpGridATR                 = 1.5; // Recovery step = ATR x
+input double                 InpFirstLot                = 0.01; // Recovery start lot
+input double                 InpLotMultiplier           = 1.2; // Recovery lot multiplier
+input int                    InpMaxRecoveryCount        = 8; // Max recovery orders
 
-input string             S_Graphics            = "===== 7. Panel and graphics =====";
-input bool               InpPanelOpensRecovery = false;                // Manual panel default role: true = RECOVERY
-input double             InpManualLot          = 0.01;                 // Manual panel initial volume [lots]
-input bool               InpConfirmActions     = true;                 // Two-click confirmation for destructive actions
-input ENUM_RM_THEME      InpTheme              = RM_THEME_DARK;        // Panel theme
-input ENUM_RM_ANNOT      InpAnnotations        = RM_ANNOT_CHART;       // Closed-profit annotations
-input ENUM_RM_PANEL_SIZE InpPanelSize          = RM_PANEL_NORMAL;      // Panel size
-input int                InpFontSize           = 8;                    // Font size [5..14] (reference: 6)
-input bool               InpShowCloseLine      = true;                // Possible-close-zone line
-input bool               InpShowGridLevels     = true;                 // Next recovery entry levels
-input bool               InpDrawConnectors     = true;                 // Dotted open->close connectors
-input bool               InpApplyChartColors   = false;                // Black chart / green candles scheme
-input int                InpPanelX             = 8;                    // Main panel X offset [px]
-input int                InpPanelY             = 22;                   // Main panel Y offset [px]
-input bool               InpShowAccountBlock   = true;                 // ENHANCEMENT: account & session metrics
+input string S_ACCOUNTPROTE = "===== 6. ACCOUNT PROTECTION =====";
+input double                 InpFreezeDDPct             = 20.0; // Pause NEW trades at drawdown % (0 = off)
+input double                 InpEmergencyValue          = 50.0; // Close all at drawdown % (0 = off)
+input double                 InpMaxManagedLots          = 0.50; // Max total open lots
+input int                    InpMaxSpread               = 50; // Max spread (points)
 
-input string             S_Trend               = "===== 8. Signal filters =====";
-input ENUM_TIMEFRAMES    InpTrendTF            = PERIOD_CURRENT;       // Filter timeframe
-input int                InpTrendAmplitude     = 4;                    // Trend amplitude [bars]
-input ENUM_RM_TREND_FIRST InpTrendFirst        = RM_TF_WITH_TREND;     // Initial entry vs trend
-input ENUM_RM_TREND_NEXT InpTrendNext          = RM_TN_ANY;            // Subsequent averaging vs trend
-input string             InpExtIndicator       = "";                   // External adapter: indicator name (licensed)
-input int                InpExtBuyBuffer       = 0;                    // External adapter: BUY buffer index
-input int                InpExtSellBuffer      = 1;                    // External adapter: SELL buffer index
+input string S_PANEL = "===== 7. PANEL =====";
+input ENUM_RM_PANEL_SIZE     InpPanelSize               = RM_PANEL_NORMAL; // Panel size
+input int                    InpFontSize                = 8; // Font size
 
-input string             S_Risk                = "===== 9. Risk (ENHANCEMENTS) =====";
-input double             InpMaxManagedLots     = 1.0;                  // Max combined managed lots [0 = off]
-input double             InpMaxRecoveryLotsSum = 0.50;                  // Max total recovery lots [0 = off]
-input double             InpMinFreeMargin      = 0.0;                  // Min free margin for new entries [money]
-input double             InpMinMarginLevel     = 300.0;                // Min margin level for new entries [%]
-input ENUM_RM_EMERGENCY  InpEmergencyMode      = RM_EMG_PERCENT;           // Emergency stop measure
-input double             InpEmergencyValue     = 25.0;                 // Emergency threshold [money or %]
-input ENUM_RM_EMG_ACTION InpEmergencyAction    = RM_EMGA_CLOSE_ALL;        // Emergency action
-input bool               InpEmergencyOverPause = true;                 // Emergency also acts while paused
-input double             InpDailyLossLimit     = 0.0;                  // Daily realised loss lockout [money, 0 = off]
-input int                InpSessionStartHour   = 0;                    // New entries from hour [server, 0-23]
-input int                InpSessionEndHour     = 24;                   // New entries until hour [server, 1-24]
-input int                InpStaleQuoteSeconds  = 60;                    // Block entries if last quote older [s, 0 = off]
-input bool               InpAuditCsv           = true;                 // CSV audit export
-input int                InpInstanceId         = 1;                    // Strategy / instance id (lock key)
-input int                InpManualOriginalMagic= 0;                    // Magic for manual ORIGINAL orders
-
-input string             S_Test                = "===== 10. Strategy Tester only =====";
-input bool               InpEnableTestSeeds    = false;                // Enable deterministic seed orders (tester only)
-input ENUM_RM_TEST_SEED  InpTestSeedScenario   = RM_SEED_NONE;         // Seed scenario
-input double             InpTestSeedLots       = 0.10;                 // Seed volume [lots]
-input int                InpTestSeedBar        = 5;                    // Open seeds on this bar count
-input int                InpTestSeedMagic      = 12345;                // Seed magic number
-
-input string             S_OpMode              = "===== 11. Operating mode and recovery handover =====";
-input ENUM_RM_OPMODE     InpOperatingMode      = RM_OP_THREE_MA_WITH_RECOVERY;  // Operating mode
-input ENUM_RM_TRIG_MODE  InpRecoveryTriggerMode = RM_TRIG_PERCENT;     // Handover trigger unit (threshold = InpLaunchDrawdown)
-input ENUM_RM_TRIG_SCOPE InpRecoveryTriggerScope = RM_TSCOPE_MANAGED;  // Handover trigger scope
-input bool               InpAutoResumeAfterRecovery = true;            // Resume normal trading automatically after a completed cycle
-input int                InpResumeCooldownBars = 3;                    // Cooldown after cycle end [signal-timeframe bars]
-input bool               InpRequireFreshSignalAfterRecovery = true;    // Only crossovers whose candle opens after the cycle
-input bool               InpCombinedAdoptOthers = false;               // Also hand over orders in the section-1 scope (normally only own normal trades)
-
-input string             S_ThreeMA             = "===== 12. Three-MA normal strategy (project defaults, not the reference EA's) =====";
-input int                InpNormalMagic        = 7351001;              // Normal-strategy magic number
-input ENUM_TIMEFRAMES    InpSignalTF           = PERIOD_CURRENT;       // Signal timeframe
-input int                InpFastPeriod         = 10;                   // Fast MA period [bars]
-input ENUM_MA_METHOD     InpFastMethod         = MODE_EMA;             // Fast MA method
-input ENUM_APPLIED_PRICE InpFastPrice          = PRICE_CLOSE;          // Fast MA applied price
-input int                InpSlowPeriod         = 30;                   // Slow MA period [bars]
-input ENUM_MA_METHOD     InpSlowMethod         = MODE_EMA;             // Slow MA method
-input ENUM_APPLIED_PRICE InpSlowPrice          = PRICE_CLOSE;          // Slow MA applied price
-input bool               InpUseFilterMA        = true;                 // Third (filter) MA enabled
-input int                InpFilterPeriod       = 100;                  // Filter MA period [bars]
-input ENUM_MA_METHOD     InpFilterMethod       = MODE_SMA;             // Filter MA method
-input ENUM_APPLIED_PRICE InpFilterPrice        = PRICE_CLOSE;          // Filter MA applied price
-input ENUM_RM_DIRS       InpNormalDirs         = RM_DIRS_BOTH;         // Allowed normal directions
-input bool               InpNormalOneBasket    = true;                 // Ignore new signals while any normal basket is open
-input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initial lot: fixed or balance-based
-input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
-input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
-input bool               InpNormalAveraging    = true;                // Normal averaging enabled
-input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [distance units]
-input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
-input int                InpNormalMaxPerDir    = 4;                    // Maximum normal orders per direction
-input double             InpNormalMaxLots      = 0.20;                  // Maximum total normal exposure [lots, 0 = off]
-input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [distance units, 0 = off]
-input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
-input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
-input double             InpNormalOverlapTPPoints = 50;                // Overlap target [distance units x lots of the two orders]
-input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [distance units]
-input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [distance units]
-
-input string             S_Units               = "===== 13. Distance units (price-distance normalisation) =====";
-input int                InpConfigVersion      = 2;                    // Config version: 2 = unit mode below; 0/1 = legacy broker points (old .set files: set 0)
-input ENUM_RM_DIST_MODE  InpDistanceUnitMode   = RM_DU_STANDARDIZED;   // Distance unit mode (used from config version 2)
-input double             InpCustomUnitPrice    = 0.0;                  // CUSTOM_UNIT: price value of one unit
-input string             InpSymbolProfileMap   = "GOLD:XAUUSD";        // Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD)
-input string             InpSymbolPrefix       = "";                   // Broker symbol prefix stripped for map lookup
-input string             InpSymbolSuffix       = "";                   // Broker symbol suffix stripped for map lookup
-input string             InpUnitOverrides      = "";                   // Per-symbol unit price SYMBOL:PRICE (e.g. XAGUSD:0.001)
-input bool               InpApplyUnitsToActiveCycle = false;           // Operator: re-apply current units to an ACTIVE basket
-input bool               InpWriteMigrationPreview = true;              // Legacy config: write a migration preview .set
+//--------------------------------------------------------------------
+// ADVANCED (fixed values; shown only with RMP_SHOW_ADVANCED)
+//--------------------------------------------------------------------
+ADV   string                 S_Scope                    = "===== 1. Managed orders =====";
+ADV   ENUM_RM_PRIORITY       InpRecoveryPriority        = RM_PRIO_EASY_FIRST; // Recovery priority
+ADV   ENUM_RM_SCOPE          InpScope                   = RM_SCOPE_ALL_SYMBOL; // Managed-order scope (this symbol only)
+ADV   string                 InpMagicList               = "0"; // Magic allowlist, comma separated (MAGIC_LIST scope)
+ADV   string                 InpExcludeMagics           = ""; // Magics never adopted (any scope)
+ADV   ENUM_RM_ADOPT          InpAdoptPolicy             = RM_ADOPT_UNTIL_LAUNCH; // Adoption of newly arriving orders
+ADV   int                    InpFirstRecoveryTicket     = 0; // First ticket to recover (0 = unused)
+ADV   string                 S_Launch                   = "===== 2. Launch =====";
+ADV   bool                   InpLocking                 = true; // Lock (hedge) the main position
+ADV   ENUM_RM_SLTP           InpDeleteSLTP              = RM_SLTP_LAUNCH_ONLY; // Delete SL and TP of managed orders
+ADV   ENUM_RM_LAUNCH         InpLaunchMode              = RM_LAUNCH_INSTANT; // Launch mode
+ADV   ENUM_RM_OTHER_EA       InpOtherEAs                = RM_OTHER_KEEP; // Other EAs at launch (closes charts!)
+ADV   bool                   InpAllowChartClosure       = false; // Operator enablement for chart closure
+ADV   bool                   InpCloseProfitable         = false; // Close profitable orders at launch (finance losers)
+ADV   bool                   InpDeletePending           = true; // Delete in-scope pending orders at launch
+ADV   string                 S_Partial                  = "===== 3. Partial closing =====";
+ADV   double                 InpPartialLots             = 0.01; // Partial-close volume per main side [lots]
+ADV   double                 InpPartialTPPoints         = 30.0; // Partial-close TP [distance units, section 13]
+ADV   ENUM_RM_TP_BASIS       InpTPBasis                 = RM_TPB_RECOVERY_LOTS; // TP points-to-money lot basis (PROPOSED)
+ADV   int                    InpOverlapThreshold        = 3; // Overlap threshold [recovery orders, 0 = off]
+ADV   ENUM_RM_OVERLAP_CMP    InpOverlapCompare          = RM_OVL_GE; // Overlap comparison (UNRESOLVED in reference)
+ADV   ENUM_RM_OVERLAP_INDEX  InpOverlapIndex            = RM_OVIDX_RECOUNT; // Grid index after overlap closure
+ADV   bool                   InpBasketTP                = false; // Whole-basket TP enabled
+ADV   double                 InpBasketTPMoney           = 25.0; // Whole-basket TP [account currency]
+ADV   string                 S_Recovery                 = "===== 4. Recovery orders =====";
+ADV   ENUM_RM_SIGNAL         InpSignalMode              = RM_SIG_TREND; // Recovery filter
+ADV   ENUM_RM_DIRS           InpRecoveryDirs            = RM_DIRS_BOTH; // Allowed recovery directions
+ADV   double                 InpGridStepPoints          = 300; // Recovery grid step [distance units, section 13]
+ADV   double                 InpStepMultiplier          = 1.1; // Step multiplier [x]
+ADV   bool                   InpOnePerBar               = true; // One recovery order per bar
+ADV   bool                   InpMultidirectional        = true; // Multidirectional recovery
+ADV   int                    InpMaxSlippage             = 30; // Maximum slippage [distance units, section 13]
+ADV   double                 InpMaxRecoveryLot          = 0.10; // Maximum recovery order volume [lots]
+ADV   int                    InpRecoveryMagic           = 9751421; // Recovery magic number
+ADV   int                    InpLockMagic               = 9751422; // Lock (hedge) magic number (PROPOSED)
+ADV   ENUM_RM_LOT_ROUND      InpLotRounding             = RM_ROUND_DOWN; // Final lot normalisation
+ADV   ENUM_RM_CAP            InpCapBehavior             = RM_CAP_REFUSE; // Lot above maximum: refuse or clamp
+ADV   ENUM_RM_FIRST_DIR      InpFirstDirection          = RM_FD_LAST_CANDLE; // First basket direction (unfiltered, PROPOSED)
+ADV   int                    InpMaxEntriesPerEvent      = 1; // Max recovery entries per tick (gap guard)
+ADV   bool                   InpRelockOnImbalance       = true; // Re-lock automatically if main becomes unequal
+ADV   string                 S_Costs                    = "===== 5. Costs =====";
+ADV   bool                   InpFullCommission          = false; // Full commission calc (exit = booked again)
+ADV   double                 InpExtraCommPerLot         = 0.0; // Extra unbooked exit commission [money/lot]
+ADV   double                 InpExecBufferPoints        = 5.0; // Execution buffer [distance units per closed lot]
+ADV   string                 S_Notify                   = "===== 6. Notifications =====";
+ADV   ENUM_RM_NOTIFY         InpNotify                  = RM_NOTIFY_ALERT; // Launch / end notifications
+ADV   string                 S_Graphics                 = "===== 7. Panel and graphics =====";
+ADV   bool                   InpPanelOpensRecovery      = false; // Manual panel default role: true = RECOVERY
+ADV   double                 InpManualLot               = 0.01; // Manual panel initial volume [lots]
+ADV   bool                   InpConfirmActions          = true; // Two-click confirmation for destructive actions
+ADV   ENUM_RM_THEME          InpTheme                   = RM_THEME_DARK; // Panel theme
+ADV   ENUM_RM_ANNOT          InpAnnotations             = RM_ANNOT_CHART; // Closed-profit annotations
+ADV   bool                   InpShowCloseLine           = true; // Possible-close-zone line
+ADV   bool                   InpShowGridLevels          = true; // Next recovery entry levels
+ADV   bool                   InpDrawConnectors          = true; // Dotted open->close connectors
+ADV   bool                   InpApplyChartColors        = false; // Black chart / green candles scheme
+ADV   int                    InpPanelX                  = 8; // Main panel X offset [px]
+ADV   int                    InpPanelY                  = 22; // Main panel Y offset [px]
+ADV   bool                   InpShowAccountBlock        = true; // ENHANCEMENT: account & session metrics
+ADV   string                 S_Trend                    = "===== 8. Signal filters =====";
+ADV   ENUM_TIMEFRAMES        InpTrendTF                 = PERIOD_CURRENT; // Filter timeframe
+ADV   int                    InpTrendAmplitude          = 20; // Trend amplitude [bars]
+ADV   ENUM_RM_TREND_FIRST    InpTrendFirst              = RM_TF_WITH_TREND; // Initial entry vs trend
+ADV   ENUM_RM_TREND_NEXT     InpTrendNext               = RM_TN_WITH_TREND; // Subsequent averaging vs trend
+ADV   string                 InpExtIndicator            = ""; // External adapter: indicator name (licensed)
+ADV   int                    InpExtBuyBuffer            = 0; // External adapter: BUY buffer index
+ADV   int                    InpExtSellBuffer           = 1; // External adapter: SELL buffer index
+ADV   string                 S_Risk                     = "===== 9. Risk (ENHANCEMENTS) =====";
+ADV   double                 InpMaxRecoveryLotsSum      = 0.0; // Max total recovery lots [0 = off]
+ADV   double                 InpMinFreeMargin           = 0.0; // Min free margin for new entries [money]
+ADV   double                 InpMinMarginLevel          = 300.0; // Min margin level for new entries [%]
+ADV   ENUM_RM_EMERGENCY      InpEmergencyMode           = RM_EMG_PERCENT; // Emergency stop measure
+ADV   ENUM_RM_EMG_ACTION     InpEmergencyAction         = RM_EMGA_CLOSE_ALL; // Emergency action
+ADV   bool                   InpEmergencyOverPause      = true; // Emergency also acts while paused
+ADV   double                 InpDailyLossLimit          = 0.0; // Daily realised loss lockout [money, 0 = off]
+ADV   int                    InpSessionStartHour        = 0; // New entries from hour [server, 0-23]
+ADV   int                    InpSessionEndHour          = 24; // New entries until hour [server, 1-24]
+ADV   int                    InpStaleQuoteSeconds       = 60; // Block entries if last quote older [s, 0 = off]
+ADV   bool                   InpAuditCsv                = true; // CSV audit export
+ADV   int                    InpInstanceId              = 1; // Strategy / instance id (lock key)
+ADV   int                    InpManualOriginalMagic     = 0; // Magic for manual ORIGINAL orders
+ADV   string                 S_Test                     = "===== 10. Strategy Tester only =====";
+ADV   bool                   InpEnableTestSeeds         = false; // Enable deterministic seed orders (tester only)
+ADV   ENUM_RM_TEST_SEED      InpTestSeedScenario        = RM_SEED_NONE; // Seed scenario
+ADV   double                 InpTestSeedLots            = 0.10; // Seed volume [lots]
+ADV   int                    InpTestSeedBar             = 5; // Open seeds on this bar count
+ADV   int                    InpTestSeedMagic           = 12345; // Seed magic number
+ADV   string                 S_OpMode                   = "===== 11. Operating mode and recovery handover =====";
+ADV   ENUM_RM_TRIG_MODE      InpRecoveryTriggerMode     = RM_TRIG_PERCENT; // Handover trigger unit (threshold = InpLaunchDrawdown)
+ADV   ENUM_RM_TRIG_SCOPE     InpRecoveryTriggerScope    = RM_TSCOPE_MANAGED; // Handover trigger scope
+ADV   bool                   InpAutoResumeAfterRecovery = true; // Resume normal trading automatically after a completed cycle
+ADV   int                    InpResumeCooldownBars      = 3; // Cooldown after cycle end [signal-timeframe bars]
+ADV   bool                   InpRequireFreshSignalAfterRecovery= true; // Only crossovers whose candle opens after the cycle
+ADV   bool                   InpCombinedAdoptOthers     = false; // Also hand over orders in the section-1 scope (normally only own normal trades)
+ADV   string                 S_ThreeMA                  = "===== 12. Three-MA normal strategy (project defaults, not the reference EA's) =====";
+ADV   int                    InpNormalMagic             = 7351001; // Normal-strategy magic number
+ADV   ENUM_MA_METHOD         InpFastMethod              = MODE_EMA; // Fast MA method
+ADV   ENUM_APPLIED_PRICE     InpFastPrice               = PRICE_CLOSE; // Fast MA applied price
+ADV   ENUM_MA_METHOD         InpSlowMethod              = MODE_EMA; // Slow MA method
+ADV   ENUM_APPLIED_PRICE     InpSlowPrice               = PRICE_CLOSE; // Slow MA applied price
+ADV   ENUM_MA_METHOD         InpFilterMethod            = MODE_SMA; // Filter MA method
+ADV   ENUM_APPLIED_PRICE     InpFilterPrice             = PRICE_CLOSE; // Filter MA applied price
+ADV   ENUM_RM_DIRS           InpNormalDirs              = RM_DIRS_BOTH; // Allowed normal directions
+ADV   bool                   InpNormalOneBasket         = true; // Ignore new signals while any normal basket is open
+ADV   double                 InpNormalLotPerBalance     = 1000.0; // Balance per InpNormalLot [account currency]
+ADV   double                 InpNormalAvgStepPoints     = 300; // Minimum averaging spacing from last fill [distance units]
+ADV   double                 InpNormalMaxLots           = 0.0; // Maximum total normal exposure [lots, 0 = off]
+ADV   double                 InpNormalTPPoints          = 200; // Virtual basket TP from weighted average [distance units, 0 = off]
+ADV   bool                   InpNormalOverlap           = false; // First/last-order overlap for normal baskets
+ADV   int                    InpNormalOverlapMinOrders  = 3; // Overlap from this many orders in a direction
+ADV   double                 InpNormalOverlapTPPoints   = 50; // Overlap target [distance units x lots of the two orders]
+ADV   int                    InpNormalSlippage          = 30; // Normal-strategy slippage [distance units]
+ADV   string                 S_Units                    = "===== 13. Distance units (price-distance normalisation) =====";
+ADV   int                    InpConfigVersion           = 2; // Config version: 2 = unit mode below; 0/1 = legacy broker points (old .set files: set 0)
+ADV   ENUM_RM_DIST_MODE      InpDistanceUnitMode        = RM_DU_STANDARDIZED; // Distance unit mode (used from config version 2)
+ADV   double                 InpCustomUnitPrice         = 0.0; // CUSTOM_UNIT: price value of one unit
+ADV   string                 InpSymbolProfileMap        = "GOLD:XAUUSD"; // Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD)
+ADV   string                 InpSymbolPrefix            = ""; // Broker symbol prefix stripped for map lookup
+ADV   string                 InpSymbolSuffix            = ""; // Broker symbol suffix stripped for map lookup
+ADV   string                 InpUnitOverrides           = ""; // Per-symbol unit price SYMBOL:PRICE (e.g. XAGUSD:0.001)
+ADV   bool                   InpApplyUnitsToActiveCycle = false; // Operator: re-apply current units to an ACTIVE basket
+ADV   bool                   InpWriteMigrationPreview   = true; // Legacy config: write a migration preview .set
+ADV   string                 S_Protect2                 = "===== Protection / spacing details =====";
+ADV   int                    InpATRPeriod               = 14;    // ATR period for ATR-based distances [bars]
+ADV   double                 InpPartialTPATR            = 0.3;   // ATR mode: recovery partial-close TP = ATR x
+ADV   double                 InpNormalOverlapATR        = 0.3;   // ATR mode: normal overlap target = ATR x
+ADV   double                 InpFreezeResumePct         = 15.0;  // Resume new trades below this drawdown % (after a pause)
+ADV   bool                   InpEmergencyAutoResume     = true;  // After a close-all, resume automatically after the cooldown
+ADV   int                    InpEmergencyCooldownBars   = 24;    // Calm-down after a close-all [signal-timeframe bars]
+ADV   bool                   InpShowUnitsPanel          = false; // Show the distance-units diagnostics panel
 
 //====================================================================
 // MODULES
@@ -2368,6 +2435,8 @@ bool     g_operatorResume = false;      // explicit operator resume command pend
 bool     g_forceStart = false;          // Start Recovery Now in RECOVERY_ONLY mode
 long     g_lastSignalBar = 0;           // open time of the last processed closed signal candle
 int      g_lastSignal = 0;              // +1 BUY / -1 SELL / 0 none on that candle
+int      g_maArmed = 0;                 // crossover waiting for trend-filter confirmation (+1/-1)
+int      g_maArmedAge = 0;              // closed candles since that crossover
 long     g_freshAfter = 0;              // crossovers on candles opened before this are stale
 long     g_normLastAvgBar[2];           // per direction: signal candle of the last averaging order
 double   g_normalRealized = 0.0;        // realised net of normal-strategy closures (session)
@@ -2412,6 +2481,10 @@ double      g_recReqSpacing[2];       // last requested recovery spacing (price)
 double      g_recEffSpacing[2];       // last effective (tick-rounded) spacing
 double      g_normNextLevel[2];       // next normal averaging level per direction
 string      g_migrationText = "";
+
+//--- account protection (persisted)
+bool        g_frozen = false;          // new trades paused by the drawdown pause
+long        g_haltUntil = 0;           // automatic end of an emergency calm-down (0 = none)
 
 
 //==== inlined: Include/RecoveryManagerPro/RM_Log.mqh
@@ -2697,7 +2770,7 @@ bool RM_ValidateInputs(string &err)
      { err = "external adapter selected but no indicator name supplied"; return false; }
    if(InpMaxManagedLots < 0.0 || InpMaxRecoveryLotsSum < 0.0 || InpMinFreeMargin < 0.0 || InpMinMarginLevel < 0.0)
      { err = "risk limits must be >= 0"; return false; }
-   if(InpEmergencyMode != RM_EMG_OFF && InpEmergencyValue <= 0.0)
+   if(InpEmergencyValue < 0.0)
      { err = "emergency threshold must be > 0 when enabled"; return false; }
    if(InpEmergencyMode == RM_EMG_PERCENT && InpEmergencyValue > 100.0)
      { err = "emergency percentage must be <= 100"; return false; }
@@ -2711,6 +2784,14 @@ bool RM_ValidateInputs(string &err)
      { err = "test seed volume must be > 0"; return false; }
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
+
+   // ---- account protection
+   if(InpFreezeDDPct < 0.0 || InpFreezeDDPct > 100.0 || InpFreezeResumePct < 0.0)
+     { err = "pause-new-trades drawdown must be 0 (off) .. 100 %"; return false; }
+   if(InpFreezeDDPct > 0.0 && InpFreezeResumePct >= InpFreezeDDPct)
+     { err = "resume level must be below the pause level"; return false; }
+   if(InpFreezeDDPct > 0.0 && InpEmergencyValue > 0.0 && InpEmergencyMode == RM_EMG_PERCENT && InpEmergencyValue <= InpFreezeDDPct)
+     { err = "close-all drawdown must be larger than the pause-new-trades drawdown"; return false; }
 
    // ---- distance units
    if(InpConfigVersion < 0 || InpConfigVersion > 2)
@@ -2749,8 +2830,10 @@ bool RM_ValidateInputs(string &err)
         { err = "normal limits: max orders per direction >= 1, max lots >= 0, TP >= 0"; return false; }
       if(InpNormalOverlap && (InpNormalOverlapMinOrders < 2 || InpNormalOverlapTPPoints <= 0.0))
         { err = "normal overlap needs at least 2 orders and a target > 0 points"; return false; }
-      if(InpNormalMaxSpread <= 0 || InpNormalSlippage < 0)
-        { err = "normal spread limit must be > 0 and slippage >= 0"; return false; }
+      if(InpNormalSlippage < 0)
+        { err = "normal slippage must be >= 0"; return false; }
+      if(InpSpacingMode == RM_SPACE_ATR && (InpNormalTPATR < 0.0 || InpNormalAvgATR <= 0.0 || InpGridATR <= 0.0 || InpATRPeriod < 2))
+        { err = "ATR factors must be > 0 (take profit may be 0 = off) and the ATR period >= 2"; return false; }
       if(InpResumeCooldownBars < 0)
         { err = "resume cooldown must be >= 0 bars"; return false; }
      }
@@ -2763,7 +2846,7 @@ bool RM_ValidateInputs(string &err)
         { err = "percentage handover threshold must be <= 100"; return false; }
       bool sameUnit = (InpEmergencyMode == RM_EMG_PERCENT && InpRecoveryTriggerMode == RM_TRIG_PERCENT) ||
                       (InpEmergencyMode == RM_EMG_MONEY && InpRecoveryTriggerMode == RM_TRIG_MONEY);
-      if(sameUnit && InpEmergencyValue <= InpLaunchDrawdown)
+      if(sameUnit && InpEmergencyValue > 0.0 && InpEmergencyValue <= InpLaunchDrawdown)
         { err = "emergency-loss limit must be larger than the recovery-launch threshold (they are different controls)"; return false; }
      }
 
@@ -3390,6 +3473,56 @@ double RM_TickPrice()
   }
 
 //+------------------------------------------------------------------+
+//| ATR-based distances (default): ATR(InpATRPeriod) of the signal    |
+//| timeframe on the last CLOSED bar, in price. Adapts every distance |
+//| to the symbol's real volatility with no unit settings.            |
+//+------------------------------------------------------------------+
+bool RM_SpacingATR()
+  {
+   return InpSpacingMode == RM_SPACE_ATR;
+  }
+
+double RM_ATRPrice()
+  {
+   double a = iATR(g_sym, InpSignalTF, InpATRPeriod, 1);
+   return (a > 0.0) ? a : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Can a NEW basket / cycle get well-defined distances right now?    |
+//+------------------------------------------------------------------+
+bool RM_NewBasketReady(string &why)
+  {
+   if(!g_dist.metaValid)
+     { why = g_dist.why; return false; }
+   if(g_dist.unitPrice <= 0.0)
+     { why = g_dist.why; return false; }             // spread/slippage limits need the unit
+   if(RM_SpacingATR() && RM_ATRPrice() <= 0.0)
+     { why = "ATR not available yet (not enough history on the signal timeframe)"; return false; }
+   return true;
+  }
+
+bool RM_NewBasketReadyQuiet()
+  {
+   string w = "";
+   return RM_NewBasketReady(w);
+  }
+
+//--- current (not yet stored) distances in PRICE; 0 = unavailable
+double RM_CurDist(double atrFactor, double units)
+  {
+   if(RM_SpacingATR())
+      return atrFactor * RM_ATRPrice();
+   return g_dist.valid ? RM_DistUnitsToPrice(units, g_dist.unitPrice) : 0.0;
+  }
+
+double RM_CurRecStepBase()    { return RM_CurDist(InpGridATR, InpGridStepPoints); }
+double RM_CurRecPartialTP()   { return RM_CurDist(InpPartialTPATR, InpPartialTPPoints); }
+double RM_CurNormStep()       { return RM_CurDist(InpNormalAvgATR, InpNormalAvgStepPoints); }
+double RM_CurNormTP()         { return RM_CurDist(InpNormalTPATR, InpNormalTPPoints); }
+double RM_CurNormOverlap()    { return RM_CurDist(InpNormalOverlapATR, InpNormalOverlapTPPoints); }
+
+//+------------------------------------------------------------------+
 //| Unit contexts                                                     |
 //+------------------------------------------------------------------+
 void RM_CtxClear(RM_DistCtx &c)
@@ -3405,15 +3538,15 @@ string RM_CtxText(const RM_DistCtx &c)
 
 bool RM_CtxCaptureRec(string why)
   {
-   if(!g_dist.valid)
+   if(!RM_NewBasketReadyQuiet())
       return false;
    g_ctxRec.active = true;
    g_ctxRec.mode = g_dist.mode;
    g_ctxRec.profile = g_dist.profile;
    g_ctxRec.unitPrice = g_dist.unitPrice;
-   g_ctxRec.stepBasePrice = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   g_ctxRec.stepBasePrice = RM_CurRecStepBase();
    g_ctxRec.stepMult = InpStepMultiplier;
-   g_ctxRec.partialTPPrice = RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice);
+   g_ctxRec.partialTPPrice = RM_CurRecPartialTP();
    g_ctxRec.bufferPrice = RM_DistUnitsToPrice(InpExecBufferPoints, g_dist.unitPrice);
    g_ctxRec.tpPrice = 0; g_ctxRec.overlapPrice = 0;
    g_ctxRec.since = (long)TimeCurrent();
@@ -3424,16 +3557,16 @@ bool RM_CtxCaptureRec(string why)
 
 bool RM_CtxCaptureNorm(string why)
   {
-   if(!g_dist.valid)
+   if(!RM_NewBasketReadyQuiet())
       return false;
    g_ctxNorm.active = true;
    g_ctxNorm.mode = g_dist.mode;
    g_ctxNorm.profile = g_dist.profile;
    g_ctxNorm.unitPrice = g_dist.unitPrice;
-   g_ctxNorm.stepBasePrice = RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice);
+   g_ctxNorm.stepBasePrice = RM_CurNormStep();
    g_ctxNorm.stepMult = 1.0;
-   g_ctxNorm.tpPrice = RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice);
-   g_ctxNorm.overlapPrice = RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice);
+   g_ctxNorm.tpPrice = RM_CurNormTP();
+   g_ctxNorm.overlapPrice = RM_CurNormOverlap();
    g_ctxNorm.partialTPPrice = 0; g_ctxNorm.bufferPrice = 0;
    g_ctxNorm.since = (long)TimeCurrent();
    RM_Audit("UNITS_NORMAL", 0, 0, g_ctxNorm.stepBasePrice, why + ": " + RM_CtxText(g_ctxNorm));
@@ -3443,7 +3576,7 @@ bool RM_CtxCaptureNorm(string why)
 //--- recovery accessors (persisted context first, current config otherwise)
 bool RM_RecDistanceUsable()
   {
-   return g_ctxRec.active || g_dist.valid;
+   return g_ctxRec.active || RM_NewBasketReadyQuiet();
   }
 
 double RM_RecUnit()
@@ -3465,8 +3598,8 @@ double RM_RecStepRequestedPrice(int n)
       base = g_ctxRec.stepBasePrice;
       mult = g_ctxRec.stepMult;
      }
-   else if(g_dist.valid)
-      base = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   else
+      base = RM_CurRecStepBase();
    return RM_GridStepPoints(base, mult, n);          // generic: base * mult^(n-1)
   }
 
@@ -3477,8 +3610,8 @@ double RM_RecStepRequestedPrice(int n)
 //+------------------------------------------------------------------+
 double RM_RecPartialTPBrokerPts()
   {
-   double price = g_ctxRec.active ? g_ctxRec.partialTPPrice
-                  : (g_dist.valid ? RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice) : -1.0);
+   double cur = RM_CurRecPartialTP();
+   double price = g_ctxRec.active ? g_ctxRec.partialTPPrice : (cur > 0.0 ? cur : -1.0);
    if(price < 0.0 || g_meta.point <= 0.0)
       return -1.0;
    return RM_PriceToBrokerPoints(price, g_meta.point);
@@ -3494,7 +3627,7 @@ double RM_RecBufferBrokerPts()
 //--- normal accessors
 bool RM_NormDistanceUsable()
   {
-   return g_ctxNorm.active || g_dist.valid;
+   return g_ctxNorm.active || RM_NewBasketReadyQuiet();
   }
 
 double RM_NormUnit()
@@ -3508,20 +3641,19 @@ double RM_NormStepPrice()
   {
    if(g_ctxNorm.active)
       return g_ctxNorm.stepBasePrice;
-   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice) : 0.0;
+   return RM_CurNormStep();
   }
 
 double RM_NormTPPrice()
   {
    if(g_ctxNorm.active)
       return g_ctxNorm.tpPrice;
-   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice) : 0.0;
+   return RM_CurNormTP();
   }
 
 double RM_NormOverlapBrokerPts()
   {
-   double price = g_ctxNorm.active ? g_ctxNorm.overlapPrice
-                  : (g_dist.valid ? RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice) : 0.0);
+   double price = g_ctxNorm.active ? g_ctxNorm.overlapPrice : RM_CurNormOverlap();
    return (g_meta.point > 0.0) ? RM_PriceToBrokerPoints(price, g_meta.point) : 0.0;
   }
 
@@ -3590,7 +3722,7 @@ void RM_MigrationPreview()
       RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "no standardized profile for " + g_sym + ": choose PRICE_DISTANCE, CUSTOM_UNIT or an override");
       return;
      }
-   string lines[10];
+   string lines[9];
    lines[0] = RM_MigLine("InpGridStepPoints", InpGridStepPoints, stdUnit);
    lines[1] = RM_MigLine("InpPartialTPPoints", InpPartialTPPoints, stdUnit);
    lines[2] = RM_MigLine("InpExecBufferPoints", InpExecBufferPoints, stdUnit);
@@ -3599,10 +3731,9 @@ void RM_MigrationPreview()
    lines[5] = RM_MigLine("InpNormalAvgStepPoints", InpNormalAvgStepPoints, stdUnit);
    lines[6] = RM_MigLine("InpNormalTPPoints", InpNormalTPPoints, stdUnit);
    lines[7] = RM_MigLine("InpNormalOverlapTPPoints", InpNormalOverlapTPPoints, stdUnit);
-   lines[8] = RM_MigLineMaxInt("InpNormalMaxSpread", InpNormalMaxSpread, stdUnit);
-   lines[9] = RM_MigLineMaxInt("InpNormalSlippage", InpNormalSlippage, stdUnit);
+   lines[8] = RM_MigLineMaxInt("InpNormalSlippage", InpNormalSlippage, stdUnit);
    string summary = "";
-   for(int i = 0; i < 10; i++)
+   for(int i = 0; i < 9; i++)
      {
       RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, lines[i] + " (same price distance, standardized unit " + DoubleToString(stdUnit, 5) + ")");
       summary += lines[i] + " ";
@@ -3619,7 +3750,7 @@ void RM_MigrationPreview()
                          DoubleToString(g_dist.brokerPoint, 8) + " / " + DoubleToString(stdUnit, 8) + "\r\n");
          FileWriteString(h, "; Review, then load it over your current settings to apply. Nothing is applied automatically.\r\n");
          FileWriteString(h, "InpConfigVersion=2\r\nInpDistanceUnitMode=0\r\n");
-         for(int k = 0; k < 10; k++)
+         for(int k = 0; k < 9; k++)
             FileWriteString(h, lines[k] + "\r\n");
          FileClose(h);
          RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "written to MQL4/Files/" + fn);
@@ -3782,6 +3913,8 @@ void RM_SaveState()
    FileWriteString(h, "OPRESUME=" + RM_B(g_operatorResume) + "\r\n");
    FileWriteString(h, "LASTSIGBAR=" + IntegerToString(g_lastSignalBar) + "\r\n");
    FileWriteString(h, "LASTSIG=" + IntegerToString(g_lastSignal) + "\r\n");
+   FileWriteString(h, "MAARMED=" + IntegerToString(g_maArmed) + "\r\n");
+   FileWriteString(h, "MAARMEDAGE=" + IntegerToString(g_maArmedAge) + "\r\n");
    FileWriteString(h, "FRESHAFTER=" + IntegerToString(g_freshAfter) + "\r\n");
    FileWriteString(h, "NAVG0=" + IntegerToString(g_normLastAvgBar[0]) + "\r\n");
    FileWriteString(h, "NAVG1=" + IntegerToString(g_normLastAvgBar[1]) + "\r\n");
@@ -3791,6 +3924,8 @@ void RM_SaveState()
    // distance-unit contexts of active baskets (never reinterpreted mid-cycle)
    FileWriteString(h, "CTXR=" + RM_CtxSerialize(g_ctxRec) + "\r\n");
    FileWriteString(h, "CTXN=" + RM_CtxSerialize(g_ctxNorm) + "\r\n");
+   FileWriteString(h, "FROZEN=" + RM_B(g_frozen) + "\r\n");
+   FileWriteString(h, "HALTUNTIL=" + IntegerToString(g_haltUntil) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -3880,6 +4015,8 @@ bool RM_LoadState()
       else if(key == "OPRESUME") g_operatorResume = (val == "1");
       else if(key == "LASTSIGBAR") g_lastSignalBar = StringToInteger(val);
       else if(key == "LASTSIG") g_lastSignal = (int)StringToInteger(val);
+      else if(key == "MAARMED") g_maArmed = (int)StringToInteger(val);
+      else if(key == "MAARMEDAGE") g_maArmedAge = (int)StringToInteger(val);
       else if(key == "FRESHAFTER") g_freshAfter = StringToInteger(val);
       else if(key == "NAVG0") g_normLastAvgBar[0] = StringToInteger(val);
       else if(key == "NAVG1") g_normLastAvgBar[1] = StringToInteger(val);
@@ -3888,6 +4025,8 @@ bool RM_LoadState()
       else if(key == "REASON") g_lastReason = val;
       else if(key == "CTXR") RM_CtxDeserialize(val, g_ctxRec);
       else if(key == "CTXN") RM_CtxDeserialize(val, g_ctxNorm);
+      else if(key == "FROZEN") g_frozen = (val == "1");
+      else if(key == "HALTUNTIL") g_haltUntil = StringToInteger(val);
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];
@@ -4522,6 +4661,53 @@ bool RM_DailyLocked()
   }
 
 //+------------------------------------------------------------------+
+//| Soft protection: at InpFreezeDDPct account drawdown (balance -     |
+//| equity, % of balance) NEW trades pause; they resume automatically |
+//| below InpFreezeResumePct. Nothing is closed by this rule, and     |
+//| closures, locks and emergency protection keep working.            |
+//+------------------------------------------------------------------+
+double RM_AccountDDPct()
+  {
+   double bal = AccountBalance();
+   if(bal <= 0.0)
+      return 0.0;
+   return MathMax(0.0, bal - AccountEquity()) / bal * 100.0;
+  }
+
+void RM_FreezeUpdate()
+  {
+   if(InpFreezeDDPct <= 0.0)
+     {
+      g_frozen = false;
+      return;
+     }
+   double dd = RM_AccountDDPct();
+   if(!g_frozen && dd >= InpFreezeDDPct)
+     {
+      g_frozen = true;
+      RM_Audit("PAUSE_NEW_TRADES", 0, 0, dd, "account drawdown " + DoubleToString(dd, 1) + "% >= " +
+               DoubleToString(InpFreezeDDPct, 1) + "%: new trades paused, open trades still managed");
+      RM_SaveState();
+     }
+   else if(g_frozen && dd < InpFreezeResumePct)
+     {
+      g_frozen = false;
+      RM_Audit("RESUME_NEW_TRADES", 0, 0, dd, "account drawdown back to " + DoubleToString(dd, 1) + "%");
+      RM_SaveState();
+     }
+  }
+
+bool RM_FreezeActive(string &why)
+  {
+   RM_FreezeUpdate();
+   if(!g_frozen)
+      return false;
+   why = "drawdown " + DoubleToString(RM_AccountDDPct(), 1) + "% - new trades paused until below " +
+         DoubleToString(InpFreezeResumePct, 0) + "%";
+   return true;
+  }
+
+//+------------------------------------------------------------------+
 //| Account-level checks for opening `lots` of `type`.                |
 //| isHedge: lock orders reduce net exposure, so spread/session/daily |
 //| gates are skipped for them; margin is still checked.              |
@@ -4530,6 +4716,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
    if(!isHedge)
      {
+      if(RM_FreezeActive(why))
+         return true;
       if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
          return true;
       if(RM_QuoteStale(why))
@@ -4565,7 +4753,7 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
 //+------------------------------------------------------------------+
 bool RM_EmergencyHit(string &why)
   {
-   if(InpEmergencyMode == RM_EMG_OFF || g_tot.totalCnt == 0)
+   if(InpEmergencyMode == RM_EMG_OFF || InpEmergencyValue <= 0.0 || g_tot.totalCnt == 0)
       return false;
    if(InpEmergencyMode == RM_EMG_MONEY && g_drawdown >= InpEmergencyValue)
      {
@@ -4851,6 +5039,8 @@ void RM_InitRuntime()
    g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
    RM_CtxClear(g_ctxRec);
    RM_CtxClear(g_ctxNorm);
+   g_frozen = false;
+   g_haltUntil = 0;
   }
 
 void RM_ResetSession()
@@ -5023,10 +5213,11 @@ void RM_Engine()
    else
       // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
       si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
-   if(si.launchTriggered && !g_launchDone && !g_dist.valid)
+   string rdy = "";
+   if(si.launchTriggered && !g_launchDone && !RM_NewBasketReady(rdy))
      {
-      si.launchTriggered = false;             // a new cycle needs defined distance units
-      g_block = g_dist.why;
+      si.launchTriggered = false;             // a new cycle needs defined distances
+      g_block = rdy;
      }
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
@@ -5061,8 +5252,11 @@ void RM_Engine()
             g_status = "Armed: drawdown " + RM_Money(g_drawdown) + " / launch at " + RM_Money(InpLaunchDrawdown);
          else
             g_status = "Armed: launching";
-         if(!g_dist.valid)
-            g_status = "Armed, launch blocked: " + g_dist.why;
+           {
+            string rw = "";
+            if(!RM_NewBasketReady(rw))
+               g_status = "Armed, launch blocked: " + rw;
+           }
          break;
       case RM_ST_PREPARING:  RM_DoPrepare();  break;
       case RM_ST_LOCKING:    RM_DoLock();     break;
@@ -5340,7 +5534,9 @@ void RM_GridEntries()
      }
    if(!RM_RecDistanceUsable())
      {
-      g_block = g_dist.why;                  // no persisted context and no defined units
+      string rw2 = "";
+      RM_NewBasketReady(rw2);
+      g_block = rw2;                         // no stored context and no defined distances
       g_status = g_block;
       return;
      }
@@ -6225,7 +6421,8 @@ void RM_DashRelayout()
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
       RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
-      RM_BuildUnits(cw);                       // panel E: distance units
+      if(InpShowUnitsPanel)
+         RM_BuildUnits(cw);                    // panel E: distance-units diagnostics (optional)
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);
@@ -7038,7 +7235,12 @@ int RM_NormalSignalEval(bool &newBar)
       return 0;                                 // already processed: never twice
    double f2 = RM_MA(InpFastPeriod, InpFastMethod, InpFastPrice, 2);
    double s2 = RM_MA(InpSlowPeriod, InpSlowMethod, InpSlowPrice, 2);
-   int sig = RM_MASignal(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1);
+   int sig = 0;
+   if(InpSignalConfirmBars > 0)
+      sig = RM_MASignalConfirm(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1,
+                               InpSignalConfirmBars, g_maArmed, g_maArmedAge);
+   else
+      sig = RM_MASignal(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1);
    g_lastSignalBar = bar1;
    g_lastSignal = sig;
    newBar = true;
@@ -7071,12 +7273,16 @@ double RM_NormalLotFor(int n, double &raw)
 //+------------------------------------------------------------------+
 bool RM_NormalExposureBlocked(int dir, double lot, string &why)
   {
-   if(RM_SpreadExceeds(InpNormalMaxSpread, RM_NormUnit(), why))
+   if(RM_SpreadExceeds(InpMaxSpread, RM_NormUnit(), why))
       return true;
    if(RM_QuoteStale(why))
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
      { why = "normal exposure cap " + RM_Lots(InpNormalMaxLots) + " lots"; return true; }
+   if(InpMaxManagedLots > 0.0 && g_normalLots + g_tot.totalLots + lot > InpMaxManagedLots + RM_EPS)
+     { why = "max total open lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+   if(RM_FreezeActive(why))
+      return true;
    ResetLastError();
    double freeAfter = AccountFreeMarginCheck(g_sym, dir, lot);
    if(freeAfter <= 0.0 || GetLastError() == ERR_NOT_ENOUGH_MONEY)
@@ -7100,8 +7306,9 @@ bool RM_NormalOpen(int dir, int n, string what)
    // fresh prices and the drawdown trigger immediately before every entry/averaging
    if(RM_TriggerCheckNow())
       return false;
-   if(n == 0 && !g_dist.valid)
-     { g_normalBlock = what + " blocked: " + g_dist.why; return false; }       // new basket needs defined units
+   string rwhy = "";
+   if(n == 0 && !RM_NewBasketReady(rwhy))
+     { g_normalBlock = what + " blocked: " + rwhy; return false; }             // new basket needs defined distances
    if(n > 0 && !RM_NormDistanceUsable())
      { g_normalBlock = what + " blocked: " + RM_UNDEFINED_MSG; return false; }
    double raw = 0;
@@ -7465,8 +7672,8 @@ void RM_CtlCheckCompletion()
    g_normLastAvgBar[0] = 0;
    g_normLastAvgBar[1] = 0;
    g_operatorResume = false;
-   if(g_cycleOutcome != RM_OUT_COMPLETED)
-      g_normalHalted = true;                         // emergency / manual end: operator reset required
+   if(g_cycleOutcome == RM_OUT_MANUAL || (g_cycleOutcome == RM_OUT_EMERGENCY && !InpEmergencyAutoResume))
+      g_normalHalted = true;                         // operator reset required
    long dur = g_cycleEnd - g_cycleStart;
    RM_Audit("CYCLE_END", g_cycleId, 0, g_cycleRealized,
             RM_OutcomeName(g_cycleOutcome) + " | realised net " + RM_Money(g_cycleRealized) + " " + AccountCurrency() +
@@ -7485,11 +7692,15 @@ void RM_CtlCooldown()
   {
    int bars = iBarShift(g_sym, InpSignalTF, (datetime)g_cycleEnd, false);
    g_cooldownBars = (bars < 0) ? 0 : bars;
-   if(!RM_ResumeAllowed(g_cycleOutcome, g_normalHalted, InpAutoResumeAfterRecovery, g_operatorResume,
-                        g_cooldownBars, InpResumeCooldownBars))
+   // an emergency close with auto-resume behaves like a completed cycle after a longer calm-down
+   bool emgAuto = (g_cycleOutcome == RM_OUT_EMERGENCY && InpEmergencyAutoResume && !g_normalHalted);
+   int outcomeRule = emgAuto ? RM_OUT_COMPLETED : g_cycleOutcome;
+   int needBars = emgAuto ? (int)MathMax(InpResumeCooldownBars, InpEmergencyCooldownBars) : InpResumeCooldownBars;
+   if(!RM_ResumeAllowed(outcomeRule, g_normalHalted, InpAutoResumeAfterRecovery || emgAuto, g_operatorResume,
+                        g_cooldownBars, needBars))
      {
-      if(g_cooldownBars < InpResumeCooldownBars)
-         g_ctlStatus = "cooldown " + IntegerToString(g_cooldownBars) + "/" + IntegerToString(InpResumeCooldownBars) + " bars";
+      if(g_cooldownBars < needBars)
+         g_ctlStatus = "cooldown " + IntegerToString(g_cooldownBars) + "/" + IntegerToString(needBars) + " bars";
       else
          g_ctlStatus = "waiting for operator: press Normal ON to resume (" + RM_OutcomeName(g_cycleOutcome) + ")";
       return;
@@ -7520,7 +7731,7 @@ void RM_CtlCooldown()
 //+------------------------------------------------------------------+
 bool RM_NormalEmergency()
   {
-   if(InpEmergencyMode == RM_EMG_OFF || g_normalCnt == 0)
+   if(InpEmergencyMode == RM_EMG_OFF || InpEmergencyValue <= 0.0 || g_normalCnt == 0)
       return false;
    double dd = MathMax(0.0, -g_normalNet);
    double pct = (AccountBalance() > 0.0) ? 100.0 * dd / AccountBalance() : 0.0;
@@ -7531,6 +7742,8 @@ bool RM_NormalEmergency()
    if(!g_normalHalted)
      {
       g_normalHalted = true;
+      if(InpEmergencyAutoResume)
+         g_haltUntil = (long)TimeCurrent() + (long)InpEmergencyCooldownBars * PeriodSeconds(InpSignalTF);
       g_lastReason = "emergency-loss limit on normal basket: " + RM_Money(dd) + " (" + DoubleToString(pct, 2) + "%)";
       RM_Audit("EMERGENCY_NORMAL", 0, g_normalLots, -dd, g_lastReason);
       RM_Notify("EMERGENCY: " + g_lastReason);
@@ -7602,6 +7815,15 @@ void RM_ControllerTick()
    RM_CtlComputeMetrics();
    g_normalBlock = "";
    g_ctlStatus = "";
+   RM_FreezeUpdate();
+   // emergency calm-down over: resume automatically (no manual reset needed)
+   if(g_normalHalted && g_haltUntil > 0 && (long)TimeCurrent() >= g_haltUntil && g_normalCnt == 0)
+     {
+      g_normalHalted = false;
+      g_haltUntil = 0;
+      RM_Audit("RESUME_NORMAL", 0, 0, 0, "emergency calm-down over - trading resumes automatically");
+      RM_SaveState();
+     }
 
    // 1. emergency protection
    if(!g_recLatch && RM_NormalEmergency())

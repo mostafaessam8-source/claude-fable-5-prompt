@@ -1,4 +1,5 @@
 ; Recovery Manager Pro - Video_Reference.set
+; Uses advanced settings: load it into a build compiled with #define RMP_SHOW_ADVANCED.
 ; OBSERVED demonstration values transcribed from the reference video input
 ; screens (AW Recovery EA v3.30, approx. 00:11-00:17), mapped onto this EA's
 ; inputs. These are NOT recommended live settings.
@@ -144,7 +145,6 @@ InpNormalTPPoints=200
 InpNormalOverlap=0
 InpNormalOverlapMinOrders=3
 InpNormalOverlapTPPoints=50
-InpNormalMaxSpread=50
 InpNormalSlippage=30
 ; --- 13. Distance units: explicitly migrated to config version 2 (standardized points).
 ;     Values above were written for 5-digit Forex, where 1 standardized point = 1 broker point,
@@ -158,3 +158,18 @@ InpSymbolSuffix=
 InpUnitOverrides=
 InpApplyUnitsToActiveCycle=0
 InpWriteMigrationPreview=1
+;
+; ---- keys added with the 25-setting restructure; these values keep this preset's previous behaviour
+InpSpacingMode=1
+InpNormalTPATR=1.0
+InpNormalAvgATR=1.5
+InpGridATR=1.5
+InpATRPeriod=14
+InpPartialTPATR=0.3
+InpNormalOverlapATR=0.3
+InpFreezeDDPct=0.0
+InpFreezeResumePct=0.0
+InpEmergencyAutoResume=0
+InpEmergencyCooldownBars=24
+InpShowUnitsPanel=1
+InpSignalConfirmBars=0

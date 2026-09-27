@@ -31,6 +31,53 @@ bool RM_DailyLocked()
   }
 
 //+------------------------------------------------------------------+
+//| Soft protection: at InpFreezeDDPct account drawdown (balance -     |
+//| equity, % of balance) NEW trades pause; they resume automatically |
+//| below InpFreezeResumePct. Nothing is closed by this rule, and     |
+//| closures, locks and emergency protection keep working.            |
+//+------------------------------------------------------------------+
+double RM_AccountDDPct()
+  {
+   double bal = AccountBalance();
+   if(bal <= 0.0)
+      return 0.0;
+   return MathMax(0.0, bal - AccountEquity()) / bal * 100.0;
+  }
+
+void RM_FreezeUpdate()
+  {
+   if(InpFreezeDDPct <= 0.0)
+     {
+      g_frozen = false;
+      return;
+     }
+   double dd = RM_AccountDDPct();
+   if(!g_frozen && dd >= InpFreezeDDPct)
+     {
+      g_frozen = true;
+      RM_Audit("PAUSE_NEW_TRADES", 0, 0, dd, "account drawdown " + DoubleToString(dd, 1) + "% >= " +
+               DoubleToString(InpFreezeDDPct, 1) + "%: new trades paused, open trades still managed");
+      RM_SaveState();
+     }
+   else if(g_frozen && dd < InpFreezeResumePct)
+     {
+      g_frozen = false;
+      RM_Audit("RESUME_NEW_TRADES", 0, 0, dd, "account drawdown back to " + DoubleToString(dd, 1) + "%");
+      RM_SaveState();
+     }
+  }
+
+bool RM_FreezeActive(string &why)
+  {
+   RM_FreezeUpdate();
+   if(!g_frozen)
+      return false;
+   why = "drawdown " + DoubleToString(RM_AccountDDPct(), 1) + "% - new trades paused until below " +
+         DoubleToString(InpFreezeResumePct, 0) + "%";
+   return true;
+  }
+
+//+------------------------------------------------------------------+
 //| Account-level checks for opening `lots` of `type`.                |
 //| isHedge: lock orders reduce net exposure, so spread/session/daily |
 //| gates are skipped for them; margin is still checked.              |
@@ -39,6 +86,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
    if(!isHedge)
      {
+      if(RM_FreezeActive(why))
+         return true;
       if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
          return true;
       if(RM_QuoteStale(why))
@@ -74,7 +123,7 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
 //+------------------------------------------------------------------+
 bool RM_EmergencyHit(string &why)
   {
-   if(InpEmergencyMode == RM_EMG_OFF || g_tot.totalCnt == 0)
+   if(InpEmergencyMode == RM_EMG_OFF || InpEmergencyValue <= 0.0 || g_tot.totalCnt == 0)
       return false;
    if(InpEmergencyMode == RM_EMG_MONEY && g_drawdown >= InpEmergencyValue)
      {

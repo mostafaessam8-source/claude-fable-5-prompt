@@ -495,6 +495,24 @@ int main()
       CHECK(RM_MASignal(0.9, 1.0, 1.2, 1.1, true, 1.15) == 0);      // slow below filter -> rejected
       CHECK(RM_MASignal(1.2, 1.0, 0.9, 1.0, true, 1.05) == -1);     // both below filter
       CHECK(RM_MASignal(1.2, 1.0, 0.9, 1.0, true, 0.95) == 0);      // fast below, slow above -> rejected
+      // delayed confirmation: crossover arms, filter confirms later, fires once
+      int arm = 0, age = 0;
+      CHECK(RM_MASignalConfirm(0.9, 1.0, 1.2, 1.1, true, 1.15, 20, arm, age) == 0 && arm == 1);  // armed, filter disagrees
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.3, 1.2, true, 1.15, 20, arm, age) == 1 && arm == 0);  // confirmed next candle
+      CHECK(RM_MASignalConfirm(1.3, 1.2, 1.4, 1.3, true, 1.15, 20, arm, age) == 0);              // never twice
+      arm = 0; age = 0;
+      CHECK(RM_MASignalConfirm(0.9, 1.0, 1.2, 1.1, true, 1.15, 20, arm, age) == 0 && arm == 1);
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.0, 1.1, true, 1.15, 20, arm, age) == -1 || arm == -1); // opposite cross re-arms
+      arm = 0; age = 0;
+      CHECK(RM_MASignalConfirm(0.9, 1.0, 1.2, 1.1, true, 1.15, 20, arm, age) == 0 && arm == 1);
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.05, 1.1, true, 0.5, 20, arm, age) == 0 && arm == -1); // cross back down: BUY dropped, SELL armed
+      arm = 0; age = 0;
+      CHECK(RM_MASignalConfirm(0.9, 1.0, 1.2, 1.1, true, 1.15, 2, arm, age) == 0);
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.2, 1.1, true, 1.15, 2, arm, age) == 0 && age == 1);
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.2, 1.1, true, 1.15, 2, arm, age) == 0 && age == 2);
+      CHECK(RM_MASignalConfirm(1.2, 1.1, 1.3, 1.2, true, 1.15, 2, arm, age) == 0 && arm == 0);    // expired after 2 candles
+      arm = 0; age = 0;
+      CHECK(RM_MASignalConfirm(0.9, 1.0, 1.2, 1.1, false, 0, 20, arm, age) == 1 && arm == 0);    // no filter: immediate
    }
 
    CASE("C22 normal lot sizing, virtual basket TP, overlap");

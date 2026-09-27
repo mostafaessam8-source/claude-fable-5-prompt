@@ -393,6 +393,40 @@ int RM_MASignal(double f2, double s2, double f1, double s1, bool useFilter, doub
   }
 
 //+------------------------------------------------------------------+
+//| Crossover with delayed trend confirmation.                        |
+//| A fast/slow crossover ARMS its direction. The signal fires on the |
+//| first closed candle where the armed direction is still aligned   |
+//| and both MAs are on the filter's side, within maxAge candles.    |
+//| An opposite crossover re-arms; a broken alignment disarms. Each  |
+//| crossover can fire at most once. armed/age persist between calls.|
+//+------------------------------------------------------------------+
+int RM_MASignalConfirm(double f2, double s2, double f1, double s1, bool useFilter, double flt1,
+                       int maxAge, int &armed, int &age)
+  {
+   int cross = 0;
+   if(f2 <= s2 && f1 > s1)
+      cross = 1;
+   else if(f2 >= s2 && f1 < s1)
+      cross = -1;
+   if(cross != 0)
+     { armed = cross; age = 0; }
+   else if(armed != 0)
+      age++;
+   if(armed == 0)
+      return 0;
+   if((armed == 1 && f1 <= s1) || (armed == -1 && f1 >= s1) || age > maxAge)
+     { armed = 0; age = 0; return 0; }
+   bool ok = !useFilter ||
+             (armed == 1 && f1 > flt1 && s1 > flt1) ||
+             (armed == -1 && f1 < flt1 && s1 < flt1);
+   if(!ok)
+      return 0;
+   int sig = armed;
+   armed = 0; age = 0;
+   return sig;
+  }
+
+//+------------------------------------------------------------------+
 //| Normal-strategy initial lot (before broker normalisation).        |
 //| FIXED  : baseLot                                                    |
 //| BALANCE: baseLot * balance / perBalance                             |

@@ -154,7 +154,7 @@ Existing margin, exposure and spread protections still apply to both modules.
 | Averaging (separate from recovery) | Triggers on an adverse move ≥ `InpNormalAvgStepPoints` from the **last** fill of the direction. Lot = initial × `InpNormalAvgMultiplier^n`, computed from the unrounded base. At most one per signal candle and direction, capped by `InpNormalMaxPerDir` and `InpNormalMaxLots`. |
 | Virtual basket TP | Closes a direction's basket when price is `InpNormalTPPoints` beyond its volume-weighted average open price. No broker TP is set. |
 | Overlap | With ≥ `InpNormalOverlapMinOrders` orders, the first and last close together when their combined net ≥ `InpNormalOverlapTPPoints × money per point per lot × their lots`. Intermediate orders stay. |
-| Limits | `InpNormalMaxSpread`, `InpNormalSlippage`, margin/free-margin checks, and the drawdown re-check before every entry. |
+| Limits | `InpMaxSpread`, `InpNormalSlippage`, margin/free-margin checks, and the drawdown re-check before every entry. |
 
 ## Dashboard: panel D "Cycle Controller" (upper right, Three-MA modes)
 

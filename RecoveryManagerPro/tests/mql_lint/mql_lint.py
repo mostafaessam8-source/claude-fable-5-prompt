@@ -90,7 +90,7 @@ def preset_code():
     """C++ that applies each MQL4/Presets/*.set to the EA inputs, validates it and runs
     a short one-losing-order scenario in the simulator."""
     pdir = os.path.join(ROOT, "MQL4", "Presets")
-    types = dict((n, t) for t, n in re.findall(r"^input\s+(\w+)\s+(Inp\w+)", open(MAIN).read(), re.M))
+    types = dict((n, t) for t, n in re.findall(r"^(?:input|ADV)\s+(\w+)\s+(Inp\w+)", open(MAIN).read(), re.M))
     funcs, calls = [], []
     for i, name in enumerate(sorted(os.listdir(pdir))):
         if not name.endswith(".set"):
@@ -103,7 +103,7 @@ def preset_code():
                 if k0 in seen_keys:
                     raise SystemExit(f"{name}: duplicate key {k0}")
                 seen_keys.add(k0)
-        missing = set(re.findall(r"^input\s+\w+\s+(Inp\w+)", open(MAIN).read(), re.M)) - seen_keys
+        missing = set(re.findall(r"^(?:input|ADV)\s+\w+\s+(Inp\w+)", open(MAIN).read(), re.M)) - seen_keys
         if missing:
             raise SystemExit(f"{name}: missing inputs {sorted(missing)}")
         for raw in open(os.path.join(pdir, name)):

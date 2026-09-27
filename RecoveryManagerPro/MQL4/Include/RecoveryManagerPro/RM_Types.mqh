@@ -227,6 +227,12 @@ enum ENUM_RM_NLOT
    RM_NLOT_BALANCE = 1  // Initial lot scaled by balance
   };
 
+enum ENUM_RM_SPACING
+  {
+   RM_SPACE_ATR   = 0, // ATR x factor (adapts to each symbol automatically)
+   RM_SPACE_UNITS = 1  // Fixed distance in points (distance units)
+  };
+
 // controller (cycle) states
 #define RM_CTL_NORMAL           0
 #define RM_CTL_HANDOVER         1

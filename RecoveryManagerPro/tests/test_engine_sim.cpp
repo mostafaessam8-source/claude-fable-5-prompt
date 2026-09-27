@@ -14,63 +14,116 @@ static int s_fail = 0, s_pass = 0;
 // restore the previous values so every scenario keeps testing what it was written for.
 
 // copies of the EA's built-in defaults (taken before any scenario changes them)
+static const auto kNew_InpOperatingMode = InpOperatingMode;
+static const auto kNew_InpNormalLotMode = InpNormalLotMode;
+static const auto kNew_InpNormalAveraging = InpNormalAveraging;
+static const auto kNew_InpNormalAvgMultiplier = InpNormalAvgMultiplier;
+static const auto kNew_InpNormalMaxPerDir = InpNormalMaxPerDir;
 static const auto kNew_InpLaunchDrawdown = InpLaunchDrawdown;
+static const auto kNew_InpMaxRecoveryCount = InpMaxRecoveryCount;
+static const auto kNew_InpEmergencyValue = InpEmergencyValue;
+static const auto kNew_InpMaxManagedLots = InpMaxManagedLots;
 static const auto kNew_InpCloseProfitable = InpCloseProfitable;
 static const auto kNew_InpOverlapThreshold = InpOverlapThreshold;
 static const auto kNew_InpStepMultiplier = InpStepMultiplier;
 static const auto kNew_InpMaxRecoveryLot = InpMaxRecoveryLot;
-static const auto kNew_InpMaxRecoveryCount = InpMaxRecoveryCount;
 static const auto kNew_InpExecBufferPoints = InpExecBufferPoints;
 static const auto kNew_InpNotify = InpNotify;
 static const auto kNew_InpManualLot = InpManualLot;
 static const auto kNew_InpShowCloseLine = InpShowCloseLine;
-static const auto kNew_InpMaxManagedLots = InpMaxManagedLots;
-static const auto kNew_InpMaxRecoveryLotsSum = InpMaxRecoveryLotsSum;
 static const auto kNew_InpMinMarginLevel = InpMinMarginLevel;
 static const auto kNew_InpEmergencyMode = InpEmergencyMode;
-static const auto kNew_InpEmergencyValue = InpEmergencyValue;
 static const auto kNew_InpEmergencyAction = InpEmergencyAction;
 static const auto kNew_InpStaleQuoteSeconds = InpStaleQuoteSeconds;
-static const auto kNew_InpOperatingMode = InpOperatingMode;
-static const auto kNew_InpNormalAveraging = InpNormalAveraging;
-static const auto kNew_InpNormalMaxPerDir = InpNormalMaxPerDir;
 static const auto kNew_InpNormalMaxLots = InpNormalMaxLots;
 static const auto kNew_InpConfigVersion = InpConfigVersion;
+static const auto kNew_InpSpacingMode = InpSpacingMode;
+static const auto kNew_InpFreezeDDPct = InpFreezeDDPct;
+static const auto kNew_InpEmergencyAutoResume = InpEmergencyAutoResume;
+static const auto kNew_InpShowUnitsPanel = InpShowUnitsPanel;
+static const auto kNew_InpSignalConfirmBars = InpSignalConfirmBars;
+static const auto kNew_InpMultidirectional = InpMultidirectional;
+static const auto kNew_InpSignalMode = InpSignalMode;
+static const auto kNew_InpTrendFirst = InpTrendFirst;
+static const auto kNew_InpTrendNext = InpTrendNext;
+static const auto kNew_InpTrendAmplitude = InpTrendAmplitude;
 static void BuiltInDefaults()
   {
+   InpSignalMode = kNew_InpSignalMode;
+   InpTrendFirst = kNew_InpTrendFirst;
+   InpTrendNext = kNew_InpTrendNext;
+   InpTrendAmplitude = kNew_InpTrendAmplitude;
+   InpOperatingMode = kNew_InpOperatingMode;
+   InpNormalLotMode = kNew_InpNormalLotMode;
+   InpNormalAveraging = kNew_InpNormalAveraging;
+   InpNormalAvgMultiplier = kNew_InpNormalAvgMultiplier;
+   InpNormalMaxPerDir = kNew_InpNormalMaxPerDir;
    InpLaunchDrawdown = kNew_InpLaunchDrawdown;
+   InpMaxRecoveryCount = kNew_InpMaxRecoveryCount;
+   InpEmergencyValue = kNew_InpEmergencyValue;
+   InpMaxManagedLots = kNew_InpMaxManagedLots;
    InpCloseProfitable = kNew_InpCloseProfitable;
    InpOverlapThreshold = kNew_InpOverlapThreshold;
    InpStepMultiplier = kNew_InpStepMultiplier;
    InpMaxRecoveryLot = kNew_InpMaxRecoveryLot;
-   InpMaxRecoveryCount = kNew_InpMaxRecoveryCount;
    InpExecBufferPoints = kNew_InpExecBufferPoints;
    InpNotify = kNew_InpNotify;
    InpManualLot = kNew_InpManualLot;
    InpShowCloseLine = kNew_InpShowCloseLine;
-   InpMaxManagedLots = kNew_InpMaxManagedLots;
-   InpMaxRecoveryLotsSum = kNew_InpMaxRecoveryLotsSum;
    InpMinMarginLevel = kNew_InpMinMarginLevel;
    InpEmergencyMode = kNew_InpEmergencyMode;
-   InpEmergencyValue = kNew_InpEmergencyValue;
    InpEmergencyAction = kNew_InpEmergencyAction;
    InpStaleQuoteSeconds = kNew_InpStaleQuoteSeconds;
-   InpOperatingMode = kNew_InpOperatingMode;
-   InpNormalAveraging = kNew_InpNormalAveraging;
-   InpNormalMaxPerDir = kNew_InpNormalMaxPerDir;
    InpNormalMaxLots = kNew_InpNormalMaxLots;
    InpConfigVersion = kNew_InpConfigVersion;
+   InpSpacingMode = kNew_InpSpacingMode;
+   InpFreezeDDPct = kNew_InpFreezeDDPct;
+   InpEmergencyAutoResume = kNew_InpEmergencyAutoResume;
+   InpShowUnitsPanel = kNew_InpShowUnitsPanel;
+   InpSignalConfirmBars = kNew_InpSignalConfirmBars;
+   InpMultidirectional = kNew_InpMultidirectional;
   }
 
+// Scenarios S01-S43 were written against the ORIGINAL defaults (recovery only, fixed
+// point distances, no pause rule). Restore them so each scenario keeps testing what it
+// was written for; S44+ use BuiltInDefaults().
 static void PreviousDefaults()
   {
-   InpLaunchDrawdown = 35.0; InpCloseProfitable = true; InpOverlapThreshold = 2; InpStepMultiplier = 1.0;
-   InpMaxRecoveryLot = 1.0; InpMaxRecoveryCount = 12; InpExecBufferPoints = 0.0; InpNotify = RM_NOTIFY_OFF;
-   InpManualLot = 0.10; InpShowCloseLine = false; InpMaxManagedLots = 0.0; InpMaxRecoveryLotsSum = 0.0;
-   InpMinMarginLevel = 200.0; InpEmergencyMode = RM_EMG_OFF; InpEmergencyValue = 30.0;
-   InpEmergencyAction = RM_EMGA_PAUSE; InpStaleQuoteSeconds = 0; InpOperatingMode = RM_OP_RECOVERY_ONLY;
-   InpNormalAveraging = false; InpNormalMaxPerDir = 5; InpNormalMaxLots = 1.0; InpConfigVersion = 0;
+   InpSignalMode = RM_SIG_SIMPLE_GRID;
+   InpTrendFirst = RM_TF_WITH_TREND;
+   InpTrendNext = RM_TN_ANY;
+   InpTrendAmplitude = 4;
+   InpOperatingMode = RM_OP_RECOVERY_ONLY;
+   InpNormalLotMode = RM_NLOT_FIXED;
+   InpNormalAveraging = false;
+   InpNormalAvgMultiplier = 1.5;
+   InpNormalMaxPerDir = 5;
+   InpLaunchDrawdown = 35.0;
+   InpMaxRecoveryCount = 12;
+   InpEmergencyValue = 30.0;
+   InpMaxManagedLots = 0.0;
+   InpCloseProfitable = true;
+   InpOverlapThreshold = 2;
+   InpStepMultiplier = 1.0;
+   InpMaxRecoveryLot = 1.0;
+   InpExecBufferPoints = 0.0;
+   InpNotify = RM_NOTIFY_OFF;
+   InpManualLot = 0.10;
+   InpShowCloseLine = false;
+   InpMinMarginLevel = 200.0;
+   InpEmergencyMode = RM_EMG_OFF;
+   InpEmergencyAction = RM_EMGA_PAUSE;
+   InpStaleQuoteSeconds = 0;
+   InpNormalMaxLots = 1.0;
+   InpConfigVersion = 0;
+   InpSpacingMode = RM_SPACE_UNITS;
+   InpFreezeDDPct = 0.0;
+   InpEmergencyAutoResume = false;
+   InpShowUnitsPanel = true;
+   InpSignalConfirmBars = 0;
+   InpMultidirectional = false;
   }
+
 
 #define EXPECT(c) do { if(c) s_pass++; else { s_fail++; std::printf("    FAIL line %d: %s\n", __LINE__, #c); } } while(0)
 
@@ -685,7 +738,7 @@ static void CombinedInputs()
    InpCloseProfitable = false;
    InpFastPeriod = 3; InpFastMethod = MODE_SMA; InpSlowPeriod = 6; InpSlowMethod = MODE_SMA;
    InpUseFilterMA = false; InpSignalTF = PERIOD_CURRENT;
-   InpNormalLot = 1.0; InpNormalTPPoints = 200; InpNormalMaxLots = 5.0; InpNormalMaxSpread = 50;
+   InpNormalLot = 1.0; InpNormalTPPoints = 200; InpNormalMaxLots = 5.0;
    InpNormalAveraging = false; InpNormalOneBasket = true;
    InpAutoResumeAfterRecovery = true; InpResumeCooldownBars = 3; InpRequireFreshSignalAfterRecovery = true;
    InpConfirmActions = false;
@@ -1169,7 +1222,7 @@ static void S38_NormalAndRecoveryIdentical()
    CombinedInputs();
    InpConfigVersion = 2; InpDistanceUnitMode = RM_DU_STANDARDIZED;
    InpGridStepPoints = 100; InpNormalAvgStepPoints = 100; InpNormalAveraging = true;
-   InpNormalLot = 0.10; InpNormalMaxSpread = 7500; InpNormalTPPoints = 5000;
+   InpNormalLot = 0.10; InpNormalTPPoints = 5000;
    InpRecoveryTriggerMode = RM_TRIG_MONEY; InpLaunchDrawdown = 5000;
    EXPECT(Init());
    Tick(2650.0);
@@ -1322,31 +1375,65 @@ static void S44_BuiltInDefaultsTradeGold()
    SetGold(3);
    S.spreadPts = 90;                                         // 0.09
    S.balance = 1000.0;
-   EXPECT(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY && InpConfigVersion == 2);
+   EXPECT(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY && InpSpacingMode == RM_SPACE_ATR);
    EXPECT(Init());
-   EXPECT(g_dist.valid && g_dist.profile == RM_PROF_XAUUSD && std::fabs(g_dist.unitPrice - 0.01) < 1e-12);
-   // long decline under the SMA-100 filter, then a sustained rise: a filtered BUY crossover
+   EXPECT(g_dist.valid && g_dist.profile == RM_PROF_XAUUSD);
+   // long decline: previously averaged BUYs into it and ended in a 50 % close-all
    for(int i = 0; i < 140; i++) Candle(S.bid - 1.0);
-   int opened = 0;
-   for(int i = 0; i < 160 && opened == 0; i++)
-     {
-      Candle(S.bid + 1.5);
-      opened = LogCount("NORMAL_ENTRY");
-     }
-   EXPECT(opened >= 1);
-   // with the default 10 % trigger and 25 % emergency limit on a 1,000 balance the long
-   // decline runs the whole cycle: averaging -> handover once -> emergency close -> halted
+   for(int i = 0; i < 160 && LogCount("NORMAL_ENTRY") == 0; i++) Candle(S.bid + 1.5);
    for(int i = 0; i < 60; i++) Candle(S.bid - 1.0);
-   EXPECT(LogCount("RMP HANDOVER ") <= 1);
-   if(LogCount("RMP HANDOVER ") == 1 && LogCount("CYCLE_END") == 1)
-     {
-      EXPECT(g_cycleOutcome == RM_OUT_EMERGENCY && g_normalHalted);
-      EXPECT(g_ctl == RM_CTL_COOLDOWN);
-     }
+   for(int i = 0; i < 120; i++) Candle(S.bid - 1.0);
+   EXPECT(LogCount("NORMAL_ENTRY") >= 1);
    const SimOrder *o = FirstNormalAfter(0);
-   EXPECT(o != nullptr && std::fabs(o->lots - 0.01) < 1e-9);  // default initial lot
-   RM_DashRefresh(true);
-   EXPECT(ObjectGetString(0, string(RM_DPFX) + "U_CHIPT", OBJPROP_TEXT) == "OK");
+   EXPECT(o != nullptr && std::fabs(o->lots - 0.01) < 1e-9);  // 0.01 per 1,000 balance
+   EXPECT(LogCount("RMP HANDOVER ") == 1);
+   EXPECT(LogCount("RMP EMERGENCY") == 0);                   // no close-all
+   EXPECT(LogCount("CYCLE_END") == 1 && g_cycleOutcome == RM_OUT_COMPLETED);
+   EXPECT(g_cycleRealized >= 0.0);                           // this path: cycle recovered its loss
+   EXPECT(!g_normalHalted && !g_recLatch);                   // trading continues automatically
+   EXPECT(AccountEquity() > 950.0);
+  }
+
+// choppy market: repeated swings around a level
+static void S45_DefaultsChoppyMarket()
+  {
+   BuiltInDefaults();
+   SetGold(3);
+   S.spreadPts = 90; S.balance = 1000.0;
+   EXPECT(Init());
+   double base = 2650.0;
+   int i = 0;
+   for(; i < 1500; i++)
+      Candle(base + 25.0 * std::sin(i * 0.11) + 8.0 * std::sin(i * 0.53));
+   // let an open recovery cycle finish before judging the result
+   for(; i < 3000 && (g_recLatch || g_ctl != RM_CTL_NORMAL); i++)
+      Candle(base + 25.0 * std::sin(i * 0.11) + 8.0 * std::sin(i * 0.53));
+   std::printf("    choppy: entries %d, handovers %d, emergencies %d, equity %.2f, balance %.2f\n",
+               LogCount("NORMAL_ENTRY"), LogCount("RMP HANDOVER "), LogCount("RMP EMERGENCY"), AccountEquity(), AccountBalance());
+   EXPECT(LogCount("NORMAL_ENTRY") >= 2);
+   EXPECT(LogCount("RMP EMERGENCY") == 0);
+   EXPECT(!g_recLatch);                                      // every cycle completed
+   EXPECT(LogCount("CYCLE_END") == LogCount("RMP HANDOVER "));
+   EXPECT(AccountBalance() > 1000.0);                         // this path ends in profit
+   EXPECT(!g_normalHalted);
+  }
+
+// trend reversal: rally, then a deep sell-off, then recovery
+static void S46_DefaultsReversal()
+  {
+   BuiltInDefaults();
+   SetGold(3);
+   S.spreadPts = 90; S.balance = 1000.0;
+   EXPECT(Init());
+   for(int i = 0; i < 150; i++) Candle(S.bid + 0.8);
+   for(int i = 0; i < 150; i++) Candle(S.bid - 1.6);
+   for(int i = 0; i < 150; i++) Candle(S.bid + 0.6);
+   std::printf("    reversal: entries %d, handovers %d, cycles %d, emergencies %d, pauses %d, equity %.2f, balance %.2f\n",
+               LogCount("NORMAL_ENTRY"), LogCount("RMP HANDOVER "), LogCount("CYCLE_END"), LogCount("RMP EMERGENCY"),
+               LogCount("PAUSE_NEW_TRADES"), AccountEquity(), AccountBalance());
+   EXPECT(LogCount("RMP EMERGENCY") == 0);
+   EXPECT(AccountEquity() > 800.0);
+   EXPECT(!g_normalHalted);
   }
 
 //====================================================================
@@ -1397,7 +1484,9 @@ static Scenario g_scen[] = {
    {"S41 units: non-standard tick size gives executable targets", S41_NonStandardTickSize},
    {"S42 units: legacy config keeps broker points + migration preview", S42_LegacyMigrationPreview},
    {"S43 units: suffix / alias / metadata resolution in the EA", S43_SymbolVariantsResolve},
-   {"S44 built-in defaults (= Three_MA_With_Recovery.set) trade 3-digit gold", S44_BuiltInDefaultsTradeGold},
+   {"S44 defaults on 3-digit gold, long decline: recovers, no close-all", S44_BuiltInDefaultsTradeGold},
+   {"S45 defaults on gold, choppy market", S45_DefaultsChoppyMarket},
+   {"S46 defaults on gold, rally / sell-off / rebound", S46_DefaultsReversal},
 };
 
 int main(int argc, char **argv)

@@ -11,7 +11,7 @@
 2. **MQL4 lint** runs `g++ -fsyntax-only` over the whole EA against a *declared* MT4 API subset. It is not MetaEditor.
 3. **Simulator scenarios** run the EA source (`OnInit` / `OnTick` / `OnDeinit` / button handlers) against an in-memory broker: instant fills at Bid/Ask, partial closes creating `from #` remainders, history, commission, a margin model, H1 bars, SMA/EMA, chart objects, files, global variables and fault injection. Each scenario runs in a fresh process. The simulator is a test double; it does not model tester timing, swaps, stop-out or real broker behaviour.
 4. **Preset checks** load each `.set` (rejecting duplicate or missing keys) into the inputs, run `RM_ValidateInputs`, initialise, and run 300 ticks with one losing order.
-5. **Standalone build**: the single-file `.mq4` is regenerated, linted, and all 37 scenarios run against it.
+5. **Standalone build**: the single-file `.mq4` is regenerated, linted, and all 47 scenarios run against it.
 
 ## Acceptance tests for the Three-MA handover
 
@@ -61,68 +61,39 @@
 - *(distance fix)* The lint caught the unit structs and `g_dist` being used before their declaration. They were moved to `RM_Globals.mqh`.
 - *(this extension)* The preset generator produced duplicate keys, one of which silently changed the conservative threshold. Fixed, and the preset check now rejects duplicate or missing keys.
 
+## Default-behaviour scenarios (25-setting restructure)
+
+These scenarios run the untouched built-in defaults on 3-digit XAUUSD, with a 0.09 spread and a 1,000 balance. The price paths are **synthetic**, so the results only show that the logic behaves as designed. They are not a forecast of live results.
+
+| Scenario | Path | Before | Now |
+|---|---|---|---|
+| S44 | long decline, rally, decline | previous defaults: averaging BUYs into the decline, emergency close-all, trading halted | handover → recovery cycle completed (+2.19), no emergency, trading continues |
+| S45 | 1,500 choppy candles (±33 swings) | same-candle filter only: no entries (every crossover rejected) | 23 normal entries, 2 recovery cycles both completed; balance 1,201.60 |
+| S46 | rally, sell-off, rebound | same-candle filter only: no entries | 1 entry closed at TP, balance 1,003.11 |
+
+
 ## Output
 
 ```
 == 1. calculation tests
-Result: 289 passed, 0 failed
+Result: 301 passed, 0 failed
 == 2. MQL4 lint (g++ -fsyntax-only)
 mql_lint: OK
 == 3. simulator scenarios
-S01 no eligible orders: EA stays idle                                          ok (6 checks)
-S02 one losing BUY: lock, grid lots, one-per-bar, group close, lineage         ok (23 checks)
-S03 unbalanced mix + unrelated symbol/magic untouched + close all scope        ok (10 checks)
-S04 restart mid-lock does not repeat launch actions                            ok (11 checks)
-S05 closure failure after 1 leg + disconnect + restart: profit counted once    ok (15 checks)
-S06 external partial close + external lock close: lineage and re-lock          ok (11 checks)
-S07 pause blocks automation; resume without catch-up burst                     ok (7 checks)
-S08 emergency close-all overrides pause                                        ok (5 checks)
-S09 multidirectional off never holds two recovery baskets                      ok (3 checks)
-S10 money-drawdown launch triggers exactly once                                ok (5 checks)
-S11 insufficient margin blocks the lock with a visible reason                  ok (6 checks)
-S12 uncertain broker reply does not duplicate an order                         ok (3 checks)
-S13 manual panel: validation, confirmation, roles                              ok (14 checks)
-S14 dashboard totals reconcile with broker orders                              ok (7 checks)
-S15 one-order-per-bar survives restart                                         ok (6 checks)
-S16 reduce volume executes only a net-non-negative plan                        ok (6 checks)
-S17 close-profitable-at-launch finances a loser reduction, then locks          ok (7 checks)
-S18 overlap closes first+last recovery orders and keeps the middle ones        ok (9 checks)
-S19 whole-basket TP closes every role and ends the session                     ok (7 checks)
-S20 unresolved partial-close lineage -> ERROR_HOLD -> operator resume          ok (6 checks)
-S21 short chart: confirmation box and panels stay on screen                    ok (10 checks)
-S22 tester MODE_TRADEALLOWED=0 does not block; disabled symbol explains why    ok (5 checks)
-S23 combined: below threshold normal trades, recovery never trades             ok (12 checks)
-S24 combined: 999 no / 1,000 yes, handover once, latch holds on improvement    ok (16 checks)
-S25 combined: price gap beyond threshold hands over on that event              ok (6 checks)
-S26 combined: normal TP/averaging cannot touch the transferred basket          ok (8 checks)
-S27 combined: pending cancel failures reconciled, steps not repeated           ok (12 checks)
-S27b combined: persistent handover failure -> ERROR_HOLD -> retry              ok (7 checks)
-S28 combined: restart / lost state / threshold change keep the latch           ok (11 checks)
-S29 combined: unrelated positions untouched, hedge covers basket only          ok (8 checks)
-S30 combined: partial closures keep cycle accounting exact                     ok (7 checks)
-S31 combined: resume only after completion, cooldown and fresh signal          ok (15 checks)
-S32 combined: emergency termination never restarts automatically               ok (12 checks)
-S33 combined: dashboard figures reconcile with orders                          ok (12 checks)
-S34 combined: account-scope DD without basket blocks entries only              ok (7 checks)
-S35 combined: Start Recovery confirm, Normal button cannot bypass latch        ok (10 checks)
-S36 THREE_MA_ONLY: recovery never trades                                       ok (4 checks)
-S37 units: gold 3- and 2-digit grid 100 -> 1.00, boundaries, slippage          ok (22 checks)
-S38 units: normal and recovery modules convert identically                     ok (9 checks)
-S39 units: unknown symbol blocks entries until explicit units                  ok (13 checks)
-S40 units: restart/input change keep the active basket's units                 ok (8 checks)
-S41 units: non-standard tick size gives executable targets                     ok (8 checks)
-S42 units: legacy config keeps broker points + migration preview               ok (8 checks)
-S43 units: suffix / alias / metadata resolution in the EA                      ok (11 checks)
-sim scenarios: 44/44 passed
+    choppy: entries 23, handovers 2, emergencies 0, equity 1201.60, balance 1201.60
+    reversal: entries 1, handovers 0, cycles 0, emergencies 0, pauses 0, equity 1003.11, balance 1003.11
+sim scenarios: 47/47 passed
 == 4. presets
 Conservative_Demo.set    validate=ok init=ok state=ARMED managed=1 lock=0.00 recovery=0 Armed: drawdown 0.61% / launch at 5.00%
 Three_MA_With_Recovery.set validate=ok init=ok state=IDLE managed=0 lock=0.00 recovery=0 No orders to recover
 Video_Reference.set      validate=ok init=ok state=RECOVERING managed=5 lock=0.10 recovery=3 Recovering: waiting for grid level / close target
 presets: 3/3 valid
+== 4b. built-in defaults
+defaults == Three_MA_With_Recovery.set: OK
 == 5. standalone single-file build (rebuilt, linted and simulated)
-written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 8323 lines
+written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 8545 lines
 mql_lint: OK
-sim scenarios: 44/44 passed
+sim scenarios: 47/47 passed
 ```
 
 ### Calculation test case list
@@ -162,5 +133,5 @@ Recovery Manager Pro - calculation tests
 - D06 migration keeps the original price distance; max limits never loosen
 - Break-even / possible-close price solve
 
-Result: 289 passed, 0 failed
+Result: 301 passed, 0 failed
 ```

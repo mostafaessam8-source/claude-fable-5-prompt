@@ -165,7 +165,12 @@ int RM_NormalSignalEval(bool &newBar)
       return 0;                                 // already processed: never twice
    double f2 = RM_MA(InpFastPeriod, InpFastMethod, InpFastPrice, 2);
    double s2 = RM_MA(InpSlowPeriod, InpSlowMethod, InpSlowPrice, 2);
-   int sig = RM_MASignal(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1);
+   int sig = 0;
+   if(InpSignalConfirmBars > 0)
+      sig = RM_MASignalConfirm(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1,
+                               InpSignalConfirmBars, g_maArmed, g_maArmedAge);
+   else
+      sig = RM_MASignal(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1);
    g_lastSignalBar = bar1;
    g_lastSignal = sig;
    newBar = true;
@@ -198,12 +203,16 @@ double RM_NormalLotFor(int n, double &raw)
 //+------------------------------------------------------------------+
 bool RM_NormalExposureBlocked(int dir, double lot, string &why)
   {
-   if(RM_SpreadExceeds(InpNormalMaxSpread, RM_NormUnit(), why))
+   if(RM_SpreadExceeds(InpMaxSpread, RM_NormUnit(), why))
       return true;
    if(RM_QuoteStale(why))
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
      { why = "normal exposure cap " + RM_Lots(InpNormalMaxLots) + " lots"; return true; }
+   if(InpMaxManagedLots > 0.0 && g_normalLots + g_tot.totalLots + lot > InpMaxManagedLots + RM_EPS)
+     { why = "max total open lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+   if(RM_FreezeActive(why))
+      return true;
    ResetLastError();
    double freeAfter = AccountFreeMarginCheck(g_sym, dir, lot);
    if(freeAfter <= 0.0 || GetLastError() == ERR_NOT_ENOUGH_MONEY)
@@ -227,8 +236,9 @@ bool RM_NormalOpen(int dir, int n, string what)
    // fresh prices and the drawdown trigger immediately before every entry/averaging
    if(RM_TriggerCheckNow())
       return false;
-   if(n == 0 && !g_dist.valid)
-     { g_normalBlock = what + " blocked: " + g_dist.why; return false; }       // new basket needs defined units
+   string rwhy = "";
+   if(n == 0 && !RM_NewBasketReady(rwhy))
+     { g_normalBlock = what + " blocked: " + rwhy; return false; }             // new basket needs defined distances
    if(n > 0 && !RM_NormDistanceUsable())
      { g_normalBlock = what + " blocked: " + RM_UNDEFINED_MSG; return false; }
    double raw = 0;

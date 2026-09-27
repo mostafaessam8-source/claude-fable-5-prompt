@@ -254,7 +254,8 @@ void RM_DashRelayout()
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
       RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
-      RM_BuildUnits(cw);                       // panel E: distance units
+      if(InpShowUnitsPanel)
+         RM_BuildUnits(cw);                    // panel E: distance-units diagnostics (optional)
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);

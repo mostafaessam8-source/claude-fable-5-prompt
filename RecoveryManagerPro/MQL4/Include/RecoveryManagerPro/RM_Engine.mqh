@@ -40,6 +40,8 @@ void RM_InitRuntime()
    g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
    RM_CtxClear(g_ctxRec);
    RM_CtxClear(g_ctxNorm);
+   g_frozen = false;
+   g_haltUntil = 0;
   }
 
 void RM_ResetSession()
@@ -212,10 +214,11 @@ void RM_Engine()
    else
       // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
       si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
-   if(si.launchTriggered && !g_launchDone && !g_dist.valid)
+   string rdy = "";
+   if(si.launchTriggered && !g_launchDone && !RM_NewBasketReady(rdy))
      {
-      si.launchTriggered = false;             // a new cycle needs defined distance units
-      g_block = g_dist.why;
+      si.launchTriggered = false;             // a new cycle needs defined distances
+      g_block = rdy;
      }
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
@@ -250,8 +253,11 @@ void RM_Engine()
             g_status = "Armed: drawdown " + RM_Money(g_drawdown) + " / launch at " + RM_Money(InpLaunchDrawdown);
          else
             g_status = "Armed: launching";
-         if(!g_dist.valid)
-            g_status = "Armed, launch blocked: " + g_dist.why;
+           {
+            string rw = "";
+            if(!RM_NewBasketReady(rw))
+               g_status = "Armed, launch blocked: " + rw;
+           }
          break;
       case RM_ST_PREPARING:  RM_DoPrepare();  break;
       case RM_ST_LOCKING:    RM_DoLock();     break;
@@ -529,7 +535,9 @@ void RM_GridEntries()
      }
    if(!RM_RecDistanceUsable())
      {
-      g_block = g_dist.why;                  // no persisted context and no defined units
+      string rw2 = "";
+      RM_NewBasketReady(rw2);
+      g_block = rw2;                         // no stored context and no defined distances
       g_status = g_block;
       return;
      }

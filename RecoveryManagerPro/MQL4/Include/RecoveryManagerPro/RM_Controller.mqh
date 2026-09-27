@@ -232,8 +232,8 @@ void RM_CtlCheckCompletion()
    g_normLastAvgBar[0] = 0;
    g_normLastAvgBar[1] = 0;
    g_operatorResume = false;
-   if(g_cycleOutcome != RM_OUT_COMPLETED)
-      g_normalHalted = true;                         // emergency / manual end: operator reset required
+   if(g_cycleOutcome == RM_OUT_MANUAL || (g_cycleOutcome == RM_OUT_EMERGENCY && !InpEmergencyAutoResume))
+      g_normalHalted = true;                         // operator reset required
    long dur = g_cycleEnd - g_cycleStart;
    RM_Audit("CYCLE_END", g_cycleId, 0, g_cycleRealized,
             RM_OutcomeName(g_cycleOutcome) + " | realised net " + RM_Money(g_cycleRealized) + " " + AccountCurrency() +
@@ -252,11 +252,15 @@ void RM_CtlCooldown()
   {
    int bars = iBarShift(g_sym, InpSignalTF, (datetime)g_cycleEnd, false);
    g_cooldownBars = (bars < 0) ? 0 : bars;
-   if(!RM_ResumeAllowed(g_cycleOutcome, g_normalHalted, InpAutoResumeAfterRecovery, g_operatorResume,
-                        g_cooldownBars, InpResumeCooldownBars))
+   // an emergency close with auto-resume behaves like a completed cycle after a longer calm-down
+   bool emgAuto = (g_cycleOutcome == RM_OUT_EMERGENCY && InpEmergencyAutoResume && !g_normalHalted);
+   int outcomeRule = emgAuto ? RM_OUT_COMPLETED : g_cycleOutcome;
+   int needBars = emgAuto ? (int)MathMax(InpResumeCooldownBars, InpEmergencyCooldownBars) : InpResumeCooldownBars;
+   if(!RM_ResumeAllowed(outcomeRule, g_normalHalted, InpAutoResumeAfterRecovery || emgAuto, g_operatorResume,
+                        g_cooldownBars, needBars))
      {
-      if(g_cooldownBars < InpResumeCooldownBars)
-         g_ctlStatus = "cooldown " + IntegerToString(g_cooldownBars) + "/" + IntegerToString(InpResumeCooldownBars) + " bars";
+      if(g_cooldownBars < needBars)
+         g_ctlStatus = "cooldown " + IntegerToString(g_cooldownBars) + "/" + IntegerToString(needBars) + " bars";
       else
          g_ctlStatus = "waiting for operator: press Normal ON to resume (" + RM_OutcomeName(g_cycleOutcome) + ")";
       return;
@@ -287,7 +291,7 @@ void RM_CtlCooldown()
 //+------------------------------------------------------------------+
 bool RM_NormalEmergency()
   {
-   if(InpEmergencyMode == RM_EMG_OFF || g_normalCnt == 0)
+   if(InpEmergencyMode == RM_EMG_OFF || InpEmergencyValue <= 0.0 || g_normalCnt == 0)
       return false;
    double dd = MathMax(0.0, -g_normalNet);
    double pct = (AccountBalance() > 0.0) ? 100.0 * dd / AccountBalance() : 0.0;
@@ -298,6 +302,8 @@ bool RM_NormalEmergency()
    if(!g_normalHalted)
      {
       g_normalHalted = true;
+      if(InpEmergencyAutoResume)
+         g_haltUntil = (long)TimeCurrent() + (long)InpEmergencyCooldownBars * PeriodSeconds(InpSignalTF);
       g_lastReason = "emergency-loss limit on normal basket: " + RM_Money(dd) + " (" + DoubleToString(pct, 2) + "%)";
       RM_Audit("EMERGENCY_NORMAL", 0, g_normalLots, -dd, g_lastReason);
       RM_Notify("EMERGENCY: " + g_lastReason);
@@ -369,6 +375,15 @@ void RM_ControllerTick()
    RM_CtlComputeMetrics();
    g_normalBlock = "";
    g_ctlStatus = "";
+   RM_FreezeUpdate();
+   // emergency calm-down over: resume automatically (no manual reset needed)
+   if(g_normalHalted && g_haltUntil > 0 && (long)TimeCurrent() >= g_haltUntil && g_normalCnt == 0)
+     {
+      g_normalHalted = false;
+      g_haltUntil = 0;
+      RM_Audit("RESUME_NORMAL", 0, 0, 0, "emergency calm-down over - trading resumes automatically");
+      RM_SaveState();
+     }
 
    // 1. emergency protection
    if(!g_recLatch && RM_NormalEmergency())

@@ -82,6 +82,8 @@ double iHigh(string s, int tf, int shift); double iLow(string s, int tf, int shi
 int iHighest(string s, int tf, int type, int count, int start); int iLowest(string s, int tf, int type, int count, int start);
 double iCustom(string s, int tf, string name, int mode, int shift);
 double iMA(string s, int tf, int period, int ma_shift, int method, int price, int shift);
+double iATR(string s, int tf, int period, int shift);
+int PeriodSeconds(int tf = 0);
 int iBarShift(string s, int tf, datetime t, bool exact = false);
 
 // ---- orders

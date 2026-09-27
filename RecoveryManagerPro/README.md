@@ -5,9 +5,39 @@ Recovery Manager Pro is an independently written MetaTrader 4 Expert Advisor tha
 > **Risk.** Recovery trading can realise losses, add exposure and consume margin. No setting guarantees recovery. Run it on a demo account first. The reference video's backtest figures (net profit 587.07, maximal drawdown 35.42 %) are observations of someone else's run, not targets or evidence of live profitability.
 
 - What it does: it adopts eligible orders, can hedge (lock) their net exposure, and opens a separate recovery grid. Each partial reduction of the losing main position is paid for by the recovery grid's realised profit, and the cycle repeats until the managed basket is empty or the operator stops it.
-- **Built-in defaults = `Three_MA_With_Recovery.set`**: a fresh attach runs `THREE_MA_WITH_RECOVERY` with standardized distance units (`InpConfigVersion=2`). Set `InpOperatingMode = RECOVERY_ONLY` for the original manage-existing-orders-only behaviour.
+- **Built-in defaults = `Three_MA_With_Recovery.set`**: a fresh attach runs `THREE_MA_WITH_RECOVERY` with ATR-based distances. See section 0 for the 25 visible settings. Set Mode = `RECOVERY_ONLY` for the original manage-existing-orders-only behaviour.
 - What it does not do in `RECOVERY_ONLY` mode: it has no entry strategy of its own. **With no eligible orders it stays idle** and shows "No orders to recover".
 - **Optional Three-MA normal trading** (`InpOperatingMode`): `THREE_MA_ONLY` trades an independent three-moving-average strategy. `THREE_MA_WITH_RECOVERY` trades it until a drawdown threshold, then hands the basket to the recovery engine under a persisted latch, and resumes only after a verified completion, a cooldown and a fresh signal. See [`docs/COMBINED_MODE.md`](docs/COMBINED_MODE.md).
+
+
+## 0. Quick start: the 25 settings
+
+The input window shows **25 settings in 7 groups**. Every other setting is advanced and hidden: it keeps its built-in value unless you uncomment `#define RMP_SHOW_ADVANCED` at the top of the `.mq4` and recompile.
+
+| # | Setting | Default | What it does / ماذا يفعل |
+|---|---|---|---|
+| 1 | Mode | Three-MA + recovery | Trades the MA strategy; a basket in drawdown goes to recovery. / يتداول بالمتوسطات، والسلة الخاسرة تنتقل للاسترداد |
+| 2 | Signal timeframe, Fast / Slow MA | chart, 10 / 30 | Crossover of the two MAs = entry. / تقاطع المتوسطين = دخول |
+| 2 | Trend filter MA | on, 100 | Buy only above it, sell only below it. A crossover may wait up to 20 candles for the filter. / شراء فوقه وبيع تحته فقط |
+| 3 | Lot mode, Lot | per balance, 0.01 | 0.01 lot per 1,000 of balance. / 0.01 لوت لكل 1000 من الرصيد |
+| 4 | Distance mode | ATR | TP and grid distances follow volatility (ATR 14), so they work on any symbol and digit count. / المسافات تتبع التذبذب فتصلح لكل الرموز |
+| 4 | TP (× ATR) | 1.0 | Basket take-profit distance from the average price. / مسافة جني الربح |
+| 4 | Averaging, step (× ATR), multiplier, max orders | on, 1.5, 1.3, 3 | Up to 3 orders per direction before handing over. / حتى 3 صفقات تعزيز |
+| 5 | Recovery start drawdown | 8 % | Floating loss of the basket (percent of balance) that starts recovery. / نسبة الخسارة العائمة لبدء الاسترداد |
+| 5 | Grid step (× ATR), first lot, multiplier, max orders | 1.5, 0.01, 1.2, 8 | Recovery grid. It follows the trend and trades both directions. / شبكة الاسترداد تتبع الاتجاه وفي الاتجاهين |
+| 6 | Pause new trades at account drawdown | 20 % | New trades pause and open trades are still managed. They resume below 15 %. Nothing is closed. / إيقاف مؤقت للصفقات الجديدة فقط |
+| 6 | Emergency close at drawdown | 50 % (0 = off) | Closes everything. Trading resumes by itself after 24 candles. / إغلاق طارئ ثم استئناف تلقائي |
+| 6 | Max total lots, max spread | 0.50, 50 | Hard caps on exposure and on entry spread. / حدود اللوت والسبريد |
+| 7 | Panel size, font | normal, 8 | Dashboard appearance. / شكل اللوحة |
+
+**What changed compared with earlier versions**:
+
+- A loss no longer stops the EA. The account-drawdown **pause** only blocks new exposure. The emergency close restarts automatically after a cooldown, and only the operator's Stop button halts trading permanently.
+- Distances are in ATR multiples, so there are no point or digit mix-ups.
+- Recovery follows the trend (both directions).
+- MA entries wait for trend-filter confirmation.
+
+> No setting guarantees profit. The simulator paths in `docs/TEST_RESULTS.md` are synthetic. Backtest on your symbol and run a demo account before going live.
 
 ---
 
@@ -193,6 +223,28 @@ Everything uses the object prefix `RMP_`. Only this EA's objects are removed on 
 
 ## 9. Inputs
 
+The tables below list **every** input. Only the 25 in section 0 are shown in the input window. The rest are advanced (see `RMP_SHOW_ADVANCED`). The Default column is the built-in value. The Video and Conservative presets set advanced values, so load them into a build compiled with `RMP_SHOW_ADVANCED`.
+
+#### Added with the 25-setting restructure
+
+| Input | Visible | Default | Meaning |
+|---|---|---|---|
+| `InpSpacingMode` | yes | `RM_SPACE_ATR` | ATR = distances are ATR multiples. UNITS = the distance-unit inputs of section 13. |
+| `InpNormalTPATR` | yes | `1.0` | Normal basket TP [× ATR, 0 = off] |
+| `InpNormalAvgATR` | yes | `1.5` | Normal averaging step [× ATR] |
+| `InpGridATR` | yes | `1.5` | Recovery grid base step [× ATR] |
+| `InpFreezeDDPct` | yes | `20.0` | Pause new trades at this account drawdown [% of balance, 0 = off] |
+| `InpATRPeriod` | no | `14` | ATR period (signal timeframe, closed candles) |
+| `InpPartialTPATR` | no | `0.3` | Recovery partial-close target [× ATR] |
+| `InpNormalOverlapATR` | no | `0.3` | Normal overlap target [× ATR] |
+| `InpFreezeResumePct` | no | `15.0` | Resume new trades below this drawdown [%] |
+| `InpEmergencyAutoResume` | no | `true` | Resume automatically after an emergency close |
+| `InpEmergencyCooldownBars` | no | `24` | Candles to wait after an emergency close |
+| `InpSignalConfirmBars` | no | `20` | Candles a crossover may wait for the trend filter [0 = same candle only] |
+| `InpShowUnitsPanel` | no | `false` | Show the distance-units panel |
+
+`InpNormalMaxSpread` was removed: `InpMaxSpread` now applies to all entries.
+
 Units are given in brackets. Invalid values or combinations stop initialisation with an explanation in the Experts log, for example: "overlap threshold must be 0 (off) or >= 2", "recovery/lock magic appears in the managed allowlist", "'Other EAs at launch' closes charts; set InpAllowChartClosure=true…". Enum values in `.set` files are the integers in `RM_Types.mqh`.
 
 #### 1. Managed orders
@@ -213,7 +265,7 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | `InpLocking` | bool | `true` | `1` | `1` | Lock (hedge) the main position |
 | `InpDeleteSLTP` | ENUM_RM_SLTP | `RM_SLTP_LAUNCH_ONLY` | `1` | `1` | Delete SL and TP of managed orders |
 | `InpLaunchMode` | ENUM_RM_LAUNCH | `RM_LAUNCH_INSTANT` | `0` | `1` | Launch mode |
-| `InpLaunchDrawdown` | double | `10.0` | `35.0` | `5.0` | Launch drawdown [% of balance or account currency] |
+| `InpLaunchDrawdown` | double | `8.0` | `35.0` | `5.0` | Launch drawdown [% of balance or account currency] |
 | `InpOtherEAs` | ENUM_RM_OTHER_EA | `RM_OTHER_KEEP` | `0` | `0` | Other EAs at launch (closes charts!) |
 | `InpAllowChartClosure` | bool | `false` | `0` | `0` | Operator enablement for chart closure |
 | `InpCloseProfitable` | bool | `false` | `1` | `1` | Close profitable orders at launch (finance losers) |
@@ -236,18 +288,18 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 
 | Input | Type | Default (= Three-MA preset) | Video | Conservative | Meaning [unit] |
 |---|---|---|---|---|---|
-| `InpSignalMode` | ENUM_RM_SIGNAL | `RM_SIG_SIMPLE_GRID` | `0` | `0` | Recovery filter |
+| `InpSignalMode` | ENUM_RM_SIGNAL | `RM_SIG_TREND` | `0` | `0` | Recovery filter |
 | `InpRecoveryDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | Allowed recovery directions |
 | `InpFirstLot` | double | `0.01` | `0.06` | `0.01` | First recovery order volume [lots] |
 | `InpLotMultiplier` | double | `1.2` | `1.3` | `1.2` | Volume multiplier [x, >= 1] |
 | `InpGridStepPoints` | double | `300` | `200` | `300` | Recovery grid step [distance units, section 13] |
 | `InpStepMultiplier` | double | `1.1` | `1.0` | `1.1` | Step multiplier [x] |
 | `InpOnePerBar` | bool | `true` | `1` | `1` | One recovery order per bar |
-| `InpMultidirectional` | bool | `false` | `0` | `0` | Multidirectional recovery |
+| `InpMultidirectional` | bool | `true` | `0` | `0` | Multidirectional recovery |
 | `InpMaxSlippage` | int | `30` | `30` | `30` | Maximum slippage [distance units, section 13] |
 | `InpMaxSpread` | int | `50` | `7500` | `50` | Maximum spread for NEW exposure [distance units] |
 | `InpMaxRecoveryLot` | double | `0.10` | `100.0` | `0.10` | Maximum recovery order volume [lots] |
-| `InpMaxRecoveryCount` | int | `10` | `100` | `10` | Maximum recovery orders (both directions) |
+| `InpMaxRecoveryCount` | int | `8` | `100` | `10` | Maximum recovery orders (both directions) |
 | `InpRecoveryMagic` | int | `9751421` | `9751421` | `9751421` | Recovery magic number |
 | `InpLockMagic` | int | `9751422` | `9751422` | `9751422` | Lock (hedge) magic number (PROPOSED) |
 | `InpLotRounding` | ENUM_RM_LOT_ROUND | `RM_ROUND_DOWN` | `0` | `0` | Final lot normalisation |
@@ -294,9 +346,9 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | Input | Type | Default (= Three-MA preset) | Video | Conservative | Meaning [unit] |
 |---|---|---|---|---|---|
 | `InpTrendTF` | ENUM_TIMEFRAMES | `PERIOD_CURRENT` | `0` | `0` | Filter timeframe |
-| `InpTrendAmplitude` | int | `4` | `4` | `4` | Trend amplitude [bars] |
+| `InpTrendAmplitude` | int | `20` | `4` | `4` | Trend amplitude [bars] |
 | `InpTrendFirst` | ENUM_RM_TREND_FIRST | `RM_TF_WITH_TREND` | `0` | `0` | Initial entry vs trend |
-| `InpTrendNext` | ENUM_RM_TREND_NEXT | `RM_TN_ANY` | `0` | `0` | Subsequent averaging vs trend |
+| `InpTrendNext` | ENUM_RM_TREND_NEXT | `RM_TN_WITH_TREND` | `0` | `0` | Subsequent averaging vs trend |
 | `InpExtIndicator` | string | (empty) | (empty) | (empty) | External adapter: indicator name (licensed) |
 | `InpExtBuyBuffer` | int | `0` | `0` | `0` | External adapter: BUY buffer index |
 | `InpExtSellBuffer` | int | `1` | `1` | `1` | External adapter: SELL buffer index |
@@ -305,12 +357,12 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 
 | Input | Type | Default (= Three-MA preset) | Video | Conservative | Meaning [unit] |
 |---|---|---|---|---|---|
-| `InpMaxManagedLots` | double | `1.0` | `0.0` | `1.0` | Max combined managed lots [0 = off] |
-| `InpMaxRecoveryLotsSum` | double | `0.50` | `0.0` | `0.50` | Max total recovery lots [0 = off] |
+| `InpMaxManagedLots` | double | `0.50` | `0.0` | `1.0` | Max combined managed lots [0 = off] |
+| `InpMaxRecoveryLotsSum` | double | `0.0` | `0.0` | `0.50` | Max total recovery lots [0 = off] |
 | `InpMinFreeMargin` | double | `0.0` | `0.0` | `0.0` | Min free margin for new entries [money] |
 | `InpMinMarginLevel` | double | `300.0` | `0.0` | `300.0` | Min margin level for new entries [%] |
 | `InpEmergencyMode` | ENUM_RM_EMERGENCY | `RM_EMG_PERCENT` | `0` | `2` | Emergency stop measure |
-| `InpEmergencyValue` | double | `25.0` | `30.0` | `15.0` | Emergency threshold [money or %] |
+| `InpEmergencyValue` | double | `50.0` | `30.0` | `15.0` | Emergency threshold [money or %] |
 | `InpEmergencyAction` | ENUM_RM_EMG_ACTION | `RM_EMGA_CLOSE_ALL` | `0` | `0` | Emergency action |
 | `InpEmergencyOverPause` | bool | `true` | `1` | `1` | Emergency also acts while paused |
 | `InpDailyLossLimit` | double | `0.0` | `0.0` | `0.0` | Daily realised loss lockout [money, 0 = off] |
@@ -361,19 +413,18 @@ Units are given in brackets. Invalid values or combinations stop initialisation 
 | `InpFilterPrice` | ENUM_APPLIED_PRICE | `PRICE_CLOSE` | `0` | `0` | Filter MA applied price |
 | `InpNormalDirs` | ENUM_RM_DIRS | `RM_DIRS_BOTH` | `0` | `0` | Allowed normal directions |
 | `InpNormalOneBasket` | bool | `true` | `1` | `1` | Ignore new signals while any normal basket is open |
-| `InpNormalLotMode` | ENUM_RM_NLOT | `RM_NLOT_FIXED` | `0` | `0` | Initial lot: fixed or balance-based |
+| `InpNormalLotMode` | ENUM_RM_NLOT | `RM_NLOT_BALANCE` | `0` | `0` | Initial lot: fixed or balance-based |
 | `InpNormalLot` | double | `0.01` | `0.01` | `0.01` | Initial lot [lots] (per InpNormalLotPerBalance in balance mode) |
 | `InpNormalLotPerBalance` | double | `1000.0` | `1000.0` | `1000.0` | Balance per InpNormalLot [account currency] |
 | `InpNormalAveraging` | bool | `true` | `0` | `0` | Normal averaging enabled |
 | `InpNormalAvgStepPoints` | double | `300` | `300` | `300` | Minimum averaging spacing from last fill [distance units] |
-| `InpNormalAvgMultiplier` | double | `1.5` | `1.5` | `1.5` | Averaging lot multiplier [x] |
-| `InpNormalMaxPerDir` | int | `4` | `5` | `5` | Maximum normal orders per direction |
-| `InpNormalMaxLots` | double | `0.20` | `1.0` | `1.0` | Maximum total normal exposure [lots, 0 = off] |
+| `InpNormalAvgMultiplier` | double | `1.3` | `1.5` | `1.5` | Averaging lot multiplier [x] |
+| `InpNormalMaxPerDir` | int | `3` | `5` | `5` | Maximum normal orders per direction |
+| `InpNormalMaxLots` | double | `0.0` | `1.0` | `1.0` | Maximum total normal exposure [lots, 0 = off] |
 | `InpNormalTPPoints` | double | `200` | `200` | `200` | Virtual basket TP from weighted average [distance units, 0 = off] |
 | `InpNormalOverlap` | bool | `false` | `0` | `0` | First/last-order overlap for normal baskets |
 | `InpNormalOverlapMinOrders` | int | `3` | `3` | `3` | Overlap from this many orders in a direction |
 | `InpNormalOverlapTPPoints` | double | `50` | `50` | `50` | Overlap target [distance units x lots of the two orders] |
-| `InpNormalMaxSpread` | int | `50` | `50` | `50` | Maximum spread for normal entries [distance units] |
 | `InpNormalSlippage` | int | `30` | `30` | `30` | Normal-strategy slippage [distance units] |
 
 #### 13. Distance units (price-distance normalisation)

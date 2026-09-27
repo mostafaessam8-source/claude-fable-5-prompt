@@ -120,6 +120,56 @@ double RM_TickPrice()
   }
 
 //+------------------------------------------------------------------+
+//| ATR-based distances (default): ATR(InpATRPeriod) of the signal    |
+//| timeframe on the last CLOSED bar, in price. Adapts every distance |
+//| to the symbol's real volatility with no unit settings.            |
+//+------------------------------------------------------------------+
+bool RM_SpacingATR()
+  {
+   return InpSpacingMode == RM_SPACE_ATR;
+  }
+
+double RM_ATRPrice()
+  {
+   double a = iATR(g_sym, InpSignalTF, InpATRPeriod, 1);
+   return (a > 0.0) ? a : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Can a NEW basket / cycle get well-defined distances right now?    |
+//+------------------------------------------------------------------+
+bool RM_NewBasketReady(string &why)
+  {
+   if(!g_dist.metaValid)
+     { why = g_dist.why; return false; }
+   if(g_dist.unitPrice <= 0.0)
+     { why = g_dist.why; return false; }             // spread/slippage limits need the unit
+   if(RM_SpacingATR() && RM_ATRPrice() <= 0.0)
+     { why = "ATR not available yet (not enough history on the signal timeframe)"; return false; }
+   return true;
+  }
+
+bool RM_NewBasketReadyQuiet()
+  {
+   string w = "";
+   return RM_NewBasketReady(w);
+  }
+
+//--- current (not yet stored) distances in PRICE; 0 = unavailable
+double RM_CurDist(double atrFactor, double units)
+  {
+   if(RM_SpacingATR())
+      return atrFactor * RM_ATRPrice();
+   return g_dist.valid ? RM_DistUnitsToPrice(units, g_dist.unitPrice) : 0.0;
+  }
+
+double RM_CurRecStepBase()    { return RM_CurDist(InpGridATR, InpGridStepPoints); }
+double RM_CurRecPartialTP()   { return RM_CurDist(InpPartialTPATR, InpPartialTPPoints); }
+double RM_CurNormStep()       { return RM_CurDist(InpNormalAvgATR, InpNormalAvgStepPoints); }
+double RM_CurNormTP()         { return RM_CurDist(InpNormalTPATR, InpNormalTPPoints); }
+double RM_CurNormOverlap()    { return RM_CurDist(InpNormalOverlapATR, InpNormalOverlapTPPoints); }
+
+//+------------------------------------------------------------------+
 //| Unit contexts                                                     |
 //+------------------------------------------------------------------+
 void RM_CtxClear(RM_DistCtx &c)
@@ -135,15 +185,15 @@ string RM_CtxText(const RM_DistCtx &c)
 
 bool RM_CtxCaptureRec(string why)
   {
-   if(!g_dist.valid)
+   if(!RM_NewBasketReadyQuiet())
       return false;
    g_ctxRec.active = true;
    g_ctxRec.mode = g_dist.mode;
    g_ctxRec.profile = g_dist.profile;
    g_ctxRec.unitPrice = g_dist.unitPrice;
-   g_ctxRec.stepBasePrice = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   g_ctxRec.stepBasePrice = RM_CurRecStepBase();
    g_ctxRec.stepMult = InpStepMultiplier;
-   g_ctxRec.partialTPPrice = RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice);
+   g_ctxRec.partialTPPrice = RM_CurRecPartialTP();
    g_ctxRec.bufferPrice = RM_DistUnitsToPrice(InpExecBufferPoints, g_dist.unitPrice);
    g_ctxRec.tpPrice = 0; g_ctxRec.overlapPrice = 0;
    g_ctxRec.since = (long)TimeCurrent();
@@ -154,16 +204,16 @@ bool RM_CtxCaptureRec(string why)
 
 bool RM_CtxCaptureNorm(string why)
   {
-   if(!g_dist.valid)
+   if(!RM_NewBasketReadyQuiet())
       return false;
    g_ctxNorm.active = true;
    g_ctxNorm.mode = g_dist.mode;
    g_ctxNorm.profile = g_dist.profile;
    g_ctxNorm.unitPrice = g_dist.unitPrice;
-   g_ctxNorm.stepBasePrice = RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice);
+   g_ctxNorm.stepBasePrice = RM_CurNormStep();
    g_ctxNorm.stepMult = 1.0;
-   g_ctxNorm.tpPrice = RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice);
-   g_ctxNorm.overlapPrice = RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice);
+   g_ctxNorm.tpPrice = RM_CurNormTP();
+   g_ctxNorm.overlapPrice = RM_CurNormOverlap();
    g_ctxNorm.partialTPPrice = 0; g_ctxNorm.bufferPrice = 0;
    g_ctxNorm.since = (long)TimeCurrent();
    RM_Audit("UNITS_NORMAL", 0, 0, g_ctxNorm.stepBasePrice, why + ": " + RM_CtxText(g_ctxNorm));
@@ -173,7 +223,7 @@ bool RM_CtxCaptureNorm(string why)
 //--- recovery accessors (persisted context first, current config otherwise)
 bool RM_RecDistanceUsable()
   {
-   return g_ctxRec.active || g_dist.valid;
+   return g_ctxRec.active || RM_NewBasketReadyQuiet();
   }
 
 double RM_RecUnit()
@@ -195,8 +245,8 @@ double RM_RecStepRequestedPrice(int n)
       base = g_ctxRec.stepBasePrice;
       mult = g_ctxRec.stepMult;
      }
-   else if(g_dist.valid)
-      base = RM_DistUnitsToPrice(InpGridStepPoints, g_dist.unitPrice);
+   else
+      base = RM_CurRecStepBase();
    return RM_GridStepPoints(base, mult, n);          // generic: base * mult^(n-1)
   }
 
@@ -207,8 +257,8 @@ double RM_RecStepRequestedPrice(int n)
 //+------------------------------------------------------------------+
 double RM_RecPartialTPBrokerPts()
   {
-   double price = g_ctxRec.active ? g_ctxRec.partialTPPrice
-                  : (g_dist.valid ? RM_DistUnitsToPrice(InpPartialTPPoints, g_dist.unitPrice) : -1.0);
+   double cur = RM_CurRecPartialTP();
+   double price = g_ctxRec.active ? g_ctxRec.partialTPPrice : (cur > 0.0 ? cur : -1.0);
    if(price < 0.0 || g_meta.point <= 0.0)
       return -1.0;
    return RM_PriceToBrokerPoints(price, g_meta.point);
@@ -224,7 +274,7 @@ double RM_RecBufferBrokerPts()
 //--- normal accessors
 bool RM_NormDistanceUsable()
   {
-   return g_ctxNorm.active || g_dist.valid;
+   return g_ctxNorm.active || RM_NewBasketReadyQuiet();
   }
 
 double RM_NormUnit()
@@ -238,20 +288,19 @@ double RM_NormStepPrice()
   {
    if(g_ctxNorm.active)
       return g_ctxNorm.stepBasePrice;
-   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalAvgStepPoints, g_dist.unitPrice) : 0.0;
+   return RM_CurNormStep();
   }
 
 double RM_NormTPPrice()
   {
    if(g_ctxNorm.active)
       return g_ctxNorm.tpPrice;
-   return g_dist.valid ? RM_DistUnitsToPrice(InpNormalTPPoints, g_dist.unitPrice) : 0.0;
+   return RM_CurNormTP();
   }
 
 double RM_NormOverlapBrokerPts()
   {
-   double price = g_ctxNorm.active ? g_ctxNorm.overlapPrice
-                  : (g_dist.valid ? RM_DistUnitsToPrice(InpNormalOverlapTPPoints, g_dist.unitPrice) : 0.0);
+   double price = g_ctxNorm.active ? g_ctxNorm.overlapPrice : RM_CurNormOverlap();
    return (g_meta.point > 0.0) ? RM_PriceToBrokerPoints(price, g_meta.point) : 0.0;
   }
 
@@ -320,7 +369,7 @@ void RM_MigrationPreview()
       RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "no standardized profile for " + g_sym + ": choose PRICE_DISTANCE, CUSTOM_UNIT or an override");
       return;
      }
-   string lines[10];
+   string lines[9];
    lines[0] = RM_MigLine("InpGridStepPoints", InpGridStepPoints, stdUnit);
    lines[1] = RM_MigLine("InpPartialTPPoints", InpPartialTPPoints, stdUnit);
    lines[2] = RM_MigLine("InpExecBufferPoints", InpExecBufferPoints, stdUnit);
@@ -329,10 +378,9 @@ void RM_MigrationPreview()
    lines[5] = RM_MigLine("InpNormalAvgStepPoints", InpNormalAvgStepPoints, stdUnit);
    lines[6] = RM_MigLine("InpNormalTPPoints", InpNormalTPPoints, stdUnit);
    lines[7] = RM_MigLine("InpNormalOverlapTPPoints", InpNormalOverlapTPPoints, stdUnit);
-   lines[8] = RM_MigLineMaxInt("InpNormalMaxSpread", InpNormalMaxSpread, stdUnit);
-   lines[9] = RM_MigLineMaxInt("InpNormalSlippage", InpNormalSlippage, stdUnit);
+   lines[8] = RM_MigLineMaxInt("InpNormalSlippage", InpNormalSlippage, stdUnit);
    string summary = "";
-   for(int i = 0; i < 10; i++)
+   for(int i = 0; i < 9; i++)
      {
       RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, lines[i] + " (same price distance, standardized unit " + DoubleToString(stdUnit, 5) + ")");
       summary += lines[i] + " ";
@@ -349,7 +397,7 @@ void RM_MigrationPreview()
                          DoubleToString(g_dist.brokerPoint, 8) + " / " + DoubleToString(stdUnit, 8) + "\r\n");
          FileWriteString(h, "; Review, then load it over your current settings to apply. Nothing is applied automatically.\r\n");
          FileWriteString(h, "InpConfigVersion=2\r\nInpDistanceUnitMode=0\r\n");
-         for(int k = 0; k < 10; k++)
+         for(int k = 0; k < 9; k++)
             FileWriteString(h, lines[k] + "\r\n");
          FileClose(h);
          RM_Audit("MIGRATION_PREVIEW", 0, 0, 0, "written to MQL4/Files/" + fn);

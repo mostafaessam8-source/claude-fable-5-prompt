@@ -123,6 +123,8 @@ bool     g_operatorResume = false;      // explicit operator resume command pend
 bool     g_forceStart = false;          // Start Recovery Now in RECOVERY_ONLY mode
 long     g_lastSignalBar = 0;           // open time of the last processed closed signal candle
 int      g_lastSignal = 0;              // +1 BUY / -1 SELL / 0 none on that candle
+int      g_maArmed = 0;                 // crossover waiting for trend-filter confirmation (+1/-1)
+int      g_maArmedAge = 0;              // closed candles since that crossover
 long     g_freshAfter = 0;              // crossovers on candles opened before this are stale
 long     g_normLastAvgBar[2];           // per direction: signal candle of the last averaging order
 double   g_normalRealized = 0.0;        // realised net of normal-strategy closures (session)
@@ -167,5 +169,9 @@ double      g_recReqSpacing[2];       // last requested recovery spacing (price)
 double      g_recEffSpacing[2];       // last effective (tick-rounded) spacing
 double      g_normNextLevel[2];       // next normal averaging level per direction
 string      g_migrationText = "";
+
+//--- account protection (persisted)
+bool        g_frozen = false;          // new trades paused by the drawdown pause
+long        g_haltUntil = 0;           // automatic end of an emergency calm-down (0 = none)
 
 #endif

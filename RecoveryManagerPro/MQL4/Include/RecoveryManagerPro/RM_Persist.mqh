@@ -153,6 +153,8 @@ void RM_SaveState()
    FileWriteString(h, "OPRESUME=" + RM_B(g_operatorResume) + "\r\n");
    FileWriteString(h, "LASTSIGBAR=" + IntegerToString(g_lastSignalBar) + "\r\n");
    FileWriteString(h, "LASTSIG=" + IntegerToString(g_lastSignal) + "\r\n");
+   FileWriteString(h, "MAARMED=" + IntegerToString(g_maArmed) + "\r\n");
+   FileWriteString(h, "MAARMEDAGE=" + IntegerToString(g_maArmedAge) + "\r\n");
    FileWriteString(h, "FRESHAFTER=" + IntegerToString(g_freshAfter) + "\r\n");
    FileWriteString(h, "NAVG0=" + IntegerToString(g_normLastAvgBar[0]) + "\r\n");
    FileWriteString(h, "NAVG1=" + IntegerToString(g_normLastAvgBar[1]) + "\r\n");
@@ -162,6 +164,8 @@ void RM_SaveState()
    // distance-unit contexts of active baskets (never reinterpreted mid-cycle)
    FileWriteString(h, "CTXR=" + RM_CtxSerialize(g_ctxRec) + "\r\n");
    FileWriteString(h, "CTXN=" + RM_CtxSerialize(g_ctxNorm) + "\r\n");
+   FileWriteString(h, "FROZEN=" + RM_B(g_frozen) + "\r\n");
+   FileWriteString(h, "HALTUNTIL=" + IntegerToString(g_haltUntil) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -251,6 +255,8 @@ bool RM_LoadState()
       else if(key == "OPRESUME") g_operatorResume = (val == "1");
       else if(key == "LASTSIGBAR") g_lastSignalBar = StringToInteger(val);
       else if(key == "LASTSIG") g_lastSignal = (int)StringToInteger(val);
+      else if(key == "MAARMED") g_maArmed = (int)StringToInteger(val);
+      else if(key == "MAARMEDAGE") g_maArmedAge = (int)StringToInteger(val);
       else if(key == "FRESHAFTER") g_freshAfter = StringToInteger(val);
       else if(key == "NAVG0") g_normLastAvgBar[0] = StringToInteger(val);
       else if(key == "NAVG1") g_normLastAvgBar[1] = StringToInteger(val);
@@ -259,6 +265,8 @@ bool RM_LoadState()
       else if(key == "REASON") g_lastReason = val;
       else if(key == "CTXR") RM_CtxDeserialize(val, g_ctxRec);
       else if(key == "CTXN") RM_CtxDeserialize(val, g_ctxNorm);
+      else if(key == "FROZEN") g_frozen = (val == "1");
+      else if(key == "HALTUNTIL") g_haltUntil = StringToInteger(val);
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];

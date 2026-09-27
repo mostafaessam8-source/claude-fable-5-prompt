@@ -1,4 +1,5 @@
 ; Recovery Manager Pro - Conservative_Demo.set
+; Uses advanced settings: load it into a build compiled with #define RMP_SHOW_ADVANCED.
 ; PROPOSED demo-account profile. Every value here is a proposal by this
 ; project, not an observation from the reference video, and none of it is a
 ; recommendation for live trading. Smaller lots, wider grid, hard caps,
@@ -128,7 +129,6 @@ InpNormalTPPoints=200
 InpNormalOverlap=0
 InpNormalOverlapMinOrders=3
 InpNormalOverlapTPPoints=50
-InpNormalMaxSpread=50
 InpNormalSlippage=30
 ; --- 13. Distance units: explicitly migrated to config version 2 (standardized points).
 ;     Values above were written for 5-digit Forex, where 1 standardized point = 1 broker point,
@@ -142,3 +142,18 @@ InpSymbolSuffix=
 InpUnitOverrides=
 InpApplyUnitsToActiveCycle=0
 InpWriteMigrationPreview=1
+;
+; ---- keys added with the 25-setting restructure; these values keep this preset's previous behaviour
+InpSpacingMode=1
+InpNormalTPATR=1.0
+InpNormalAvgATR=1.5
+InpGridATR=1.5
+InpATRPeriod=14
+InpPartialTPATR=0.3
+InpNormalOverlapATR=0.3
+InpFreezeDDPct=0.0
+InpFreezeResumePct=0.0
+InpEmergencyAutoResume=0
+InpEmergencyCooldownBars=24
+InpShowUnitsPanel=1
+InpSignalConfirmBars=0
