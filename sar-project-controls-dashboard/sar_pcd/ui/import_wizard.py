@@ -36,10 +36,13 @@ def _file_row(page, label, filt):
 
 
 class ProjectPage(QWizardPage):
-    def __init__(self):
+    def __init__(self, wiz):
         super().__init__()
-        self.setTitle("Project workspace")
-        self.setSubTitle("A workspace stores both schedules (parsed once), the mapping profile, overrides, settings and the audit trail.")
+        self.wiz = wiz
+        self._touched = False
+        self.setTitle("STEP 4 - Save project workspace")
+        self.setSubTitle("Name and location are pre-filled next to your Current XER - change them if you like. The workspace "
+                         "(.sarpcd) stores both schedules, the mapping profile, overrides, settings and the audit trail.")
         f = QFormLayout(self)
         self.name = QLineEdit("New Project")
         f.addRow("Project name", self.name)
@@ -58,10 +61,28 @@ class ProjectPage(QWizardPage):
         f.addRow(hint)
         self.name.textChanged.connect(self.completeChanged)
         self.path.textChanged.connect(self.completeChanged)
+        self.name.textEdited.connect(self._touch)
+        self.path.textEdited.connect(self._touch)
+
+    def _touch(self, *_):
+        self._touched = True
+
+    def initializePage(self):  # noqa: N802
+        if self._touched:
+            return
+        cur = self.wiz.p_cu.loaded
+        pid = self.wiz.p_sel.cu.currentData()
+        proj = next((p for p in cur.projects if p.proj_id == pid), cur.projects[0] if cur.projects else None)
+        name = (proj.name or proj.short_name) if proj else Path(self.wiz.p_cu.edit.text()).stem
+        self.name.setText(name)
+        safe = "".join(ch if ch.isalnum() or ch in " -_." else "_" for ch in (proj.short_name if proj else name)).strip() or "Project"
+        self.path.setText(str(Path(self.wiz.p_cu.edit.text()).parent / f"{safe}.sarpcd"))
 
     def _save_as(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Save workspace", f"{self.name.text()}.sarpcd", "SAR PCD Project (*.sarpcd)")
+        start = self.path.text() or f"{self.name.text()}.sarpcd"
+        path, _ = QFileDialog.getSaveFileName(self, "Save workspace", start, "SAR PCD Project (*.sarpcd)")
         if path:
+            self._touched = True
             if not path.endswith(".sarpcd"):
                 path += ".sarpcd"
             self.path.setText(path)
@@ -134,7 +155,7 @@ class ProcessPage(QWizardPage):
     def __init__(self, wiz):
         super().__init__()
         self.wiz = wiz
-        self.setTitle("STEPS 4-9 - Validate, match, classify and check data quality")
+        self.setTitle("STEPS 5-9 - Validate, match, classify and check data quality")
         v = QVBoxLayout(self)
         self.steps = QListWidget()
         v.addWidget(self.steps)
@@ -214,12 +235,14 @@ class ImportWizard(QWizard):
         self.setWindowTitle("New Project - Import Primavera P6 XER files")
         self.setWizardStyle(QWizard.ModernStyle)
         self.resize(820, 600)
-        self.p_proj = ProjectPage()
-        self.p_bl = FilePage(1, "Select Approved Baseline XER", "The approved baseline schedule exported from Primavera P6.")
-        self.p_cu = FilePage(2, "Select Current / Updated XER", "The latest schedule update (its Data Date drives all time-phased KPIs).")
+        self.p_bl = FilePage(1, "Select Approved Baseline XER (BL)",
+                             "Click Browse… and choose the APPROVED BASELINE schedule exported from Primavera P6 (.xer).")
+        self.p_cu = FilePage(2, "Select Current / Updated XER",
+                             "Click Browse… and choose the LATEST UPDATE schedule (.xer). Its Data Date drives all time-phased KPIs.")
         self.p_sel = SelectProjectsPage(self)
+        self.p_proj = ProjectPage(self)
         self.p_proc = ProcessPage(self)
-        for p in (self.p_proj, self.p_bl, self.p_cu, self.p_sel, self.p_proc):
+        for p in (self.p_bl, self.p_cu, self.p_sel, self.p_proj, self.p_proc):
             self.addPage(p)
         self.setButtonText(QWizard.FinishButton, "Generate Dashboard")
 

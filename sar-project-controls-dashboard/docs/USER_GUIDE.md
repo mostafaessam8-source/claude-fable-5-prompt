@@ -14,11 +14,11 @@ Primavera P6 does not need to be installed. Nothing is uploaded; all processing 
 
 | Step | What happens |
 |---|---|
-| Project | Name and location of the workspace; optionally reuse a Mapping Profile saved from another project. |
-| 1 Baseline XER | Select the **Approved Baseline** export. |
-| 2 Current XER | Select the **Current / Updated** schedule. Its Data Date drives all time-phased KPIs. |
+| 1 Baseline XER | Click **Browse…** and select the **Approved Baseline** export (.xer). |
+| 2 Current XER | Click **Browse…** and select the **Current / Updated** schedule. Its Data Date drives all time-phased KPIs. |
 | 3 Projects | If an XER contains several projects, pick one for each file. P6 version and encoding are shown. |
-| 4-9 | Validation, normalization, activity matching, semantic classification, mapping summary and data-quality check, with progress. Warnings such as *"17 activities could not be confidently mapped…"* are shown before the dashboard opens. |
+| 4 Save workspace | Name and location are pre-filled next to the Current XER (change them if you like); optionally reuse a Mapping Profile saved from another project. |
+| 5-9 | Validation, normalization, activity matching, semantic classification, mapping summary and data-quality check, with progress. Warnings such as *"17 activities could not be confidently mapped…"* are shown before the dashboard opens. |
 
 Export XERs from P6 with *File ▸ Export ▸ Primavera PM (XER)*. Include resource assignments and
 expenses if you want cost KPIs.
@@ -59,7 +59,18 @@ mapping profile and all overrides. The history of imported files is kept in the 
 
 ## 6. Exports
 
-**Export** menu: PDF Executive Dashboard, PDF Full Project Controls Report (A3 or A4 landscape, SAR
+**Export ▸ Excel - Dynamic Dashboard (live formulas)** writes a workbook in which every KPI is an Excel
+formula. On its *Dashboard* sheet the yellow cells are inputs: **Data Date**, **Phase**, **Discipline**,
+**Location**, **Contractor**, **Work Package** (dropdowns), lookahead weeks and delay tolerance. Changing
+any of them recalculates actual / planned progress, variance, SPI, CPI, BAC / PV / EV / AC, EAC,
+baseline and forecast finish, days behind, critical / longest-path / negative-float counts, delayed and
+lookahead counts, the status, phase and cost-by-discipline tables and their charts. The *Data* sheet lists
+every activity with formula columns (Planned Fraction from the baseline calendar's working-day table,
+In Filter, Finish Variance, Delayed, In Lookahead) - use AutoFilter on them to see the activities behind a
+number. A *Planned Fraction (app)* column holds the application's value for audit; at the export Data Date
+the two are identical. Works in Excel 2010 and later (no dynamic-array functions).
+
+**Export** menu also has: PDF Executive Dashboard, PDF Full Project Controls Report (A3 or A4 landscape, SAR
 cover page with project, data date, report period, generated date and source XER names), Excel
 Detailed Analysis, Lookahead, Critical Activities, Baseline Comparison, Schedule Health, a
 high-resolution dashboard PNG and a PNG of the current screen. Every activity list also has

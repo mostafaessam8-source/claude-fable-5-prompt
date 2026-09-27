@@ -28,7 +28,7 @@ jobs:
         run: pyinstaller build/sar_pcd.spec --noconfirm --distpath dist --workpath build/out
       - name: Smoke test frozen CLI
         run: |
-          dist\SAR_Project_Controls_Dashboard\SAR_PCD_CLI.exe analyze --baseline samples\Demo_Baseline_Rev0.xer --current samples\Demo_Update_2025-11.xer --risks samples\Demo_Risk_Register.csv --pdf dist\smoke_exec.pdf --excel dist\smoke.xlsx
+          dist\SAR_Project_Controls_Dashboard\SAR_PCD_CLI.exe analyze --baseline samples\Demo_Baseline_Rev0.xer --current samples\Demo_Update_2025-11.xer --risks samples\Demo_Risk_Register.csv --pdf dist\smoke_exec.pdf --excel dist\smoke.xlsx --excel-dynamic dist\smoke_dynamic.xlsx
         shell: cmd
       - name: Build installer (Inno Setup)
         run: |

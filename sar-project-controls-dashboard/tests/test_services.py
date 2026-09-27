@@ -123,3 +123,23 @@ def test_performance_10k_activities():
     assert len(ctx.rows) == n
     assert d.kpis["progress_planned"].available
     assert elapsed < 60, f"analysis took {elapsed:.1f}s (generation {gen:.1f}s)"
+
+
+def test_dynamic_excel_has_live_formulas(tmp_path, demo_ctx):
+    from openpyxl import load_workbook
+    from sar_pcd.reporting.excel_dynamic import COL, export_dynamic
+    d = build(demo_ctx)
+    path = tmp_path / "dyn.xlsx"
+    info = export_dynamic(path, d)
+    assert info["rows"] == len(demo_ctx.rows) and info["formulas"] > 5 * info["rows"]
+    wb = load_workbook(path)
+    assert {"Dashboard", "Data", "S-Curve", "Calendars", "Lists", "Read Me"} <= set(wb.sheetnames)
+    for name in ("DataDate", "F_Phase", "F_Disc", "D_Inc", "D_PF", "K_Actual", "K_Planned", "CalCum", "CalOrigin"):
+        assert name in wb.defined_names
+    dash = wb["Dashboard"]
+    assert dash["A16"].value.startswith("=IFERROR(SUMPRODUCT(D_Inc,D_InCur,D_W,D_Pct)")
+    assert "EV/K_AC" in dash["B19"].value.replace(" ", "") or "K_EV/K_AC" in dash["B19"].value
+    data = wb["Data"]
+    assert data[f"{COL['pf']}2"].value.startswith("=IF(")
+    assert "INDEX(CalCum" in data[f"{COL['pf']}2"].value and "_xlfn" not in data[f"{COL['pf']}2"].value
+    assert len(dash._charts) >= 3

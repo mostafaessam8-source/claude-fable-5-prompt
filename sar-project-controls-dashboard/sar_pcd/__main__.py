@@ -72,6 +72,10 @@ def analyze(args) -> int:
         from .reporting.excel import export_detailed
         export_detailed(args.excel, d, cache)
         print("Wrote", args.excel)
+    if args.excel_dynamic:
+        from .reporting.excel_dynamic import export_dynamic
+        export_dynamic(args.excel_dynamic, d)
+        print("Wrote", args.excel_dynamic)
     if args.png:
         from .reporting.dashboard_image import save_png
         save_png(d, args.png)
@@ -97,6 +101,7 @@ def main(argv=None) -> int:
     a.add_argument("--pdf")
     a.add_argument("--pdf-full")
     a.add_argument("--excel")
+    a.add_argument("--excel-dynamic", help="Dynamic Excel dashboard with live formulas")
     a.add_argument("--png")
     a.add_argument("--size", default="A3", choices=["A3", "A4"])
     dm = sub.add_parser("demo", help="Write demonstration XER files")

@@ -288,6 +288,7 @@ class MainWindow(QMainWindow):
             self._act(e, "PDF - Executive Dashboard…", lambda: self.export("pdf_exec")),
             self._act(e, "PDF - Full Project Controls Report…", lambda: self.export("pdf_full")),
             None,
+            self._act(e, "Excel - Dynamic Dashboard (live formulas)…", lambda: self.export("xl_dynamic")),
             self._act(e, "Excel - Detailed Analysis…", lambda: self.export("xl_detail")),
             self._act(e, "Excel - Lookahead (2/4/6/8 weeks)…", lambda: self.export("xl_look")),
             self._act(e, "Excel - Critical Activities…", lambda: self.export("xl_crit")),
@@ -298,7 +299,7 @@ class MainWindow(QMainWindow):
             self._act(e, "Current Screen - PNG…", lambda: self.export("screen")),
         ]
         e.insertSeparator(self.export_actions[3])
-        e.insertSeparator(self.export_actions[9])
+        e.insertSeparator(self.export_actions[10])
         self.export_actions = [a for a in self.export_actions if a]
         mp = mb.addMenu("&Mapping")
         self._act(mp, "Save Mapping Profile As…", self.save_profile_as)
@@ -626,6 +627,7 @@ class MainWindow(QMainWindow):
         specs = {
             "pdf_exec": ("PDF (*.pdf)", f"{name}_Executive_Dashboard_{stamp}.pdf"),
             "pdf_full": ("PDF (*.pdf)", f"{name}_Project_Controls_Report_{stamp}.pdf"),
+            "xl_dynamic": ("Excel (*.xlsx)", f"{name}_Dynamic_Dashboard_{stamp}.xlsx"),
             "xl_detail": ("Excel (*.xlsx)", f"{name}_Detailed_Analysis_{stamp}.xlsx"),
             "xl_look": ("Excel (*.xlsx)", f"{name}_Lookahead_{stamp}.xlsx"),
             "xl_crit": ("Excel (*.xlsx)", f"{name}_Critical_Activities_{stamp}.xlsx"),
@@ -652,6 +654,9 @@ class MainWindow(QMainWindow):
             elif kind == "pdf_full":
                 from ..reporting.pdf import full_pdf
                 full_pdf(path, d, cache, size, audit)
+            elif kind == "xl_dynamic":
+                from ..reporting.excel_dynamic import export_dynamic
+                export_dynamic(path, d)
             elif kind == "xl_detail":
                 XL.export_detailed(path, d, cache, audit)
             elif kind == "xl_look":
