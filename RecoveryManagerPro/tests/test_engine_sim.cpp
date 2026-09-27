@@ -586,6 +586,27 @@ static void S21_ShortChartKeepsPanelsVisible()
    EXPECT(OnScreen("OK") && OnScreen("K_BG"));
   }
 
+static void S22_TesterTradeAllowedQuirk()
+  {
+   VideoInputs();
+   InpConfirmActions = false;
+   S.tradeAllowedInfo = 0;                                  // tester reports MODE_TRADEALLOWED = 0
+   EXPECT(Init());
+   Tick(1.10000);
+   Click("SELL");
+   EXPECT(S.open.size() == 1 && S.open[0].type == OP_SELL);  // the EA must not block itself
+   // live account where the symbol is really disabled: clear reason, no order
+   OnDeinit(REASON_REMOVE);
+   S.testing = false; S.tradeMode = SYMBOL_TRADE_MODE_DISABLED;
+   EXPECT(Init());
+   Tick(1.10000);
+   Click("BUY");
+   EXPECT(S.open.size() == 1);
+   EXPECT(g_uiMsg.find("disabled") != string::npos);
+   OnDeinit(REASON_REMOVE);
+   Clean();
+  }
+
 //====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
@@ -611,6 +632,7 @@ static Scenario g_scen[] = {
    {"S19 whole-basket TP closes every role and ends the session", S19_WholeBasketTP},
    {"S20 unresolved partial-close lineage -> ERROR_HOLD -> operator resume", S20_UnresolvedLineageHoldsThenResume},
    {"S21 short chart: confirmation box and panels stay on screen", S21_ShortChartKeepsPanelsVisible},
+   {"S22 tester MODE_TRADEALLOWED=0 does not block; disabled symbol explains why", S22_TesterTradeAllowedQuirk},
 };
 
 int main(int argc, char **argv)

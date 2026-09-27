@@ -2052,6 +2052,8 @@ bool RM_ErrUncertain(int e)
 
 string RM_ErrText(int e)
   {
+   if(e == ERR_MARKET_CLOSED)
+      return "132 market is closed (outside trading hours / weekend)";
    return IntegerToString(e) + " " + ErrorDescription(e);
   }
 
@@ -2064,8 +2066,16 @@ bool RM_TradeReady(string &why)
      { why = "no connection to trade server"; return false; }
    if(!IsTradeAllowed())
      { why = "trading not allowed (AutoTrading off, EA permissions or trade context)"; return false; }
-   if(MarketInfo(g_sym, MODE_TRADEALLOWED) == 0.0)
-     { why = "market closed or symbol not tradeable"; return false; }
+   // MODE_TRADEALLOWED is unreliable (often 0 in the Strategy Tester): use the symbol
+   // trade mode live, and let the broker's own reply (e.g. 132 market closed) speak otherwise
+   if(!IsTesting())
+     {
+      long tm = SymbolInfoInteger(g_sym, SYMBOL_TRADE_MODE);
+      if(tm == SYMBOL_TRADE_MODE_DISABLED)
+        { why = "trading is disabled for " + g_sym + " on this account"; return false; }
+      if(tm == SYMBOL_TRADE_MODE_CLOSEONLY)
+        { why = g_sym + " is close-only on this account"; return false; }
+     }
    if(IsTradeContextBusy())
      { why = "trade context busy"; return false; }
    if(RM_Bid() <= 0.0 || RM_Ask() <= 0.0)

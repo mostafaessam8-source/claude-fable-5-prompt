@@ -108,7 +108,9 @@ struct Sim
    std::vector<string> log;
    int closeCalls = 0, sendCalls = 0;
    bool hideRemainderComment = false;
-   int chartW = 1400, chartH = 800;   // broker that does not write "from #<ticket>"
+   int chartW = 1400, chartH = 800;
+   int tradeMode = 4;                   // SYMBOL_TRADE_MODE_FULL
+   double tradeAllowedInfo = 1;         // MarketInfo(MODE_TRADEALLOWED); tester often reports 0   // broker that does not write "from #<ticket>"
   } S;
 
 inline double SimAsk() { return S.bid + S.spreadPts * S.point; }
@@ -185,7 +187,7 @@ inline double MarketInfo(string sym, int t)
       case MODE_DIGITS: return S.digits;
       case MODE_TICKVALUE: return S.tickValue;
       case MODE_TICKSIZE: return S.tickSize;
-      case MODE_TRADEALLOWED: return 1;
+      case MODE_TRADEALLOWED: return S.tradeAllowedInfo;
       case MODE_MINLOT: return S.minLot;
       case MODE_LOTSTEP: return S.lotStep;
       case MODE_MAXLOT: return S.maxLot;
@@ -194,6 +196,8 @@ inline double MarketInfo(string sym, int t)
      }
    return 0;
   }
+const int SYMBOL_TRADE_MODE = 3, SYMBOL_TRADE_MODE_DISABLED = 0, SYMBOL_TRADE_MODE_CLOSEONLY = 3;
+inline long SymbolInfoInteger(string, int) { return S.tradeMode; }
 inline datetime iTime(string, int, int shift) { return SimBar(S.now) - (datetime)shift * 3600; }
 inline double SimSeries(std::map<datetime, double> &m, int shift)
   {
