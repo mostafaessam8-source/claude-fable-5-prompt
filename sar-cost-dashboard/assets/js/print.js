@@ -2,20 +2,46 @@
  * A4 printing.
  *
  * "One page" mode (default, also used for Ctrl+P): every scroll area is expanded so all rows print,
- * the page is laid out, and the whole page is scaled to fit a single A4 sheet. Both orientations are
- * tried and the one giving the larger scale wins. The layout width is widened as the scale shrinks,
- * so tables wrap less and the sheet is filled as fully as possible.
+ * the page is laid out, and the whole page is scaled to fit a single A4 sheet (portrait or landscape,
+ * whichever gives the larger scale). The layout width is widened as the scale shrinks, so tables wrap
+ * less and the sheet is filled as fully as possible.
+ *
+ * Scaling uses CSS `zoom`, which shrinks the real layout box. (A transform only shrinks the picture:
+ * the unscaled box stays larger than the paper, and Chrome's print preview then shrinks the whole
+ * document again and adds blank pages.) A small safety margin absorbs printer/font differences.
  *
  * "Full size" mode: same expansion, fitted to the A4 width only, flowing over as many pages as needed.
  */
 (function () {
   "use strict";
-  var MM = 96 / 25.4, MARGIN = 7; // mm
-  var mode = "fit", styleEl = null, active = false, headEl = null, sheet = null;
+  var MM = 96 / 25.4, MARGIN = 8, SAFE_W = 0.985, SAFE_H = 0.955; // MARGIN must match @page in styles.css
+  var mode = "fit", active = false, headEl = null, sheet = null, styleEl = null, squeezed = [];
 
+  /** Printable area of an A4 sheet in CSS px, less a safety margin. */
   function dims(orient) {
-    var w = (orient === "portrait" ? 210 : 297) - 2 * MARGIN, h = (orient === "portrait" ? 297 : 210) - 2 * MARGIN;
-    return { W: Math.floor(w * MM), H: Math.floor(h * MM) - 2 };
+    var w = orient === "portrait" ? 210 : 297, h = orient === "portrait" ? 297 : 210;
+    return { W: Math.floor((w - 2 * MARGIN) * MM * SAFE_W), H: Math.floor((h - 2 * MARGIN) * MM * SAFE_H) };
+  }
+  function setPage(orient) {
+    if (!styleEl) { styleEl = document.createElement("style"); document.head.appendChild(styleEl); }
+    styleEl.textContent = "@page { size: A4 " + orient + "; margin: " + MARGIN + "mm; }";
+  }
+  /** Apply zoom, then correct it using the real zoomed size (text rounding at small zoom adds height). */
+  function applyZoom(z, d) {
+    for (var k = 0; k < 8; k++) {
+      sheet.style.zoom = z;
+      var b = sheet.getBoundingClientRect();
+      if (b.height <= d.H && b.width <= d.W) break;
+      z = z * Math.min(d.H / b.height, d.W / b.width) * 0.995;
+    }
+  }
+  /** Tall bar charts are made denser on paper (thinner bars), which lets the page print larger. */
+  function squeezeCharts() {
+    squeezed = [];
+    sheet.querySelectorAll(".chart-box").forEach(function (b) {
+      var h = b.offsetHeight;
+      if (h > 380) { squeezed.push([b, b.style.height]); b.style.height = Math.max(300, Math.round(h * 0.68)) + "px"; }
+    });
   }
   function main() { return document.getElementById("view"); } // <main class="content" id="view">
 
@@ -68,11 +94,6 @@
     return h;
   }
 
-  function setPageStyle(orient) {
-    if (!styleEl) { styleEl = document.createElement("style"); document.head.appendChild(styleEl); }
-    styleEl.textContent = "@page { size: A4 " + orient + "; margin: " + MARGIN + "mm; }";
-  }
-
   function prepare() {
     if (active) return;
     active = true;
@@ -87,20 +108,18 @@
     sheet.insertBefore(headEl, sheet.firstChild);
     UI.eachChart(function (c) { c.options.devicePixelRatio = 2.5; });
 
+    squeezeCharts();
     if (mode === "fit") {
       var L = dims("landscape"), P = dims("portrait");
       var fl = fit(L.W, L.H, true), fp = fit(P.W, P.H, true);
-      var orient = fp.s > fl.s * 1.04 ? "portrait" : "landscape";
+      var orient = fp.s > fl.s * 1.05 ? "portrait" : "landscape";
       var d = orient === "portrait" ? P : L;
-      var r = fit(d.W, d.H, true);
-      setPageStyle(orient);
-      sheet.style.transformOrigin = "0 0";
-      sheet.style.transform = "scale(" + r.s + ")";
-      mc.style.width = d.W + "px";
-      mc.style.height = Math.min(d.H, Math.ceil(r.h * r.s)) + "px";
+      var r = fit(d.W, d.H, true);   // re-apply the chosen layout width
+      setPage(orient);
+      applyZoom(r.s, d);
     } else {
-      var LL = dims("landscape"), rr = fit(LL.W, LL.H, false);
-      setPageStyle("landscape");
+      var dl = dims("landscape"), rr = fit(dl.W, dl.H, false);
+      setPage("landscape");
       if (rr.s < 1) sheet.style.zoom = rr.s;
     }
   }
@@ -111,6 +130,7 @@
     var mc = main();
     document.body.classList.remove("printing", "print-fit", "print-flow");
     if (headEl) { headEl.remove(); headEl = null; }
+    squeezed.forEach(function (x) { x[0].style.height = x[1]; }); squeezed = [];
     if (sheet) { while (sheet.firstChild) mc.insertBefore(sheet.firstChild, sheet); sheet.remove(); sheet = null; }
     mc.style.width = ""; mc.style.height = "";
     UI.eachChart(function (c) { c.options.devicePixelRatio = undefined; c.resize(); });

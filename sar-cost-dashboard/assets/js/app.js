@@ -34,6 +34,10 @@
     { id: "import", group: "Data", title: "Data Import", icon: "upload", sub: "Update the dashboard from the Excel source files" }
   ];
 
+  // A published weekly report (see publish.js) carries its data inside the file: no import, no stored data.
+  var PUB = window.SAR_PUBLISHED || null;
+  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import"; });
+
   /* ----------------------------- dataset -------------------------------- */
   var base = window.SAR_DEFAULT_DATA || { tables: {}, sources: {} };
   var dataset = { tables: {}, sources: {} };
@@ -92,9 +96,15 @@
       if (srcs[k].imported) imported = true;
       if (srcs[k].importedAt && (!latest || srcs[k].importedAt > latest)) latest = srcs[k].importedAt;
     });
-    document.getElementById("dataStamp").innerHTML = latest
-      ? (imported ? "Imported " : "Baseline ") + "<strong>" + esc(new Date(latest).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })) + "</strong>"
-      : "No data loaded";
+    function when(iso) { return esc(new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })); }
+    document.getElementById("dataStamp").innerHTML = PUB
+      ? "Published <strong>" + when(PUB.publishedAt) + "</strong>" + (PUB.by ? " · " + esc(PUB.by) : "")
+      : latest ? (imported ? "Imported " : "Baseline ") + "<strong>" + when(latest) + "</strong>" : "No data loaded";
+    if (PUB) {
+      document.querySelectorAll(".js-editor").forEach(function (e) { e.remove(); });
+      document.querySelector(".brand .title h1").textContent = PUB.title;
+      document.querySelector(".brand .title p").textContent = "Published weekly report · read-only snapshot";
+    }
   }
 
   function renderNav(active) {
@@ -136,6 +146,10 @@
       rerender: function () { var y = window.scrollY; render(page); window.scrollTo(0, y); }
     };
     ctx.actions.appendChild(SARPrint.button());
+    if (PUB && PUB.note && page.id === "overview") {
+      view.appendChild(U.el('<div class="note-box mgmt-note"><b>Management note — ' + esc(PUB.title) + "</b>" +
+        (PUB.by ? '<span class="muted"> · ' + esc(PUB.by) + "</span>" : "") + "<p>" + esc(PUB.note).replace(/\n/g, "<br>") + "</p></div>"));
+    }
     try {
       if (page.id === "import") renderImport(ctx);
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
@@ -249,9 +263,12 @@
     if (location.hash === "#/" + id) route(); else location.hash = "#/" + id;
     window.scrollTo(0, 0);
   }
-  window.SARApp = { D: D, PAGES: PAGES, go: go };
+  window.SARApp = { D: D, PAGES: PAGES, go: go, published: PUB, dataset: function () { return dataset; } };
 
-  SARStore.load().then(function (stored) {
+  var pubBtn = document.getElementById("publishBtn");
+  if (pubBtn) pubBtn.addEventListener("click", function () { window.SARPublish.open(); });
+
+  (PUB ? Promise.resolve(null) : SARStore.load()).then(function (stored) {
     mergeDataset(stored);
     renderHeader();
     route();

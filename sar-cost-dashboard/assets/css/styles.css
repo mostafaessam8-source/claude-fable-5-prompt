@@ -412,6 +412,9 @@ body.printing .tile.clickable { transform: none; box-shadow: none; }
 body.print-flow .tile, body.print-flow tr, body.print-flow .chart-box, body.print-flow .g-row { break-inside: avoid; }
 body.print-flow .chart-box { max-height: 560px; }
 body.print-flow .grid { break-inside: avoid; }
+@page { size: A4 landscape; margin: 8mm; } /* keep in sync with MARGIN in print.js */
+body.printing, html:has(body.printing) { overflow: hidden; height: auto; }
+body.printing .layout { min-height: 0; }
 @media print {
   html, body { background: var(--white) !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -462,3 +465,16 @@ table.dt th.sorted { background: #005e6e; }
 .g-group .go { margin-left: 10px; font-size: 11px; font-weight: 600; color: var(--slate); }
 .g-group.clickable:hover .go { color: var(--sar-blue); }
 @media (max-width: 560px) { body:not(.printing) .sort-pop { width: calc(100vw - 40px); } body:not(.printing) .sort-level { grid-template-columns: 1fr 1fr 24px; } body:not(.printing) .sort-level .lvl { grid-column: 1 / -1; } }
+
+/* ----------------------------- Publish ---------------------------------- */
+.pub-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding-top: 10px; }
+.fld { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--slate); margin-bottom: 12px; text-transform: none; }
+.fld input, .fld textarea { font-weight: 400; font-size: 14px; color: var(--sar-black); border: 1px solid var(--cool-gray); padding: 8px 10px; resize: vertical; }
+.fld input:focus, .fld textarea:focus { outline: 2px solid var(--sar-blue); outline-offset: -1px; }
+.pub-help { background: var(--tint-5); padding: 14px 18px; font-size: 13px; line-height: 1.55; }
+.pub-help h4 { margin: 0 0 6px; color: var(--sar-blue); }
+.pub-help ol { padding-left: 18px; margin: 0 0 8px; }
+.pub-help code { background: var(--white); padding: 0 4px; }
+.mgmt-note { margin-bottom: 16px; border-left-color: var(--yellow); }
+.mgmt-note p { margin: 6px 0 0; }
+@media (max-width: 800px) { body:not(.printing) .pub-grid { grid-template-columns: minmax(0, 1fr); } }

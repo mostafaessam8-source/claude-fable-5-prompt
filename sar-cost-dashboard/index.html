@@ -25,7 +25,11 @@
     <div class="header-meta">
       <span class="chip" id="dataStamp">Data: —</span>
       <span class="chip blue" id="reportChip">Report Date <strong>—</strong></span>
-      <a class="icon-btn" href="#/import" title="Import Excel files">
+      <button class="icon-btn ghost js-editor" id="publishBtn" type="button" title="Publish this week's report as a shareable file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7h16v-7M12 3v12m0-12l-4 4m4-4l4 4"/></svg>
+        <span>Publish</span>
+      </button>
+      <a class="icon-btn js-editor" href="#/import" title="Import Excel files">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>
         <span>Import Excel</span>
       </a>
@@ -49,6 +53,7 @@
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/pages.js"></script>
   <script src="assets/js/print.js"></script>
+  <script src="assets/js/publish.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
