@@ -10,9 +10,9 @@ Recovery Manager Pro is an independently written MetaTrader 4 Expert Advisor tha
 - **Optional Three-MA normal trading** (`InpOperatingMode`): `THREE_MA_ONLY` trades an independent three-moving-average strategy. `THREE_MA_WITH_RECOVERY` trades it until a drawdown threshold, then hands the basket to the recovery engine under a persisted latch, and resumes only after a verified completion, a cooldown and a fresh signal. See [`docs/COMBINED_MODE.md`](docs/COMBINED_MODE.md).
 
 
-## 0. Quick start: the 25 settings
+## 0. Quick start: the 26 settings
 
-The input window shows **25 settings in 7 groups**. Every other setting is advanced and hidden: it keeps its built-in value unless you uncomment `#define RMP_SHOW_ADVANCED` at the top of the `.mq4` and recompile.
+The input window shows **26 settings in 7 groups**. Every other setting is advanced and hidden: it keeps its built-in value unless you uncomment `#define RMP_SHOW_ADVANCED` at the top of the `.mq4` and recompile.
 
 | # | Setting | Default | What it does / ماذا يفعل |
 |---|---|---|---|
@@ -24,11 +24,19 @@ The input window shows **25 settings in 7 groups**. Every other setting is advan
 | 4 | TP (× ATR) | 1.0 | Basket take-profit distance from the average price. / مسافة جني الربح |
 | 4 | Averaging, step (× ATR), multiplier, max orders | on, 1.5, 1.3, 3 | Up to 3 orders per direction before handing over. / حتى 3 صفقات تعزيز |
 | 5 | Recovery start drawdown | 8 % | Floating loss of the basket (percent of balance) that starts recovery. / نسبة الخسارة العائمة لبدء الاسترداد |
-| 5 | Grid step (× ATR), first lot, multiplier, max orders | 1.5, 0.01, 1.2, 8 | Recovery grid. It follows the trend and trades both directions. / شبكة الاسترداد تتبع الاتجاه وفي الاتجاهين |
+| 5 | Grid step (× ATR), first lot, multiplier, max orders | 1.5, 0.01 per 1,000, 1.2, 8 | Recovery grid. It follows the trend, trades both directions, and its lot scales with the balance. / شبكة الاسترداد تتبع الاتجاه في الاتجاهين، واللوت يتناسب مع الرصيد |
+| 6 | Recovery basket stop | 20 % | A recovery basket (all orders of one direction) that loses this share of the balance is closed. That direction is blocked for 24 candles. This stops a grid from growing against a strong trend. / قطع سلة الاسترداد الخاسرة عند 20% بدل تركها تكبر |
 | 6 | Pause new trades at account drawdown | 20 % | New trades pause and open trades are still managed. They resume below 15 %. Nothing is closed. / إيقاف مؤقت للصفقات الجديدة فقط |
 | 6 | Emergency close at drawdown | 50 % (0 = off) | Closes everything. Trading resumes by itself after 24 candles. / إغلاق طارئ ثم استئناف تلقائي |
-| 6 | Max total lots, max spread | 0.50, 50 | Hard caps on exposure and on entry spread. / حدود اللوت والسبريد |
+| 6 | Max total lots, max spread | 0.10 per 1,000, 50 | Exposure cap that scales with the balance; lock (hedge) orders are not counted. Also an entry spread limit. / حد اللوت يتناسب مع الرصيد ولا يحسب صفقات التحوط |
 | 7 | Panel size, font | normal, 8 | Dashboard appearance. / شكل اللوحة |
+
+**Fixes after the XAUUSD tester report (EA stopped opening trades)**:
+
+- The total-lots cap was a fixed 0.50 while lots grow with the balance, and lock orders counted toward it. Once the managed basket was large enough, every recovery order was refused forever. The cap is now per 1,000 of balance and ignores lock orders.
+- After a loss, 0.01 per 1,000 could fall below 0.01 lots. The EA then refused every entry and stayed idle. Balance-scaled lots now never go below the broker minimum.
+- A recovery grid could keep averaging against a strong trend until the 50 % emergency. The **recovery basket stop** (20 %) closes that basket first.
+- Under stress (paused, or account drawdown ≥ 10 %), a winning recovery group's surplus also cuts the worst losing opposite recovery orders.
 
 **What changed compared with earlier versions**:
 
@@ -242,6 +250,13 @@ The tables below list **every** input. Only the 25 in section 0 are shown in the
 | `InpEmergencyCooldownBars` | no | `24` | Candles to wait after an emergency close |
 | `InpSignalConfirmBars` | no | `20` | Candles a crossover may wait for the trend filter [0 = same candle only] |
 | `InpShowUnitsPanel` | no | `false` | Show the distance-units panel |
+| `InpRecBasketStopPct` | yes | `20.0` | Close a recovery basket at this loss [% of balance, 0 = off]; that direction waits `InpEmergencyCooldownBars` |
+| `InpCrossFinance` | no | `true` | A qualifying group's surplus also closes losing opposite recovery orders (only under stress) |
+| `InpCrossFinanceDDPct` | no | `10.0` | ...from this account drawdown [%] or while new trades are paused |
+| `InpPauseAllowsHedge` | no | `false` | During the pause / lots cap, still allow orders that shrink net exposure |
+| `InpRecoveryMATrend` | no | `false` | Recovery orders only in the MA trend direction (slow MA vs filter MA) |
+
+In balance lot mode, `InpFirstLot`, `InpMaxRecoveryLot` and `InpMaxManagedLots` are per `InpNormalLotPerBalance` (1,000) of balance.
 
 `InpNormalMaxSpread` was removed: `InpMaxSpread` now applies to all entries.
 

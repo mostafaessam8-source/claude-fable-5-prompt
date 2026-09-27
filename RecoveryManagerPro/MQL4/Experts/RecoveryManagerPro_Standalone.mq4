@@ -295,6 +295,7 @@ enum ENUM_RM_SPACING
 #define RM_PLAN_NORMAL_OVERLAP   9   // normal first+last overlap
 #define RM_PLAN_NORMAL_CLOSE    10   // operator closes the normal basket
 #define RM_PLAN_NORMAL_EMERGENCY 11  // emergency-loss limit closes the normal basket
+#define RM_PLAN_BASKET_STOP     12   // recovery basket loss limit closes that basket
 
 #define RM_R_OK               0
 #define RM_R_NO_RECOVERY      1
@@ -382,6 +383,7 @@ struct RM_PlanConfig
    int               overlapThreshold;
    int               overlapCompare;    // ENUM_RM_OVERLAP_CMP
    bool              matchedMain;       // locked: close equal BUY/SELL slices
+   bool              crossFinance;      // surplus of a qualifying group also cuts losing opposite recovery orders
   };
 
 //+------------------------------------------------------------------+
@@ -1223,6 +1225,81 @@ double RM_MainLots(const RM_Book &b, int side)
 //| overlap is active. Main slice: matched BUY+SELL (locked) or a    |
 //| single losing leg (unlocked).                                     |
 //+------------------------------------------------------------------+
+//| Totals, target and qualification of a GROUP/OVERLAP plan          |
+//+------------------------------------------------------------------+
+void RM_PlanGroupTotals(RM_Plan &p, const RM_PlanConfig &c, const RM_SymbolMeta &m, double mpp)
+  {
+   RM_PlanTotals(p, c, mpp);
+   double basis = p.recoveryCloseLots;
+   if(c.tpBasis == RM_TPB_SLICE_LOTS)
+      basis = MathMax(p.mainBuyCloseLots, p.mainSellCloseLots);
+   else if(c.tpBasis == RM_TPB_MIN_LOT)
+      basis = m.minLot;
+   p.target = RM_TargetMoney(c.partialTPPoints, mpp, basis);
+   p.qualifies = (p.expectedNet >= p.target - 1e-9);
+   p.reason = p.qualifies ? RM_R_OK : RM_R_BELOW_TARGET;
+  }
+
+//+------------------------------------------------------------------+
+//| Cross-basket financing: the surplus of a qualifying group above   |
+//| its target closes (part of) the worst LOSING recovery orders of   |
+//| the opposite basket, worst first, as long as the whole plan still |
+//| meets its target. Only losing legs are cut; nothing is closed at  |
+//| a combined loss.                                                  |
+//+------------------------------------------------------------------+
+void RM_PlanCrossFinance(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta &m,
+                         double mpp, int oppDir, RM_Plan &p)
+  {
+   bool used[RM_MAX_LEGS];
+   for(int u = 0; u < RM_MAX_LEGS; u++) used[u] = false;
+   for(int guard = 0; guard < RM_MAX_LEGS; guard++)
+     {
+      int w = -1;
+      double wPerLot = 0.0;
+      for(int i = 0; i < b.n && i < RM_MAX_LEGS; i++)
+        {
+         if(used[i] || b.role[i] != RM_ROLE_RECOVERY || b.type[i] != oppDir || b.lots[i] <= RM_EPS)
+            continue;
+         double net = RM_LegNet(b, i);
+         if(net >= 0.0)
+            continue;
+         double perLot = net / b.lots[i];
+         if(w < 0 || perLot < wPerLot)
+           { w = i; wPerLot = perLot; }
+        }
+      if(w < 0)
+         return;
+      used[w] = true;
+      double surplus = p.expectedNet - p.target;
+      double costPerLot = -wPerLot + RM_LegExitCost(b, w, b.lots[w], c) / b.lots[w] +
+                          MathMax(0.0, c.execBufferPoints) * mpp;
+      if(surplus <= 0.0 || costPerLot <= 0.0)
+         return;
+      double v = RM_ValidSlice(b.lots[w], surplus / costPerLot, m);
+      bool added = false;
+      for(int tries = 0; tries < 200 && v > RM_EPS; tries++)
+        {
+         RM_Plan t = p;
+         if(!RM_PlanAddLeg(t, b, w, v, c))
+            return;
+         RM_PlanGroupTotals(t, c, m, mpp);
+         if(t.qualifies)
+           {
+            p = t;
+            added = true;
+            break;
+           }
+         double nv = RM_ValidSlice(b.lots[w], v - m.lotStep, m);
+         if(nv >= v - RM_EPS)
+            break;                               // no smaller legal slice
+         v = nv;
+        }
+      if(!added)
+         return;
+     }
+  }
+
+//+------------------------------------------------------------------+
 void RM_PlanGroup(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta &m,
                   double mpp, int dir, RM_Plan &p)
   {
@@ -1315,16 +1392,9 @@ void RM_PlanGroup(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta 
       RM_PlanAddLeg(p, b, iSell, vSell, c);
       p.mainSellTicket = b.ticket[iSell];
      }
-   RM_PlanTotals(p, c, mpp);
-   double basis = p.recoveryCloseLots;
-   if(c.tpBasis == RM_TPB_SLICE_LOTS)
-      basis = MathMax(p.mainBuyCloseLots, p.mainSellCloseLots);
-   else if(c.tpBasis == RM_TPB_MIN_LOT)
-      basis = m.minLot;
-   p.target = RM_TargetMoney(c.partialTPPoints, mpp, basis);
-   p.qualifies = (p.expectedNet >= p.target - 1e-9);
-   if(!p.qualifies)
-      p.reason = RM_R_BELOW_TARGET;
+   RM_PlanGroupTotals(p, c, m, mpp);
+   if(p.qualifies && c.crossFinance)
+      RM_PlanCrossFinance(b, c, m, mpp, 1 - dir, p);
    RM_PlanSortForExecution(p);
   }
 
@@ -2160,14 +2230,15 @@ input int                    InpNormalMaxPerDir         = 3; // Max orders per d
 input string S_RECOVERY = "===== 5. RECOVERY =====";
 input double                 InpLaunchDrawdown          = 8.0; // Start recovery at drawdown (% of balance)
 input double                 InpGridATR                 = 1.5; // Recovery step = ATR x
-input double                 InpFirstLot                = 0.01; // Recovery start lot
+input double                 InpFirstLot                = 0.01; // Recovery start lot (per 1000 balance in balance mode)
 input double                 InpLotMultiplier           = 1.2; // Recovery lot multiplier
 input int                    InpMaxRecoveryCount        = 8; // Max recovery orders
 
 input string S_ACCOUNTPROTE = "===== 6. ACCOUNT PROTECTION =====";
+input double                 InpRecBasketStopPct        = 20.0; // Cut a recovery basket at this loss [% of balance, 0 = off]
 input double                 InpFreezeDDPct             = 20.0; // Pause NEW trades at drawdown % (0 = off)
 input double                 InpEmergencyValue          = 50.0; // Close all at drawdown % (0 = off)
-input double                 InpMaxManagedLots          = 0.50; // Max total open lots
+input double                 InpMaxManagedLots          = 0.10; // Max total lots (per 1000 balance in balance mode, locks excluded)
 input int                    InpMaxSpread               = 50; // Max spread (points)
 
 input string S_PANEL = "===== 7. PANEL =====";
@@ -2208,6 +2279,9 @@ ADV   double                 InpGridStepPoints          = 300; // Recovery grid 
 ADV   double                 InpStepMultiplier          = 1.1; // Step multiplier [x]
 ADV   bool                   InpOnePerBar               = true; // One recovery order per bar
 ADV   bool                   InpMultidirectional        = true; // Multidirectional recovery
+ADV   bool                   InpCrossFinance            = true; // Winning basket's surplus also cuts losing opposite recovery orders
+ADV   double                 InpCrossFinanceDDPct       = 10.0; // ...used from this account drawdown [%] or while paused
+ADV   bool                   InpRecoveryMATrend         = false; // Recovery orders only in the MA trend direction (slow MA vs filter MA)
 ADV   int                    InpMaxSlippage             = 30; // Maximum slippage [distance units, section 13]
 ADV   double                 InpMaxRecoveryLot          = 0.10; // Maximum recovery order volume [lots]
 ADV   int                    InpRecoveryMagic           = 9751421; // Recovery magic number
@@ -2304,6 +2378,7 @@ ADV   int                    InpATRPeriod               = 14;    // ATR period f
 ADV   double                 InpPartialTPATR            = 0.3;   // ATR mode: recovery partial-close TP = ATR x
 ADV   double                 InpNormalOverlapATR        = 0.3;   // ATR mode: normal overlap target = ATR x
 ADV   double                 InpFreezeResumePct         = 15.0;  // Resume new trades below this drawdown % (after a pause)
+ADV   bool                   InpPauseAllowsHedge        = false; // During the pause / lots cap, still allow orders that shrink net exposure
 ADV   bool                   InpEmergencyAutoResume     = true;  // After a close-all, resume automatically after the cooldown
 ADV   int                    InpEmergencyCooldownBars   = 24;    // Calm-down after a close-all [signal-timeframe bars]
 ADV   bool                   InpShowUnitsPanel          = false; // Show the distance-units diagnostics panel
@@ -2351,6 +2426,7 @@ bool     g_chartsDone = false;
 bool     g_closeRequested = false;
 bool     g_launchNotified = false;
 long     g_lastEntryBar[2];             // per direction: bar open time of last entry
+long     g_basketStopUntil[2];          // per direction: no new recovery basket before this time
 int      g_highIndex[2];                // highest grid index used per direction
 int      g_planSeq = 0;
 int      g_reqSeq = 0;                  // unique order request tag
@@ -2389,6 +2465,7 @@ int      g_pendCount = 0;
 //--- runtime (not persisted)
 RM_Book    g_book;                      // authoritative snapshot for panel + planner
 RM_Totals  g_tot;
+double   g_normalLots = 0.0;
 RM_Plan    g_plan;                      // scratch plan
 RM_Plan    g_curGroup;                  // current-group preview
 RM_Plan    g_reducePreview;             // possible closures preview
@@ -2561,6 +2638,7 @@ string RM_PlanKindName(int k)
       case RM_PLAN_NORMAL_OVERLAP:   return "NORMAL_OVERLAP";
       case RM_PLAN_NORMAL_CLOSE:     return "NORMAL_CLOSE";
       case RM_PLAN_NORMAL_EMERGENCY: return "NORMAL_EMERGENCY";
+      case RM_PLAN_BASKET_STOP:      return "BASKET_STOP";
      }
    return "NONE";
   }
@@ -2786,6 +2864,8 @@ bool RM_ValidateInputs(string &err)
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
    // ---- account protection
+   if(InpCrossFinanceDDPct < 0.0)
+     { err = "cross-financing drawdown must be >= 0"; return false; }
    if(InpFreezeDDPct < 0.0 || InpFreezeDDPct > 100.0 || InpFreezeResumePct < 0.0)
      { err = "pause-new-trades drawdown must be 0 (off) .. 100 %"; return false; }
    if(InpFreezeDDPct > 0.0 && InpFreezeResumePct >= InpFreezeDDPct)
@@ -2863,6 +2943,7 @@ bool RM_ValidateInputs(string &err)
    g_cfg.overlapThreshold = InpOverlapThreshold;
    g_cfg.overlapCompare = InpOverlapCompare;
    g_cfg.matchedMain = InpLocking;
+   g_cfg.crossFinance = false;              // switched on under stress by RM_CrossFinanceActive()
    return true;
   }
 
@@ -3884,6 +3965,8 @@ void RM_SaveState()
    FileWriteString(h, "NOTIFIED=" + RM_B(g_launchNotified) + "\r\n");
    FileWriteString(h, "LEB0=" + IntegerToString(g_lastEntryBar[0]) + "\r\n");
    FileWriteString(h, "LEB1=" + IntegerToString(g_lastEntryBar[1]) + "\r\n");
+   FileWriteString(h, "BSTOP0=" + IntegerToString(g_basketStopUntil[0]) + "\r\n");
+   FileWriteString(h, "BSTOP1=" + IntegerToString(g_basketStopUntil[1]) + "\r\n");
    FileWriteString(h, "HI0=" + IntegerToString(g_highIndex[0]) + "\r\n");
    FileWriteString(h, "HI1=" + IntegerToString(g_highIndex[1]) + "\r\n");
    FileWriteString(h, "PLANSEQ=" + IntegerToString(g_planSeq) + "\r\n");
@@ -3987,6 +4070,8 @@ bool RM_LoadState()
       else if(key == "NOTIFIED") g_launchNotified = (val == "1");
       else if(key == "LEB0") g_lastEntryBar[0] = StringToInteger(val);
       else if(key == "LEB1") g_lastEntryBar[1] = StringToInteger(val);
+      else if(key == "BSTOP0") g_basketStopUntil[0] = StringToInteger(val);
+      else if(key == "BSTOP1") g_basketStopUntil[1] = StringToInteger(val);
       else if(key == "HI0") g_highIndex[0] = (int)StringToInteger(val);
       else if(key == "HI1") g_highIndex[1] = (int)StringToInteger(val);
       else if(key == "PLANSEQ") g_planSeq = (int)StringToInteger(val);
@@ -4608,8 +4693,35 @@ bool RM_ExternalAllows(int dir)
 //+------------------------------------------------------------------+
 //| Provider interface                                                |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Main MA trend for recovery entries: slow MA vs trend-filter MA on |
+//| the last closed signal candle. +1 up, -1 down, 0 = gate off.      |
+//+------------------------------------------------------------------+
+int RM_MATrend()
+  {
+   if(!InpRecoveryMATrend)
+      return 0;
+   return RM_MATrendRaw();
+  }
+
+int RM_MATrendRaw()
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      return 0;
+   double slow = iMA(g_sym, InpSignalTF, InpSlowPeriod, 0, InpSlowMethod, InpSlowPrice, 1);
+   double flt = iMA(g_sym, InpSignalTF, InpFilterPeriod, 0, InpFilterMethod, InpFilterPrice, 1);
+   if(slow <= 0.0 || flt <= 0.0)
+      return 0;
+   if(slow > flt) return 1;
+   if(slow < flt) return -1;
+   return 0;
+  }
+
 bool RM_SignalAllows(int dir, bool isFirst)
   {
+   int mt = RM_MATrend();
+   if(mt != 0 && mt != (dir == RM_BUY ? 1 : -1))
+      return false;                        // never add recovery orders against the main trend
    switch(InpSignalMode)
      {
       case RM_SIG_SIMPLE_GRID:     return true;
@@ -4697,6 +4809,17 @@ void RM_FreezeUpdate()
      }
   }
 
+//+------------------------------------------------------------------+
+//| Cross-basket financing is used under stress only: while new      |
+//| trades are paused or the account drawdown reaches its threshold. |
+//+------------------------------------------------------------------+
+bool RM_CrossFinanceActive()
+  {
+   if(!InpCrossFinance)
+      return false;
+   return g_frozen || RM_AccountDDPct() >= InpCrossFinanceDDPct;
+  }
+
 bool RM_FreezeActive(string &why)
   {
    RM_FreezeUpdate();
@@ -4712,11 +4835,46 @@ bool RM_FreezeActive(string &why)
 //| isHedge: lock orders reduce net exposure, so spread/session/daily |
 //| gates are skipped for them; margin is still checked.              |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Lot scaling: in BALANCE lot mode the first recovery lot and the   |
+//| total-lots cap are "per InpNormalLotPerBalance of balance", like  |
+//| the normal lot, so every size grows and shrinks with the account. |
+//+------------------------------------------------------------------+
+double RM_BalanceScale()
+  {
+   if(InpNormalLotMode != RM_NLOT_BALANCE || InpNormalLotPerBalance <= 0.0 || AccountBalance() <= 0.0)
+      return 1.0;
+   return AccountBalance() / InpNormalLotPerBalance;
+  }
+
+double RM_RecFirstLot()    { return InpFirstLot * RM_BalanceScale(); }
+double RM_LotsCap()        { return InpMaxManagedLots * RM_BalanceScale(); }
+
+//+------------------------------------------------------------------+
+//| Open risk in lots: normal + managed orders, WITHOUT lock orders   |
+//| (a lock only hedges volume that is already counted).              |
+//+------------------------------------------------------------------+
+double RM_ExposureLots()   { return g_normalLots + g_tot.totalLots - g_tot.lockLots; }
+
+//+------------------------------------------------------------------+
+//| True when opening `lots` of `type` makes the managed net exposure |
+//| (BUY lots - SELL lots) smaller in absolute size.                  |
+//+------------------------------------------------------------------+
+bool RM_ReducesNetExposure(int type, double lots)
+  {
+   double net = (g_tot.mainBuyLots + g_tot.recBuyLots) - (g_tot.mainSellLots + g_tot.recSellLots);
+   double after = net + (type == RM_BUY ? lots : -lots);
+   return MathAbs(after) < MathAbs(net) - RM_EPS;
+  }
+
 bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
+   // the drawdown pause and the total-lots cap stop NEW risk; an order that
+   // shrinks the net exposure is a hedge and is still allowed
+   bool reducing = InpPauseAllowsHedge && RM_ReducesNetExposure(type, lots);
    if(!isHedge)
      {
-      if(RM_FreezeActive(why))
+      if(!reducing && RM_FreezeActive(why))
          return true;
       if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
          return true;
@@ -4726,8 +4884,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
         { why = "outside entry session hours"; return true; }
       if(RM_DailyLocked())
         { why = "daily loss lockout (" + RM_Money(g_realizedDay) + " " + AccountCurrency() + ")"; return true; }
-      if(InpMaxManagedLots > 0.0 && g_tot.totalLots + lots > InpMaxManagedLots + RM_EPS)
-        { why = "max combined managed lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+      if(!reducing && InpMaxManagedLots > 0.0 && RM_ExposureLots() + lots > RM_LotsCap() + RM_EPS)
+        { why = "max total lots " + RM_Lots(RM_LotsCap()) + " reached"; return true; }
      }
    ResetLastError();
    double freeAfter = AccountFreeMarginCheck(g_sym, type, lots);
@@ -5023,6 +5181,7 @@ void RM_InitRuntime()
    g_state = RM_ST_IDLE;
    g_stateBeforePause = RM_ST_RECOVERING;
    g_lastEntryBar[0] = 0; g_lastEntryBar[1] = 0;
+   g_basketStopUntil[0] = 0; g_basketStopUntil[1] = 0;
    g_highIndex[0] = -1;   g_highIndex[1] = -1;
    g_nextLevel[0] = 0;    g_nextLevel[1] = 0;
    RM_JournalClear(g_journal);
@@ -5466,6 +5625,10 @@ void RM_DoRecover()
    if(InpDeleteSLTP == RM_SLTP_CONTINUOUS)
       RM_ClearManagedSLTP();
    g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   g_cfg.crossFinance = RM_CrossFinanceActive();
+   // ---- basket loss limit: a recovery basket that went too far against the market is cut
+   if(RM_BasketStop())
+      return;
    // ---- automatic closure: best qualifying group
    int best = -1;
    double bestSurplus = 0.0;
@@ -5491,6 +5654,38 @@ void RM_DoRecover()
       return;
      }
    RM_GridEntries();
+  }
+
+//+------------------------------------------------------------------+
+//| Recovery basket loss limit (InpRecBasketStopPct of balance):      |
+//| closes every recovery order of that direction and blocks a new    |
+//| basket in that direction for InpEmergencyCooldownBars candles.    |
+//| Main (original + lock) orders are not touched.                    |
+//+------------------------------------------------------------------+
+bool RM_BasketStop()
+  {
+   if(InpRecBasketStopPct <= 0.0 || AccountBalance() <= 0.0)
+      return false;
+   double limit = -InpRecBasketStopPct / 100.0 * AccountBalance();
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      double pl = (d == RM_BUY) ? g_tot.recBuyPL : g_tot.recSellPL;
+      if(cnt == 0 || pl > limit)
+         continue;
+      RM_IndexList L;
+      L.n = RM_RecoveryLegs(g_book, d, L);
+      RM_PlanListed(g_book, g_cfg, g_mpp, RM_PLAN_BASKET_STOP, L, -1.0, g_plan);
+      if(g_plan.n == 0)
+         continue;
+      g_basketStopUntil[d] = (long)TimeCurrent() + (long)InpEmergencyCooldownBars * PeriodSeconds(InpSignalTF);
+      RM_Audit("BASKET_STOP", 0, 0, pl, RM_Side(d) + " recovery basket " + RM_Money(pl) + " <= limit " +
+               RM_Money(limit) + " (" + DoubleToString(InpRecBasketStopPct, 1) + "% of balance): closed, new " +
+               RM_Side(d) + " basket blocked for " + IntegerToString(InpEmergencyCooldownBars) + " candles");
+      RM_StartPlan(g_plan);
+      return true;
+     }
+   return false;
   }
 
 //+------------------------------------------------------------------+
@@ -5608,6 +5803,7 @@ void RM_TryNewBasket()
      {
       int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
       can[d] = (cnt == 0) &&
+               (long)TimeCurrent() >= g_basketStopUntil[d] &&
                RM_DirectionAllowed(d, InpRecoveryDirs, false, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt) &&
                RM_BarGateOpen(InpOnePerBar, g_lastEntryBar[d], (long)iTime(g_sym, 0, 0)) &&
                RM_SignalAllows(d, true);
@@ -5633,27 +5829,29 @@ void RM_TryNewBasket()
 //+------------------------------------------------------------------+
 bool RM_OpenRecovery(int dir, int idx, bool manual, double manualLot)
   {
-   double raw = manual ? manualLot : RM_GridRawLot(InpFirstLot, InpLotMultiplier, idx);
+   double raw = manual ? manualLot : RM_GridRawLot(RM_RecFirstLot(), InpLotMultiplier, idx);
    if(InpCapBehavior == RM_CAP_REFUSE && raw > g_meta.maxLot + RM_EPS)
      {
       g_block = "recovery lot " + DoubleToString(raw, 3) + " exceeds broker maximum - refused";
       return false;
      }
    double lot = RM_NormalizeLot(raw, g_meta, InpLotRounding);
+   if(lot <= 0.0 && raw > 0.0 && !manual && InpNormalLotMode == RM_NLOT_BALANCE)
+      lot = g_meta.minLot;                 // balance-scaled lot below the minimum: use the minimum
    if(lot <= 0.0)
      {
       g_block = "recovery lot " + DoubleToString(raw, 3) + " below broker minimum";
       return false;
      }
-   if(RM_LotExceedsCap(lot, InpMaxRecoveryLot))
+   if(RM_LotExceedsCap(lot, InpMaxRecoveryLot * RM_BalanceScale()))
      {
       if(InpCapBehavior == RM_CAP_REFUSE)
         {
-         g_block = "recovery lot " + RM_Lots(lot) + " exceeds maximum " + RM_Lots(InpMaxRecoveryLot) + " - refused";
+         g_block = "recovery lot " + RM_Lots(lot) + " exceeds maximum " + RM_Lots(InpMaxRecoveryLot * RM_BalanceScale()) + " - refused";
          RM_Audit("ENTRY_REFUSED", 0, lot, 0, g_block);
          return false;
         }
-      lot = RM_NormalizeLot(InpMaxRecoveryLot, g_meta, RM_ROUND_DOWN);
+      lot = RM_NormalizeLot(InpMaxRecoveryLot * RM_BalanceScale(), g_meta, RM_ROUND_DOWN);
       if(lot <= 0.0)
          return false;
      }
@@ -5732,6 +5930,7 @@ void RM_UpdatePreviews(bool force)
       return;
    g_lastPreviewMs = now;
    g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   g_cfg.crossFinance = RM_CrossFinanceActive();
    RM_PlanReset(g_curGroup, RM_PLAN_NONE);
    bool have = false;
    for(int d = 0; d < 2; d++)
@@ -7121,7 +7320,6 @@ RM_Book  g_nbook;                   // normal-strategy market orders (not in the
 RM_NSide g_ns[2];
 double   g_normalNet = 0.0;
 int      g_normalCnt = 0;
-double   g_normalLots = 0.0;
 double   g_maFast1 = 0, g_maSlow1 = 0, g_maFilter1 = 0;
 string   g_normalBlock = "";        // why normal trading is currently blocked
 
@@ -7265,7 +7463,10 @@ double RM_NormalLotFor(int n, double &raw)
   {
    double base = RM_NormalBaseLot(InpNormalLotMode, InpNormalLot, AccountBalance(), InpNormalLotPerBalance);
    raw = RM_GridRawLot(base, InpNormalAveraging ? InpNormalAvgMultiplier : 1.0, n);
-   return RM_NormalizeLot(raw, g_meta, RM_ROUND_DOWN);
+   double lot = RM_NormalizeLot(raw, g_meta, RM_ROUND_DOWN);
+   if(lot <= 0.0 && raw > 0.0 && InpNormalLotMode == RM_NLOT_BALANCE)
+      lot = g_meta.minLot;                 // a smaller balance never stops trading: broker minimum
+   return lot;
   }
 
 //+------------------------------------------------------------------+
@@ -7279,8 +7480,8 @@ bool RM_NormalExposureBlocked(int dir, double lot, string &why)
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
      { why = "normal exposure cap " + RM_Lots(InpNormalMaxLots) + " lots"; return true; }
-   if(InpMaxManagedLots > 0.0 && g_normalLots + g_tot.totalLots + lot > InpMaxManagedLots + RM_EPS)
-     { why = "max total open lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+   if(InpMaxManagedLots > 0.0 && RM_ExposureLots() + lot > RM_LotsCap() + RM_EPS)
+     { why = "max total lots " + RM_Lots(RM_LotsCap()) + " reached"; return true; }
    if(RM_FreezeActive(why))
       return true;
    ResetLastError();

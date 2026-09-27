@@ -11,7 +11,7 @@
 2. **MQL4 lint** runs `g++ -fsyntax-only` over the whole EA against a *declared* MT4 API subset. It is not MetaEditor.
 3. **Simulator scenarios** run the EA source (`OnInit` / `OnTick` / `OnDeinit` / button handlers) against an in-memory broker: instant fills at Bid/Ask, partial closes creating `from #` remainders, history, commission, a margin model, H1 bars, SMA/EMA, chart objects, files, global variables and fault injection. Each scenario runs in a fresh process. The simulator is a test double; it does not model tester timing, swaps, stop-out or real broker behaviour.
 4. **Preset checks** load each `.set` (rejecting duplicate or missing keys) into the inputs, run `RM_ValidateInputs`, initialise, and run 300 ticks with one losing order.
-5. **Standalone build**: the single-file `.mq4` is regenerated, linted, and all 47 scenarios run against it.
+5. **Standalone build**: the single-file `.mq4` is regenerated, linted, and all 49 scenarios run against it.
 
 ## Acceptance tests for the Three-MA handover
 
@@ -70,19 +70,22 @@ These scenarios run the untouched built-in defaults on 3-digit XAUUSD, with a 0.
 | S44 | long decline, rally, decline | previous defaults: averaging BUYs into the decline, emergency close-all, trading halted | handover → recovery cycle completed (+2.19), no emergency, trading continues |
 | S45 | 1,500 choppy candles (±33 swings) | same-candle filter only: no entries (every crossover rejected) | 23 normal entries, 2 recovery cycles both completed; balance 1,201.60 |
 | S46 | rally, sell-off, rebound | same-candle filter only: no entries | 1 entry closed at TP, balance 1,003.11 |
+| S47 / S48 | 10,000 balance, long gold rally with swings | no basket stop: 50 % emergency, balance 4,950.78 | basket stop cut the losing grid, no emergency, balance 8,082.60 (equity 6,310.00, cycle open) |
 
 
 ## Output
 
 ```
 == 1. calculation tests
-Result: 301 passed, 0 failed
+Result: 306 passed, 0 failed
 == 2. MQL4 lint (g++ -fsyntax-only)
 mql_lint: OK
 == 3. simulator scenarios
     choppy: entries 23, handovers 2, emergencies 0, equity 1201.60, balance 1201.60
     reversal: entries 1, handovers 0, cycles 0, emergencies 0, pauses 0, equity 1003.11, balance 1003.11
-sim scenarios: 47/47 passed
+    rally (old): handovers 2, cycles 1, pauses 3, emergencies 1, entries 33, equity 4012.68, balance 4950.78, open lots 0.34
+    rally (new): handovers 2, cycles 1, pauses 2, emergencies 0, entries 54, equity 6310.00, balance 8082.60, open lots 0.78
+sim scenarios: 49/49 passed
 == 4. presets
 Conservative_Demo.set    validate=ok init=ok state=ARMED managed=1 lock=0.00 recovery=0 Armed: drawdown 0.61% / launch at 5.00%
 Three_MA_With_Recovery.set validate=ok init=ok state=IDLE managed=0 lock=0.00 recovery=0 No orders to recover
@@ -91,9 +94,9 @@ presets: 3/3 valid
 == 4b. built-in defaults
 defaults == Three_MA_With_Recovery.set: OK
 == 5. standalone single-file build (rebuilt, linted and simulated)
-written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 8545 lines
+written MQL4/Experts/RecoveryManagerPro_Standalone.mq4 8746 lines
 mql_lint: OK
-sim scenarios: 47/47 passed
+sim scenarios: 49/49 passed
 ```
 
 ### Calculation test case list
@@ -133,5 +136,5 @@ Recovery Manager Pro - calculation tests
 - D06 migration keeps the original price distance; max limits never loosen
 - Break-even / possible-close price solve
 
-Result: 301 passed, 0 failed
+Result: 306 passed, 0 failed
 ```

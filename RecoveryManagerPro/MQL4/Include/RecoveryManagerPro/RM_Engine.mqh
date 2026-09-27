@@ -24,6 +24,7 @@ void RM_InitRuntime()
    g_state = RM_ST_IDLE;
    g_stateBeforePause = RM_ST_RECOVERING;
    g_lastEntryBar[0] = 0; g_lastEntryBar[1] = 0;
+   g_basketStopUntil[0] = 0; g_basketStopUntil[1] = 0;
    g_highIndex[0] = -1;   g_highIndex[1] = -1;
    g_nextLevel[0] = 0;    g_nextLevel[1] = 0;
    RM_JournalClear(g_journal);
@@ -467,6 +468,10 @@ void RM_DoRecover()
    if(InpDeleteSLTP == RM_SLTP_CONTINUOUS)
       RM_ClearManagedSLTP();
    g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   g_cfg.crossFinance = RM_CrossFinanceActive();
+   // ---- basket loss limit: a recovery basket that went too far against the market is cut
+   if(RM_BasketStop())
+      return;
    // ---- automatic closure: best qualifying group
    int best = -1;
    double bestSurplus = 0.0;
@@ -492,6 +497,38 @@ void RM_DoRecover()
       return;
      }
    RM_GridEntries();
+  }
+
+//+------------------------------------------------------------------+
+//| Recovery basket loss limit (InpRecBasketStopPct of balance):      |
+//| closes every recovery order of that direction and blocks a new    |
+//| basket in that direction for InpEmergencyCooldownBars candles.    |
+//| Main (original + lock) orders are not touched.                    |
+//+------------------------------------------------------------------+
+bool RM_BasketStop()
+  {
+   if(InpRecBasketStopPct <= 0.0 || AccountBalance() <= 0.0)
+      return false;
+   double limit = -InpRecBasketStopPct / 100.0 * AccountBalance();
+   for(int d = 0; d < 2; d++)
+     {
+      int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
+      double pl = (d == RM_BUY) ? g_tot.recBuyPL : g_tot.recSellPL;
+      if(cnt == 0 || pl > limit)
+         continue;
+      RM_IndexList L;
+      L.n = RM_RecoveryLegs(g_book, d, L);
+      RM_PlanListed(g_book, g_cfg, g_mpp, RM_PLAN_BASKET_STOP, L, -1.0, g_plan);
+      if(g_plan.n == 0)
+         continue;
+      g_basketStopUntil[d] = (long)TimeCurrent() + (long)InpEmergencyCooldownBars * PeriodSeconds(InpSignalTF);
+      RM_Audit("BASKET_STOP", 0, 0, pl, RM_Side(d) + " recovery basket " + RM_Money(pl) + " <= limit " +
+               RM_Money(limit) + " (" + DoubleToString(InpRecBasketStopPct, 1) + "% of balance): closed, new " +
+               RM_Side(d) + " basket blocked for " + IntegerToString(InpEmergencyCooldownBars) + " candles");
+      RM_StartPlan(g_plan);
+      return true;
+     }
+   return false;
   }
 
 //+------------------------------------------------------------------+
@@ -609,6 +646,7 @@ void RM_TryNewBasket()
      {
       int cnt = (d == RM_BUY) ? g_tot.recBuyCnt : g_tot.recSellCnt;
       can[d] = (cnt == 0) &&
+               (long)TimeCurrent() >= g_basketStopUntil[d] &&
                RM_DirectionAllowed(d, InpRecoveryDirs, false, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt) &&
                RM_BarGateOpen(InpOnePerBar, g_lastEntryBar[d], (long)iTime(g_sym, 0, 0)) &&
                RM_SignalAllows(d, true);
@@ -634,27 +672,29 @@ void RM_TryNewBasket()
 //+------------------------------------------------------------------+
 bool RM_OpenRecovery(int dir, int idx, bool manual, double manualLot)
   {
-   double raw = manual ? manualLot : RM_GridRawLot(InpFirstLot, InpLotMultiplier, idx);
+   double raw = manual ? manualLot : RM_GridRawLot(RM_RecFirstLot(), InpLotMultiplier, idx);
    if(InpCapBehavior == RM_CAP_REFUSE && raw > g_meta.maxLot + RM_EPS)
      {
       g_block = "recovery lot " + DoubleToString(raw, 3) + " exceeds broker maximum - refused";
       return false;
      }
    double lot = RM_NormalizeLot(raw, g_meta, InpLotRounding);
+   if(lot <= 0.0 && raw > 0.0 && !manual && InpNormalLotMode == RM_NLOT_BALANCE)
+      lot = g_meta.minLot;                 // balance-scaled lot below the minimum: use the minimum
    if(lot <= 0.0)
      {
       g_block = "recovery lot " + DoubleToString(raw, 3) + " below broker minimum";
       return false;
      }
-   if(RM_LotExceedsCap(lot, InpMaxRecoveryLot))
+   if(RM_LotExceedsCap(lot, InpMaxRecoveryLot * RM_BalanceScale()))
      {
       if(InpCapBehavior == RM_CAP_REFUSE)
         {
-         g_block = "recovery lot " + RM_Lots(lot) + " exceeds maximum " + RM_Lots(InpMaxRecoveryLot) + " - refused";
+         g_block = "recovery lot " + RM_Lots(lot) + " exceeds maximum " + RM_Lots(InpMaxRecoveryLot * RM_BalanceScale()) + " - refused";
          RM_Audit("ENTRY_REFUSED", 0, lot, 0, g_block);
          return false;
         }
-      lot = RM_NormalizeLot(InpMaxRecoveryLot, g_meta, RM_ROUND_DOWN);
+      lot = RM_NormalizeLot(InpMaxRecoveryLot * RM_BalanceScale(), g_meta, RM_ROUND_DOWN);
       if(lot <= 0.0)
          return false;
      }
@@ -733,6 +773,7 @@ void RM_UpdatePreviews(bool force)
       return;
    g_lastPreviewMs = now;
    g_cfg.matchedMain = InpLocking && g_tot.mainBuyCnt > 0 && g_tot.mainSellCnt > 0;
+   g_cfg.crossFinance = RM_CrossFinanceActive();
    RM_PlanReset(g_curGroup, RM_PLAN_NONE);
    bool have = false;
    for(int d = 0; d < 2; d++)

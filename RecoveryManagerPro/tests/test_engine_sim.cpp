@@ -43,6 +43,10 @@ static const auto kNew_InpEmergencyAutoResume = InpEmergencyAutoResume;
 static const auto kNew_InpShowUnitsPanel = InpShowUnitsPanel;
 static const auto kNew_InpSignalConfirmBars = InpSignalConfirmBars;
 static const auto kNew_InpMultidirectional = InpMultidirectional;
+static const auto kNew_InpCrossFinance = InpCrossFinance;
+static const auto kNew_InpPauseAllowsHedge = InpPauseAllowsHedge;
+static const auto kNew_InpRecoveryMATrend = InpRecoveryMATrend;
+static const auto kNew_InpRecBasketStopPct = InpRecBasketStopPct;
 static const auto kNew_InpSignalMode = InpSignalMode;
 static const auto kNew_InpTrendFirst = InpTrendFirst;
 static const auto kNew_InpTrendNext = InpTrendNext;
@@ -82,6 +86,10 @@ static void BuiltInDefaults()
    InpShowUnitsPanel = kNew_InpShowUnitsPanel;
    InpSignalConfirmBars = kNew_InpSignalConfirmBars;
    InpMultidirectional = kNew_InpMultidirectional;
+   InpCrossFinance = kNew_InpCrossFinance;
+   InpPauseAllowsHedge = kNew_InpPauseAllowsHedge;
+   InpRecoveryMATrend = kNew_InpRecoveryMATrend;
+   InpRecBasketStopPct = kNew_InpRecBasketStopPct;
   }
 
 // Scenarios S01-S43 were written against the ORIGINAL defaults (recovery only, fixed
@@ -122,6 +130,10 @@ static void PreviousDefaults()
    InpShowUnitsPanel = true;
    InpSignalConfirmBars = 0;
    InpMultidirectional = false;
+   InpCrossFinance = false;
+   InpPauseAllowsHedge = false;
+   InpRecoveryMATrend = false;
+   InpRecBasketStopPct = 0.0;
   }
 
 
@@ -1436,6 +1448,37 @@ static void S46_DefaultsReversal()
    EXPECT(!g_normalHalted);
   }
 
+// the reported tester case: recovery SELLs caught by a long gold rally
+static void RallyPath(bool newRules)
+  {
+   BuiltInDefaults();
+   if(!newRules) { InpCrossFinance = false; InpPauseAllowsHedge = false; InpRecoveryMATrend = false; InpRecBasketStopPct = 0.0; }
+   SetGold(3);
+   S.spreadPts = 90; S.balance = 10000.0;
+   EXPECT(Init());
+   int i = 0;
+   for(; i < 120; i++) Candle(S.bid - 1.2);                     // sell-off: SELL basket, handover
+   for(; i < 900; i++) Candle(S.bid + 1.6 + 6.0 * std::sin(i * 0.3));   // long rally with swings
+   for(; i < 1400; i++) Candle(S.bid + 0.2 + 12.0 * std::sin(i * 0.2)); // slower drift up, choppy
+   std::printf("    rally (%s): handovers %d, cycles %d, pauses %d, emergencies %d, entries %d, equity %.2f, balance %.2f, open lots %.2f\n",
+               newRules ? "new" : "old", LogCount("RMP HANDOVER "), LogCount("CYCLE_END"), LogCount("PAUSE_NEW_TRADES"),
+               LogCount("RMP EMERGENCY"), LogCount("RMP ENTRY "), AccountEquity(), AccountBalance(), g_tot.totalLots);
+  }
+static void S47_RallyOldRules()
+  {
+   RallyPath(false);
+   EXPECT(LogCount("RMP EMERGENCY") >= 1);                  // previous rules: the grid ran into the 50 % close-all
+  }
+static void S48_RallyNewRules()
+  {
+   RallyPath(true);
+   EXPECT(LogCount("RMP EMERGENCY") == 0);                  // basket stop cut the losing grid first
+   EXPECT(LogCount("BASKET_STOP") >= 1);
+   EXPECT(LogCount("RMP ENTRY ") >= 1);                      // 0.78 lots incl. lock no longer blocks recovery
+   EXPECT(AccountBalance() > 7000.0);                        // this path: 4,950 under the previous rules
+   EXPECT(!g_normalHalted);
+  }
+
 //====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
@@ -1487,6 +1530,8 @@ static Scenario g_scen[] = {
    {"S44 defaults on 3-digit gold, long decline: recovers, no close-all", S44_BuiltInDefaultsTradeGold},
    {"S45 defaults on gold, choppy market", S45_DefaultsChoppyMarket},
    {"S46 defaults on gold, rally / sell-off / rebound", S46_DefaultsReversal},
+   {"S47 long gold rally, previous closure rules (no basket stop)", S47_RallyOldRules},
+   {"S48 long gold rally, balance-scaled caps + basket stop", S48_RallyNewRules},
 };
 
 int main(int argc, char **argv)

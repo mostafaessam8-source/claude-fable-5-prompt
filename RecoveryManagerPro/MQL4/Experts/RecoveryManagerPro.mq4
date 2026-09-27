@@ -62,14 +62,15 @@ input int                    InpNormalMaxPerDir         = 3; // Max orders per d
 input string S_RECOVERY = "===== 5. RECOVERY =====";
 input double                 InpLaunchDrawdown          = 8.0; // Start recovery at drawdown (% of balance)
 input double                 InpGridATR                 = 1.5; // Recovery step = ATR x
-input double                 InpFirstLot                = 0.01; // Recovery start lot
+input double                 InpFirstLot                = 0.01; // Recovery start lot (per 1000 balance in balance mode)
 input double                 InpLotMultiplier           = 1.2; // Recovery lot multiplier
 input int                    InpMaxRecoveryCount        = 8; // Max recovery orders
 
 input string S_ACCOUNTPROTE = "===== 6. ACCOUNT PROTECTION =====";
+input double                 InpRecBasketStopPct        = 20.0; // Cut a recovery basket at this loss [% of balance, 0 = off]
 input double                 InpFreezeDDPct             = 20.0; // Pause NEW trades at drawdown % (0 = off)
 input double                 InpEmergencyValue          = 50.0; // Close all at drawdown % (0 = off)
-input double                 InpMaxManagedLots          = 0.50; // Max total open lots
+input double                 InpMaxManagedLots          = 0.10; // Max total lots (per 1000 balance in balance mode, locks excluded)
 input int                    InpMaxSpread               = 50; // Max spread (points)
 
 input string S_PANEL = "===== 7. PANEL =====";
@@ -110,6 +111,9 @@ ADV   double                 InpGridStepPoints          = 300; // Recovery grid 
 ADV   double                 InpStepMultiplier          = 1.1; // Step multiplier [x]
 ADV   bool                   InpOnePerBar               = true; // One recovery order per bar
 ADV   bool                   InpMultidirectional        = true; // Multidirectional recovery
+ADV   bool                   InpCrossFinance            = true; // Winning basket's surplus also cuts losing opposite recovery orders
+ADV   double                 InpCrossFinanceDDPct       = 10.0; // ...used from this account drawdown [%] or while paused
+ADV   bool                   InpRecoveryMATrend         = false; // Recovery orders only in the MA trend direction (slow MA vs filter MA)
 ADV   int                    InpMaxSlippage             = 30; // Maximum slippage [distance units, section 13]
 ADV   double                 InpMaxRecoveryLot          = 0.10; // Maximum recovery order volume [lots]
 ADV   int                    InpRecoveryMagic           = 9751421; // Recovery magic number
@@ -206,6 +210,7 @@ ADV   int                    InpATRPeriod               = 14;    // ATR period f
 ADV   double                 InpPartialTPATR            = 0.3;   // ATR mode: recovery partial-close TP = ATR x
 ADV   double                 InpNormalOverlapATR        = 0.3;   // ATR mode: normal overlap target = ATR x
 ADV   double                 InpFreezeResumePct         = 15.0;  // Resume new trades below this drawdown % (after a pause)
+ADV   bool                   InpPauseAllowsHedge        = false; // During the pause / lots cap, still allow orders that shrink net exposure
 ADV   bool                   InpEmergencyAutoResume     = true;  // After a close-all, resume automatically after the cooldown
 ADV   int                    InpEmergencyCooldownBars   = 24;    // Calm-down after a close-all [signal-timeframe bars]
 ADV   bool                   InpShowUnitsPanel          = false; // Show the distance-units diagnostics panel

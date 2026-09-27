@@ -47,7 +47,7 @@ static RM_PlanConfig Cfg()
    c.partialLots = 0.03; c.partialTPPoints = 30; c.tpBasis = RM_TPB_RECOVERY_LOTS;
    c.fullCommission = false; c.extraCommPerLot = 0; c.execBufferPoints = 0;
    c.overlapEnabled = true; c.overlapThreshold = 2; c.overlapCompare = RM_OVL_GE;
-   c.matchedMain = true; return c;
+   c.matchedMain = true; c.crossFinance = false; return c;
   }
 
 static bool LegalRemainders(const RM_Plan &p, const RM_SymbolMeta &m)
@@ -298,6 +298,32 @@ int main()
       RM_PlanGroup(B, c, fx, 1.0, RM_SELL, P);
       CHECK(P.isFinal && !P.isOverlap && P.kind == RM_PLAN_GROUP);
       CHECK(NEAR(P.recoveryCloseLots, 0.23));
+   }
+
+   CASE("Cross-basket financing: surplus cuts the worst losing opposite recovery orders");
+   {
+      BookClear(B);
+      Add(B, 60, RM_ROLE_ORIGINAL, RM_BUY, 0.10, -10.0, 0, 0, 100);
+      Add(B, 61, RM_ROLE_LOCK, RM_SELL, 0.10, 5.0, 0, 0, 110);
+      Add(B, 70, RM_ROLE_RECOVERY, RM_BUY, 0.05, 100.0, 0, 0, 200);
+      Add(B, 71, RM_ROLE_RECOVERY, RM_SELL, 0.10, -200.0, 0, 0, 300);   // -2000/lot (worst)
+      Add(B, 72, RM_ROLE_RECOVERY, RM_SELL, 0.05, -30.0, 0, 0, 400);    // -600/lot
+      Add(B, 73, RM_ROLE_RECOVERY, RM_SELL, 0.02, 4.0, 0, 0, 500);      // winner: never cut
+      RM_PlanConfig c = Cfg();
+      RM_PlanGroup(B, c, fx, 1.0, RM_BUY, P);
+      CHECK(P.qualifies && P.n == 3 && NEAR(P.expectedNet, 98.5));      // off: group only
+      c.crossFinance = true;
+      RM_PlanGroup(B, c, fx, 1.0, RM_BUY, P);
+      double l71 = 0, l72 = 0, l73 = 0;
+      for(int k = 0; k < P.n; k++)
+        { if(P.ticket[k] == 71) l71 = P.closeLots[k]; if(P.ticket[k] == 72) l72 = P.closeLots[k]; if(P.ticket[k] == 73) l73 = P.closeLots[k]; }
+      CHECK(NEAR(l71, 0.04) && NEAR(l72, 0.02) && NEAR(l73, 0.0));
+      CHECK(P.qualifies && P.expectedNet >= P.target - 1e-9);
+      CHECK(NEAR(P.expectedNet, 6.5) && NEAR(P.target, 3.3));
+      // no surplus above target -> nothing added
+      B.profit[2] = 3.0;
+      RM_PlanGroup(B, c, fx, 1.0, RM_BUY, P);
+      CHECK(P.n == 3 || !P.qualifies);
    }
 
    CASE("Priority: easy-first, hard-first, first-ticket override, stable tie-break");

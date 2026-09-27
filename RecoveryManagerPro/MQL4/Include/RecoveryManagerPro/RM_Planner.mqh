@@ -270,6 +270,81 @@ double RM_MainLots(const RM_Book &b, int side)
 //| overlap is active. Main slice: matched BUY+SELL (locked) or a    |
 //| single losing leg (unlocked).                                     |
 //+------------------------------------------------------------------+
+//| Totals, target and qualification of a GROUP/OVERLAP plan          |
+//+------------------------------------------------------------------+
+void RM_PlanGroupTotals(RM_Plan &p, const RM_PlanConfig &c, const RM_SymbolMeta &m, double mpp)
+  {
+   RM_PlanTotals(p, c, mpp);
+   double basis = p.recoveryCloseLots;
+   if(c.tpBasis == RM_TPB_SLICE_LOTS)
+      basis = MathMax(p.mainBuyCloseLots, p.mainSellCloseLots);
+   else if(c.tpBasis == RM_TPB_MIN_LOT)
+      basis = m.minLot;
+   p.target = RM_TargetMoney(c.partialTPPoints, mpp, basis);
+   p.qualifies = (p.expectedNet >= p.target - 1e-9);
+   p.reason = p.qualifies ? RM_R_OK : RM_R_BELOW_TARGET;
+  }
+
+//+------------------------------------------------------------------+
+//| Cross-basket financing: the surplus of a qualifying group above   |
+//| its target closes (part of) the worst LOSING recovery orders of   |
+//| the opposite basket, worst first, as long as the whole plan still |
+//| meets its target. Only losing legs are cut; nothing is closed at  |
+//| a combined loss.                                                  |
+//+------------------------------------------------------------------+
+void RM_PlanCrossFinance(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta &m,
+                         double mpp, int oppDir, RM_Plan &p)
+  {
+   bool used[RM_MAX_LEGS];
+   for(int u = 0; u < RM_MAX_LEGS; u++) used[u] = false;
+   for(int guard = 0; guard < RM_MAX_LEGS; guard++)
+     {
+      int w = -1;
+      double wPerLot = 0.0;
+      for(int i = 0; i < b.n && i < RM_MAX_LEGS; i++)
+        {
+         if(used[i] || b.role[i] != RM_ROLE_RECOVERY || b.type[i] != oppDir || b.lots[i] <= RM_EPS)
+            continue;
+         double net = RM_LegNet(b, i);
+         if(net >= 0.0)
+            continue;
+         double perLot = net / b.lots[i];
+         if(w < 0 || perLot < wPerLot)
+           { w = i; wPerLot = perLot; }
+        }
+      if(w < 0)
+         return;
+      used[w] = true;
+      double surplus = p.expectedNet - p.target;
+      double costPerLot = -wPerLot + RM_LegExitCost(b, w, b.lots[w], c) / b.lots[w] +
+                          MathMax(0.0, c.execBufferPoints) * mpp;
+      if(surplus <= 0.0 || costPerLot <= 0.0)
+         return;
+      double v = RM_ValidSlice(b.lots[w], surplus / costPerLot, m);
+      bool added = false;
+      for(int tries = 0; tries < 200 && v > RM_EPS; tries++)
+        {
+         RM_Plan t = p;
+         if(!RM_PlanAddLeg(t, b, w, v, c))
+            return;
+         RM_PlanGroupTotals(t, c, m, mpp);
+         if(t.qualifies)
+           {
+            p = t;
+            added = true;
+            break;
+           }
+         double nv = RM_ValidSlice(b.lots[w], v - m.lotStep, m);
+         if(nv >= v - RM_EPS)
+            break;                               // no smaller legal slice
+         v = nv;
+        }
+      if(!added)
+         return;
+     }
+  }
+
+//+------------------------------------------------------------------+
 void RM_PlanGroup(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta &m,
                   double mpp, int dir, RM_Plan &p)
   {
@@ -362,16 +437,9 @@ void RM_PlanGroup(const RM_Book &b, const RM_PlanConfig &c, const RM_SymbolMeta 
       RM_PlanAddLeg(p, b, iSell, vSell, c);
       p.mainSellTicket = b.ticket[iSell];
      }
-   RM_PlanTotals(p, c, mpp);
-   double basis = p.recoveryCloseLots;
-   if(c.tpBasis == RM_TPB_SLICE_LOTS)
-      basis = MathMax(p.mainBuyCloseLots, p.mainSellCloseLots);
-   else if(c.tpBasis == RM_TPB_MIN_LOT)
-      basis = m.minLot;
-   p.target = RM_TargetMoney(c.partialTPPoints, mpp, basis);
-   p.qualifies = (p.expectedNet >= p.target - 1e-9);
-   if(!p.qualifies)
-      p.reason = RM_R_BELOW_TARGET;
+   RM_PlanGroupTotals(p, c, m, mpp);
+   if(p.qualifies && c.crossFinance)
+      RM_PlanCrossFinance(b, c, m, mpp, 1 - dir, p);
    RM_PlanSortForExecution(p);
   }
 

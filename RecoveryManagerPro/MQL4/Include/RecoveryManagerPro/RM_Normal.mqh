@@ -51,7 +51,6 @@ RM_Book  g_nbook;                   // normal-strategy market orders (not in the
 RM_NSide g_ns[2];
 double   g_normalNet = 0.0;
 int      g_normalCnt = 0;
-double   g_normalLots = 0.0;
 double   g_maFast1 = 0, g_maSlow1 = 0, g_maFilter1 = 0;
 string   g_normalBlock = "";        // why normal trading is currently blocked
 
@@ -195,7 +194,10 @@ double RM_NormalLotFor(int n, double &raw)
   {
    double base = RM_NormalBaseLot(InpNormalLotMode, InpNormalLot, AccountBalance(), InpNormalLotPerBalance);
    raw = RM_GridRawLot(base, InpNormalAveraging ? InpNormalAvgMultiplier : 1.0, n);
-   return RM_NormalizeLot(raw, g_meta, RM_ROUND_DOWN);
+   double lot = RM_NormalizeLot(raw, g_meta, RM_ROUND_DOWN);
+   if(lot <= 0.0 && raw > 0.0 && InpNormalLotMode == RM_NLOT_BALANCE)
+      lot = g_meta.minLot;                 // a smaller balance never stops trading: broker minimum
+   return lot;
   }
 
 //+------------------------------------------------------------------+
@@ -209,8 +211,8 @@ bool RM_NormalExposureBlocked(int dir, double lot, string &why)
       return true;
    if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
      { why = "normal exposure cap " + RM_Lots(InpNormalMaxLots) + " lots"; return true; }
-   if(InpMaxManagedLots > 0.0 && g_normalLots + g_tot.totalLots + lot > InpMaxManagedLots + RM_EPS)
-     { why = "max total open lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+   if(InpMaxManagedLots > 0.0 && RM_ExposureLots() + lot > RM_LotsCap() + RM_EPS)
+     { why = "max total lots " + RM_Lots(RM_LotsCap()) + " reached"; return true; }
    if(RM_FreezeActive(why))
       return true;
    ResetLastError();

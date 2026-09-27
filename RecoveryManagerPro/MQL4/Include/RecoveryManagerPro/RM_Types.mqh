@@ -270,6 +270,7 @@ enum ENUM_RM_SPACING
 #define RM_PLAN_NORMAL_OVERLAP   9   // normal first+last overlap
 #define RM_PLAN_NORMAL_CLOSE    10   // operator closes the normal basket
 #define RM_PLAN_NORMAL_EMERGENCY 11  // emergency-loss limit closes the normal basket
+#define RM_PLAN_BASKET_STOP     12   // recovery basket loss limit closes that basket
 
 #define RM_R_OK               0
 #define RM_R_NO_RECOVERY      1
@@ -357,6 +358,7 @@ struct RM_PlanConfig
    int               overlapThreshold;
    int               overlapCompare;    // ENUM_RM_OVERLAP_CMP
    bool              matchedMain;       // locked: close equal BUY/SELL slices
+   bool              crossFinance;      // surplus of a qualifying group also cuts losing opposite recovery orders
   };
 
 //+------------------------------------------------------------------+

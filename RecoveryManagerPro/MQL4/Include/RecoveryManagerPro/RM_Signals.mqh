@@ -118,8 +118,35 @@ bool RM_ExternalAllows(int dir)
 //+------------------------------------------------------------------+
 //| Provider interface                                                |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Main MA trend for recovery entries: slow MA vs trend-filter MA on |
+//| the last closed signal candle. +1 up, -1 down, 0 = gate off.      |
+//+------------------------------------------------------------------+
+int RM_MATrend()
+  {
+   if(!InpRecoveryMATrend)
+      return 0;
+   return RM_MATrendRaw();
+  }
+
+int RM_MATrendRaw()
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      return 0;
+   double slow = iMA(g_sym, InpSignalTF, InpSlowPeriod, 0, InpSlowMethod, InpSlowPrice, 1);
+   double flt = iMA(g_sym, InpSignalTF, InpFilterPeriod, 0, InpFilterMethod, InpFilterPrice, 1);
+   if(slow <= 0.0 || flt <= 0.0)
+      return 0;
+   if(slow > flt) return 1;
+   if(slow < flt) return -1;
+   return 0;
+  }
+
 bool RM_SignalAllows(int dir, bool isFirst)
   {
+   int mt = RM_MATrend();
+   if(mt != 0 && mt != (dir == RM_BUY ? 1 : -1))
+      return false;                        // never add recovery orders against the main trend
    switch(InpSignalMode)
      {
       case RM_SIG_SIMPLE_GRID:     return true;

@@ -124,6 +124,8 @@ bool RM_ValidateInputs(string &err)
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
    // ---- account protection
+   if(InpCrossFinanceDDPct < 0.0)
+     { err = "cross-financing drawdown must be >= 0"; return false; }
    if(InpFreezeDDPct < 0.0 || InpFreezeDDPct > 100.0 || InpFreezeResumePct < 0.0)
      { err = "pause-new-trades drawdown must be 0 (off) .. 100 %"; return false; }
    if(InpFreezeDDPct > 0.0 && InpFreezeResumePct >= InpFreezeDDPct)
@@ -201,6 +203,7 @@ bool RM_ValidateInputs(string &err)
    g_cfg.overlapThreshold = InpOverlapThreshold;
    g_cfg.overlapCompare = InpOverlapCompare;
    g_cfg.matchedMain = InpLocking;
+   g_cfg.crossFinance = false;              // switched on under stress by RM_CrossFinanceActive()
    return true;
   }
 

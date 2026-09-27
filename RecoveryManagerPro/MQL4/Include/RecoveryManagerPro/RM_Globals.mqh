@@ -39,6 +39,7 @@ bool     g_chartsDone = false;
 bool     g_closeRequested = false;
 bool     g_launchNotified = false;
 long     g_lastEntryBar[2];             // per direction: bar open time of last entry
+long     g_basketStopUntil[2];          // per direction: no new recovery basket before this time
 int      g_highIndex[2];                // highest grid index used per direction
 int      g_planSeq = 0;
 int      g_reqSeq = 0;                  // unique order request tag
@@ -77,6 +78,7 @@ int      g_pendCount = 0;
 //--- runtime (not persisted)
 RM_Book    g_book;                      // authoritative snapshot for panel + planner
 RM_Totals  g_tot;
+double   g_normalLots = 0.0;
 RM_Plan    g_plan;                      // scratch plan
 RM_Plan    g_curGroup;                  // current-group preview
 RM_Plan    g_reducePreview;             // possible closures preview

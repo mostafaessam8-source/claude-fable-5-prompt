@@ -67,6 +67,17 @@ void RM_FreezeUpdate()
      }
   }
 
+//+------------------------------------------------------------------+
+//| Cross-basket financing is used under stress only: while new      |
+//| trades are paused or the account drawdown reaches its threshold. |
+//+------------------------------------------------------------------+
+bool RM_CrossFinanceActive()
+  {
+   if(!InpCrossFinance)
+      return false;
+   return g_frozen || RM_AccountDDPct() >= InpCrossFinanceDDPct;
+  }
+
 bool RM_FreezeActive(string &why)
   {
    RM_FreezeUpdate();
@@ -82,11 +93,46 @@ bool RM_FreezeActive(string &why)
 //| isHedge: lock orders reduce net exposure, so spread/session/daily |
 //| gates are skipped for them; margin is still checked.              |
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Lot scaling: in BALANCE lot mode the first recovery lot and the   |
+//| total-lots cap are "per InpNormalLotPerBalance of balance", like  |
+//| the normal lot, so every size grows and shrinks with the account. |
+//+------------------------------------------------------------------+
+double RM_BalanceScale()
+  {
+   if(InpNormalLotMode != RM_NLOT_BALANCE || InpNormalLotPerBalance <= 0.0 || AccountBalance() <= 0.0)
+      return 1.0;
+   return AccountBalance() / InpNormalLotPerBalance;
+  }
+
+double RM_RecFirstLot()    { return InpFirstLot * RM_BalanceScale(); }
+double RM_LotsCap()        { return InpMaxManagedLots * RM_BalanceScale(); }
+
+//+------------------------------------------------------------------+
+//| Open risk in lots: normal + managed orders, WITHOUT lock orders   |
+//| (a lock only hedges volume that is already counted).              |
+//+------------------------------------------------------------------+
+double RM_ExposureLots()   { return g_normalLots + g_tot.totalLots - g_tot.lockLots; }
+
+//+------------------------------------------------------------------+
+//| True when opening `lots` of `type` makes the managed net exposure |
+//| (BUY lots - SELL lots) smaller in absolute size.                  |
+//+------------------------------------------------------------------+
+bool RM_ReducesNetExposure(int type, double lots)
+  {
+   double net = (g_tot.mainBuyLots + g_tot.recBuyLots) - (g_tot.mainSellLots + g_tot.recSellLots);
+   double after = net + (type == RM_BUY ? lots : -lots);
+   return MathAbs(after) < MathAbs(net) - RM_EPS;
+  }
+
 bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
   {
+   // the drawdown pause and the total-lots cap stop NEW risk; an order that
+   // shrinks the net exposure is a hedge and is still allowed
+   bool reducing = InpPauseAllowsHedge && RM_ReducesNetExposure(type, lots);
    if(!isHedge)
      {
-      if(RM_FreezeActive(why))
+      if(!reducing && RM_FreezeActive(why))
          return true;
       if(RM_SpreadExceeds(InpMaxSpread, RM_RecUnit(), why))
          return true;
@@ -96,8 +142,8 @@ bool RM_NewExposureBlocked(int type, double lots, bool isHedge, string &why)
         { why = "outside entry session hours"; return true; }
       if(RM_DailyLocked())
         { why = "daily loss lockout (" + RM_Money(g_realizedDay) + " " + AccountCurrency() + ")"; return true; }
-      if(InpMaxManagedLots > 0.0 && g_tot.totalLots + lots > InpMaxManagedLots + RM_EPS)
-        { why = "max combined managed lots " + RM_Lots(InpMaxManagedLots) + " reached"; return true; }
+      if(!reducing && InpMaxManagedLots > 0.0 && RM_ExposureLots() + lots > RM_LotsCap() + RM_EPS)
+        { why = "max total lots " + RM_Lots(RM_LotsCap()) + " reached"; return true; }
      }
    ResetLastError();
    double freeAfter = AccountFreeMarginCheck(g_sym, type, lots);

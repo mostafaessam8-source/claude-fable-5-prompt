@@ -124,6 +124,8 @@ void RM_SaveState()
    FileWriteString(h, "NOTIFIED=" + RM_B(g_launchNotified) + "\r\n");
    FileWriteString(h, "LEB0=" + IntegerToString(g_lastEntryBar[0]) + "\r\n");
    FileWriteString(h, "LEB1=" + IntegerToString(g_lastEntryBar[1]) + "\r\n");
+   FileWriteString(h, "BSTOP0=" + IntegerToString(g_basketStopUntil[0]) + "\r\n");
+   FileWriteString(h, "BSTOP1=" + IntegerToString(g_basketStopUntil[1]) + "\r\n");
    FileWriteString(h, "HI0=" + IntegerToString(g_highIndex[0]) + "\r\n");
    FileWriteString(h, "HI1=" + IntegerToString(g_highIndex[1]) + "\r\n");
    FileWriteString(h, "PLANSEQ=" + IntegerToString(g_planSeq) + "\r\n");
@@ -227,6 +229,8 @@ bool RM_LoadState()
       else if(key == "NOTIFIED") g_launchNotified = (val == "1");
       else if(key == "LEB0") g_lastEntryBar[0] = StringToInteger(val);
       else if(key == "LEB1") g_lastEntryBar[1] = StringToInteger(val);
+      else if(key == "BSTOP0") g_basketStopUntil[0] = StringToInteger(val);
+      else if(key == "BSTOP1") g_basketStopUntil[1] = StringToInteger(val);
       else if(key == "HI0") g_highIndex[0] = (int)StringToInteger(val);
       else if(key == "HI1") g_highIndex[1] = (int)StringToInteger(val);
       else if(key == "PLANSEQ") g_planSeq = (int)StringToInteger(val);

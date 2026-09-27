@@ -1,5 +1,26 @@
 # Changes
 
+## Tester report: XAUUSD stopped opening trades (recovery stuck at 36.8 % drawdown)
+
+Causes found:
+
+1. **Fixed 0.50 total-lots cap.** It did not scale with the balance-based lots, and lock orders counted toward it. With 0.60 lots managed, every new order was refused.
+2. **Account-drawdown pause.** It blocked all new orders while the basket kept losing.
+3. **Recovery grid averaging against a strong trend.** Four SELL orders reached -16,630 with no limit below the 50 % emergency.
+4. **Lot below the broker minimum.** Balance-scaled lots could drop below it after a loss (for example 0.009), which stopped every entry for good.
+
+Changes:
+
+- `InpMaxManagedLots` (0.10), `InpFirstLot` and `InpMaxRecoveryLot` are per 1,000 of balance in balance lot mode. Exposure excludes lock orders.
+- Balance-scaled lots are floored at the broker minimum.
+- New visible setting **`InpRecBasketStopPct` = 20 %**: a recovery basket at that loss is closed, and its direction waits `InpEmergencyCooldownBars`.
+- Cross-basket financing (`InpCrossFinance`, active under stress only): a winning group's surplus above target also cuts the worst losing opposite recovery orders. It is a pure planner function with calculation tests.
+- Optional, off by default after simulation (both made the choppy path worse): `InpPauseAllowsHedge` and `InpRecoveryMATrend`.
+- Scenarios:
+  - S47 and S48: a long gold rally on 10,000. Previous rules: 50 % emergency, balance 4,950.78. New: no emergency, balance 8,082.60 (equity 6,310.00 with a cycle still open).
+  - S45 (choppy) is unchanged at 1,201.60.
+  - These paths are synthetic, not a forecast.
+
 ## Restructure: 25 clear settings, no stop at the first loss
 
 - **Settings.** The input window shows 25 settings in 7 numbered groups (README section 0). All other inputs are advanced and hidden (`ADV`). Uncomment `#define RMP_SHOW_ADVANCED` to show them.

@@ -73,6 +73,7 @@ string RM_PlanKindName(int k)
       case RM_PLAN_NORMAL_OVERLAP:   return "NORMAL_OVERLAP";
       case RM_PLAN_NORMAL_CLOSE:     return "NORMAL_CLOSE";
       case RM_PLAN_NORMAL_EMERGENCY: return "NORMAL_EMERGENCY";
+      case RM_PLAN_BASKET_STOP:      return "BASKET_STOP";
      }
    return "NONE";
   }
