@@ -9,6 +9,7 @@ A reference collection of the **Claude Fable 5 system prompt**, plus cleaned-up,
 | [`PROMPT_fable5.md`](PROMPT_fable5.md) | The **original** Claude Fable 5 system prompt, kept intact for reference. |
 | [`PROMPT.md`](PROMPT.md) | A **generalized, vendor-neutral** rewrite (English) — adapted for use with any assistant or model. |
 | [`PROMPT.zh.md`](PROMPT.zh.md) | The same generalized prompt, **translated into Chinese (简体中文)**. |
+| [`RecoveryManagerPro/`](RecoveryManagerPro/README.md) | **Recovery Manager Pro**, an independent MetaTrader 4 recovery-manager Expert Advisor (MQL4 source, presets, docs and tests). |
 
 The original prompt is product-specific to Claude/Anthropic. The two generalized versions strip out the brand- and platform-specific details so you can reuse the underlying behavior, safety, and formatting guidance in your own chatbot or agent.
 

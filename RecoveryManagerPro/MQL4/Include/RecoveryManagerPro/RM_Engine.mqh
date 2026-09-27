@@ -176,27 +176,27 @@ void RM_Engine()
    // ---- state transition
    double lv, lres; int ldir;
    bool gap = RM_LockGap(lv, ldir, lres);
-   RM_StateInput in;
-   in.state = g_state;
-   in.hasManaged = (g_tot.totalCnt > 0);
-   in.hasMain = (RM_MainCount() > 0);
-   in.launchDone = g_launchDone;
-   in.launchTriggered = RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
+   RM_StateInput si;
+   si.state = g_state;
+   si.hasManaged = (g_tot.totalCnt > 0);
+   si.hasMain = (RM_MainCount() > 0);
+   si.launchDone = g_launchDone;
+   si.launchTriggered = RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
                                            InpLaunchDrawdown, g_tot.origCnt > 0);
-   in.prepDone = g_prepDone;
-   in.lockingEnabled = InpLocking;
-   in.lockDone = g_lockDone;
-   in.mainImbalanced = gap;
-   in.relockOnImbalance = InpRelockOnImbalance;
-   in.journalOpen = RM_JournalOpen();
-   in.closeRequested = g_closeRequested;
-   in.pauseRequested = g_pauseRequested;
-   in.resumeRequested = g_resumeRequested;
-   in.errorCondition = g_errorCondition && !g_resumeRequested;
-   in.stateBeforePause = g_stateBeforePause;
+   si.prepDone = g_prepDone;
+   si.lockingEnabled = InpLocking;
+   si.lockDone = g_lockDone;
+   si.mainImbalanced = gap;
+   si.relockOnImbalance = InpRelockOnImbalance;
+   si.journalOpen = RM_JournalOpen();
+   si.closeRequested = g_closeRequested;
+   si.pauseRequested = g_pauseRequested;
+   si.resumeRequested = g_resumeRequested;
+   si.errorCondition = g_errorCondition && !g_resumeRequested;
+   si.stateBeforePause = g_stateBeforePause;
    if(g_state == RM_ST_ERROR_HOLD && g_resumeRequested)
       RM_AcceptErrorResolution();
-   int ns = RM_NextState(in);
+   int ns = RM_NextState(si);
    g_pauseRequested = false;
    g_resumeRequested = false;
    if(ns != g_state)
@@ -634,7 +634,8 @@ bool RM_OpenRecovery(int dir, int idx, bool manual, double manualLot)
       RM_RegAdd(t, RM_ROLE_RECOVERY, dir, OrderLots(), idx, 0, OrderOpenPrice(), (long)OrderOpenTime());
    if(!manual)
       g_lastEntryBar[dir] = barId;
-   if(idx > g_highIndex[dir])
+   // a new basket (index 0) restarts the sequence; otherwise keep the highest index used
+   if(idx == 0 || idx > g_highIndex[dir])
       g_highIndex[dir] = idx;
    g_entriesThisTick++;
    RM_Audit(manual ? "MANUAL_RECOVERY" : "ENTRY", t, lot, raw,
@@ -757,6 +758,8 @@ bool RM_ActionCloseAll(string &msg)
   {
    if(g_tot.totalCnt == 0)
      { msg = "nothing to close"; return false; }
+   if(g_state == RM_ST_ERROR_HOLD)
+     { msg = "error hold: check the orders, press Resume, then Close All"; return false; }
    g_closeRequested = true;
    RM_Audit("OPERATOR", 0, g_tot.totalLots, g_tot.totalPL, "close all managed orders");
    RM_SaveState();

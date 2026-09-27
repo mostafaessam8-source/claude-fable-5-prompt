@@ -80,10 +80,75 @@ def build_tu(api_header, extra=""):
     return f'#include "{api_header}"\n#include "{shim}"\n' + src + "\n" + extra
 
 
+def preset_code():
+    """C++ that applies each MQL4/Presets/*.set to the EA inputs, validates it and runs
+    a short one-losing-order scenario in the simulator."""
+    pdir = os.path.join(ROOT, "MQL4", "Presets")
+    types = dict((n, t) for t, n in re.findall(r"^input\s+(\w+)\s+(Inp\w+)", open(MAIN).read(), re.M))
+    funcs, calls = [], []
+    for i, name in enumerate(sorted(os.listdir(pdir))):
+        if not name.endswith(".set"):
+            continue
+        lines = []
+        for raw in open(os.path.join(pdir, name)):
+            raw = raw.strip()
+            if not raw or raw.startswith(";") or "=" not in raw:
+                continue
+            k, v = raw.split("=", 1)
+            if types.get(k) != "string":
+                lines.append(f"   {k} = (decltype({k}))({v});")
+            else:
+                lines.append(f'   {k} = "{v}";')
+        funcs.append(f"static void Apply{i}()\n  {{\n" + "\n".join(lines) + "\n  }")
+        calls.append((name, f"Apply{i}"))
+    body = "\n".join(funcs) + "\n#include <sys/stat.h>\nint main(int argc, char **argv)\n  {\n"
+    body += "   int which = argc > 1 ? std::atoi(argv[1]) : -1; int rc = 0;\n"
+    for idx, (name, fn) in enumerate(calls):
+        body += f"""   if(which == {idx})
+     {{
+      {fn}();
+      string err = "";
+      bool ok = RM_ValidateInputs(err);
+      S.fileDir = "/tmp/rmp_preset_{idx}"; mkdir(S.fileDir.c_str(), 0777);
+      SimRecordBar();
+      bool init = ok && OnInit() == INIT_SUCCEEDED;
+      SimOpen(OP_BUY, 0.10, 0, "manual");
+      for(int t = 0; t < 300; t++) {{ S.now += 600; S.bid -= 0.00002; SimRecordBar(); OnTick(); }}
+      std::printf("%-24s validate=%s init=%s state=%s managed=%d lock=%.2f recovery=%d %s\\n", "{name}",
+                  ok ? "ok" : err.c_str(), init ? "ok" : "FAIL", RM_StateName(g_state).c_str(), g_tot.totalCnt,
+                  g_tot.lockLots, g_tot.recBuyCnt + g_tot.recSellCnt, g_status.c_str());
+      rc = (ok && init && g_state != RM_ST_ERROR_HOLD) ? 0 : 1;
+     }}
+"""
+    body += "   if(which < 0) std::printf(\"%d\\n\", " + str(len(calls)) + ");\n   return rc;\n  }\n"
+    return body
+
+
 def main():
     cxx = os.environ.get("CXX", "g++")
     flags = ["-std=c++17", "-Wall", "-Wno-unused-variable", "-Wno-unused-but-set-variable",
              "-Wno-unused-function", "-Wno-sign-compare"]
+    if "--presets" in sys.argv:
+        tu = build_tu(os.path.join(HERE, "mt4_sim.h"), preset_code())
+        fd, tmp = tempfile.mkstemp(suffix=".cpp")
+        with os.fdopen(fd, "w") as f:
+            f.write(tu)
+        exe = tmp[:-4]
+        r = subprocess.run([cxx] + flags + ["-O1", "-o", exe, tmp], capture_output=True, text=True)
+        sys.stderr.write(r.stderr)
+        if r.returncode != 0:
+            print("preset build: ERRORS (translation unit kept at", tmp + ")")
+            return 1
+        n = int(subprocess.run([exe], capture_output=True, text=True).stdout.strip())
+        bad = 0
+        for i in range(n):
+            p = subprocess.run([exe, str(i)], capture_output=True, text=True)
+            sys.stdout.write(p.stdout)
+            bad += (p.returncode != 0)
+        os.unlink(tmp)
+        os.unlink(exe)
+        print(f"presets: {n - bad}/{n} valid")
+        return 1 if bad else 0
     if "--sim" in sys.argv:
         # build and run the end-to-end scenarios against the in-memory broker
         test = os.path.abspath(sys.argv[sys.argv.index("--sim") + 1])

@@ -1,0 +1,95 @@
+; Recovery Manager Pro - Conservative_Demo.set
+; PROPOSED demo-account profile. Every value here is a proposal by this
+; project, not an observation from the reference video, and none of it is a
+; recommendation for live trading. Smaller lots, wider grid, hard caps,
+; emergency pause and readable fonts. Test on a demo account first.
+; If your terminal rejects comment lines, delete the lines starting with ';'.
+;
+InpRecoveryPriority=0
+InpScope=1
+InpMagicList=0
+InpExcludeMagics=
+InpAdoptPolicy=0
+InpFirstRecoveryTicket=0
+InpLocking=1
+InpDeleteSLTP=1
+; launch only after 5 % managed drawdown instead of instantly
+InpLaunchMode=1
+InpLaunchDrawdown=5.0
+InpOtherEAs=0
+InpAllowChartClosure=0
+InpCloseProfitable=1
+InpDeletePending=1
+InpPartialLots=0.01
+InpPartialTPPoints=30
+InpTPBasis=0
+InpOverlapThreshold=3
+InpOverlapCompare=0
+InpOverlapIndex=0
+InpBasketTP=0
+InpBasketTPMoney=25.0
+InpSignalMode=0
+InpRecoveryDirs=0
+InpFirstLot=0.01
+InpLotMultiplier=1.2
+InpGridStepPoints=300
+InpStepMultiplier=1.1
+InpOnePerBar=1
+InpMultidirectional=0
+InpMaxSlippage=30
+InpMaxSpread=50
+InpMaxRecoveryLot=0.10
+InpMaxRecoveryCount=10
+InpRecoveryMagic=9751421
+InpLockMagic=9751422
+InpLotRounding=0
+InpCapBehavior=0
+InpFirstDirection=0
+InpMaxEntriesPerEvent=1
+InpRelockOnImbalance=1
+InpFullCommission=0
+InpExtraCommPerLot=0.0
+InpExecBufferPoints=5.0
+InpNotify=1
+InpPanelOpensRecovery=0
+InpManualLot=0.01
+InpConfirmActions=1
+InpTheme=0
+InpAnnotations=1
+InpPanelSize=1
+InpFontSize=8
+InpShowCloseLine=1
+InpShowGridLevels=1
+InpDrawConnectors=1
+InpApplyChartColors=0
+InpPanelX=8
+InpPanelY=22
+InpShowAccountBlock=1
+InpTrendTF=0
+InpTrendAmplitude=4
+InpTrendFirst=0
+InpTrendNext=0
+InpExtIndicator=
+InpExtBuyBuffer=0
+InpExtSellBuffer=1
+InpMaxManagedLots=1.0
+InpMaxRecoveryLotsSum=0.50
+InpMinFreeMargin=0.0
+InpMinMarginLevel=300.0
+; emergency: pause automation at 15 % managed loss (still acts while paused)
+InpEmergencyMode=2
+InpEmergencyValue=15.0
+InpEmergencyAction=0
+InpEmergencyOverPause=1
+InpDailyLossLimit=0.0
+InpSessionStartHour=0
+InpSessionEndHour=24
+InpStaleQuoteSeconds=60
+InpAuditCsv=1
+InpInstanceId=1
+InpManualOriginalMagic=0
+InpEnableTestSeeds=0
+InpTestSeedScenario=0
+InpTestSeedLots=0.10
+InpTestSeedBar=5
+InpTestSeedMagic=12345

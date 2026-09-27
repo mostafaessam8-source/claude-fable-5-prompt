@@ -1,0 +1,111 @@
+; Recovery Manager Pro - Video_Reference.set
+; OBSERVED demonstration values transcribed from the reference video input
+; screens (AW Recovery EA v3.30, approx. 00:11-00:17), mapped onto this EA's
+; inputs. These are NOT recommended live settings.
+; Lines marked PROPOSED/ENHANCEMENT below are not visible in the video; they
+; are set to the value that adds the least behaviour beyond the reference.
+; If your terminal rejects comment lines, delete the lines starting with ';'.
+;
+; --- 1. Managed orders (VIDEO)
+InpRecoveryPriority=0
+InpScope=0
+InpMagicList=12345,54321,0
+; PROPOSED: not in the video
+InpExcludeMagics=
+InpAdoptPolicy=0
+; VIDEO: first ticket 0 = unused
+InpFirstRecoveryTicket=0
+; --- 2. Launch (VIDEO)
+InpLocking=1
+; VIDEO "Delete SL and TP: On" -> launch-only removal (documented choice)
+InpDeleteSLTP=1
+InpLaunchMode=0
+InpLaunchDrawdown=35.0
+InpOtherEAs=0
+InpAllowChartClosure=0
+InpCloseProfitable=1
+InpDeletePending=1
+; --- 3. Partial closing (VIDEO except basis/compare/index)
+InpPartialLots=0.03
+InpPartialTPPoints=30
+; PROPOSED conversion basis (not established by the video)
+InpTPBasis=0
+InpOverlapThreshold=2
+; UNRESOLVED in the reference: >= chosen, exposed for calibration
+InpOverlapCompare=0
+InpOverlapIndex=0
+InpBasketTP=0
+InpBasketTPMoney=25.0
+; --- 4. Recovery orders (VIDEO)
+InpSignalMode=0
+InpRecoveryDirs=0
+InpFirstLot=0.06
+InpLotMultiplier=1.3
+InpGridStepPoints=200
+InpStepMultiplier=1.0
+InpOnePerBar=1
+InpMultidirectional=0
+InpMaxSlippage=30
+InpMaxSpread=7500
+InpMaxRecoveryLot=100.0
+InpMaxRecoveryCount=100
+InpRecoveryMagic=9751421
+; PROPOSED (not in the video): separate lock magic, rounding, cap, first direction, gap guard
+InpLockMagic=9751422
+InpLotRounding=0
+InpCapBehavior=0
+InpFirstDirection=0
+InpMaxEntriesPerEvent=1
+InpRelockOnImbalance=1
+; --- 5. Costs (VIDEO: full commission false; others PROPOSED neutral)
+InpFullCommission=0
+InpExtraCommPerLot=0.0
+InpExecBufferPoints=0.0
+; --- 6. Notifications (VIDEO)
+InpNotify=0
+; --- 7. Panel and graphics (VIDEO; manual lot 0.10 observed later on the panel)
+InpPanelOpensRecovery=0
+InpManualLot=0.10
+InpConfirmActions=1
+InpTheme=0
+InpAnnotations=1
+InpPanelSize=1
+InpFontSize=6
+InpShowCloseLine=0
+InpShowGridLevels=1
+InpDrawConnectors=1
+InpApplyChartColors=1
+InpPanelX=8
+InpPanelY=22
+; ENHANCEMENT off to stay close to the reference layout
+InpShowAccountBlock=0
+; --- 8. Trend filter (VIDEO; inactive because the filter is Simple Grids)
+InpTrendTF=0
+InpTrendAmplitude=4
+InpTrendFirst=0
+InpTrendNext=0
+InpExtIndicator=
+InpExtBuyBuffer=0
+InpExtSellBuffer=1
+; --- 9. Risk ENHANCEMENTS: all off (not part of the reference)
+InpMaxManagedLots=0.0
+InpMaxRecoveryLotsSum=0.0
+InpMinFreeMargin=0.0
+InpMinMarginLevel=0.0
+InpEmergencyMode=0
+InpEmergencyValue=30.0
+InpEmergencyAction=0
+InpEmergencyOverPause=1
+InpDailyLossLimit=0.0
+InpSessionStartHour=0
+InpSessionEndHour=24
+InpStaleQuoteSeconds=0
+InpAuditCsv=1
+InpInstanceId=1
+InpManualOriginalMagic=0
+; --- 10. Strategy Tester only (off)
+InpEnableTestSeeds=0
+InpTestSeedScenario=0
+InpTestSeedLots=0.10
+InpTestSeedBar=5
+InpTestSeedMagic=12345
