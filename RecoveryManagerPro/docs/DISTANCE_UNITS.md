@@ -117,11 +117,10 @@ When a recovery cycle launches, and when a normal basket opens, the unit price a
 
 ## Settings migration
 
-- `InpConfigVersion` is **0 by default**. An old `.set` file has no such key, so it is treated as **legacy**: all distance inputs keep their broker-point meaning and their exact previous spacing. The dashboard shows *LEGACY* and a notice goes to the log. Scenario S42 covers this.
-- At start, a **preview** is written to the log and to `MQL4/Files/RecoveryManagerPro/<symbol>_units_v2_preview.set`. It lists each distance input converted with `NewInput = OldInput × OldPoint / NewUnitPrice`, which keeps every original price distance. Integer maximum limits (spread, slippage) are floored. Nothing is applied automatically: review the file, then load it over your settings.
-- The shipped presets were explicitly migrated to version 2. They were written for 5-digit Forex, where one standardized point equals one broker point, so no price distance changed.
-
-**Trade-off to know:** MT4 cannot tell a fresh attach from an old `.set` file that simply lacks the new keys. Keeping legacy behaviour as the default is what avoids silently reinterpreting old files, so a fresh attach also starts in legacy mode until you set `InpConfigVersion=2` or load a v2 preset.
+- **`InpConfigVersion` is 2 by default** (the built-in defaults equal `Three_MA_With_Recovery.set`), so distance inputs use `InpDistanceUnitMode` (standardized points by default).
+- **Old `.set` files** written before this change contain no `InpConfigVersion` key, so MT4 loads them with the default 2, and their distances are then read as standardized points. That is identical for 5-digit Forex and 3-digit JPY, where one standardized point equals one broker point. It is **10× larger** for 4-digit Forex and for 2- or 3-digit gold. To keep an old file's exact previous spacing, add `InpConfigVersion=0` to it: it is then treated as **legacy** (broker points, *LEGACY* chip, log notice). Scenario S42 covers this.
+- For a legacy configuration a **preview** is written at start, to the log and to `MQL4/Files/RecoveryManagerPro/<symbol>_units_v2_preview.set`. It lists each distance input converted with `NewInput = OldInput × OldPoint / NewUnitPrice`, which keeps every original price distance. Integer maximum limits (spread, slippage) are floored. Nothing is applied automatically: review the file, then load it over your settings.
+- The shipped presets are version 2. They were written for 5-digit Forex, so no price distance changed.
 
 ## Dashboard: panel E "Distance units"
 

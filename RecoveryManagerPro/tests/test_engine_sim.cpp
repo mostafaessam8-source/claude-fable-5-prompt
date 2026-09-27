@@ -9,6 +9,69 @@
 #include <sys/stat.h>
 
 static int s_fail = 0, s_pass = 0;
+// The scenarios below were written against the pre-2026-09 defaults (RECOVERY_ONLY,
+// legacy broker points, ...). The EA defaults now equal Three_MA_With_Recovery.set;
+// restore the previous values so every scenario keeps testing what it was written for.
+
+// copies of the EA's built-in defaults (taken before any scenario changes them)
+static const auto kNew_InpLaunchDrawdown = InpLaunchDrawdown;
+static const auto kNew_InpCloseProfitable = InpCloseProfitable;
+static const auto kNew_InpOverlapThreshold = InpOverlapThreshold;
+static const auto kNew_InpStepMultiplier = InpStepMultiplier;
+static const auto kNew_InpMaxRecoveryLot = InpMaxRecoveryLot;
+static const auto kNew_InpMaxRecoveryCount = InpMaxRecoveryCount;
+static const auto kNew_InpExecBufferPoints = InpExecBufferPoints;
+static const auto kNew_InpNotify = InpNotify;
+static const auto kNew_InpManualLot = InpManualLot;
+static const auto kNew_InpShowCloseLine = InpShowCloseLine;
+static const auto kNew_InpMaxManagedLots = InpMaxManagedLots;
+static const auto kNew_InpMaxRecoveryLotsSum = InpMaxRecoveryLotsSum;
+static const auto kNew_InpMinMarginLevel = InpMinMarginLevel;
+static const auto kNew_InpEmergencyMode = InpEmergencyMode;
+static const auto kNew_InpEmergencyValue = InpEmergencyValue;
+static const auto kNew_InpEmergencyAction = InpEmergencyAction;
+static const auto kNew_InpStaleQuoteSeconds = InpStaleQuoteSeconds;
+static const auto kNew_InpOperatingMode = InpOperatingMode;
+static const auto kNew_InpNormalAveraging = InpNormalAveraging;
+static const auto kNew_InpNormalMaxPerDir = InpNormalMaxPerDir;
+static const auto kNew_InpNormalMaxLots = InpNormalMaxLots;
+static const auto kNew_InpConfigVersion = InpConfigVersion;
+static void BuiltInDefaults()
+  {
+   InpLaunchDrawdown = kNew_InpLaunchDrawdown;
+   InpCloseProfitable = kNew_InpCloseProfitable;
+   InpOverlapThreshold = kNew_InpOverlapThreshold;
+   InpStepMultiplier = kNew_InpStepMultiplier;
+   InpMaxRecoveryLot = kNew_InpMaxRecoveryLot;
+   InpMaxRecoveryCount = kNew_InpMaxRecoveryCount;
+   InpExecBufferPoints = kNew_InpExecBufferPoints;
+   InpNotify = kNew_InpNotify;
+   InpManualLot = kNew_InpManualLot;
+   InpShowCloseLine = kNew_InpShowCloseLine;
+   InpMaxManagedLots = kNew_InpMaxManagedLots;
+   InpMaxRecoveryLotsSum = kNew_InpMaxRecoveryLotsSum;
+   InpMinMarginLevel = kNew_InpMinMarginLevel;
+   InpEmergencyMode = kNew_InpEmergencyMode;
+   InpEmergencyValue = kNew_InpEmergencyValue;
+   InpEmergencyAction = kNew_InpEmergencyAction;
+   InpStaleQuoteSeconds = kNew_InpStaleQuoteSeconds;
+   InpOperatingMode = kNew_InpOperatingMode;
+   InpNormalAveraging = kNew_InpNormalAveraging;
+   InpNormalMaxPerDir = kNew_InpNormalMaxPerDir;
+   InpNormalMaxLots = kNew_InpNormalMaxLots;
+   InpConfigVersion = kNew_InpConfigVersion;
+  }
+
+static void PreviousDefaults()
+  {
+   InpLaunchDrawdown = 35.0; InpCloseProfitable = true; InpOverlapThreshold = 2; InpStepMultiplier = 1.0;
+   InpMaxRecoveryLot = 1.0; InpMaxRecoveryCount = 12; InpExecBufferPoints = 0.0; InpNotify = RM_NOTIFY_OFF;
+   InpManualLot = 0.10; InpShowCloseLine = false; InpMaxManagedLots = 0.0; InpMaxRecoveryLotsSum = 0.0;
+   InpMinMarginLevel = 200.0; InpEmergencyMode = RM_EMG_OFF; InpEmergencyValue = 30.0;
+   InpEmergencyAction = RM_EMGA_PAUSE; InpStaleQuoteSeconds = 0; InpOperatingMode = RM_OP_RECOVERY_ONLY;
+   InpNormalAveraging = false; InpNormalMaxPerDir = 5; InpNormalMaxLots = 1.0; InpConfigVersion = 0;
+  }
+
 #define EXPECT(c) do { if(c) s_pass++; else { s_fail++; std::printf("    FAIL line %d: %s\n", __LINE__, #c); } } while(0)
 
 static void Tick(double bid, int secs = 60)
@@ -1253,6 +1316,39 @@ static void S43_SymbolVariantsResolve()
    EXPECT(std::fabs(AlignPriceToTick("USDJPY", 150.123, RM_ALIGN_DOWN) - 150.12) < 1e-9);
   }
 
+static void S44_BuiltInDefaultsTradeGold()
+  {
+   BuiltInDefaults();                                        // exactly what a fresh attach uses
+   SetGold(3);
+   S.spreadPts = 90;                                         // 0.09
+   S.balance = 1000.0;
+   EXPECT(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY && InpConfigVersion == 2);
+   EXPECT(Init());
+   EXPECT(g_dist.valid && g_dist.profile == RM_PROF_XAUUSD && std::fabs(g_dist.unitPrice - 0.01) < 1e-12);
+   // long decline under the SMA-100 filter, then a sustained rise: a filtered BUY crossover
+   for(int i = 0; i < 140; i++) Candle(S.bid - 1.0);
+   int opened = 0;
+   for(int i = 0; i < 160 && opened == 0; i++)
+     {
+      Candle(S.bid + 1.5);
+      opened = LogCount("NORMAL_ENTRY");
+     }
+   EXPECT(opened >= 1);
+   // with the default 10 % trigger and 25 % emergency limit on a 1,000 balance the long
+   // decline runs the whole cycle: averaging -> handover once -> emergency close -> halted
+   for(int i = 0; i < 60; i++) Candle(S.bid - 1.0);
+   EXPECT(LogCount("RMP HANDOVER ") <= 1);
+   if(LogCount("RMP HANDOVER ") == 1 && LogCount("CYCLE_END") == 1)
+     {
+      EXPECT(g_cycleOutcome == RM_OUT_EMERGENCY && g_normalHalted);
+      EXPECT(g_ctl == RM_CTL_COOLDOWN);
+     }
+   const SimOrder *o = FirstNormalAfter(0);
+   EXPECT(o != nullptr && std::fabs(o->lots - 0.01) < 1e-9);  // default initial lot
+   RM_DashRefresh(true);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "U_CHIPT", OBJPROP_TEXT) == "OK");
+  }
+
 //====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
@@ -1301,6 +1397,7 @@ static Scenario g_scen[] = {
    {"S41 units: non-standard tick size gives executable targets", S41_NonStandardTickSize},
    {"S42 units: legacy config keeps broker points + migration preview", S42_LegacyMigrationPreview},
    {"S43 units: suffix / alias / metadata resolution in the EA", S43_SymbolVariantsResolve},
+   {"S44 built-in defaults (= Three_MA_With_Recovery.set) trade 3-digit gold", S44_BuiltInDefaultsTradeGold},
 };
 
 int main(int argc, char **argv)
@@ -1312,6 +1409,7 @@ int main(int argc, char **argv)
    S.fileDir = string("/tmp/rmp_sim_files_") + std::to_string(i);
    Clean();
    if(argc > 2) S.verbose = true;
+   PreviousDefaults();
    g_scen[i].fn();
    std::printf("%-78s %s (%d checks)\n", g_scen[i].name, s_fail ? "FAIL" : "ok", s_pass + s_fail);
    Clean();

@@ -1,5 +1,13 @@
 # Changes
 
+## Built-in defaults = Three_MA_With_Recovery.set
+
+The 22 input defaults that differed now equal the example preset. That includes `InpOperatingMode = THREE_MA_WITH_RECOVERY`, `InpConfigVersion = 2`, a 10 % handover threshold, the 25 % emergency close, normal averaging on, and the lot and exposure caps. A fresh attach therefore trades the Three-MA strategy with standardized distance units.
+
+- Old `.set` files without `InpConfigVersion` are now read as version 2. Add `InpConfigVersion=0` to keep their previous broker-point spacing (see `docs/DISTANCE_UNITS.md`).
+- `tests/check_defaults.py` fails the build if the defaults and the preset ever differ.
+- The earlier simulator scenarios restore their original defaults. New scenario S44 runs the untouched defaults on 3-digit gold with a 1,000 balance: entry → averaging → handover → emergency close → halted.
+
 ## Distance units across symbols and quote precision
 
 **Defect.** Distance inputs were converted as `input × chart Point`, so the same input meant ten times less price distance on 3-digit XAUUSD or 4-digit Forex. The error also reached point-based money targets, the spread and slippage limits, and order prices, which were not aligned to the tick size.

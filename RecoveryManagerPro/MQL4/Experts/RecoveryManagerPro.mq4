@@ -39,17 +39,17 @@ input string             S_Launch              = "===== 2. Launch =====";
 input bool               InpLocking            = true;                 // Lock (hedge) the main position
 input ENUM_RM_SLTP       InpDeleteSLTP         = RM_SLTP_LAUNCH_ONLY;  // Delete SL and TP of managed orders
 input ENUM_RM_LAUNCH     InpLaunchMode         = RM_LAUNCH_INSTANT;    // Launch mode
-input double             InpLaunchDrawdown     = 35.0;                 // Launch drawdown [% of balance or account currency]
+input double             InpLaunchDrawdown     = 10.0;                 // Launch drawdown [% of balance or account currency]
 input ENUM_RM_OTHER_EA   InpOtherEAs           = RM_OTHER_KEEP;        // Other EAs at launch (closes charts!)
 input bool               InpAllowChartClosure  = false;                // Operator enablement for chart closure
-input bool               InpCloseProfitable    = true;                 // Close profitable orders at launch (finance losers)
+input bool               InpCloseProfitable    = false;                 // Close profitable orders at launch (finance losers)
 input bool               InpDeletePending      = true;                 // Delete in-scope pending orders at launch
 
 input string             S_Partial             = "===== 3. Partial closing =====";
 input double             InpPartialLots        = 0.01;                 // Partial-close volume per main side [lots]
 input double             InpPartialTPPoints    = 30.0;                 // Partial-close TP [distance units, section 13]
 input ENUM_RM_TP_BASIS   InpTPBasis            = RM_TPB_RECOVERY_LOTS; // TP points-to-money lot basis (PROPOSED)
-input int                InpOverlapThreshold   = 2;                    // Overlap threshold [recovery orders, 0 = off]
+input int                InpOverlapThreshold   = 3;                    // Overlap threshold [recovery orders, 0 = off]
 input ENUM_RM_OVERLAP_CMP InpOverlapCompare    = RM_OVL_GE;            // Overlap comparison (UNRESOLVED in reference)
 input ENUM_RM_OVERLAP_INDEX InpOverlapIndex    = RM_OVIDX_RECOUNT;     // Grid index after overlap closure
 input bool               InpBasketTP           = false;                // Whole-basket TP enabled
@@ -61,13 +61,13 @@ input ENUM_RM_DIRS       InpRecoveryDirs       = RM_DIRS_BOTH;         // Allowe
 input double             InpFirstLot           = 0.01;                 // First recovery order volume [lots]
 input double             InpLotMultiplier      = 1.2;                  // Volume multiplier [x, >= 1]
 input double             InpGridStepPoints     = 300;                  // Recovery grid step [distance units, section 13]
-input double             InpStepMultiplier     = 1.0;                  // Step multiplier [x]
+input double             InpStepMultiplier     = 1.1;                  // Step multiplier [x]
 input bool               InpOnePerBar          = true;                 // One recovery order per bar
 input bool               InpMultidirectional   = false;                // Multidirectional recovery
 input int                InpMaxSlippage        = 30;                   // Maximum slippage [distance units, section 13]
 input int                InpMaxSpread          = 50;                   // Maximum spread for NEW exposure [distance units]
-input double             InpMaxRecoveryLot     = 1.0;                  // Maximum recovery order volume [lots]
-input int                InpMaxRecoveryCount   = 12;                   // Maximum recovery orders (both directions)
+input double             InpMaxRecoveryLot     = 0.10;                  // Maximum recovery order volume [lots]
+input int                InpMaxRecoveryCount   = 10;                   // Maximum recovery orders (both directions)
 input int                InpRecoveryMagic      = 9751421;              // Recovery magic number
 input int                InpLockMagic          = 9751422;              // Lock (hedge) magic number (PROPOSED)
 input ENUM_RM_LOT_ROUND  InpLotRounding        = RM_ROUND_DOWN;        // Final lot normalisation
@@ -79,20 +79,20 @@ input bool               InpRelockOnImbalance  = true;                 // Re-loc
 input string             S_Costs               = "===== 5. Costs =====";
 input bool               InpFullCommission     = false;                // Full commission calc (exit = booked again)
 input double             InpExtraCommPerLot    = 0.0;                  // Extra unbooked exit commission [money/lot]
-input double             InpExecBufferPoints   = 0.0;                  // Execution buffer [distance units per closed lot]
+input double             InpExecBufferPoints   = 5.0;                  // Execution buffer [distance units per closed lot]
 
 input string             S_Notify              = "===== 6. Notifications =====";
-input ENUM_RM_NOTIFY     InpNotify             = RM_NOTIFY_OFF;        // Launch / end notifications
+input ENUM_RM_NOTIFY     InpNotify             = RM_NOTIFY_ALERT;        // Launch / end notifications
 
 input string             S_Graphics            = "===== 7. Panel and graphics =====";
 input bool               InpPanelOpensRecovery = false;                // Manual panel default role: true = RECOVERY
-input double             InpManualLot          = 0.10;                 // Manual panel initial volume [lots]
+input double             InpManualLot          = 0.01;                 // Manual panel initial volume [lots]
 input bool               InpConfirmActions     = true;                 // Two-click confirmation for destructive actions
 input ENUM_RM_THEME      InpTheme              = RM_THEME_DARK;        // Panel theme
 input ENUM_RM_ANNOT      InpAnnotations        = RM_ANNOT_CHART;       // Closed-profit annotations
 input ENUM_RM_PANEL_SIZE InpPanelSize          = RM_PANEL_NORMAL;      // Panel size
 input int                InpFontSize           = 8;                    // Font size [5..14] (reference: 6)
-input bool               InpShowCloseLine      = false;                // Possible-close-zone line
+input bool               InpShowCloseLine      = true;                // Possible-close-zone line
 input bool               InpShowGridLevels     = true;                 // Next recovery entry levels
 input bool               InpDrawConnectors     = true;                 // Dotted open->close connectors
 input bool               InpApplyChartColors   = false;                // Black chart / green candles scheme
@@ -110,18 +110,18 @@ input int                InpExtBuyBuffer       = 0;                    // Extern
 input int                InpExtSellBuffer      = 1;                    // External adapter: SELL buffer index
 
 input string             S_Risk                = "===== 9. Risk (ENHANCEMENTS) =====";
-input double             InpMaxManagedLots     = 0.0;                  // Max combined managed lots [0 = off]
-input double             InpMaxRecoveryLotsSum = 0.0;                  // Max total recovery lots [0 = off]
+input double             InpMaxManagedLots     = 1.0;                  // Max combined managed lots [0 = off]
+input double             InpMaxRecoveryLotsSum = 0.50;                  // Max total recovery lots [0 = off]
 input double             InpMinFreeMargin      = 0.0;                  // Min free margin for new entries [money]
-input double             InpMinMarginLevel     = 200.0;                // Min margin level for new entries [%]
-input ENUM_RM_EMERGENCY  InpEmergencyMode      = RM_EMG_OFF;           // Emergency stop measure
-input double             InpEmergencyValue     = 30.0;                 // Emergency threshold [money or %]
-input ENUM_RM_EMG_ACTION InpEmergencyAction    = RM_EMGA_PAUSE;        // Emergency action
+input double             InpMinMarginLevel     = 300.0;                // Min margin level for new entries [%]
+input ENUM_RM_EMERGENCY  InpEmergencyMode      = RM_EMG_PERCENT;           // Emergency stop measure
+input double             InpEmergencyValue     = 25.0;                 // Emergency threshold [money or %]
+input ENUM_RM_EMG_ACTION InpEmergencyAction    = RM_EMGA_CLOSE_ALL;        // Emergency action
 input bool               InpEmergencyOverPause = true;                 // Emergency also acts while paused
 input double             InpDailyLossLimit     = 0.0;                  // Daily realised loss lockout [money, 0 = off]
 input int                InpSessionStartHour   = 0;                    // New entries from hour [server, 0-23]
 input int                InpSessionEndHour     = 24;                   // New entries until hour [server, 1-24]
-input int                InpStaleQuoteSeconds  = 0;                    // Block entries if last quote older [s, 0 = off]
+input int                InpStaleQuoteSeconds  = 60;                    // Block entries if last quote older [s, 0 = off]
 input bool               InpAuditCsv           = true;                 // CSV audit export
 input int                InpInstanceId         = 1;                    // Strategy / instance id (lock key)
 input int                InpManualOriginalMagic= 0;                    // Magic for manual ORIGINAL orders
@@ -134,7 +134,7 @@ input int                InpTestSeedBar        = 5;                    // Open s
 input int                InpTestSeedMagic      = 12345;                // Seed magic number
 
 input string             S_OpMode              = "===== 11. Operating mode and recovery handover =====";
-input ENUM_RM_OPMODE     InpOperatingMode      = RM_OP_RECOVERY_ONLY;  // Operating mode
+input ENUM_RM_OPMODE     InpOperatingMode      = RM_OP_THREE_MA_WITH_RECOVERY;  // Operating mode
 input ENUM_RM_TRIG_MODE  InpRecoveryTriggerMode = RM_TRIG_PERCENT;     // Handover trigger unit (threshold = InpLaunchDrawdown)
 input ENUM_RM_TRIG_SCOPE InpRecoveryTriggerScope = RM_TSCOPE_MANAGED;  // Handover trigger scope
 input bool               InpAutoResumeAfterRecovery = true;            // Resume normal trading automatically after a completed cycle
@@ -160,11 +160,11 @@ input bool               InpNormalOneBasket    = true;                 // Ignore
 input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initial lot: fixed or balance-based
 input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
 input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
-input bool               InpNormalAveraging    = false;                // Normal averaging enabled
+input bool               InpNormalAveraging    = true;                // Normal averaging enabled
 input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [distance units]
 input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
-input int                InpNormalMaxPerDir    = 5;                    // Maximum normal orders per direction
-input double             InpNormalMaxLots      = 1.0;                  // Maximum total normal exposure [lots, 0 = off]
+input int                InpNormalMaxPerDir    = 4;                    // Maximum normal orders per direction
+input double             InpNormalMaxLots      = 0.20;                  // Maximum total normal exposure [lots, 0 = off]
 input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [distance units, 0 = off]
 input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
 input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
@@ -173,7 +173,7 @@ input int                InpNormalMaxSpread    = 50;                   // Maximu
 input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [distance units]
 
 input string             S_Units               = "===== 13. Distance units (price-distance normalisation) =====";
-input int                InpConfigVersion      = 0;                    // Config version: 0/1 legacy = broker points, 2 = unit mode below
+input int                InpConfigVersion      = 2;                    // Config version: 2 = unit mode below; 0/1 = legacy broker points (old .set files: set 0)
 input ENUM_RM_DIST_MODE  InpDistanceUnitMode   = RM_DU_STANDARDIZED;   // Distance unit mode (used from config version 2)
 input double             InpCustomUnitPrice    = 0.0;                  // CUSTOM_UNIT: price value of one unit
 input string             InpSymbolProfileMap   = "GOLD:XAUUSD";        // Explicit aliases SYMBOL:PROFILE (FX, FXJPY, XAUUSD)
