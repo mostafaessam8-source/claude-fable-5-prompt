@@ -107,7 +107,8 @@ struct Sim
    bool verbose = false;
    std::vector<string> log;
    int closeCalls = 0, sendCalls = 0;
-   bool hideRemainderComment = false;   // broker that does not write "from #<ticket>"
+   bool hideRemainderComment = false;
+   int chartW = 1400, chartH = 800;   // broker that does not write "from #<ticket>"
   } S;
 
 inline double SimAsk() { return S.bid + S.spreadPts * S.point; }
@@ -381,7 +382,7 @@ inline long ChartNext(long) { return -1; }
 inline bool ChartClose(long) { return true; }
 inline string ChartSymbol(long) { return S.sym; }
 inline void ChartRedraw(long = 0) {}
-inline long ChartGetInteger(long, int prop, int = 0) { return prop == CHART_WIDTH_IN_PIXELS ? 1400 : (prop == CHART_HEIGHT_IN_PIXELS ? 800 : 0); }
+inline long ChartGetInteger(long, int prop, int = 0) { return prop == CHART_WIDTH_IN_PIXELS ? S.chartW : (prop == CHART_HEIGHT_IN_PIXELS ? S.chartH : 0); }
 inline int ChartPeriod(long) { return 60; }
 inline bool ChartSetInteger(long, int, long) { return true; }
 inline bool ChartTimePriceToXY(long, int, datetime, double, int &x, int &y) { x = 500; y = 300; return true; }

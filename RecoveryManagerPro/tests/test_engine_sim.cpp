@@ -551,6 +551,41 @@ static void S20_UnresolvedLineageHoldsThenResume()
    EXPECT(LogCount("LINEAGE_DROPPED") >= 1);
   }
 
+static bool OnScreen(const string &key)
+  {
+   string n = string(RM_DPFX) + key;
+   if(ObjectFind(0, n) < 0) return false;
+   long x = ObjectGetInteger(0, n, OBJPROP_XDISTANCE), y = ObjectGetInteger(0, n, OBJPROP_YDISTANCE);
+   long w = ObjectGetInteger(0, n, OBJPROP_XSIZE), h = ObjectGetInteger(0, n, OBJPROP_YSIZE);
+   return x >= 0 && y >= 0 && x + w <= S.chartW && y + h <= S.chartH;
+  }
+
+static void S21_ShortChartKeepsPanelsVisible()
+  {
+   S.chartW = 2000; S.chartH = 730;                         // user's screen: tall main panel, short chart
+   VideoInputs();
+   InpFontSize = 8; InpShowAccountBlock = true; InpConfirmActions = true;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(OnScreen("G_BG"));                                // current-group panel visible
+   EXPECT(OnScreen("C_BG"));                                // manual panel visible
+   Click("BUY");
+   EXPECT(g_pendingAct == RM_ACT_OPEN_BUY);
+   EXPECT(OnScreen("K_BG") && OnScreen("OK") && OnScreen("CANCEL"));
+   Click("SELL");                                           // replaces the unconfirmed BUY
+   EXPECT(g_pendingAct == RM_ACT_OPEN_SELL);
+   EXPECT(OnScreen("OK"));
+   Click("OK");
+   EXPECT(S.open.size() == 1 && S.open[0].type == OP_SELL);
+   // narrow chart: the box falls back under the main panel but stays on screen
+   OnDeinit(REASON_REMOVE);
+   S.chartW = 700; S.chartH = 730;
+   EXPECT(Init());
+   Tick(1.10000);
+   Click("BUY");
+   EXPECT(OnScreen("OK") && OnScreen("K_BG"));
+  }
+
 //====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
@@ -575,6 +610,7 @@ static Scenario g_scen[] = {
    {"S18 overlap closes first+last recovery orders and keeps the middle ones", S18_OverlapKeepsMiddleOrders},
    {"S19 whole-basket TP closes every role and ends the session", S19_WholeBasketTP},
    {"S20 unresolved partial-close lineage -> ERROR_HOLD -> operator resume", S20_UnresolvedLineageHoldsThenResume},
+   {"S21 short chart: confirmation box and panels stay on screen", S21_ShortChartKeepsPanelsVisible},
 };
 
 int main(int argc, char **argv)

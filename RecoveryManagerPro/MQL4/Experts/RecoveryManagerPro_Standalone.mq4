@@ -4831,7 +4831,13 @@ void RM_BuildGroup(int chartH)
    int w = g_gw, rh = g_rh;
    int h = 10 * rh + 12;
    int x = 8;
-   int y = (int)MathMax(g_py + g_panelRect[0][3] + 8, chartH - h - 8);
+   int y = chartH - h - 8;
+   // not enough room under a tall main panel: place the group panel beside it
+   if(y < g_py + g_panelRect[0][3] + 8)
+     {
+      x = g_px + g_mw + 8;
+      y = (int)MathMax(g_py, chartH - h - 8);
+     }
    RM_Rect("G_BG", x, y, w, h, C_BG, C_BORDER);
    RM_Rect("G_HEAD", x, y, w, rh + 4, C_HEAD, C_BORDER);
    RM_Text("G_TITLE", x + 8, y + 3, "CURRENT GROUP", C_TEXT, false, true);
@@ -4887,9 +4893,17 @@ void RM_BuildManual(int chartW, int chartH)
 //+------------------------------------------------------------------+
 void RM_ShowConfirm()
   {
-   int x = g_px, w = g_mw, rh = g_rh;
-   int y = g_py + g_panelRect[0][3] + 4;
-   RM_Rect("K_BG", x, y, w, 4 * rh + 16, C_HEAD, C_AMBER);
+   int w = g_mw, rh = g_rh;
+   int h = 4 * rh + 16;
+   // always on screen: to the right of the main panel, else below it (clamped)
+   int x = g_px + g_mw + 8;
+   int y = g_py;
+   if(x + w > g_lastChartW - 60)
+     {
+      x = g_px;
+      y = (int)MathMin(g_py + g_panelRect[0][3] + 4, g_lastChartH - h - 8);
+     }
+   RM_Rect("K_BG", x, y, w, h, C_HEAD, C_AMBER);
    RM_Text("K_T1", x + 8, y + 4, RM_Cut(g_pendingText1, 60), C_AMBER, false, true);
    RM_Text("K_T2", x + 8, y + 4 + rh, RM_Cut(g_pendingText2, 64), C_TEXT, false, false);
    RM_Text("K_T3", x + 8, y + 4 + 2 * rh, RM_Cut(g_pendingText3, 64), C_TEXT, false, false);
@@ -5078,7 +5092,7 @@ void RM_RefreshManual()
    RM_Set("ROLE", g_uiRecoveryRole ? "RECOVERY" : "ORIGINAL", g_uiRecoveryRole ? C_AMBER : C_ACCENT);
    RM_Set("C_TARGET", g_sym + " as " + (g_uiRecoveryRole ? "RECOVERY (magic " + IntegerToString(InpRecoveryMagic) + ")"
           : "ORIGINAL (magic " + IntegerToString(InpManualOriginalMagic) + ")"), C_DIM);
-   RM_Set("C_MSG", RM_Cut(g_uiMsg, 40), g_uiMsgClr == clrNONE ? C_DIM : g_uiMsgClr);
+   RM_Set("C_MSG", RM_Cut(g_uiMsg, (int)MathMax(30, (g_cw - 16) / (g_fs * 0.62))), g_uiMsgClr == clrNONE ? C_DIM : g_uiMsgClr);
   }
 
 void RM_UiMsg(string m, color c)
@@ -5249,7 +5263,10 @@ void RM_RequestAction(int act)
      }
    RM_PreparePending(act);
    if(InpConfirmActions)
+     {
       RM_ShowConfirm();
+      RM_UiMsg("press Confirm in the amber box", C_AMBER);
+     }
    else
       RM_ExecutePending();
   }
@@ -5287,10 +5304,7 @@ void RM_OnButton(string name)
    if(key == "OK")     { RM_ExecutePending(); return; }
    if(key == "CANCEL") { RM_HideConfirm(); RM_UiMsg("cancelled", C_DIM); return; }
    if(g_pendingAct != RM_ACT_NONE && (key == "CLOSEALL" || key == "REDUCE" || key == "GROUP" || key == "BUY" || key == "SELL"))
-     {
-      RM_UiMsg("confirm or cancel the pending action first", C_AMBER);
-      return;
-     }
+      RM_HideConfirm();                       // a new action replaces the unconfirmed one
    if(key == "STOP")
      {
       RM_ActionStopResume();
