@@ -54,6 +54,10 @@ The three "portable" headers contain no MT4 API calls, so the same files also co
 
 ## 2. Installation and compilation
 
+**Option A – single file (simplest).** Copy `MQL4/Experts/RecoveryManagerPro_Standalone.mq4` into `<Data Folder>/MQL4/Experts/` and compile it. It already contains every module, so no include folder is needed. It is generated from the modular sources by `tests/build_single_file.py`; edit the modular files, not this one.
+
+**Option B – modular sources.** Compiling `RecoveryManagerPro.mq4` on its own fails with "function not defined" / "declaration without type" errors unless step 2 below is done.
+
 1. Copy `MQL4/Experts/RecoveryManagerPro.mq4` into `<Data Folder>/MQL4/Experts/`.
 2. Copy the folder `MQL4/Include/RecoveryManagerPro/` into `<Data Folder>/MQL4/Include/`. The include path must be exactly `MQL4/Include/RecoveryManagerPro/RM_*.mqh`.
 3. Copy `MQL4/Presets/*.set` into `<Data Folder>/MQL4/Presets/` (optional).

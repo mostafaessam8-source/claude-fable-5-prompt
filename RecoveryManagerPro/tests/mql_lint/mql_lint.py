@@ -22,6 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 INC = os.path.join(ROOT, "MQL4", "Include")
 MAIN = os.path.join(ROOT, "MQL4", "Experts", "RecoveryManagerPro.mq4")
+if "--main" in sys.argv:        # e.g. --main MQL4/Experts/RecoveryManagerPro_Standalone.mq4
+    MAIN = os.path.abspath(sys.argv[sys.argv.index("--main") + 1])
 
 seen = set()
 
@@ -43,7 +45,7 @@ def inline(path):
             elif re.match(r'\s*#include\s+<stdlib.mqh>', line) or re.match(r'\s*#property\b', line):
                 continue
             else:
-                out.append(line.rstrip("\n"))
+                out.append(line.rstrip("\r\n"))
         if path.endswith("RM_Globals.mqh"):
             out.append("//@@PROTOTYPES@@")
     return "\n".join(out)
@@ -75,6 +77,10 @@ def prototypes(src):
 
 def build_tu(api_header, extra=""):
     src = transform(inline(MAIN))
+    if "//@@PROTOTYPES@@" not in src:
+        # standalone build: declare everything right after the inlined globals section
+        banner = "//==== inlined: Include/RecoveryManagerPro/RM_Log.mqh"
+        src = src.replace(banner, "//@@PROTOTYPES@@\n" + banner, 1)
     src = src.replace("//@@PROTOTYPES@@", prototypes(src))
     shim = os.path.join(ROOT, "tests", "mql4_shim.h")
     return f'#include "{api_header}"\n#include "{shim}"\n' + src + "\n" + extra

@@ -11,4 +11,9 @@ echo "== 1. calculation tests";  "$HERE/run_tests.sh" | tail -n 1 || rc=1
 echo "== 2. MQL4 lint (g++ -fsyntax-only)"; python3 "$HERE/mql_lint/mql_lint.py" || rc=1
 echo "== 3. simulator scenarios"; python3 "$HERE/mql_lint/mql_lint.py" --sim "$HERE/test_engine_sim.cpp" || rc=1
 echo "== 4. presets"; python3 "$HERE/mql_lint/mql_lint.py" --presets || rc=1
+echo "== 5. standalone single-file build (rebuilt, linted and simulated)"
+python3 "$HERE/build_single_file.py" || rc=1
+SA="$HERE/../MQL4/Experts/RecoveryManagerPro_Standalone.mq4"
+python3 "$HERE/mql_lint/mql_lint.py" --main "$SA" || rc=1
+python3 "$HERE/mql_lint/mql_lint.py" --main "$SA" --sim "$HERE/test_engine_sim.cpp" | tail -n 1 || rc=1
 exit $rc
