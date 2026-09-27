@@ -773,6 +773,39 @@ int       gTradesOpened[STRAT_COUNT];       // trades opened in this session per
 int       gWinsS[STRAT_COUNT+1];            // closed wins per strategy (+ manual)
 int       gLossS[STRAT_COUNT+1];            // closed losses per strategy (+ manual)
 double    gPLS[STRAT_COUNT+1];              // closed P/L per strategy (+ manual)
+
+// Diagnostics: why signals were (not) executed
+int       gDiagSignals = 0;
+int       gDiagOpened = 0;
+string    gDiagKey[];
+int       gDiagCnt[];
+bool      gSpreadWarned = false;
+
+void Diag(string reason)
+  {
+   int n = ArraySize(gDiagKey);
+   for(int i=0; i<n; i++)
+      if(gDiagKey[i]==reason)
+        {
+         gDiagCnt[i]++;
+         return;
+        }
+   ArrayResize(gDiagKey, n+1);
+   ArrayResize(gDiagCnt, n+1);
+   gDiagKey[n] = reason;
+   gDiagCnt[n] = 1;
+  }
+
+string DiagSummary()
+  {
+   string t = StringFormat("signals %d | opened %d", gDiagSignals, gDiagOpened);
+   int n = ArraySize(gDiagKey);
+   if(n>0)
+      t += " | not opened:";
+   for(int i=0; i<n; i++)
+      t += " " + gDiagKey[i] + " x" + IntegerToString(gDiagCnt[i]) + (i<n-1 ? "," : "");
+   return(t);
+  }
 datetime  gLastSignalTime = 0;
 
 // Strategy setups
@@ -2580,6 +2613,10 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    EventKillTimer();
+   Log("DIAGNOSTICS: " + DiagSummary());
+   for(int s=0; s<STRAT_COUNT; s++)
+      Log(StringFormat("DIAGNOSTICS %s: %s | trades opened %d | last state: %s", StratShort(s),
+                       gStratOn[s] ? "ON" : "OFF", gTradesOpened[s], gDetail[s]));
    if(DeleteObjectsOnExit || reason==REASON_REMOVE)
       DeleteByPrefix(PFX);
    else
@@ -2597,6 +2634,15 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   if(!gSpreadWarned && MaxSpreadPips>0 && SpreadPips()>MaxSpreadPips)
+     {
+      gSpreadWarned = true;
+      string w = StringFormat("WARNING: spread %.1f pips > MaxSpreadPips %.1f - every signal will be BLOCKED. "
+                              "Tester: set a fixed Spread (not 'Current' on weekends) or raise MaxSpreadPips.", SpreadPips(), MaxSpreadPips);
+      Log(w);
+      if(!IsTesting())
+         Alert(EA_NAME, " ", Symbol(), ": ", w);
+     }
    UpdateRiskTracking();
    ManageOpenTrades();
 
@@ -4300,6 +4346,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    if(KVCheck(gv) && (datetime)KVGet(gv)==key)
      {
       Log(StratShort(s) + ": duplicate signal ignored (setup already traded)");
+      Diag("duplicate");
       return(-1);
      }
    if(gSignalBar[s]==BarT(tf, 1) && gSignalBar[s]!=0)
@@ -4310,6 +4357,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
 
    // --- register the signal (dashboard + drawing + alerts)
    gSignalBar[s] = BarT(tf, 1);
+   gDiagSignals++;
    gLastSignal = sigTxt;
    gLastSignalTime = TimeCurrent();
    gLastSignalDir = dir;
@@ -4320,6 +4368,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
      {
       if(AlertSignalsWhenAutoOff)
          Notify("SIGNAL (auto trading OFF): " + sigTxt);
+      Diag("auto trading OFF");
       KVSet(gv, (double)key);
       return(-1);
      }
@@ -4329,27 +4378,32 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    if(sl<=0 || (dir>0 && sl>=price) || (dir<0 && sl<=price))
      {
       Log(StratShort(s) + ": invalid SL side - signal rejected. " + sigTxt);
+      Diag("invalid SL");
       return(-1);
      }
    if(tp<=0 || (dir>0 && tp<=price) || (dir<0 && tp>=price))
      {
       Log(StratShort(s) + ": invalid TP side - signal rejected. " + sigTxt);
+      Diag("invalid TP");
       return(-1);
      }
    if(risk<Pips(MinStopLossPips))
      {
       Log(StringFormat("%s: SL distance %.1f pips < MinStopLossPips %.1f - signal rejected", StratShort(s), risk/gPip, MinStopLossPips));
+      Diag("SL < MinStopLossPips");
       return(-1);
      }
    if(MaxStopLossPips>0 && risk>Pips(MaxStopLossPips))
      {
       Log(StringFormat("%s: SL distance %.1f pips > MaxStopLossPips %.1f - signal rejected", StratShort(s), risk/gPip, MaxStopLossPips));
+      Diag("SL > MaxStopLossPips");
       return(-1);
      }
 
    // --- temporary filters (setup kept)
    string why = "";
-   if(!IsTradeAllowed())
+   string tag = "";
+   if(!IsTesting() && !IsTradeAllowed())
       why = "terminal/EA trading not allowed";
    else
       if(gRiskBlock)
@@ -4373,6 +4427,22 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
       why = NewsBlockText();
    if(why!="")
      {
+      tag = why;
+      if(StringFind(why, "spread")==0)
+         tag = "spread > MaxSpreadPips";
+      else
+         if(StringFind(why, "max trades for")==0)
+            tag = "MaxTradesPerStrategy";
+         else
+            if(StringFind(why, "news")>=0)
+               tag = "news filter";
+            else
+               if(StringFind(why, "DAILY LOSS")>=0)
+                  tag = "daily loss limit";
+               else
+                  if(StringFind(why, "MAX DRAWDOWN")>=0)
+                     tag = "max drawdown";
+      Diag(tag);
       Log(StratShort(s) + ": signal blocked - " + why + ". " + sigTxt);
       Notify("Signal blocked (" + why + "): " + sigTxt);
       gSignalBar[s] = 0;   // allow a retry on a later candle
@@ -4384,6 +4454,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    if(lots<=0)
      {
       Log(StratShort(s) + ": lot calculation failed - signal rejected");
+      Diag("lot calculation");
       return(-1);
      }
    int type;
@@ -4394,6 +4465,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    if(!MarginOK(dir>0 ? OP_BUY : OP_SELL, lots))
      {
       Log(StratShort(s) + ": not enough free margin for " + D2S(lots) + " lots - signal rejected");
+      Diag("not enough margin");
       Notify("Not enough margin: " + sigTxt);
       return(-1);
      }
@@ -4405,6 +4477,7 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
       KVSet(gv, (double)key);
       if(s>=0 && s<STRAT_COUNT)
          gTradesOpened[s]++;
+      gDiagOpened++;
       Notify("OPENED #" + IntegerToString(ticket) + " " + D2S(lots) + " lots: " + sigTxt);
       return(ticket);
      }
@@ -4609,6 +4682,7 @@ int SendOrder(int type, double lots, double price, double sl, double tp, int mag
          if(MathAbs(px-mkt)<(MarketInfo(Symbol(), MODE_STOPLEVEL)+1)*Point)
            {
             Log("SendOrder: pending price too close to market (StopLevel) - not placed");
+            Diag("pending too close (StopLevel)");
             return(-1);
            }
         }
@@ -4616,6 +4690,7 @@ int SendOrder(int type, double lots, double price, double sl, double tp, int mag
       if(!FixStops(type, (type==OP_BUY ? Bid : (type==OP_SELL ? Ask : px)), s, t))
         {
          Log("SendOrder: SL/TP inside broker StopLevel and adjustment disabled - order rejected");
+         Diag("SL/TP inside StopLevel");
          return(-1);
         }
       int ticket;
@@ -4634,8 +4709,11 @@ int SendOrder(int type, double lots, double price, double sl, double tp, int mag
         }
       int err = GetLastError();
       Log(StringFormat("OrderSend failed (attempt %d/%d): error %d %s", attempt+1, MaxRetries+1, err, ErrorText(err)));
-      if(!IsTransientError(err))
+      if(!IsTransientError(err) || attempt==MaxRetries)
+        {
+         Diag("OrderSend error " + IntegerToString(err) + " " + ErrorText(err));
          break;
+        }
       Sleep(RetryDelayMs);
      }
    return(-1);
@@ -6694,6 +6772,9 @@ void UpdatePerfPanel()
          PerfLine("", d, PanelTextColor);
         }
      }
+   PerfLine("Diagnostics", DiagSummary(), ArraySize(gDiagKey)>0 ? ClrWarning : ClrInfo);
+   if(MaxSpreadPips>0 && SpreadPips()>MaxSpreadPips)
+      PerfLine("WARNING", StringFormat("spread %.1f pips > MaxSpreadPips %.1f - signals blocked", SpreadPips(), MaxSpreadPips), ClrWarning);
    if(gRiskBlock)
       PerfLine("WARNING", gRiskMsg, ClrWarning);
    else
@@ -6771,7 +6852,8 @@ void UpdateComment()
            "Auto Trading: " + autoTxt + "\n" +
            "Open trades: " + IntegerToString(n) + "\n" +
            "Floating P/L: " + Money(fl) + " " + AccountCurrency() + "\n" +
-           "Last signal: " + (gLastSignalTime>0 ? TimeToString(gLastSignalTime, TIME_DATE|TIME_MINUTES) + " " + gLastSignal : "none"));
+           "Last signal: " + (gLastSignalTime>0 ? TimeToString(gLastSignalTime, TIME_DATE|TIME_MINUTES) + " " + gLastSignal : "none") + "\n" +
+           "Diagnostics: " + DiagSummary());
   }
 
 void RefreshUI(bool force)
