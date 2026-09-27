@@ -208,6 +208,14 @@ def evm(ctx: ProjectContext, rows: list[ActRow]) -> dict:
                 if c.budget_cost > 0:
                     ev_on_current += 1
     res.update(BAC=bac, PV=pv, EV=ev, AC=ac if has_ac else None, added_budget=added_budget)
+    weightable = [r.bl for r in rows if r.bl is not None and not (r.bl.is_milestone or r.bl.is_loe or r.bl.is_wbs_summary)]
+    cov = sum(1 for b in weightable if b.budget_cost > 0) / len(weightable) if weightable else 0.0
+    res["cost_coverage"] = cov
+    res["cost_reliable"] = cov >= ctx.settings.weighting_coverage
+    if not res["cost_reliable"]:
+        res["notes"].append(
+            f"Baseline cost loading covers only {cov:.0%} of activities (threshold {ctx.settings.weighting_coverage:.0%}). "
+            "Cost-based EV / PV / SPI / CPI are shown for reference only and are not used on the KPI cards.")
     res["SV"] = ev - pv
     res["SPI"] = ev / pv if pv > 0 else None
     if ev_on_current:
@@ -231,7 +239,10 @@ def evm(ctx: ProjectContext, rows: list[ActRow]) -> dict:
 def spi_cpi_kpis(ctx: ProjectContext, rows: list[ActRow], prog: dict) -> tuple[KPI, KPI, dict]:
     e = evm(ctx, rows)
     keys = [r.key for r in rows if r.cur is not None or r.bl is not None]
-    if e.get("available") and e.get("SPI") is not None:
+    cost_ok = bool(e.get("available") and e.get("cost_reliable"))
+    cov_note = (f"Cost-based EV not used: baseline cost loading covers only {e.get('cost_coverage', 0):.0%} of activities."
+                if e.get("available") and not cost_ok else "")
+    if cost_ok and e.get("SPI") is not None:
         spi = e["SPI"]
         spi_k = KPI("spi", "SPI", spi, f"{spi:.2f}", GOOD if spi >= 1 else (WARN if spi >= 0.9 else BAD),
                     formula="SPI = EV / PV (cost-based Earned Value)",
@@ -242,18 +253,24 @@ def spi_cpi_kpis(ctx: ProjectContext, rows: list[ActRow], prog: dict) -> tuple[K
         spi = prog["actual"] / prog["planned"]
         spi_k = KPI("spi", "SPI", spi, f"{spi:.2f}", GOOD if spi >= 1 else (WARN if spi >= 0.9 else BAD),
                     formula="SPI (progress-based) = Actual Progress % / Planned Progress %",
-                    source="No baseline cost loading - schedule-progress SPI using the selected weighting",
+                    source=("No reliable baseline cost loading" if e.get("available") else "No baseline cost loading")
+                           + " - schedule-progress SPI using the selected weighting",
                     method=f"Measure {ctx.measure}; weighting {ctx.weighting}", keys=keys,
-                    notes=["This is a progress-based SPI, not a cost-based Earned Value SPI."])
+                    notes=["This is a progress-based SPI, not a cost-based Earned Value SPI."] + ([cov_note] if cov_note else []))
     else:
         spi_k = KPI.unavailable("spi", "SPI", "Planned progress is zero or unavailable at the Data Date.")
-    if e.get("available") and e.get("CPI") is not None:
+    if cost_ok and e.get("CPI") is not None:
         cpi = e["CPI"]
         cpi_k = KPI("cpi", "CPI", cpi, f"{cpi:.2f}", GOOD if cpi >= 1 else (WARN if cpi >= 0.9 else BAD),
                     formula="CPI = EV / AC", source="AC = Σ actual cost from TASKRSRC and PROJCOST (current XER)",
                     keys=keys, notes=list(e["notes"]), extra={"EV": e["EV"], "AC": e["AC"]})
     else:
-        reason = "Cost Data Not Available" if not e.get("available") else "Actual Cost Not Available"
+        if not e.get("available"):
+            reason = "Cost Data Not Available"
+        elif not cost_ok:
+            reason = f"Cost Loading Incomplete ({e.get('cost_coverage', 0):.0%} of activities)"
+        else:
+            reason = "Actual Cost Not Available"
         cpi_k = KPI.unavailable("cpi", "CPI", f"CPI = N/A - {reason}. CPI is never derived from schedule data.", "CPI = EV / AC")
         cpi_k.display = "N/A"
         cpi_k.extra["reason"] = reason
@@ -343,7 +360,7 @@ def critical_kpis(ctx: ProjectContext, rows: list[ActRow]) -> dict[str, KPI]:
         "crit_ms": KPI("crit_ms", "Critical Milestones", len(ms), str(len(ms)), NEUTRAL,
                        formula="Critical activities of milestone type", keys=[r.key for r in ms], **base),
         "path_float": KPI("path_float", "Total Float (Longest Path)", min_tf,
-                          "N/A" if min_tf is None else f"{min_tf:g} Days", BAD if (min_tf or 0) < 0 else NEUTRAL,
+                          "N/A" if min_tf is None else f"{min_tf:.1f} Days".replace(".0 Days", " Days"), BAD if (min_tf or 0) < 0 else NEUTRAL,
                           formula="Minimum Total Float of Longest Path activities", keys=[r.key for r in lp],
                           source=ci["longest_path_source"]),
     }

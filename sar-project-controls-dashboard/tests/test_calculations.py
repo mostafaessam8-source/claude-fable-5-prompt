@@ -138,3 +138,13 @@ def test_s_curve_consistent_with_kpis(demo_ctx):
     assert sc["planned"][-1] == pytest.approx(100.0, abs=0.01)
     planned = [p for p in sc["planned"] if p is not None]
     assert planned == sorted(planned)
+
+
+def test_partial_cost_loading_does_not_drive_spi_cpi(small):
+    """Only activity A is cost-loaded (50% coverage < 80%): SPI must be progress-based, CPI N/A."""
+    prog = {"MS-1": {"as": 0, "af": 0, "rem": 0, "pct": 100}, "A-1": {"as": 0, "af": None, "rem": 5, "pct": 50.0}}
+    ctx = small(progress=prog, dd=5, rate_b=0)
+    d = build(ctx)
+    assert d.evm["cost_reliable"] is False and d.evm["cost_coverage"] == pytest.approx(0.5)
+    assert "progress-based" in d.kpis["spi"].formula
+    assert d.kpis["cpi"].available is False and "Cost Loading Incomplete" in d.kpis["cpi"].notes[0]

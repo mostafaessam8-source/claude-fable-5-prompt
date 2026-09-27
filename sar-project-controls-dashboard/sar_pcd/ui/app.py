@@ -31,6 +31,40 @@ def setup_logging() -> str:
     return str(path)
 
 
+def apply_light_theme(app) -> None:
+    """Always use the SAR light theme, even when Windows is in dark mode.
+
+    Qt follows the Windows colour scheme by default; with dark mode the palette
+    turns black and popups / menus become unreadable under our light stylesheet.
+    """
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QColor, QPalette
+
+    from ..reporting import style as S
+    from .theme import QSS
+
+    try:  # Qt >= 6.8
+        app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+    except AttributeError:
+        pass
+    app.setStyle("Fusion")
+    pal = QPalette()
+    roles = {
+        QPalette.Window: S.PAGE_BG, QPalette.WindowText: S.TEXT, QPalette.Base: "#FFFFFF",
+        QPalette.AlternateBase: "#F6F8F9", QPalette.Text: S.TEXT, QPalette.Button: "#FFFFFF",
+        QPalette.ButtonText: S.TEXT, QPalette.BrightText: "#FFFFFF", QPalette.Highlight: "#CFE6EA",
+        QPalette.HighlightedText: S.TEXT, QPalette.ToolTipBase: S.SAR_BLACK, QPalette.ToolTipText: "#FFFFFF",
+        QPalette.PlaceholderText: S.TEXT_MUTED, QPalette.Link: S.SAR_BLUE, QPalette.Light: "#FFFFFF",
+        QPalette.Midlight: "#F0F2F4", QPalette.Mid: S.BORDER, QPalette.Dark: "#A0A8AE", QPalette.Shadow: "#6B7278",
+    }
+    for role, color in roles.items():
+        pal.setColor(QPalette.All, role, QColor(color))
+    for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText):
+        pal.setColor(QPalette.Disabled, role, QColor(S.TEXT_MUTED))
+    app.setPalette(pal)
+    app.setStyleSheet(QSS)
+
+
 def run(argv=None) -> int:
     log_path = setup_logging()
     os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "1")
@@ -51,8 +85,7 @@ def run(argv=None) -> int:
         icon = Path(__file__).resolve().parents[1] / "resources" / "app.ico"
     if icon.exists():
         app.setWindowIcon(QIcon(str(icon)))
-    app.setStyle("Fusion")
-    app.setStyleSheet(QSS)
+    apply_light_theme(app)
     win = MainWindow(log_path)
 
     def excepthook(t, v, tb):

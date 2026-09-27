@@ -46,5 +46,30 @@ QProgressBar {{ border: 1px solid {S.BORDER}; border-radius: 3px; text-align: ce
 QProgressBar::chunk {{ background: {S.SAR_BLUE}; }}
 QStatusBar {{ background: {S.CARD_BG}; color: {S.TEXT_2}; }}
 QScrollArea {{ border: none; background: transparent; }}
+QMenuBar {{ background: {S.CARD_BG}; color: {S.TEXT}; border-bottom: 1px solid {S.BORDER}; }}
+QMenuBar::item {{ background: transparent; padding: 4px 10px; }}
+QMenuBar::item:selected {{ background: #CFE6EA; color: {S.TEXT}; }}
+QMenu {{ background: #FFFFFF; color: {S.TEXT}; border: 1px solid {S.BORDER}; }}
+QMenu::item {{ padding: 5px 24px 5px 20px; }}
+QMenu::item:selected {{ background: #CFE6EA; color: {S.TEXT}; }}
+QMenu::item:disabled {{ color: {S.TEXT_MUTED}; }}
+QMenu::separator {{ height: 1px; background: {S.BORDER}; margin: 3px 6px; }}
+QComboBox {{ color: {S.TEXT}; }}
+QComboBox QAbstractItemView {{ background: #FFFFFF; color: {S.TEXT}; border: 1px solid {S.BORDER};
+    selection-background-color: #CFE6EA; selection-color: {S.TEXT}; outline: 0; }}
+QComboBox QAbstractItemView::item {{ min-height: 22px; padding: 2px 6px; color: {S.TEXT}; }}
+QDialog, QWizard, QMessageBox, QProgressDialog, QInputDialog, QFileDialog {{ background: {S.PAGE_BG}; color: {S.TEXT}; }}
+QWizard QWidget {{ color: {S.TEXT}; }}
+QLabel {{ color: {S.TEXT}; background: transparent; }}
+QListView, QListWidget, QTextBrowser, QTextEdit, QPlainTextEdit {{ background: #FFFFFF; color: {S.TEXT}; }}
+QTableView, QTreeView {{ color: {S.TEXT}; }}
+QCheckBox, QRadioButton, QGroupBox {{ color: {S.TEXT}; }}
+QGroupBox {{ border: 1px solid {S.BORDER}; border-radius: 4px; margin-top: 10px; padding-top: 8px; background: #FFFFFF; }}
+QGroupBox::title {{ subcontrol-origin: margin; left: 8px; padding: 0 4px; font-weight: 700; }}
+QScrollBar:vertical {{ background: #F0F2F4; width: 12px; }}
+QScrollBar::handle:vertical {{ background: #B9C3CC; border-radius: 5px; min-height: 24px; }}
+QScrollBar:horizontal {{ background: #F0F2F4; height: 12px; }}
+QScrollBar::handle:horizontal {{ background: #B9C3CC; border-radius: 5px; min-width: 24px; }}
+QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
 QToolTip {{ background: {S.SAR_BLACK}; color: white; border: none; padding: 4px; }}
 """
