@@ -251,6 +251,8 @@
 
   /* ----------------------------- boot ----------------------------------- */
   document.getElementById("menuToggle").addEventListener("click", function () { document.body.classList.toggle("nav-open"); });
+  document.getElementById("navBackdrop").addEventListener("click", function () { document.body.classList.remove("nav-open"); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") document.body.classList.remove("nav-open"); });
   window.addEventListener("hashchange", route);
   /** Navigate to a page with preset state, e.g. go("issues", { f: { code: ["0214"] } }). */
   function go(id, patch) {

@@ -60,7 +60,12 @@
    */
   function filterBar(ctx, defs, rows) {
     var st = ctx.state.f || (ctx.state.f = {});
-    var bar = add(ctx.view, '<div class="filters"></div>');
+    var bar = add(ctx.view, '<div class="filters collapsible' + (ctx.state.fOpen ? " open" : "") + '"></div>');
+    // Phones: the slicers fold away behind one button; active filters stay visible as chips.
+    var nActive = defs.reduce(function (n, d) { return n + ((st[d.key] || []).length ? 1 : 0); }, 0);
+    var tg = el('<button type="button" class="filters-toggle">⚲ Filters' + (nActive ? " <b>" + nActive + "</b>" : "") + (ctx.state.fOpen ? " ▴" : " ▾") + "</button>");
+    tg.addEventListener("click", function () { ctx.state.fOpen = !ctx.state.fOpen; bar.classList.toggle("open", ctx.state.fOpen); tg.innerHTML = tg.innerHTML.replace(/[▴▾]$/, ctx.state.fOpen ? "▴" : "▾"); });
+    bar.appendChild(tg);
     defs.forEach(function (d) {
       st[d.key] = st[d.key] || [];
       var opts = d.options, counts = null;

@@ -434,7 +434,10 @@
     return { beginAtZero: true, max: max, ticks: { callback: function (v) { return Math.round(v * 100) + "%"; } }, grid: { color: "rgba(200,201,199,.5)" }, border: { display: false } };
   }
   function shortLabel(n) {
-    return function (v) { var s = String(this.getLabelForValue(v)); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+    return function (v) {
+      var m = window.innerWidth < 600 ? Math.min(n, 16) : window.innerWidth < 900 ? Math.min(n, 24) : n; // narrower labels on phones
+      var s = String(this.getLabelForValue(v)); return s.length > m ? s.slice(0, m - 1) + "…" : s;
+    };
   }
   function catAxis() { return { grid: { display: false }, border: { color: C.gray }, ticks: { autoSkip: false } }; }
 
