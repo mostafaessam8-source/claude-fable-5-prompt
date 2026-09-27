@@ -156,6 +156,120 @@ enum ENUM_PRICE_UNIT
   };
 
 //+------------------------------------------------------------------+
+//| Enumerations - NEW video strategies (N1 / N2 / N3)               |
+//+------------------------------------------------------------------+
+enum StrategyMode
+  {
+   STRATEGY_NONE              = 0, // None of the new strategies
+   STRATEGY_1_FIBONACCI_50    = 1, // N1 Fibonacci 50% only
+   STRATEGY_2_LIQUIDITY_SWEEP = 2, // N2 Liquidity sweep only
+   STRATEGY_3_VOLUME_PROFILE  = 3, // N3 Volume profile only
+   STRATEGY_1_AND_2           = 4, // N1 + N2
+   STRATEGY_1_AND_3           = 5, // N1 + N3
+   STRATEGY_2_AND_3           = 6, // N2 + N3
+   ALL_STRATEGIES             = 7  // N1 + N2 + N3
+  };
+
+enum ENUM_NCONFIRM
+  {
+   NCONF_CANDLE               = 0, // Confirmation candle
+   NCONF_STRUCTURE            = 1, // Micro structure break (close beyond last N candles)
+   NCONF_CANDLE_OR_STRUCTURE  = 2, // Candle OR structure break
+   NCONF_CANDLE_AND_STRUCTURE = 3, // Candle AND structure break
+   NCONF_NONE                 = 4  // No confirmation - entry on touch (NOT recommended)
+  };
+
+enum ENUM_N1_SL
+  {
+   N1_SL_ZONE           = 0, // Beyond the reaction zone
+   N1_SL_SWING          = 1, // Beyond the latest valid swing
+   N1_SL_CONFIRM_CANDLE = 2, // Beyond the confirmation candle (as in the video)
+   N1_SL_ATR            = 3  // ATR based
+  };
+
+enum ENUM_N1_TP
+  {
+   N1_TP_RR         = 0, // Fixed Risk:Reward
+   N1_TP_IMPULSE_END= 1, // Previous swing = impulse end (fib 0 level, as in the video)
+   N1_TP_LIQUIDITY  = 2, // Nearest liquidity target
+   N1_TP_MANUAL     = 3  // Manual TP from the panel
+  };
+
+enum ENUM_SWING_METHOD
+  {
+   SWING_FRACTAL        = 0, // Fractal swings (N bars on each side)
+   SWING_HIGHEST_LOWEST = 1  // Highest high / lowest low of the lookback window
+  };
+
+enum ENUM_N2_TRIGGER
+  {
+   N2_RECLAIM         = 0, // Candle closes back inside the level
+   N2_MSS             = 1, // Opposite MSS / BOS
+   N2_RECLAIM_OR_MSS  = 2, // Close back inside OR MSS
+   N2_RECLAIM_AND_MSS = 3  // Close back inside AND MSS
+  };
+
+enum ENUM_N2_ENTRY
+  {
+   N2_ENTRY_MARKET = 0, // Market after trigger + confirmation
+   N2_ENTRY_RETEST = 1  // Wait for a retest of the swept level
+  };
+
+enum ENUM_N2_SL
+  {
+   N2_SL_SWEEP = 0, // Beyond the sweep extreme (swept liquidity)
+   N2_SL_SWING = 1, // Beyond the latest swing
+   N2_SL_ATR   = 2  // ATR based
+  };
+
+enum ENUM_N2_TP
+  {
+   N2_TP_OPPOSITE_LIQ = 0, // Opposite liquidity
+   N2_TP_PREV_SWING   = 1, // Previous swing high / low
+   N2_TP_RR           = 2, // Fixed Risk:Reward
+   N2_TP_PARTIAL      = 3  // Partial at xR, final TP at final RR
+  };
+
+enum ENUM_VP_SOURCE
+  {
+   VP_LAST_IMPULSE  = 0, // Last impulse leg (fixed range from trend start to end - as in the video)
+   VP_LOOKBACK_BARS = 1, // Last N bars
+   VP_PREVIOUS_DAY  = 2  // Previous day
+  };
+
+enum ENUM_VP_ENTRY
+  {
+   VPE_TOUCH     = 0, // Touch of the zone (+ optional confirmation candle)
+   VPE_REJECTION = 1, // Wick into the zone and close back out
+   VPE_RECLAIM   = 2, // Reclaim (buy) / lose (sell) the level
+   VPE_RETEST    = 3  // Reclaim first, then retest + confirmation
+  };
+
+enum ENUM_VP_BIAS
+  {
+   VPB_IMPULSE_DIRECTION = 0, // Trade only in the impulse direction (fallback: price vs POC)
+   VPB_PRICE_VS_POC      = 1, // Above POC -> buys, below POC -> sells
+   VPB_BOTH_DIRECTIONS   = 2  // Both directions
+  };
+
+enum ENUM_N3_SL
+  {
+   N3_SL_ZONE  = 0, // Outside the VP zone
+   N3_SL_SWING = 1, // Beyond the latest swing
+   N3_SL_ATR   = 2  // ATR based
+  };
+
+enum ENUM_N3_TP
+  {
+   N3_TP_OPPOSITE_ZONE = 0, // Next VP level in trade direction
+   N3_TP_POC           = 1, // POC
+   N3_TP_VA_EDGE       = 2, // VAH for buys / VAL for sells (as in the video)
+   N3_TP_HVN           = 3, // Next HVN
+   N3_TP_LVN           = 4, // Next LVN
+   N3_TP_RR            = 5  // Fixed Risk:Reward
+  };
+
+//+------------------------------------------------------------------+
 //| Inputs                                                           |
 //+------------------------------------------------------------------+
 input string   _g0 = "================ GENERAL ================"; // ----- General -----
@@ -363,6 +477,127 @@ input double   S3_PartialAtR            = 1.0;       // Partial mode: close part
 input double   S3_PartialPercent        = 50.0;      // Partial mode: % volume to close
 input double   S3_BEOffsetPips          = 1.0;       // Partial mode: BE offset after partial (pips)
 
+input string   _nn = "================ NEW VIDEO STRATEGIES (N1 / N2 / N3) ================"; // ----- New strategies -----
+input StrategyMode NewStrategyMode      = ALL_STRATEGIES; // New strategies active at start (toggle on chart: N1/N2/N3)
+input int      MagicNew1                = 710011;    // Magic number - N1 Fibonacci 50%
+input int      MagicNew2                = 710012;    // Magic number - N2 Liquidity sweep
+input int      MagicNew3                = 710013;    // Magic number - N3 Volume profile
+input bool     DebugMode                = false;     // Log the accept / reject reason of EVERY evaluation
+input bool     PerfShowStrategyDetails  = true;      // Show each strategy's current condition line in the stats panel
+
+input string   _nw = "================ NEWS FILTER (optional) ================"; // ----- News filter -----
+input bool     UseNewsFilter            = false;     // Block new trades around news times (OFF by default)
+input string   NewsTimes                = "";        // Dated news (server time) "2026.10.02 15:30;2026.10.07 21:00"
+input string   NewsDailyTimes           = "";        // Daily blocked times (server time) "15:30;17:00"
+input int      NewsMinutesBefore        = 30;        // Minutes blocked before news
+input int      NewsMinutesAfter         = 30;        // Minutes blocked after news
+
+input string   _n1 = "================ N1: FIBONACCI 50% + STRUCTURE ================"; // ----- N1 Fibonacci 50% -----
+input ENUM_TIMEFRAMES N1_ImpulseTimeframe = PERIOD_CURRENT; // Impulse / Fibonacci timeframe
+input ENUM_TIMEFRAMES N1_ConfirmTimeframe = PERIOD_CURRENT; // Confirmation timeframe (evaluated on its closed candles)
+input double   N1_FibLevel              = 50.0;      // Fibonacci retracement level % (video: 50)
+input int      N1_SwingStrength         = 3;         // Swing strength (bars on each side)
+input int      N1_SwingLookback         = 100;       // Swing lookback (bars of impulse timeframe)
+input double   N1_MinImpulsePips        = 20.0;      // Minimum impulse size (pips)
+input double   N1_MinImpulseATR         = 2.0;       // Minimum impulse size as ATR multiple (0 = off)
+input int      N1_MaxImpulseBars        = 40;        // Maximum impulse duration (bars)
+input bool     N1_RequireImpulseBOS     = true;      // Impulse must break the previous swing (valid structure)
+input double   N1_ZoneWidthPips         = 5.0;       // Reaction zone half width around the fib level (pips)
+input bool     N1_RequireOriginZone     = false;     // Fib level must overlap the supply/demand base at the impulse origin
+input int      N1_OriginBaseBars        = 5;         // Bars before the impulse origin that form the supply/demand base
+input double   N1_MaxEntryDistancePips  = 10.0;      // Max distance between entry and the fib level (pips)
+input double   N1_InvalidateFibLevel    = 100.0;     // Close beyond this fib % cancels the setup (100 = impulse origin)
+input int      N1_MaxBarsForRetrace     = 60;        // Max confirmation-TF bars to wait for the retracement
+input int      N1_MaxBarsForConfirm     = 10;        // Max confirmation-TF bars after the touch
+input ENUM_NCONFIRM N1_ConfirmType      = NCONF_CANDLE_OR_STRUCTURE; // Confirmation required after the touch
+input ENUM_CONFIRM_MODE N1_CandleType   = CONFIRM_ANY_PATTERN; // Confirmation candle type
+input double   N1_ConfirmMinBodyRatio   = 0.50;      // Confirmation candle min body/range (directional close)
+input int      N1_StructureBars         = 3;         // Structure break: close beyond the high/low of the last N candles
+input ENUM_N1_SL N1_SLMode              = N1_SL_ZONE; // Stop loss method
+input int      N1_SLBufferPoints        = 30;        // SL buffer (POINTS)
+input int      N1_ATRPeriod             = 14;        // ATR period
+input double   N1_ATRMultiplierSL       = 1.5;       // ATR multiplier for SL
+input ENUM_N1_TP N1_TPMode              = N1_TP_IMPULSE_END; // Take profit method
+input double   N1_RiskReward            = 2.0;       // Risk:Reward (1:x)
+input double   N1_MinRR                 = 1.0;       // Structural TP below this RR -> fixed RR
+
+input string   _n2 = "================ N2: LIQUIDITY SWEEP / FALSE BREAKOUT ================"; // ----- N2 Liquidity sweep -----
+input ENUM_TIMEFRAMES N2_Timeframe      = PERIOD_CURRENT; // N2 timeframe
+input ENUM_SWING_METHOD N2_SwingMethod  = SWING_FRACTAL; // Swing detection method
+input int      N2_SwingStrength         = 3;         // Fractal swing strength (bars on each side)
+input int      N2_LiquidityLookback     = 100;       // Liquidity lookback (bars)
+input bool     N2_UseEqualHighsLows     = true;      // Liquidity: equal highs / lows
+input double   N2_EqualTolerancePips    = 2.0;       // Equal highs / lows tolerance (pips)
+input bool     N2_UsePreviousSwing      = true;      // Liquidity: previous swing high / low
+input bool     N2_UsePreviousDayHL      = true;      // Liquidity: previous day high / low
+input bool     N2_UseAsianSessionHL     = true;      // Session liquidity: Asian high / low
+input bool     N2_UseLondonSessionHL    = true;      // Session liquidity: London high / low
+input bool     N2_UseNewYorkSessionHL   = true;      // Session liquidity: New York high / low
+input double   N2_MinSweepPips          = 1.0;       // Minimum sweep distance beyond the level (pips)
+input ENUM_N2_TRIGGER N2_TriggerMode    = N2_RECLAIM_OR_MSS; // What confirms the sweep
+input int      N2_ReclaimBars           = 3;         // Candles allowed to close back inside after the sweep
+input int      N2_RealBreakoutCloses    = 2;         // Consecutive closes beyond the level = REAL breakout (cancel)
+input int      N2_MSSLookback           = 20;        // MSS/BOS structure lookback (bars)
+input double   N2_MSSMinBreakPips       = 0.5;       // MSS/BOS: close beyond structure by (pips)
+input ENUM_N2_ENTRY N2_EntryMode        = N2_ENTRY_MARKET; // Entry on market or on retest
+input double   N2_RetestTolerancePips   = 2.0;       // Retest tolerance around the swept level (pips)
+input bool     N2_RequireConfirmCandle  = true;      // Require a confirmation candle for the entry
+input ENUM_CONFIRM_MODE N2_CandleType   = CONFIRM_DIRECTIONAL_CLOSE; // Confirmation candle type
+input double   N2_ConfirmMinBodyRatio   = 0.30;      // Confirmation candle min body/range
+input int      N2_SignalExpiryBars      = 12;        // Max bars after the sweep before the signal expires
+input ENUM_N2_SL N2_SLMode              = N2_SL_SWEEP; // Stop loss method
+input double   N2_SLBufferPips          = 2.0;       // SL buffer (pips)
+input int      N2_ATRPeriod             = 14;        // ATR period
+input double   N2_ATRMultiplierSL       = 1.5;       // ATR multiplier for SL
+input ENUM_N2_TP N2_TPMode              = N2_TP_PARTIAL; // Take profit method
+input double   N2_RiskReward            = 2.0;       // Risk:Reward (1:x)
+input double   N2_MinRR                 = 1.0;       // Structural TP below this RR -> fixed RR
+input double   N2_PartialAtR            = 1.0;       // Partial mode: partial close at this R
+input double   N2_PartialPercent        = 50.0;      // Partial mode: % volume closed
+input double   N2_FinalRR               = 2.0;       // Partial mode: final TP at this R
+input double   N2_BEOffsetPips          = 1.0;       // Partial mode: SL to BE + offset after the partial
+
+input string   _n3 = "================ N3: VOLUME PROFILE (VP) ================"; // ----- N3 Volume profile -----
+input ENUM_TIMEFRAMES N3_ProfileTimeframe = PERIOD_CURRENT; // Volume profile timeframe
+input ENUM_TIMEFRAMES N3_ConfirmTimeframe = PERIOD_CURRENT; // Confirmation / entry timeframe
+input ENUM_VP_SOURCE N3_ProfileSource   = VP_LAST_IMPULSE; // Profile range
+input int      N3_LookbackBars          = 120;       // Profile lookback bars (lookback source / impulse search)
+input int      N3_SwingStrength         = 3;         // Impulse source: swing strength
+input double   N3_MinImpulsePips        = 20.0;      // Impulse source: minimum impulse size (pips)
+input int      N3_MaxImpulseBars        = 80;        // Impulse source: maximum impulse duration (bars)
+input int      N3_Bins                  = 40;        // Number of price bins
+input double   N3_ValueAreaPct          = 70.0;      // Value area % (default 70)
+input double   N3_HVNThresholdPct       = 60.0;      // HVN: local volume peak >= X% of POC volume
+input double   N3_LVNThresholdPct       = 25.0;      // LVN: local volume trough <= X% of POC volume
+input double   N3_MinZoneStrengthPct    = 50.0;      // Minimum zone strength: HVN volume >= X% of POC to be traded
+input bool     N3_TradePOC              = true;      // Entry zones: POC (video: main entry)
+input bool     N3_TradeVAHVAL           = true;      // Entry zones: VAH / VAL
+input bool     N3_TradeHVN              = false;     // Entry zones: HVN
+input bool     N3_TradeLVN              = false;     // Entry zones: LVN
+input double   N3_ZoneWidthPips         = 0.0;       // Zone half width in pips (0 = half a bin)
+input ENUM_VP_ENTRY N3_EntryMode        = VPE_REJECTION; // Entry mode
+input ENUM_VP_BIAS N3_BiasMode          = VPB_IMPULSE_DIRECTION; // Direction filter
+input bool     N3_RequireConfirmCandle  = true;      // Require a confirmation candle
+input ENUM_CONFIRM_MODE N3_CandleType   = CONFIRM_ANY_PATTERN; // Confirmation candle type
+input double   N3_ConfirmMinBodyRatio   = 0.40;      // Confirmation candle min body/range
+input int      N3_RetestBars            = 10;        // Retest mode: bars allowed between reclaim and retest
+input bool     N3_AutoRefresh           = false;     // Recalculate the profile on every new bar
+input ENUM_TIMEFRAMES N3_RefreshPeriod  = PERIOD_D1; // Lookback source: recalculate when a new bar of this TF opens
+input bool     N3_DrawHistogram         = true;      // Draw the profile histogram
+input int      N3_HistogramWidthBars    = 20;        // Histogram width (bars) for the POC bin
+input ENUM_N3_SL N3_SLMode              = N3_SL_ZONE; // Stop loss method
+input double   N3_SLBufferPips          = 2.0;       // SL buffer (pips)
+input int      N3_ATRPeriod             = 14;        // ATR period
+input double   N3_ATRMultiplierSL       = 1.5;       // ATR multiplier for SL
+input ENUM_N3_TP N3_TPMode              = N3_TP_VA_EDGE; // Take profit target
+input double   N3_RiskReward            = 2.0;       // Risk:Reward (1:x) for RR mode / fallback
+input double   N3_MinRR                 = 1.0;       // VP target below this RR -> next target or fixed RR
+input bool     N3_UsePartial            = true;      // Partial at the VP target, rest runs to final RR (video)
+input double   N3_PartialPercent        = 50.0;      // Partial: % volume closed at the target
+input double   N3_PartialAtR            = 1.0;       // Partial: R multiple used when no VP target exists
+input double   N3_FinalRR               = 3.0;       // Partial: final TP (R multiple, at least beyond the target)
+input double   N3_BEOffsetPips          = 1.0;       // Partial: SL to BE + offset after the partial
+
 input string   _al = "================ ALERTS & LOG ================"; // ----- Alerts -----
 input bool     UseAlerts                = true;      // Popup alerts
 input bool     UsePushNotifications     = false;     // Push notifications (MetaQuotes ID required)
@@ -430,10 +665,14 @@ input bool     ConfirmPanelActions      = true;      // Ask confirmation for clo
 //+------------------------------------------------------------------+
 #define EA_NAME      "Three Strategy Smart Trading EA"
 #define PFX          "TSSE_"
-#define STRAT_COUNT  3
-#define ST_S1        0
+#define STRAT_COUNT  6
+#define ST_S1        0   // original strategies
 #define ST_S2        1
 #define ST_S3        2
+#define ST_N1        3   // new video strategy 1: Fibonacci 50%
+#define ST_N2        4   // new video strategy 2: Liquidity sweep
+#define ST_N3        5   // new video strategy 3: Volume profile
+#define ST_MANUAL    6   // manual panel trades (not a strategy)
 
 // Setup phases (S2 / S3)
 #define PH_IDLE      0   // waiting for trigger (break / sweep)
@@ -526,6 +765,14 @@ string    gLastCond[STRAT_COUNT];     // last logged condition (to avoid log spa
 datetime  gSignalBar[STRAT_COUNT];    // bar time of last signal
 datetime  gLastBar[STRAT_COUNT];      // new bar detection per strategy timeframe
 string    gLastSignal = "none";
+int       gLastSignalDir = 0;
+int       gLastSignalStrat = -1;
+bool      gShowObjs = true;                 // Hide/Show strategy objects button
+bool      gEntryReady[STRAT_COUNT];         // setup in its final (entry) stage
+int       gTradesOpened[STRAT_COUNT];       // trades opened in this session per strategy
+int       gWinsS[STRAT_COUNT+1];            // closed wins per strategy (+ manual)
+int       gLossS[STRAT_COUNT+1];            // closed losses per strategy (+ manual)
+double    gPLS[STRAT_COUNT+1];              // closed P/L per strategy (+ manual)
 datetime  gLastSignalTime = 0;
 
 // Strategy setups
@@ -579,13 +826,1651 @@ uint      gLastUI = 0;
 int       gTradePanelH = 0;
 
 //+------------------------------------------------------------------+
+//| ================================================================ |
+//| NEW VIDEO STRATEGIES  (N1 / N2 / N3)                             |
+//| Independent modules. They reuse the EA's shared engine:         |
+//| ExecuteSignal (filters, lot size, duplicate guard, order send), |
+//| ManageOpenTrades (BE / trailing / partial), panels and alerts.  |
+//|                                                                  |
+//| N1  Fibonacci 50% + market structure confirmation                |
+//|     VIDEO: a strong impulse leg is measured with Fibonacci from |
+//|     its start (1) to its end (0). Price retraces to the 0.5     |
+//|     level, ideally under the supply (or above the demand) base  |
+//|     that launched the impulse. The trader does NOT sell on the  |
+//|     touch - he waits for a rejection candle at 0.5, then sells  |
+//|     with SL above that candle and TP near the 0 level (~1:2).   |
+//|     CODE: FindImpulse() -> fib level/zone -> wait touch ->      |
+//|     confirmation candle and/or micro structure break -> entry.  |
+//|                                                                  |
+//| N2  Liquidity sweep / false breakout                             |
+//|     VIDEO: most traders buy at the equal lows / previous low    |
+//|     where the "$$$$" (stop orders) sits and get stopped out.    |
+//|     The real move starts AFTER price runs below that low        |
+//|     (sweep) and comes back. Entry after the sweep, SL beyond    |
+//|     the sweep extreme, target the opposite high.                |
+//|     CODE: liquidity levels -> sweep -> classify (real breakout, |
+//|     liquidity sweep, false breakout, structure break) ->        |
+//|     reclaim and/or MSS -> market or retest entry.               |
+//|                                                                  |
+//| N3  Volume profile (VP)                                          |
+//|     VIDEO: a fixed range volume profile is drawn from the start |
+//|     of the trend to its end. When price comes back to the Point |
+//|     of Control (red line) - best when a demand zone is at the   |
+//|     same place - the trader buys, SL under the demand zone,     |
+//|     takes part of the profit at the Value Area High (upper      |
+//|     white line) and lets the rest run.                          |
+//|     CODE: tick-volume profile with price bins (no native VP in  |
+//|     MQL4) -> POC / VAH / VAL / HVN / LVN -> zone entry mode     |
+//|     (touch / rejection / reclaim / retest) + confirmation ->    |
+//|     partial at the VP target, rest to the final RR.             |
+//+------------------------------------------------------------------+
+
+// Pending signal of a new strategy (filled by CheckStrategyXSignal)
+struct TNSignal
+  {
+   bool     ready;
+   int      dir;
+   datetime key;           // setup id for duplicate protection
+   string   reason;
+   double   zoneHi;
+   double   zoneLo;
+   double   extreme;       // sweep extreme / reaction extreme
+   double   partialTarget; // price for the partial close (N3)
+   double   entry;
+   double   sl;
+   double   tp;
+  };
+
+// N1 Fibonacci setup
+struct TFibSetup
+  {
+   int      phase;        // 0 search impulse, 1 wait retracement, 2 wait confirmation
+   int      dir;
+   datetime tStart;
+   datetime tEnd;
+   double   pStart;       // fib 100 (impulse origin)
+   double   pEnd;         // fib 0   (impulse end)
+   double   level;        // fib level (50%)
+   double   zoneHi;
+   double   zoneLo;
+   double   invalid;
+   double   reactExtreme; // extreme of the reaction after the touch
+   int      bars;
+  };
+
+// N2 sweep setup (one per direction)
+struct TSweepSetup
+  {
+   int      phase;        // 0 idle, 1 swept - waiting trigger, 2 triggered - waiting entry
+   double   level;
+   string   name;
+   double   extreme;
+   datetime sweepTime;
+   int      bars;
+   int      closesBeyond;
+   bool     reclaimed;
+   bool     mss;
+   double   mssLevel;
+   datetime mssTime;
+   string   cls;          // classification
+  };
+
+// N3 volume profile
+struct TVProfile
+  {
+   bool     valid;
+   datetime tStart;
+   datetime tEnd;
+   double   lo;
+   double   hi;
+   double   bin;
+   int      bins;
+   int      poc;
+   double   pocPrice;
+   double   vah;
+   double   val;
+   double   maxVol;
+   int      dir;          // impulse direction (0 = none)
+   datetime calcKey;      // id of the profile (used as setup key)
+  };
+
+// N3 retest arm (one per direction)
+struct TVPArm
+  {
+   bool     armed;
+   double   zoneHi;
+   double   zoneLo;
+   string   name;
+   int      bars;
+  };
+
+TNSignal    gNSig[3];
+TFibSetup   gFib;
+datetime    gFibUsedKey = 0;
+TSweepSetup gSwB, gSwS;
+TLiq        gN2High[], gN2Low[];
+TVProfile   gVP;
+double      gVPVol[];
+double      gVPHvn[], gVPHvnStr[], gVPLvn[];
+datetime    gVPRefreshBar = 0;
+bool        gVPForce = true;
+TVPArm      gVPArmB, gVPArmS;
+
+//+------------------------------------------------------------------+
+//| Shared helpers for the new strategies                            |
+//+------------------------------------------------------------------+
+bool CanDraw() { return(gDrawUI && gShowObjs); }
+
+int NIdx(int s) { return(s-ST_N1); }   // gNSig index
+
+bool StrategyModeHas(int which)
+  {
+   int m = NewStrategyMode;
+   if(which==1)
+      return(m==STRATEGY_1_FIBONACCI_50 || m==STRATEGY_1_AND_2 || m==STRATEGY_1_AND_3 || m==ALL_STRATEGIES);
+   if(which==2)
+      return(m==STRATEGY_2_LIQUIDITY_SWEEP || m==STRATEGY_1_AND_2 || m==STRATEGY_2_AND_3 || m==ALL_STRATEGIES);
+   return(m==STRATEGY_3_VOLUME_PROFILE || m==STRATEGY_1_AND_3 || m==STRATEGY_2_AND_3 || m==ALL_STRATEGIES);
+  }
+
+//--- micro structure break on closed candle 1: close beyond the high/low of candles 2..n+1
+bool StructureBreak(int tf, int dir, int n)
+  {
+   if(n<1)
+      return(false);
+   if(dir>0)
+      return(BarC(tf, 1)>BarH(tf, iHighest(Symbol(), tf, MODE_HIGH, n, 2)));
+   return(BarC(tf, 1)<BarL(tf, iLowest(Symbol(), tf, MODE_LOW, n, 2)));
+  }
+
+//--- latest impulse leg: most recent confirmed swing and the opposite swing before it
+bool FindImpulse(int tf, int str, int lookback, double minSize, double minATR, int maxBars, bool requireBOS,
+                 int &dir, int &sShift, int &eShift, string &why)
+  {
+   int sh[], sl[];
+   int nh = CollectSwings(tf, true, 1, lookback, str, sh, 8);
+   int nl = CollectSwings(tf, false, 1, lookback, str, sl, 8);
+   if(nh<1 || nl<1)
+     {
+      why = "not enough swings";
+      return(false);
+     }
+   dir = (sh[0]<sl[0] ? 1 : -1);          // most recent swing high -> bullish leg (low -> high)
+   eShift = (dir>0 ? sh[0] : sl[0]);
+   sShift = -1;
+   if(dir>0)
+     {
+      for(int i=0; i<nl; i++)
+         if(sl[i]>eShift)
+           {
+            sShift = sl[i];
+            break;
+           }
+     }
+   else
+     {
+      for(int i=0; i<nh; i++)
+         if(sh[i]>eShift)
+           {
+            sShift = sh[i];
+            break;
+           }
+     }
+   if(sShift<0)
+     {
+      why = "impulse origin swing not found";
+      return(false);
+     }
+   double pS = (dir>0 ? BarL(tf, sShift) : BarH(tf, sShift));
+   double pE = (dir>0 ? BarH(tf, eShift) : BarL(tf, eShift));
+   double size = MathAbs(pE-pS);
+   if(sShift-eShift>maxBars)
+     {
+      why = "impulse too slow (" + IntegerToString(sShift-eShift) + " bars)";
+      return(false);
+     }
+   if(size<minSize)
+     {
+      why = StringFormat("impulse %.1f pips < minimum", size/gPip);
+      return(false);
+     }
+   if(minATR>0)
+     {
+      double atr = iATR(Symbol(), tf, 14, eShift);
+      if(atr>0 && size<atr*minATR)
+        {
+         why = StringFormat("impulse %.1f ATR < %.1f ATR", size/atr, minATR);
+         return(false);
+        }
+     }
+   if(requireBOS)
+     {
+      // a valid impulse breaks the previous swing in its direction
+      int prev = -1;
+      if(dir>0)
+        {
+         for(int j=0; j<nh; j++)
+            if(sh[j]>sShift)
+              {
+               prev = sh[j];
+               break;
+              }
+         if(prev<0 || BarH(tf, eShift)<=BarH(tf, prev))
+           {
+            why = "bullish impulse did not break the previous swing high";
+            return(false);
+           }
+        }
+      else
+        {
+         for(int j=0; j<nl; j++)
+            if(sl[j]>sShift)
+              {
+               prev = sl[j];
+               break;
+              }
+         if(prev<0 || BarL(tf, eShift)>=BarL(tf, prev))
+           {
+            why = "bearish impulse did not break the previous swing low";
+            return(false);
+           }
+        }
+     }
+   // the impulse extreme must still be intact
+   if(eShift>1)
+     {
+      if(dir>0 && BarH(tf, iHighest(Symbol(), tf, MODE_HIGH, eShift-1, 1))>pE)
+        {
+         why = "impulse extended - waiting new swing";
+         return(false);
+        }
+      if(dir<0 && BarL(tf, iLowest(Symbol(), tf, MODE_LOW, eShift-1, 1))<pE)
+        {
+         why = "impulse extended - waiting new swing";
+         return(false);
+        }
+     }
+   return(true);
+  }
+
+bool ConfirmationOK(int mode, int tf, int dir, int candleType, double minBody, int structBars, string &what)
+  {
+   bool candle = IsConfirmCandle(tf, 1, dir, candleType, minBody);
+   bool structure = StructureBreak(tf, dir, structBars);
+   what = (candle ? ConfirmName(candleType) : "") + (candle && structure ? " + " : "") + (structure ? "structure break" : "");
+   if(mode==NCONF_CANDLE)
+      return(candle);
+   if(mode==NCONF_STRUCTURE)
+      return(structure);
+   if(mode==NCONF_CANDLE_OR_STRUCTURE)
+      return(candle || structure);
+   if(mode==NCONF_CANDLE_AND_STRUCTURE)
+      return(candle && structure);
+   what = "touch (no confirmation)";
+   return(true);
+  }
+
+//--- RR check helper: returns target if valid and RR >= minRR, else fixed RR target
+double TargetOrRR(int dir, double entry, double sl, double target, double minRR, double rr, string who)
+  {
+   double risk = MathAbs(entry-sl);
+   double rrTP = (dir>0 ? entry+risk*rr : entry-risk*rr);
+   if(target>0 && risk>0 && ((dir>0 && target>entry) || (dir<0 && target<entry)) && MathAbs(target-entry)/risk>=minRR)
+      return(NP(target));
+   if(target>0)
+      Log(who + ": structural TP RR < " + D2S(minRR) + " or wrong side - using fixed RR 1:" + D2S(rr, 1));
+   return(NP(rrTP));
+  }
+
+void NDrawLine(string n, datetime t1, double p, datetime t2, color c, int style, int width, bool ray, string label)
+  {
+   if(!CanDraw())
+      return;
+   DrawTrend(n, t1, p, t2, p, c, style, width, ray);
+   if(label!="")
+      DrawTextObj(n + "_T", t2, p, label, c, ANCHOR_LEFT_LOWER, PanelFontSize-1);
+  }
+
+void NDrawRect(string n, datetime t1, double p1, datetime t2, double p2, color c)
+  {
+   if(!CanDraw())
+      return;
+   if(ObjectFind(0, n)<0)
+     {
+      if(!ObjectCreate(0, n, OBJ_RECTANGLE, 0, t1, p1, t2, p2))
+         return;
+     }
+   else
+     {
+      ObjectMove(0, n, 0, t1, p1);
+      ObjectMove(0, n, 1, t2, p2);
+     }
+   ObjectSetInteger(0, n, OBJPROP_COLOR, c);
+   ObjectSetInteger(0, n, OBJPROP_BACK, true);
+   ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
+  }
+
+void NDrawArrow(string n, datetime t, double p, int dir, color c)
+  {
+   if(!CanDraw())
+      return;
+   if(ObjectFind(0, n)<0)
+      ObjectCreate(0, n, OBJ_ARROW, 0, t, p);
+   ObjectSetInteger(0, n, OBJPROP_ARROWCODE, dir>0 ? 233 : 234);
+   ObjectSetInteger(0, n, OBJPROP_COLOR, c);
+   ObjectSetInteger(0, n, OBJPROP_WIDTH, 2);
+   ObjectSetInteger(0, n, OBJPROP_ANCHOR, dir>0 ? ANCHOR_TOP : ANCHOR_BOTTOM);
+   ObjectSetInteger(0, n, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, n, OBJPROP_HIDDEN, true);
+  }
+
+//--- generic process wrapper for N strategies (status + execution)
+void NProcess(int s)
+  {
+   bool sig = false;
+   if(s==ST_N1)
+      sig = CheckStrategy1Signal();
+   else
+      if(s==ST_N2)
+         sig = CheckStrategy2Signal();
+      else
+         sig = CheckStrategy3Signal();
+   if(sig)
+     {
+      bool ok = false;
+      if(s==ST_N1)
+         ok = ExecuteStrategy1Trade();
+      else
+         if(s==ST_N2)
+            ok = ExecuteStrategy2Trade();
+         else
+            ok = ExecuteStrategy3Trade();
+      if(!ok && DebugMode)
+         Log(StratShort(s) + ": signal was not executed (see previous messages)");
+     }
+   int tf = StratTF(s);
+   if(gSignalBar[s]==BarT(tf, 1) && gSignalBar[s]!=0)
+      gState[s] = "Signal Detected";
+   else
+      gState[s] = (gEntryReady[s] ? "Waiting" : "Active");
+  }
+
+//+------------------------------------------------------------------+
+//| ================= N1: FIBONACCI 50% ============================ |
+//+------------------------------------------------------------------+
+void ResetFib()
+  {
+   gFib.phase = 0;
+   gFib.dir = 0;
+   gFib.tStart = 0;
+   gFib.tEnd = 0;
+   gFib.pStart = 0;
+   gFib.pEnd = 0;
+   gFib.level = 0;
+   gFib.zoneHi = 0;
+   gFib.zoneLo = 0;
+   gFib.invalid = 0;
+   gFib.reactExtreme = 0;
+   gFib.bars = 0;
+   gEntryReady[ST_N1] = false;
+  }
+
+void DrawFib()
+  {
+   if(!CanDraw() || gFib.tEnd==0)
+      return;
+   DeleteByPrefix(PFX+"STR1_FIB_");
+   string n = PFX + "STR1_FIB_";
+   datetime tR = iTime(Symbol(), Period(), 0) + PeriodSeconds(Period())*10;
+   color c = (gFib.dir>0 ? ClrBullish : ClrBearish);
+   double rng = gFib.pStart-gFib.pEnd;
+   NDrawLine(n + "L100", gFib.tStart, gFib.pStart, tR, clrSilver, STYLE_DOT, 1, false, "FIB 100 (origin)");
+   NDrawLine(n + "L618", gFib.tStart, gFib.pEnd+rng*0.618, tR, clrDimGray, STYLE_DOT, 1, false, "61.8");
+   NDrawLine(n + "L382", gFib.tStart, gFib.pEnd+rng*0.382, tR, clrDimGray, STYLE_DOT, 1, false, "38.2");
+   NDrawLine(n + "L0", gFib.tStart, gFib.pEnd, tR, clrSilver, STYLE_DOT, 1, false, "FIB 0 (impulse end)");
+   NDrawLine(n + "LVL", gFib.tStart, gFib.level, tR, ClrTrendline, STYLE_SOLID, 2, false,
+             "N1 FIB " + DoubleToString(N1_FibLevel, 1) + "%");
+   DrawTrend(n + "IMP", gFib.tStart, gFib.pStart, gFib.tEnd, gFib.pEnd, c, STYLE_SOLID, 2, false);
+   NDrawRect(n + "ZONE", gFib.tEnd, gFib.zoneHi, tR, gFib.zoneLo, gFib.dir>0 ? ClrFVGBull : ClrFVGBear);
+  }
+
+bool CheckStrategy1Signal()
+  {
+   int idx = NIdx(ST_N1);
+   gNSig[idx].ready = false;
+   int itf = TF(N1_ImpulseTimeframe);
+   int ctf = StratTF(ST_N1);
+
+   //--- phase 0: find a valid impulse and build the Fibonacci / reaction zone
+   if(gFib.phase==0)
+     {
+      int dir = 0, s = -1, e = -1;
+      string why = "";
+      if(!FindImpulse(itf, N1_SwingStrength, N1_SwingLookback, Pips(N1_MinImpulsePips), N1_MinImpulseATR,
+                      N1_MaxImpulseBars, N1_RequireImpulseBOS, dir, s, e, why))
+        {
+         SetCond(ST_N1, "REJECT: no valid impulse - " + why);
+         return(false);
+        }
+      datetime key = BarT(itf, e);
+      if(key==gFibUsedKey)
+        {
+         SetCond(ST_N1, "impulse already used - waiting for a new impulse");
+         return(false);
+        }
+      if(!DirAllowed(dir))
+        {
+         SetCond(ST_N1, "REJECT: impulse direction not allowed (TradeDirection)");
+         return(false);
+        }
+      gFib.dir = dir;
+      gFib.tStart = BarT(itf, s);
+      gFib.tEnd = key;
+      gFib.pStart = (dir>0 ? BarL(itf, s) : BarH(itf, s));
+      gFib.pEnd = (dir>0 ? BarH(itf, e) : BarL(itf, e));
+      gFib.level = NP(gFib.pEnd+(gFib.pStart-gFib.pEnd)*N1_FibLevel/100.0);
+      gFib.zoneHi = NP(gFib.level+Pips(N1_ZoneWidthPips));
+      gFib.zoneLo = NP(gFib.level-Pips(N1_ZoneWidthPips));
+      gFib.invalid = NP(gFib.pEnd+(gFib.pStart-gFib.pEnd)*N1_InvalidateFibLevel/100.0);
+      if(N1_RequireOriginZone)
+        {
+         // supply (bearish impulse) / demand (bullish impulse) base = candles just before the origin
+         int cnt = (int)MathMax(1, N1_OriginBaseBars);
+         double baseEdge = (dir>0 ? BarH(itf, iHighest(Symbol(), itf, MODE_HIGH, cnt, s)) : BarL(itf, iLowest(Symbol(), itf, MODE_LOW, cnt, s)));
+         bool overlap = (dir>0 ? gFib.zoneLo<=baseEdge : gFib.zoneHi>=baseEdge);
+         if(!overlap)
+           {
+            gFibUsedKey = key;
+            SetCond(ST_N1, "REJECT: fib level does not reach the origin supply/demand base");
+            ResetFib();
+            return(false);
+           }
+        }
+      gFib.phase = 1;
+      gFib.bars = 0;
+      DrawFib();
+      Log(StringFormat("N1 %s impulse %s -> %s (%.1f pips). Fib %.1f%% = %s, zone %s - %s. Waiting retracement.",
+                       dir>0 ? "BULLISH" : "BEARISH", PriceStr(gFib.pStart), PriceStr(gFib.pEnd),
+                       MathAbs(gFib.pEnd-gFib.pStart)/gPip, N1_FibLevel, PriceStr(gFib.level),
+                       PriceStr(gFib.zoneLo), PriceStr(gFib.zoneHi)));
+     }
+
+   int dir = gFib.dir;
+   double h1 = BarH(ctf, 1), l1 = BarL(ctf, 1), c1 = BarC(ctf, 1);
+   gFib.bars++;
+   DrawFib();
+
+   // invalidation: retracement closed beyond the invalidation level (origin by default)
+   if((dir>0 && c1<gFib.invalid) || (dir<0 && c1>gFib.invalid))
+     {
+      Log("N1: close beyond fib " + D2S(N1_InvalidateFibLevel, 1) + "% - setup invalid");
+      gFibUsedKey = gFib.tEnd;
+      ResetFib();
+      SetCond(ST_N1, "REJECT: retracement too deep - setup cancelled");
+      return(false);
+     }
+
+   //--- phase 1: wait for price to reach the reaction zone (no entry on the touch)
+   if(gFib.phase==1)
+     {
+      if((dir>0 && h1>gFib.pEnd) || (dir<0 && l1<gFib.pEnd))
+        {
+         ResetFib();
+         SetCond(ST_N1, "impulse extended before the retracement - waiting new swing");
+         return(false);
+        }
+      if(gFib.bars>N1_MaxBarsForRetrace)
+        {
+         gFibUsedKey = gFib.tEnd;
+         ResetFib();
+         SetCond(ST_N1, "REJECT: no retracement within " + IntegerToString(N1_MaxBarsForRetrace) + " bars");
+         return(false);
+        }
+      bool touched = (dir>0 ? l1<=gFib.zoneHi : h1>=gFib.zoneLo);
+      if(!touched)
+        {
+         double dist = (dir>0 ? l1-gFib.zoneHi : gFib.zoneLo-h1)/gPip;
+         SetCond(ST_N1, StringFormat("WAITING: %s impulse, price %.1f pips from the %.1f%% zone [%s - %s]",
+                                     dir>0 ? "bullish" : "bearish", dist, N1_FibLevel, PriceStr(gFib.zoneLo), PriceStr(gFib.zoneHi)));
+         return(false);
+        }
+      gFib.phase = 2;
+      gFib.bars = 0;
+      gFib.reactExtreme = (dir>0 ? l1 : h1);
+      Log("N1: price reached the " + D2S(N1_FibLevel, 1) + "% reaction zone - waiting confirmation (no entry on touch)");
+     }
+
+   //--- phase 2: confirmation candle and/or structure break
+   gEntryReady[ST_N1] = true;
+   if(dir>0 && l1<gFib.reactExtreme)
+      gFib.reactExtreme = l1;
+   if(dir<0 && h1>gFib.reactExtreme)
+      gFib.reactExtreme = h1;
+   if(gFib.bars>N1_MaxBarsForConfirm)
+     {
+      gFibUsedKey = gFib.tEnd;
+      ResetFib();
+      SetCond(ST_N1, "REJECT: no confirmation within " + IntegerToString(N1_MaxBarsForConfirm) + " bars");
+      return(false);
+     }
+   string what = "";
+   bool conf = ConfirmationOK(N1_ConfirmType, ctf, dir, N1_CandleType, N1_ConfirmMinBodyRatio, N1_StructureBars, what);
+   bool sideOk = (dir>0 ? c1>gFib.zoneLo : c1<gFib.zoneHi);
+   if(!conf || !sideOk)
+     {
+      SetCond(ST_N1, "ENTRY READY: in the fib zone, waiting " + (sideOk ? "confirmation" : "close back out of the zone"));
+      return(false);
+     }
+   double dist = MathAbs(c1-gFib.level)/gPip;
+   if(dist>N1_MaxEntryDistancePips)
+     {
+      SetCond(ST_N1, StringFormat("REJECT: confirmation close %.1f pips from the fib level (max %.1f)", dist, N1_MaxEntryDistancePips));
+      return(false);
+     }
+   gNSig[idx].ready = true;
+   gNSig[idx].dir = dir;
+   gNSig[idx].key = gFib.tEnd;
+   gNSig[idx].zoneHi = gFib.zoneHi;
+   gNSig[idx].zoneLo = gFib.zoneLo;
+   gNSig[idx].extreme = gFib.reactExtreme;
+   gNSig[idx].partialTarget = 0;
+   gNSig[idx].reason = StringFormat("Fib %.1f%% retracement + %s", N1_FibLevel, what);
+   SetCond(ST_N1, "SIGNAL ACCEPTED: " + gNSig[idx].reason);
+   return(true);
+  }
+
+double CalculateStrategy1StopLoss()
+  {
+   int k = NIdx(ST_N1);
+   int ctf = StratTF(ST_N1);
+   double buf = N1_SLBufferPoints*Point;
+   double sl;
+   if(N1_SLMode==N1_SL_ATR)
+     {
+      double atr = GetATR(ctf, N1_ATRPeriod);
+      sl = (gNSig[k].dir>0 ? gNSig[k].entry-atr*N1_ATRMultiplierSL : gNSig[k].entry+atr*N1_ATRMultiplierSL);
+     }
+   else
+      if(N1_SLMode==N1_SL_CONFIRM_CANDLE)
+         sl = (gNSig[k].dir>0 ? MathMin(BarL(ctf, 1), gNSig[k].extreme)-buf : MathMax(BarH(ctf, 1), gNSig[k].extreme)+buf);
+      else
+         if(N1_SLMode==N1_SL_SWING)
+           {
+            int s = FindSwing(ctf, gNSig[k].dir<0, 1, 30, 2);
+            sl = (s>0 ? (gNSig[k].dir>0 ? BarL(ctf, s)-buf : BarH(ctf, s)+buf) : 0);
+            if(sl<=0 || (gNSig[k].dir>0 && sl>=gNSig[k].entry) || (gNSig[k].dir<0 && sl<=gNSig[k].entry))
+               sl = (gNSig[k].dir>0 ? MathMin(gNSig[k].zoneLo, gNSig[k].extreme)-buf : MathMax(gNSig[k].zoneHi, gNSig[k].extreme)+buf);
+           }
+         else
+            sl = (gNSig[k].dir>0 ? MathMin(gNSig[k].zoneLo, gNSig[k].extreme)-buf : MathMax(gNSig[k].zoneHi, gNSig[k].extreme)+buf);
+   return(NP(sl));
+  }
+
+double CalculateStrategy1TakeProfit()
+  {
+   int k = NIdx(ST_N1);
+   double target = 0;
+   if(N1_TPMode==N1_TP_IMPULSE_END)
+      target = gFib.pEnd;
+   else
+      if(N1_TPMode==N1_TP_LIQUIDITY)
+         target = LiquidityTarget(TF(N1_ImpulseTimeframe), gNSig[k].dir, gNSig[k].entry, N1_SwingLookback, N1_SwingStrength);
+      else
+         if(N1_TPMode==N1_TP_MANUAL)
+            target = PanelManualTP(gNSig[k].dir, gNSig[k].entry);
+   if(N1_TPMode==N1_TP_RR)
+      return(TargetOrRR(gNSig[k].dir, gNSig[k].entry, gNSig[k].sl, 0, 0, N1_RiskReward, "N1"));
+   return(TargetOrRR(gNSig[k].dir, gNSig[k].entry, gNSig[k].sl, target, N1_MinRR, N1_RiskReward, "N1"));
+  }
+
+bool ExecuteStrategy1Trade()
+  {
+   int idx = NIdx(ST_N1);
+   if(!gNSig[idx].ready)
+      return(false);
+   RefreshRates();
+   gNSig[idx].entry = (gNSig[idx].dir>0 ? Ask : Bid);
+   gNSig[idx].sl = CalculateStrategy1StopLoss();
+   gNSig[idx].tp = CalculateStrategy1TakeProfit();
+   int res = ExecuteSignal(ST_N1, gNSig[idx].dir, gNSig[idx].entry, gNSig[idx].sl, gNSig[idx].tp,
+                           gNSig[idx].reason, gNSig[idx].key, false);
+   gNSig[idx].ready = false;
+   if(res!=0)
+     {
+      gFibUsedKey = gFib.tEnd;
+      ResetFib();
+     }
+   return(res>0);
+  }
+
+//+------------------------------------------------------------------+
+//| ================= N2: LIQUIDITY SWEEP ========================== |
+//+------------------------------------------------------------------+
+void ResetSweep(TSweepSetup &st)
+  {
+   st.phase = 0;
+   st.level = 0;
+   st.name = "";
+   st.extreme = 0;
+   st.sweepTime = 0;
+   st.bars = 0;
+   st.closesBeyond = 0;
+   st.reclaimed = false;
+   st.mss = false;
+   st.mssLevel = 0;
+   st.mssTime = 0;
+   st.cls = "";
+  }
+
+void N2BuildLiquidity(int tf)
+  {
+   bool fractal = (N2_SwingMethod==SWING_FRACTAL);
+   BuildLiquidity(tf, N2_LiquidityLookback, N2_SwingStrength, N2_UseEqualHighsLows, Pips(N2_EqualTolerancePips),
+                  N2_UsePreviousSwing && fractal, false, N2_UsePreviousDayHL, N2_UseAsianSessionHL,
+                  N2_UseLondonSessionHL, N2_UseNewYorkSessionHL, gN2High, gN2Low);
+   if(!fractal && N2_UsePreviousSwing)
+     {
+      // highest high / lowest low of the lookback window (excluding the last 2 candles)
+      int cnt = (int)MathMax(3, N2_LiquidityLookback-3);
+      int hs = iHighest(Symbol(), tf, MODE_HIGH, cnt, 3);
+      int ls = iLowest(Symbol(), tf, MODE_LOW, cnt, 3);
+      if(hs>0 && LiqIntact(tf, true, BarH(tf, hs), hs))
+         AddLiq(gN2High, BarH(tf, hs), hs, "RANGE H");
+      if(ls>0 && LiqIntact(tf, false, BarL(tf, ls), ls))
+         AddLiq(gN2Low, BarL(tf, ls), ls, "RANGE L");
+     }
+   // drawing
+   if(!CanDraw())
+      return;
+   DeleteByPrefix(PFX+"STR2_LIQ_");
+   datetime tEnd = BarT(tf, 0);
+   for(int i=0; i<ArraySize(gN2High); i++)
+      NDrawLine(PFX+"STR2_LIQ_H"+IntegerToString(i), BarT(tf, gN2High[i].shift), gN2High[i].price, tEnd,
+                clrKhaki, STYLE_DASHDOT, 1, false, "N2 $ " + gN2High[i].name);
+   for(int i=0; i<ArraySize(gN2Low); i++)
+      NDrawLine(PFX+"STR2_LIQ_L"+IntegerToString(i), BarT(tf, gN2Low[i].shift), gN2Low[i].price, tEnd,
+                clrKhaki, STYLE_DASHDOT, 1, false, "N2 $ " + gN2Low[i].name);
+  }
+
+//--- one direction of N2. Returns true when an entry signal is ready.
+bool N2Step(TSweepSetup &st, int dir, int tf, string &msg)
+  {
+   if(!DirAllowed(dir))
+     {
+      msg = "direction disabled";
+      return(false);
+     }
+   double h1 = BarH(tf, 1), l1 = BarL(tf, 1), c1 = BarC(tf, 1);
+   string tag = (dir>0 ? "B" : "S");
+
+   //--- phase 0: detect a sweep of liquidity
+   if(st.phase==0)
+     {
+      int n = (dir>0 ? ArraySize(gN2Low) : ArraySize(gN2High));
+      bool found = false;
+      for(int i=0; i<n && !found; i++)
+        {
+         double lv = (dir>0 ? gN2Low[i].price : gN2High[i].price);
+         bool sweep = (dir>0 ? l1<lv-Pips(N2_MinSweepPips) : h1>lv+Pips(N2_MinSweepPips));
+         if(!sweep)
+            continue;
+         found = true;
+         st.phase = 1;
+         st.level = lv;
+         st.name = (dir>0 ? gN2Low[i].name : gN2High[i].name);
+         st.extreme = (dir>0 ? l1 : h1);
+         st.sweepTime = BarT(tf, 1);
+         st.bars = 0;
+         bool beyond = (dir>0 ? c1<lv : c1>lv);
+         st.closesBeyond = (beyond ? 1 : 0);
+         st.reclaimed = !beyond;
+         st.mss = false;
+         int ms = FindSwing(tf, dir>0, 2, N2_MSSLookback, N2_SwingStrength);
+         if(ms<0)
+            ms = (dir>0 ? iHighest(Symbol(), tf, MODE_HIGH, N2_MSSLookback, 2) : iLowest(Symbol(), tf, MODE_LOW, N2_MSSLookback, 2));
+         st.mssLevel = (dir>0 ? BarH(tf, ms) : BarL(tf, ms));
+         st.mssTime = BarT(tf, ms);
+         NDrawArrow(PFX+"STR2_SWP_"+tag+IntegerToString((int)st.sweepTime), st.sweepTime, st.extreme, dir,
+                    dir>0 ? ClrBullish : ClrBearish);
+         if(CanDraw())
+            DrawTextObj(PFX+"STR2_SWP_"+tag+IntegerToString((int)st.sweepTime)+"_T", st.sweepTime, st.extreme,
+                        "N2 SWEEP " + st.name, ClrLiquidity, dir>0 ? ANCHOR_UPPER : ANCHOR_LOWER, PanelFontSize-1);
+         Log(StringFormat("N2 %s: %s @%s swept (extreme %s, candle %s)", DirStr(dir), st.name, PriceStr(lv),
+                          PriceStr(st.extreme), beyond ? "closed BEYOND the level" : "closed back INSIDE (wick sweep)"));
+        }
+      if(!found)
+        {
+         msg = "waiting sweep of " + IntegerToString(n) + (dir>0 ? " sell-side" : " buy-side") + " level(s)";
+         return(false);
+        }
+     }
+   else
+     {
+      //--- update the sweep on later candles
+      st.bars++;
+      if(dir>0 && l1<st.extreme)
+         st.extreme = l1;
+      if(dir<0 && h1>st.extreme)
+         st.extreme = h1;
+      bool beyond = (dir>0 ? c1<st.level : c1>st.level);
+      if(st.phase==1)
+        {
+         if(beyond && !st.reclaimed)
+            st.closesBeyond++;
+         else
+            if(beyond && st.reclaimed)
+              {
+               Log("N2 " + DirStr(dir) + ": reclaim failed (closed beyond the level again) - cancelled");
+               ResetSweep(st);
+               msg = "REJECT: reclaim failed";
+               return(false);
+              }
+            else
+               st.reclaimed = true;
+        }
+      if(st.bars>N2_SignalExpiryBars)
+        {
+         ResetSweep(st);
+         msg = "REJECT: signal expired (" + IntegerToString(N2_SignalExpiryBars) + " bars after sweep)";
+         return(false);
+        }
+      if(st.phase==2 && ((dir>0 && c1<st.extreme) || (dir<0 && c1>st.extreme)))
+        {
+         ResetSweep(st);
+         msg = "REJECT: closed beyond the sweep extreme - real breakout";
+         return(false);
+        }
+     }
+
+   //--- classification: real breakout vs sweep / false breakout
+   if(st.phase==1)
+     {
+      if(!st.reclaimed && st.closesBeyond>=N2_RealBreakoutCloses)
+        {
+         Log(StringFormat("N2 %s: REAL BREAKOUT of %s (%d closes beyond) - no trade", DirStr(dir), st.name, st.closesBeyond));
+         ResetSweep(st);
+         msg = "REJECT: real breakout (closes beyond the level)";
+         return(false);
+        }
+      bool needReclaim = (N2_TriggerMode==N2_RECLAIM || N2_TriggerMode==N2_RECLAIM_AND_MSS);
+      if(needReclaim && !st.reclaimed && st.bars>=N2_ReclaimBars)
+        {
+         ResetSweep(st);
+         msg = "REJECT: no close back inside within " + IntegerToString(N2_ReclaimBars) + " candles";
+         return(false);
+        }
+      if(!st.mss && (dir>0 ? c1>st.mssLevel+Pips(N2_MSSMinBreakPips) : c1<st.mssLevel-Pips(N2_MSSMinBreakPips)))
+        {
+         st.mss = true;
+         if(CanDraw())
+            DrawStructure(PFX+"STR2_MSS_"+tag+IntegerToString((int)st.sweepTime), st.mssTime, BarT(tf, 1), st.mssLevel, "N2 MSS");
+        }
+      bool trig = false;
+      if(N2_TriggerMode==N2_RECLAIM)
+         trig = st.reclaimed;
+      else
+         if(N2_TriggerMode==N2_MSS)
+            trig = st.mss;
+         else
+            if(N2_TriggerMode==N2_RECLAIM_OR_MSS)
+               trig = st.reclaimed || st.mss;
+            else
+               trig = st.reclaimed && st.mss;
+      if(!trig)
+        {
+         msg = StringFormat("swept %s - waiting %s (%d/%d)", st.name,
+                            N2_TriggerMode==N2_MSS ? "MSS" : (N2_TriggerMode==N2_RECLAIM ? "close back inside" : "reclaim/MSS"),
+                            st.bars, N2_SignalExpiryBars);
+         return(false);
+        }
+      st.cls = (st.closesBeyond>0 ? "FALSE BREAKOUT" : "LIQUIDITY SWEEP");
+      if(st.mss)
+         st.cls += " + VALID STRUCTURE BREAK";
+      st.phase = 2;
+      Log("N2 " + DirStr(dir) + ": " + st.cls + " confirmed at " + st.name);
+     }
+
+   //--- phase 2: entry (market or retest) + confirmation candle
+   if(st.phase==2)
+     {
+      if(N2_EntryMode==N2_ENTRY_RETEST)
+        {
+         bool retest = (dir>0 ? l1<=st.level+Pips(N2_RetestTolerancePips) && c1>st.level
+                        : h1>=st.level-Pips(N2_RetestTolerancePips) && c1<st.level);
+         if(!retest)
+           {
+            msg = st.cls + " - ENTRY READY, waiting retest of " + PriceStr(st.level);
+            return(false);
+           }
+        }
+      if(N2_RequireConfirmCandle && !IsConfirmCandle(tf, 1, dir, N2_CandleType, N2_ConfirmMinBodyRatio))
+        {
+         msg = st.cls + " - ENTRY READY, waiting confirmation candle";
+         return(false);
+        }
+      int idx = NIdx(ST_N2);
+      gNSig[idx].ready = true;
+      gNSig[idx].dir = dir;
+      gNSig[idx].key = st.sweepTime;
+      gNSig[idx].extreme = st.extreme;
+      gNSig[idx].zoneHi = st.level;
+      gNSig[idx].zoneLo = st.level;
+      gNSig[idx].partialTarget = 0;
+      gNSig[idx].reason = st.cls + " of " + st.name;
+      msg = "SIGNAL ACCEPTED: " + gNSig[idx].reason;
+      return(true);
+     }
+   msg = "idle";
+   return(false);
+  }
+
+bool CheckStrategy2Signal()
+  {
+   int idx = NIdx(ST_N2);
+   gNSig[idx].ready = false;
+   int tf = StratTF(ST_N2);
+   N2BuildLiquidity(tf);
+   string mb = "", ms = "";
+   bool sb = N2Step(gSwB, 1, tf, mb);
+   bool ss = false;
+   if(!sb)
+      ss = N2Step(gSwS, -1, tf, ms);
+   else
+      ms = "(buy signal has priority this bar)";
+   gEntryReady[ST_N2] = (gSwB.phase==2 || gSwS.phase==2);
+   SetCond(ST_N2, "BUY: " + mb + " | SELL: " + ms);
+   return(sb || ss);
+  }
+
+double CalculateStrategy2StopLoss()
+  {
+   int k = NIdx(ST_N2);
+   int tf = StratTF(ST_N2);
+   double buf = Pips(N2_SLBufferPips);
+   double sl;
+   if(N2_SLMode==N2_SL_ATR)
+     {
+      double atr = GetATR(tf, N2_ATRPeriod);
+      sl = (gNSig[k].dir>0 ? gNSig[k].entry-atr*N2_ATRMultiplierSL : gNSig[k].entry+atr*N2_ATRMultiplierSL);
+     }
+   else
+      if(N2_SLMode==N2_SL_SWING)
+        {
+         int s = FindSwing(tf, gNSig[k].dir<0, 1, 30, N2_SwingStrength);
+         sl = (s>0 ? (gNSig[k].dir>0 ? BarL(tf, s)-buf : BarH(tf, s)+buf) : 0);
+         if(sl<=0 || (gNSig[k].dir>0 && sl>=gNSig[k].entry) || (gNSig[k].dir<0 && sl<=gNSig[k].entry))
+            sl = (gNSig[k].dir>0 ? gNSig[k].extreme-buf : gNSig[k].extreme+buf);
+        }
+      else
+         sl = (gNSig[k].dir>0 ? gNSig[k].extreme-buf : gNSig[k].extreme+buf);
+   return(NP(sl));
+  }
+
+double CalculateStrategy2TakeProfit()
+  {
+   int k = NIdx(ST_N2);
+   int tf = StratTF(ST_N2);
+   double risk = MathAbs(gNSig[k].entry-gNSig[k].sl);
+   if(N2_TPMode==N2_TP_PARTIAL)
+      return(NP(gNSig[k].dir>0 ? gNSig[k].entry+risk*N2_FinalRR : gNSig[k].entry-risk*N2_FinalRR));
+   if(N2_TPMode==N2_TP_RR)
+      return(TargetOrRR(gNSig[k].dir, gNSig[k].entry, gNSig[k].sl, 0, 0, N2_RiskReward, "N2"));
+   double target = 0;
+   if(N2_TPMode==N2_TP_OPPOSITE_LIQ)
+     {
+      if(gNSig[k].dir>0)
+        {
+         for(int i=0; i<ArraySize(gN2High); i++)
+            if(gN2High[i].price>gNSig[k].entry && (target==0 || gN2High[i].price<target))
+               target = gN2High[i].price;
+        }
+      else
+        {
+         for(int i=0; i<ArraySize(gN2Low); i++)
+            if(gN2Low[i].price<gNSig[k].entry && (target==0 || gN2Low[i].price>target))
+               target = gN2Low[i].price;
+        }
+     }
+   else
+     {
+      int s = FindSwing(tf, gNSig[k].dir>0, 1, N2_LiquidityLookback, N2_SwingStrength);
+      if(s>0)
+         target = (gNSig[k].dir>0 ? BarH(tf, s) : BarL(tf, s));
+     }
+   return(TargetOrRR(gNSig[k].dir, gNSig[k].entry, gNSig[k].sl, target, N2_MinRR, N2_RiskReward, "N2"));
+  }
+
+bool ExecuteStrategy2Trade()
+  {
+   int idx = NIdx(ST_N2);
+   if(!gNSig[idx].ready)
+      return(false);
+   RefreshRates();
+   gNSig[idx].entry = (gNSig[idx].dir>0 ? Ask : Bid);
+   gNSig[idx].sl = CalculateStrategy2StopLoss();
+   gNSig[idx].tp = CalculateStrategy2TakeProfit();
+   int res = ExecuteSignal(ST_N2, gNSig[idx].dir, gNSig[idx].entry, gNSig[idx].sl, gNSig[idx].tp,
+                           gNSig[idx].reason, gNSig[idx].key, false);
+   gNSig[idx].ready = false;
+   if(res!=0)
+     {
+      if(gNSig[idx].dir>0)
+         ResetSweep(gSwB);
+      else
+         ResetSweep(gSwS);
+     }
+   return(res>0);
+  }
+
+//+------------------------------------------------------------------+
+//| ================= N3: VOLUME PROFILE =========================== |
+//+------------------------------------------------------------------+
+void ResetVP()
+  {
+   gVP.valid = false;
+   gVP.tStart = 0;
+   gVP.tEnd = 0;
+   gVP.lo = 0;
+   gVP.hi = 0;
+   gVP.bin = 0;
+   gVP.bins = 0;
+   gVP.poc = -1;
+   gVP.pocPrice = 0;
+   gVP.vah = 0;
+   gVP.val = 0;
+   gVP.maxVol = 0;
+   gVP.dir = 0;
+   gVP.calcKey = 0;
+   gVPArmB.armed = false;
+   gVPArmS.armed = false;
+   gVPForce = true;
+  }
+
+//--- range of the profile (bar shifts on the profile timeframe). Returns false if unavailable.
+bool N3ProfileRange(int ptf, int &sShift, int &eShift, int &dir, datetime &key, string &why)
+  {
+   dir = 0;
+   if(N3_ProfileSource==VP_LAST_IMPULSE)
+     {
+      if(!FindImpulse(ptf, N3_SwingStrength, N3_LookbackBars, Pips(N3_MinImpulsePips), 0, N3_MaxImpulseBars, false,
+                      dir, sShift, eShift, why))
+         return(false);
+      key = BarT(ptf, eShift);
+      return(true);
+     }
+   if(N3_ProfileSource==VP_PREVIOUS_DAY)
+     {
+      datetime d0 = iTime(Symbol(), PERIOD_D1, 0), d1 = iTime(Symbol(), PERIOD_D1, 1);
+      if(d0==0 || d1==0)
+        {
+         why = "no D1 data";
+         return(false);
+        }
+      sShift = iBarShift(Symbol(), ptf, d1, false);
+      eShift = iBarShift(Symbol(), ptf, d0, false)+1;
+      if(BarT(ptf, eShift-1)<d0)
+         eShift--;
+      key = d1;
+      if(sShift<eShift || eShift<1)
+        {
+         why = "previous day bars not found";
+         return(false);
+        }
+      return(true);
+     }
+   sShift = (int)MathMax(10, N3_LookbackBars);
+   eShift = 1;
+   key = iTime(Symbol(), N3_RefreshPeriod, 0);
+   return(true);
+  }
+
+bool N3NeedRefresh(int ptf)
+  {
+   if(gVPForce || N3_AutoRefresh || !gVP.valid)
+      return(true);
+   if(N3_ProfileSource==VP_LAST_IMPULSE)
+     {
+      int d = 0, s = 0, e = 0;
+      string why = "";
+      if(FindImpulse(ptf, N3_SwingStrength, N3_LookbackBars, Pips(N3_MinImpulsePips), 0, N3_MaxImpulseBars, false, d, s, e, why))
+         return(BarT(ptf, e)!=gVP.calcKey);
+      return(false);
+     }
+   if(N3_ProfileSource==VP_PREVIOUS_DAY)
+      return(iTime(Symbol(), PERIOD_D1, 1)!=gVP.calcKey);
+   return(iTime(Symbol(), N3_RefreshPeriod, 0)!=gVP.calcKey);
+  }
+
+//--- build the tick-volume profile: POC, value area, HVN, LVN
+bool N3Calculate(int ptf, string &why)
+  {
+   int s = 0, e = 0, dir = 0;
+   datetime key = 0;
+   if(!N3ProfileRange(ptf, s, e, dir, key, why))
+      return(false);
+   int bins = (int)MathMax(5, N3_Bins);
+   double hi = BarH(ptf, iHighest(Symbol(), ptf, MODE_HIGH, s-e+1, e));
+   double lo = BarL(ptf, iLowest(Symbol(), ptf, MODE_LOW, s-e+1, e));
+   if(hi-lo<=Point*bins)
+     {
+      why = "profile range too small";
+      return(false);
+     }
+   double bin = (hi-lo)/bins;
+   ArrayResize(gVPVol, bins);
+   ArrayInitialize(gVPVol, 0.0);
+   double total = 0;
+   for(int k=e; k<=s; k++)
+     {
+      double h = BarH(ptf, k), l = BarL(ptf, k);
+      double v = (double)iVolume(Symbol(), ptf, k);
+      if(v<=0)
+         continue;
+      total += v;
+      if(h-l<Point)
+        {
+         int b0 = (int)MathMin(bins-1, MathMax(0, MathFloor((BarC(ptf, k)-lo)/bin)));
+         gVPVol[b0] += v;
+         continue;
+        }
+      // distribute the candle volume over the bins it covers (uniform distribution)
+      int bFrom = (int)MathMax(0, MathFloor((l-lo)/bin));
+      int bTo = (int)MathMin(bins-1, MathFloor((h-lo)/bin));
+      for(int b=bFrom; b<=bTo; b++)
+        {
+         double bLo = lo+b*bin, bHi = bLo+bin;
+         double ov = MathMin(h, bHi)-MathMax(l, bLo);
+         if(ov>0)
+            gVPVol[b] += v*ov/(h-l);
+        }
+     }
+   if(total<=0)
+     {
+      why = "no tick volume";
+      return(false);
+     }
+   // POC
+   int poc = 0;
+   for(int b=1; b<bins; b++)
+      if(gVPVol[b]>gVPVol[poc])
+         poc = b;
+   double maxV = gVPVol[poc];
+   // Value area: expand from the POC toward the larger neighbour until VA% of volume is covered
+   double target = total*N3_ValueAreaPct/100.0, acc = gVPVol[poc];
+   int up = poc, dn = poc;
+   while(acc<target && (up<bins-1 || dn>0))
+     {
+      double vu = (up<bins-1 ? gVPVol[up+1] : -1);
+      double vd = (dn>0 ? gVPVol[dn-1] : -1);
+      if(vu>=vd)
+        {
+         up++;
+         acc += vu;
+        }
+      else
+        {
+         dn--;
+         acc += vd;
+        }
+     }
+   // HVN / LVN (local extremes of the histogram)
+   ArrayResize(gVPHvn, 0);
+   ArrayResize(gVPHvnStr, 0);
+   ArrayResize(gVPLvn, 0);
+   for(int b=1; b<bins-1; b++)
+     {
+      double v = gVPVol[b];
+      if(b!=poc && v>=gVPVol[b-1] && v>=gVPVol[b+1] && v>=maxV*N3_HVNThresholdPct/100.0)
+        {
+         int n = ArraySize(gVPHvn);
+         ArrayResize(gVPHvn, n+1);
+         ArrayResize(gVPHvnStr, n+1);
+         gVPHvn[n] = lo+(b+0.5)*bin;
+         gVPHvnStr[n] = v/maxV*100.0;
+        }
+      if(v<=gVPVol[b-1] && v<=gVPVol[b+1] && v<=maxV*N3_LVNThresholdPct/100.0)
+        {
+         int n = ArraySize(gVPLvn);
+         ArrayResize(gVPLvn, n+1);
+         gVPLvn[n] = lo+(b+0.5)*bin;
+        }
+     }
+   gVP.valid = true;
+   gVP.tStart = BarT(ptf, s);
+   gVP.tEnd = BarT(ptf, e);
+   gVP.lo = lo;
+   gVP.hi = hi;
+   gVP.bin = bin;
+   gVP.bins = bins;
+   gVP.poc = poc;
+   gVP.pocPrice = NP(lo+(poc+0.5)*bin);
+   gVP.vah = NP(lo+(up+1)*bin);
+   gVP.val = NP(lo+dn*bin);
+   gVP.maxVol = maxV;
+   gVP.dir = dir;
+   gVP.calcKey = key;
+   gVPArmB.armed = false;
+   gVPArmS.armed = false;
+   gVPForce = false;
+   Log(StringFormat("N3 profile %s -> %s (%d bars, %d bins): POC %s VAH %s VAL %s | HVN %d LVN %d | impulse %s",
+                    TimeToString(gVP.tStart), TimeToString(gVP.tEnd), s-e+1, bins, PriceStr(gVP.pocPrice),
+                    PriceStr(gVP.vah), PriceStr(gVP.val), ArraySize(gVPHvn), ArraySize(gVPLvn),
+                    dir>0 ? "UP" : (dir<0 ? "DOWN" : "n/a")));
+   DrawVP(ptf);
+   return(true);
+  }
+
+void DrawVP(int ptf)
+  {
+   DeleteByPrefix(PFX+"STR3_VP_");
+   if(!CanDraw() || !gVP.valid)
+      return;
+   string n = PFX+"STR3_VP_";
+   datetime tR = iTime(Symbol(), Period(), 0) + PeriodSeconds(Period())*15;
+   NDrawRect(n+"BOX", gVP.tStart, gVP.hi, gVP.tEnd, gVP.lo, C'25,30,45');
+   NDrawLine(n+"POC", gVP.tStart, gVP.pocPrice, tR, clrRed, STYLE_SOLID, 2, false, "N3 POC");
+   NDrawLine(n+"VAH", gVP.tStart, gVP.vah, tR, clrWhite, STYLE_SOLID, 1, false, "N3 VAH");
+   NDrawLine(n+"VAL", gVP.tStart, gVP.val, tR, clrWhite, STYLE_SOLID, 1, false, "N3 VAL");
+   for(int i=0; i<ArraySize(gVPHvn); i++)
+      NDrawRect(n+"HVN"+IntegerToString(i), gVP.tStart, gVPHvn[i]+gVP.bin/2, tR, gVPHvn[i]-gVP.bin/2, C'20,50,110');
+   for(int i=0; i<ArraySize(gVPLvn); i++)
+      NDrawLine(n+"LVN"+IntegerToString(i), gVP.tStart, gVPLvn[i], tR, clrGold, STYLE_DOT, 1, false, "LVN");
+   if(N3_DrawHistogram && gVP.maxVol>0)
+     {
+      int ps = PeriodSeconds(Period());
+      for(int b=0; b<gVP.bins; b++)
+        {
+         if(gVPVol[b]<=0)
+            continue;
+         int w = (int)MathMax(1, MathRound(gVPVol[b]/gVP.maxVol*N3_HistogramWidthBars));
+         double pLo = gVP.lo+b*gVP.bin, pHi = pLo+gVP.bin*0.9;
+         bool inVA = (pLo>=gVP.val-Point && pHi<=gVP.vah+Point);
+         NDrawRect(n+"H"+IntegerToString(b), gVP.tStart, pHi, gVP.tStart+w*ps, pLo,
+                   b==gVP.poc ? C'170,40,40' : (inVA ? C'40,70,150' : C'70,40,90'));
+        }
+     }
+  }
+
+//--- VP zones for entries
+int N3Zones(double &zHi[], double &zLo[], string &zName[])
+  {
+   ArrayResize(zHi, 0);
+   ArrayResize(zLo, 0);
+   ArrayResize(zName, 0);
+   double hw = (N3_ZoneWidthPips>0 ? Pips(N3_ZoneWidthPips) : gVP.bin/2.0);
+   int n = 0;
+   if(N3_TradePOC)
+     {
+      ArrayResize(zHi, n+1);
+      ArrayResize(zLo, n+1);
+      ArrayResize(zName, n+1);
+      zHi[n] = gVP.pocPrice+hw;
+      zLo[n] = gVP.pocPrice-hw;
+      zName[n] = "POC";
+      n++;
+     }
+   if(N3_TradeVAHVAL)
+     {
+      ArrayResize(zHi, n+2);
+      ArrayResize(zLo, n+2);
+      ArrayResize(zName, n+2);
+      zHi[n] = gVP.vah+hw;
+      zLo[n] = gVP.vah-hw;
+      zName[n] = "VAH";
+      zHi[n+1] = gVP.val+hw;
+      zLo[n+1] = gVP.val-hw;
+      zName[n+1] = "VAL";
+      n += 2;
+     }
+   if(N3_TradeHVN)
+      for(int i=0; i<ArraySize(gVPHvn); i++)
+        {
+         if(gVPHvnStr[i]<N3_MinZoneStrengthPct)
+            continue;
+         ArrayResize(zHi, n+1);
+         ArrayResize(zLo, n+1);
+         ArrayResize(zName, n+1);
+         zHi[n] = gVPHvn[i]+hw;
+         zLo[n] = gVPHvn[i]-hw;
+         zName[n] = "HVN";
+         n++;
+        }
+   if(N3_TradeLVN)
+      for(int i=0; i<ArraySize(gVPLvn); i++)
+        {
+         ArrayResize(zHi, n+1);
+         ArrayResize(zLo, n+1);
+         ArrayResize(zName, n+1);
+         zHi[n] = gVPLvn[i]+hw;
+         zLo[n] = gVPLvn[i]-hw;
+         zName[n] = "LVN";
+         n++;
+        }
+   return(n);
+  }
+
+bool N3DirAllowed(int dir, double c2)
+  {
+   if(!DirAllowed(dir))
+      return(false);
+   if(N3_BiasMode==VPB_BOTH_DIRECTIONS)
+      return(true);
+   if(N3_BiasMode==VPB_IMPULSE_DIRECTION && gVP.dir!=0)
+      return(dir==gVP.dir);
+   return(dir>0 ? c2>=gVP.pocPrice : c2<=gVP.pocPrice);   // price vs POC
+  }
+
+bool CheckStrategy3Signal()
+  {
+   int idx = NIdx(ST_N3);
+   gNSig[idx].ready = false;
+   gEntryReady[ST_N3] = false;
+   int ptf = TF(N3_ProfileTimeframe);
+   int ctf = StratTF(ST_N3);
+   if(N3NeedRefresh(ptf))
+     {
+      string why = "";
+      if(!N3Calculate(ptf, why))
+        {
+         SetCond(ST_N3, "REJECT: volume profile unavailable - " + why);
+         return(false);
+        }
+     }
+   if(!gVP.valid)
+     {
+      SetCond(ST_N3, "waiting for a valid volume profile");
+      return(false);
+     }
+   double h1 = BarH(ctf, 1), l1 = BarL(ctf, 1), c1 = BarC(ctf, 1), c2 = BarC(ctf, 2);
+   double zHi[], zLo[];
+   string zName[];
+   int nz = N3Zones(zHi, zLo, zName);
+   if(nz==0)
+     {
+      SetCond(ST_N3, "REJECT: no VP entry zone enabled / strong enough");
+      return(false);
+     }
+   string status = "";
+   for(int d=0; d<2; d++)
+     {
+      int dir = (d==0 ? 1 : -1);
+      if(!N3DirAllowed(dir, c2))
+         continue;
+      // retest arm bookkeeping
+      if(dir>0 && gVPArmB.armed && ++gVPArmB.bars>N3_RetestBars)
+         gVPArmB.armed = false;
+      if(dir<0 && gVPArmS.armed && ++gVPArmS.bars>N3_RetestBars)
+         gVPArmS.armed = false;
+      for(int z=0; z<nz; z++)
+        {
+         bool setup = false;
+         bool inZone = (l1<=zHi[z] && h1>=zLo[z]);
+         if(inZone)
+            gEntryReady[ST_N3] = true;
+         if(N3_EntryMode==VPE_TOUCH)
+            setup = (dir>0 ? l1<=zHi[z] && c1>=zLo[z] && c2>zHi[z] : h1>=zLo[z] && c1<=zHi[z] && c2<zLo[z]);
+         else
+            if(N3_EntryMode==VPE_REJECTION)
+               setup = (dir>0 ? l1<=zHi[z] && c1>zHi[z] && c2>zLo[z] : h1>=zLo[z] && c1<zLo[z] && c2<zHi[z]);
+            else
+              {
+               bool reclaim = (dir>0 ? c2<zLo[z] && c1>zHi[z] : c2>zHi[z] && c1<zLo[z]);
+               if(N3_EntryMode==VPE_RECLAIM)
+                  setup = reclaim;
+               else
+                 {
+                  // RETEST: reclaim arms the zone, a later touch + close back out is the entry
+                  if(reclaim)
+                    {
+                     if(dir>0)
+                       {
+                        gVPArmB.armed = true;
+                        gVPArmB.zoneHi = zHi[z];
+                        gVPArmB.zoneLo = zLo[z];
+                        gVPArmB.name = zName[z];
+                        gVPArmB.bars = 0;
+                       }
+                     else
+                       {
+                        gVPArmS.armed = true;
+                        gVPArmS.zoneHi = zHi[z];
+                        gVPArmS.zoneLo = zLo[z];
+                        gVPArmS.name = zName[z];
+                        gVPArmS.bars = 0;
+                       }
+                     status = zName[z] + " reclaimed - waiting retest";
+                     continue;
+                    }
+                  bool armed = (dir>0 ? gVPArmB.armed && gVPArmB.name==zName[z] && MathAbs(gVPArmB.zoneHi-zHi[z])<Point
+                                : gVPArmS.armed && gVPArmS.name==zName[z] && MathAbs(gVPArmS.zoneHi-zHi[z])<Point);
+                  setup = armed && (dir>0 ? l1<=zHi[z] && c1>zHi[z] : h1>=zLo[z] && c1<zLo[z]);
+                 }
+              }
+         if(!setup)
+            continue;
+         if(N3_RequireConfirmCandle && !IsConfirmCandle(ctf, 1, dir, N3_CandleType, N3_ConfirmMinBodyRatio))
+           {
+            status = zName[z] + " " + DirStr(dir) + " setup - waiting confirmation candle";
+            gEntryReady[ST_N3] = true;
+            continue;
+           }
+         gNSig[idx].ready = true;
+         gNSig[idx].dir = dir;
+         gNSig[idx].key = gVP.calcKey;
+         gNSig[idx].zoneHi = zHi[z];
+         gNSig[idx].zoneLo = zLo[z];
+         gNSig[idx].extreme = (dir>0 ? l1 : h1);
+         gNSig[idx].partialTarget = 0;
+         string modeTxt[4] = {"touch", "rejection", "reclaim", "retest"};
+         gNSig[idx].reason = "VP " + zName[z] + " " + modeTxt[(int)N3_EntryMode] +
+                             (N3_RequireConfirmCandle ? " + " + ConfirmName(N3_CandleType) : "");
+         SetCond(ST_N3, "SIGNAL ACCEPTED: " + gNSig[idx].reason);
+         return(true);
+        }
+     }
+   if(status=="")
+      status = StringFormat("WAITING: price %s | POC %s VAH %s VAL %s | bias %s", PriceStr(c1), PriceStr(gVP.pocPrice),
+                            PriceStr(gVP.vah), PriceStr(gVP.val), gVP.dir>0 ? "UP" : (gVP.dir<0 ? "DOWN" : "n/a"));
+   SetCond(ST_N3, status);
+   return(false);
+  }
+
+double CalculateStrategy3StopLoss()
+  {
+   int k = NIdx(ST_N3);
+   int ctf = StratTF(ST_N3);
+   double buf = Pips(N3_SLBufferPips);
+   double sl;
+   if(N3_SLMode==N3_SL_ATR)
+     {
+      double atr = GetATR(ctf, N3_ATRPeriod);
+      sl = (gNSig[k].dir>0 ? gNSig[k].entry-atr*N3_ATRMultiplierSL : gNSig[k].entry+atr*N3_ATRMultiplierSL);
+     }
+   else
+      if(N3_SLMode==N3_SL_SWING)
+        {
+         int s = FindSwing(ctf, gNSig[k].dir<0, 1, 30, 2);
+         sl = (s>0 ? (gNSig[k].dir>0 ? BarL(ctf, s)-buf : BarH(ctf, s)+buf) : 0);
+         if(sl<=0 || (gNSig[k].dir>0 && sl>=gNSig[k].entry) || (gNSig[k].dir<0 && sl<=gNSig[k].entry))
+            sl = (gNSig[k].dir>0 ? MathMin(gNSig[k].zoneLo, gNSig[k].extreme)-buf : MathMax(gNSig[k].zoneHi, gNSig[k].extreme)+buf);
+        }
+      else
+         sl = (gNSig[k].dir>0 ? MathMin(gNSig[k].zoneLo, gNSig[k].extreme)-buf : MathMax(gNSig[k].zoneHi, gNSig[k].extreme)+buf);
+   return(NP(sl));
+  }
+
+//--- VP levels beyond the entry, nearest first
+int N3Targets(int dir, double entry, double &out[])
+  {
+   ArrayResize(out, 0);
+   double cand[];
+   int n = 0;
+   ArrayResize(cand, 5+ArraySize(gVPHvn)+ArraySize(gVPLvn));
+   if(N3_TPMode==N3_TP_POC || N3_TPMode==N3_TP_OPPOSITE_ZONE)
+      cand[n++] = gVP.pocPrice;
+   if(N3_TPMode==N3_TP_VA_EDGE || N3_TPMode==N3_TP_OPPOSITE_ZONE)
+     {
+      cand[n++] = (dir>0 ? gVP.vah : gVP.val);
+      if(N3_TPMode==N3_TP_OPPOSITE_ZONE)
+         cand[n++] = (dir>0 ? gVP.val : gVP.vah);
+     }
+   if(N3_TPMode==N3_TP_HVN || N3_TPMode==N3_TP_OPPOSITE_ZONE)
+      for(int i=0; i<ArraySize(gVPHvn); i++)
+         cand[n++] = gVPHvn[i];
+   if(N3_TPMode==N3_TP_LVN)
+      for(int i=0; i<ArraySize(gVPLvn); i++)
+         cand[n++] = gVPLvn[i];
+   // profile extreme as the last structural target
+   cand[n++] = (dir>0 ? gVP.hi : gVP.lo);
+   int m = 0;
+   for(int i=0; i<n; i++)
+     {
+      if((dir>0 && cand[i]<=entry) || (dir<0 && cand[i]>=entry))
+         continue;
+      ArrayResize(out, m+1);
+      out[m++] = cand[i];
+     }
+   // sort by distance from entry (nearest first)
+   for(int i=0; i<m-1; i++)
+      for(int j=i+1; j<m; j++)
+         if(MathAbs(out[j]-entry)<MathAbs(out[i]-entry))
+           {
+            double t = out[i];
+            out[i] = out[j];
+            out[j] = t;
+           }
+   return(m);
+  }
+
+double CalculateStrategy3TakeProfit()
+  {
+   int idx = NIdx(ST_N3);
+   
+   double risk = MathAbs(gNSig[idx].entry-gNSig[idx].sl);
+   double target = 0;
+   if(N3_TPMode!=N3_TP_RR && risk>0)
+     {
+      double t[];
+      int n = N3Targets(gNSig[idx].dir, gNSig[idx].entry, t);
+      for(int i=0; i<n; i++)
+         if(MathAbs(t[i]-gNSig[idx].entry)/risk>=N3_MinRR)
+           {
+            target = t[i];
+            break;
+           }
+      if(target==0)
+         Log("N3: no VP target with RR >= " + D2S(N3_MinRR) + " - using fixed RR");
+     }
+   if(!N3_UsePartial)
+      return(TargetOrRR(gNSig[idx].dir, gNSig[idx].entry, gNSig[idx].sl, target, N3_MinRR, N3_RiskReward, "N3"));
+   // partial at the VP target (or at N3_PartialAtR), remainder to the final RR (beyond the target)
+   gNSig[idx].partialTarget = (target>0 ? target : (gNSig[idx].dir>0 ? gNSig[idx].entry+risk*N3_PartialAtR : gNSig[idx].entry-risk*N3_PartialAtR));
+   double fin = (gNSig[idx].dir>0 ? gNSig[idx].entry+risk*N3_FinalRR : gNSig[idx].entry-risk*N3_FinalRR);
+   if(target>0 && ((gNSig[idx].dir>0 && fin<=target) || (gNSig[idx].dir<0 && fin>=target)))
+      fin = (gNSig[idx].dir>0 ? target+risk : target-risk);
+   return(NP(fin));
+  }
+
+bool ExecuteStrategy3Trade()
+  {
+   int idx = NIdx(ST_N3);
+   if(!gNSig[idx].ready)
+      return(false);
+   RefreshRates();
+   gNSig[idx].entry = (gNSig[idx].dir>0 ? Ask : Bid);
+   gNSig[idx].sl = CalculateStrategy3StopLoss();
+   gNSig[idx].tp = CalculateStrategy3TakeProfit();
+   int res = ExecuteSignal(ST_N3, gNSig[idx].dir, gNSig[idx].entry, gNSig[idx].sl, gNSig[idx].tp,
+                           gNSig[idx].reason, gNSig[idx].key, false);
+   gNSig[idx].ready = false;
+   if(res>0 && N3_UsePartial && gNSig[idx].partialTarget>0)
+     {
+      KVSet(PFX+"PT_"+IntegerToString(res), gNSig[idx].partialTarget);
+      Log("N3 #" + IntegerToString(res) + ": partial close planned at " + PriceStr(gNSig[idx].partialTarget));
+     }
+   if(res!=0)
+     {
+      gVPArmB.armed = false;
+      gVPArmS.armed = false;
+     }
+   return(res>0);
+  }
+
+//+------------------------------------------------------------------+
+//| ================= NEWS FILTER ================================== |
+//| MQL4 has no economic calendar: news times are entered manually. |
+//+------------------------------------------------------------------+
+string TrimStr(string v)
+  {
+   while(StringLen(v)>0 && (StringGetCharacter(v, 0)==' ' || StringGetCharacter(v, 0)=='\t'))
+      v = StringSubstr(v, 1);
+   while(StringLen(v)>0 && (StringGetCharacter(v, StringLen(v)-1)==' ' || StringGetCharacter(v, StringLen(v)-1)=='\t'))
+      v = StringSubstr(v, 0, StringLen(v)-1);
+   return(v);
+  }
+
+string NewsBlockText()
+  {
+   if(!UseNewsFilter)
+      return("");
+   datetime now = TimeCurrent();
+   string parts[];
+   int n = StringSplit(NewsTimes, ';', parts);
+   for(int i=0; i<n; i++)
+     {
+      string p = TrimStr(parts[i]);
+      if(StringLen(p)<10)
+         continue;
+      datetime t = StringToTime(p);
+      if(t>0 && now>=t-NewsMinutesBefore*60 && now<=t+NewsMinutesAfter*60)
+         return("news filter (" + p + ")");
+     }
+   n = StringSplit(NewsDailyTimes, ';', parts);
+   string day = TimeToString(now, TIME_DATE);
+   for(int i=0; i<n; i++)
+     {
+      string p = TrimStr(parts[i]);
+      if(StringLen(p)<4)
+         continue;
+      datetime t = StringToTime(day + " " + p);
+      if(t>0 && now>=t-NewsMinutesBefore*60 && now<=t+NewsMinutesAfter*60)
+         return("daily news filter (" + p + ")");
+     }
+   return("");
+  }
+
+//+------------------------------------------------------------------+
+//| Partial-close plans (S3, N2, N3) used by ManageOpenTrades        |
+//+------------------------------------------------------------------+
+bool PartialPlan(int magic, int ticket, int type, double op, double risk, double &trigger, double &pct, double &beOff)
+  {
+   bool buy = (type==OP_BUY);
+   if(magic==MagicStrategy3 && S3_TPMode==S3_TP_PARTIAL_BE)
+     {
+      if(risk<=0)
+         return(false);
+      trigger = (buy ? op+risk*S3_PartialAtR : op-risk*S3_PartialAtR);
+      pct = S3_PartialPercent;
+      beOff = S3_BEOffsetPips;
+      return(true);
+     }
+   if(magic==MagicNew2 && N2_TPMode==N2_TP_PARTIAL)
+     {
+      if(risk<=0)
+         return(false);
+      trigger = (buy ? op+risk*N2_PartialAtR : op-risk*N2_PartialAtR);
+      pct = N2_PartialPercent;
+      beOff = N2_BEOffsetPips;
+      return(true);
+     }
+   if(magic==MagicNew3 && N3_UsePartial)
+     {
+      string k = PFX+"PT_"+IntegerToString(ticket);
+      if(KVCheck(k) && KVGet(k)>0)
+         trigger = KVGet(k);
+      else
+        {
+         if(risk<=0)
+            return(false);
+         trigger = (buy ? op+risk*N3_PartialAtR : op-risk*N3_PartialAtR);
+        }
+      pct = N3_PartialPercent;
+      beOff = N3_BEOffsetPips;
+      return(true);
+     }
+   return(false);
+  }
+
+//+------------------------------------------------------------------+
+//| Strategy objects (hide / remove when disabled)                   |
+//+------------------------------------------------------------------+
+void DeleteStrategyObjects(int s)
+  {
+   if(s==ST_S1)
+      DeleteByPrefix(PFX+"S1");
+   else
+      if(s==ST_S2)
+         DeleteByPrefix(PFX+"S2");
+      else
+         if(s==ST_S3)
+           {
+            DeleteByPrefix(PFX+"S3");
+            DeleteByPrefix(PFX+"LIQ_");
+           }
+         else
+            if(s==ST_N1)
+               DeleteByPrefix(PFX+"STR1_");
+            else
+               if(s==ST_N2)
+                  DeleteByPrefix(PFX+"STR2_");
+               else
+                  if(s==ST_N3)
+                     DeleteByPrefix(PFX+"STR3_");
+   DeleteByPrefix(PFX+"SIG_"+StratShort(s)+"_");
+  }
+
+void DeleteAllStrategyObjects()
+  {
+   for(int s=0; s<STRAT_COUNT; s++)
+      DeleteStrategyObjects(s);
+  }
+
+//--- ENTRY READY flag for the original strategies (setup in its final stage)
+void UpdateEntryReadyOld()
+  {
+   gEntryReady[ST_S1] = (gS1Buy.phase==S1_WAIT_CONF || gS1Sell.phase==S1_WAIT_CONF);
+   gEntryReady[ST_S2] = (gS2Buy.phase>=PH_WAIT_RET || gS2Sell.phase>=PH_WAIT_RET);
+   gEntryReady[ST_S3] = (gS3Buy.phase>=PH_WAIT_RET || gS3Sell.phase>=PH_WAIT_RET);
+  }
+
+//--- dashboard status of a strategy
+string StrategyStatus(int s, int openTrades)
+  {
+   if(!gStratOn[s])
+      return("DISABLED");
+   if(openTrades>0)
+      return("TRADE OPEN");
+   if(gState[s]=="Signal Detected")
+      return("SIGNAL DETECTED");
+   if(gEntryReady[s])
+      return("ENTRY READY");
+   return("WAITING");
+  }
+
+color StrategyStatusColor(string st)
+  {
+   if(st=="TRADE OPEN")
+      return(ClrProfit);
+   if(st=="SIGNAL DETECTED")
+      return(ClrProfit);
+   if(st=="ENTRY READY")
+      return(ClrWarning);
+   if(st=="WAITING")
+      return(ClrInfo);
+   return(ToggleOffColor);
+  }
+
+//+------------------------------------------------------------------+
 //| Expert initialization                                            |
 //+------------------------------------------------------------------+
 int OnInit()
   {
    // --- validate inputs
-   if(MagicStrategy1==MagicStrategy2 || MagicStrategy1==MagicStrategy3 || MagicStrategy2==MagicStrategy3 ||
-      MagicManual==MagicStrategy1 || MagicManual==MagicStrategy2 || MagicManual==MagicStrategy3)
+   int mg[7];
+   mg[0] = MagicStrategy1;
+   mg[1] = MagicStrategy2;
+   mg[2] = MagicStrategy3;
+   mg[3] = MagicNew1;
+   mg[4] = MagicNew2;
+   mg[5] = MagicNew3;
+   mg[6] = MagicManual;
+   bool dupMagic = false;
+   for(int a=0; a<7; a++)
+      for(int b=a+1; b<7; b++)
+         if(mg[a]==mg[b])
+            dupMagic = true;
+   if(dupMagic)
      {
       Alert(EA_NAME, ": every magic number must be unique.");
       return(INIT_PARAMETERS_INCORRECT);
@@ -595,7 +2480,7 @@ int OnInit()
       Alert(EA_NAME, ": MinBodyToRangeRatio must be > 0 and <= 1.");
       return(INIT_PARAMETERS_INCORRECT);
      }
-   if(S1_RiskReward<=0 || S2_RiskReward<=0 || S3_RiskReward<=0)
+   if(S1_RiskReward<=0 || S2_RiskReward<=0 || S3_RiskReward<=0 || N1_RiskReward<=0 || N2_RiskReward<=0 || N3_RiskReward<=0)
      {
       Alert(EA_NAME, ": Risk:Reward values must be > 0.");
       return(INIT_PARAMETERS_INCORRECT);
@@ -603,6 +2488,11 @@ int OnInit()
    if(S2_EntryPercentOfFVG<0 || S2_EntryPercentOfFVG>100 || S3_EntryPercentOfFVG<0 || S3_EntryPercentOfFVG>100)
      {
       Alert(EA_NAME, ": EntryPercentOfFVG must be between 0 and 100.");
+      return(INIT_PARAMETERS_INCORRECT);
+     }
+   if(N1_FibLevel<=0 || N1_FibLevel>=100 || N3_ValueAreaPct<=0 || N3_ValueAreaPct>100)
+     {
+      Alert(EA_NAME, ": N1_FibLevel must be between 0 and 100, N3_ValueAreaPct between 0 and 100.");
       return(INIT_PARAMETERS_INCORRECT);
      }
    if(TF(EntryTimeframe)>=TF(ReferenceTimeframe))
@@ -615,6 +2505,12 @@ int OnInit()
          Print(EA_NAME, ": WARNING - tester chart ", TFName(Period()), " is higher than S2 EntryTimeframe - run S2 tests on ", TFName(TF(EntryTimeframe)));
       if(EnableStrategy3 && TF(S3_Timeframe)<Period())
          Print(EA_NAME, ": WARNING - tester chart ", TFName(Period()), " is higher than S3 timeframe - run the test on ", TFName(TF(S3_Timeframe)));
+      if(StrategyModeHas(1) && TF(N1_ConfirmTimeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart is higher than N1 confirmation timeframe - run the test on ", TFName(TF(N1_ConfirmTimeframe)));
+      if(StrategyModeHas(2) && TF(N2_Timeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart is higher than N2 timeframe - run the test on ", TFName(TF(N2_Timeframe)));
+      if(StrategyModeHas(3) && TF(N3_ConfirmTimeframe)<Period())
+         Print(EA_NAME, ": WARNING - tester chart is higher than N3 confirmation timeframe - run the test on ", TFName(TF(N3_ConfirmTimeframe)));
      }
 
    gPip = PipSize();
@@ -623,6 +2519,9 @@ int OnInit()
    gStratOn[ST_S1] = EnableStrategy1;
    gStratOn[ST_S2] = EnableStrategy2;
    gStratOn[ST_S3] = EnableStrategy3;
+   gStratOn[ST_N1] = StrategyModeHas(1);
+   gStratOn[ST_N2] = StrategyModeHas(2);
+   gStratOn[ST_N3] = StrategyModeHas(3);
    gTrailOn = UseTrailingStop;
    gPerfVisible = ShowPerformancePanel;
 
@@ -633,7 +2532,16 @@ int OnInit()
       gLastCond[i] = "";
       gSignalBar[i] = 0;
       gLastBar[i] = 0;
+      gEntryReady[i] = false;
+      gTradesOpened[i] = 0;
      }
+   for(int i=0; i<3; i++)
+      gNSig[i].ready = false;
+   ResetFib();
+   gFibUsedKey = 0;
+   ResetSweep(gSwB);
+   ResetSweep(gSwS);
+   ResetVP();
    gS2Buy.ticket = 0;
    gS2Sell.ticket = 0;
    gS3Buy.ticket = 0;
@@ -744,8 +2652,12 @@ void RunStrategies()
          if(s==ST_S2)
             S2Process();
          else
-            S3Process();
+            if(s==ST_S3)
+               S3Process();
+            else
+               NProcess(s);     // new video strategies N1 / N2 / N3
      }
+   UpdateEntryReadyOld();
   }
 
 //+------------------------------------------------------------------+
@@ -836,6 +2748,12 @@ int StratTF(int s)
       return(TF(S1_Timeframe));
    if(s==ST_S2)
       return(TF(EntryTimeframe));
+   if(s==ST_N1)
+      return(TF(N1_ConfirmTimeframe));
+   if(s==ST_N2)
+      return(TF(N2_Timeframe));
+   if(s==ST_N3)
+      return(TF(N3_ConfirmTimeframe));
    return(TF(S3_Timeframe));
   }
 
@@ -847,6 +2765,12 @@ int StratMagic(int s)
       return(MagicStrategy2);
    if(s==ST_S3)
       return(MagicStrategy3);
+   if(s==ST_N1)
+      return(MagicNew1);
+   if(s==ST_N2)
+      return(MagicNew2);
+   if(s==ST_N3)
+      return(MagicNew3);
    return(MagicManual);
   }
 
@@ -858,6 +2782,12 @@ string StratShort(int s)
       return("S2");
    if(s==ST_S3)
       return("S3");
+   if(s==ST_N1)
+      return("N1");
+   if(s==ST_N2)
+      return("N2");
+   if(s==ST_N3)
+      return("N3");
    return("MAN");
   }
 
@@ -869,6 +2799,12 @@ string StratName(int s)
       return("S2 Candle Range MSS FVG");
    if(s==ST_S3)
       return("S3 Liquidity BOS FVG");
+   if(s==ST_N1)
+      return("N1 Fibonacci 50%");
+   if(s==ST_N2)
+      return("N2 Liquidity Sweep");
+   if(s==ST_N3)
+      return("N3 Volume Profile");
    return("Manual");
   }
 
@@ -880,8 +2816,14 @@ int MagicToStrat(int magic)
       return(ST_S2);
    if(magic==MagicStrategy3)
       return(ST_S3);
+   if(magic==MagicNew1)
+      return(ST_N1);
+   if(magic==MagicNew2)
+      return(ST_N2);
+   if(magic==MagicNew3)
+      return(ST_N3);
    if(magic==MagicManual)
-      return(3);
+      return(ST_MANUAL);
    return(-1);
   }
 
@@ -933,6 +2875,12 @@ void Log(string msg)
 void SetCond(int s, string msg)
   {
    gDetail[s] = msg;
+   if(DebugMode)
+     {
+      gLastCond[s] = msg;
+      Log("[DEBUG] " + StratShort(s) + " " + TimeToString(BarT(StratTF(s), 1)) + ": " + msg);
+      return;
+     }
    if(msg!=gLastCond[s])
      {
       gLastCond[s] = msg;
@@ -2364,6 +4312,8 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    gSignalBar[s] = BarT(tf, 1);
    gLastSignal = sigTxt;
    gLastSignalTime = TimeCurrent();
+   gLastSignalDir = dir;
+   gLastSignalStrat = s;
    DrawSignal(s, dir, price, sl, tp);
 
    if(!gAuto || gEmergencyStop)
@@ -2419,6 +4369,8 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
                   else
                      if(!AllowHedging && CountOrders(-1, dir>0 ? OP_SELL : OP_BUY, false)>0)
                         why = "hedging not allowed (opposite position open)";
+   if(why=="")
+      why = NewsBlockText();
    if(why!="")
      {
       Log(StratShort(s) + ": signal blocked - " + why + ". " + sigTxt);
@@ -2451,6 +4403,8 @@ int ExecuteSignal(int s, int dir, double price, double sl, double tp, string rea
    if(ticket>0)
      {
       KVSet(gv, (double)key);
+      if(s>=0 && s<STRAT_COUNT)
+         gTradesOpened[s]++;
       Notify("OPENED #" + IntegerToString(ticket) + " " + D2S(lots) + " lots: " + sigTxt);
       return(ticket);
      }
@@ -2961,15 +4915,16 @@ void ManageOpenTrades()
       // remember the ORIGINAL risk (1R) before any SL movement
       double risk = InitialRisk(ticket);
 
-      // --- S3 partial close at xR + break even
-      if(OrderMagicNumber()==MagicStrategy3 && S3_TPMode==S3_TP_PARTIAL_BE && !PartialDone(ticket) &&
-         StringFind(OrderComment(), "from #")<0)
+      // --- partial close + break even (S3 partial mode, N2 partial mode, N3 partial at VP target)
+      double pTrig = 0, pPct = 0, pBE = 0;
+      if(!PartialDone(ticket) && StringFind(OrderComment(), "from #")<0 &&
+         PartialPlan(OrderMagicNumber(), ticket, type, op, risk, pTrig, pPct, pBE))
         {
-         if(risk>0 && profitDist>=risk*S3_PartialAtR)
+         if(OrderSelect(ticket, SELECT_BY_TICKET) && (type==OP_BUY ? cp>=pTrig : cp<=pTrig))
            {
-            double closeLots = NormalizeLotDown(OrderLots()*S3_PartialPercent/100.0);
+            double closeLots = NormalizeLotDown(OrderLots()*pPct/100.0);
             double minLot = MarketInfo(Symbol(), MODE_MINLOT);
-            double beSL = NP(type==OP_BUY ? op+Pips(S3_BEOffsetPips) : op-Pips(S3_BEOffsetPips));
+            double beSL = NP(type==OP_BUY ? op+Pips(pBE) : op-Pips(pBE));
             MarkPartialDone(ticket);
             if(closeLots>=minLot && OrderLots()-closeLots>=minLot-1e-9)
               {
@@ -2982,14 +4937,14 @@ void ManageOpenTrades()
                      if(OrderSelect(child, SELECT_BY_TICKET) && IsBetterSL(type, beSL, OrderStopLoss()))
                         ModifySLTP(child, beSL, OrderTakeProfit());
                     }
-                  Notify(StringFormat("S3 partial close %.2f lots at %.1fR, SL -> BE (#%d)", closeLots, S3_PartialAtR, ticket));
+                  Notify(StringFormat("Partial close %.2f lots at %s, SL -> BE (#%d)", closeLots, PriceStr(pTrig), ticket));
                  }
               }
             else
               {
                if(IsBetterSL(type, beSL, sl))
                   ModifySLTP(ticket, beSL, tp);   // volume too small to split - only move to BE
-               Log("S3 partial: volume too small to split - SL moved to BE only");
+               Log("Partial: volume too small to split - SL moved to BE only");
               }
             continue;
            }
@@ -3307,6 +5262,8 @@ void CleanupTradeGlobals()
          tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"R_")));
       if(StringFind(n, PFX+"EXT_")==0)
          tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"EXT_")));
+      if(StringFind(n, PFX+"PT_")==0)
+         tk = (int)StringToInteger(StringSubstr(n, StringLen(PFX+"PT_")));
       if(tk<=0)
          continue;
       if(!OrderSelect(tk, SELECT_BY_TICKET) || OrderCloseTime()!=0)
@@ -3492,7 +5449,7 @@ void DrawTextObj(string n, datetime t, double p, string text, color c, int ancho
 //--- Strategy 1 trendline (candidate = dotted, active = solid)
 void DrawS1Trendline(TS1Setup &st, int tf, string tag, bool active)
   {
-   if(!gDrawUI || !ShowTrendlines || st.t1==0)
+   if(!CanDraw() || !ShowTrendlines || st.t1==0)
       return;
    string cand = PFX + "S1TL_" + tag + "_CAND";
    double pEnd = S1LineValue(st, tf, 0);
@@ -3511,7 +5468,7 @@ void DrawS1Trendline(TS1Setup &st, int tf, string tag, bool active)
 //--- text mark (breakout / retest / sweep)
 void DrawMark(string n, datetime t, double p, string text, color c, bool above)
   {
-   if(!gDrawUI || !ShowStructureMarks)
+   if(!CanDraw() || !ShowStructureMarks)
       return;
    DrawTextObj(n, t, p, (above ? "v " : "^ ") + text, c, above ? ANCHOR_LOWER : ANCHOR_UPPER, PanelFontSize);
   }
@@ -3519,7 +5476,7 @@ void DrawMark(string n, datetime t, double p, string text, color c, bool above)
 //--- BOS / MSS: dotted level from structure point to the breaking candle + label
 void DrawStructure(string n, datetime t1, datetime t2, double level, string text)
   {
-   if(!gDrawUI || !ShowStructureMarks)
+   if(!CanDraw() || !ShowStructureMarks)
       return;
    DrawTrend(n, t1, level, t2, level, ClrStructure, STYLE_DOT, 1, false);
    DrawTextObj(n + "_L", t2, level, text, ClrStructure, ANCHOR_LOWER, PanelFontSize);
@@ -3528,7 +5485,7 @@ void DrawStructure(string n, datetime t1, datetime t2, double level, string text
 //--- FVG rectangle
 void DrawFVG(string n, datetime t1, datetime t2, double top, double bottom, int dir, string text)
   {
-   if(!gDrawUI || !ShowFVGZones)
+   if(!CanDraw() || !ShowFVGZones)
       return;
    if(ObjectFind(0, n)<0)
      {
@@ -3552,7 +5509,7 @@ void DrawFVG(string n, datetime t1, datetime t2, double top, double bottom, int 
 //--- Strategy 2 reference range
 void DrawRefRange()
   {
-   if(!gDrawUI || !ShowReferenceRange || gS2RefTime==0)
+   if(!CanDraw() || !ShowReferenceRange || gS2RefTime==0)
       return;
    int tf = TF(EntryTimeframe);
    string n = PFX + "S2REF_" + IntegerToString((int)gS2RefTime);
@@ -3574,6 +5531,8 @@ void DrawLiquidity(int tf)
    if(!gDrawUI)
       return;
    DeleteByPrefix(PFX + "LIQ_");
+   if(!gShowObjs)
+      return;
    if(!ShowLiquidityLevels)
       return;
    datetime tEnd = BarT(tf, 0);
@@ -3594,7 +5553,7 @@ void DrawLiquidity(int tf)
 //--- signal arrow + strategy label + planned levels
 void DrawSignal(int s, int dir, double price, double sl, double tp)
   {
-   if(!gDrawUI)
+   if(!CanDraw())
       return;
    datetime t = iTime(Symbol(), Period(), 0);
    string n = PFX + "SIG_" + StratShort(s) + "_" + IntegerToString((int)t) + (dir>0 ? "B" : "S");
@@ -3835,6 +5794,15 @@ void BuildTradePanel()
    UIButton(BTN("S2"), c2, r, bw3, bh, gStratOn[ST_S2] ? "S2: ON" : "S2: OFF", OnOff(gStratOn[ST_S2]), ButtonTextColor);
    UIButton(BTN("S3"), c3, r, bw3, bh, gStratOn[ST_S3] ? "S3: ON" : "S3: OFF", OnOff(gStratOn[ST_S3]), ButtonTextColor);
    r += rowH;
+   // Row 12b: new video strategies
+   UIButton(BTN("N1"), c1, r, bw3, bh, gStratOn[ST_N1] ? "N1 FIB: ON" : "N1 FIB: OFF", OnOff(gStratOn[ST_N1]), ButtonTextColor);
+   UIButton(BTN("N2"), c2, r, bw3, bh, gStratOn[ST_N2] ? "N2 LIQ: ON" : "N2 LIQ: OFF", OnOff(gStratOn[ST_N2]), ButtonTextColor);
+   UIButton(BTN("N3"), c3, r, bw3, bh, gStratOn[ST_N3] ? "N3 VP: ON" : "N3 VP: OFF", OnOff(gStratOn[ST_N3]), ButtonTextColor);
+   r += rowH;
+   // Row 12c: refresh / objects
+   UIButton(BTN("REFRESH"), cx1, r, bw2, bh, "REFRESH STRATEGY", ButtonBgColor, ButtonTextColor);
+   UIButton(BTN("OBJS"), cx2, r, bw2, bh, gShowObjs ? "HIDE OBJECTS" : "SHOW OBJECTS", OnOff(gShowObjs), ButtonTextColor);
+   r += rowH;
    // Row 13: auto / stats
    UIButton(BTN("AUTO"), cx1, r, bw2, bh, gAuto ? "AUTO TRADING: ON" : "AUTO TRADING: OFF", OnOff(gAuto), ButtonTextColor);
    UIButton(BTN("STATS"), cx2, r, bw2, bh, gPerfVisible ? "HIDE STATS PANEL" : "SHOW STATS PANEL", ButtonBgColor, ButtonTextColor);
@@ -3944,14 +5912,52 @@ void PanelAction(string id)
      }
 
    // --- switches
-   if(id=="S1" || id=="S2" || id=="S3")
+   if(id=="S1" || id=="S2" || id=="S3" || id=="N1" || id=="N2" || id=="N3")
      {
-      int s = (id=="S1" ? ST_S1 : (id=="S2" ? ST_S2 : ST_S3));
+      int s = ST_S1;
+      if(id=="S2")
+         s = ST_S2;
+      if(id=="S3")
+         s = ST_S3;
+      if(id=="N1")
+         s = ST_N1;
+      if(id=="N2")
+         s = ST_N2;
+      if(id=="N3")
+         s = ST_N3;
       gStratOn[s] = !gStratOn[s];
       gState[s] = gStratOn[s] ? "Active" : "Inactive";
+      gLastBar[s] = 0;                  // evaluate again on the next tick
       if(!gStratOn[s])
+        {
          ResetStrategy(s);
+         DeleteStrategyObjects(s);      // remove its chart objects automatically
+        }
       PanelMsg(StratName(s) + (gStratOn[s] ? " ON" : " OFF"), ClrInfo);
+      return;
+     }
+   if(id=="REFRESH")
+     {
+      for(int k=0; k<STRAT_COUNT; k++)
+        {
+         ResetStrategy(k);
+         gLastBar[k] = 0;
+        }
+      gFibUsedKey = 0;
+      DeleteAllStrategyObjects();
+      RunStrategies();
+      PanelMsg("Strategies refreshed (setups reset, VP recalculated)", ClrInfo);
+      return;
+     }
+   if(id=="OBJS")
+     {
+      gShowObjs = !gShowObjs;
+      if(!gShowObjs)
+         DeleteAllStrategyObjects();
+      else
+         for(int k=0; k<STRAT_COUNT; k++)
+            gLastBar[k] = 0;              // redraw on the next evaluation
+      PanelMsg(gShowObjs ? "Strategy objects shown" : "Strategy objects hidden", ClrInfo);
       return;
      }
    if(id=="AUTO")
@@ -3996,10 +6002,25 @@ void ResetStrategy(int s)
          ResetFvg(gS2Sell);
         }
       else
-        {
-         ResetFvg(gS3Buy);
-         ResetFvg(gS3Sell);
-        }
+         if(s==ST_S3)
+           {
+            ResetFvg(gS3Buy);
+            ResetFvg(gS3Sell);
+           }
+         else
+            if(s==ST_N1)
+               ResetFib();
+            else
+               if(s==ST_N2)
+                 {
+                  ResetSweep(gSwB);
+                  ResetSweep(gSwS);
+                 }
+               else
+                  if(s==ST_N3)
+                     ResetVP();
+   if(s>=0 && s<STRAT_COUNT)
+      gEntryReady[s] = false;
   }
 
 //--- reference price for SL/TP pips conversion
@@ -4434,10 +6455,30 @@ void CalcHistoryStats()
    gTotalPL = 0;
    gWins = 0;
    gLosses = 0;
+   for(int k=0; k<=STRAT_COUNT; k++)
+     {
+      gWinsS[k] = 0;
+      gLossS[k] = 0;
+      gPLS[k] = 0;
+     }
    for(int i=0; i<total; i++)
      {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
          continue;
+      if(OrderType()<=OP_SELL && OrderSymbol()==Symbol())
+        {
+         int st = MagicToStrat(OrderMagicNumber());
+         if(st>=0 && st<=STRAT_COUNT)
+           {
+            double spl = OrderProfit()+OrderSwap()+OrderCommission();
+            gPLS[st] += spl;
+            if(spl>0)
+               gWinsS[st]++;
+            else
+               if(spl<0)
+                  gLossS[st]++;
+           }
+        }
       if(OrderType()>OP_SELL || !OrderInScope(StatsScope))
          continue;
       double pl = OrderProfit()+OrderSwap()+OrderCommission();
@@ -4614,18 +6655,45 @@ void UpdatePerfPanel()
             "Auto Trading", gAuto ? "ON" : "OFF", gAuto ? ClrProfit : ClrWarning);
 
    PerfHeader("STRATEGIES");
+   string act = "";
    for(int s=0; s<STRAT_COUNT; s++)
-     {
-      string d = gStratOn[s] ? gDetail[s] : "disabled";
-      if(StringLen(d)>80)
-         d = StringSubstr(d, 0, 80) + "..";
-      PerfLine(StratShort(s) + " " + gState[s], d, StateColor(gState[s]));
-     }
+      if(gStratOn[s])
+         act += StratShort(s) + " ";
+   PerfLine("Active", act=="" ? "none" : act, ClrInfo);
+   PerfLine("Last Signal", gLastSignalTime>0 ? TimeToString(gLastSignalTime, TIME_DATE|TIME_MINUTES) + "  " +
+            (gLastSignalStrat>=0 ? StratName(gLastSignalStrat) : "") + "  " + (gLastSignalDir>0 ? "BUY" : (gLastSignalDir<0 ? "SELL" : "")) : "-",
+            gLastSignalDir>0 ? ClrProfit : (gLastSignalDir<0 ? ClrLoss : ClrInfo));
    string ls = gLastSignal;
    if(StringLen(ls)>80)
       ls = StringSubstr(ls, 0, 80) + "..";
-   PerfLine("Last Signal", gLastSignalTime>0 ? TimeToString(gLastSignalTime, TIME_DATE|TIME_MINUTES) : "-", ClrInfo);
    PerfLine("", ls, ClrInfo);
+   for(int s=0; s<STRAT_COUNT; s++)
+     {
+      int sMagic = StratMagic(s), sOpen = 0;
+      double sLots = 0, sFloat = 0;
+      for(int i=OrdersTotal()-1; i>=0; i--)
+        {
+         if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+            continue;
+         if(OrderSymbol()!=Symbol() || OrderMagicNumber()!=sMagic || OrderType()>OP_SELL)
+            continue;
+         sOpen++;
+         sLots += OrderLots();
+         sFloat += OrderProfit()+OrderSwap()+OrderCommission();
+        }
+      int sClosed = gWinsS[s]+gLossS[s];
+      string stTxt = StrategyStatus(s, sOpen);
+      string info = StringFormat("open %d | lots %.2f | P/L %s | WR %s (%d) | opened %d", sOpen, sLots, Money(sFloat),
+                                 sClosed>0 ? DoubleToString(100.0*gWinsS[s]/sClosed, 0) + "%" : "-", sClosed, gTradesOpened[s]);
+      PerfLine(StratShort(s) + " " + stTxt, info, StrategyStatusColor(stTxt));
+      if(PerfShowStrategyDetails && gStratOn[s])
+        {
+         string d = gDetail[s];
+         if(StringLen(d)>85)
+            d = StringSubstr(d, 0, 85) + "..";
+         PerfLine("", d, PanelTextColor);
+        }
+     }
    if(gRiskBlock)
       PerfLine("WARNING", gRiskMsg, ClrWarning);
    else
@@ -4657,7 +6725,7 @@ void UpdatePerfPanel()
       PerfLine("", "no open trades", PanelTextColor);
 
    // remove stale rows from previous (longer) renders
-   for(int r=gPerfRow; r<gPerfRow+PerfMaxTradeRows+4; r++)
+   for(int r=gPerfRow; r<gPerfRow+PerfMaxTradeRows+24; r++)
      {
       for(int c=0; c<3; c++)
         {

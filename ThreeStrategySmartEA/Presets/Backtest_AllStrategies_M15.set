@@ -47,3 +47,4 @@ ST_UseStructure=true
 ST_Combine=0
 ST_ProfitLockStartR=2.0
 ST_ExtendTP=true
+NewStrategyMode=0
