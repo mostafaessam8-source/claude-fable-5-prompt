@@ -106,6 +106,32 @@ void RM_SaveState()
    FileWriteString(h, "DAY=" + IntegerToString(g_dayStamp) + "\r\n");
    FileWriteString(h, "PEAKDD=" + DoubleToString(g_peakDrawdown, 2) + "\r\n");
    FileWriteString(h, "RESID=" + DoubleToString(g_lockResidual, 8) + "\r\n");
+   // combined-operation controller
+   FileWriteString(h, "CTL=" + IntegerToString(g_ctl) + "\r\n");
+   FileWriteString(h, "LATCH=" + RM_B(g_recLatch) + "\r\n");
+   FileWriteString(h, "CYCLEID=" + IntegerToString(g_cycleId) + "\r\n");
+   FileWriteString(h, "CYCLESTART=" + IntegerToString(g_cycleStart) + "\r\n");
+   FileWriteString(h, "CYCLEEND=" + IntegerToString(g_cycleEnd) + "\r\n");
+   FileWriteString(h, "TRIGVAL=" + DoubleToString(g_trigValue, 4) + "\r\n");
+   FileWriteString(h, "HOSNAP=" + RM_B(g_hoSnapshot) + "\r\n");
+   FileWriteString(h, "HOPEND=" + RM_B(g_hoPendings) + "\r\n");
+   FileWriteString(h, "HOATT=" + IntegerToString(g_hoAttempts) + "\r\n");
+   FileWriteString(h, "ENGEND=" + RM_B(g_engineCycleEnded) + "\r\n");
+   FileWriteString(h, "OUTCOME=" + IntegerToString(g_cycleOutcome) + "\r\n");
+   FileWriteString(h, "CYCEMG=" + RM_B(g_cycleEmergency) + "\r\n");
+   FileWriteString(h, "CYCMAN=" + RM_B(g_cycleManual) + "\r\n");
+   FileWriteString(h, "CYCREAL=" + DoubleToString(g_cycleRealized, 2) + "\r\n");
+   FileWriteString(h, "NORMEN=" + RM_B(g_normalEnabled) + "\r\n");
+   FileWriteString(h, "NORMHALT=" + RM_B(g_normalHalted) + "\r\n");
+   FileWriteString(h, "OPRESUME=" + RM_B(g_operatorResume) + "\r\n");
+   FileWriteString(h, "LASTSIGBAR=" + IntegerToString(g_lastSignalBar) + "\r\n");
+   FileWriteString(h, "LASTSIG=" + IntegerToString(g_lastSignal) + "\r\n");
+   FileWriteString(h, "FRESHAFTER=" + IntegerToString(g_freshAfter) + "\r\n");
+   FileWriteString(h, "NAVG0=" + IntegerToString(g_normLastAvgBar[0]) + "\r\n");
+   FileWriteString(h, "NAVG1=" + IntegerToString(g_normLastAvgBar[1]) + "\r\n");
+   FileWriteString(h, "NREAL=" + DoubleToString(g_normalRealized, 2) + "\r\n");
+   FileWriteString(h, "JACT=" + IntegerToString(g_journalActor) + "\r\n");
+   FileWriteString(h, "REASON=" + RM_CsvSafe(g_lastReason) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -176,6 +202,31 @@ bool RM_LoadState()
       else if(key == "DAY") g_dayStamp = StringToInteger(val);
       else if(key == "PEAKDD") g_peakDrawdown = StringToDouble(val);
       else if(key == "RESID") g_lockResidual = StringToDouble(val);
+      else if(key == "CTL") g_ctl = (int)StringToInteger(val);
+      else if(key == "LATCH") g_recLatch = (val == "1");
+      else if(key == "CYCLEID") g_cycleId = (int)StringToInteger(val);
+      else if(key == "CYCLESTART") g_cycleStart = StringToInteger(val);
+      else if(key == "CYCLEEND") g_cycleEnd = StringToInteger(val);
+      else if(key == "TRIGVAL") g_trigValue = StringToDouble(val);
+      else if(key == "HOSNAP") g_hoSnapshot = (val == "1");
+      else if(key == "HOPEND") g_hoPendings = (val == "1");
+      else if(key == "HOATT") g_hoAttempts = (int)StringToInteger(val);
+      else if(key == "ENGEND") g_engineCycleEnded = (val == "1");
+      else if(key == "OUTCOME") g_cycleOutcome = (int)StringToInteger(val);
+      else if(key == "CYCEMG") g_cycleEmergency = (val == "1");
+      else if(key == "CYCMAN") g_cycleManual = (val == "1");
+      else if(key == "CYCREAL") g_cycleRealized = StringToDouble(val);
+      else if(key == "NORMEN") g_normalEnabled = (val == "1");
+      else if(key == "NORMHALT") g_normalHalted = (val == "1");
+      else if(key == "OPRESUME") g_operatorResume = (val == "1");
+      else if(key == "LASTSIGBAR") g_lastSignalBar = StringToInteger(val);
+      else if(key == "LASTSIG") g_lastSignal = (int)StringToInteger(val);
+      else if(key == "FRESHAFTER") g_freshAfter = StringToInteger(val);
+      else if(key == "NAVG0") g_normLastAvgBar[0] = StringToInteger(val);
+      else if(key == "NAVG1") g_normLastAvgBar[1] = StringToInteger(val);
+      else if(key == "NREAL") g_normalRealized = StringToDouble(val);
+      else if(key == "JACT") g_journalActor = (int)StringToInteger(val);
+      else if(key == "REASON") g_lastReason = val;
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];
@@ -239,6 +290,8 @@ bool RM_LoadState()
    FileClose(h);
    if(g_state < RM_ST_IDLE || g_state > RM_ST_ERROR_HOLD)
       g_state = RM_ST_ERROR_HOLD;
+   if(g_ctl < RM_CTL_NORMAL || g_ctl > RM_CTL_ERROR_HOLD)
+      g_ctl = RM_CTL_ERROR_HOLD;
    return true;
   }
 

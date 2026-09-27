@@ -23,11 +23,38 @@ string RM_StateName(int s)
    return "?";
   }
 
+string RM_CtlName(int c)
+  {
+   switch(c)
+     {
+      case RM_CTL_NORMAL:           return "NORMAL";
+      case RM_CTL_HANDOVER:         return "HANDOVER";
+      case RM_CTL_RECOVERY_ACTIVE:  return "RECOVERY_ACTIVE";
+      case RM_CTL_RECOVERY_CLOSING: return "RECOVERY_CLOSING";
+      case RM_CTL_COOLDOWN:         return "COOLDOWN";
+      case RM_CTL_PAUSED:           return "PAUSED";
+      case RM_CTL_ERROR_HOLD:       return "ERROR_HOLD";
+     }
+   return "?";
+  }
+
+string RM_OutcomeName(int o)
+  {
+   switch(o)
+     {
+      case RM_OUT_COMPLETED: return "COMPLETED";
+      case RM_OUT_EMERGENCY: return "EMERGENCY_CLOSE";
+      case RM_OUT_MANUAL:    return "MANUAL_TERMINATION";
+     }
+   return "-";
+  }
+
 string RM_RoleName(int r)
   {
    if(r == RM_ROLE_ORIGINAL) return "ORIGINAL";
    if(r == RM_ROLE_LOCK)     return "LOCK";
    if(r == RM_ROLE_RECOVERY) return "RECOVERY";
+   if(r == RM_ROLE_NORMAL)   return "NORMAL";
    return "NONE";
   }
 
@@ -42,6 +69,10 @@ string RM_PlanKindName(int k)
       case RM_PLAN_CLOSE_ALL: return "CLOSE_ALL";
       case RM_PLAN_LAUNCH:    return "LAUNCH_FINANCE";
       case RM_PLAN_MANUAL:    return "MANUAL_GROUP";
+      case RM_PLAN_NORMAL_TP:        return "NORMAL_TP";
+      case RM_PLAN_NORMAL_OVERLAP:   return "NORMAL_OVERLAP";
+      case RM_PLAN_NORMAL_CLOSE:     return "NORMAL_CLOSE";
+      case RM_PLAN_NORMAL_EMERGENCY: return "NORMAL_EMERGENCY";
      }
    return "NONE";
   }
@@ -65,6 +96,14 @@ string RM_ReasonName(int r)
 string RM_Side(int t)
   {
    return (t == RM_BUY) ? "BUY" : "SELL";
+  }
+
+//--- explicit string choice (avoids literal+literal concatenation pitfalls)
+string RM_Pick(bool cond, string a, string b)
+  {
+   if(cond)
+      return a;
+   return b;
   }
 
 string RM_Money(double v)

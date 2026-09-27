@@ -123,6 +123,48 @@ bool RM_ValidateInputs(string &err)
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
+   // ---- Three-MA normal strategy and combined operation
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      if(InpNormalMagic <= 0 || InpNormalMagic == InpRecoveryMagic || InpNormalMagic == InpLockMagic ||
+         InpNormalMagic == InpManualOriginalMagic || (InpEnableTestSeeds && InpNormalMagic == InpTestSeedMagic))
+        { err = "normal-strategy magic must be > 0 and differ from recovery, lock, manual and test magics"; return false; }
+      if(RM_InList(InpNormalMagic, g_magicExclude))
+        { err = "normal-strategy magic is in InpExcludeMagics - its basket could never be recovered"; return false; }
+      if(InpFastPeriod <= 0 || InpSlowPeriod <= 0 || (InpUseFilterMA && InpFilterPeriod <= 0))
+        { err = "moving-average periods must be positive"; return false; }
+      if(InpFastPeriod >= InpSlowPeriod)
+        { err = "fast MA period must be smaller than the slow MA period"; return false; }
+      if(InpUseFilterMA && InpSlowPeriod >= InpFilterPeriod)
+        { err = "with the filter enabled the periods must satisfy fast < slow < filter"; return false; }
+      if(InpNormalLot <= 0.0)
+        { err = "normal initial lot must be > 0"; return false; }
+      if(InpNormalLotMode == RM_NLOT_BALANCE && InpNormalLotPerBalance <= 0.0)
+        { err = "balance-based lot sizing needs InpNormalLotPerBalance > 0"; return false; }
+      if(InpNormalAveraging && (InpNormalAvgStepPoints <= 0.0 || InpNormalAvgMultiplier < 1.0 || InpNormalAvgMultiplier > 5.0))
+        { err = "normal averaging: spacing > 0 points and multiplier in [1.0, 5.0]"; return false; }
+      if(InpNormalMaxPerDir < 1 || InpNormalMaxLots < 0.0 || InpNormalTPPoints < 0.0)
+        { err = "normal limits: max orders per direction >= 1, max lots >= 0, TP >= 0"; return false; }
+      if(InpNormalOverlap && (InpNormalOverlapMinOrders < 2 || InpNormalOverlapTPPoints <= 0.0))
+        { err = "normal overlap needs at least 2 orders and a target > 0 points"; return false; }
+      if(InpNormalMaxSpread <= 0 || InpNormalSlippage < 0)
+        { err = "normal spread limit must be > 0 and slippage >= 0"; return false; }
+      if(InpResumeCooldownBars < 0)
+        { err = "resume cooldown must be >= 0 bars"; return false; }
+     }
+   if(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY)
+     {
+      // one threshold (InpLaunchDrawdown) controls the handover; InpLaunchMode is ignored here
+      if(InpLaunchDrawdown <= 0.0)
+        { err = "handover threshold InpLaunchDrawdown must be > 0"; return false; }
+      if(InpRecoveryTriggerMode == RM_TRIG_PERCENT && InpLaunchDrawdown > 100.0)
+        { err = "percentage handover threshold must be <= 100"; return false; }
+      bool sameUnit = (InpEmergencyMode == RM_EMG_PERCENT && InpRecoveryTriggerMode == RM_TRIG_PERCENT) ||
+                      (InpEmergencyMode == RM_EMG_MONEY && InpRecoveryTriggerMode == RM_TRIG_MONEY);
+      if(sameUnit && InpEmergencyValue <= InpLaunchDrawdown)
+        { err = "emergency-loss limit must be larger than the recovery-launch threshold (they are different controls)"; return false; }
+     }
+
    // derived planner configuration
    g_cfg.priority = InpRecoveryPriority;
    g_cfg.firstTicket = InpFirstRecoveryTicket;

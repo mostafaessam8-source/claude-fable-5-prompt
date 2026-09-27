@@ -20,6 +20,7 @@
 #define RM_ROLE_ORIGINAL  1
 #define RM_ROLE_LOCK      2
 #define RM_ROLE_RECOVERY  3
+#define RM_ROLE_NORMAL    4     // Three-MA normal-strategy order (never in the recovery registry)
 
 // ---- order sides (identical to MT4 OP_BUY / OP_SELL) --------------
 #define RM_BUY   0
@@ -200,6 +201,56 @@ enum ENUM_RM_TEST_SEED
    RM_SEED_UNBALANCED_MIX  = 4
   };
 
+// ---- combined operation (Three-MA normal trading + recovery) --------
+enum ENUM_RM_OPMODE
+  {
+   RM_OP_RECOVERY_ONLY          = 0, // Recovery only (original behaviour)
+   RM_OP_THREE_MA_ONLY          = 1, // Three-MA normal trading only
+   RM_OP_THREE_MA_WITH_RECOVERY = 2  // Three-MA with drawdown handover to recovery
+  };
+
+enum ENUM_RM_TRIG_MODE
+  {
+   RM_TRIG_PERCENT = 0, // % of balance
+   RM_TRIG_MONEY   = 1  // account currency
+  };
+
+enum ENUM_RM_TRIG_SCOPE
+  {
+   RM_TSCOPE_MANAGED = 0, // Managed strategy basket (default)
+   RM_TSCOPE_ACCOUNT = 1  // Whole account (balance - equity)
+  };
+
+enum ENUM_RM_NLOT
+  {
+   RM_NLOT_FIXED   = 0, // Fixed initial lot
+   RM_NLOT_BALANCE = 1  // Initial lot scaled by balance
+  };
+
+// controller (cycle) states
+#define RM_CTL_NORMAL           0
+#define RM_CTL_HANDOVER         1
+#define RM_CTL_RECOVERY_ACTIVE  2
+#define RM_CTL_RECOVERY_CLOSING 3
+#define RM_CTL_COOLDOWN         4
+#define RM_CTL_PAUSED           5
+#define RM_CTL_ERROR_HOLD       6
+
+// cycle outcomes
+#define RM_OUT_NONE      0
+#define RM_OUT_COMPLETED 1   // basket closed by the recovery engine
+#define RM_OUT_EMERGENCY 2   // emergency-loss limit closed the basket
+#define RM_OUT_MANUAL    3   // operator terminated the cycle early
+
+// actors for the central permission gate
+#define RM_ACTOR_NONE      0
+#define RM_ACTOR_RECOVERY  1
+#define RM_ACTOR_NORMAL    2
+#define RM_ACTOR_OPERATOR  3
+#define RM_ACTOR_EMERGENCY 4
+#define RM_ACTOR_TEST      5
+#define RM_ACTOR_HANDOVER  6
+
 // ---- plan kinds / reasons -----------------------------------------
 #define RM_PLAN_NONE      0
 #define RM_PLAN_GROUP     1   // recovery basket + main slice
@@ -209,6 +260,10 @@ enum ENUM_RM_TEST_SEED
 #define RM_PLAN_CLOSE_ALL 5   // operator/emergency close all
 #define RM_PLAN_LAUNCH    6   // launch "close profitable" financing
 #define RM_PLAN_MANUAL    7   // manual close-current-group
+#define RM_PLAN_NORMAL_TP        8   // normal basket virtual TP
+#define RM_PLAN_NORMAL_OVERLAP   9   // normal first+last overlap
+#define RM_PLAN_NORMAL_CLOSE    10   // operator closes the normal basket
+#define RM_PLAN_NORMAL_EMERGENCY 11  // emergency-loss limit closes the normal basket
 
 #define RM_R_OK               0
 #define RM_R_NO_RECOVERY      1

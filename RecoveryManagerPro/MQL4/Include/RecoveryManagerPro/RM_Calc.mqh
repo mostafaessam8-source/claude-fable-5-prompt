@@ -326,4 +326,135 @@ double RM_BreakEvenPrice(double priceNow, double netNow, double target, double m
    return priceNow + (target - netNow) / moneyPerPriceUnit;
   }
 
+//====================================================================
+// Combined operation: pure helpers (unit-tested natively)
+//====================================================================
+
+//+------------------------------------------------------------------+
+//| Balance-relative FLOATING drawdown (not peak-to-trough history).  |
+//| MANAGED: money = max(0, -managedFloatingNet)                       |
+//| ACCOUNT: money = max(0, balance - equity)                          |
+//| percent = 100 * money / balance ; 0 when balance <= 0 (guard)      |
+//+------------------------------------------------------------------+
+void RM_TriggerMetrics(int scope, double managedFloatingNet, double balance, double equity,
+                       double &ddMoney, double &ddPct)
+  {
+   if(scope == RM_TSCOPE_ACCOUNT)
+      ddMoney = MathMax(0.0, balance - equity);
+   else
+      ddMoney = MathMax(0.0, -managedFloatingNet);
+   ddPct = (balance > 0.0) ? 100.0 * ddMoney / balance : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Trigger when the selected metric >= threshold (threshold > 0).    |
+//| A zero/invalid balance never triggers percent mode.               |
+//+------------------------------------------------------------------+
+bool RM_TriggerHit(int mode, double ddMoney, double ddPct, double threshold, double balance)
+  {
+   if(threshold <= 0.0)
+      return false;
+   if(mode == RM_TRIG_PERCENT)
+      return balance > 0.0 && ddPct >= threshold - RM_EPS;
+   return ddMoney >= threshold - RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| 0..1 progress toward the threshold (for the dashboard bar)        |
+//+------------------------------------------------------------------+
+double RM_TriggerProgress(int mode, double ddMoney, double ddPct, double threshold)
+  {
+   if(threshold <= 0.0)
+      return 0.0;
+   double v = (mode == RM_TRIG_PERCENT) ? ddPct : ddMoney;
+   return MathMax(0.0, MathMin(1.0, v / threshold));
+  }
+
+//+------------------------------------------------------------------+
+//| Three-MA crossover on CLOSED candles.                              |
+//| BUY : f2 <= s2 AND f1 > s1 ; SELL: f2 >= s2 AND f1 < s1           |
+//| filter: BUY needs f1 > flt1 AND s1 > flt1 ; SELL both below.      |
+//| Returns +1 BUY, -1 SELL, 0 none/rejected.                          |
+//+------------------------------------------------------------------+
+int RM_MASignal(double f2, double s2, double f1, double s1, bool useFilter, double flt1)
+  {
+   int sig = 0;
+   if(f2 <= s2 && f1 > s1)
+      sig = 1;
+   else if(f2 >= s2 && f1 < s1)
+      sig = -1;
+   if(sig == 0 || !useFilter)
+      return sig;
+   if(sig == 1 && f1 > flt1 && s1 > flt1)
+      return 1;
+   if(sig == -1 && f1 < flt1 && s1 < flt1)
+      return -1;
+   return 0;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal-strategy initial lot (before broker normalisation).        |
+//| FIXED  : baseLot                                                    |
+//| BALANCE: baseLot * balance / perBalance                             |
+//+------------------------------------------------------------------+
+double RM_NormalBaseLot(int mode, double baseLot, double balance, double perBalance)
+  {
+   if(mode == RM_NLOT_BALANCE)
+     {
+      if(perBalance <= 0.0 || balance <= 0.0)
+         return 0.0;
+      return baseLot * balance / perBalance;
+     }
+   return baseLot;
+  }
+
+//+------------------------------------------------------------------+
+//| Virtual basket TP: price moved TP points beyond the volume-       |
+//| weighted average open price of the direction's basket.           |
+//+------------------------------------------------------------------+
+bool RM_BasketTPReached(int dir, double wavgOpen, double tpPoints, double point, double bid, double ask)
+  {
+   if(tpPoints <= 0.0 || wavgOpen <= 0.0)
+      return false;
+   if(dir == RM_BUY)
+      return bid >= wavgOpen + tpPoints * point - RM_EPS;
+   return ask <= wavgOpen - tpPoints * point + RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal overlap: first + last order net >= points * value * lots   |
+//+------------------------------------------------------------------+
+bool RM_NormalOverlapHit(double netFirst, double netLast, double lotsFirst, double lotsLast,
+                         double tpPoints, double mpp)
+  {
+   double target = RM_TargetMoney(tpPoints, mpp, lotsFirst + lotsLast);
+   if(target <= 0.0)
+      return false;
+   return netFirst + netLast >= target - RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| May normal trading resume after a completed recovery cycle?       |
+//| barsSince: signal-timeframe bars since completion                  |
+//+------------------------------------------------------------------+
+bool RM_ResumeAllowed(int outcome, bool halted, bool autoResume, bool operatorCmd,
+                      int barsSince, int cooldownBars)
+  {
+   if(barsSince < cooldownBars)
+      return false;                      // cooldown always applies
+   if(halted || outcome == RM_OUT_EMERGENCY || outcome == RM_OUT_MANUAL)
+      return operatorCmd;                // explicit reset required
+   return autoResume || operatorCmd;
+  }
+
+//+------------------------------------------------------------------+
+//| Fresh-signal rule: the crossover candle must open after the cycle |
+//+------------------------------------------------------------------+
+bool RM_SignalIsFresh(bool requireFresh, long signalBarOpen, long freshAfter)
+  {
+   if(!requireFresh || freshAfter <= 0)
+      return true;
+   return signalBarOpen >= freshAfter;
+  }
+
 #endif

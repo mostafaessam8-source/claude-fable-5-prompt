@@ -23,6 +23,23 @@ bool RM_JournalOpen()
    return g_journal.status == RM_J_IN_PROGRESS;
   }
 
+bool RM_IsNormalKind(int kind)
+  {
+   return kind == RM_PLAN_NORMAL_TP || kind == RM_PLAN_NORMAL_OVERLAP ||
+          kind == RM_PLAN_NORMAL_CLOSE || kind == RM_PLAN_NORMAL_EMERGENCY;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal-strategy results never mix with recovery-cycle accounting  |
+//+------------------------------------------------------------------+
+void RM_BookRealized(double v)
+  {
+   if(RM_IsNormalKind(g_journal.kind))
+      g_normalRealized += v;
+   else
+      RM_AddRealized(v);
+  }
+
 //+------------------------------------------------------------------+
 //| true if the ticket is a not-yet-confirmed leg of the open journal |
 //+------------------------------------------------------------------+
@@ -64,6 +81,7 @@ bool RM_StartPlan(const RM_Plan &p)
       return false;
    g_planSeq++;
    RM_JournalFromPlan(g_journal, p, g_planSeq);
+   g_journalActor = g_actor;             // legs always run under the actor that started the plan
    g_journalStart = (long)TimeCurrent();
    RM_Audit("PLAN", 0, 0, p.expectedNet, "id " + IntegerToString(g_planSeq) + " " + RM_PlanSummary(p));
    RM_SaveState();
@@ -83,7 +101,7 @@ void RM_FinishJournal()
             "id " + IntegerToString(g_journal.planId) + " " + RM_PlanKindName(g_journal.kind) +
             " estimated " + RM_Money(g_journal.estimatedNet) + " realised " + RM_Money(g_journal.realizedNet));
    if(g_journal.kind == RM_PLAN_GROUP || g_journal.kind == RM_PLAN_OVERLAP || g_journal.kind == RM_PLAN_MANUAL ||
-      g_journal.kind == RM_PLAN_REDUCE || g_journal.kind == RM_PLAN_BASKET)
+      g_journal.kind == RM_PLAN_REDUCE || g_journal.kind == RM_PLAN_BASKET || RM_IsNormalKind(g_journal.kind))
       RM_AnnotGroup(g_journal.realizedNet);
    RM_JournalClear(g_journal);
    RM_SaveState();
@@ -103,9 +121,21 @@ void RM_AfterClose(int ticket, double haveBefore, double closedLots, int child)
   }
 
 //+------------------------------------------------------------------+
-//| Execute pending legs. Returns true when the journal is finished.  |
+//| Execute pending legs under the journal's own actor.               |
 //+------------------------------------------------------------------+
 bool RM_RunJournal()
+  {
+   int prevActor = g_actor;
+   g_actor = g_journalActor;
+   bool done = RM_RunJournalLegs();
+   g_actor = prevActor;
+   return done;
+  }
+
+//+------------------------------------------------------------------+
+//| Execute pending legs. Returns true when the journal is finished.  |
+//+------------------------------------------------------------------+
+bool RM_RunJournalLegs()
   {
    if(!RM_JournalOpen())
       return true;
@@ -135,7 +165,7 @@ bool RM_RunJournal()
            {
             // filled before the last save (e.g. crash): count it once, now
             RM_JournalMarkLeg(g_journal, k, hl, hn);
-            RM_AddRealized(hn);
+            RM_BookRealized(hn);
             int ch = RM_FindChild(ticket);
             RM_AfterClose(ticket, g_journal.ticketLots[k], hl, ch);
             RM_Audit("LEG_RECONCILED", ticket, hl, hn, "fill found in history");
@@ -166,7 +196,7 @@ bool RM_RunJournal()
       if(RM_Close(ticket, want, closed, realized, child, err))
         {
          RM_JournalMarkLeg(g_journal, k, closed, realized);
-         RM_AddRealized(realized);
+         RM_BookRealized(realized);
          RM_AfterClose(ticket, have, closed, child);
          RM_AnnotConnector(ticket);
          RM_Audit("LEG_FILLED", ticket, closed, realized,

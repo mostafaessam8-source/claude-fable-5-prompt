@@ -1,24 +1,24 @@
-; Recovery Manager Pro - Conservative_Demo.set
-; PROPOSED demo-account profile. Every value here is a proposal by this
-; project, not an observation from the reference video, and none of it is a
-; recommendation for live trading. Smaller lots, wider grid, hard caps,
-; emergency pause and readable fonts. Test on a demo account first.
+; Recovery Manager Pro - Three_MA_With_Recovery.set
+; EXAMPLE settings for THREE_MA_WITH_RECOVERY. Every value is a test/demo input chosen by
+; this project - not the reference Three-MA EA's defaults and not a trading recommendation.
+; Handover: managed-strategy floating drawdown >= 10 % of balance (InpLaunchDrawdown, unit
+; InpRecoveryTriggerMode). InpLaunchMode is ignored in this mode. Emergency-loss limit 25 %
+; closes everything and requires an operator reset. Test on a demo account first.
 ; If your terminal rejects comment lines, delete the lines starting with ';'.
 ;
 InpRecoveryPriority=0
-InpScope=1
+InpScope=0
 InpMagicList=0
 InpExcludeMagics=
 InpAdoptPolicy=0
 InpFirstRecoveryTicket=0
 InpLocking=1
 InpDeleteSLTP=1
-; launch only after 5 % managed drawdown instead of instantly
-InpLaunchMode=1
-InpLaunchDrawdown=5.0
+InpLaunchMode=0
+InpLaunchDrawdown=10.0
 InpOtherEAs=0
 InpAllowChartClosure=0
-InpCloseProfitable=1
+InpCloseProfitable=0
 InpDeletePending=1
 InpPartialLots=0.01
 InpPartialTPPoints=30
@@ -76,10 +76,9 @@ InpMaxManagedLots=1.0
 InpMaxRecoveryLotsSum=0.50
 InpMinFreeMargin=0.0
 InpMinMarginLevel=300.0
-; emergency: pause automation at 15 % managed loss (still acts while paused)
 InpEmergencyMode=2
-InpEmergencyValue=15.0
-InpEmergencyAction=0
+InpEmergencyValue=25.0
+InpEmergencyAction=1
 InpEmergencyOverPause=1
 InpDailyLossLimit=0.0
 InpSessionStartHour=0
@@ -93,9 +92,7 @@ InpTestSeedScenario=0
 InpTestSeedLots=0.10
 InpTestSeedBar=5
 InpTestSeedMagic=12345
-;
-; --- 11-12. Three-MA normal strategy (added later; RECOVERY_ONLY keeps them inactive)
-InpOperatingMode=0
+InpOperatingMode=2
 InpRecoveryTriggerMode=0
 InpRecoveryTriggerScope=0
 InpAutoResumeAfterRecovery=1
@@ -118,12 +115,12 @@ InpNormalDirs=0
 InpNormalOneBasket=1
 InpNormalLotMode=0
 InpNormalLot=0.01
-InpNormalLotPerBalance=1000.0
-InpNormalAveraging=0
+InpNormalLotPerBalance=1000
+InpNormalAveraging=1
 InpNormalAvgStepPoints=300
 InpNormalAvgMultiplier=1.5
-InpNormalMaxPerDir=5
-InpNormalMaxLots=1.0
+InpNormalMaxPerDir=4
+InpNormalMaxLots=0.20
 InpNormalTPPoints=200
 InpNormalOverlap=0
 InpNormalOverlapMinOrders=3

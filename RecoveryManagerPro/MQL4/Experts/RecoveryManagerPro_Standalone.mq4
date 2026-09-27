@@ -45,6 +45,7 @@
 #define RM_ROLE_ORIGINAL  1
 #define RM_ROLE_LOCK      2
 #define RM_ROLE_RECOVERY  3
+#define RM_ROLE_NORMAL    4     // Three-MA normal-strategy order (never in the recovery registry)
 
 // ---- order sides (identical to MT4 OP_BUY / OP_SELL) --------------
 #define RM_BUY   0
@@ -225,6 +226,56 @@ enum ENUM_RM_TEST_SEED
    RM_SEED_UNBALANCED_MIX  = 4
   };
 
+// ---- combined operation (Three-MA normal trading + recovery) --------
+enum ENUM_RM_OPMODE
+  {
+   RM_OP_RECOVERY_ONLY          = 0, // Recovery only (original behaviour)
+   RM_OP_THREE_MA_ONLY          = 1, // Three-MA normal trading only
+   RM_OP_THREE_MA_WITH_RECOVERY = 2  // Three-MA with drawdown handover to recovery
+  };
+
+enum ENUM_RM_TRIG_MODE
+  {
+   RM_TRIG_PERCENT = 0, // % of balance
+   RM_TRIG_MONEY   = 1  // account currency
+  };
+
+enum ENUM_RM_TRIG_SCOPE
+  {
+   RM_TSCOPE_MANAGED = 0, // Managed strategy basket (default)
+   RM_TSCOPE_ACCOUNT = 1  // Whole account (balance - equity)
+  };
+
+enum ENUM_RM_NLOT
+  {
+   RM_NLOT_FIXED   = 0, // Fixed initial lot
+   RM_NLOT_BALANCE = 1  // Initial lot scaled by balance
+  };
+
+// controller (cycle) states
+#define RM_CTL_NORMAL           0
+#define RM_CTL_HANDOVER         1
+#define RM_CTL_RECOVERY_ACTIVE  2
+#define RM_CTL_RECOVERY_CLOSING 3
+#define RM_CTL_COOLDOWN         4
+#define RM_CTL_PAUSED           5
+#define RM_CTL_ERROR_HOLD       6
+
+// cycle outcomes
+#define RM_OUT_NONE      0
+#define RM_OUT_COMPLETED 1   // basket closed by the recovery engine
+#define RM_OUT_EMERGENCY 2   // emergency-loss limit closed the basket
+#define RM_OUT_MANUAL    3   // operator terminated the cycle early
+
+// actors for the central permission gate
+#define RM_ACTOR_NONE      0
+#define RM_ACTOR_RECOVERY  1
+#define RM_ACTOR_NORMAL    2
+#define RM_ACTOR_OPERATOR  3
+#define RM_ACTOR_EMERGENCY 4
+#define RM_ACTOR_TEST      5
+#define RM_ACTOR_HANDOVER  6
+
 // ---- plan kinds / reasons -----------------------------------------
 #define RM_PLAN_NONE      0
 #define RM_PLAN_GROUP     1   // recovery basket + main slice
@@ -234,6 +285,10 @@ enum ENUM_RM_TEST_SEED
 #define RM_PLAN_CLOSE_ALL 5   // operator/emergency close all
 #define RM_PLAN_LAUNCH    6   // launch "close profitable" financing
 #define RM_PLAN_MANUAL    7   // manual close-current-group
+#define RM_PLAN_NORMAL_TP        8   // normal basket virtual TP
+#define RM_PLAN_NORMAL_OVERLAP   9   // normal first+last overlap
+#define RM_PLAN_NORMAL_CLOSE    10   // operator closes the normal basket
+#define RM_PLAN_NORMAL_EMERGENCY 11  // emergency-loss limit closes the normal basket
 
 #define RM_R_OK               0
 #define RM_R_NO_RECOVERY      1
@@ -725,6 +780,137 @@ double RM_BreakEvenPrice(double priceNow, double netNow, double target, double m
    if(MathAbs(moneyPerPriceUnit) < RM_EPS)
       return 0.0;
    return priceNow + (target - netNow) / moneyPerPriceUnit;
+  }
+
+//====================================================================
+// Combined operation: pure helpers (unit-tested natively)
+//====================================================================
+
+//+------------------------------------------------------------------+
+//| Balance-relative FLOATING drawdown (not peak-to-trough history).  |
+//| MANAGED: money = max(0, -managedFloatingNet)                       |
+//| ACCOUNT: money = max(0, balance - equity)                          |
+//| percent = 100 * money / balance ; 0 when balance <= 0 (guard)      |
+//+------------------------------------------------------------------+
+void RM_TriggerMetrics(int scope, double managedFloatingNet, double balance, double equity,
+                       double &ddMoney, double &ddPct)
+  {
+   if(scope == RM_TSCOPE_ACCOUNT)
+      ddMoney = MathMax(0.0, balance - equity);
+   else
+      ddMoney = MathMax(0.0, -managedFloatingNet);
+   ddPct = (balance > 0.0) ? 100.0 * ddMoney / balance : 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Trigger when the selected metric >= threshold (threshold > 0).    |
+//| A zero/invalid balance never triggers percent mode.               |
+//+------------------------------------------------------------------+
+bool RM_TriggerHit(int mode, double ddMoney, double ddPct, double threshold, double balance)
+  {
+   if(threshold <= 0.0)
+      return false;
+   if(mode == RM_TRIG_PERCENT)
+      return balance > 0.0 && ddPct >= threshold - RM_EPS;
+   return ddMoney >= threshold - RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| 0..1 progress toward the threshold (for the dashboard bar)        |
+//+------------------------------------------------------------------+
+double RM_TriggerProgress(int mode, double ddMoney, double ddPct, double threshold)
+  {
+   if(threshold <= 0.0)
+      return 0.0;
+   double v = (mode == RM_TRIG_PERCENT) ? ddPct : ddMoney;
+   return MathMax(0.0, MathMin(1.0, v / threshold));
+  }
+
+//+------------------------------------------------------------------+
+//| Three-MA crossover on CLOSED candles.                              |
+//| BUY : f2 <= s2 AND f1 > s1 ; SELL: f2 >= s2 AND f1 < s1           |
+//| filter: BUY needs f1 > flt1 AND s1 > flt1 ; SELL both below.      |
+//| Returns +1 BUY, -1 SELL, 0 none/rejected.                          |
+//+------------------------------------------------------------------+
+int RM_MASignal(double f2, double s2, double f1, double s1, bool useFilter, double flt1)
+  {
+   int sig = 0;
+   if(f2 <= s2 && f1 > s1)
+      sig = 1;
+   else if(f2 >= s2 && f1 < s1)
+      sig = -1;
+   if(sig == 0 || !useFilter)
+      return sig;
+   if(sig == 1 && f1 > flt1 && s1 > flt1)
+      return 1;
+   if(sig == -1 && f1 < flt1 && s1 < flt1)
+      return -1;
+   return 0;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal-strategy initial lot (before broker normalisation).        |
+//| FIXED  : baseLot                                                    |
+//| BALANCE: baseLot * balance / perBalance                             |
+//+------------------------------------------------------------------+
+double RM_NormalBaseLot(int mode, double baseLot, double balance, double perBalance)
+  {
+   if(mode == RM_NLOT_BALANCE)
+     {
+      if(perBalance <= 0.0 || balance <= 0.0)
+         return 0.0;
+      return baseLot * balance / perBalance;
+     }
+   return baseLot;
+  }
+
+//+------------------------------------------------------------------+
+//| Virtual basket TP: price moved TP points beyond the volume-       |
+//| weighted average open price of the direction's basket.           |
+//+------------------------------------------------------------------+
+bool RM_BasketTPReached(int dir, double wavgOpen, double tpPoints, double point, double bid, double ask)
+  {
+   if(tpPoints <= 0.0 || wavgOpen <= 0.0)
+      return false;
+   if(dir == RM_BUY)
+      return bid >= wavgOpen + tpPoints * point - RM_EPS;
+   return ask <= wavgOpen - tpPoints * point + RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal overlap: first + last order net >= points * value * lots   |
+//+------------------------------------------------------------------+
+bool RM_NormalOverlapHit(double netFirst, double netLast, double lotsFirst, double lotsLast,
+                         double tpPoints, double mpp)
+  {
+   double target = RM_TargetMoney(tpPoints, mpp, lotsFirst + lotsLast);
+   if(target <= 0.0)
+      return false;
+   return netFirst + netLast >= target - RM_EPS;
+  }
+
+//+------------------------------------------------------------------+
+//| May normal trading resume after a completed recovery cycle?       |
+//| barsSince: signal-timeframe bars since completion                  |
+//+------------------------------------------------------------------+
+bool RM_ResumeAllowed(int outcome, bool halted, bool autoResume, bool operatorCmd,
+                      int barsSince, int cooldownBars)
+  {
+   if(barsSince < cooldownBars)
+      return false;                      // cooldown always applies
+   if(halted || outcome == RM_OUT_EMERGENCY || outcome == RM_OUT_MANUAL)
+      return operatorCmd;                // explicit reset required
+   return autoResume || operatorCmd;
+  }
+
+//+------------------------------------------------------------------+
+//| Fresh-signal rule: the crossover candle must open after the cycle |
+//+------------------------------------------------------------------+
+bool RM_SignalIsFresh(bool requireFresh, long signalBarOpen, long freshAfter)
+  {
+   if(!requireFresh || freshAfter <= 0)
+      return true;
+   return signalBarOpen >= freshAfter;
   }
 
 
@@ -1312,6 +1498,30 @@ void RM_PlanAll(const RM_Book &b, const RM_PlanConfig &c, double mpp,
   }
 
 //+------------------------------------------------------------------+
+//| Close the listed book legs in full (normal-strategy closures).    |
+//| targetMoney < 0 = unconditional.                                    |
+//+------------------------------------------------------------------+
+void RM_PlanListed(const RM_Book &b, const RM_PlanConfig &c, double mpp, int kind,
+                   const RM_IndexList &list, double targetMoney, RM_Plan &p)
+  {
+   RM_PlanReset(p, kind);
+   for(int k = 0; k < list.n; k++)
+      if(!RM_PlanAddLeg(p, b, list.idx[k], b.lots[list.idx[k]], c))
+         return;
+   if(p.n == 0)
+     {
+      p.reason = RM_R_NO_MAIN;
+      return;
+     }
+   RM_PlanTotals(p, c, mpp);
+   p.target = MathMax(0.0, targetMoney);
+   p.qualifies = (targetMoney < 0.0) || (p.expectedNet >= targetMoney - 1e-9);
+   if(!p.qualifies)
+      p.reason = RM_R_BELOW_TARGET;
+   RM_PlanSortForExecution(p);
+  }
+
+//+------------------------------------------------------------------+
 //| Journal core                                                      |
 //+------------------------------------------------------------------+
 void RM_JournalClear(RM_Journal &j)
@@ -1588,6 +1798,45 @@ input double             InpTestSeedLots       = 0.10;                 // Seed v
 input int                InpTestSeedBar        = 5;                    // Open seeds on this bar count
 input int                InpTestSeedMagic      = 12345;                // Seed magic number
 
+input string             S_OpMode              = "===== 11. Operating mode and recovery handover =====";
+input ENUM_RM_OPMODE     InpOperatingMode      = RM_OP_RECOVERY_ONLY;  // Operating mode
+input ENUM_RM_TRIG_MODE  InpRecoveryTriggerMode = RM_TRIG_PERCENT;     // Handover trigger unit (threshold = InpLaunchDrawdown)
+input ENUM_RM_TRIG_SCOPE InpRecoveryTriggerScope = RM_TSCOPE_MANAGED;  // Handover trigger scope
+input bool               InpAutoResumeAfterRecovery = true;            // Resume normal trading automatically after a completed cycle
+input int                InpResumeCooldownBars = 3;                    // Cooldown after cycle end [signal-timeframe bars]
+input bool               InpRequireFreshSignalAfterRecovery = true;    // Only crossovers whose candle opens after the cycle
+input bool               InpCombinedAdoptOthers = false;               // Also hand over orders in the section-1 scope (normally only own normal trades)
+
+input string             S_ThreeMA             = "===== 12. Three-MA normal strategy (project defaults, not the reference EA's) =====";
+input int                InpNormalMagic        = 7351001;              // Normal-strategy magic number
+input ENUM_TIMEFRAMES    InpSignalTF           = PERIOD_CURRENT;       // Signal timeframe
+input int                InpFastPeriod         = 10;                   // Fast MA period [bars]
+input ENUM_MA_METHOD     InpFastMethod         = MODE_EMA;             // Fast MA method
+input ENUM_APPLIED_PRICE InpFastPrice          = PRICE_CLOSE;          // Fast MA applied price
+input int                InpSlowPeriod         = 30;                   // Slow MA period [bars]
+input ENUM_MA_METHOD     InpSlowMethod         = MODE_EMA;             // Slow MA method
+input ENUM_APPLIED_PRICE InpSlowPrice          = PRICE_CLOSE;          // Slow MA applied price
+input bool               InpUseFilterMA        = true;                 // Third (filter) MA enabled
+input int                InpFilterPeriod       = 100;                  // Filter MA period [bars]
+input ENUM_MA_METHOD     InpFilterMethod       = MODE_SMA;             // Filter MA method
+input ENUM_APPLIED_PRICE InpFilterPrice        = PRICE_CLOSE;          // Filter MA applied price
+input ENUM_RM_DIRS       InpNormalDirs         = RM_DIRS_BOTH;         // Allowed normal directions
+input bool               InpNormalOneBasket    = true;                 // Ignore new signals while any normal basket is open
+input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initial lot: fixed or balance-based
+input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
+input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
+input bool               InpNormalAveraging    = false;                // Normal averaging enabled
+input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [points]
+input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
+input int                InpNormalMaxPerDir    = 5;                    // Maximum normal orders per direction
+input double             InpNormalMaxLots      = 1.0;                  // Maximum total normal exposure [lots, 0 = off]
+input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [points, 0 = off]
+input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
+input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
+input double             InpNormalOverlapTPPoints = 50;                // Overlap target [points x lots of the two orders]
+input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [points]
+input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [points]
+
 //====================================================================
 // MODULES
 //====================================================================
@@ -1690,6 +1939,37 @@ string   g_chartPreview = "";
 int      g_extHandleWarned = 0;
 int      g_tradeEvents = 0;             // confirmed sends/closes (snapshot refresh trigger)
 
+//--- central permission gate: who is asking for a trade operation right now
+int      g_actor = RM_ACTOR_NONE;
+string   g_lastDenied = "";             // last refused automated action (dashboard)
+
+//--- combined-operation controller (persisted)
+int      g_ctl = RM_CTL_NORMAL;         // cycle state
+bool     g_recLatch = false;            // recovery latch: once set only a completed cycle clears it
+int      g_cycleId = 0;
+long     g_cycleStart = 0;
+long     g_cycleEnd = 0;
+double   g_trigValue = 0.0;             // metric value that fired the handover
+bool     g_hoSnapshot = false;          // handover: tickets registered
+bool     g_hoPendings = false;          // handover: normal pendings cancelled and reconciled
+int      g_hoAttempts = 0;
+bool     g_engineCycleEnded = false;    // recovery engine reached COMPLETE for this cycle
+int      g_cycleOutcome = RM_OUT_NONE;
+bool     g_cycleEmergency = false;
+bool     g_cycleManual = false;
+double   g_cycleRealized = 0.0;         // realised net of the last finished cycle
+bool     g_normalEnabled = true;        // operator switch for normal entries
+bool     g_normalHalted = false;        // needs an explicit operator reset (emergency / manual end)
+bool     g_operatorResume = false;      // explicit operator resume command pending
+bool     g_forceStart = false;          // Start Recovery Now in RECOVERY_ONLY mode
+long     g_lastSignalBar = 0;           // open time of the last processed closed signal candle
+int      g_lastSignal = 0;              // +1 BUY / -1 SELL / 0 none on that candle
+long     g_freshAfter = 0;              // crossovers on candles opened before this are stale
+long     g_normLastAvgBar[2];           // per direction: signal candle of the last averaging order
+double   g_normalRealized = 0.0;        // realised net of normal-strategy closures (session)
+string   g_lastReason = "";             // last handover / block reason
+int      g_journalActor = RM_ACTOR_NONE; // actor that owns the open journal
+
 
 //==== inlined: Include/RecoveryManagerPro/RM_Log.mqh
 //+------------------------------------------------------------------+
@@ -1715,11 +1995,38 @@ string RM_StateName(int s)
    return "?";
   }
 
+string RM_CtlName(int c)
+  {
+   switch(c)
+     {
+      case RM_CTL_NORMAL:           return "NORMAL";
+      case RM_CTL_HANDOVER:         return "HANDOVER";
+      case RM_CTL_RECOVERY_ACTIVE:  return "RECOVERY_ACTIVE";
+      case RM_CTL_RECOVERY_CLOSING: return "RECOVERY_CLOSING";
+      case RM_CTL_COOLDOWN:         return "COOLDOWN";
+      case RM_CTL_PAUSED:           return "PAUSED";
+      case RM_CTL_ERROR_HOLD:       return "ERROR_HOLD";
+     }
+   return "?";
+  }
+
+string RM_OutcomeName(int o)
+  {
+   switch(o)
+     {
+      case RM_OUT_COMPLETED: return "COMPLETED";
+      case RM_OUT_EMERGENCY: return "EMERGENCY_CLOSE";
+      case RM_OUT_MANUAL:    return "MANUAL_TERMINATION";
+     }
+   return "-";
+  }
+
 string RM_RoleName(int r)
   {
    if(r == RM_ROLE_ORIGINAL) return "ORIGINAL";
    if(r == RM_ROLE_LOCK)     return "LOCK";
    if(r == RM_ROLE_RECOVERY) return "RECOVERY";
+   if(r == RM_ROLE_NORMAL)   return "NORMAL";
    return "NONE";
   }
 
@@ -1734,6 +2041,10 @@ string RM_PlanKindName(int k)
       case RM_PLAN_CLOSE_ALL: return "CLOSE_ALL";
       case RM_PLAN_LAUNCH:    return "LAUNCH_FINANCE";
       case RM_PLAN_MANUAL:    return "MANUAL_GROUP";
+      case RM_PLAN_NORMAL_TP:        return "NORMAL_TP";
+      case RM_PLAN_NORMAL_OVERLAP:   return "NORMAL_OVERLAP";
+      case RM_PLAN_NORMAL_CLOSE:     return "NORMAL_CLOSE";
+      case RM_PLAN_NORMAL_EMERGENCY: return "NORMAL_EMERGENCY";
      }
    return "NONE";
   }
@@ -1757,6 +2068,14 @@ string RM_ReasonName(int r)
 string RM_Side(int t)
   {
    return (t == RM_BUY) ? "BUY" : "SELL";
+  }
+
+//--- explicit string choice (avoids literal+literal concatenation pitfalls)
+string RM_Pick(bool cond, string a, string b)
+  {
+   if(cond)
+      return a;
+   return b;
   }
 
 string RM_Money(double v)
@@ -1950,6 +2269,48 @@ bool RM_ValidateInputs(string &err)
    if(InpEnableTestSeeds && (InpTestSeedMagic == InpRecoveryMagic || InpTestSeedMagic == InpLockMagic))
      { err = "test seed magic must differ from recovery/lock magic"; return false; }
 
+   // ---- Three-MA normal strategy and combined operation
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      if(InpNormalMagic <= 0 || InpNormalMagic == InpRecoveryMagic || InpNormalMagic == InpLockMagic ||
+         InpNormalMagic == InpManualOriginalMagic || (InpEnableTestSeeds && InpNormalMagic == InpTestSeedMagic))
+        { err = "normal-strategy magic must be > 0 and differ from recovery, lock, manual and test magics"; return false; }
+      if(RM_InList(InpNormalMagic, g_magicExclude))
+        { err = "normal-strategy magic is in InpExcludeMagics - its basket could never be recovered"; return false; }
+      if(InpFastPeriod <= 0 || InpSlowPeriod <= 0 || (InpUseFilterMA && InpFilterPeriod <= 0))
+        { err = "moving-average periods must be positive"; return false; }
+      if(InpFastPeriod >= InpSlowPeriod)
+        { err = "fast MA period must be smaller than the slow MA period"; return false; }
+      if(InpUseFilterMA && InpSlowPeriod >= InpFilterPeriod)
+        { err = "with the filter enabled the periods must satisfy fast < slow < filter"; return false; }
+      if(InpNormalLot <= 0.0)
+        { err = "normal initial lot must be > 0"; return false; }
+      if(InpNormalLotMode == RM_NLOT_BALANCE && InpNormalLotPerBalance <= 0.0)
+        { err = "balance-based lot sizing needs InpNormalLotPerBalance > 0"; return false; }
+      if(InpNormalAveraging && (InpNormalAvgStepPoints <= 0.0 || InpNormalAvgMultiplier < 1.0 || InpNormalAvgMultiplier > 5.0))
+        { err = "normal averaging: spacing > 0 points and multiplier in [1.0, 5.0]"; return false; }
+      if(InpNormalMaxPerDir < 1 || InpNormalMaxLots < 0.0 || InpNormalTPPoints < 0.0)
+        { err = "normal limits: max orders per direction >= 1, max lots >= 0, TP >= 0"; return false; }
+      if(InpNormalOverlap && (InpNormalOverlapMinOrders < 2 || InpNormalOverlapTPPoints <= 0.0))
+        { err = "normal overlap needs at least 2 orders and a target > 0 points"; return false; }
+      if(InpNormalMaxSpread <= 0 || InpNormalSlippage < 0)
+        { err = "normal spread limit must be > 0 and slippage >= 0"; return false; }
+      if(InpResumeCooldownBars < 0)
+        { err = "resume cooldown must be >= 0 bars"; return false; }
+     }
+   if(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY)
+     {
+      // one threshold (InpLaunchDrawdown) controls the handover; InpLaunchMode is ignored here
+      if(InpLaunchDrawdown <= 0.0)
+        { err = "handover threshold InpLaunchDrawdown must be > 0"; return false; }
+      if(InpRecoveryTriggerMode == RM_TRIG_PERCENT && InpLaunchDrawdown > 100.0)
+        { err = "percentage handover threshold must be <= 100"; return false; }
+      bool sameUnit = (InpEmergencyMode == RM_EMG_PERCENT && InpRecoveryTriggerMode == RM_TRIG_PERCENT) ||
+                      (InpEmergencyMode == RM_EMG_MONEY && InpRecoveryTriggerMode == RM_TRIG_MONEY);
+      if(sameUnit && InpEmergencyValue <= InpLaunchDrawdown)
+        { err = "emergency-loss limit must be larger than the recovery-launch threshold (they are different controls)"; return false; }
+     }
+
    // derived planner configuration
    g_cfg.priority = InpRecoveryPriority;
    g_cfg.firstTicket = InpFirstRecoveryTicket;
@@ -2058,6 +2419,94 @@ string RM_ErrText(int e)
   }
 
 //+------------------------------------------------------------------+
+//| CENTRAL PERMISSION GATE for every automated or manual trade       |
+//| operation (send / close / modify / delete). The caller sets       |
+//| g_actor; nothing reaches the broker without passing here, so the  |
+//| normal strategy can never bypass the recovery latch.              |
+//+------------------------------------------------------------------+
+#define RM_OPK_OPEN   1
+#define RM_OPK_CLOSE  2
+#define RM_OPK_MODIFY 3
+#define RM_OPK_DELETE 4
+
+bool RM_Combined()
+  {
+   return InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY;
+  }
+
+bool RM_Permit(int op, int magic, int ticket, string &why)
+  {
+   switch(g_actor)
+     {
+      case RM_ACTOR_TEST:
+         if(IsTesting())
+            return true;
+         why = "test actions only in the Strategy Tester";
+         return false;
+      case RM_ACTOR_EMERGENCY:
+         if(op == RM_OPK_OPEN)
+           { why = "emergency protection may only reduce exposure"; return false; }
+         return true;
+      case RM_ACTOR_OPERATOR:
+         if(op == RM_OPK_OPEN && magic == InpNormalMagic && g_recLatch)
+           { why = "recovery latch active: normal-strategy orders are blocked"; return false; }
+         return true;
+      case RM_ACTOR_HANDOVER:
+         if(g_ctl == RM_CTL_HANDOVER && op == RM_OPK_DELETE && magic == InpNormalMagic)
+            return true;
+         why = "handover may only cancel normal-strategy pending orders";
+         return false;
+      case RM_ACTOR_RECOVERY:
+         if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+            return true;
+         if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+           { why = "recovery engine disabled in THREE_MA_ONLY"; return false; }
+         if(!g_recLatch)
+           { why = "recovery is monitoring only (no active cycle)"; return false; }
+         if(op == RM_OPK_OPEN && magic == InpNormalMagic)
+           { why = "recovery never opens normal-strategy orders"; return false; }
+         return true;
+      case RM_ACTOR_NORMAL:
+         if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+           { why = "normal trading disabled (RECOVERY_ONLY)"; return false; }
+         if(magic != InpNormalMagic)
+           { why = "normal strategy may only touch its own magic"; return false; }
+         if(op != RM_OPK_OPEN && ticket > 0 && RM_RegFind(ticket) >= 0)
+           { why = "ticket belongs to the recovery cycle"; return false; }
+         if(g_recLatch)
+           {
+            // only an already-started normal closure may finish before the handover snapshot
+            if(op == RM_OPK_CLOSE && g_ctl == RM_CTL_HANDOVER && !g_hoSnapshot)
+               return true;
+            why = "recovery latch active: normal strategy blocked";
+            return false;
+           }
+         if(g_ctl != RM_CTL_NORMAL)
+           { why = "normal strategy blocked (" + RM_CtlName(g_ctl) + ")"; return false; }
+         if(op == RM_OPK_OPEN && (!g_normalEnabled || g_normalHalted))
+           { why = g_normalHalted ? "normal trading halted - operator reset required" : "normal entries disabled by operator"; return false; }
+         return true;
+     }
+   why = "no authorised actor for this trade operation";
+   return false;
+  }
+
+bool RM_Gate(int op, int magic, int ticket, string &err)
+  {
+   string why = "";
+   if(RM_Permit(op, magic, ticket, why))
+      return true;
+   err = "blocked: " + why;
+   g_lastDenied = why;
+   return false;
+  }
+
+int RM_Slippage()
+  {
+   return (g_actor == RM_ACTOR_NORMAL) ? InpNormalSlippage : InpMaxSlippage;
+  }
+
+//+------------------------------------------------------------------+
 //| Is trading possible right now? why receives the reason.          |
 //+------------------------------------------------------------------+
 bool RM_TradeReady(string &why)
@@ -2128,6 +2577,8 @@ int RM_FindByTag(string tag, int magic)
 //+------------------------------------------------------------------+
 int RM_Send(int type, double lots, int magic, string comment, string tag, string &err)
   {
+   if(!RM_Gate(RM_OPK_OPEN, magic, 0, err))
+      return -1;
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return -1; }
@@ -2144,7 +2595,7 @@ int RM_Send(int type, double lots, int magic, string comment, string tag, string
       RefreshRates();
       double price = (type == OP_BUY) ? RM_Ask() : RM_Bid();
       ResetLastError();
-      int t = OrderSend(g_sym, type, lots, RM_NormPrice(price), InpMaxSlippage, 0, 0,
+      int t = OrderSend(g_sym, type, lots, RM_NormPrice(price), RM_Slippage(), 0, 0,
                         comment, magic, 0, arrow);
       if(t > 0)
         {
@@ -2218,6 +2669,8 @@ int RM_FindChild(int parent)
 bool RM_Close(int ticket, double lots, double &closedLots, double &realized, int &child, string &err)
   {
    closedLots = 0; realized = 0; child = 0;
+   if(OrderSelect(ticket, SELECT_BY_TICKET) && !RM_Gate(RM_OPK_CLOSE, OrderMagicNumber(), ticket, err))
+      return false;
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return false; }
@@ -2247,7 +2700,7 @@ bool RM_Close(int ticket, double lots, double &closedLots, double &realized, int
            { err = "inside broker freeze level"; return false; }
         }
       ResetLastError();
-      bool ok = OrderClose(ticket, v, RM_NormPrice(price), InpMaxSlippage, clrGold);
+      bool ok = OrderClose(ticket, v, RM_NormPrice(price), RM_Slippage(), clrGold);
       int e = GetLastError();
       if(!ok && RM_ErrUncertain(e))
         {
@@ -2298,6 +2751,8 @@ bool RM_ClearSLTP(int ticket, string &err)
      { err = "ticket not open"; return false; }
    if(OrderStopLoss() == 0.0 && OrderTakeProfit() == 0.0)
       return true;
+   if(!RM_Gate(RM_OPK_MODIFY, OrderMagicNumber(), ticket, err))
+      return false;
    double freeze = MarketInfo(g_sym, MODE_FREEZELEVEL) * g_meta.point;
    double price = (OrderType() == OP_BUY) ? RM_Bid() : RM_Ask();
    if(freeze > 0.0)
@@ -2326,6 +2781,9 @@ bool RM_ClearSLTP(int ticket, string &err)
 
 bool RM_DeletePending(int ticket, string &err)
   {
+   if(OrderSelect(ticket, SELECT_BY_TICKET) && OrderCloseTime() == 0 &&
+      !RM_Gate(RM_OPK_DELETE, OrderMagicNumber(), ticket, err))
+      return false;
    for(int attempt = 0; attempt < RM_RETRIES; attempt++)
      {
       RM_WaitContext();
@@ -2450,6 +2908,32 @@ void RM_SaveState()
    FileWriteString(h, "DAY=" + IntegerToString(g_dayStamp) + "\r\n");
    FileWriteString(h, "PEAKDD=" + DoubleToString(g_peakDrawdown, 2) + "\r\n");
    FileWriteString(h, "RESID=" + DoubleToString(g_lockResidual, 8) + "\r\n");
+   // combined-operation controller
+   FileWriteString(h, "CTL=" + IntegerToString(g_ctl) + "\r\n");
+   FileWriteString(h, "LATCH=" + RM_B(g_recLatch) + "\r\n");
+   FileWriteString(h, "CYCLEID=" + IntegerToString(g_cycleId) + "\r\n");
+   FileWriteString(h, "CYCLESTART=" + IntegerToString(g_cycleStart) + "\r\n");
+   FileWriteString(h, "CYCLEEND=" + IntegerToString(g_cycleEnd) + "\r\n");
+   FileWriteString(h, "TRIGVAL=" + DoubleToString(g_trigValue, 4) + "\r\n");
+   FileWriteString(h, "HOSNAP=" + RM_B(g_hoSnapshot) + "\r\n");
+   FileWriteString(h, "HOPEND=" + RM_B(g_hoPendings) + "\r\n");
+   FileWriteString(h, "HOATT=" + IntegerToString(g_hoAttempts) + "\r\n");
+   FileWriteString(h, "ENGEND=" + RM_B(g_engineCycleEnded) + "\r\n");
+   FileWriteString(h, "OUTCOME=" + IntegerToString(g_cycleOutcome) + "\r\n");
+   FileWriteString(h, "CYCEMG=" + RM_B(g_cycleEmergency) + "\r\n");
+   FileWriteString(h, "CYCMAN=" + RM_B(g_cycleManual) + "\r\n");
+   FileWriteString(h, "CYCREAL=" + DoubleToString(g_cycleRealized, 2) + "\r\n");
+   FileWriteString(h, "NORMEN=" + RM_B(g_normalEnabled) + "\r\n");
+   FileWriteString(h, "NORMHALT=" + RM_B(g_normalHalted) + "\r\n");
+   FileWriteString(h, "OPRESUME=" + RM_B(g_operatorResume) + "\r\n");
+   FileWriteString(h, "LASTSIGBAR=" + IntegerToString(g_lastSignalBar) + "\r\n");
+   FileWriteString(h, "LASTSIG=" + IntegerToString(g_lastSignal) + "\r\n");
+   FileWriteString(h, "FRESHAFTER=" + IntegerToString(g_freshAfter) + "\r\n");
+   FileWriteString(h, "NAVG0=" + IntegerToString(g_normLastAvgBar[0]) + "\r\n");
+   FileWriteString(h, "NAVG1=" + IntegerToString(g_normLastAvgBar[1]) + "\r\n");
+   FileWriteString(h, "NREAL=" + DoubleToString(g_normalRealized, 2) + "\r\n");
+   FileWriteString(h, "JACT=" + IntegerToString(g_journalActor) + "\r\n");
+   FileWriteString(h, "REASON=" + RM_CsvSafe(g_lastReason) + "\r\n");
    for(int i = 0; i < g_regCount; i++)
       FileWriteString(h, "REG=" + IntegerToString(g_reg[i].ticket) + "," + IntegerToString(g_reg[i].role) + "," +
                       IntegerToString(g_reg[i].type) + "," + DoubleToString(g_reg[i].initialLots, 8) + "," +
@@ -2520,6 +3004,31 @@ bool RM_LoadState()
       else if(key == "DAY") g_dayStamp = StringToInteger(val);
       else if(key == "PEAKDD") g_peakDrawdown = StringToDouble(val);
       else if(key == "RESID") g_lockResidual = StringToDouble(val);
+      else if(key == "CTL") g_ctl = (int)StringToInteger(val);
+      else if(key == "LATCH") g_recLatch = (val == "1");
+      else if(key == "CYCLEID") g_cycleId = (int)StringToInteger(val);
+      else if(key == "CYCLESTART") g_cycleStart = StringToInteger(val);
+      else if(key == "CYCLEEND") g_cycleEnd = StringToInteger(val);
+      else if(key == "TRIGVAL") g_trigValue = StringToDouble(val);
+      else if(key == "HOSNAP") g_hoSnapshot = (val == "1");
+      else if(key == "HOPEND") g_hoPendings = (val == "1");
+      else if(key == "HOATT") g_hoAttempts = (int)StringToInteger(val);
+      else if(key == "ENGEND") g_engineCycleEnded = (val == "1");
+      else if(key == "OUTCOME") g_cycleOutcome = (int)StringToInteger(val);
+      else if(key == "CYCEMG") g_cycleEmergency = (val == "1");
+      else if(key == "CYCMAN") g_cycleManual = (val == "1");
+      else if(key == "CYCREAL") g_cycleRealized = StringToDouble(val);
+      else if(key == "NORMEN") g_normalEnabled = (val == "1");
+      else if(key == "NORMHALT") g_normalHalted = (val == "1");
+      else if(key == "OPRESUME") g_operatorResume = (val == "1");
+      else if(key == "LASTSIGBAR") g_lastSignalBar = StringToInteger(val);
+      else if(key == "LASTSIG") g_lastSignal = (int)StringToInteger(val);
+      else if(key == "FRESHAFTER") g_freshAfter = StringToInteger(val);
+      else if(key == "NAVG0") g_normLastAvgBar[0] = StringToInteger(val);
+      else if(key == "NAVG1") g_normLastAvgBar[1] = StringToInteger(val);
+      else if(key == "NREAL") g_normalRealized = StringToDouble(val);
+      else if(key == "JACT") g_journalActor = (int)StringToInteger(val);
+      else if(key == "REASON") g_lastReason = val;
       else if(key == "REG" && g_regCount < RM_MAX_REG)
         {
          string f[];
@@ -2583,6 +3092,8 @@ bool RM_LoadState()
    FileClose(h);
    if(g_state < RM_ST_IDLE || g_state > RM_ST_ERROR_HOLD)
       g_state = RM_ST_ERROR_HOLD;
+   if(g_ctl < RM_CTL_NORMAL || g_ctl > RM_CTL_ERROR_HOLD)
+      g_ctl = RM_CTL_ERROR_HOLD;
    return true;
   }
 
@@ -2736,6 +3247,14 @@ bool RM_InScope(int magic)
   {
    if(magic == InpRecoveryMagic || magic == InpLockMagic)
       return false;
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      // Three-MA modes: only our own normal trades, unless explicitly widened
+      if(magic == InpNormalMagic)
+         return true;
+      if(!InpCombinedAdoptOthers)
+         return false;
+     }
    if(RM_InList(magic, g_magicExclude))
       return false;
    if(InpScope == RM_SCOPE_MANUAL)
@@ -2754,6 +3273,11 @@ bool RM_ForeignRmpComment(string cmt)
 
 bool RM_AdoptionAllowed()
   {
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+      return false;
+   if(RM_Combined())
+      // normal trades are registered explicitly by the handover; others only if configured
+      return g_recLatch && g_hoSnapshot && InpCombinedAdoptOthers && !g_launchDone;
    if(g_state == RM_ST_IDLE || g_state == RM_ST_COMPLETE)
       return true;
    if(InpAdoptPolicy == RM_ADOPT_ALWAYS)
@@ -3223,6 +3747,23 @@ bool RM_JournalOpen()
    return g_journal.status == RM_J_IN_PROGRESS;
   }
 
+bool RM_IsNormalKind(int kind)
+  {
+   return kind == RM_PLAN_NORMAL_TP || kind == RM_PLAN_NORMAL_OVERLAP ||
+          kind == RM_PLAN_NORMAL_CLOSE || kind == RM_PLAN_NORMAL_EMERGENCY;
+  }
+
+//+------------------------------------------------------------------+
+//| Normal-strategy results never mix with recovery-cycle accounting  |
+//+------------------------------------------------------------------+
+void RM_BookRealized(double v)
+  {
+   if(RM_IsNormalKind(g_journal.kind))
+      g_normalRealized += v;
+   else
+      RM_AddRealized(v);
+  }
+
 //+------------------------------------------------------------------+
 //| true if the ticket is a not-yet-confirmed leg of the open journal |
 //+------------------------------------------------------------------+
@@ -3264,6 +3805,7 @@ bool RM_StartPlan(const RM_Plan &p)
       return false;
    g_planSeq++;
    RM_JournalFromPlan(g_journal, p, g_planSeq);
+   g_journalActor = g_actor;             // legs always run under the actor that started the plan
    g_journalStart = (long)TimeCurrent();
    RM_Audit("PLAN", 0, 0, p.expectedNet, "id " + IntegerToString(g_planSeq) + " " + RM_PlanSummary(p));
    RM_SaveState();
@@ -3283,7 +3825,7 @@ void RM_FinishJournal()
             "id " + IntegerToString(g_journal.planId) + " " + RM_PlanKindName(g_journal.kind) +
             " estimated " + RM_Money(g_journal.estimatedNet) + " realised " + RM_Money(g_journal.realizedNet));
    if(g_journal.kind == RM_PLAN_GROUP || g_journal.kind == RM_PLAN_OVERLAP || g_journal.kind == RM_PLAN_MANUAL ||
-      g_journal.kind == RM_PLAN_REDUCE || g_journal.kind == RM_PLAN_BASKET)
+      g_journal.kind == RM_PLAN_REDUCE || g_journal.kind == RM_PLAN_BASKET || RM_IsNormalKind(g_journal.kind))
       RM_AnnotGroup(g_journal.realizedNet);
    RM_JournalClear(g_journal);
    RM_SaveState();
@@ -3303,9 +3845,21 @@ void RM_AfterClose(int ticket, double haveBefore, double closedLots, int child)
   }
 
 //+------------------------------------------------------------------+
-//| Execute pending legs. Returns true when the journal is finished.  |
+//| Execute pending legs under the journal's own actor.               |
 //+------------------------------------------------------------------+
 bool RM_RunJournal()
+  {
+   int prevActor = g_actor;
+   g_actor = g_journalActor;
+   bool done = RM_RunJournalLegs();
+   g_actor = prevActor;
+   return done;
+  }
+
+//+------------------------------------------------------------------+
+//| Execute pending legs. Returns true when the journal is finished.  |
+//+------------------------------------------------------------------+
+bool RM_RunJournalLegs()
   {
    if(!RM_JournalOpen())
       return true;
@@ -3335,7 +3889,7 @@ bool RM_RunJournal()
            {
             // filled before the last save (e.g. crash): count it once, now
             RM_JournalMarkLeg(g_journal, k, hl, hn);
-            RM_AddRealized(hn);
+            RM_BookRealized(hn);
             int ch = RM_FindChild(ticket);
             RM_AfterClose(ticket, g_journal.ticketLots[k], hl, ch);
             RM_Audit("LEG_RECONCILED", ticket, hl, hn, "fill found in history");
@@ -3366,7 +3920,7 @@ bool RM_RunJournal()
       if(RM_Close(ticket, want, closed, realized, child, err))
         {
          RM_JournalMarkLeg(g_journal, k, closed, realized);
-         RM_AddRealized(realized);
+         RM_BookRealized(realized);
          RM_AfterClose(ticket, have, closed, child);
          RM_AnnotConnector(ticket);
          RM_Audit("LEG_FILLED", ticket, closed, realized,
@@ -3432,6 +3986,11 @@ void RM_InitRuntime()
    g_regCount = 0;
    g_pendCount = 0;
    RM_DayRoll();
+   // controller fields: defaults first, the state file (if any) restores them
+   g_ctl = RM_CTL_NORMAL; g_recLatch = false; g_hoSnapshot = false; g_hoPendings = false; g_hoAttempts = 0;
+   g_engineCycleEnded = false; g_cycleOutcome = RM_OUT_NONE; g_cycleEmergency = false; g_cycleManual = false;
+   g_normalEnabled = true; g_normalHalted = false; g_operatorResume = false; g_forceStart = false;
+   g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
   }
 
 void RM_ResetSession()
@@ -3492,8 +4051,11 @@ void RM_EnterState(int ns)
    g_state = ns;
    RM_Audit("STATE", 0, 0, g_managedNet, RM_StateName(old) + " -> " + RM_StateName(ns) +
             (ns == RM_ST_ERROR_HOLD ? " (" + g_errorText + ")" : ""));
+   if(ns == RM_ST_PREPARING)
+      g_forceStart = false;
    if(ns == RM_ST_COMPLETE)
      {
+      g_engineCycleEnded = true;             // the controller verifies and closes the cycle
       RM_Notify("recovery complete, session realised " + RM_Money(g_realizedSession) + " " + AccountCurrency());
       RM_Audit("SESSION_END", 0, 0, g_realizedSession, "managed basket empty");
       RM_ResetSession();
@@ -3526,6 +4088,8 @@ void RM_Engine()
    if(g_busy)
       return;
    g_busy = true;
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_RECOVERY;             // every engine operation passes the gate as RECOVERY
    RM_RefreshMeta();
    datetime bar0 = iTime(g_sym, 0, 0);
    if(bar0 != g_lastBarSeen)
@@ -3553,7 +4117,10 @@ void RM_Engine()
       RM_Audit("EMERGENCY", 0, 0, g_managedNet, ew);
       RM_Notify("EMERGENCY: " + ew);
       if(InpEmergencyAction == RM_EMGA_CLOSE_ALL)
+        {
          g_closeRequested = true;
+         g_cycleEmergency = true;           // cycle outcome: emergency, never auto-resumed
+        }
       else if(g_state != RM_ST_PAUSED)
          g_pauseRequested = true;
      }
@@ -3580,8 +4147,13 @@ void RM_Engine()
    si.hasManaged = (g_tot.totalCnt > 0);
    si.hasMain = (RM_MainCount() > 0);
    si.launchDone = g_launchDone;
-   si.launchTriggered = RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
-                                           InpLaunchDrawdown, g_tot.origCnt > 0);
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      si.launchTriggered = g_forceStart ||
+                           RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
+                                              InpLaunchDrawdown, g_tot.origCnt > 0);
+   else
+      // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
+      si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
    si.lockDone = g_lockDone;
@@ -3632,6 +4204,7 @@ void RM_Engine()
       RM_BuildBook();
    RM_UpdatePreviews(g_tradeEvents != tradesAtStart);
    RM_AnnotLevels();
+   g_actor = prevActor;
    g_busy = false;
   }
 
@@ -4112,6 +4685,8 @@ bool RM_ActionOpen(int dir, bool asRecovery, double lotInput, string &msg)
      { msg = "volume below broker minimum " + RM_Lots(g_meta.minLot); return false; }
    if(MathAbs(lot - lotInput) > RM_EPS)
      { msg = "volume must be a multiple of the lot step " + DoubleToString(g_meta.lotStep, 2); return false; }
+   if(asRecovery && InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch)
+     { msg = "no recovery cycle active - manual RECOVERY orders are not allowed"; return false; }
    if(asRecovery)
      {
       if(!RM_DirectionAllowed(dir, InpRecoveryDirs, true, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt))
@@ -4124,14 +4699,25 @@ bool RM_ActionOpen(int dir, bool asRecovery, double lotInput, string &msg)
      }
    if(RM_NewExposureBlocked(dir, lot, false, why))
      { msg = why; return false; }
+   // in the Three-MA modes a manual non-recovery order outside a cycle joins the NORMAL basket
+   bool asNormal = (InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch);
+   if(asNormal && !g_normalEnabled)
+     { msg = "normal entries are disabled"; return false; }
    g_reqSeq++;
    string tag = "#" + IntegerToString(g_reqSeq);
-   string cmt = RM_CommentPrefix() + "O " + tag;
+   string cmt = RM_CommentPrefix() + (asNormal ? "N " : "O ") + tag;
    RM_SaveState();
    string err = "";
-   int t = RM_Send(dir, lot, InpManualOriginalMagic, cmt, tag, err);
+   int t = RM_Send(dir, lot, asNormal ? InpNormalMagic : InpManualOriginalMagic, cmt, tag, err);
    if(t <= 0)
      { msg = "open failed: " + err; RM_Audit("MANUAL_FAILED", 0, lot, 0, err); return false; }
+   if(asNormal)
+     {
+      RM_Audit("MANUAL_NORMAL", t, lot, 0, RM_Side(dir));
+      RM_SaveState();
+      msg = "manual NORMAL " + RM_Side(dir) + " " + RM_Lots(lot) + " opened (#" + IntegerToString(t) + ")";
+      return true;
+     }
    if(OrderSelect(t, SELECT_BY_TICKET))
       RM_RegAdd(t, RM_ROLE_ORIGINAL, dir, OrderLots(), 0, 0, OrderOpenPrice(), (long)OrderOpenTime());
    RM_Audit("MANUAL_ORIGINAL", t, lot, 0, RM_Side(dir));
@@ -4234,6 +4820,8 @@ void RM_TestSeeds()
    if(g_testBars < InpTestSeedBar)
       return;
    g_seedDone = true;
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_TEST;
    double l = RM_NormalizeLot(InpTestSeedLots, g_meta, RM_ROUND_DOWN);
    string err = "";
    if(InpTestSeedScenario == RM_SEED_ONE_BUY || InpTestSeedScenario == RM_SEED_BALANCED_HEDGE)
@@ -4246,6 +4834,7 @@ void RM_TestSeeds()
       RM_Send(OP_SELL, l, InpTestSeedMagic, "TEST SEED S #s4", "#s4", err);
      }
    Print("RMP TEST SEED scenario ", EnumToString(InpTestSeedScenario), " opened (", err, ")");
+   g_actor = prevActor;
   }
 
 
@@ -4269,13 +4858,13 @@ int    g_labelY[RM_MAX_LABELS];
 string g_labelName[RM_MAX_LABELS];
 int    g_labelN = 0;
 // panel rectangles published by the dashboard (x, y, w, h)
-int    g_panelRect[3][4];
+int    g_panelRect[4][4];
 color  g_savedColors[8];
 bool   g_colorsSaved = false;
 
 bool RM_PointInPanels(int x, int y)
   {
-   for(int i = 0; i < 3; i++)
+   for(int i = 0; i < 4; i++)
      {
       if(g_panelRect[i][2] <= 0)
          continue;
@@ -4509,6 +5098,8 @@ void RM_RestoreChartColors()
 #define RM_ACT_GROUP     3
 #define RM_ACT_OPEN_BUY  4
 #define RM_ACT_OPEN_SELL 5
+#define RM_ACT_START_REC 6
+#define RM_ACT_CLOSE_BASKET 7
 
 //--- theme
 color  C_BG, C_BORDER, C_HEAD, C_TEXT, C_DIM, C_GREEN, C_RED, C_AMBER, C_BTN, C_BTNTXT, C_ACCENT;
@@ -4720,7 +5311,7 @@ void RM_DashRelayout()
    g_lastChartW = cw;
    g_lastChartH = ch;
    ObjectsDeleteAll(0, RM_DPFX);
-   for(int i = 0; i < 3; i++)
+   for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++)
          g_panelRect[i][j] = 0;
    double sc = (g_panelSize == RM_PANEL_LARGE) ? 1.3 : 1.0;
@@ -4741,6 +5332,7 @@ void RM_DashRelayout()
      {
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
+      RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);
@@ -4913,6 +5505,10 @@ void RM_ShowConfirm()
       x = g_px;
       y = (int)MathMin(g_py + g_panelRect[0][3] + 4, g_lastChartH - h - 8);
      }
+   // keep clear of the cycle panel when both sit on the same side
+   if(g_panelRect[3][2] > 0 && x < g_panelRect[3][0] + g_panelRect[3][2] && x + w > g_panelRect[3][0] &&
+      y < g_panelRect[3][1] + g_panelRect[3][3] && y + h > g_panelRect[3][1])
+      y = (int)MathMin(g_panelRect[3][1] + g_panelRect[3][3] + 4, g_lastChartH - h - 8);
    RM_Rect("K_BG", x, y, w, h, C_HEAD, C_AMBER);
    RM_Text("K_T1", x + 8, y + 4, RM_Cut(g_pendingText1, 60), C_AMBER, false, true);
    RM_Text("K_T2", x + 8, y + 4 + rh, RM_Cut(g_pendingText2, 64), C_TEXT, false, false);
@@ -5050,6 +5646,7 @@ void RM_DashRefresh(bool force)
         }
       RM_RefreshGroup(cur);
       RM_RefreshManual();
+      RM_RefreshCycle();
      }
    ChartRedraw();
   }
@@ -5099,9 +5696,13 @@ void RM_RefreshGroup(string cur)
 
 void RM_RefreshManual()
   {
-   RM_Set("ROLE", g_uiRecoveryRole ? "RECOVERY" : "ORIGINAL", g_uiRecoveryRole ? C_AMBER : C_ACCENT);
+   // Three-MA modes: a non-recovery manual order outside a cycle joins the NORMAL basket
+   bool asNormal = (InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch);
+   string base = asNormal ? "NORMAL" : "ORIGINAL";
+   int baseMagic = asNormal ? InpNormalMagic : InpManualOriginalMagic;
+   RM_Set("ROLE", g_uiRecoveryRole ? "RECOVERY" : base, g_uiRecoveryRole ? C_AMBER : C_ACCENT);
    RM_Set("C_TARGET", g_sym + " as " + (g_uiRecoveryRole ? "RECOVERY (magic " + IntegerToString(InpRecoveryMagic) + ")"
-          : "ORIGINAL (magic " + IntegerToString(InpManualOriginalMagic) + ")"), C_DIM);
+          : base + " (magic " + IntegerToString(baseMagic) + ")"), C_DIM);
    RM_Set("C_MSG", RM_Cut(g_uiMsg, (int)MathMax(30, (g_cw - 16) / (g_fs * 0.62))), g_uiMsgClr == clrNONE ? C_DIM : g_uiMsgClr);
   }
 
@@ -5253,6 +5854,12 @@ void RM_ExecutePending()
      }
    else if(act == RM_ACT_OPEN_BUY || act == RM_ACT_OPEN_SELL)
       ok = RM_ActionOpen(act == RM_ACT_OPEN_BUY ? RM_BUY : RM_SELL, g_uiRecoveryRole, g_uiLot, msg);
+   else if(act == RM_ACT_START_REC || act == RM_ACT_CLOSE_BASKET)
+     {
+      RM_ExecuteCyclePending(act);
+      RM_DashRefresh(true);
+      return;
+     }
    RM_UiMsg(msg, ok ? C_GREEN : C_RED);
    RM_DashRefresh(true);
   }
@@ -5286,6 +5893,14 @@ void RM_RequestAction(int act)
 //+------------------------------------------------------------------+
 void RM_OnButton(string name)
   {
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_OPERATOR;             // operator actions pass the gate as OPERATOR
+   RM_OnButtonInner(name);
+   g_actor = prevActor;
+  }
+
+void RM_OnButtonInner(string name)
+  {
    if(StringFind(name, RM_DPFX) != 0)
       return;
    string key = StringSubstr(name, StringLen(RM_DPFX));
@@ -5313,8 +5928,15 @@ void RM_OnButton(string name)
      }
    if(key == "OK")     { RM_ExecutePending(); return; }
    if(key == "CANCEL") { RM_HideConfirm(); RM_UiMsg("cancelled", C_DIM); return; }
-   if(g_pendingAct != RM_ACT_NONE && (key == "CLOSEALL" || key == "REDUCE" || key == "GROUP" || key == "BUY" || key == "SELL"))
+   if(g_pendingAct != RM_ACT_NONE && (key == "CLOSEALL" || key == "REDUCE" || key == "GROUP" || key == "BUY" ||
+                                      key == "SELL" || key == "STARTREC" || key == "CLOSEBSK"))
       RM_HideConfirm();                       // a new action replaces the unconfirmed one
+   if(key == "NRM" || key == "STARTREC" || key == "PAUSEREC" || key == "CLOSEBSK")
+     {
+      RM_CycleButton(key);
+      RM_DashRefresh(true);
+      return;
+     }
    if(key == "STOP")
      {
       RM_ActionStopResume();
@@ -5343,13 +5965,1192 @@ void RM_PollTesterButtons()
   {
    if(!IsVisualMode())
       return;
-   string keys[] = {"MIN", "SHOW", "OK", "CANCEL", "STOP", "CLOSEALL", "REDUCE", "GROUP", "BUY", "SELL", "ROLE", "PLUS", "MINUS"};
+   string keys[] = {"MIN", "SHOW", "OK", "CANCEL", "STOP", "CLOSEALL", "REDUCE", "GROUP", "BUY", "SELL", "ROLE", "PLUS", "MINUS",
+                    "NRM", "STARTREC", "PAUSEREC", "CLOSEBSK"};
    for(int i = 0; i < ArraySize(keys); i++)
      {
       string n = RM_DPFX + keys[i];
       if(ObjectFind(0, n) >= 0 && ObjectGetInteger(0, n, OBJPROP_STATE) != 0)
          RM_OnButton(n);
      }
+  }
+
+
+//==== inlined: Include/RecoveryManagerPro/RM_Normal.mqh
+//+------------------------------------------------------------------+
+//| RM_Normal.mqh - independent Three-MA normal-trading module.        |
+//|                                                                   |
+//| Based on the PUBLIC description of a three-moving-average EA      |
+//| (fast/slow crossover, optional third MA filtering direction,      |
+//| lot sizing, averaging, virtual basket TP, optional first/last     |
+//| overlap). It is NOT a replication of that product's undocumented  |
+//| logic; every rule below is this project's documented choice.      |
+//|                                                                   |
+//| Signals (closed candles of InpSignalTF, evaluated once per new    |
+//| candle; last processed candle persisted):                         |
+//|   BUY : Fast[2] <= Slow[2] AND Fast[1] > Slow[1]                   |
+//|   SELL: Fast[2] >= Slow[2] AND Fast[1] < Slow[1]                   |
+//|   filter on: BUY needs Fast[1] & Slow[1] > Filter[1], SELL below   |
+//| Entry   : a signal opens the initial order of its direction only  |
+//|           when that direction has no normal basket (and, with     |
+//|           InpNormalOneBasket, when no normal basket exists).      |
+//| Averaging (own settings, separate from recovery averaging):       |
+//|           adverse move >= InpNormalAvgStepPoints from the LAST    |
+//|           fill of the direction, lot = initial x multiplier^n     |
+//|           (n = orders already open, from the unrounded base),     |
+//|           at most one averaging order per signal candle and       |
+//|           direction, capped per direction and by total lots.      |
+//| Basket TP: virtual (no broker TP); a direction's basket closes    |
+//|           when price is InpNormalTPPoints beyond its volume-      |
+//|           weighted average open price.                             |
+//| Overlap : with >= InpNormalOverlapMinOrders orders, the first and |
+//|           last order close together when their combined net        |
+//|           >= InpNormalOverlapTPPoints x money/point/lot x their    |
+//|           lots; intermediate orders stay.                          |
+//| Opposite signals do not close baskets.                            |
+//|                                                                   |
+//| Every order operation runs as RM_ACTOR_NORMAL through the central |
+//| permission gate, and the drawdown trigger is re-evaluated with    |
+//| fresh prices immediately before every entry / averaging action.   |
+//+------------------------------------------------------------------+
+
+struct RM_NSide
+  {
+   int               cnt;
+   double            lots;
+   double            net;
+   double            wavg;          // volume-weighted average open price
+   int               firstIdx;      // index in g_nbook (earliest)
+   int               lastIdx;       // index in g_nbook (latest)
+  };
+
+RM_Book  g_nbook;                   // normal-strategy market orders (not in the recovery registry)
+RM_NSide g_ns[2];
+double   g_normalNet = 0.0;
+int      g_normalCnt = 0;
+double   g_normalLots = 0.0;
+double   g_maFast1 = 0, g_maSlow1 = 0, g_maFilter1 = 0;
+string   g_normalBlock = "";        // why normal trading is currently blocked
+
+//+------------------------------------------------------------------+
+//| Scan own normal-magic market orders that are not transferred      |
+//+------------------------------------------------------------------+
+void RM_NormalScan()
+  {
+   g_nbook.n = 0;
+   for(int d = 0; d < 2; d++)
+     {
+      g_ns[d].cnt = 0; g_ns[d].lots = 0; g_ns[d].net = 0; g_ns[d].wavg = 0;
+      g_ns[d].firstIdx = -1; g_ns[d].lastIdx = -1;
+     }
+   double pv[2];
+   pv[0] = 0; pv[1] = 0;
+   for(int i = 0; i < OrdersTotal(); i++)
+     {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+         continue;
+      if(OrderSymbol() != g_sym || OrderMagicNumber() != InpNormalMagic)
+         continue;
+      int type = OrderType();
+      if(type != OP_BUY && type != OP_SELL)
+         continue;
+      int ticket = OrderTicket();
+      if(RM_RegFind(ticket) >= 0)
+         continue;                              // transferred to recovery: not ours anymore
+      if(g_nbook.n >= RM_MAX_LEGS)
+         break;
+      int n = g_nbook.n++;
+      g_nbook.ticket[n] = ticket;
+      g_nbook.role[n] = RM_ROLE_NORMAL;
+      g_nbook.type[n] = type;
+      g_nbook.lots[n] = OrderLots();
+      g_nbook.profit[n] = OrderProfit();
+      g_nbook.swap[n] = OrderSwap();
+      g_nbook.comm[n] = OrderCommission();
+      g_nbook.openPrice[n] = OrderOpenPrice();
+      g_nbook.openTime[n] = (long)OrderOpenTime();
+      g_nbook.gridIndex[n] = 0;
+      g_ns[type].cnt++;
+      g_ns[type].lots += OrderLots();
+      g_ns[type].net += RM_LegNet(g_nbook, n);
+      pv[type] += OrderLots() * OrderOpenPrice();
+      int f = g_ns[type].firstIdx, l = g_ns[type].lastIdx;
+      if(f < 0 || RM_EarlierThan(g_nbook, n, f))
+         g_ns[type].firstIdx = n;
+      if(l < 0 || RM_EarlierThan(g_nbook, l, n))
+         g_ns[type].lastIdx = n;
+     }
+   g_normalNet = 0; g_normalCnt = 0; g_normalLots = 0;
+   for(int d2 = 0; d2 < 2; d2++)
+     {
+      if(g_ns[d2].lots > 0)
+         g_ns[d2].wavg = pv[d2] / g_ns[d2].lots;
+      g_ns[d2].lots = RM_Clean(g_ns[d2].lots);
+      g_normalNet += g_ns[d2].net;
+      g_normalCnt += g_ns[d2].cnt;
+      g_normalLots += g_ns[d2].lots;
+     }
+   g_normalLots = RM_Clean(g_normalLots);
+  }
+
+int RM_NormalPendingCount()
+  {
+   int c = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+         continue;
+      if(OrderSymbol() == g_sym && OrderMagicNumber() == InpNormalMagic && OrderType() > OP_SELL)
+         c++;
+     }
+   return c;
+  }
+
+//+------------------------------------------------------------------+
+//| Moving averages on closed candles                                 |
+//+------------------------------------------------------------------+
+double RM_MA(int period, ENUM_MA_METHOD method, ENUM_APPLIED_PRICE price, int shift)
+  {
+   return iMA(g_sym, InpSignalTF, period, 0, method, price, shift);
+  }
+
+//+------------------------------------------------------------------+
+//| Evaluate the newest CLOSED signal candle once. Runs in every      |
+//| state, so a crossover formed during recovery is consumed there    |
+//| and can never be reused afterwards. newBar = candle processed now.|
+//+------------------------------------------------------------------+
+int RM_NormalSignalEval(bool &newBar)
+  {
+   newBar = false;
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      return 0;
+   long bar1 = (long)iTime(g_sym, InpSignalTF, 1);
+   if(bar1 <= 0)
+      return 0;
+   g_maFast1 = RM_MA(InpFastPeriod, InpFastMethod, InpFastPrice, 1);
+   g_maSlow1 = RM_MA(InpSlowPeriod, InpSlowMethod, InpSlowPrice, 1);
+   g_maFilter1 = InpUseFilterMA ? RM_MA(InpFilterPeriod, InpFilterMethod, InpFilterPrice, 1) : 0.0;
+   if(bar1 == g_lastSignalBar)
+      return 0;                                 // already processed: never twice
+   double f2 = RM_MA(InpFastPeriod, InpFastMethod, InpFastPrice, 2);
+   double s2 = RM_MA(InpSlowPeriod, InpSlowMethod, InpSlowPrice, 2);
+   int sig = RM_MASignal(f2, s2, g_maFast1, g_maSlow1, InpUseFilterMA, g_maFilter1);
+   g_lastSignalBar = bar1;
+   g_lastSignal = sig;
+   newBar = true;
+   if(sig != 0)
+      RM_Audit("SIGNAL", 0, 0, sig, RM_Side(sig > 0 ? RM_BUY : RM_SELL) + " crossover on candle " +
+               TimeToString((datetime)bar1) + " (" + RM_CtlName(g_ctl) + ")");
+   RM_SaveState();
+   return sig;
+  }
+
+string RM_SignalText()
+  {
+   if(g_lastSignal > 0) return "BUY";
+   if(g_lastSignal < 0) return "SELL";
+   return "none";
+  }
+
+//+------------------------------------------------------------------+
+//| Lot for the n-th order of a direction (n = 0 initial)             |
+//+------------------------------------------------------------------+
+double RM_NormalLotFor(int n, double &raw)
+  {
+   double base = RM_NormalBaseLot(InpNormalLotMode, InpNormalLot, AccountBalance(), InpNormalLotPerBalance);
+   raw = RM_GridRawLot(base, InpNormalAveraging ? InpNormalAvgMultiplier : 1.0, n);
+   return RM_NormalizeLot(raw, g_meta, RM_ROUND_DOWN);
+  }
+
+//+------------------------------------------------------------------+
+//| Normal-strategy risk gates for NEW exposure                       |
+//+------------------------------------------------------------------+
+bool RM_NormalExposureBlocked(int dir, double lot, string &why)
+  {
+   int sp = RM_SpreadPoints();
+   if(sp > InpNormalMaxSpread)
+     { why = "spread " + IntegerToString(sp) + " > normal max " + IntegerToString(InpNormalMaxSpread); return true; }
+   if(RM_QuoteStale(why))
+      return true;
+   if(InpNormalMaxLots > 0.0 && g_normalLots + lot > InpNormalMaxLots + RM_EPS)
+     { why = "normal exposure cap " + RM_Lots(InpNormalMaxLots) + " lots"; return true; }
+   ResetLastError();
+   double freeAfter = AccountFreeMarginCheck(g_sym, dir, lot);
+   if(freeAfter <= 0.0 || GetLastError() == ERR_NOT_ENOUGH_MONEY)
+     { why = "insufficient free margin for " + RM_Lots(lot) + " lots"; return true; }
+   if(InpMinFreeMargin > 0.0 && freeAfter < InpMinFreeMargin)
+     { why = "free margin after entry below " + RM_Money(InpMinFreeMargin); return true; }
+   if(InpMinMarginLevel > 0.0)
+     {
+      double marginAfter = AccountMargin() + MathMax(0.0, AccountFreeMargin() - freeAfter);
+      if(marginAfter > 0.0 && AccountEquity() / marginAfter * 100.0 < InpMinMarginLevel)
+        { why = "margin level after entry below " + DoubleToString(InpMinMarginLevel, 0) + "%"; return true; }
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Open one normal order (gate + fresh trigger check first)          |
+//+------------------------------------------------------------------+
+bool RM_NormalOpen(int dir, int n, string what)
+  {
+   // fresh prices and the drawdown trigger immediately before every entry/averaging
+   if(RM_TriggerCheckNow())
+      return false;
+   double raw = 0;
+   double lot = RM_NormalLotFor(n, raw);
+   if(lot <= 0.0)
+     { g_normalBlock = what + ": lot " + DoubleToString(raw, 3) + " below broker minimum"; return false; }
+   string why = "";
+   if(RM_NormalExposureBlocked(dir, lot, why))
+     { g_normalBlock = what + " blocked: " + why; return false; }
+   g_reqSeq++;
+   string tag = "#" + IntegerToString(g_reqSeq);
+   string cmt = RM_CommentPrefix() + "N " + RM_Pick(dir == RM_BUY, "B ", "S ") + IntegerToString(n) + " " + tag;
+   RM_SaveState();
+   string err = "";
+   int t = RM_Send(dir, lot, InpNormalMagic, cmt, tag, err);
+   if(t <= 0)
+     {
+      g_normalBlock = what + " failed: " + err;
+      RM_Audit("NORMAL_FAILED", 0, lot, 0, RM_Side(dir) + " " + what + ": " + err);
+      return false;
+     }
+   RM_Audit(n == 0 ? "NORMAL_ENTRY" : "NORMAL_AVERAGE", t, lot, raw, RM_Side(dir) + " " + what);
+   RM_SaveState();
+   RM_NormalScan();
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| Basket management: virtual TP and overlap (closures via journal)  |
+//| Returns true when a closure plan was started.                     |
+//+------------------------------------------------------------------+
+bool RM_NormalManage()
+  {
+   for(int d = 0; d < 2; d++)
+     {
+      if(g_ns[d].cnt == 0)
+         continue;
+      if(RM_BasketTPReached(d, g_ns[d].wavg, InpNormalTPPoints, g_meta.point, RM_Bid(), RM_Ask()))
+        {
+         RM_IndexList L;
+         L.n = 0;
+         for(int i = 0; i < g_nbook.n; i++)
+            if(g_nbook.type[i] == d && L.n < RM_MAX_PLAN_LEGS)
+               L.idx[L.n++] = i;
+         RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_TP, L, -1.0, g_plan);
+         RM_Audit("NORMAL_TP", 0, g_ns[d].lots, g_plan.expectedNet,
+                  RM_Side(d) + " basket reached " + DoubleToString(InpNormalTPPoints, 0) + " pt from average " +
+                  DoubleToString(g_ns[d].wavg, g_digits));
+         RM_StartPlan(g_plan);
+         return true;
+        }
+      if(InpNormalOverlap && g_ns[d].cnt >= InpNormalOverlapMinOrders)
+        {
+         int f = g_ns[d].firstIdx, l = g_ns[d].lastIdx;
+         if(f >= 0 && l >= 0 && f != l &&
+            RM_NormalOverlapHit(RM_LegNet(g_nbook, f), RM_LegNet(g_nbook, l), g_nbook.lots[f], g_nbook.lots[l],
+                                InpNormalOverlapTPPoints, g_mpp))
+           {
+            RM_IndexList L2;
+            L2.n = 2; L2.idx[0] = f; L2.idx[1] = l;
+            RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_OVERLAP, L2, -1.0, g_plan);
+            RM_StartPlan(g_plan);
+            return true;
+           }
+        }
+     }
+   return false;
+  }
+
+//+------------------------------------------------------------------+
+//| Averaging and new entries                                         |
+//+------------------------------------------------------------------+
+void RM_NormalEntries(bool newBar, int sig)
+  {
+   long bar1 = (long)iTime(g_sym, InpSignalTF, 1);
+   // ---- averaging (separate module and settings from recovery averaging)
+   if(InpNormalAveraging)
+      for(int d = 0; d < 2; d++)
+        {
+         int cnt = g_ns[d].cnt;
+         if(cnt == 0 || cnt >= InpNormalMaxPerDir)
+            continue;
+         if(g_normLastAvgBar[d] == bar1)
+            continue;                                   // one averaging order per signal candle
+         double lastPrice = g_nbook.openPrice[g_ns[d].lastIdx];
+         bool adverse = (d == RM_BUY) ? RM_Ask() <= lastPrice - InpNormalAvgStepPoints * g_meta.point
+                                      : RM_Bid() >= lastPrice + InpNormalAvgStepPoints * g_meta.point;
+         if(!adverse)
+            continue;
+         if(RM_NormalOpen(d, cnt, "averaging #" + IntegerToString(cnt)))
+           {
+            g_normLastAvgBar[d] = bar1;
+            RM_SaveState();
+           }
+         if(g_recLatch)
+            return;                                     // trigger fired: stop immediately
+        }
+   // ---- new entry on a freshly processed crossover
+   if(!newBar || sig == 0)
+      return;
+   int dir = (sig > 0) ? RM_BUY : RM_SELL;
+   if(!RM_DirectionAllowed(dir, InpNormalDirs, false, true, 0, 0))
+     { g_normalBlock = RM_Side(dir) + " signal ignored: direction not allowed"; return; }
+   if(!RM_SignalIsFresh(InpRequireFreshSignalAfterRecovery, g_lastSignalBar, g_freshAfter))
+     { g_normalBlock = RM_Side(dir) + " signal ignored: crossover not fresh after the last recovery cycle"; return; }
+   if(g_ns[dir].cnt > 0 || (InpNormalOneBasket && g_normalCnt > 0))
+     { g_normalBlock = RM_Side(dir) + " signal ignored: a normal basket is already open"; return; }
+   if(!g_normalEnabled || g_normalHalted)
+     { g_normalBlock = RM_Side(dir) + " signal ignored: normal entries disabled"; return; }
+   RM_NormalOpen(dir, 0, "signal entry");
+  }
+
+
+//==== inlined: Include/RecoveryManagerPro/RM_Controller.mqh
+//+------------------------------------------------------------------+
+//| RM_Controller.mqh - the single authoritative controller for the   |
+//| operating cycle                                                    |
+//|                                                                   |
+//|   NORMAL -> HANDOVER -> RECOVERY_ACTIVE (-> RECOVERY_CLOSING)     |
+//|          -> COOLDOWN -> NORMAL        (+ PAUSED, ERROR_HOLD)      |
+//|                                                                   |
+//| Priority on every tick:                                           |
+//|  1 emergency protection   2 reconcile unfinished operations       |
+//|  3 active handover / recovery   4 drawdown-trigger evaluation     |
+//|  5 normal basket management     6 normal averaging and entries    |
+//|                                                                   |
+//| The recovery latch is persisted before any further trading action |
+//| and is cleared ONLY by a verified, reconciled cycle completion -  |
+//| never by drawdown improving or by a threshold change.             |
+//| RECOVERY_ONLY mode bypasses this file and runs the original       |
+//| engine unchanged.                                                 |
+//+------------------------------------------------------------------+
+
+#define RM_HO_MAX_ATTEMPTS 10
+
+double g_ctlDDMoney = 0.0;
+double g_ctlDDPct = 0.0;
+double g_ctlProgress = 0.0;
+string g_ctlStatus = "";
+int    g_cooldownBars = 0;
+
+string RM_TrigUnit()
+  {
+   return (InpRecoveryTriggerMode == RM_TRIG_PERCENT) ? "%" : AccountCurrency();
+  }
+
+void RM_CtlComputeMetrics()
+  {
+   RM_TriggerMetrics(InpRecoveryTriggerScope, g_normalNet, AccountBalance(), AccountEquity(), g_ctlDDMoney, g_ctlDDPct);
+   g_ctlProgress = RM_TriggerProgress(InpRecoveryTriggerMode, g_ctlDDMoney, g_ctlDDPct, InpLaunchDrawdown);
+  }
+
+double RM_TrigMetricValue()
+  {
+   return (InpRecoveryTriggerMode == RM_TRIG_PERCENT) ? g_ctlDDPct : g_ctlDDMoney;
+  }
+
+void RM_CtlSet(int ns, string why)
+  {
+   if(ns == g_ctl)
+      return;
+   RM_Audit("CYCLE_STATE", g_cycleId, 0, 0, RM_CtlName(g_ctl) + " -> " + RM_CtlName(ns) + (why != "" ? " (" + why + ")" : ""));
+   g_ctl = ns;
+   RM_SaveState();
+  }
+
+bool RM_CtlOwnError()
+  {
+   return g_ctl == RM_CTL_ERROR_HOLD && g_state != RM_ST_ERROR_HOLD && !g_hoPendings;
+  }
+
+//+------------------------------------------------------------------+
+//| Open market orders that belong to the cycle (by identity, never   |
+//| by comment): registered tickets + recovery/lock/normal magics.    |
+//+------------------------------------------------------------------+
+int RM_CycleOrdersOpen()
+  {
+   int c = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+     {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+         continue;
+      if(OrderSymbol() != g_sym || OrderType() > OP_SELL)
+         continue;
+      int m = OrderMagicNumber();
+      if(m == InpRecoveryMagic || m == InpLockMagic || m == InpNormalMagic || RM_RegFind(OrderTicket()) >= 0)
+         c++;
+     }
+   return c;
+  }
+
+string RM_NormalTicketList()
+  {
+   string s = "";
+   for(int i = 0; i < g_nbook.n; i++)
+      s += "#" + IntegerToString(g_nbook.ticket[i]) + " " + RM_Side(g_nbook.type[i]) + " " + RM_Lots(g_nbook.lots[i]) +
+           " " + RM_Money(RM_LegNet(g_nbook, i)) + "; ";
+   return s;
+  }
+
+//+------------------------------------------------------------------+
+//| Handover: steps 1-2 (latch persisted, normal entries disabled),   |
+//| step 9 (record). Steps 3-8 run in RM_CtlHandoverStep / engine.    |
+//+------------------------------------------------------------------+
+void RM_StartHandover(string reason, double value)
+  {
+   g_recLatch = true;
+   g_cycleId++;
+   g_cycleStart = (long)TimeCurrent();
+   g_cycleEnd = 0;
+   g_trigValue = value;
+   g_hoSnapshot = false;
+   g_hoPendings = false;
+   g_hoAttempts = 0;
+   g_engineCycleEnded = false;
+   g_cycleOutcome = RM_OUT_NONE;
+   g_cycleEmergency = false;
+   g_cycleManual = false;
+   g_lastReason = reason;
+   g_ctl = RM_CTL_HANDOVER;
+   RM_SaveState();                                   // latch is durable before anything else
+   double ml = (AccountMargin() > 0.0) ? AccountEquity() / AccountMargin() * 100.0 : 0.0;
+   RM_Audit("HANDOVER", g_cycleId, g_normalLots, value,
+            reason + " | value " + DoubleToString(value, 2) + " threshold " + DoubleToString(InpLaunchDrawdown, 2) + " " +
+            RM_TrigUnit() + " scope " + RM_Pick(InpRecoveryTriggerScope == RM_TSCOPE_ACCOUNT, "ACCOUNT", "MANAGED") +
+            " | tickets " + RM_NormalTicketList() + "| balance " + RM_Money(AccountBalance()) +
+            " equity " + RM_Money(AccountEquity()) + " free margin " + RM_Money(AccountFreeMargin()) +
+            " margin level " + DoubleToString(ml, 0) + "%");
+   RM_Notify("recovery cycle " + IntegerToString(g_cycleId) + " started: " + reason);
+   RM_CtlHandoverStep();
+  }
+
+//+------------------------------------------------------------------+
+//| Handover steps 3-7. Each completed step is persisted and never    |
+//| repeated; a failure keeps the controller in HANDOVER / ERROR_HOLD.|
+//+------------------------------------------------------------------+
+void RM_CtlHandoverStep()
+  {
+   if(RM_JournalOpen())
+     {
+      g_ctlStatus = "handover: finishing an already-started closure first";
+      return;
+     }
+   if(!g_hoSnapshot)
+     {
+      // 3 + 7: snapshot and register the basket as ORIGINAL (magic numbers unchanged)
+      RM_NormalScan();
+      string list = RM_NormalTicketList();
+      int n = 0;
+      for(int i = 0; i < g_nbook.n; i++)
+         if(RM_RegAdd(g_nbook.ticket[i], RM_ROLE_ORIGINAL, g_nbook.type[i], g_nbook.lots[i], 0, 0,
+                      g_nbook.openPrice[i], g_nbook.openTime[i]))
+            n++;
+      g_hoSnapshot = true;
+      RM_SaveState();
+      RM_Audit("HANDOVER_SNAPSHOT", g_cycleId, 0, n, "registered as ORIGINAL: " + (n > 0 ? list : "none"));
+      RM_NormalScan();                             // 5: transferred tickets leave normal management
+     }
+   if(!g_hoPendings)
+     {
+      // 4: cancel only managed normal-strategy pending entries, then reconcile
+      int prevActor = g_actor;
+      g_actor = RM_ACTOR_HANDOVER;
+      for(int k = OrdersTotal() - 1; k >= 0; k--)
+        {
+         if(!OrderSelect(k, SELECT_BY_POS, MODE_TRADES))
+            continue;
+         if(OrderSymbol() != g_sym || OrderMagicNumber() != InpNormalMagic || OrderType() <= OP_SELL)
+            continue;
+         int t = OrderTicket();
+         string err = "";
+         if(RM_DeletePending(t, err))
+            RM_Audit("HANDOVER_PENDING_CANCELLED", t, 0, 0, "");
+         else
+            RM_Audit("HANDOVER_PENDING_FAILED", t, 0, 0, err);
+        }
+      g_actor = prevActor;
+      if(RM_NormalPendingCount() == 0)
+        {
+         g_hoPendings = true;
+         RM_SaveState();
+         RM_Audit("HANDOVER_READY", g_cycleId, 0, 0, "pending orders reconciled; recovery engine takes over (SL/TP policy applied at launch)");
+        }
+      else
+        {
+         g_hoAttempts++;
+         g_ctlStatus = "handover: normal pending orders still open (attempt " + IntegerToString(g_hoAttempts) + ")";
+         if(g_hoAttempts >= RM_HO_MAX_ATTEMPTS)
+           {
+            g_errorText = "handover could not cancel normal pending orders";
+            RM_CtlSet(RM_CTL_ERROR_HOLD, g_errorText);
+           }
+         RM_SaveState();
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Mirror the recovery engine state while the latch is set           |
+//+------------------------------------------------------------------+
+void RM_CtlSync()
+  {
+   if(RM_CtlOwnError() || g_engineCycleEnded)
+      return;                                        // completion is decided by RM_CtlCheckCompletion
+   int ns = RM_CTL_HANDOVER;
+   if(g_state == RM_ST_ERROR_HOLD)
+      ns = RM_CTL_ERROR_HOLD;
+   else if(g_state == RM_ST_PAUSED)
+      ns = RM_CTL_PAUSED;
+   else if(g_state == RM_ST_CLOSING)
+      ns = RM_CTL_RECOVERY_CLOSING;
+   else if((g_state == RM_ST_LOCKING || g_state == RM_ST_RECOVERING) && g_prepDone)
+      ns = RM_CTL_RECOVERY_ACTIVE;
+   RM_CtlSet(ns, "");
+  }
+
+//+------------------------------------------------------------------+
+//| Completion = nothing of the cycle left open, no pending that     |
+//| could reopen it, no unfinished closure, result reconciled.        |
+//+------------------------------------------------------------------+
+void RM_CtlCheckCompletion()
+  {
+   if(!g_recLatch || !g_hoSnapshot || !g_hoPendings)
+      return;
+   if(!(g_engineCycleEnded || g_state == RM_ST_IDLE))
+      return;
+   if(RM_JournalOpen())
+      return;
+   int open = RM_CycleOrdersOpen();
+   int pend = RM_NormalPendingCount();
+   if(g_regCount > 0 || open > 0 || pend > 0)
+     {
+      g_ctlStatus = "completion pending: " + IntegerToString(open) + " orders, " + IntegerToString(pend) + " pending";
+      return;
+     }
+   g_cycleRealized = g_realizedSession;
+   g_cycleOutcome = g_cycleEmergency ? RM_OUT_EMERGENCY : (g_cycleManual ? RM_OUT_MANUAL : RM_OUT_COMPLETED);
+   g_cycleEnd = (long)TimeCurrent();
+   g_freshAfter = g_cycleEnd;
+   g_recLatch = false;
+   g_engineCycleEnded = false;
+   g_hoSnapshot = false;
+   g_hoPendings = false;
+   g_normLastAvgBar[0] = 0;
+   g_normLastAvgBar[1] = 0;
+   g_operatorResume = false;
+   if(g_cycleOutcome != RM_OUT_COMPLETED)
+      g_normalHalted = true;                         // emergency / manual end: operator reset required
+   long dur = g_cycleEnd - g_cycleStart;
+   RM_Audit("CYCLE_END", g_cycleId, 0, g_cycleRealized,
+            RM_OutcomeName(g_cycleOutcome) + " | realised net " + RM_Money(g_cycleRealized) + " " + AccountCurrency() +
+            " (all cycle closures incl. costs; the transferred orders' full P/L is included) | duration " +
+            IntegerToString(dur / 3600) + "h" + IntegerToString((dur % 3600) / 60) + "m");
+   RM_Notify("recovery cycle " + IntegerToString(g_cycleId) + " ended: " + RM_OutcomeName(g_cycleOutcome) +
+             ", realised " + RM_Money(g_cycleRealized) + " " + AccountCurrency());
+   g_lastReason = "cycle " + IntegerToString(g_cycleId) + " " + RM_OutcomeName(g_cycleOutcome);
+   RM_CtlSet(RM_CTL_COOLDOWN, "cycle complete");
+  }
+
+//+------------------------------------------------------------------+
+//| COOLDOWN -> NORMAL                                                |
+//+------------------------------------------------------------------+
+void RM_CtlCooldown()
+  {
+   int bars = iBarShift(g_sym, InpSignalTF, (datetime)g_cycleEnd, false);
+   g_cooldownBars = (bars < 0) ? 0 : bars;
+   if(!RM_ResumeAllowed(g_cycleOutcome, g_normalHalted, InpAutoResumeAfterRecovery, g_operatorResume,
+                        g_cooldownBars, InpResumeCooldownBars))
+     {
+      if(g_cooldownBars < InpResumeCooldownBars)
+         g_ctlStatus = "cooldown " + IntegerToString(g_cooldownBars) + "/" + IntegerToString(InpResumeCooldownBars) + " bars";
+      else
+         g_ctlStatus = "waiting for operator: press Normal ON to resume (" + RM_OutcomeName(g_cycleOutcome) + ")";
+      return;
+     }
+   // recheck the trigger and risk limits before resuming
+   RM_CtlComputeMetrics();
+   if(RM_TriggerHit(InpRecoveryTriggerMode, g_ctlDDMoney, g_ctlDDPct, InpLaunchDrawdown, AccountBalance()))
+     {
+      g_ctlStatus = "resume held: drawdown still at/above the threshold";
+      return;
+     }
+   if(g_operatorResume)
+     {
+      g_normalHalted = false;
+      g_normalEnabled = true;
+     }
+   g_operatorResume = false;
+   RM_Audit("RESUME_NORMAL", g_cycleId, 0, 0, "after " + IntegerToString(g_cooldownBars) + " bars; fresh crossover required: " +
+            RM_Pick(InpRequireFreshSignalAfterRecovery, "yes", "no"));
+   RM_CtlSet(RM_CTL_NORMAL, "cooldown over");
+  }
+
+//+------------------------------------------------------------------+
+//| Emergency-loss limit on the NORMAL basket (the recovery engine    |
+//| applies it to transferred baskets). Distinct from the recovery    |
+//| launch threshold; validation keeps it above that threshold.       |
+//| Returns true while an emergency closure is in progress.           |
+//+------------------------------------------------------------------+
+bool RM_NormalEmergency()
+  {
+   if(InpEmergencyMode == RM_EMG_OFF || g_normalCnt == 0)
+      return false;
+   double dd = MathMax(0.0, -g_normalNet);
+   double pct = (AccountBalance() > 0.0) ? 100.0 * dd / AccountBalance() : 0.0;
+   bool hit = (InpEmergencyMode == RM_EMG_MONEY && dd >= InpEmergencyValue) ||
+              (InpEmergencyMode == RM_EMG_PERCENT && pct >= InpEmergencyValue);
+   if(!hit)
+      return false;
+   if(!g_normalHalted)
+     {
+      g_normalHalted = true;
+      g_lastReason = "emergency-loss limit on normal basket: " + RM_Money(dd) + " (" + DoubleToString(pct, 2) + "%)";
+      RM_Audit("EMERGENCY_NORMAL", 0, g_normalLots, -dd, g_lastReason);
+      RM_Notify("EMERGENCY: " + g_lastReason);
+      RM_SaveState();
+     }
+   if(InpEmergencyAction != RM_EMGA_CLOSE_ALL)
+      return false;                                  // pause action: entries halted, basket kept
+   if(RM_JournalOpen())
+      return true;
+   RM_IndexList L;
+   L.n = 0;
+   for(int i = 0; i < g_nbook.n && L.n < RM_MAX_PLAN_LEGS; i++)
+      L.idx[L.n++] = i;
+   RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_EMERGENCY, L, -1.0, g_plan);
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_EMERGENCY;
+   RM_StartPlan(g_plan);
+   g_actor = prevActor;
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| Trigger evaluation with fresh prices (every tick and immediately  |
+//| before each normal entry / averaging). Returns true when normal   |
+//| trading must not act now (handover started or entries blocked).  |
+//+------------------------------------------------------------------+
+bool RM_TriggerCheckNow()
+  {
+   if(g_recLatch)
+      return true;
+   if(!RM_Combined() || g_ctl != RM_CTL_NORMAL)
+      return false;
+   RefreshRates();
+   RM_NormalScan();
+   RM_CtlComputeMetrics();
+   if(!RM_TriggerHit(InpRecoveryTriggerMode, g_ctlDDMoney, g_ctlDDPct, InpLaunchDrawdown, AccountBalance()))
+      return false;
+   double v = RM_TrigMetricValue();
+   if(g_normalCnt == 0)
+     {
+      // account-level drawdown caused by positions outside the scope: never trade them
+      string r = "account drawdown " + DoubleToString(v, 2) + " " + RM_TrigUnit() + " >= threshold with no managed basket: normal entries blocked";
+      if(g_lastReason != r)
+        {
+         g_lastReason = r;
+         RM_Audit("TRIGGER_NO_BASKET", 0, 0, v, r);
+        }
+      g_normalBlock = r;
+      return true;
+     }
+   RM_StartHandover("drawdown trigger", v);
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//| THE controller tick                                               |
+//+------------------------------------------------------------------+
+void RM_ControllerTick()
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+     {
+      RM_Engine();                                   // original behaviour, unchanged
+      return;
+     }
+   RM_RefreshMeta();
+   RM_NormalScan();
+   bool newBar = false;
+   int sig = RM_NormalSignalEval(newBar);            // consumed in every state: no stale reuse
+   RM_CtlComputeMetrics();
+   g_normalBlock = "";
+   g_ctlStatus = "";
+
+   // 1. emergency protection
+   if(!g_recLatch && RM_NormalEmergency())
+     {
+      RM_Engine();
+      return;
+     }
+   // 2. reconcile unfinished trade operations
+   if(RM_JournalOpen())
+     {
+      RM_RunJournal();
+      RM_NormalScan();
+     }
+   // 3. active handover / recovery (exclusive manager of the transferred basket)
+   if(g_recLatch)
+     {
+      if(g_ctl == RM_CTL_HANDOVER)
+         RM_CtlHandoverStep();
+      RM_Engine();
+      RM_CtlSync();
+      RM_CtlCheckCompletion();
+      if(g_recLatch)
+         g_normalBlock = "recovery cycle " + IntegerToString(g_cycleId) + " active";
+      return;
+     }
+   RM_Engine();                                      // monitoring: the gate refuses trades without a latch
+   if(g_ctl == RM_CTL_COOLDOWN || g_ctl != RM_CTL_NORMAL)
+     {
+      if(g_ctl == RM_CTL_COOLDOWN)
+         RM_CtlCooldown();
+      else if(!g_recLatch)
+         RM_CtlSet(RM_CTL_NORMAL, "no active cycle");
+      if(g_ctl != RM_CTL_NORMAL)
+        {
+         g_normalBlock = g_ctlStatus;
+         return;
+        }
+     }
+   // 4. drawdown-trigger evaluation
+   if(RM_TriggerCheckNow())
+     {
+      if(g_recLatch)
+        {
+         RM_Engine();                                // hand over on this same executable event
+         RM_CtlSync();
+        }
+      return;
+     }
+   // 5. normal basket management
+   if(RM_JournalOpen())
+      return;
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_NORMAL;
+   if(!RM_NormalManage())
+      // 6. normal averaging and new entries
+      RM_NormalEntries(newBar, sig);
+   g_actor = prevActor;
+   if(g_normalBlock == "" && (!g_normalEnabled || g_normalHalted))
+      g_normalBlock = g_normalHalted ? "halted - operator reset required" : "normal entries disabled by operator";
+  }
+
+//+------------------------------------------------------------------+
+//| Restart: reconcile broker orders before enabling either engine    |
+//+------------------------------------------------------------------+
+void RM_CtlReconcileOnStart()
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      return;
+   RM_NormalScan();
+   int recOrders = 0;
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+      if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES) && OrderSymbol() == g_sym && OrderType() <= OP_SELL &&
+         (OrderMagicNumber() == InpRecoveryMagic || OrderMagicNumber() == InpLockMagic))
+         recOrders++;
+   bool cycleEvidence = (g_regCount > 0 || recOrders > 0 || (RM_JournalOpen() && !RM_IsNormalKind(g_journal.kind)));
+   if(RM_Combined() && cycleEvidence && !g_recLatch)
+     {
+      g_recLatch = true;
+      g_hoSnapshot = false;                          // re-register any unregistered normal tickets
+      g_hoPendings = false;
+      g_ctl = RM_CTL_HANDOVER;
+      RM_Audit("RESTART_LATCH", g_cycleId, 0, recOrders, "recovery state found on restart: latch restored, normal trading disabled");
+     }
+   if(g_recLatch && (g_ctl == RM_CTL_NORMAL || g_ctl == RM_CTL_COOLDOWN))
+      g_ctl = RM_CTL_HANDOVER;
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY && cycleEvidence)
+      RM_Audit("WARNING", 0, 0, recOrders, "recovery/lock orders exist but THREE_MA_ONLY never manages them");
+   RM_Audit("CYCLE_RESTORE", g_cycleId, 0, 0, RM_CtlName(g_ctl) + " latch " + RM_Pick(g_recLatch, "ON", "off"));
+   RM_SaveState();
+  }
+
+//+------------------------------------------------------------------+
+//| Operator commands (dashboard). None can bypass the latch.         |
+//+------------------------------------------------------------------+
+void RM_CmdToggleNormal(string &msg)
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+     { msg = "normal trading is not used in RECOVERY_ONLY"; return; }
+   if(g_ctl == RM_CTL_COOLDOWN)
+     {
+      g_operatorResume = true;
+      msg = "resume requested: normal trading restarts after the cooldown";
+     }
+   else if(g_normalHalted)
+     {
+      g_normalHalted = false;
+      g_normalEnabled = true;
+      msg = "normal trading reset by operator";
+     }
+   else
+     {
+      g_normalEnabled = !g_normalEnabled;
+      msg = "normal entries " + RM_Pick(g_normalEnabled, "enabled", "disabled");
+      if(g_recLatch && g_normalEnabled)
+         msg += " (still blocked until the recovery cycle completes)";
+     }
+   RM_Audit("OPERATOR", 0, 0, 0, msg);
+   RM_SaveState();
+  }
+
+bool RM_CmdStartRecovery(string &msg)
+  {
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+     { msg = "recovery is disabled in THREE_MA_ONLY"; return false; }
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+     {
+      if(g_state != RM_ST_ARMED)
+        { msg = "nothing armed to launch (" + RM_StateName(g_state) + ")"; return false; }
+      g_forceStart = true;
+      RM_Audit("OPERATOR", 0, 0, 0, "start recovery now");
+      msg = "recovery launch requested";
+      return true;
+     }
+   if(g_recLatch)
+     { msg = "recovery cycle already active"; return false; }
+   RM_NormalScan();
+   if(g_normalCnt == 0)
+     { msg = "no normal basket to transfer"; return false; }
+   RM_CtlComputeMetrics();
+   RM_StartHandover("operator: Start Recovery Now", RM_TrigMetricValue());
+   msg = "handover started (cycle " + IntegerToString(g_cycleId) + ")";
+   return true;
+  }
+
+void RM_CmdPauseRecovery(string &msg)
+  {
+   if(RM_CtlOwnError())
+     {
+      g_hoAttempts = 0;
+      g_errorText = "";
+      RM_CtlSet(RM_CTL_HANDOVER, "operator retry");
+      msg = "handover retry";
+      return;
+     }
+   if(RM_Combined() && !g_recLatch)
+     { msg = "no active recovery cycle (monitoring only)"; return; }
+   RM_ActionStopResume();
+   msg = (g_state == RM_ST_PAUSED) ? "recovery paused" : "recovery resume requested";
+  }
+
+bool RM_CmdCloseBasket(string &msg)
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY || g_recLatch)
+     {
+      if(g_recLatch)
+         g_cycleManual = true;                       // early termination: operator reset needed later
+      return RM_ActionCloseAll(msg);
+     }
+   RM_NormalScan();
+   if(g_normalCnt == 0)
+     { msg = "no managed basket open"; return false; }
+   if(RM_JournalOpen())
+     { msg = "a closure is already in progress"; return false; }
+   RM_IndexList L;
+   L.n = 0;
+   for(int i = 0; i < g_nbook.n && L.n < RM_MAX_PLAN_LEGS; i++)
+      L.idx[L.n++] = i;
+   RM_PlanListed(g_nbook, g_cfg, g_mpp, RM_PLAN_NORMAL_CLOSE, L, -1.0, g_plan);
+   RM_Audit("OPERATOR", 0, g_normalLots, g_plan.expectedNet, "close normal basket");
+   RM_StartPlan(g_plan);                             // runs as OPERATOR (set by the button handler)
+   msg = "closing the normal basket";
+   return true;
+  }
+
+
+//==== inlined: Include/RecoveryManagerPro/RM_DashCycle.mqh
+//+------------------------------------------------------------------+
+//| RM_DashCycle.mqh - panel D "CYCLE CONTROLLER" (Three-MA modes).   |
+//| Upper right. Values come from the same snapshots the controller   |
+//| uses: g_nbook/g_ns (normal basket), g_book (recovery registry),   |
+//| g_ctlDD* (trigger metrics) and the persisted cycle fields.        |
+//+------------------------------------------------------------------+
+
+
+int g_dx = 0, g_dy = 0, g_dw = 0, g_barW = 0;
+
+string RM_MethodName(int m)
+  {
+   switch(m)
+     {
+      case MODE_SMA:  return "SMA";
+      case MODE_EMA:  return "EMA";
+      case MODE_SMMA: return "SMMA";
+      case MODE_LWMA: return "LWMA";
+     }
+   return "?";
+  }
+
+string RM_PriceName(int p)
+  {
+   switch(p)
+     {
+      case PRICE_CLOSE:    return "C";
+      case PRICE_OPEN:     return "O";
+      case PRICE_HIGH:     return "H";
+      case PRICE_LOW:      return "L";
+      case PRICE_MEDIAN:   return "M";
+      case PRICE_TYPICAL:  return "T";
+      case PRICE_WEIGHTED: return "W";
+     }
+   return "?";
+  }
+
+string RM_OpModeName()
+  {
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+      return "THREE_MA_ONLY";
+   if(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY)
+      return "THREE_MA_WITH_RECOVERY";
+   return "RECOVERY_ONLY";
+  }
+
+void RM_Row5(string key, int x, int y, int w, string label, color lc)
+  {
+   RM_Text(key + "_L", x + 8, y, label, lc, false, false);
+   RM_Text(key + "_1", x + (int)(w * 0.40), y, "", C_TEXT, true, false);
+   RM_Text(key + "_2", x + (int)(w * 0.58), y, "", C_TEXT, true, false);
+   RM_Text(key + "_3", x + (int)(w * 0.76), y, "", C_TEXT, true, false);
+   RM_Text(key + "_4", x + w - 8, y, "", C_TEXT, true, false);
+  }
+
+void RM_BuildCycle(int chartW)
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      return;
+   int w = g_mw, rh = g_rh;
+   int x = (int)MathMax(g_px + g_mw + 8, chartW - w - 60);
+   int y = g_py;
+   g_dx = x; g_dy = y; g_dw = w;
+   RM_Rect("D_BG", x, y, w, 10, C_BG, C_BORDER);
+   RM_Rect("D_HEAD", x, y, w, rh + 4, C_HEAD, C_BORDER);
+   RM_Text("D_TITLE", x + 8, y + 3, "CYCLE CONTROLLER", C_TEXT, false, true);
+   RM_Rect("D_CHIP", x + w - 128, y + 4, 120, rh - 4, C_AMBER, C_AMBER);
+   RM_Text("D_CHIPT", x + w - 122, y + 4, "", C_BG, false, true);
+   int r = y + rh + 8;
+   RM_Text("D_MODE", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Text("D_ENG", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Text("D_DD", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Text("D_THR", x + 8, r, "", C_DIM, false, false); r += rh;
+   g_barW = w - 16;
+   RM_Rect("D_BARBG", x + 8, r + 2, g_barW, rh - 8, C_HEAD, C_BORDER);
+   RM_Rect("D_BAR", x + 8, r + 2, 1, rh - 8, C_GREEN, C_GREEN);
+   r += rh;
+   RM_Text("D_MA", x + 8, r, "", C_DIM, false, false); r += rh;
+   RM_Text("D_SIG", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Row5("D_H", x, r, w, "Role", C_DIM);
+   RM_Set("D_H_1", "Cnt", C_DIM); r += rh;
+   RM_Row5("D_RN", x, r, w, "Normal", C_ACCENT); r += rh;
+   RM_Row5("D_RO", x, r, w, "Original", C_TEXT); r += rh;
+   RM_Row5("D_RH", x, r, w, "Hedge", C_TEXT); r += rh;
+   RM_Row5("D_RR", x, r, w, "Recovery", C_AMBER); r += rh;
+   RM_Text("D_CYC", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Text("D_PL", x + 8, r, "", C_TEXT, false, false); r += rh;
+   RM_Text("D_RES", x + 8, r, "", C_DIM, false, false); r += rh;
+   RM_Text("D_WHY", x + 8, r, "", C_DIM, false, false); r += rh;
+   RM_Text("D_BLK", x + 8, r, "", C_DIM, false, false); r += rh + 2;
+   int bw = (w - 24) / 2;
+   RM_Button("NRM", x + 8, r, bw, rh + 2, "Normal ON", C_BTN, C_BTNTXT);
+   RM_Button("STARTREC", x + 16 + bw, r, bw, rh + 2, "Start Recovery", C_BTN, C_AMBER);
+   r += rh + 6;
+   RM_Button("PAUSEREC", x + 8, r, bw, rh + 2, "Pause Recovery", C_BTN, C_BTNTXT);
+   RM_Button("CLOSEBSK", x + 16 + bw, r, bw, rh + 2, "Close Basket", C_BTN, C_RED);
+   r += rh + 8;
+   ObjectSetInteger(0, RM_DPFX + "D_BG", OBJPROP_YSIZE, r - y);
+   g_panelRect[3][0] = x; g_panelRect[3][1] = y; g_panelRect[3][2] = w; g_panelRect[3][3] = r - y;
+   // set the header texts once
+   RM_Set("D_H_2", "Buy lots", C_DIM);
+   RM_Set("D_H_3", "Sell lots", C_DIM);
+   RM_Set("D_H_4", "P/L", C_DIM);
+  }
+
+void RM_RoleStats(int role, int &cnt, double &bl, double &sl, double &pl)
+  {
+   cnt = 0; bl = 0; sl = 0; pl = 0;
+   if(role == RM_ROLE_NORMAL)
+     {
+      for(int i = 0; i < g_nbook.n; i++)
+        {
+         cnt++;
+         if(g_nbook.type[i] == RM_BUY) bl += g_nbook.lots[i]; else sl += g_nbook.lots[i];
+         pl += RM_LegNet(g_nbook, i);
+        }
+      return;
+     }
+   for(int k = 0; k < g_book.n; k++)
+     {
+      if(g_book.role[k] != role)
+         continue;
+      cnt++;
+      if(g_book.type[k] == RM_BUY) bl += g_book.lots[k]; else sl += g_book.lots[k];
+      pl += RM_LegNet(g_book, k);
+     }
+  }
+
+void RM_RoleRow(string key, int role)
+  {
+   int c; double bl, sl, pl;
+   RM_RoleStats(role, c, bl, sl, pl);
+   RM_Set(key + "_1", IntegerToString(c), C_TEXT);
+   RM_Set(key + "_2", RM_Lots(bl), C_TEXT);
+   RM_Set(key + "_3", RM_Lots(sl), C_TEXT);
+   RM_Set(key + "_4", RM_Money(pl), RM_PLColor(pl));
+  }
+
+string RM_Dur(long secs)
+  {
+   if(secs < 0)
+      secs = 0;
+   return IntegerToString(secs / 86400) + "d " + IntegerToString((secs % 86400) / 3600) + "h " +
+          IntegerToString((secs % 3600) / 60) + "m";
+  }
+
+void RM_RefreshCycle()
+  {
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY || ObjectFind(0, RM_DPFX + "D_BG") < 0)
+      return;
+   string cur = AccountCurrency();
+   color chip = C_GREEN;
+   if(g_ctl == RM_CTL_ERROR_HOLD) chip = C_RED;
+   else if(g_ctl == RM_CTL_HANDOVER || g_ctl == RM_CTL_RECOVERY_ACTIVE || g_ctl == RM_CTL_RECOVERY_CLOSING) chip = C_AMBER;
+   else if(g_ctl == RM_CTL_PAUSED || g_ctl == RM_CTL_COOLDOWN) chip = C_AMBER;
+   RM_SetBg("D_CHIP", chip);
+   RM_Set("D_CHIPT", RM_CtlName(g_ctl), C_BG);
+   RM_Set("D_MODE", "Mode " + RM_OpModeName(), C_TEXT);
+   bool normalActive = (g_ctl == RM_CTL_NORMAL && !g_recLatch && g_normalEnabled && !g_normalHalted && g_normalBlock == "");
+   string eng = "MONITORING";
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY) eng = "DISABLED";
+   else if(g_ctl == RM_CTL_RECOVERY_CLOSING) eng = "CLOSING";
+   else if(g_recLatch) eng = (g_ctl == RM_CTL_PAUSED) ? "PAUSED" : "ACTIVE";
+   RM_Set("D_ENG", "Normal " + RM_Pick(normalActive, "ACTIVE", "BLOCKED") + " | Recovery " + eng,
+          normalActive ? C_GREEN : C_AMBER);
+   string scope = (InpRecoveryTriggerScope == RM_TSCOPE_ACCOUNT) ? "account" : "managed";
+   RM_Set("D_DD", "DD " + RM_Money(g_ctlDDMoney) + " " + cur + " (" + DoubleToString(g_ctlDDPct, 2) + "%) " + scope +
+          " floating", g_ctlDDMoney > 0 ? C_RED : C_TEXT);
+   double v = RM_TrigMetricValue();
+   string thr = "Trigger " + DoubleToString(InpLaunchDrawdown, 2) + " " + RM_TrigUnit();
+   if(InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY)
+      thr += g_recLatch ? " | latched at " + DoubleToString(g_trigValue, 2)
+                        : " | remaining " + DoubleToString(MathMax(0.0, InpLaunchDrawdown - v), 2);
+   else
+      thr += " | not used (" + RM_OpModeName() + ")";
+   RM_Set("D_THR", thr, C_DIM);
+   double prog = g_recLatch ? 1.0 : g_ctlProgress;
+   int bw = (int)MathMax(1, g_barW * prog);
+   ObjectSetInteger(0, RM_DPFX + "D_BAR", OBJPROP_XSIZE, bw);
+   RM_SetBg("D_BAR", prog >= 1.0 ? C_RED : (prog >= 0.66 ? C_AMBER : C_GREEN));
+   RM_Set("D_MA", "F " + IntegerToString(InpFastPeriod) + " " + RM_MethodName(InpFastMethod) + "/" + RM_PriceName(InpFastPrice) +
+          "  S " + IntegerToString(InpSlowPeriod) + " " + RM_MethodName(InpSlowMethod) + "/" + RM_PriceName(InpSlowPrice) +
+          (InpUseFilterMA ? "  Flt " + IntegerToString(InpFilterPeriod) + " " + RM_MethodName(InpFilterMethod) + "/" +
+           RM_PriceName(InpFilterPrice) : "  Flt off"), C_DIM);
+   RM_Set("D_SIG", "Signal " + RM_SignalText() + (g_lastSignalBar > 0 ? " @ " + TimeToString((datetime)g_lastSignalBar) : "") +
+          "  f " + DoubleToString(g_maFast1, g_digits) + " s " + DoubleToString(g_maSlow1, g_digits),
+          g_lastSignal > 0 ? C_ACCENT : (g_lastSignal < 0 ? C_AMBER : C_TEXT));
+   RM_RoleRow("D_RN", RM_ROLE_NORMAL);
+   RM_RoleRow("D_RO", RM_ROLE_ORIGINAL);
+   RM_RoleRow("D_RH", RM_ROLE_LOCK);
+   RM_RoleRow("D_RR", RM_ROLE_RECOVERY);
+   string cyc = "Cycle " + IntegerToString(g_cycleId);
+   if(g_recLatch)
+      cyc += " since " + TimeToString((datetime)g_cycleStart) + " (" + RM_Dur((long)TimeCurrent() - g_cycleStart) + ")";
+   else if(g_cycleEnd > 0)
+      cyc += " " + RM_OutcomeName(g_cycleOutcome) + ", lasted " + RM_Dur(g_cycleEnd - g_cycleStart);
+   else
+      cyc += " - none yet";
+   RM_Set("D_CYC", RM_Cut(cyc, 60), C_TEXT);
+   double realised = g_recLatch ? g_realizedSession : g_cycleRealized;
+   RM_Set("D_PL", "Cycle realised " + RM_Money(realised) + " | floating " + RM_Money(g_tot.totalPL) + " " + cur,
+          RM_PLColor(realised));
+   string res = "Auto-resume " + RM_Pick(InpAutoResumeAfterRecovery, "ON", "OFF") + ", cooldown " +
+                IntegerToString(InpResumeCooldownBars) + " bars";
+   if(g_ctl == RM_CTL_COOLDOWN)
+      res = RM_Cut(g_ctlStatus, 58);
+   RM_Set("D_RES", res, g_ctl == RM_CTL_COOLDOWN ? C_AMBER : C_DIM);
+   RM_Set("D_WHY", RM_Cut("Last: " + (g_lastReason != "" ? g_lastReason : "-"), 60), C_DIM);
+   string blk = (g_normalBlock != "") ? g_normalBlock : (g_lastDenied != "" ? "Denied: " + g_lastDenied : "");
+   if(g_ctl == RM_CTL_ERROR_HOLD)
+      blk = "ERROR: " + g_errorText;
+   RM_Set("D_BLK", RM_Cut(blk, 60), g_ctl == RM_CTL_ERROR_HOLD ? C_RED : C_AMBER);
+   string nb = (g_ctl == RM_CTL_COOLDOWN) ? "Resume Normal" : (g_normalHalted ? "Reset Normal" : RM_Pick(g_normalEnabled, "Normal OFF", "Normal ON"));
+   RM_Set("NRM", nb, g_normalEnabled && !g_normalHalted ? C_BTNTXT : C_GREEN);
+   RM_Set("PAUSEREC", (g_ctl == RM_CTL_PAUSED || g_ctl == RM_CTL_ERROR_HOLD) ? "Resume Recovery" : "Pause Recovery", C_BTNTXT);
+  }
+
+//+------------------------------------------------------------------+
+//| Confirmation previews for the cycle actions                       |
+//+------------------------------------------------------------------+
+void RM_PrepareCyclePending(int act)
+  {
+   string cur = AccountCurrency();
+   RM_PlanReset(g_confirmPlan, RM_PLAN_NONE);
+   if(act == RM_ACT_START_REC)
+     {
+      g_pendingText1 = "START RECOVERY NOW?";
+      g_pendingText2 = "Transfers " + IntegerToString(g_normalCnt) + " normal orders, " + RM_Lots(g_normalLots) +
+                       " lots, floating " + RM_Money(g_normalNet) + " " + cur;
+      g_pendingText3 = "Normal trading stays blocked until the cycle completes";
+      return;
+     }
+   if(g_recLatch)
+     {
+      int c; double bl, sl, pl, tb = 0, ts = 0;
+      int n = 0;
+      for(int r = RM_ROLE_ORIGINAL; r <= RM_ROLE_RECOVERY; r++)
+        {
+         RM_RoleStats(r, c, bl, sl, pl);
+         n += c; tb += bl; ts += sl;
+        }
+      g_pendingText1 = "TERMINATE RECOVERY CYCLE " + IntegerToString(g_cycleId) + " EARLY?";
+      g_pendingText2 = "Remaining " + IntegerToString(n) + " orders BUY " + RM_Lots(tb) + " / SELL " + RM_Lots(ts) +
+                       " floating " + RM_Money(g_tot.totalPL) + " " + cur;
+      g_pendingText3 = "Realised so far " + RM_Money(g_realizedSession) + "; normal trading then needs a reset";
+     }
+   else
+     {
+      g_pendingText1 = "CLOSE NORMAL BASKET (" + IntegerToString(g_normalCnt) + " orders)?";
+      g_pendingText2 = "Lots " + RM_Lots(g_normalLots) + "  est. P/L " + RM_Money(g_normalNet) + " " + cur;
+      g_pendingText3 = RM_Cut("Tickets " + RM_NormalTicketList(), 64);
+     }
+  }
+
+void RM_CycleButton(string key)
+  {
+   string msg = "";
+   if(key == "NRM")
+     {
+      RM_CmdToggleNormal(msg);
+      RM_UiMsg(msg, C_DIM);
+      return;
+     }
+   if(key == "PAUSEREC")
+     {
+      RM_CmdPauseRecovery(msg);
+      RM_UiMsg(msg, C_DIM);
+      return;
+     }
+   int act = (key == "STARTREC") ? RM_ACT_START_REC : RM_ACT_CLOSE_BASKET;
+   g_pendingAct = act;
+   g_pendingSince = GetTickCount();
+   RM_PrepareCyclePending(act);
+   if(InpConfirmActions)
+     {
+      RM_ShowConfirm();
+      RM_UiMsg("press Confirm in the amber box", C_AMBER);
+     }
+   else
+      RM_ExecuteCyclePending(act);
+  }
+
+void RM_ExecuteCyclePending(int act)
+  {
+   string msg = "";
+   bool ok = (act == RM_ACT_START_REC) ? RM_CmdStartRecovery(msg) : RM_CmdCloseBasket(msg);
+   RM_UiMsg(msg, ok ? C_GREEN : C_RED);
   }
 
 
@@ -5381,6 +7182,7 @@ int OnInit()
    else
       RM_Audit("INIT", 0, 0, 0, "state restored: " + RM_StateName(g_state));
    RM_ReconcileRegistry();      // broker truth wins over the file
+   RM_CtlReconcileOnStart();    // restore the recovery latch before either engine may act
    RM_PreviewChartClosure(false);
    if(InpApplyChartColors)
       RM_ApplyChartColors();
@@ -5424,7 +7226,7 @@ void OnTick()
    if(IsTesting())
       RM_PollTesterButtons();   // MT4 tester delivers no chart events
    RM_TestSeeds();
-   RM_Engine();
+   RM_ControllerTick();         // single authoritative controller (engine + normal strategy)
    if(IsTesting())
       RM_DashRefresh(false);    // MT4 tester generates no timer events
   }

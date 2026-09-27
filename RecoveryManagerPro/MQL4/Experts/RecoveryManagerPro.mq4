@@ -132,6 +132,45 @@ input double             InpTestSeedLots       = 0.10;                 // Seed v
 input int                InpTestSeedBar        = 5;                    // Open seeds on this bar count
 input int                InpTestSeedMagic      = 12345;                // Seed magic number
 
+input string             S_OpMode              = "===== 11. Operating mode and recovery handover =====";
+input ENUM_RM_OPMODE     InpOperatingMode      = RM_OP_RECOVERY_ONLY;  // Operating mode
+input ENUM_RM_TRIG_MODE  InpRecoveryTriggerMode = RM_TRIG_PERCENT;     // Handover trigger unit (threshold = InpLaunchDrawdown)
+input ENUM_RM_TRIG_SCOPE InpRecoveryTriggerScope = RM_TSCOPE_MANAGED;  // Handover trigger scope
+input bool               InpAutoResumeAfterRecovery = true;            // Resume normal trading automatically after a completed cycle
+input int                InpResumeCooldownBars = 3;                    // Cooldown after cycle end [signal-timeframe bars]
+input bool               InpRequireFreshSignalAfterRecovery = true;    // Only crossovers whose candle opens after the cycle
+input bool               InpCombinedAdoptOthers = false;               // Also hand over orders in the section-1 scope (normally only own normal trades)
+
+input string             S_ThreeMA             = "===== 12. Three-MA normal strategy (project defaults, not the reference EA's) =====";
+input int                InpNormalMagic        = 7351001;              // Normal-strategy magic number
+input ENUM_TIMEFRAMES    InpSignalTF           = PERIOD_CURRENT;       // Signal timeframe
+input int                InpFastPeriod         = 10;                   // Fast MA period [bars]
+input ENUM_MA_METHOD     InpFastMethod         = MODE_EMA;             // Fast MA method
+input ENUM_APPLIED_PRICE InpFastPrice          = PRICE_CLOSE;          // Fast MA applied price
+input int                InpSlowPeriod         = 30;                   // Slow MA period [bars]
+input ENUM_MA_METHOD     InpSlowMethod         = MODE_EMA;             // Slow MA method
+input ENUM_APPLIED_PRICE InpSlowPrice          = PRICE_CLOSE;          // Slow MA applied price
+input bool               InpUseFilterMA        = true;                 // Third (filter) MA enabled
+input int                InpFilterPeriod       = 100;                  // Filter MA period [bars]
+input ENUM_MA_METHOD     InpFilterMethod       = MODE_SMA;             // Filter MA method
+input ENUM_APPLIED_PRICE InpFilterPrice        = PRICE_CLOSE;          // Filter MA applied price
+input ENUM_RM_DIRS       InpNormalDirs         = RM_DIRS_BOTH;         // Allowed normal directions
+input bool               InpNormalOneBasket    = true;                 // Ignore new signals while any normal basket is open
+input ENUM_RM_NLOT       InpNormalLotMode      = RM_NLOT_FIXED;        // Initial lot: fixed or balance-based
+input double             InpNormalLot          = 0.01;                 // Initial lot [lots] (per InpNormalLotPerBalance in balance mode)
+input double             InpNormalLotPerBalance = 1000.0;              // Balance per InpNormalLot [account currency]
+input bool               InpNormalAveraging    = false;                // Normal averaging enabled
+input double             InpNormalAvgStepPoints = 300;                 // Minimum averaging spacing from last fill [points]
+input double             InpNormalAvgMultiplier = 1.5;                 // Averaging lot multiplier [x]
+input int                InpNormalMaxPerDir    = 5;                    // Maximum normal orders per direction
+input double             InpNormalMaxLots      = 1.0;                  // Maximum total normal exposure [lots, 0 = off]
+input double             InpNormalTPPoints     = 200;                  // Virtual basket TP from weighted average [points, 0 = off]
+input bool               InpNormalOverlap      = false;                // First/last-order overlap for normal baskets
+input int                InpNormalOverlapMinOrders = 3;                // Overlap from this many orders in a direction
+input double             InpNormalOverlapTPPoints = 50;                // Overlap target [points x lots of the two orders]
+input int                InpNormalMaxSpread    = 50;                   // Maximum spread for normal entries [points]
+input int                InpNormalSlippage     = 30;                   // Normal-strategy slippage [points]
+
 //====================================================================
 // MODULES
 //====================================================================
@@ -147,6 +186,9 @@ input int                InpTestSeedMagic      = 12345;                // Seed m
 #include <RecoveryManagerPro/RM_Engine.mqh>
 #include <RecoveryManagerPro/RM_Annotations.mqh>
 #include <RecoveryManagerPro/RM_Dashboard.mqh>
+#include <RecoveryManagerPro/RM_Normal.mqh>
+#include <RecoveryManagerPro/RM_Controller.mqh>
+#include <RecoveryManagerPro/RM_DashCycle.mqh>
 
 //+------------------------------------------------------------------+
 //| Expert initialization                                             |
@@ -175,6 +217,7 @@ int OnInit()
    else
       RM_Audit("INIT", 0, 0, 0, "state restored: " + RM_StateName(g_state));
    RM_ReconcileRegistry();      // broker truth wins over the file
+   RM_CtlReconcileOnStart();    // restore the recovery latch before either engine may act
    RM_PreviewChartClosure(false);
    if(InpApplyChartColors)
       RM_ApplyChartColors();
@@ -218,7 +261,7 @@ void OnTick()
    if(IsTesting())
       RM_PollTesterButtons();   // MT4 tester delivers no chart events
    RM_TestSeeds();
-   RM_Engine();
+   RM_ControllerTick();         // single authoritative controller (engine + normal strategy)
    if(IsTesting())
       RM_DashRefresh(false);    // MT4 tester generates no timer events
   }

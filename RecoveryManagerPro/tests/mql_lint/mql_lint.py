@@ -96,6 +96,16 @@ def preset_code():
         if not name.endswith(".set"):
             continue
         lines = []
+        seen_keys = set()
+        for raw in open(os.path.join(pdir, name)):
+            k0 = raw.split("=", 1)[0].strip()
+            if "=" in raw and not raw.startswith(";"):
+                if k0 in seen_keys:
+                    raise SystemExit(f"{name}: duplicate key {k0}")
+                seen_keys.add(k0)
+        missing = set(re.findall(r"^input\s+\w+\s+(Inp\w+)", open(MAIN).read(), re.M)) - seen_keys
+        if missing:
+            raise SystemExit(f"{name}: missing inputs {sorted(missing)}")
         for raw in open(os.path.join(pdir, name)):
             raw = raw.strip()
             if not raw or raw.startswith(";") or "=" not in raw:

@@ -585,6 +585,30 @@ void RM_PlanAll(const RM_Book &b, const RM_PlanConfig &c, double mpp,
   }
 
 //+------------------------------------------------------------------+
+//| Close the listed book legs in full (normal-strategy closures).    |
+//| targetMoney < 0 = unconditional.                                    |
+//+------------------------------------------------------------------+
+void RM_PlanListed(const RM_Book &b, const RM_PlanConfig &c, double mpp, int kind,
+                   const RM_IndexList &list, double targetMoney, RM_Plan &p)
+  {
+   RM_PlanReset(p, kind);
+   for(int k = 0; k < list.n; k++)
+      if(!RM_PlanAddLeg(p, b, list.idx[k], b.lots[list.idx[k]], c))
+         return;
+   if(p.n == 0)
+     {
+      p.reason = RM_R_NO_MAIN;
+      return;
+     }
+   RM_PlanTotals(p, c, mpp);
+   p.target = MathMax(0.0, targetMoney);
+   p.qualifies = (targetMoney < 0.0) || (p.expectedNet >= targetMoney - 1e-9);
+   if(!p.qualifies)
+      p.reason = RM_R_BELOW_TARGET;
+   RM_PlanSortForExecution(p);
+  }
+
+//+------------------------------------------------------------------+
 //| Journal core                                                      |
 //+------------------------------------------------------------------+
 void RM_JournalClear(RM_Journal &j)

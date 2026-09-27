@@ -14,6 +14,8 @@ typedef int color;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef int ENUM_TIMEFRAMES;
+typedef int ENUM_MA_METHOD;
+typedef int ENUM_APPLIED_PRICE;
 
 inline color RGBc(int r, int g, int b) { return r | (g << 8) | (b << 16); }
 
@@ -54,6 +56,8 @@ MT4C(OBJ_BUTTON) MT4C(OBJ_EDIT) MT4C(OBJ_HLINE) MT4C(OBJ_LABEL) MT4C(OBJ_RECTANG
 MT4C(PERIOD_CURRENT) MT4C(REASON_ACCOUNT) MT4C(REASON_CHARTCHANGE) MT4C(REASON_CHARTCLOSE) MT4C(REASON_CLOSE)
 MT4C(REASON_INITFAILED) MT4C(REASON_REMOVE) MT4C(STYLE_DASH) MT4C(STYLE_DOT)
 MT4C(TIME_DATE) MT4C(TIME_SECONDS)
+const int MODE_SMA = 0, MODE_EMA = 1, MODE_SMMA = 2, MODE_LWMA = 3;
+const int PRICE_CLOSE = 0, PRICE_OPEN = 1, PRICE_HIGH = 2, PRICE_LOW = 3, PRICE_MEDIAN = 4, PRICE_TYPICAL = 5, PRICE_WEIGHTED = 6;
 extern const double EMPTY_VALUE;
 extern const color clrBlack, clrDarkOrange, clrDodgerBlue, clrGold, clrLime, clrNONE, clrOrange, clrOrangeRed,
        clrSilver, clrWhite, clrYellow;
@@ -67,7 +71,7 @@ template<typename... A> void Comment(A... a);
 bool IsConnected(); bool IsOptimization(); bool IsTesting(); bool IsTradeAllowed(); bool IsTradeContextBusy();
 bool IsVisualMode(); bool SendNotification(string text); void Sleep(int ms); uint GetTickCount();
 int GetLastError(); void ResetLastError(); string ErrorDescription(int e); bool RefreshRates();
-string Symbol(); datetime TimeCurrent(); int TimeHour(datetime t); string TimeToString(datetime t, int mode);
+string Symbol(); datetime TimeCurrent(); int TimeHour(datetime t); string TimeToString(datetime t, int mode = 3);
 template<typename E> string EnumToString(E e);
 bool EventSetMillisecondTimer(int ms); void EventKillTimer();
 
@@ -77,6 +81,8 @@ datetime iTime(string s, int tf, int shift); double iOpen(string s, int tf, int 
 double iHigh(string s, int tf, int shift); double iLow(string s, int tf, int shift); int iBars(string s, int tf);
 int iHighest(string s, int tf, int type, int count, int start); int iLowest(string s, int tf, int type, int count, int start);
 double iCustom(string s, int tf, string name, int mode, int shift);
+double iMA(string s, int tf, int period, int ma_shift, int method, int price, int shift);
+int iBarShift(string s, int tf, datetime t, bool exact = false);
 
 // ---- orders
 int OrdersTotal(); bool OrderSelect(int index, int select, int pool = 0);

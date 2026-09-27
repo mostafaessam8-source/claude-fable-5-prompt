@@ -19,6 +19,8 @@
 #define RM_ACT_GROUP     3
 #define RM_ACT_OPEN_BUY  4
 #define RM_ACT_OPEN_SELL 5
+#define RM_ACT_START_REC 6
+#define RM_ACT_CLOSE_BASKET 7
 
 //--- theme
 color  C_BG, C_BORDER, C_HEAD, C_TEXT, C_DIM, C_GREEN, C_RED, C_AMBER, C_BTN, C_BTNTXT, C_ACCENT;
@@ -230,7 +232,7 @@ void RM_DashRelayout()
    g_lastChartW = cw;
    g_lastChartH = ch;
    ObjectsDeleteAll(0, RM_DPFX);
-   for(int i = 0; i < 3; i++)
+   for(int i = 0; i < 4; i++)
       for(int j = 0; j < 4; j++)
          g_panelRect[i][j] = 0;
    double sc = (g_panelSize == RM_PANEL_LARGE) ? 1.3 : 1.0;
@@ -251,6 +253,7 @@ void RM_DashRelayout()
      {
       RM_BuildGroup(ch);
       RM_BuildManual(cw, ch);
+      RM_BuildCycle(cw);                       // panel D (Three-MA modes only)
      }
    g_layoutBuilt = true;
    RM_DashRefresh(true);
@@ -423,6 +426,10 @@ void RM_ShowConfirm()
       x = g_px;
       y = (int)MathMin(g_py + g_panelRect[0][3] + 4, g_lastChartH - h - 8);
      }
+   // keep clear of the cycle panel when both sit on the same side
+   if(g_panelRect[3][2] > 0 && x < g_panelRect[3][0] + g_panelRect[3][2] && x + w > g_panelRect[3][0] &&
+      y < g_panelRect[3][1] + g_panelRect[3][3] && y + h > g_panelRect[3][1])
+      y = (int)MathMin(g_panelRect[3][1] + g_panelRect[3][3] + 4, g_lastChartH - h - 8);
    RM_Rect("K_BG", x, y, w, h, C_HEAD, C_AMBER);
    RM_Text("K_T1", x + 8, y + 4, RM_Cut(g_pendingText1, 60), C_AMBER, false, true);
    RM_Text("K_T2", x + 8, y + 4 + rh, RM_Cut(g_pendingText2, 64), C_TEXT, false, false);
@@ -560,6 +567,7 @@ void RM_DashRefresh(bool force)
         }
       RM_RefreshGroup(cur);
       RM_RefreshManual();
+      RM_RefreshCycle();
      }
    ChartRedraw();
   }
@@ -609,9 +617,13 @@ void RM_RefreshGroup(string cur)
 
 void RM_RefreshManual()
   {
-   RM_Set("ROLE", g_uiRecoveryRole ? "RECOVERY" : "ORIGINAL", g_uiRecoveryRole ? C_AMBER : C_ACCENT);
+   // Three-MA modes: a non-recovery manual order outside a cycle joins the NORMAL basket
+   bool asNormal = (InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch);
+   string base = asNormal ? "NORMAL" : "ORIGINAL";
+   int baseMagic = asNormal ? InpNormalMagic : InpManualOriginalMagic;
+   RM_Set("ROLE", g_uiRecoveryRole ? "RECOVERY" : base, g_uiRecoveryRole ? C_AMBER : C_ACCENT);
    RM_Set("C_TARGET", g_sym + " as " + (g_uiRecoveryRole ? "RECOVERY (magic " + IntegerToString(InpRecoveryMagic) + ")"
-          : "ORIGINAL (magic " + IntegerToString(InpManualOriginalMagic) + ")"), C_DIM);
+          : base + " (magic " + IntegerToString(baseMagic) + ")"), C_DIM);
    RM_Set("C_MSG", RM_Cut(g_uiMsg, (int)MathMax(30, (g_cw - 16) / (g_fs * 0.62))), g_uiMsgClr == clrNONE ? C_DIM : g_uiMsgClr);
   }
 
@@ -763,6 +775,12 @@ void RM_ExecutePending()
      }
    else if(act == RM_ACT_OPEN_BUY || act == RM_ACT_OPEN_SELL)
       ok = RM_ActionOpen(act == RM_ACT_OPEN_BUY ? RM_BUY : RM_SELL, g_uiRecoveryRole, g_uiLot, msg);
+   else if(act == RM_ACT_START_REC || act == RM_ACT_CLOSE_BASKET)
+     {
+      RM_ExecuteCyclePending(act);
+      RM_DashRefresh(true);
+      return;
+     }
    RM_UiMsg(msg, ok ? C_GREEN : C_RED);
    RM_DashRefresh(true);
   }
@@ -796,6 +814,14 @@ void RM_RequestAction(int act)
 //+------------------------------------------------------------------+
 void RM_OnButton(string name)
   {
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_OPERATOR;             // operator actions pass the gate as OPERATOR
+   RM_OnButtonInner(name);
+   g_actor = prevActor;
+  }
+
+void RM_OnButtonInner(string name)
+  {
    if(StringFind(name, RM_DPFX) != 0)
       return;
    string key = StringSubstr(name, StringLen(RM_DPFX));
@@ -823,8 +849,15 @@ void RM_OnButton(string name)
      }
    if(key == "OK")     { RM_ExecutePending(); return; }
    if(key == "CANCEL") { RM_HideConfirm(); RM_UiMsg("cancelled", C_DIM); return; }
-   if(g_pendingAct != RM_ACT_NONE && (key == "CLOSEALL" || key == "REDUCE" || key == "GROUP" || key == "BUY" || key == "SELL"))
+   if(g_pendingAct != RM_ACT_NONE && (key == "CLOSEALL" || key == "REDUCE" || key == "GROUP" || key == "BUY" ||
+                                      key == "SELL" || key == "STARTREC" || key == "CLOSEBSK"))
       RM_HideConfirm();                       // a new action replaces the unconfirmed one
+   if(key == "NRM" || key == "STARTREC" || key == "PAUSEREC" || key == "CLOSEBSK")
+     {
+      RM_CycleButton(key);
+      RM_DashRefresh(true);
+      return;
+     }
    if(key == "STOP")
      {
       RM_ActionStopResume();
@@ -853,7 +886,8 @@ void RM_PollTesterButtons()
   {
    if(!IsVisualMode())
       return;
-   string keys[] = {"MIN", "SHOW", "OK", "CANCEL", "STOP", "CLOSEALL", "REDUCE", "GROUP", "BUY", "SELL", "ROLE", "PLUS", "MINUS"};
+   string keys[] = {"MIN", "SHOW", "OK", "CANCEL", "STOP", "CLOSEALL", "REDUCE", "GROUP", "BUY", "SELL", "ROLE", "PLUS", "MINUS",
+                    "NRM", "STARTREC", "PAUSEREC", "CLOSEBSK"};
    for(int i = 0; i < ArraySize(keys); i++)
      {
       string n = RM_DPFX + keys[i];

@@ -77,6 +77,94 @@ string RM_ErrText(int e)
   }
 
 //+------------------------------------------------------------------+
+//| CENTRAL PERMISSION GATE for every automated or manual trade       |
+//| operation (send / close / modify / delete). The caller sets       |
+//| g_actor; nothing reaches the broker without passing here, so the  |
+//| normal strategy can never bypass the recovery latch.              |
+//+------------------------------------------------------------------+
+#define RM_OPK_OPEN   1
+#define RM_OPK_CLOSE  2
+#define RM_OPK_MODIFY 3
+#define RM_OPK_DELETE 4
+
+bool RM_Combined()
+  {
+   return InpOperatingMode == RM_OP_THREE_MA_WITH_RECOVERY;
+  }
+
+bool RM_Permit(int op, int magic, int ticket, string &why)
+  {
+   switch(g_actor)
+     {
+      case RM_ACTOR_TEST:
+         if(IsTesting())
+            return true;
+         why = "test actions only in the Strategy Tester";
+         return false;
+      case RM_ACTOR_EMERGENCY:
+         if(op == RM_OPK_OPEN)
+           { why = "emergency protection may only reduce exposure"; return false; }
+         return true;
+      case RM_ACTOR_OPERATOR:
+         if(op == RM_OPK_OPEN && magic == InpNormalMagic && g_recLatch)
+           { why = "recovery latch active: normal-strategy orders are blocked"; return false; }
+         return true;
+      case RM_ACTOR_HANDOVER:
+         if(g_ctl == RM_CTL_HANDOVER && op == RM_OPK_DELETE && magic == InpNormalMagic)
+            return true;
+         why = "handover may only cancel normal-strategy pending orders";
+         return false;
+      case RM_ACTOR_RECOVERY:
+         if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+            return true;
+         if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+           { why = "recovery engine disabled in THREE_MA_ONLY"; return false; }
+         if(!g_recLatch)
+           { why = "recovery is monitoring only (no active cycle)"; return false; }
+         if(op == RM_OPK_OPEN && magic == InpNormalMagic)
+           { why = "recovery never opens normal-strategy orders"; return false; }
+         return true;
+      case RM_ACTOR_NORMAL:
+         if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+           { why = "normal trading disabled (RECOVERY_ONLY)"; return false; }
+         if(magic != InpNormalMagic)
+           { why = "normal strategy may only touch its own magic"; return false; }
+         if(op != RM_OPK_OPEN && ticket > 0 && RM_RegFind(ticket) >= 0)
+           { why = "ticket belongs to the recovery cycle"; return false; }
+         if(g_recLatch)
+           {
+            // only an already-started normal closure may finish before the handover snapshot
+            if(op == RM_OPK_CLOSE && g_ctl == RM_CTL_HANDOVER && !g_hoSnapshot)
+               return true;
+            why = "recovery latch active: normal strategy blocked";
+            return false;
+           }
+         if(g_ctl != RM_CTL_NORMAL)
+           { why = "normal strategy blocked (" + RM_CtlName(g_ctl) + ")"; return false; }
+         if(op == RM_OPK_OPEN && (!g_normalEnabled || g_normalHalted))
+           { why = g_normalHalted ? "normal trading halted - operator reset required" : "normal entries disabled by operator"; return false; }
+         return true;
+     }
+   why = "no authorised actor for this trade operation";
+   return false;
+  }
+
+bool RM_Gate(int op, int magic, int ticket, string &err)
+  {
+   string why = "";
+   if(RM_Permit(op, magic, ticket, why))
+      return true;
+   err = "blocked: " + why;
+   g_lastDenied = why;
+   return false;
+  }
+
+int RM_Slippage()
+  {
+   return (g_actor == RM_ACTOR_NORMAL) ? InpNormalSlippage : InpMaxSlippage;
+  }
+
+//+------------------------------------------------------------------+
 //| Is trading possible right now? why receives the reason.          |
 //+------------------------------------------------------------------+
 bool RM_TradeReady(string &why)
@@ -147,6 +235,8 @@ int RM_FindByTag(string tag, int magic)
 //+------------------------------------------------------------------+
 int RM_Send(int type, double lots, int magic, string comment, string tag, string &err)
   {
+   if(!RM_Gate(RM_OPK_OPEN, magic, 0, err))
+      return -1;
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return -1; }
@@ -163,7 +253,7 @@ int RM_Send(int type, double lots, int magic, string comment, string tag, string
       RefreshRates();
       double price = (type == OP_BUY) ? RM_Ask() : RM_Bid();
       ResetLastError();
-      int t = OrderSend(g_sym, type, lots, RM_NormPrice(price), InpMaxSlippage, 0, 0,
+      int t = OrderSend(g_sym, type, lots, RM_NormPrice(price), RM_Slippage(), 0, 0,
                         comment, magic, 0, arrow);
       if(t > 0)
         {
@@ -237,6 +327,8 @@ int RM_FindChild(int parent)
 bool RM_Close(int ticket, double lots, double &closedLots, double &realized, int &child, string &err)
   {
    closedLots = 0; realized = 0; child = 0;
+   if(OrderSelect(ticket, SELECT_BY_TICKET) && !RM_Gate(RM_OPK_CLOSE, OrderMagicNumber(), ticket, err))
+      return false;
    string why = "";
    if(!RM_TradeReady(why))
      { err = why; return false; }
@@ -266,7 +358,7 @@ bool RM_Close(int ticket, double lots, double &closedLots, double &realized, int
            { err = "inside broker freeze level"; return false; }
         }
       ResetLastError();
-      bool ok = OrderClose(ticket, v, RM_NormPrice(price), InpMaxSlippage, clrGold);
+      bool ok = OrderClose(ticket, v, RM_NormPrice(price), RM_Slippage(), clrGold);
       int e = GetLastError();
       if(!ok && RM_ErrUncertain(e))
         {
@@ -317,6 +409,8 @@ bool RM_ClearSLTP(int ticket, string &err)
      { err = "ticket not open"; return false; }
    if(OrderStopLoss() == 0.0 && OrderTakeProfit() == 0.0)
       return true;
+   if(!RM_Gate(RM_OPK_MODIFY, OrderMagicNumber(), ticket, err))
+      return false;
    double freeze = MarketInfo(g_sym, MODE_FREEZELEVEL) * g_meta.point;
    double price = (OrderType() == OP_BUY) ? RM_Bid() : RM_Ask();
    if(freeze > 0.0)
@@ -345,6 +439,9 @@ bool RM_ClearSLTP(int ticket, string &err)
 
 bool RM_DeletePending(int ticket, string &err)
   {
+   if(OrderSelect(ticket, SELECT_BY_TICKET) && OrderCloseTime() == 0 &&
+      !RM_Gate(RM_OPK_DELETE, OrderMagicNumber(), ticket, err))
+      return false;
    for(int attempt = 0; attempt < RM_RETRIES; attempt++)
      {
       RM_WaitContext();

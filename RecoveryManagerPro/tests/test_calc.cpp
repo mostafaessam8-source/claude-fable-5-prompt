@@ -459,6 +459,87 @@ int main()
       CHECK(RM_NextState(in) == RM_ST_RECOVERING);
    }
 
+   CASE("C20 drawdown trigger: 10% of 10,000 -> 999 no, 1,000 yes (managed scope)");
+   {
+      double m, pc;
+      RM_TriggerMetrics(RM_TSCOPE_MANAGED, -999.0, 10000, 9001, m, pc);
+      CHECK(NEAR(m, 999.0) && NEAR(pc, 9.99));
+      CHECK(!RM_TriggerHit(RM_TRIG_PERCENT, m, pc, 10.0, 10000));
+      RM_TriggerMetrics(RM_TSCOPE_MANAGED, -1000.0, 10000, 9000, m, pc);
+      CHECK(NEAR(m, 1000.0) && NEAR(pc, 10.0));
+      CHECK(RM_TriggerHit(RM_TRIG_PERCENT, m, pc, 10.0, 10000));
+      CHECK(RM_TriggerHit(RM_TRIG_MONEY, m, pc, 1000.0, 10000));
+      CHECK(!RM_TriggerHit(RM_TRIG_MONEY, 999.99, 0, 1000.0, 10000));
+      RM_TriggerMetrics(RM_TSCOPE_MANAGED, +250.0, 10000, 10250, m, pc);      // profit is no drawdown
+      CHECK(NEAR(m, 0) && !RM_TriggerHit(RM_TRIG_MONEY, m, pc, 1.0, 10000));
+      RM_TriggerMetrics(RM_TSCOPE_ACCOUNT, 0.0, 10000, 8800, m, pc);          // account: balance - equity
+      CHECK(NEAR(m, 1200) && NEAR(pc, 12.0));
+      RM_TriggerMetrics(RM_TSCOPE_ACCOUNT, 0.0, 0.0, -5, m, pc);              // zero balance guard
+      CHECK(NEAR(pc, 0.0) && !RM_TriggerHit(RM_TRIG_PERCENT, m, pc, 10.0, 0.0));
+      CHECK(!RM_TriggerHit(RM_TRIG_PERCENT, 5000, 50, 0.0, 10000));           // no threshold -> never
+      CHECK(NEAR(RM_TriggerProgress(RM_TRIG_PERCENT, 500, 5.0, 10.0), 0.5));
+      CHECK(NEAR(RM_TriggerProgress(RM_TRIG_MONEY, 3000, 30.0, 1000.0), 1.0));
+   }
+
+   CASE("C21 Three-MA crossover on closed candles, filter");
+   {
+      CHECK(RM_MASignal(1.0, 1.0, 1.2, 1.1, false, 0) == 1);        // f2 <= s2 (equal) and f1 > s1
+      CHECK(RM_MASignal(0.9, 1.0, 1.2, 1.1, false, 0) == 1);
+      CHECK(RM_MASignal(1.1, 1.0, 1.2, 1.1, false, 0) == 0);        // already above: no new cross
+      CHECK(RM_MASignal(1.0, 1.0, 0.9, 1.0, false, 0) == -1);
+      CHECK(RM_MASignal(1.2, 1.0, 0.9, 1.0, false, 0) == -1);
+      CHECK(RM_MASignal(0.9, 1.0, 0.8, 1.0, false, 0) == 0);
+      CHECK(RM_MASignal(0.9, 1.0, 1.2, 1.1, true, 1.05) == 1);      // both above filter
+      CHECK(RM_MASignal(0.9, 1.0, 1.2, 1.1, true, 1.15) == 0);      // slow below filter -> rejected
+      CHECK(RM_MASignal(1.2, 1.0, 0.9, 1.0, true, 1.05) == -1);     // both below filter
+      CHECK(RM_MASignal(1.2, 1.0, 0.9, 1.0, true, 0.95) == 0);      // fast below, slow above -> rejected
+   }
+
+   CASE("C22 normal lot sizing, virtual basket TP, overlap");
+   {
+      CHECK(NEAR(RM_NormalBaseLot(RM_NLOT_FIXED, 0.05, 25000, 1000), 0.05));
+      CHECK(NEAR(RM_NormalBaseLot(RM_NLOT_BALANCE, 0.01, 25000, 1000), 0.25));
+      CHECK(NEAR(RM_NormalBaseLot(RM_NLOT_BALANCE, 0.01, 25000, 0), 0.0));
+      CHECK(NEAR(RM_NormalizeLot(RM_NormalBaseLot(RM_NLOT_BALANCE, 0.01, 1550, 1000), fx, RM_ROUND_DOWN), 0.01));
+      CHECK(RM_BasketTPReached(RM_BUY, 1.10000, 100, 0.00001, 1.10100, 1.10110));
+      CHECK(!RM_BasketTPReached(RM_BUY, 1.10000, 100, 0.00001, 1.10099, 1.10109));
+      CHECK(RM_BasketTPReached(RM_SELL, 1.10000, 100, 0.00001, 1.09890, 1.09900));
+      CHECK(!RM_BasketTPReached(RM_SELL, 1.10000, 100, 0.00001, 1.09891, 1.09901));
+      CHECK(!RM_BasketTPReached(RM_BUY, 1.10000, 0, 0.00001, 2.0, 2.0));       // TP 0 = off
+      CHECK(RM_NormalOverlapHit(-4.0, 7.0, 0.01, 0.02, 100, 1.0));             // 3.00 >= 100*1*0.03
+      CHECK(!RM_NormalOverlapHit(-4.0, 6.9, 0.01, 0.02, 100, 1.0));
+   }
+
+   CASE("C23 resume rules: cooldown, auto-resume, emergency/manual need operator, fresh signal");
+   {
+      CHECK(!RM_ResumeAllowed(RM_OUT_COMPLETED, false, true, false, 2, 3));   // cooldown not over
+      CHECK(RM_ResumeAllowed(RM_OUT_COMPLETED, false, true, false, 3, 3));
+      CHECK(!RM_ResumeAllowed(RM_OUT_COMPLETED, false, false, false, 9, 3));  // auto off: wait
+      CHECK(RM_ResumeAllowed(RM_OUT_COMPLETED, false, false, true, 9, 3));    // operator command
+      CHECK(!RM_ResumeAllowed(RM_OUT_EMERGENCY, true, true, false, 99, 3));   // never automatic
+      CHECK(RM_ResumeAllowed(RM_OUT_EMERGENCY, true, true, true, 99, 3));
+      CHECK(!RM_ResumeAllowed(RM_OUT_EMERGENCY, true, true, true, 1, 3));     // even operator waits cooldown
+      CHECK(!RM_ResumeAllowed(RM_OUT_MANUAL, false, true, false, 9, 3));
+      CHECK(!RM_SignalIsFresh(true, 1000, 2000));                             // crossover during recovery
+      CHECK(RM_SignalIsFresh(true, 2000, 2000));
+      CHECK(RM_SignalIsFresh(false, 1000, 2000));
+   }
+
+   CASE("C24 normal basket closure plan lists only the requested legs");
+   {
+      BookClear(B);
+      Add(B, 1, RM_ROLE_NORMAL, RM_BUY, 0.01, -4.0, 0, 0, 100);
+      Add(B, 2, RM_ROLE_NORMAL, RM_BUY, 0.02, 1.0, 0, 0, 200);
+      Add(B, 3, RM_ROLE_NORMAL, RM_BUY, 0.03, 9.0, 0, 0, 300);
+      RM_IndexList L; L.n = 2; L.idx[0] = 0; L.idx[1] = 2;
+      RM_PlanConfig c = Cfg();
+      RM_PlanListed(B, c, 1.0, RM_PLAN_NORMAL_OVERLAP, L, -1.0, P);
+      CHECK(P.n == 2 && NEAR(P.expectedNet, 5.0) && P.qualifies);
+      CHECK(P.ticket[0] == 3);                                     // profitable leg first
+      RM_PlanListed(B, c, 1.0, RM_PLAN_NORMAL_TP, L, 6.0, P);
+      CHECK(!P.qualifies);
+   }
+
    CASE("Break-even / possible-close price solve");
    {
       // 0.10 lot BUY group, EURUSD: 1.0 per point per lot -> 10000 per price unit per lot

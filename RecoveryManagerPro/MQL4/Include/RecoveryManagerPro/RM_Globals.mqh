@@ -98,4 +98,35 @@ string   g_chartPreview = "";
 int      g_extHandleWarned = 0;
 int      g_tradeEvents = 0;             // confirmed sends/closes (snapshot refresh trigger)
 
+//--- central permission gate: who is asking for a trade operation right now
+int      g_actor = RM_ACTOR_NONE;
+string   g_lastDenied = "";             // last refused automated action (dashboard)
+
+//--- combined-operation controller (persisted)
+int      g_ctl = RM_CTL_NORMAL;         // cycle state
+bool     g_recLatch = false;            // recovery latch: once set only a completed cycle clears it
+int      g_cycleId = 0;
+long     g_cycleStart = 0;
+long     g_cycleEnd = 0;
+double   g_trigValue = 0.0;             // metric value that fired the handover
+bool     g_hoSnapshot = false;          // handover: tickets registered
+bool     g_hoPendings = false;          // handover: normal pendings cancelled and reconciled
+int      g_hoAttempts = 0;
+bool     g_engineCycleEnded = false;    // recovery engine reached COMPLETE for this cycle
+int      g_cycleOutcome = RM_OUT_NONE;
+bool     g_cycleEmergency = false;
+bool     g_cycleManual = false;
+double   g_cycleRealized = 0.0;         // realised net of the last finished cycle
+bool     g_normalEnabled = true;        // operator switch for normal entries
+bool     g_normalHalted = false;        // needs an explicit operator reset (emergency / manual end)
+bool     g_operatorResume = false;      // explicit operator resume command pending
+bool     g_forceStart = false;          // Start Recovery Now in RECOVERY_ONLY mode
+long     g_lastSignalBar = 0;           // open time of the last processed closed signal candle
+int      g_lastSignal = 0;              // +1 BUY / -1 SELL / 0 none on that candle
+long     g_freshAfter = 0;              // crossovers on candles opened before this are stale
+long     g_normLastAvgBar[2];           // per direction: signal candle of the last averaging order
+double   g_normalRealized = 0.0;        // realised net of normal-strategy closures (session)
+string   g_lastReason = "";             // last handover / block reason
+int      g_journalActor = RM_ACTOR_NONE; // actor that owns the open journal
+
 #endif

@@ -33,6 +33,11 @@ void RM_InitRuntime()
    g_regCount = 0;
    g_pendCount = 0;
    RM_DayRoll();
+   // controller fields: defaults first, the state file (if any) restores them
+   g_ctl = RM_CTL_NORMAL; g_recLatch = false; g_hoSnapshot = false; g_hoPendings = false; g_hoAttempts = 0;
+   g_engineCycleEnded = false; g_cycleOutcome = RM_OUT_NONE; g_cycleEmergency = false; g_cycleManual = false;
+   g_normalEnabled = true; g_normalHalted = false; g_operatorResume = false; g_forceStart = false;
+   g_journalActor = RM_ACTOR_NONE; g_actor = RM_ACTOR_NONE;
   }
 
 void RM_ResetSession()
@@ -93,8 +98,11 @@ void RM_EnterState(int ns)
    g_state = ns;
    RM_Audit("STATE", 0, 0, g_managedNet, RM_StateName(old) + " -> " + RM_StateName(ns) +
             (ns == RM_ST_ERROR_HOLD ? " (" + g_errorText + ")" : ""));
+   if(ns == RM_ST_PREPARING)
+      g_forceStart = false;
    if(ns == RM_ST_COMPLETE)
      {
+      g_engineCycleEnded = true;             // the controller verifies and closes the cycle
       RM_Notify("recovery complete, session realised " + RM_Money(g_realizedSession) + " " + AccountCurrency());
       RM_Audit("SESSION_END", 0, 0, g_realizedSession, "managed basket empty");
       RM_ResetSession();
@@ -127,6 +135,8 @@ void RM_Engine()
    if(g_busy)
       return;
    g_busy = true;
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_RECOVERY;             // every engine operation passes the gate as RECOVERY
    RM_RefreshMeta();
    datetime bar0 = iTime(g_sym, 0, 0);
    if(bar0 != g_lastBarSeen)
@@ -154,7 +164,10 @@ void RM_Engine()
       RM_Audit("EMERGENCY", 0, 0, g_managedNet, ew);
       RM_Notify("EMERGENCY: " + ew);
       if(InpEmergencyAction == RM_EMGA_CLOSE_ALL)
+        {
          g_closeRequested = true;
+         g_cycleEmergency = true;           // cycle outcome: emergency, never auto-resumed
+        }
       else if(g_state != RM_ST_PAUSED)
          g_pauseRequested = true;
      }
@@ -181,8 +194,13 @@ void RM_Engine()
    si.hasManaged = (g_tot.totalCnt > 0);
    si.hasMain = (RM_MainCount() > 0);
    si.launchDone = g_launchDone;
-   si.launchTriggered = RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
-                                           InpLaunchDrawdown, g_tot.origCnt > 0);
+   if(InpOperatingMode == RM_OP_RECOVERY_ONLY)
+      si.launchTriggered = g_forceStart ||
+                           RM_LaunchTriggered(InpLaunchMode, g_managedNet, AccountBalance(),
+                                              InpLaunchDrawdown, g_tot.origCnt > 0);
+   else
+      // combined mode: ONLY the controller's latch launches recovery (immediate-start ignored)
+      si.launchTriggered = RM_Combined() && g_recLatch && g_hoSnapshot && g_hoPendings && g_tot.origCnt > 0;
    si.prepDone = g_prepDone;
    si.lockingEnabled = InpLocking;
    si.lockDone = g_lockDone;
@@ -233,6 +251,7 @@ void RM_Engine()
       RM_BuildBook();
    RM_UpdatePreviews(g_tradeEvents != tradesAtStart);
    RM_AnnotLevels();
+   g_actor = prevActor;
    g_busy = false;
   }
 
@@ -713,6 +732,8 @@ bool RM_ActionOpen(int dir, bool asRecovery, double lotInput, string &msg)
      { msg = "volume below broker minimum " + RM_Lots(g_meta.minLot); return false; }
    if(MathAbs(lot - lotInput) > RM_EPS)
      { msg = "volume must be a multiple of the lot step " + DoubleToString(g_meta.lotStep, 2); return false; }
+   if(asRecovery && InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch)
+     { msg = "no recovery cycle active - manual RECOVERY orders are not allowed"; return false; }
    if(asRecovery)
      {
       if(!RM_DirectionAllowed(dir, InpRecoveryDirs, true, InpMultidirectional, g_tot.recBuyCnt, g_tot.recSellCnt))
@@ -725,14 +746,25 @@ bool RM_ActionOpen(int dir, bool asRecovery, double lotInput, string &msg)
      }
    if(RM_NewExposureBlocked(dir, lot, false, why))
      { msg = why; return false; }
+   // in the Three-MA modes a manual non-recovery order outside a cycle joins the NORMAL basket
+   bool asNormal = (InpOperatingMode != RM_OP_RECOVERY_ONLY && !g_recLatch);
+   if(asNormal && !g_normalEnabled)
+     { msg = "normal entries are disabled"; return false; }
    g_reqSeq++;
    string tag = "#" + IntegerToString(g_reqSeq);
-   string cmt = RM_CommentPrefix() + "O " + tag;
+   string cmt = RM_CommentPrefix() + (asNormal ? "N " : "O ") + tag;
    RM_SaveState();
    string err = "";
-   int t = RM_Send(dir, lot, InpManualOriginalMagic, cmt, tag, err);
+   int t = RM_Send(dir, lot, asNormal ? InpNormalMagic : InpManualOriginalMagic, cmt, tag, err);
    if(t <= 0)
      { msg = "open failed: " + err; RM_Audit("MANUAL_FAILED", 0, lot, 0, err); return false; }
+   if(asNormal)
+     {
+      RM_Audit("MANUAL_NORMAL", t, lot, 0, RM_Side(dir));
+      RM_SaveState();
+      msg = "manual NORMAL " + RM_Side(dir) + " " + RM_Lots(lot) + " opened (#" + IntegerToString(t) + ")";
+      return true;
+     }
    if(OrderSelect(t, SELECT_BY_TICKET))
       RM_RegAdd(t, RM_ROLE_ORIGINAL, dir, OrderLots(), 0, 0, OrderOpenPrice(), (long)OrderOpenTime());
    RM_Audit("MANUAL_ORIGINAL", t, lot, 0, RM_Side(dir));
@@ -835,6 +867,8 @@ void RM_TestSeeds()
    if(g_testBars < InpTestSeedBar)
       return;
    g_seedDone = true;
+   int prevActor = g_actor;
+   g_actor = RM_ACTOR_TEST;
    double l = RM_NormalizeLot(InpTestSeedLots, g_meta, RM_ROUND_DOWN);
    string err = "";
    if(InpTestSeedScenario == RM_SEED_ONE_BUY || InpTestSeedScenario == RM_SEED_BALANCED_HEDGE)
@@ -847,6 +881,7 @@ void RM_TestSeeds()
       RM_Send(OP_SELL, l, InpTestSeedMagic, "TEST SEED S #s4", "#s4", err);
      }
    Print("RMP TEST SEED scenario ", EnumToString(InpTestSeedScenario), " opened (", err, ")");
+   g_actor = prevActor;
   }
 
 #endif

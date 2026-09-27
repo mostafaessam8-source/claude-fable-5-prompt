@@ -19,13 +19,13 @@ int    g_labelY[RM_MAX_LABELS];
 string g_labelName[RM_MAX_LABELS];
 int    g_labelN = 0;
 // panel rectangles published by the dashboard (x, y, w, h)
-int    g_panelRect[3][4];
+int    g_panelRect[4][4];
 color  g_savedColors[8];
 bool   g_colorsSaved = false;
 
 bool RM_PointInPanels(int x, int y)
   {
-   for(int i = 0; i < 3; i++)
+   for(int i = 0; i < 4; i++)
      {
       if(g_panelRect[i][2] <= 0)
          continue;

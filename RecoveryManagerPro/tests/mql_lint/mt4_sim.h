@@ -25,6 +25,8 @@ typedef int color;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef int ENUM_TIMEFRAMES;
+typedef int ENUM_MA_METHOD;
+typedef int ENUM_APPLIED_PRICE;
 
 inline color RGBc(int r, int g, int b) { return r | (g << 8) | (b << 16); }
 
@@ -67,6 +69,8 @@ const int REASON_REMOVE = 1, REASON_RECOMPILE = 2, REASON_CHARTCHANGE = 3, REASO
 const int INIT_SUCCEEDED = 0, INIT_FAILED = 1, INIT_PARAMETERS_INCORRECT = 2, INVALID_HANDLE = -1;
 const int FILE_READ = 1, FILE_WRITE = 2, FILE_TXT = 16, FILE_ANSI = 32, FILE_SHARE_READ = 128, FILE_REWRITE = 512;
 const int PERIOD_CURRENT = 0, TIME_DATE = 1, TIME_SECONDS = 4;
+const int MODE_SMA = 0, MODE_EMA = 1, MODE_SMMA = 2, MODE_LWMA = 3;
+const int PRICE_CLOSE = 0, PRICE_OPEN = 1, PRICE_HIGH = 2, PRICE_LOW = 3, PRICE_MEDIAN = 4, PRICE_TYPICAL = 5, PRICE_WEIGHTED = 6;
 const double EMPTY_VALUE = 2147483647.0;
 const color clrBlack = 0, clrWhite = 0xFFFFFF, clrYellow = 0x00FFFF, clrGold = 0x00D7FF, clrLime = 0x00FF00,
             clrNONE = -1, clrOrange = 0x00A5FF, clrOrangeRed = 0x0045FF, clrDarkOrange = 0x008CFF,
@@ -110,6 +114,7 @@ struct Sim
    bool hideRemainderComment = false;
    int chartW = 1400, chartH = 800;
    int tradeMode = 4;                   // SYMBOL_TRADE_MODE_FULL
+   int failDeletes = 0;                 // next N OrderDelete calls fail
    double tradeAllowedInfo = 1;         // MarketInfo(MODE_TRADEALLOWED); tester often reports 0   // broker that does not write "from #<ticket>"
   } S;
 
@@ -170,7 +175,7 @@ inline bool RefreshRates() { return true; }
 inline string Symbol() { return S.sym; }
 inline datetime TimeCurrent() { return S.now; }
 inline int TimeHour(datetime t) { return (int)((t % 86400) / 3600); }
-inline string TimeToString(datetime t, int) { return std::to_string((long long)t); }
+inline string TimeToString(datetime t, int = 3) { return std::to_string((long long)t); }
 template<typename E> string EnumToString(E e) { return std::to_string((int)e); }
 inline bool EventSetMillisecondTimer(int) { return true; }
 inline void EventKillTimer() {}
@@ -215,6 +220,43 @@ inline int iHighest(string, int, int, int count, int start)
 inline int iLowest(string, int, int, int count, int start)
   { int best = start; for(int i = start; i < start + count; i++) if(SimSeries(S.bl, i) < SimSeries(S.bl, best)) best = i; return best; }
 inline double iCustom(string, int, string, int, int) { S.lastError = 4802; return EMPTY_VALUE; }
+// moving averages on the simulated H1 closes (SMA exact; EMA seeded with an SMA 3*period back)
+inline double SimPrice(int price, int shift)
+  {
+   double o = SimSeries(S.bo, shift), h = SimSeries(S.bh, shift), l = SimSeries(S.bl, shift), c = SimSeries(S.bc, shift);
+   switch(price)
+     {
+      case PRICE_OPEN: return o;
+      case PRICE_HIGH: return h;
+      case PRICE_LOW: return l;
+      case PRICE_MEDIAN: return (h + l) / 2;
+      case PRICE_TYPICAL: return (h + l + c) / 3;
+      case PRICE_WEIGHTED: return (h + l + 2 * c) / 4;
+     }
+   return c;
+  }
+inline double iMA(string, int, int period, int, int method, int price, int shift)
+  {
+   if(method == MODE_EMA)
+     {
+      int start = shift + 3 * period;
+      double e = 0;
+      for(int i = 0; i < period; i++) e += SimPrice(price, start + i);
+      e /= period;
+      double k = 2.0 / (period + 1);
+      for(int i = start - 1; i >= shift; i--) e = SimPrice(price, i) * k + e * (1 - k);
+      return e;
+     }
+   double s = 0;
+   for(int i = 0; i < period; i++) s += SimPrice(price, shift + i);
+   return s / period;
+  }
+inline int iBarShift(string, int, datetime t, bool = false)
+  {
+   if(t <= 0) return -1;
+   long d = (long)(SimBar(S.now) - SimBar(t)) / 3600;
+   return d < 0 ? 0 : (int)d;
+  }
 
 // ---- orders
 inline int OrdersTotal() { return (int)S.open.size(); }
@@ -301,6 +343,7 @@ inline bool OrderModify(int ticket, double, double sl, double tp, datetime, colo
   }
 inline bool OrderDelete(int ticket)
   {
+   if(S.failDeletes > 0) { S.failDeletes--; S.lastError = ERR_TRADE_DISABLED; return false; }
    for(size_t i = 0; i < S.open.size(); i++)
       if(S.open[i].ticket == ticket && S.open[i].type > OP_SELL)
         { SimOrder h = S.open[i]; h.closeTime = S.now; S.hist.push_back(h); S.open.erase(S.open.begin() + i); return true; }

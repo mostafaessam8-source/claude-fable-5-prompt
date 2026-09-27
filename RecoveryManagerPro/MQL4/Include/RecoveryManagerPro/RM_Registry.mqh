@@ -148,6 +148,14 @@ bool RM_InScope(int magic)
   {
    if(magic == InpRecoveryMagic || magic == InpLockMagic)
       return false;
+   if(InpOperatingMode != RM_OP_RECOVERY_ONLY)
+     {
+      // Three-MA modes: only our own normal trades, unless explicitly widened
+      if(magic == InpNormalMagic)
+         return true;
+      if(!InpCombinedAdoptOthers)
+         return false;
+     }
    if(RM_InList(magic, g_magicExclude))
       return false;
    if(InpScope == RM_SCOPE_MANUAL)
@@ -166,6 +174,11 @@ bool RM_ForeignRmpComment(string cmt)
 
 bool RM_AdoptionAllowed()
   {
+   if(InpOperatingMode == RM_OP_THREE_MA_ONLY)
+      return false;
+   if(RM_Combined())
+      // normal trades are registered explicitly by the handover; others only if configured
+      return g_recLatch && g_hoSnapshot && InpCombinedAdoptOthers && !g_launchDone;
    if(g_state == RM_ST_IDLE || g_state == RM_ST_COMPLETE)
       return true;
    if(InpAdoptPolicy == RM_ADOPT_ALWAYS)

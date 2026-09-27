@@ -608,6 +608,433 @@ static void S22_TesterTradeAllowedQuirk()
   }
 
 //====================================================================
+// Combined operation (Three-MA + drawdown handover) acceptance tests
+//====================================================================
+static void CombinedInputs()
+  {
+   VideoInputs();
+   InpOperatingMode = RM_OP_THREE_MA_WITH_RECOVERY;
+   InpRecoveryTriggerMode = RM_TRIG_PERCENT; InpRecoveryTriggerScope = RM_TSCOPE_MANAGED;
+   InpLaunchDrawdown = 10.0;                                // 10 % of 10,000 = 1,000 (test input)
+   InpLaunchMode = RM_LAUNCH_INSTANT;                       // must NOT start recovery on its own
+   InpCloseProfitable = false;
+   InpFastPeriod = 3; InpFastMethod = MODE_SMA; InpSlowPeriod = 6; InpSlowMethod = MODE_SMA;
+   InpUseFilterMA = false; InpSignalTF = PERIOD_CURRENT;
+   InpNormalLot = 1.0; InpNormalTPPoints = 200; InpNormalMaxLots = 5.0; InpNormalMaxSpread = 50;
+   InpNormalAveraging = false; InpNormalOneBasket = true;
+   InpAutoResumeAfterRecovery = true; InpResumeCooldownBars = 3; InpRequireFreshSignalAfterRecovery = true;
+   InpConfirmActions = false;
+  }
+// one H1 candle with a single price
+static void Candle(double px)
+  {
+   S.now = SimBar(S.now) + 3600 + 5;
+   S.bid = px;
+   SimRecordBar();
+   OnTick();
+  }
+// drive a down-then-up (BUY) or up-then-down (SELL) path until a crossover candle is processed
+static bool DriveCross(int dir, int maxBars = 30)
+  {
+   long before = g_lastSignalBar;
+   int want = (dir == OP_BUY) ? 1 : -1;
+   double st = 0.0010;
+   for(int i = 0; i < 8; i++) Candle(S.bid + (dir == OP_BUY ? -st : st));
+   for(int i = 0; i < maxBars; i++)
+     {
+      Candle(S.bid + (dir == OP_BUY ? st : -st));
+      if(g_lastSignalBar != before && g_lastSignal == want)
+         return true;
+     }
+   return false;
+  }
+static int NormalOpenTicket()
+  { for(auto &o : S.open) if(o.magic == InpNormalMagic && o.sym == S.sym && o.type <= OP_SELL) return o.ticket; return -1; }
+// first normal-strategy order (open or closed) opened after time t
+static const SimOrder *FirstNormalAfter(long t)
+  {
+   const SimOrder *best = nullptr;
+   for(auto &o : S.open) if(o.magic == InpNormalMagic && o.sym == S.sym && o.openTime > t && (!best || o.openTime < best->openTime)) best = &o;
+   for(auto &o : S.hist) if(o.magic == InpNormalMagic && o.sym == S.sym && o.openTime > t && (!best || o.openTime < best->openTime)) best = &o;
+   return best;
+  }
+static double CycleHistNet(long since)
+  {
+   double s = 0;
+   for(auto &h : S.hist)
+      if(h.sym == S.sym && h.type <= OP_SELL && h.closeTime >= since &&
+         (h.magic == InpNormalMagic || h.magic == InpRecoveryMagic || h.magic == InpLockMagic))
+         s += h.profitFixed + h.comm + h.swap;
+   return s;
+  }
+
+static void S23_BelowThresholdNormalOnly()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(g_ctl == RM_CTL_NORMAL);
+   EXPECT(DriveCross(OP_BUY));
+   EXPECT(CountMagic(InpNormalMagic) == 1);                 // crossover opened the normal BUY
+   EXPECT(CountMagic(InpLockMagic) == 0 && CountMagic(InpRecoveryMagic) == 0);
+   EXPECT(LogCount("RMP SIGNAL") >= 1);
+   for(int i = 0; i < 30 && CountMagic(InpNormalMagic) > 0; i++) Candle(S.bid + 0.0005);   // up to virtual TP
+   EXPECT(CountMagic(InpNormalMagic) == 0);
+   EXPECT(LogCount("NORMAL_TP") >= 1);
+   EXPECT(g_normalRealized > 0.0);
+   EXPECT(LogCount("RMP HANDOVER ") == 0);                  // recovery never traded
+   EXPECT(CountMagic(InpLockMagic) == 0 && CountMagic(InpRecoveryMagic) == 0);
+   EXPECT(g_realizedSession == 0.0);                        // normal P/L not mixed into recovery accounting
+  }
+
+static void S24_ThresholdExactlyOnceAndLatch()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   EXPECT(t > 0);
+   double op = SimFindOpen(t)->openPrice;
+   Tick(op - 0.00999, 1);                                   // managed loss 999 = 9.99 %
+   EXPECT(std::fabs(g_normalNet + 999.0) < 1e-6);
+   EXPECT(g_ctl == RM_CTL_NORMAL && !g_recLatch);
+   Tick(op - 0.01000, 1);                                   // 1,000 = 10 %: trigger
+   EXPECT(g_recLatch);
+   EXPECT(LogCount("RMP HANDOVER ") == 1);
+   EXPECT(RM_RegFind(t) >= 0 && g_reg[RM_RegFind(t)].role == RM_ROLE_ORIGINAL);
+   EXPECT(SimFindOpen(t) != nullptr);                       // the trigger did not liquidate it
+   Hold(5, 1);
+   EXPECT(CountMagic(InpLockMagic) == 1);                   // existing hedge sequence started
+   EXPECT(g_ctl == RM_CTL_RECOVERY_ACTIVE);
+   EXPECT(SimFindOpen(t)->magic == InpNormalMagic);         // magic unchanged, not re-opened
+   // drawdown improves: latch holds, no normal trading
+   for(int i = 0; i < 40; i++) Candle(op + 0.0010 * std::sin(i * 0.4));
+   EXPECT(g_recLatch);
+   EXPECT(LogCount("RMP HANDOVER ") == 1);
+   int normalOrders = 0;
+   for(auto &o : S.open) if(o.magic == InpNormalMagic) normalOrders++;
+   EXPECT(normalOrders <= 1);                               // only the transferred ticket (or its remainder)
+   EXPECT(LogCount("NORMAL_ENTRY") == 1);
+  }
+
+static void S25_GapBeyondThreshold()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   double op = SimFindOpen(t)->openPrice;
+   Tick(op - 0.00500, 1);
+   EXPECT(!g_recLatch);
+   Tick(op - 0.02000, 1);                                   // gap: -500 -> -2,000 in one event
+   EXPECT(g_recLatch && LogCount("RMP HANDOVER ") == 1);
+   EXPECT(g_trigValue >= 19.99);
+   Hold(4, 1);
+   EXPECT(CountMagic(InpLockMagic) == 1);
+  }
+
+static void S26_NormalExitsCannotTouchRecovery()
+  {
+   CombinedInputs();
+   InpNormalAveraging = true; InpNormalAvgStepPoints = 100; InpNormalMaxPerDir = 5;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   double op = SimFindOpen(t)->openPrice;
+   int avgBefore = LogCount("NORMAL_AVERAGE");
+   Tick(op - 0.01100, 1);                                   // trigger (averaging would also qualify)
+   EXPECT(g_recLatch);
+   EXPECT(LogCount("NORMAL_AVERAGE") == avgBefore);         // trigger checked before averaging
+   int tpBefore = LogCount("NORMAL_TP");
+   for(int i = 0; i < 20; i++) Candle(S.bid - 0.00150);     // averaging distance crossed many times
+   for(int i = 0; i < 60; i++) Candle(S.bid + 0.00100);     // far beyond the normal virtual TP
+   EXPECT(LogCount("NORMAL_AVERAGE") == avgBefore);
+   EXPECT(LogCount("NORMAL_TP") == tpBefore);
+   EXPECT(LogCount("NORMAL_ENTRY") == 1);
+   EXPECT(g_lastDenied == "" || g_lastDenied.find("latch") != string::npos || g_lastDenied.find("monitoring") != string::npos);
+  }
+
+static void S27_PendingsAndHandoverFailure()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   double op = SimFindOpen(t)->openPrice;
+   int pend = SimOpen(OP_BUYLIMIT, 0.5, InpNormalMagic, "normal pending");
+   int foreignPend = SimOpen(OP_SELLLIMIT, 0.5, 555, "other EA pending");
+   S.failDeletes = 3;
+   Tick(op - 0.01000, 1);
+   EXPECT(g_recLatch && g_ctl == RM_CTL_HANDOVER);
+   EXPECT(SimFindOpen(pend) != nullptr);
+   EXPECT(CountMagic(InpLockMagic) == 0);                   // engine waits for a reconciled handover
+   Hold(3, 1);
+   EXPECT(SimFindOpen(pend) == nullptr);                    // cancelled once the broker accepted it
+   EXPECT(SimFindOpen(foreignPend) != nullptr);             // another EA's pending untouched
+   Hold(4, 1);
+   EXPECT(CountMagic(InpLockMagic) == 1);
+   EXPECT(LogCount("HANDOVER_SNAPSHOT") == 1);              // successful steps not repeated
+   EXPECT(LogCount("HANDOVER_READY") == 1);
+   EXPECT(LogCount("HANDOVER_PENDING_FAILED") >= 1);
+   EXPECT(LogCount("RMP HANDOVER ") == 1);
+  }
+
+static void S27b_HandoverErrorHold()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   SimOpen(OP_BUYLIMIT, 0.5, InpNormalMagic, "normal pending");
+   S.failDeletes = 1000;
+   Tick(op - 0.01000, 1);
+   Hold(12, 1);
+   EXPECT(g_ctl == RM_CTL_ERROR_HOLD);
+   EXPECT(g_recLatch);                                      // never falls back to normal trading
+   EXPECT(CountMagic(InpLockMagic) == 0);
+   S.failDeletes = 0;
+   Click("PAUSEREC");                                       // operator retry
+   Hold(6, 1);
+   EXPECT(g_ctl == RM_CTL_RECOVERY_ACTIVE);
+   EXPECT(CountMagic(InpLockMagic) == 1);
+  }
+
+static void S28_RestartRestoresLatch()
+  {
+   S.testing = false;
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.01000, 1);
+   Hold(5, 1);
+   EXPECT(g_ctl == RM_CTL_RECOVERY_ACTIVE);
+   OnDeinit(REASON_CLOSE);
+   S.bid = op + 0.00200;                                    // drawdown gone while offline
+   InpLaunchDrawdown = 50.0;                                // threshold changed during the cycle
+   EXPECT(Init());
+   Tick(S.bid, 1);
+   EXPECT(g_recLatch && g_ctl != RM_CTL_NORMAL);
+   EXPECT(DriveCross(OP_BUY));
+   EXPECT(LogCount("NORMAL_ENTRY") == 1);                    // no new normal trade
+   // state file lost: recovery orders on the account still restore the latch
+   OnDeinit(REASON_CLOSE);
+   Clean();
+   mkdir(S.fileDir.c_str(), 0777);
+   EXPECT(Init());
+   EXPECT(LogCount("RESTART_LATCH") == 1);
+   EXPECT(g_recLatch);
+   Tick(S.bid, 1);
+   EXPECT(g_ctl != RM_CTL_NORMAL);
+   OnDeinit(REASON_REMOVE);
+   Clean();
+  }
+
+static void S29_UnrelatedPositionsUntouched()
+  {
+   CombinedInputs();
+   InpScope = RM_SCOPE_ALL_SYMBOL;                          // even the widest recovery scope
+   EXPECT(Init());
+   int manual = SimOpen(OP_BUY, 0.50, 0, "manual");
+   int other = SimOpen(OP_SELL, 0.30, 555, "other EA");
+   int gbp = SimOpen(OP_BUY, 0.20, InpNormalMagic, "normal magic, other symbol", "GBPUSD");
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   int t = NormalOpenTicket();
+   double op = SimFindOpen(t)->openPrice;
+   Tick(op - 0.01000, 1);
+   Hold(5, 1);
+   EXPECT(g_recLatch);
+   EXPECT(RM_RegFind(manual) < 0 && RM_RegFind(other) < 0 && RM_RegFind(gbp) < 0);
+   EXPECT(std::fabs(LotsMagic(InpLockMagic, OP_SELL) - 1.0) < 1e-9);   // hedges the normal basket only
+   EXPECT(SimFindOpen(manual) && std::fabs(SimFindOpen(manual)->lots - 0.50) < 1e-9);
+   EXPECT(SimFindOpen(other) && std::fabs(SimFindOpen(other)->lots - 0.30) < 1e-9);
+   EXPECT(SimFindOpen(gbp) != nullptr);
+  }
+
+static void S30_PartialClosuresKeepCycleAccounting()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.01000, 1);
+   long start = g_cycleStart;
+   Hold(5, 1);
+   // grid down, then up until at least one partial group closure happened
+   for(int i = 0; i < 6; i++) Candle(S.bid - 0.00210);
+   int before = LogCount("PLAN_DONE");
+   for(int i = 0; i < 300 && LogCount("PLAN_DONE") == before; i++) Tick(S.bid + 0.00010, 120);
+   Hold(2, 1);
+   EXPECT(LogCount("PLAN_DONE") > before);
+   EXPECT(LogCount("LINEAGE") >= 1 || LogCount("remainder #") >= 1);
+   EXPECT(g_recLatch);
+   EXPECT(std::fabs(g_realizedSession - CycleHistNet(start)) < 0.01);  // every cycle closure, once
+   RM_DashRefresh(true);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_PL", OBJPROP_TEXT).find(RM_Money(g_realizedSession)) != string::npos);
+  }
+
+static void S31_ResumeAfterCompletionCooldownFreshSignal()
+  {
+   CombinedInputs();
+   InpRecoveryTriggerMode = RM_TRIG_MONEY; InpLaunchDrawdown = 20.0;   // small cycle for the test
+   InpNormalLot = 0.10; InpBasketTP = true; InpBasketTPMoney = 1.0;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.00210, 1);
+   EXPECT(g_recLatch);
+   for(int i = 0; i < 600 && g_recLatch; i++) Tick(S.bid + 0.00010, 300);
+   EXPECT(!g_recLatch);
+   EXPECT(g_ctl == RM_CTL_COOLDOWN);
+   EXPECT(g_cycleOutcome == RM_OUT_COMPLETED);
+   EXPECT(LogCount("CYCLE_END") == 1);
+   EXPECT(std::fabs(g_cycleRealized - g_realizedSession) < 1e-9);
+   long ended = g_cycleEnd;
+   int entries = LogCount("NORMAL_ENTRY");
+   Candle(S.bid); Candle(S.bid);                            // inside the 3-bar cooldown
+   EXPECT(g_ctl == RM_CTL_COOLDOWN);
+   EXPECT(LogCount("NORMAL_ENTRY") == entries);
+   for(int i = 0; i < 4; i++) Candle(S.bid);
+   EXPECT(g_ctl == RM_CTL_NORMAL);
+   EXPECT(DriveCross(OP_BUY));
+   EXPECT(LogCount("NORMAL_ENTRY") >= entries + 1);
+   const SimOrder *first = FirstNormalAfter(ended);
+   EXPECT(first != nullptr && first->openTime > ended + 3 * 3600);   // not before the cooldown
+   EXPECT(first != nullptr && std::fabs(first->lots - 0.10) < 1e-9); // lot progression reset
+  }
+
+static void S32_EmergencyDoesNotRestart()
+  {
+   CombinedInputs();
+   InpLocking = false;                                      // loss can keep growing after handover
+   InpRecoveryTriggerMode = RM_TRIG_MONEY; InpLaunchDrawdown = 1000.0;
+   InpEmergencyMode = RM_EMG_MONEY; InpEmergencyValue = 1500.0; InpEmergencyAction = RM_EMGA_CLOSE_ALL;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.01000, 1);
+   EXPECT(g_recLatch);
+   Hold(3, 1);
+   Tick(op - 0.01800, 1);                                   // beyond the emergency-loss limit
+   Hold(6, 1);
+   EXPECT(LogCount("RMP EMERGENCY ") >= 1);
+   EXPECT(!g_recLatch);
+   EXPECT(g_cycleOutcome == RM_OUT_EMERGENCY);
+   EXPECT(g_normalHalted);
+   int entries = LogCount("NORMAL_ENTRY");
+   for(int i = 0; i < 3; i++) DriveCross(i % 2 ? OP_SELL : OP_BUY);
+   EXPECT(LogCount("NORMAL_ENTRY") == entries);             // stays paused
+   EXPECT(g_ctl == RM_CTL_COOLDOWN);
+   Click("NRM");                                            // explicit operator reset
+   Candle(S.bid);
+   EXPECT(g_ctl == RM_CTL_NORMAL && !g_normalHalted);
+   EXPECT(DriveCross(OP_BUY));
+   EXPECT(LogCount("NORMAL_ENTRY") >= entries + 1);
+  }
+
+static void S33_DashboardReconcilesCombined()
+  {
+   CombinedInputs();
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.00400, 1);
+   RM_DashRefresh(true);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RN_1", OBJPROP_TEXT) == "1");
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RN_4", OBJPROP_TEXT) == RM_Money(g_normalNet));
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_DD", OBJPROP_TEXT).find(RM_Money(-g_normalNet)) != string::npos);
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_CHIPT", OBJPROP_TEXT) == "NORMAL");
+   Tick(op - 0.01000, 1);
+   Hold(5, 1);
+   RM_DashRefresh(true);
+   int co = 0, ch = 0; double plO = 0, plH = 0;
+   for(auto &o : S.open)
+     {
+      if(o.sym != S.sym || o.type > OP_SELL) continue;
+      if(o.magic == InpNormalMagic) { co++; plO += SimProfit(o) + o.comm + o.swap; }
+      if(o.magic == InpLockMagic) { ch++; plH += SimProfit(o) + o.comm + o.swap; }
+     }
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RO_1", OBJPROP_TEXT) == std::to_string(co));
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RH_1", OBJPROP_TEXT) == std::to_string(ch));
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RO_4", OBJPROP_TEXT) == RM_Money(plO));
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RH_4", OBJPROP_TEXT) == RM_Money(plH));
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_RN_1", OBJPROP_TEXT) == "0");   // transferred, not double counted
+   EXPECT(ObjectGetString(0, string(RM_DPFX) + "D_CHIPT", OBJPROP_TEXT) == "RECOVERY_ACTIVE");
+  }
+
+static void S34_AccountScopeNoBasket()
+  {
+   CombinedInputs();
+   InpRecoveryTriggerScope = RM_TSCOPE_ACCOUNT; InpRecoveryTriggerMode = RM_TRIG_MONEY; InpLaunchDrawdown = 300.0;
+   EXPECT(Init());
+   S.bid = 1.12000;
+   int manual = SimOpen(OP_BUY, 2.00, 0, "manual, not managed");   // bought 200 pips higher
+   Tick(1.10000);                                           // account DD ~ 4,000 >= 300
+   DriveCross(OP_SELL);
+   DriveCross(OP_BUY);
+   EXPECT(CountMagic(InpNormalMagic) == 0);                 // no new normal entries
+   EXPECT(!g_recLatch && LogCount("RMP HANDOVER ") == 0);   // no recovery without a basket
+   EXPECT(CountMagic(InpLockMagic) == 0 && CountMagic(InpRecoveryMagic) == 0);
+   EXPECT(LogCount("TRIGGER_NO_BASKET") >= 1);
+   EXPECT(SimFindOpen(manual) && std::fabs(SimFindOpen(manual)->lots - 2.00) < 1e-9);
+   EXPECT(g_normalBlock.find("no managed basket") != string::npos);
+  }
+
+static void S35_OperatorStartAndNormalButtonNoBypass()
+  {
+   CombinedInputs();
+   InpConfirmActions = true;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   Tick(S.bid - 0.00100, 1);                                // below threshold
+   EXPECT(!g_recLatch);
+   Click("STARTREC");
+   EXPECT(!g_recLatch && g_pendingAct == RM_ACT_START_REC); // needs confirmation
+   Click("OK");
+   EXPECT(g_recLatch && LogCount("operator: Start Recovery Now") >= 1);
+   Hold(4, 1);
+   Click("NRM");                                            // disable
+   Click("NRM");                                            // enable again: latch still wins
+   EXPECT(g_normalEnabled);
+   int entries = LogCount("NORMAL_ENTRY");
+   DriveCross(OP_SELL);
+   EXPECT(LogCount("NORMAL_ENTRY") == entries);
+   // early termination shows the remaining exposure first
+   Click("CLOSEBSK");
+   EXPECT(g_pendingText1.find("TERMINATE RECOVERY CYCLE") == 0);
+   EXPECT(g_pendingText2.find("Remaining") == 0);
+   Click("OK");
+   Hold(6, 1);
+   EXPECT(!g_recLatch && g_cycleOutcome == RM_OUT_MANUAL && g_normalHalted);
+  }
+
+static void S36_ThreeMAOnlyNeverRecovers()
+  {
+   CombinedInputs();
+   InpOperatingMode = RM_OP_THREE_MA_ONLY;
+   EXPECT(Init());
+   Tick(1.10000);
+   EXPECT(DriveCross(OP_BUY));
+   double op = SimFindOpen(NormalOpenTicket())->openPrice;
+   Tick(op - 0.03000, 1);                                   // 30 % drawdown
+   Hold(10, 60);
+   EXPECT(!g_recLatch && CountMagic(InpLockMagic) == 0 && CountMagic(InpRecoveryMagic) == 0);
+   EXPECT(g_state == RM_ST_IDLE);
+  }
+
+//====================================================================
 typedef void (*ScenarioFn)();
 struct Scenario { const char *name; ScenarioFn fn; };
 static Scenario g_scen[] = {
@@ -633,6 +1060,21 @@ static Scenario g_scen[] = {
    {"S20 unresolved partial-close lineage -> ERROR_HOLD -> operator resume", S20_UnresolvedLineageHoldsThenResume},
    {"S21 short chart: confirmation box and panels stay on screen", S21_ShortChartKeepsPanelsVisible},
    {"S22 tester MODE_TRADEALLOWED=0 does not block; disabled symbol explains why", S22_TesterTradeAllowedQuirk},
+   {"S23 combined: below threshold normal trades, recovery never trades", S23_BelowThresholdNormalOnly},
+   {"S24 combined: 999 no / 1,000 yes, handover once, latch holds on improvement", S24_ThresholdExactlyOnceAndLatch},
+   {"S25 combined: price gap beyond threshold hands over on that event", S25_GapBeyondThreshold},
+   {"S26 combined: normal TP/averaging cannot touch the transferred basket", S26_NormalExitsCannotTouchRecovery},
+   {"S27 combined: pending cancel failures reconciled, steps not repeated", S27_PendingsAndHandoverFailure},
+   {"S27b combined: persistent handover failure -> ERROR_HOLD -> retry", S27b_HandoverErrorHold},
+   {"S28 combined: restart / lost state / threshold change keep the latch", S28_RestartRestoresLatch},
+   {"S29 combined: unrelated positions untouched, hedge covers basket only", S29_UnrelatedPositionsUntouched},
+   {"S30 combined: partial closures keep cycle accounting exact", S30_PartialClosuresKeepCycleAccounting},
+   {"S31 combined: resume only after completion, cooldown and fresh signal", S31_ResumeAfterCompletionCooldownFreshSignal},
+   {"S32 combined: emergency termination never restarts automatically", S32_EmergencyDoesNotRestart},
+   {"S33 combined: dashboard figures reconcile with orders", S33_DashboardReconcilesCombined},
+   {"S34 combined: account-scope DD without basket blocks entries only", S34_AccountScopeNoBasket},
+   {"S35 combined: Start Recovery confirm, Normal button cannot bypass latch", S35_OperatorStartAndNormalButtonNoBypass},
+   {"S36 THREE_MA_ONLY: recovery never trades", S36_ThreeMAOnlyNeverRecovers},
 };
 
 int main(int argc, char **argv)
