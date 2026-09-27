@@ -5,6 +5,9 @@ on:
     paths: ["sar-project-controls-dashboard/**", ".github/workflows/sar-pcd-windows.yml"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -43,3 +46,15 @@ jobs:
         with:
           name: SAR_Project_Controls_Dashboard_installer
           path: sar-project-controls-dashboard/dist/installer/*.exe
+      - name: Publish release (permanent download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: sar-pcd-build-${{ github.run_number }}
+          name: SAR Project Controls Dashboard 1.0.0 (build ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          body: |
+            Windows 10/11 64-bit installer for the SAR Project Controls Dashboard.
+            Download SAR_Project_Controls_Dashboard_Setup_1.0.0.exe below and run it.
+            Built from commit ${{ github.sha }}.
+          files: sar-project-controls-dashboard/dist/installer/SAR_Project_Controls_Dashboard_Setup_1.0.0.exe
