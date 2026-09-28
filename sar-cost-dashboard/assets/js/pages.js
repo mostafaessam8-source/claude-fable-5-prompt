@@ -407,7 +407,8 @@
         { get: function (p) { return G(p, "Spend Plan as per Budgeting (M) FTY 2026"); }, label: "Spend Plan 2026", type: "money", total: "sum" },
         { get: function (p) { return G(p, "YTD Spend Plan as per Budgeting (M)"); }, label: "YTD Plan", type: "money", total: "sum" },
         { get: function (p) { return G(p, "YTD Actual (M)"); }, label: "YTD Actual", type: "money", total: "sum" },
-        { get: function (p) { return G(p, "Variance (M)2 w.r.t. Budgeting Spending Plan"); }, label: "YTD Var. vs plan", type: "money", signed: true, total: "sum" }] });
+        { get: function (p) { return (N(G(p, "YTD Actual (M)")) || 0) - (N(G(p, "YTD Spend Plan as per Budgeting (M)")) || 0); },
+          label: "YTD Var. (Actual − Plan)", type: "money", signed: true, total: "sum" }] });
     }
     if (del.length) {
       add(body, '<h4 class="mh">Delivery projects</h4>');
