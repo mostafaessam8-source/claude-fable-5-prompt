@@ -12,7 +12,7 @@
     if (window.SAR_PUBLISH_KIT) return Promise.resolve(window.SAR_PUBLISH_KIT);
     return new Promise(function (res, rej) {
       var s = document.createElement("script");
-      s.src = "assets/js/publish-kit.js";            // <script> loading also works when opened from file://
+      s.src = "assets/js/publish-kit.js" + (window.SAR_VERSION ? "?v=" + window.SAR_VERSION : "");            // <script> loading also works when opened from file://
       s.onload = function () { window.SAR_PUBLISH_KIT ? res(window.SAR_PUBLISH_KIT) : rej(new Error("publish kit is empty")); };
       s.onerror = function () { rej(new Error("assets/js/publish-kit.js is missing — run: node tools/build-publish-kit.js")); };
       document.head.appendChild(s);
@@ -31,7 +31,7 @@
     html = html.replace(/[ \t]*<!--[^>]*Baseline data[^>]*-->\s*\n/, "");
     html = html.replace(/[ \t]*<!--[^>]*Libraries are vendored[^>]*-->\s*\n/, "");
     html = html.replace(/[ \t]*<script\b[^>]*\bsrc=[^>]*><\/script>\s*\n?/g, "");
-    html = html.replace(/<link rel="stylesheet" href="assets\/css\/styles\.css">/, function () { return "<style>\n" + kit.css + "\n</style>"; });
+    html = html.replace(/<link rel="stylesheet" href="assets\/css\/styles\.css(?:\?v=[^"]*)?">/, function () { return "<style>\n" + kit.css + "\n</style>"; });
     html = html.replace(/<title>[\s\S]*?<\/title>/, "<title>" + esc(meta.title) + "</title>");
     var inline = "<script>window.SAR_DEFAULT_DATA = " + safeJson(dataset) + ";\nwindow.SAR_PUBLISHED = " + safeJson(meta) + ";</script>\n" +
       kit.scripts.map(function (s) { return "<script>/* " + s.name + " */\n" + safeCode(s.code) + "\n</script>"; }).join("\n") + "\n";

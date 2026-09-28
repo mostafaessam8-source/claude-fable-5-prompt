@@ -65,6 +65,8 @@ opened straight from disk.
 > Some SharePoint libraries download `.html` files instead of showing them. The file still opens in the
 > browser from Downloads. For one-click viewing, ask IT for an intranet/IIS folder that serves HTML.
 
+After changing the code, run `npm run release` (stamps a version on every file link so browsers load the new files instead of a cached copy, then rebuilds the publish kit).
+
 The Publish button packs the site's code from `assets/js/publish-kit.js`. Rebuild it after changing any
 code (`node tools/build-publish-kit.js`).
 
