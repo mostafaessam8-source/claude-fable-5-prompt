@@ -405,7 +405,7 @@
       U.table(add(body, "<div></div>"), { rows: projs, exportName: "KPI_projects", totals: true, autoHeight: true, columns: [
         { key: "Code", label: "Code" }, { key: "Project Name", label: "Project" },
         { get: function (p) { return G(p, "Spend Plan as per Budgeting (M) FTY 2026"); }, label: "Spend Plan 2026", type: "money", total: "sum" },
-        { get: function (p) { return G(p, "Spend Plan as per V2 Forecast (M) FTY 2026"); }, label: "Forecast V3 2026", type: "money", total: "sum" },
+        { get: function (p) { return G(p, "YTD Spend Plan as per Budgeting (M)"); }, label: "YTD Plan", type: "money", total: "sum" },
         { get: function (p) { return G(p, "YTD Actual (M)"); }, label: "YTD Actual", type: "money", total: "sum" },
         { get: function (p) { return G(p, "Variance (M)2 w.r.t. Budgeting Spending Plan"); }, label: "YTD Var. vs plan", type: "money", signed: true, total: "sum" }] });
     }
