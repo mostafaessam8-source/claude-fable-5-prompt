@@ -893,10 +893,9 @@
 
     // Bridge + S-curve
     var g1 = grid(v, "g-1-2");
-    waterfall(chartBox(panelIn(g1, "Spend Plan → year-end Forecast Plan", "Bridge: Jan – " + esc(fmt.month(cut)) + " and " + esc(remLbl) + " differences (Forecast Plan − Spend Plan)"), "tall"), [
+    var vr = T.landing - T.plan;
+    waterfall(chartBox(panelIn(g1, "Spend Plan vs year-end Forecast Plan", "2026 full year · variance " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + " of plan)"), "tall"), [
       { label: "Spend Plan 2026", value: T.plan, total: true, color: S.plan },
-      { label: "To " + fmt.month(cut) + " (forecast − plan)", value: T.fcYtd - T.planYtd },
-      { label: remLbl + " (forecast − plan)", value: T.fcRem - T.planRem },
       { label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }], TARGET * T.plan);
     var rowsF = spAll.filter(function (r) { var o = projAll.filter(function (x) { return x.ID === String(r.ID); })[0]; return o && passes(o, defs, st); });
     var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
