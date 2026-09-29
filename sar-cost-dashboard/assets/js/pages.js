@@ -790,8 +790,8 @@
 
   /* ======================================================================
      KPI Year-End Outlook — how the cost KPIs will close the year.
-     Landing = actual spend up to the last month with actuals + the contractor
-     Forecast Plan for the remaining months, against the Spend Plan (budgeting).
+     Year-end = the contractor Forecast Plan (invoicing plan) for the full year,
+     against the Spend Plan (budgeting). Actual spend is shown for reference only.
      No new data: Spending_Plan, KPI_Projects_Data and KPI_Summary only.
      ====================================================================== */
   var TARGET = 0.95;   // "CAPEX Variance (−5%)": year-end spend within 5% of the Spend Plan
@@ -814,8 +814,8 @@
       o.months[r.Month] = { row: r, plan: pl, act: past ? ac : null, fc: fc, text: r["Invoice Related actvities"], ms: r.Milestones, past: past };
     });
     return Object.keys(by).map(function (k) {
-      var o = by[k]; o.landing = o.act + o.fcRem; o.variance = o.landing - o.plan; o.pct = o.plan ? o.landing / o.plan : null;
-      o.ytdVar = o.act - o.planYtd; o.remVar = o.fcRem - o.planRem; o.status = outlookStatus(o); return o;
+      var o = by[k]; o.landing = o.fcFY; o.fcYtd = o.fcFY - o.fcRem; o.variance = o.landing - o.plan; o.pct = o.plan ? o.landing / o.plan : null;
+      o.ytdVar = o.fcYtd - o.planYtd; o.remVar = o.fcRem - o.planRem; o.status = outlookStatus(o); return o;
     });
   }
   function waterfall(box, steps, target) {
@@ -856,20 +856,20 @@
     var projX = projAll.filter(function (o) { return passes(o, defs, st, "proj"); });
     function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
     var T = { plan: tot(proj, "plan"), planYtd: tot(proj, "planYtd"), act: tot(proj, "act"), planRem: tot(proj, "planRem"), fcRem: tot(proj, "fcRem"), fcFY: tot(proj, "fcFY") };
-    T.landing = T.act + T.fcRem; T.pct = T.plan ? T.landing / T.plan : null; T.gap = TARGET * T.plan - T.landing;
+    T.fcYtd = T.fcFY - T.fcRem; T.landing = T.fcFY; T.pct = T.plan ? T.landing / T.plan : null; T.gap = TARGET * T.plan - T.landing;
     var remLbl = cut ? months.filter(function (m) { return m > cut; }).map(fmt.month) : [];
     remLbl = remLbl.length ? remLbl[0] + " – " + remLbl[remLbl.length - 1] : "—";
 
-    add(v, '<div class="note-box ol-lead"><b>How the year closes:</b> year-end landing = <b>actual spend to ' + esc(fmt.month(cut)) + "</b> + the contractor <b>Forecast Plan for " + esc(remLbl) +
-      "</b>, compared with the <b>Spend Plan (budgeting)</b>. CAPEX Variance KPI target: year-end spend at least <b>" + Math.round(TARGET * 100) + "%</b> of the Spend Plan (variance within −5%).</div>");
+    add(v, '<div class="note-box ol-lead"><b>How the year closes:</b> year-end = the contractor <b>Forecast Plan (invoicing plan)</b> for Jan – Dec 2026, compared with the <b>Spend Plan (budgeting)</b>. ' +
+      "Actual spend (to " + esc(fmt.month(cut)) + ") is shown for reference only and does not change the year-end figure. CAPEX Variance KPI target: year-end spend at least <b>" + Math.round(TARGET * 100) + "%</b> of the Spend Plan (variance within −5%).</div>");
 
     var g = grid(v, "g-6");
     var pc = T.pct, col = pc == null ? "slate" : pc >= TARGET ? "" : pc >= 0.85 ? "yellow" : "red";
     g.innerHTML = mTile("Spend Plan 2026", T.plan, "", "Budgeting · " + fmt.money(T.plan) + " SAR") +
-      mTile("Actual to date", T.act, "yellow", "Jan – " + esc(fmt.month(cut)) + " · YTD plan " + fmt.m(T.planYtd) + " M") +
+      mTile("Forecast Plan to date", T.fcYtd, "slate", "Jan – " + esc(fmt.month(cut)) + " · actual " + fmt.m(T.act) + " M (reference)") +
       mTile("Forecast Plan remaining", T.fcRem, "slate", esc(remLbl) + " · plan " + fmt.m(T.planRem) + " M") +
-      mTile("Year-end landing", T.landing, "black", "Actual + remaining Forecast Plan") +
-      U.tile({ value: fmt.pct(pc, 1), label: "Landing vs plan", color: col, note: "Target ≥ " + Math.round(TARGET * 100) + "% · variance " + fmt.m(T.landing - T.plan) + " M" }) +
+      mTile("Year-end (Forecast Plan)", T.landing, "black", "Invoicing plan Jan – Dec") +
+      U.tile({ value: fmt.pct(pc, 1), label: "Forecast Plan vs Spend Plan", color: col, note: "Target ≥ " + Math.round(TARGET * 100) + "% · variance " + fmt.m(T.landing - T.plan) + " M" }) +
       U.tile({ value: T.gap > 0 ? fmt.m(T.gap) : "0.00", unit: "M SAR", label: T.gap > 0 ? "Gap to KPI target" : "Target covered", color: T.gap > 0 ? "red" : "mid",
         note: T.gap > 0 ? "Extra spend needed by Dec to reach " + Math.round(TARGET * 100) + "%" : "Headroom " + fmt.m(-T.gap) + " M above the target" });
     clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; }));
@@ -878,35 +878,33 @@
     var kp = panelIn(v, "KPI closing position", "Today's KPI result (YTD) and the projected year-end result · KPI result = weight × % achieved");
     var krows = ksum.map(function (r) {
       var code = N(r["KPI Code"]), list = proj.filter(function (o) { return codeKpi[o.ID] === code; });
-      var o = { KPI: r["Objective/ KPIs"], w: kpiW[code], plan: tot(list, "plan"), planYtd: tot(list, "planYtd"), act: tot(list, "act"), fcRem: tot(list, "fcRem"), n: list.length };
-      o.ytdPct = o.planYtd ? o.act / o.planYtd : null; o.landing = o.act + o.fcRem; o.yePct = o.plan ? o.landing / o.plan : null;
+      var o = { KPI: r["Objective/ KPIs"], w: kpiW[code], plan: tot(list, "plan"), planYtd: tot(list, "planYtd"), act: tot(list, "act"), fcRem: tot(list, "fcRem"), fcFY: tot(list, "fcFY"), n: list.length };
+      o.ytdPct = o.planYtd ? o.act / o.planYtd : null; o.landing = o.fcFY; o.yePct = o.plan ? o.landing / o.plan : null;
       o.nowRes = o.ytdPct != null ? o.w * Math.min(1, o.ytdPct) : null; o.yeRes = o.yePct != null ? o.w * Math.min(1, o.yePct) : null; o.gap = TARGET * o.plan - o.landing;
       return o;
     }).filter(function (o) { return o.n; });
     tableIn(kp, { rows: krows, search: false, autoHeight: true, exportName: "KPI_Year_End_Outlook", onRow: function (o, e) { pick(ctx, "kpi", o.KPI, e); }, rowTitle: "Filter by this KPI",
       columns: [{ key: "KPI", label: "KPI", wrap: true }, { key: "w", label: "Weight", type: "pct" }, { key: "plan", label: "Spend Plan 2026", type: "money" },
         { key: "planYtd", label: "YTD Plan", type: "money" }, { key: "act", label: "YTD Actual", type: "money" }, { key: "ytdPct", label: "YTD % achieved", type: "meter" },
-        { key: "nowRes", label: "KPI result today", type: "pct" }, { key: "fcRem", label: "Forecast Plan remaining", type: "money" }, { key: "landing", label: "Year-end landing", type: "money" },
+        { key: "nowRes", label: "KPI result today", type: "pct" }, { key: "landing", label: "Year-end Forecast Plan", type: "money" },
         { key: "yePct", label: "Year-end % achieved", type: "meter" }, { key: "yeRes", label: "Projected KPI result", type: "pct" },
         { key: "gap", label: "Gap to " + Math.round(TARGET * 100) + "% target", type: "money", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">Covered</span>'; } }] });
 
     // Bridge + S-curve
     var g1 = grid(v, "g-1-2");
-    waterfall(chartBox(panelIn(g1, "Spend Plan → year-end landing", "Bridge: Spend Plan, YTD variance, remaining months, landing"), "tall"), [
+    waterfall(chartBox(panelIn(g1, "Spend Plan → year-end Forecast Plan", "Bridge: Jan – " + esc(fmt.month(cut)) + " and " + esc(remLbl) + " differences (Forecast Plan − Spend Plan)"), "tall"), [
       { label: "Spend Plan 2026", value: T.plan, total: true, color: S.plan },
-      { label: "YTD variance (actual − plan)", value: T.act - T.planYtd },
-      { label: "Remaining (forecast − plan)", value: T.fcRem - T.planRem },
-      { label: "Year-end landing", value: T.landing, total: true, color: C.black }], TARGET * T.plan);
+      { label: "To " + fmt.month(cut) + " (forecast − plan)", value: T.fcYtd - T.planYtd },
+      { label: remLbl + " (forecast − plan)", value: T.fcRem - T.planRem },
+      { label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }], TARGET * T.plan);
     var rowsF = spAll.filter(function (r) { var o = projAll.filter(function (x) { return x.ID === String(r.ID); })[0]; return o && passes(o, defs, st); });
     var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
-    var actC = 0, proj2 = mm.map(function (o, i) { if (i <= ci) { actC += o.act; return i === ci ? actC : null; } actC += o.inv; return actC; });
     var actLine = [], a2 = 0; mm.forEach(function (o, i) { a2 += o.act; actLine.push(i <= ci ? a2 : null); });
-    U.chart(chartBox(panelIn(g1, "Year-end S-curve", "Cumulative · solid = actual to " + esc(fmt.month(cut)) + ", dashed = projection with the Forecast Plan · click a month for the project split"), "tall"), U.clickable({ type: "line",
+    U.chart(chartBox(panelIn(g1, "Year-end S-curve", "Cumulative Spend Plan vs Forecast Plan (invoicing plan) · actual to " + esc(fmt.month(cut)) + " for reference · click a month for the project split"), "tall"), U.clickable({ type: "line",
       data: { labels: labels, datasets: [
         U.lineDs("Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 }),
-        U.lineDs("Actual (cum)", actLine, S.actual, { pointRadius: 4, borderWidth: 3, spanGaps: false }),
-        U.lineDs("Projection: actual + Forecast Plan", proj2, C.black, { borderDash: [6, 4], pointRadius: 3, borderWidth: 2 }),
-        U.lineDs("Forecast Plan (cum, contractor)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [2, 3], pointRadius: 0, borderWidth: 1.5 }),
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5 }),
+        U.lineDs("Actual (cum, reference)", actLine, S.actual, { pointRadius: 3, borderWidth: 2, spanGaps: false }),
         U.lineDs(Math.round(TARGET * 100) + "% target", mm.map(function () { return TARGET * T.plan; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })] },
       options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
       function (i) { monthModal(D, rowsF, mm[i].month); }));
@@ -915,7 +913,7 @@
     var g2 = grid(v, "g-2-1");
     var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; });
     var names = byV.map(function (o) { return o.name; });
-    var vb = chartBox(panelIn(g2, "Year-end variance by project", "Landing − Spend Plan · red = under-spend, blue = over · click to filter")); vb.style.height = Math.max(320, names.length * 26 + 60) + "px";
+    var vb = chartBox(panelIn(g2, "Year-end variance by project", "Forecast Plan − Spend Plan · red = under-spend, blue = over · click to filter")); vb.style.height = Math.max(320, names.length * 26 + 60) + "px";
     hbar(vb, names, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
       byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
       function (i, e) { pick(ctx, "proj", names[i], e); });
@@ -938,15 +936,16 @@
       rowClass: function (o) { return st.proj.indexOf(o.name) >= 0 ? "selected" : ""; },
       columns: [{ key: "ID", label: "ID", nowrap: true }, { key: "name", label: "Project", nowrap: true }, { key: "kpi", label: "KPI", nowrap: true },
         { key: "plan", label: "Spend Plan 2026", type: "money", total: "sum" }, { key: "planYtd", label: "YTD Plan", type: "money", total: "sum" },
-        { key: "act", label: "YTD Actual", type: "money", total: "sum" }, { key: "fcRem", label: "Forecast Plan remaining", type: "money", total: "sum" },
-        { key: "landing", label: "Year-end landing", type: "money", total: "sum" }, { key: "variance", label: "Variance (landing − plan)", type: "money", signed: true, total: "sum" },
-        { key: "pct", label: "Landing ÷ plan", type: "meter" }, { key: "status", label: "Outlook", type: "badge" }] });
+        { key: "fcYtd", label: "YTD Forecast Plan", type: "money", total: "sum" }, { key: "act", label: "YTD Actual (ref.)", type: "money", total: "sum" },
+        { key: "fcRem", label: "Forecast Plan remaining", type: "money", total: "sum" },
+        { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance (forecast − plan)", type: "money", signed: true, total: "sum" },
+        { key: "pct", label: "Forecast ÷ plan", type: "meter" }, { key: "status", label: "Outlook", type: "badge" }] });
   };
 
   function outlookModal(list) {
     tableModal("Year-end outlook by project", list, [{ key: "ID", label: "ID" }, { key: "name", label: "Project" },
       { key: "plan", label: "Spend Plan", type: "money", total: "sum" }, { key: "act", label: "YTD Actual", type: "money", total: "sum" },
-      { key: "fcRem", label: "Forecast remaining", type: "money", total: "sum" }, { key: "landing", label: "Landing", type: "money", total: "sum" },
+      { key: "fcRem", label: "Forecast remaining", type: "money", total: "sum" }, { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" },
       { key: "variance", label: "Variance", type: "money", signed: true, total: "sum" }, { key: "status", label: "Outlook", type: "badge" }],
       { totals: true, autoHeight: true, sort: { key: "variance", dir: 1 } });
   }
@@ -982,7 +981,7 @@
       var o = it.o, inv = it.acts;
       var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
       h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
-        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M · landing " + fmt.m(o.landing, 1) + ' M</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M · Forecast Plan " + fmt.m(o.landing, 1) + ' M</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
       it.acts.forEach(function (a) {
         var i = months.indexOf(a.m), idx = all.push(a) - 1;
         var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");
