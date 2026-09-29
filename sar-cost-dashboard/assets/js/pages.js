@@ -758,7 +758,7 @@
     var fvar = (last.invC || 0) - (last.planC || 0);
     g.innerHTML = mTile("Spend Plan (FY)", last.planC) + mTile("Forecast Plan (FY)", last.invC, "slate", "Contractor cash-flow forecast") +
       mTile("Actual to date", lastAct.actCv, "yellow", lastAct.month ? "Cumulative to " + fmt.month(lastAct.month) : "") +
-      mTile("Forecast − Plan (FY)", fvar, fvar < 0 ? "red" : "mid", fmt.money(fvar) + " SAR");
+      mTile("Variance (FY)", fvar, fvar < 0 ? "red" : "mid", "Forecast Plan − Spend Plan · " + fmt.money(fvar) + " SAR");
     clickTiles(g, [0, 1, 2, 3].map(function () { return function () { spendModal(D, f.sp); }; }));
 
     var p1 = panelIn(v, "Cumulative spend S-curve", "Click a month for the project breakdown");
