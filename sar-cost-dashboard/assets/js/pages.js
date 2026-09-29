@@ -903,7 +903,7 @@
     U.chart(chartBox(panelIn(g1, "Year-end S-curve", "Cumulative Spend Plan vs Forecast Plan (invoicing plan) · actual to " + esc(fmt.month(cut)) + " for reference · click a month for the project split"), "tall"), U.clickable({ type: "line",
       data: { labels: labels, datasets: [
         U.lineDs("Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 }),
-        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5 }),
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5, borderDash: [7, 5] }),
         U.lineDs("Actual (cum, reference)", actLine, S.actual, { pointRadius: 3, borderWidth: 2, spanGaps: false }),
         U.lineDs(Math.round(TARGET * 100) + "% target", mm.map(function () { return TARGET * T.plan; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })] },
       options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
