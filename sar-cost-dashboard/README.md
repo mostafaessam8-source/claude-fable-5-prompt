@@ -19,6 +19,7 @@ opened straight from disk.
 | Cost Dashboard | Cost Dashboard | `NSR_Project_Data` |
 | Cost Analysis | Cost Dashboard graph | `NSR_Project_Data`, `Spending_Plan`, `KPI_Projects_Data` |
 | Cost S-Curve | Cost S-Curve | `Spending_Plan` |
+| KPI Year-End Outlook | *(new)* | `Spending_Plan`, `KPI_Projects_Data`, `KPI_Summary` (KPI codes 7 & 8): year-end landing = actual to date + contractor Forecast Plan for the remaining months vs the Spend Plan and the −5% CAPEX target; invoice schedule from *Invoice Related actvities* |
 | Weekly Progress Summary | Weekly Progress Summary | `Weekly_Report_Updates` |
 | Project Progress | Progress | `Weekly_Report_Updates`, `Contract_Details`, `Deliverable_Status`, `Project_Milestones_Progress`, `Interim_Payment_Certificate`, `Lookahead_Activities`, `Area_of_Concern` |
 | Progress S-Curve | Progress S-Curve | `S_Curve` (sheet *S-Curve*), `MLS` |

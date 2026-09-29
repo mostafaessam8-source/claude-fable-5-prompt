@@ -25,6 +25,7 @@
     { id: "cost", group: "Cost", title: "Cost Dashboard", icon: "table", sub: "PD-NSR 2026 project cost register" },
     { id: "cost-analysis", group: "Cost", title: "Cost Analysis", icon: "chart", sub: "Contract value, work confirmation, payments and spend plan by project and month" },
     { id: "cost-scurve", group: "Cost", title: "Cost S-Curve", icon: "curve", sub: "Spend plan vs actual & forecast by month" },
+    { id: "kpi-outlook", group: "Cost", title: "KPI Year-End Outlook", icon: "kpi", sub: "How the cost KPIs close the year — actual to date + contractor Forecast Plan vs the Spend Plan" },
     { id: "weekly", group: "Progress", title: "Weekly Progress Summary", icon: "table", sub: "Planned vs actual progress, SPI and payments for every project" },
     { id: "project", group: "Progress", title: "Project Progress", icon: "project", sub: "Single-project weekly report card" },
     { id: "progress-scurve", group: "Progress", title: "Progress S-Curve", icon: "curve", sub: "Cumulative plan, actual and forecast progress" },
