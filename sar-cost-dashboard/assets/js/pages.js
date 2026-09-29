@@ -372,11 +372,11 @@
       U.hl(S.plan, phases, sel(ctx, "phase")), { maxBarThickness: 48 })],
       function (i, e) { pick(ctx, "phase", phases[i], e); }, null, { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } });
 
-    var rates = ["Critical", "High", "Medium", "Low"], stats = U.uniq(iss.map(function (r) { return r["Issue Status"] || "Not set"; }));
+    var rates = ["Critical", "High", "Medium", "Low", "N/A"], stats = U.uniq(iss.map(function (r) { return r["Issue Status"] || "Not set"; }));
     var ib = panelIn(g4, "Issues by status and rate", "Click a segment for the issue list");
     var ic = { type: "bar", data: { labels: stats, datasets: rates.map(function (rt) {
       return U.barDs(rt, stats.map(function (s) { return iss.filter(function (r) { return (r["Issue Status"] || "Not set") === s && r["Issue Rate"] === rt; }).length; }),
-        { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate }[rt], { borderRadius: 0, borderColor: C.white, borderWidth: { top: 2 } }); }) },
+        { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate, "N/A": C.gray }[rt], { borderRadius: 0, borderColor: C.white, borderWidth: { top: 2 } }); }) },
       options: { scales: { x: Object.assign(U.catAxis(), { stacked: true }), y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } };
     U.chart(chartBox(ib), U.clickable(ic, function (i, e, di) {
       var s = stats[i], rt = rates[di];
@@ -1066,8 +1066,8 @@
   /* ======================================================================
      Issue Register
      ====================================================================== */
-  var RATE_ORDER = ["Critical", "High", "Medium", "Low"];
-  var RATE_COLOR = { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate };
+  var RATE_ORDER = ["Critical", "High", "Medium", "Low", "N/A"];
+  var RATE_COLOR = { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate, "N/A": C.gray };
   P.issues = function (ctx) {
     var D = ctx.D, v = ctx.view, all = D.t("Issue_register").filter(function (r) { return r["ILR ID No."] || r["Issue (Description)"]; });
     var defs = [
@@ -1075,8 +1075,10 @@
       { key: "rate", label: "Issue Rate", options: U.uniq(all.map(function (r) { return r["Issue Rate"]; })).sort(function (a, b) { return RATE_ORDER.indexOf(a) - RATE_ORDER.indexOf(b); }), get: function (r) { return r["Issue Rate"]; } },
       { key: "code", label: "Project Code", options: U.uniq(all.map(function (r) { return r["Poject Code"]; })).sort(), get: function (r) { return r["Poject Code"]; } },
       { key: "name", label: "Project Name", options: U.uniq(all.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } },
-      { key: "cat", label: "Issue Category", options: U.uniq(all.map(function (r) { return r["Issue Category"]; })).sort(), get: function (r) { return r["Issue Category"]; } }];
+      { key: "cat", label: "Issue Category", options: U.uniq(all.map(function (r) { return r["Issue Category"]; })).sort(), get: function (r) { return r["Issue Category"]; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(all.map(function (r) { return r["Project Manager"]; })).sort(), get: function (r) { return r["Project Manager"]; } }];
     var st = filterBar(ctx, defs, all);
+    var rp = all.map(function (r) { return r["Reporting Period"]; }).filter(Boolean).sort().pop();
     var rows = all.filter(function (r) { return passes(r, defs, st); });
     function cnt(re, field) { return rows.filter(function (r) { return re.test(r[field] || ""); }).length; }
     function setStatus(re) { return function () {
@@ -1114,13 +1116,13 @@
         layout: { padding: { top: 20 } }, scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } },
       function (i, e) { pick(ctx, "status", statuses[i], e); }));
 
-    var p = panelIn(v, "NSR projects issue register", "Click a row for the full issue record");
+    var p = panelIn(v, "NSR projects issue register", (rp ? "Project cards · reporting period " + esc(fmt.month(rp)) + " · " : "") + "Click a row for the full issue record");
     tableIn(p, { rows: rows, exportName: "Issue_Register", maxHeight: 640,
       onRow: function (r) { U.recordModal((r["ILR ID No."] || "Issue") + " — " + (r["Project Name"] || ""), r); },
       columns: [
         { key: "Poject Code", label: "Project Code" }, { key: "Project Name", label: "Project Name" },
         { key: "ILR ID No.", label: "ILR ID No.", nowrap: true }, { key: "Issue Identification (Date)", label: "Identified", type: "date" },
-        { key: "Issue (Description)", label: "Issue (Description)", wrap: true }, { key: "Resolution Action Plan", label: "Resolution Action Plan", wrap: true },
+        { key: "Issue Title", label: "Issue Title", wrap: true }, { key: "Issue (Description)", label: "Issue (Description)", wrap: true }, { key: "Resolution Action Plan", label: "Resolution Action Plan", wrap: true },
         { key: "Issue Rate", label: "Issue Rate", type: "badge" }, { key: "Issue Status", label: "Issue Status", type: "badge" }] });
   };
 

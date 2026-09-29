@@ -32,8 +32,7 @@
         Lookahead_Activities: ["Source.Name", "Sr. No.", "Lookahead Activities (7 Days) Description"],
         Interim_Payment_Certificate: ["Source.Name", "Sr.No", "Description", "IPC / VO No.", "Cum Sum"],
         Area_of_Concern: ["Source.Name", "Sr. No.", "Issue /Concern Description", "Mitigation Action", "Status"],
-        Issue_register: ["Poject Code", "Project Name", "ILR ID No.", "Issue Identification (Date)", "Issue (Description)",
-          "Resolution Action Plan", "Issue Rate", "Issue Status"],
+        // Issue_register is no longer read from this file — it comes from the Project Cards workbook ("cards").
         Project_Milestones_Progress: ["Source.Name", "Sort", "Description", "Project Start", "Data Date", "Planned Finish",
           "Actual/Forecast Finish", "Planned progress", "Actual Progress"],
         Project_Milestones_Progress_Combine: ["Source.Name", "Sort", "WSB", "Description", "Project Start", "Data Date",
@@ -74,6 +73,18 @@
       file: "Contract details.xlsx",
       tables: {
         Contract_Details: ["Ref", "Code", "Contract", "Contractor", "Scope", "Value (SAR)", "Stage", "Owner"]
+      }
+    },
+    // Monthly "EP - NSR Projects <Mon><YY>.xlsx": one sheet per project ("<code>_Project Card").
+    // The Issue Register is built from section 12.1 "Issue Log" of every card (see parseProjectCards).
+    cards: {
+      label: "EP – NSR Projects (Project Cards)",
+      file: "EP - NSR Projects <Month>.xlsx",
+      projectCards: true,
+      tables: {
+        Issue_register: ["ILR ID No.", "Issue Identification (Date)", "Issue Owner", "Issue Title", "Issue Category",
+          "Issue (Description)", "Issue Impact", "Issue Urgency", "Issue Score", "Issue Rate", "Resolution Action Plan",
+          "Action Plan Owner", "Action Plan (Original Due Date)", "Issue Closure Date", "Issue Status", "Remarks / Comments"]
       }
     }
   };
@@ -226,12 +237,83 @@
    * Parse one workbook.
    * @returns {Promise<{source, tables:{name:rows[]}, report:[{table, rows, status, missing[]}]}>}
    */
+  /* ---------------------------------------------------------------------- */
+  /* Project Cards workbook: every "<code>_Project Card" sheet has the same  */
+  /* layout. Section 12.1 "Issue Log" is found by its heading text (not by   */
+  /* fixed rows), so added/removed projects and shifted rows are handled.    */
+  /* ---------------------------------------------------------------------- */
+  var CARD_RE = /project\s*card/i;
+  var TEXT_COLS = /owner|title|category|description|action plan$|rate|status|remarks|ref\.?$/i;
+
+  function parseProjectCards(XLSX, wb, sheetNames) {
+    var rows = [], cards = 0, noLog = [], reportingPeriod = null, headersSeen = {};
+    sheetNames.forEach(function (name) {
+      var ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) return;
+      var rg = XLSX.utils.decode_range(ws["!ref"]);
+      function v(r, c) { return cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: c })]); }
+      function txt(r, c) { var x = v(r, c); return x == null ? "" : normKey(x); }
+      // "Label | value" pairs of the card header (label in column B, value in column C)
+      function field(label) {
+        var want = label.toLowerCase();
+        for (var r = rg.s.r; r <= Math.min(rg.e.r, 200); r++) if (txt(r, 1).toLowerCase() === want) return v(r, 2);
+        return null;
+      }
+      // Section heading "Issue Log" → the header row that starts with "ILR ID No."
+      var head = -1, hdr = -1;
+      for (var r = rg.s.r; r <= rg.e.r; r++) {
+        if (head < 0 && txt(r, 1).toLowerCase() === "issue log") head = r;
+        else if (head >= 0 && /^ilr id/i.test(txt(r, 1))) { hdr = r; break; }
+        if (head >= 0 && r - head > 10) break;
+      }
+      cards++;
+      if (hdr < 0) { noLog.push(name); return; }
+      // the log's columns: the continuous run of text headers starting at "ILR ID No." (helper cells further right are ignored)
+      var cols = [];
+      for (var c = 1; c <= rg.e.c; c++) {
+        var hc = ws[XLSX.utils.encode_cell({ r: hdr, c: c })];
+        if (!hc || hc.t !== "s" || !String(hc.v).trim()) break;
+        var h = normKey(hc.v); cols.push({ c: c, key: h }); headersSeen[h] = 1;
+      }
+      var code = field("Project Code"), pname = field("Project Name"), pm = field("Project Manager");
+      var rp = field("Reporting Period"); if (rp && (!reportingPeriod || rp > reportingPeriod)) reportingPeriod = rp;
+      code = code != null ? String(code).trim() : String(name).split("_")[0];
+      for (var rr = hdr + 1; rr <= rg.e.r; rr++) {
+        var id = txt(rr, 1);
+        if (!/ilr/i.test(id)) break;                            // end of the log (next section / blank)
+        var rec = {};
+        cols.forEach(function (col) {
+          var x = v(rr, col.c);
+          if (x === 0 && TEXT_COLS.test(col.key)) x = null;         // formula blanks show as 0 in text columns
+          rec[col.key] = x;
+        });
+        // skip the empty placeholder slots (only an ILR number, no content)
+        var has = ["Issue Identification (Date)", "Issue Title", "Issue (Description)", "Issue Category", "Issue Status", "Resolution Action Plan"]
+          .some(function (k) { return rec[k] != null && rec[k] !== ""; });
+        if (!has) continue;
+        rows.push(Object.assign({
+          Code: name, "Poject Code": code, "Project Name": pname != null ? String(pname).trim() : name,
+          "Project Manager": pm != null ? String(pm).trim() : null, "Report to": "PMO Cards", "Reporting Period": rp
+        }, rec));
+      }
+    });
+    var missing = SOURCES.cards.tables.Issue_register.filter(function (c) { return !headersSeen[normKey(c)]; });
+    var report = [{ table: "Issue_register", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing,
+      via: cards + " project cards" + (noLog.length ? " (" + noLog.length + " without an Issue Log: " + noLog.join(", ") + ")" : "") }];
+    return { source: "cards", label: SOURCES.cards.label, tables: { Issue_register: rows }, report: report, reportingPeriod: reportingPeriod };
+  }
+
   async function parseWorkbook(buffer, XLSX, JSZip) {
     var zip = await JSZip.loadAsync(buffer);
     if (!zip.file("xl/workbook.xml")) throw new Error("Not an .xlsx workbook (xl/workbook.xml missing). Save the file as Excel Workbook (*.xlsx).");
     var meta = await listTables(zip);
     var names = Object.keys(meta.tables);
     var source = detectSource(names.concat(meta.sheets));
+    var cardSheets = meta.sheets.filter(function (s) { return CARD_RE.test(s); });
+    if (!source && cardSheets.length) {
+      var cwb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false, sheets: cardSheets });
+      return parseProjectCards(XLSX, cwb, cardSheets);
+    }
     if (!source) throw new Error("This workbook does not contain any of the expected Excel tables. Found tables: " + (names.join(", ") || "none"));
 
     var wb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });

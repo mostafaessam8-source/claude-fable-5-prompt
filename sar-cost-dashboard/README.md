@@ -24,7 +24,7 @@ opened straight from disk.
 | Progress S-Curve | Progress S-Curve | `S_Curve` (sheet *S-Curve*), `MLS` |
 | Projects Master Plan | Projects Master Plan | `Project_Milestones_Progress_Combine` |
 | Project Timeline | Timeline | `Project_Milestones_Progress` |
-| Issue Register | Issue | `Issue_register` |
+| Issue Register | Issue | Section 12.1 *Issue Log* of every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx** |
 | Abbreviations | Abbreviations | `ABBREVIATIONS`, `ABBREVIATIONS_2` |
 | Data Import | — | — |
 
@@ -77,11 +77,17 @@ code (`node tools/build-publish-kit.js`).
    * `PBI Weekly Report.xlsx`
    * `EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx`
    * `Contract details.xlsx`
+   * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
 3. The site recognises each file by the **Excel tables inside it**, not by the file name. It reads those
    tables the same way Power BI's `Excel.Workbook(…){[Item="…",Kind="Table"]}` does, and shows a
    log of rows per table plus any missing columns.
 4. Only the tables from the files you imported are replaced. The import is saved in the browser
    (IndexedDB), so it's still there after a reload. **Discard imports** goes back to the baseline.
+
+> **Project Cards file:** each `<code>_Project Card` sheet is read on its own. The site finds section 12.1
+> **Issue Log** by its heading, reads the header row that starts with "ILR ID No.", and imports every ILR row
+> that has content (empty ILR slots are skipped). Projects can be added or removed, and the month in the file
+> name can change. The weekly PBI file no longer feeds the Issue Register.
 
 > Keep the Excel **table names and column headers** as they are. Rows can be added or removed freely,
 > and formulas are fine: the site reads the values Excel last calculated, so save the file in Excel
