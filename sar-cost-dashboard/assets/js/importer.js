@@ -84,7 +84,9 @@
       tables: {
         Issue_register: ["ILR ID No.", "Issue Identification (Date)", "Issue Owner", "Issue Title", "Issue Category",
           "Issue (Description)", "Issue Impact", "Issue Urgency", "Issue Score", "Issue Rate", "Resolution Action Plan",
-          "Action Plan Owner", "Action Plan (Original Due Date)", "Issue Closure Date", "Issue Status", "Remarks / Comments"]
+          "Action Plan Owner", "Action Plan (Original Due Date)", "Issue Closure Date", "Issue Status", "Remarks / Comments"],
+        // one record per card with every section (general info, performance, timeline, milestones, logs …)
+        Project_Cards: []
       }
     }
   };
@@ -245,8 +247,173 @@
   var CARD_RE = /project\s*card/i;
   var TEXT_COLS = /owner|title|category|description|action plan$|rate|status|remarks|ref\.?$/i;
 
+  /* ---------------------------------------------------------------------- */
+  /* Full project card → one Project_Cards record. Every section is located */
+  /* by its heading / header text, so inserted rows or columns don't break it. */
+  /* ---------------------------------------------------------------------- */
+  function parseCard(XLSX, ws, name) {
+    var rg = XLSX.utils.decode_range(ws["!ref"]), last = rg.e.r, lastC = Math.min(rg.e.c, 90);
+    function v(r, c) {
+      var x = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: c })]);
+      if (typeof x === "string") { x = x.trim(); if (x === "-" || x === "" || /^\[insert/i.test(x) || x === "False" || x === "True") return null; }
+      return x === false ? null : x;
+    }
+    function txt(r, c) { var x = v(r, c); return x == null ? "" : normKey(x); }
+    function low(r, c) { return txt(r, c).toLowerCase(); }
+    function num(x) { return typeof x === "number" && isFinite(x) ? x : null; }
+    function date(x) { return typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x) ? x : null; }
+    function str(x) { return x == null ? null : String(x).trim() || null; }
+    function findRow(re, from, to) {
+      for (var r = from || 0; r <= Math.min(last, to == null ? last : to); r++) if (re.test(low(r, 1))) return r;
+      return -1;
+    }
+    function sec(label) { var want = label.toLowerCase(); return findRow({ test: function (s) { return s === want; } }); }
+    function at(label, from, to, dc) { var r = findRow({ test: function (s) { return s === label.toLowerCase(); } }, from, to); return r < 0 ? null : v(r, 1 + (dc || 1)); }
+    // A logged table: header row whose column B matches `hdrRe`, its run of text headers, rows until B is empty.
+    function block(hdrRe, from, keep) {
+      var h = findRow(hdrRe, from); if (h < 0) return [];
+      var cols = [];
+      for (var c = 1, gap = 0; c <= lastC && gap < 2; c++) { var hc = txt(h, c); if (!hc) { gap++; continue; } gap = 0; cols.push({ c: c, key: hc }); }  // one merged blank allowed
+      var out = [];
+      for (var r = h + 1; r <= last; r++) {
+        if (!txt(r, 1)) break;
+        var rec = {};
+        cols.forEach(function (col) { rec[col.key] = v(r, col.c); });
+        if (!keep || keep(rec)) out.push(rec);
+      }
+      return out;
+    }
+    function hasAny(rec, keys) { return keys.some(function (k) { return Object.keys(rec).some(function (rk) { return rk.indexOf(k) === 0 && rec[rk] != null && rec[rk] !== 0; }); }); }
+
+    var gen = sec("project general information"), perf = sec("project performance"), stake = sec("project key stakeholders");
+    var fund = sec("project funding info."), cont = sec("project contracting info."), base = sec("project baseline schedule");
+    var exe = findRow(/^execution schedule/), tl = sec("project timeline"), bud = sec("project budget");
+    var ms = sec("critical path milestones"), dl = sec("deliverables"), isum = sec("issue log summary");
+    var csum = sec("change log summary"), rsum = sec("risk log summary"), clsum = sec("claim register summary"), kpi = sec("kpis");
+
+    var code = str(at("Project Code", gen, gen + 15)) || String(name).split("_")[0];
+    var card = {
+      Sheet: name, Code: code, Name: str(at("Project Name", gen, gen + 15)) || name,
+      Size: str(at("Project Size", gen, gen + 15)), Complexity: str(at("Project Complexity", gen, gen + 15)),
+      Group: str(at("Project Group", gen, gen + 15)), Type: str(at("Project Type", gen, gen + 15)),
+      Category: str(at("Project Category", gen, gen + 15)), PlannedPhase: str(at("Planned Phase", gen, gen + 15)),
+      ActualPhase: str(at("Actual Phase", gen, gen + 15)), Description: str(at("Project Description", gen, gen + 15)),
+      Location: null
+    };
+    var cx = findRow(/^project complexity$/, gen, gen + 15);
+    if (cx >= 0 && low(cx, 3) === "location") card.Location = str(v(cx + 1, 3));
+
+    card.Perf = {
+      Planned: num(at("Planned Progress (%)", perf, perf + 12)), Actual: num(at("Actual Progress (%)", perf, perf + 12)),
+      Variance: num(at("Progress Variance %", perf, perf + 12)), Paid: num(at("Approved Paid Amount (SAR)", perf, perf + 12)),
+      Status: str(at("Overall Status", perf, perf + 12)), Delay: str(at("Delay Level", perf, perf + 12)),
+      Risk: str(at("Risk Level", perf, perf + 12)), SV: num(at("Schedule Variance (BL Vs. Forecast)", perf, perf + 12))
+    };
+    var dept = findRow(/^performing organization \(department\)$/, stake, stake + 10), spon = findRow(/^project sponsor/, stake, stake + 10);
+    card.Stake = {
+      BU: str(at("Performing Organization (BU)", stake, stake + 10)), Department: str(at("Performing Organization (Department)", stake, stake + 10)),
+      Program: dept >= 0 ? str(v(dept, 3)) : null, PM: str(at("Project Manager", stake, stake + 10)),
+      Sponsor: str(at("Project Sponsor (BU)", stake, stake + 10)), SponsorOrg: spon >= 0 ? str(v(spon, 3)) : null,
+      Owner: str(at("Project Owner (Department)", stake, stake + 10)), Maintenance: str(at("Maintenance Entity (BU / Dept.)", stake, stake + 10))
+    };
+    var fo = findRow(/^funding organization$/, fund, fund + 10);
+    card.Fund = {
+      Org: fo >= 0 ? str(v(fo, 2)) : null, Budget: num(at("Budget (SAR)", fund, fund + 10)),
+      Year: fo >= 0 ? str(v(fo + 1, 3)) : null, FundStatus: fo >= 0 ? str(v(fo + 1, 4)) : null, Critical: fo >= 0 ? str(v(fo + 1, 5)) : null,
+      CON: num(at("Contract value - CON", fund, fund + 10)), PMC: num(at("Contract value - PMC", fund, fund + 10)), CSC: num(at("Contract value - CSC", fund, fund + 10))
+    };
+    card.Contracts = [];
+    for (var r = cont + 1; cont >= 0 && r <= cont + 8; r++) {
+      var role = txt(r, 1);
+      if (/^(contractor|pmc|csc)$/i.test(role)) card.Contracts.push({ Role: role, Entity: str(v(r, 2)), "PR No.": str(v(r, 3)), "PR Date": date(v(r, 4)),
+        "PO No.": str(v(r, 5)), "PO Date": date(v(r, 6)), "Contract Effective Date": date(v(r, 7)) });
+    }
+    var rv = findRow(/^revised \(y\/n\)$/, base, base + 8);
+    card.Baseline = { Revised: str(at("Revised (Y/N)", base, base + 8)), Version: str(at("Revised Version", base, base + 8)),
+      PMFeedback: rv >= 0 ? str(v(rv + 1, 3)) : null, EPMOFeedback: rv >= 0 ? str(v(rv + 1, 5)) : null, DelayReason: rv >= 0 ? str(v(rv + 1, 7)) : null, Versions: [] };
+    var sd = findRow(/^start date$/, base, base + 12);
+    if (sd >= 0) for (var c = 2; c <= 8; c++) {
+      var vn = txt(sd - 1, c); if (!vn) break;
+      var ver = { Version: vn, Start: date(v(sd, c)), Finish: date(v(sd + 1, c)), Budget: num(v(sd + 2, c)) };
+      if (ver.Start || ver.Finish || ver.Budget) card.Baseline.Versions.push(ver);
+    }
+    var md = findRow(/^month starting date$/, exe, tl);
+    var rp = date(at("Reporting Period", exe, tl));
+    card.Exec = { Period: num(at("Execution Period (Months)", exe, tl)), Start: date(at("Execution Start Date", exe, tl)), ReportingPeriod: rp,
+      PlannedToDate: num(at("Planned Progress (% to Date)", exe, tl)), ActualToDate: num(at("Actual Progress (% to Date)", exe, tl)), Months: [] };
+    var ep = findRow(/^execution period/, exe, tl);
+    if (ep >= 0) { card.Exec.FCCPeriod = num(v(ep, 5)); }
+    var toc = findRow(/^planned progress \(% to date\)$/, exe, tl);
+    if (toc >= 0 && /toc/i.test(txt(toc, 7))) card.Exec.TOC = str(v(toc, 8));
+    if (md >= 0) {
+      var pr = findRow(/^planned progress \(%\)$/, md, md + 3), ar = findRow(/^actual progress \(%\)$/, md, md + 3);
+      for (var mc = 2; mc <= lastC; mc++) {
+        var d = date(v(md, mc)); if (!d) continue;
+        var pv = pr >= 0 ? num(v(pr, mc)) : null, av = ar >= 0 ? num(v(ar, mc)) : null;
+        if (pv == null && av == null) continue;
+        card.Exec.Months.push({ Month: d, Plan: pv, Actual: rp && d > rp ? null : av });
+      }
+    }
+    // 8. Project timeline: phases ("… Phase") and their activities
+    card.Timeline = [];
+    var th = findRow(/^project phases$/, tl, tl + 5);
+    if (th >= 0) {
+      var tc = {};
+      for (var hc2 = 1; hc2 <= lastC; hc2++) { var hk = low(th, hc2); if (hk) tc[hk] = hc2; }
+      var col = function (re) { for (var k in tc) if (re.test(k)) return tc[k]; return -1; };
+      var C_ = { bs: col(/^start date \(baseline\)/), be: col(/^end date \(baseline\)/), rs: col(/^start date \(rev/), re: col(/^end date \(rev/),
+        fs: col(/^start date \(forecast/), fe: col(/^end date \(forecast/), pl: col(/^planned progress/), ac: col(/^actual progress/), w: col(/^activities weight/) };
+      var phase = null;
+      for (var tr = th + 1; tr <= last; tr++) {
+        var nm = txt(tr, 1);
+        if (/^(project phases|total)$/i.test(nm)) break;
+        if (!nm) { if (!txt(tr + 1, 1)) break; continue; }
+        var isPh = /phase$/i.test(nm);
+        var g = function (k) { return C_[k] >= 0 ? v(tr, C_[k]) : null; };
+        var it = { Phase: isPh ? nm : phase, Name: nm, Level: isPh ? 1 : 2,
+          BS: date(g("bs")), BE: date(g("be")), RS: date(g("rs")), RE: date(g("re")), FS: date(g("fs")), FE: date(g("fe")),
+          Plan: num(g("pl")), Actual: num(g("ac")), Weight: num(g("w")) };
+        if (isPh) phase = nm;
+        if (!isPh && !it.BS && !it.BE && !it.RS && !it.RE && !it.FS && !it.FE) continue;   // unused work-package slots
+        card.Timeline.push(it);
+      }
+      var tot = findRow(/^total$/, th + 1, bud > 0 ? bud : last);
+      if (tot >= 0) card.Total = { BS: date(v(tot, C_.bs)), BE: date(v(tot, C_.be)), RS: date(v(tot, C_.rs)), RE: date(v(tot, C_.re)),
+        FS: date(v(tot, C_.fs)), FE: date(v(tot, C_.fe)), Plan: num(v(tot, C_.pl)), Actual: num(v(tot, C_.ac)) };
+    }
+    // 9. Budget (EVM) and cash flow
+    card.Budget = block(/^execution phase \/ work package/, bud, function (x) {
+      return Object.keys(x).some(function (k) { return k !== "Execution Phase / Work package" && typeof x[k] === "number" && x[k] !== 0; }); });
+    card.CashFlow = block(/^cash-flow activity$/, bud, function (x) { return Object.keys(x).some(function (k) { return typeof x[k] === "number" && x[k] !== 0; }); });
+    // 10–11. Milestones & deliverables
+    card.Milestones = block(/^milestone \(m\)$/, ms).map(function (x) {
+      return { Milestone: x["Milestone (M)"], Planned: date(x["Planned Completion Date"]), Actual: date(x["Actual Date"]), Completed: str(x.Status) };
+    }).filter(function (x) { return x.Milestone; });
+    card.Deliverables = block(/^deliverable \(d\)$/, dl).map(function (x) {
+      return { Deliverable: x["Deliverable (D)"], Due: date(x["Planned Due Date"]), Actual: date(x["Actual Date"]), Status: str(x.Status) };
+    }).filter(function (x) { return x.Deliverable && !(/^d\d+$/i.test(x.Deliverable) && !x.Due && !x.Actual); });
+    // 12–15. Log summaries and logs (Issue log itself feeds Issue_register)
+    card.IssueSummary = { Total: num(at("Total Issues", isum, isum + 15)), Open: num(at("Open Issues", isum, isum + 15)), Closed: num(at("Closed Issues", isum, isum + 15)) };
+    card.Changes = block(/^cr id/, csum, function (x) { return hasAny(x, ["Change Request Title", "Change Request (Description)", "CR Status", "Submission Date"]); });
+    card.ChangeSummary = { Total: num(at("Total changes", csum, csum + 25)), CostImpact: num(at("Total cost impact", csum, csum + 25)),
+      Duration: num(at("Total increased duration", csum, csum + 25)), Approved: num(at("Changes appoved", csum, csum + 25)) };
+    card.Risks = block(/^rrf id/, rsum, function (x) { return hasAny(x, ["Risk Title", "Risk (Description)", "Risk Owner"]); });
+    card.RiskSummary = { Total: num(at("Total risks", rsum, rsum + 20)), Open: num(at("Open Risks", rsum, rsum + 20)), Closed: num(at("Closed Risks", rsum, rsum + 20)) };
+    card.Claims = block(/^claim id/, clsum, function (x) { return hasAny(x, ["Claim Description", "Date of Claim", "Status", "Claiming for"]); });
+    // KPIs (phase carried down)
+    card.KPIs = [];
+    var kh = kpi >= 0 ? findRow(/^phase$/, kpi, kpi + 5) : -1;
+    if (kh >= 0) for (var kr = kh + 1, ph = null, blanks = 0; kr <= last && blanks < 3; kr++) {
+      var kd = txt(kr, 2);
+      if (!kd) { blanks++; if (txt(kr, 1)) ph = txt(kr, 1); continue; }
+      blanks = 0; if (txt(kr, 1)) ph = txt(kr, 1);
+      card.KPIs.push({ Phase: ph, KPI: kd, Value: num(v(kr, 3)) });
+    }
+    return card;
+  }
+
   function parseProjectCards(XLSX, wb, sheetNames) {
-    var rows = [], cards = 0, noLog = [], reportingPeriod = null, headersSeen = {};
+    var rows = [], cardRecs = [], cards = 0, noLog = [], reportingPeriod = null, headersSeen = {};
     sheetNames.forEach(function (name) {
       var ws = wb.Sheets[name];
       if (!ws || !ws["!ref"]) return;
@@ -267,6 +434,7 @@
         if (head >= 0 && r - head > 10) break;
       }
       cards++;
+      try { cardRecs.push(parseCard(XLSX, ws, name)); } catch (e) { cardRecs.push({ Sheet: name, Code: String(name).split("_")[0], Name: name, error: String(e.message || e) }); }
       if (hdr < 0) { noLog.push(name); return; }
       // the log's columns: the continuous run of text headers starting at "ILR ID No." (helper cells further right are ignored)
       var cols = [];
@@ -300,7 +468,8 @@
     var missing = SOURCES.cards.tables.Issue_register.filter(function (c) { return !headersSeen[normKey(c)]; });
     var report = [{ table: "Issue_register", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing,
       via: cards + " project cards" + (noLog.length ? " (" + noLog.length + " without an Issue Log: " + noLog.join(", ") + ")" : "") }];
-    return { source: "cards", label: SOURCES.cards.label, tables: { Issue_register: rows }, report: report, reportingPeriod: reportingPeriod };
+    report.push({ table: "Project_Cards", rows: cardRecs.length, status: cardRecs.length ? "ok" : "missing", missing: [], via: "all card sections" });
+    return { source: "cards", label: SOURCES.cards.label, tables: { Issue_register: rows, Project_Cards: cardRecs }, report: report, reportingPeriod: reportingPeriod };
   }
 
   async function parseWorkbook(buffer, XLSX, JSZip) {

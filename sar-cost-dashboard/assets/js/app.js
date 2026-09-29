@@ -14,6 +14,7 @@
     gantt: '<path d="M4 5h9M7 10h11M5 15h7M10 20h10"/>',
     issue: '<path d="M12 3l10 18H2zM12 10v5m0 3v.5"/>',
     book: '<path d="M4 4h7a3 3 0 013 3v13a2 2 0 00-2-2H4zM20 4h-6M20 4v14h-6"/>',
+    card: '<path d="M3 5h18v14H3zM7 9h4v4H7zM14 9h4M14 13h4M7 16h11"/>',
     upload: '<path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V4h16v3"/>'
   };
 
@@ -29,6 +30,8 @@
     { id: "progress-scurve", group: "Progress", title: "Progress S-Curve", icon: "curve", sub: "Cumulative plan, actual and forecast progress" },
     { id: "master-plan", group: "Progress", title: "Projects Master Plan", icon: "gantt", sub: "Milestone schedule for all projects" },
     { id: "timeline", group: "Progress", title: "Project Timeline", icon: "gantt", sub: "Milestone timeline for a single project" },
+    { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
+    { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
     { id: "issues", group: "Risks & Issues", title: "Issue Register", icon: "issue", sub: "NSR projects issue log" },
     { id: "abbreviations", group: "Reference", title: "Abbreviations", icon: "book", sub: "Project and report abbreviations" },
     { id: "import", group: "Data", title: "Data Import", icon: "upload", sub: "Update the dashboard from the Excel source files" }

@@ -24,6 +24,8 @@ opened straight from disk.
 | Progress S-Curve | Progress S-Curve | `S_Curve` (sheet *S-Curve*), `MLS` |
 | Projects Master Plan | Projects Master Plan | `Project_Milestones_Progress_Combine` |
 | Project Timeline | Timeline | `Project_Milestones_Progress` |
+| Project Cards | *(new)* | Every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx**, all sections |
+| Portfolio Master Plan | *(new)* | Section 8 *Project Timeline* + section 10 *Critical Path Milestones* of every project card |
 | Issue Register | Issue | Section 12.1 *Issue Log* of every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx** |
 | Abbreviations | Abbreviations | `ABBREVIATIONS`, `ABBREVIATIONS_2` |
 | Data Import | — | — |
@@ -73,7 +75,7 @@ code (`node tools/build-publish-kit.js`).
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).
-2. Drop any of the three workbooks (one, two or all three):
+2. Drop any of the four workbooks (one or several at once):
    * `PBI Weekly Report.xlsx`
    * `EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx`
    * `Contract details.xlsx`
@@ -88,6 +90,12 @@ code (`node tools/build-publish-kit.js`).
 > **Issue Log** by its heading, reads the header row that starts with "ILR ID No.", and imports every ILR row
 > that has content (empty ILR slots are skipped). Projects can be added or removed, and the month in the file
 > name can change. The weekly PBI file no longer feeds the Issue Register.
+
+> The same file also feeds **Project Cards** (one full card per project: general info, performance, stakeholders,
+> funding & contracts, baseline versions and feedback, execution S-curve, phase/activity timeline, earned value,
+> milestones, deliverables, issue / change / risk / claim logs and KPIs) and the **Portfolio Master Plan**
+> (projects → phases → activities with baseline, revised baseline, forecast/actual and milestones). Each section is
+> found by its heading text, so the cards may gain rows without breaking the import.
 
 > Keep the Excel **table names and column headers** as they are. Rows can be added or removed freely,
 > and formulas are fine: the site reads the values Excel last calculated, so save the file in Excel
