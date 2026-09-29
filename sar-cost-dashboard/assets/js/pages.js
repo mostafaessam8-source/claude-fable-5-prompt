@@ -657,7 +657,7 @@
     var g2 = grid(v, "g-2");
     totalsChart(chartBox(panelIn(g2, "Incremental budget vs total forecast", "Sum of the selected months · click a bar for the project split")), [
       { label: "Spend Plan", value: U.sum(sp, function (r) { return G(r, SP.plan); }), color: S.plan },
-      { label: "Forecast V3", value: U.sum(sp, function (r) { return G(r, SP.fc); }), color: S.forecast },
+      { label: "Invoice Plan", value: U.sum(sp, function (r) { return G(r, SP.inv); }), color: S.invoice },
       { label: "Actual Spend", value: U.sum(sp, function (r) { return G(r, SP.act); }), color: S.actual }], function () { spendModal(D, sp); });
     totalsChart(chartBox(panelIn(g2, "Up-to-date budget vs total forecast", "Year to date (KPI projects data) · click for the project split")), [
       { label: "YTD Spend Plan", value: U.sum(kp, function (r) { return G(r, "YTD Spend Plan as per Budgeting (M)"); }), color: S.plan },
