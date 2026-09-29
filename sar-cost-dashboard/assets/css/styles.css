@@ -610,31 +610,28 @@ body.printing .pg-row.g-head { position: static; }
 
 /* ----------------------------- KPI Year-End Outlook --------------------- */
 .ol-lead { margin-bottom: var(--gap); }
-.ig-row { display: grid; border-top: 1px solid var(--tint-10); min-height: 46px; }
-.ig-row > div { padding: 4px 5px; font-size: 11.5px; position: relative; min-width: 0; }
-.ig-row .num { display: flex; align-items: center; justify-content: flex-end; font-variant-numeric: tabular-nums; font-weight: 700; }
-.ig-row.g-head { position: sticky; top: 0; z-index: 5; background: var(--sar-blue); color: var(--white); font-weight: 700; min-height: 32px; border-top: 0; }
-.ig-row.g-head > div { display: flex; align-items: center; font-size: 11.5px; }
-.ig-m { justify-content: center; }
-.ig-m.cut { box-shadow: inset -3px 0 0 var(--yellow); }
-.ig-p { cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
-.ig-p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sar-black); }
-.ig-p small { color: var(--slate); display: flex; gap: 6px; align-items: center; }
-.ig-p small .badge { font-size: 10px; padding: 1px 6px; }
-.ig-p:hover b { color: var(--sar-blue); }
-.ig-c { border-left: 1px dashed var(--tint-10); overflow: hidden; }
-.ig-c.cut { box-shadow: inset -3px 0 0 var(--yellow); }
-.ig-c.clickable { cursor: pointer; }
-.ig-c.clickable:hover { background: var(--tint-5); }
-.ig-b { position: absolute; left: 2px; right: 2px; top: 5px; height: 16px; }
-.ig-b.act { background: var(--yellow); }
-.ig-b.fc { background: var(--slate); }
-.ig-b.plan { background: var(--tint-10); outline: 1px solid rgba(0,119,139,.4); outline-offset: -1px; }
-.ig-v { position: relative; display: block; text-align: center; font-weight: 700; font-size: 11px; line-height: 16px; margin-top: 1px; color: var(--sar-black); }
-.ig-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 9.5px; line-height: 1.2; color: var(--slate); margin-top: 3px; }
-.ig-ms { top: 2px; right: 3px; left: auto !important; width: 8px; height: 8px; border-width: 1.5px; }
-.ig-tot { background: var(--tint-10); font-weight: 700; }
-.ig-tot > div:first-child { display: flex; flex-direction: column; justify-content: center; color: var(--sar-blue); }
-.ig-tot .num span { text-align: right; } .ig-tot small { color: var(--slate); font-weight: 600; }
-body.printing .ig .gantt-inner { min-width: 0 !important; }
-body.printing .ig-row.g-head { position: static; }
+.gantt.iv { max-height: 760px; }
+.gantt.iv .gantt-inner { min-width: 980px; }
+.iv-row { display: grid; grid-template-columns: minmax(240px, 30%) 58px 56px 1fr; border-top: 1px solid var(--tint-10); min-height: 28px; }
+.iv-row > div { padding: 4px 8px; font-size: 12px; display: flex; align-items: center; min-width: 0; }
+.iv-row .num { justify-content: flex-end; font-variant-numeric: tabular-nums; font-weight: 700; }
+.iv-row.g-head { position: sticky; top: 0; z-index: 5; background: var(--sar-blue); color: var(--white); font-weight: 700; border-top: 0; min-height: 32px; }
+.iv-row.g-head .g-months span { width: auto; text-align: center; padding: 8px 0; }
+.iv-row.g-head .g-months span.cut { box-shadow: inset -3px 0 0 var(--yellow); }
+.iv-p { background: var(--tint-10); cursor: pointer; min-height: 38px; }
+.iv-p > div:first-child { flex-wrap: wrap; gap: 4px 8px; }
+.iv-p b { color: var(--sar-blue); font-size: 13px; }
+.iv-p small { flex-basis: 100%; color: var(--slate); font-size: 11px; }
+.iv-p .badge { font-size: 10px; padding: 1px 6px; }
+.iv-p:hover b { text-decoration: underline; }
+.iv-a { cursor: pointer; }
+.iv-a:hover > div:not(.g-track) { background: var(--tint-5); }
+.iv-lab { padding-left: 22px !important; display: block !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; }
+.iv-a.ms .iv-lab { color: var(--slate); font-style: italic; }
+.iv-bar { position: absolute; top: 5px; bottom: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.iv-bar.act { background: var(--yellow); color: var(--sar-black); }
+.iv-bar.fc { background: var(--slate); color: var(--white); }
+.iv-bar.miss { background: var(--white); outline: 2px dashed var(--red); outline-offset: -2px; color: var(--red); }
+.iv-ms { top: 50% !important; margin-top: -5px; }
+body.printing .gantt.iv .gantt-inner { min-width: 0; }
+body.printing .iv-row.g-head { position: static; }

@@ -928,7 +928,7 @@
       function (i, e) { pick(ctx, "out", outs[i], e); }));
 
     // Invoice schedule (Gantt by month)
-    var ip = panelIn(v, "Invoice schedule 2026", "Invoice-related activities by project and month · yellow = actual to " + esc(fmt.month(cut)) + ", slate = Forecast Plan · ◆ = milestone · click a cell for details, a project for its filter");
+    var ip = panelIn(v, "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
     invoiceGantt(ip, proj.slice().sort(function (a, b) { return b.plan - a.plan; }), months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
 
     // Project table
@@ -951,37 +951,53 @@
       { totals: true, autoHeight: true, sort: { key: "variance", dir: 1 } });
   }
 
+  /**
+   * Invoice Gantt: one bar per invoice-related activity, stacked under its project.
+   * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
+   * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
+   */
   function invoiceGantt(host, list, months, cut, onProj) {
-    if (!list.length) { add(host, '<div class="empty">No projects for the current filters.</div>'); return; }
-    var max = 0; list.forEach(function (o) { months.forEach(function (m) { var c = o.months[m]; if (c) max = Math.max(max, c.past ? c.act || 0 : c.fc || 0); }); });
-    var cols = "260px repeat(" + months.length + ", minmax(62px, 1fr)) 92px 92px";
-    var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual spend</span><span><i style="background:' + C.slate + '"></i>Forecast Plan (contractor)</span>' +
-      '<span><i style="background:' + C.tint10 + ';outline:1px solid ' + C.blue + '"></i>Spend Plan only (no forecast)</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone</span>' +
-      '<span><i style="background:' + C.yellow + ';width:3px"></i>Actuals cut-off ' + esc(fmt.month(cut)) + "</span></div>";
-    h += '<div class="gantt ig"><div class="gantt-inner" style="min-width:' + (260 + months.length * 62 + 184) + 'px"><div class="ig-row g-head" style="grid-template-columns:' + cols + '"><div>Project</div>' +
-      months.map(function (m) { return '<div class="ig-m' + (m === cut ? " cut" : "") + '">' + esc(fmt.month(m)) + "</div>"; }).join("") + '<div class="num">Plan</div><div class="num">Landing</div></div>';
-    list.forEach(function (o, i) {
-      h += '<div class="ig-row" style="grid-template-columns:' + cols + '"><div class="ig-p" data-p="' + i + '" title="Filter by this project"><b>' + esc(o.name) + '</b><small>' + esc(o.ID) + " · " + U.badge(o.status) + "</small></div>";
+    var items = [];
+    list.forEach(function (o) {
+      var acts = [];
       months.forEach(function (m) {
-        var c = o.months[m] || {}, val = c.past ? c.act : c.fc, has = val > 0, planOnly = !has && c.plan > 0;
-        var alpha = has && max ? 0.35 + 0.65 * Math.min(1, val / max) : 0;
-        var tip = fmt.month(m) + " — " + o.name + (c.text ? " | " + c.text : "") + " | Plan " + fmt.money(c.plan) + (c.past ? " | Actual " + fmt.money(c.act) : " | Forecast Plan " + fmt.money(c.fc)) + (c.ms ? " | Milestone: " + c.ms : "");
-        h += '<div class="ig-c' + (m === cut ? " cut" : "") + (c.row ? " clickable" : "") + '" data-p="' + i + '" data-m="' + m + '" title="' + esc(tip) + '">' +
-          (has ? '<span class="ig-b ' + (c.past ? "act" : "fc") + '" style="opacity:' + alpha.toFixed(2) + '"></span><span class="ig-v">' + fmt.m(val, 1) + "</span>" : planOnly ? '<span class="ig-b plan"></span><span class="ig-v muted">(' + fmt.m(c.plan, 1) + ")</span>" : "") +
-          (c.text ? '<span class="ig-t">' + esc(c.text) + "</span>" : "") + (c.ms ? '<b class="pg-dia ig-ms"></b>' : "") + "</div>";
+        var c = o.months[m]; if (!c) return;
+        if (c.text) acts.push({ kind: "inv", o: o, m: m, c: c, label: c.text, val: c.past ? c.act : c.fc, miss: c.past && !(c.act > 0) });
       });
-      h += '<div class="num">' + fmt.m(o.plan, 1) + '</div><div class="num ' + (o.variance < 0 ? "neg" : "pos") + '">' + fmt.m(o.landing, 1) + "</div></div>";
+      var ms = months.filter(function (m) { return o.months[m] && o.months[m].ms; }).map(function (m) { return { m: m, label: o.months[m].ms }; });
+      if (acts.length) items.push({ o: o, acts: acts, ms: ms });
     });
-    var totM = months.map(function (m) { var p = 0, x = 0; list.forEach(function (o) { var c = o.months[m]; if (c) { p += c.plan; x += c.past ? c.act || 0 : c.fc || 0; } }); return { p: p, x: x }; });
-    h += '<div class="ig-row ig-tot" style="grid-template-columns:' + cols + '"><div>Total · actual / forecast<br><small>Spend Plan</small></div>' + totM.map(function (t) {
-      return '<div class="num"><span>' + fmt.m(t.x, 1) + "<br><small>" + fmt.m(t.p, 1) + "</small></span></div>"; }).join("") +
-      '<div class="num">' + fmt.m(U.sum(list, "plan"), 1) + '</div><div class="num">' + fmt.m(U.sum(list, "landing"), 1) + "</div></div>";
-    h += '</div></div><div class="pc-note">Values in M SAR. Months up to the cut-off show actual spend; later months show the contractor Forecast Plan, with the Spend Plan in brackets where no forecast exists.</div>';
+    if (!items.length) { add(host, '<div class="empty">No invoice-related activities for the current filters.</div>'); return; }
+    var n = months.length, ci = months.indexOf(cut);
+    function left(i) { return (i / n * 100).toFixed(4) + "%"; }
+    var gridL = months.map(function (m, i) { return '<span class="g-grid" style="left:' + left(i) + '"></span>'; }).join("") +
+      (ci >= 0 ? '<span class="g-today" style="left:' + left(ci + 1) + '" title="Actuals cut-off ' + esc(fmt.month(cut)) + '"></span>' : "");
+    var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual (invoiced)</span><span><i style="background:' + C.slate + '"></i>Forecast Plan (contractor)</span>' +
+      '<span><i style="background:#fff;outline:2px dashed ' + C.red + ';outline-offset:-2px"></i>✕ Past activity not invoiced</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone (on the project row)</span>' +
+      '<span><i style="background:' + C.yellow + ';width:3px"></i>Actuals cut-off ' + esc(fmt.month(cut)) + "</span></div>";
+    h += '<div class="gantt iv"><div class="gantt-inner"><div class="iv-row g-head"><div>Project / invoice activity</div><div>Month</div><div class="num">M SAR</div><div class="g-track"><div class="g-months">' +
+      months.map(function (m, i) { return '<span class="' + (m === cut ? "cut" : "") + '" style="left:' + left(i) + ";width:" + (100 / n).toFixed(4) + '%">' + esc(fmt.month(m)) + "</span>"; }).join("") + "</div></div></div>";
+    var all = [];
+    items.forEach(function (it, pi) {
+      var o = it.o, inv = it.acts;
+      var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
+      h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
+        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M · landing " + fmt.m(o.landing, 1) + ' M</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+      it.acts.forEach(function (a) {
+        var i = months.indexOf(a.m), idx = all.push(a) - 1;
+        var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");
+        var bar = '<span class="iv-bar ' + (a.miss ? "miss" : a.c.past ? "act" : "fc") + '" style="left:calc(' + left(i) + ' + 3px);width:calc(' + (100 / n).toFixed(4) + '% - 6px)">' + (a.miss ? "✕" : fmt.m(a.val, 1)) + "</span>";
+        h += '<div class="iv-row iv-a" data-a="' + idx + '" title="' + esc(tip) + '"><div class="iv-lab">' + esc(a.label) + "</div><div>" + esc(fmt.month(a.m)) +
+          '</div><div class="num">' + (a.miss ? '<span class="neg">0.0</span>' : fmt.m(a.val, 1)) + '</div><div class="g-track">' + gridL + bar + "</div></div>";
+      });
+    });
+    h += '</div></div><div class="pc-note">Each bar is one invoice-related activity from the Spending Plan (Invoice Related Activities column), placed in its month. Values in M SAR: actual spend up to ' +
+      esc(fmt.month(cut)) + ", contractor Forecast Plan after it. Milestones come from the Spending Plan Milestones column.</div>";
     var node = add(host, "<div>" + h + "</div>");
-    node.querySelectorAll(".ig-p").forEach(function (p) { p.addEventListener("click", function (e) { onProj(list[+p.getAttribute("data-p")], e); }); });
-    node.querySelectorAll(".ig-c.clickable").forEach(function (c) { c.addEventListener("click", function () {
-      var o = list[+c.getAttribute("data-p")], m = c.getAttribute("data-m"), x = o.months[m];
-      U.modal(o.name + " — " + fmt.month(m), '<div class="kv">' + [["Project", esc(o.ID + " — " + o.name)], ["Month", esc(fmt.month(m))], ["Invoice-related activity", esc(x.text || "—")],
+    node.querySelectorAll(".iv-p").forEach(function (p) { p.addEventListener("click", function (e) { onProj(items[+p.getAttribute("data-p")].o, e); }); });
+    node.querySelectorAll(".iv-a").forEach(function (r) { r.addEventListener("click", function () {
+      var a = all[+r.getAttribute("data-a")], x = a.c, o = a.o;
+      U.modal(o.name + " — " + fmt.month(a.m), '<div class="kv">' + [["Project", esc(o.ID + " — " + o.name)], ["Month", esc(fmt.month(a.m))], ["Invoice-related activity", esc(x.text || "—")],
         ["Milestone", esc(x.ms || "—")], ["Spend Plan", fmt.money(x.plan) + " SAR"], ["Forecast Plan (contractor)", fmt.money(x.fc) + " SAR"],
         ["Actual spend", x.past ? fmt.money(x.act) + " SAR" : "Not yet (after the " + esc(fmt.month(cut)) + " cut-off)"]].map(function (p) { return "<div>" + p[0] + "</div><div>" + p[1] + "</div>"; }).join("") + "</div>");
     }); });
