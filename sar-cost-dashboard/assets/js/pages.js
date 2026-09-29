@@ -981,7 +981,8 @@
       var o = it.o, inv = it.acts;
       var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
       h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
-        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M · Forecast Plan " + fmt.m(o.landing, 1) + ' M</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M · Forecast Plan " + fmt.m(o.landing, 1) + " M · YTD Plan " + fmt.m(o.planYtd, 1) +
+          " M · YTD Actual " + '<b class="' + (o.act < o.planYtd ? "neg" : "pos") + '">' + fmt.m(o.act, 1) + " M</b>" + (o.planYtd ? " (" + fmt.pct(o.act / o.planYtd, 1) + ")" : "") + '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
       it.acts.forEach(function (a) {
         var i = months.indexOf(a.m), idx = all.push(a) - 1;
         var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");
