@@ -145,7 +145,8 @@
     var cfg = {
       type: "bar",
       data: { labels: items.map(function (i) { return i.label; }),
-        datasets: [U.barDs("Value", items.map(function (i) { return i.value; }), items.map(function (i) { return i.color; }), { maxBarThickness: 64 })] },
+        datasets: [U.fcStyle(U.barDs("Value", items.map(function (i) { return i.value; }), items.map(function (i) { return i.color; }), { maxBarThickness: 64 }),
+          items.map(function (i) { return i.color === S.invoice; }))] },
       options: {
         plugins: {
           legend: { display: false },
@@ -361,7 +362,7 @@
     var lc = { type: "line",
       data: { labels: mm.map(function (o) { return fmt.month(o.month); }), datasets: [
         U.lineDs("Spend Plan", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3 }),
-        U.lineDs("Forecast Plan", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [6, 4], pointRadius: 3 }),
+        U.lineDs("Forecast Plan", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [7, 5], pointRadius: 3 }),
         U.lineDs("Actual Spend", mm.map(function (o) { return o.actCv; }), S.actual, { borderWidth: 3, pointRadius: 3 })] },
       options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() }, interaction: { mode: "index", intersect: false } } };
     U.chart(chartBox(pa), U.clickable(lc, function (i) { monthModal(D, sp, mm[i].month); }));
@@ -566,7 +567,7 @@
     pb.style.height = Math.max(560, byP.length * 30 + 70) + "px";
     hbar(pb, names, [
       U.barDs("Spend Plan 2026", byP.map(M("Spend Plan as per Budgeting (M) FTY 2026")), U.hl(S.plan, names, st.proj)),
-      U.barDs("Forecast Plan 2026", byP.map(fcF), U.hl(S.invoice, names, st.proj)),
+      U.fcBar("Forecast Plan 2026", byP.map(fcF), U.hl(S.invoice, names, st.proj)),
       U.barDs("YTD Actual", byP.map(M("YTD Actual (M)")), U.hl(S.actual, names, st.proj))], function (i, e) { pick(ctx, "proj", names[i], e); });
 
     var pp = panelIn(v, "Project spend detail", proj.length + " projects · click a row to filter");
@@ -680,7 +681,7 @@
     });
     function pv(k) { return names.map(function (n) { return byP[n] ? byP[n][k] : null; }); }
     var b2 = chartBox(panelIn(g1, "Plan vs forecast vs actual", (st.month.length ? st.month.map(fmt.month).join(", ") : "2026") + " spend by project · click to filter")); b2.style.height = h;
-    hbar(b2, names, [U.barDs("Spend Plan", pv("plan"), U.hl(S.plan, names, st.proj)), U.barDs("Forecast Plan", pv("inv"), U.hl(S.invoice, names, st.proj)),
+    hbar(b2, names, [U.barDs("Spend Plan", pv("plan"), U.hl(S.plan, names, st.proj)), U.fcBar("Forecast Plan", pv("inv"), U.hl(S.invoice, names, st.proj)),
       U.barDs("Actual Spend", pv("act"), U.hl(S.actual, names, st.proj))],
       function (i, e) { pick(ctx, "proj", names[i], e); });
 
@@ -710,12 +711,12 @@
     function mSel(i, e) { pick(ctx, "month", months[i], e); }
     vbar(chartBox(panelIn(g3, "Plan vs actual", "By month · click a month to filter")), labels, [
       U.barDs("Spend Plan", mm.map(function (o) { return o.plan; }), U.hl(S.plan, months, st.month)),
-      U.barDs("Forecast Plan", mm.map(function (o) { return o.inv; }), U.hl(S.invoice, months, st.month)),
+      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), U.hl(S.invoice, months, st.month)),
       U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), U.hl(S.actual, months, st.month))], mSel);
     U.chart(chartBox(panelIn(g3, "Cumulative plan vs forecast vs actual", "By month · click a month to filter")), U.clickable({ type: "line",
       data: { labels: labels, datasets: [
         U.lineDs("Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3 }),
-        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [6, 4], pointRadius: 3 }),
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [7, 5], pointRadius: 3 }),
         U.lineDs("Actual Spend (cum)", mm.map(function (o) { return o.actCv; }), S.actual, { borderWidth: 3, pointRadius: 3 })] },
       options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() }, interaction: { mode: "index", intersect: false } } }, mSel));
 
@@ -766,7 +767,7 @@
     U.chart(chartBox(p1, "tall"), U.clickable({ type: "line",
       data: { labels: labels, datasets: [
         U.lineDs("Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3 }),
-        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [6, 4], pointRadius: 3 }),
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [7, 5], pointRadius: 3 }),
         U.lineDs("Actual Spend (cum)", mm.map(function (o) { return o.actCv; }), S.actual, { borderWidth: 3, pointRadius: 4 })] },
       options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() }, interaction: { mode: "index", intersect: false } } },
       function (i) { monthModal(D, f.sp, mm[i].month); }));
@@ -774,7 +775,7 @@
     var p2 = panelIn(v, "Monthly spend", "Incremental values · click a month for the project breakdown");
     p2.style.marginBottom = "16px";
     vbar(chartBox(p2), labels, [U.barDs("Spend Plan", mm.map(function (o) { return o.plan; }), S.plan),
-      U.barDs("Forecast Plan", mm.map(function (o) { return o.inv; }), S.invoice), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), S.actual)],
+      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), S.invoice), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), S.actual)],
       function (i) { monthModal(D, f.sp, mm[i].month); });
 
     var p3 = panelIn(v, "S-curve data", "Monthly and cumulative values (SAR) · click a row for the project breakdown");
@@ -825,8 +826,8 @@
       if (s.total) { data.push([0, s.value]); run = s.value; colors.push(s.color); }
       else { data.push([run, run + s.value]); run += s.value; colors.push(s.value < 0 ? C.red : C.blue); }
     });
-    var ds = [U.barDs("Amount", data, colors, { maxBarThickness: 70, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" },
-      formatter: function (v, c) { var s = steps[c.dataIndex], x = s.total ? s.value : s.value; return (s.total || x < 0 ? "" : "+") + fmt.m(x) + " M"; } } })];
+    var ds = [U.fcStyle(U.barDs("Amount", data, colors, { maxBarThickness: 70, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" },
+      formatter: function (v, c) { var s = steps[c.dataIndex], x = s.total ? s.value : s.value; return (s.total || x < 0 ? "" : "+") + fmt.m(x) + " M"; } } }), colors.map(function (c) { return c === S.invoice; }))];
     if (target != null) ds.push(U.lineDs("Target (" + Math.round(TARGET * 100) + "% of plan)", steps.map(function () { return target; }), C.black, { borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, datalabels: { display: false } }));
     return U.chart(box, { type: "bar", data: { labels: steps.map(function (s) { return s.label; }), datasets: ds },
       options: { layout: { padding: { top: 24 } }, plugins: { legend: { display: target != null, labels: { filter: function (i) { return i.datasetIndex > 0; } } },
@@ -971,7 +972,7 @@
     function left(i) { return (i / n * 100).toFixed(4) + "%"; }
     var gridL = months.map(function (m, i) { return '<span class="g-grid" style="left:' + left(i) + '"></span>'; }).join("") +
       (ci >= 0 ? '<span class="g-today" style="left:' + left(ci + 1) + '" title="Actuals cut-off ' + esc(fmt.month(cut)) + '"></span>' : "");
-    var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual (invoiced)</span><span><i style="background:' + C.slate + '"></i>Forecast Plan (contractor)</span>' +
+    var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual (invoiced)</span><span><i class="fc-sw"></i>Forecast Plan (contractor)</span>' +
       '<span><i style="background:#fff;outline:2px dashed ' + C.red + ';outline-offset:-2px"></i>✕ Past activity not invoiced</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone (on the project row)</span>' +
       '<span><i style="background:' + C.yellow + ';width:3px"></i>Actuals cut-off ' + esc(fmt.month(cut)) + "</span></div>";
     h += '<div class="gantt iv"><div class="gantt-inner"><div class="iv-row g-head"><div>Project / invoice activity</div><div>Month</div><div class="num">M SAR</div><div class="g-track"><div class="g-months">' +

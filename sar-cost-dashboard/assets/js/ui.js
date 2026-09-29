@@ -393,6 +393,11 @@
     Chart.defaults.plugins.legend.labels.generateLabels = function (chart) {
       return baseLabels(chart).map(function (l) {
         var ds = chart.data.datasets[l.datasetIndex], bg = ds && ds.backgroundColor;
+        if (ds && ds.fcBorder && !ds.fcIdx) {   // dashed Forecast Plan swatch
+          var b0 = Array.isArray(ds.fcBorder) ? ds.fcBorder.filter(function (c) { return String(c).length === 7; })[0] || String(ds.fcBorder[0]).slice(0, 7) : ds.fcBorder;
+          l.fillStyle = fcFill(b0); l.strokeStyle = b0; l.lineWidth = 1.5; l.lineDash = [3, 2];
+          return l;
+        }
         if (Array.isArray(bg)) {
           var solid = bg.filter(function (c) { return typeof c === "string" && c.length === 7; })[0] || String(bg[0]).slice(0, 7);
           l.fillStyle = solid; l.strokeStyle = solid;
@@ -400,6 +405,20 @@
         return l;
       });
     };
+    Chart.register({ id: "fcDash", afterDatasetDraw: function (chart, args) {
+      var ds = chart.data.datasets[args.index];
+      if (!ds || !ds.fcBorder || (ds.type && ds.type !== "bar") || args.meta.hidden) return;
+      var cx = chart.ctx, horiz = chart.options.indexAxis === "y";
+      cx.save(); cx.setLineDash([5, 3]); cx.lineWidth = 1.6;
+      args.meta.data.forEach(function (el, i) {
+        if (ds.fcIdx && !ds.fcIdx[i]) return;
+        var p = el.getProps(["x", "y", "base", "width", "height"], true);
+        cx.strokeStyle = Array.isArray(ds.fcBorder) ? ds.fcBorder[i] : ds.fcBorder;
+        if (horiz) cx.strokeRect(Math.min(p.x, p.base) + 0.8, p.y - p.height / 2 + 0.8, Math.abs(p.x - p.base) - 1.6, p.height - 1.6);
+        else cx.strokeRect(p.x - p.width / 2 + 0.8, Math.min(p.y, p.base) + 0.8, p.width - 1.6, Math.abs(p.base - p.y) - 1.6);
+      });
+      cx.restore();
+    } });
     Chart.defaults.plugins.tooltip.backgroundColor = C.black;
     Chart.defaults.plugins.tooltip.titleFont = { weight: "700" };
     Chart.defaults.plugins.tooltip.padding = 10;
@@ -462,6 +481,16 @@
 
   /** Hex colour at reduced opacity — used to dim the bars that are not selected. */
   function fade(hex) { return hex.length === 7 ? hex + "40" : hex; }
+  /* Forecast Plan (invoicing plan) is always drawn dashed: dashed lines, and bars with a light fill and a
+     dashed outline (see the fcDash plugin). `fcIdx` limits the dashed look to some bars of a dataset. */
+  function fcFill(c) { c = String(c); return c.slice(0, 7) + (c.length > 7 ? "14" : "40"); }
+  function fcStyle(ds, fcIdx) {
+    var bg = ds.backgroundColor, isArr = Array.isArray(bg);
+    ds.fcBorder = bg; ds.fcIdx = fcIdx || null;
+    ds.backgroundColor = isArr ? bg.map(function (c, i) { return !fcIdx || fcIdx[i] ? fcFill(c) : c; }) : fcFill(bg);
+    return ds;
+  }
+  function fcBar(label, data, color, extra) { return fcStyle(barDs(label, data, color, extra)); }
   /** Per-bar colours: selected (or all, when nothing is selected) keep `color`, others fade. */
   function hl(color, keys, selected) {
     if (!selected || !selected.length) return color;
@@ -532,7 +561,7 @@
     C: C, SERIES: SERIES, fmt: fmt, esc: esc, el: el, uniq: uniq, sum: sum, toNum: toNum, isoWeek: isoWeek,
     badge: badge, statusClass: statusClass, tile: tile, info: info, panel: panel, meter: meter,
     table: table, multiSelect: multiSelect, select: select,
-    chart: chart, destroyCharts: destroyCharts, eachChart: eachChart, barDs: barDs, lineDs: lineDs,
+    chart: chart, destroyCharts: destroyCharts, eachChart: eachChart, barDs: barDs, lineDs: lineDs, fcBar: fcBar, fcStyle: fcStyle,
     moneyAxis: moneyAxis, shortLabel: shortLabel, fade: fade, hl: hl, clickable: clickable, pctAxis: pctAxis, catAxis: catAxis, wrapLabel: wrapLabel,
     moneyTooltip: moneyTooltip, pctTooltip: pctTooltip,
     modal: modal, recordModal: recordModal, toast: toast
