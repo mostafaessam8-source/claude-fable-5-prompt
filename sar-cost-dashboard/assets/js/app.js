@@ -24,10 +24,9 @@
     { id: "kpi-cost", group: "KPIs", title: "KPI Cost Summary", icon: "cost", sub: "CAPEX variance and non-KPI spending — budget vs forecast vs actual" },
     { id: "kpi-outlook", group: "Cost", title: "KPI Year-End Outlook", icon: "kpi", sub: "How the cost KPIs close the year — contractor Forecast Plan (invoicing plan) vs the Spend Plan" },
     { id: "cost", group: "Cost", title: "Cost Dashboard", icon: "table", sub: "Contract value, work confirmation and payments · 2026 Spend Plan vs Forecast Plan vs Actual · S-curve and detail tables" },
-    { id: "spi-outlook", group: "Progress", title: "SPI Year-End Outlook", icon: "curve", sub: "How the Schedule Performance Index KPI closes the year — EV ÷ PV from the project S-curves, projected to 31-Dec" },
+    { id: "spi-outlook", group: "Progress", title: "SPI & S-Curve Outlook", icon: "curve", sub: "Schedule Performance Index KPI to 31-Dec (ΣEV ÷ ΣPV from the project S-curves) and each project's progress S-curve" },
     { id: "weekly", group: "Progress", title: "Weekly Progress Summary", icon: "table", sub: "Planned vs actual progress, SPI and payments for every project" },
     { id: "project", group: "Progress", title: "Project Progress", icon: "project", sub: "Single-project weekly report card" },
-    { id: "progress-scurve", group: "Progress", title: "Progress S-Curve", icon: "curve", sub: "Cumulative plan, actual and forecast progress" },
     { id: "master-plan", group: "Progress", title: "Projects Master Plan", icon: "gantt", sub: "Milestone schedule for all projects" },
     { id: "timeline", group: "Progress", title: "Project Timeline", icon: "gantt", sub: "Milestone timeline for a single project" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
@@ -130,6 +129,7 @@
   function route() {
     var id = (location.hash.replace(/^#\/?/, "") || "overview").split("?")[0];
     if (id === "cost-analysis" || id === "cost-scurve") id = "cost";   // merged into the Cost Dashboard
+    if (id === "progress-scurve") id = "spi-outlook";                   // merged into the SPI & S-Curve Outlook
     var page = PAGES.filter(function (p) { return p.id === id; })[0] || PAGES[0];
     document.body.classList.remove("nav-open");
     renderNav(page.id);

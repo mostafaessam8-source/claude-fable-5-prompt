@@ -643,3 +643,6 @@ body.printing .iv-row.g-head { position: static; }
 .stack { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 .panel-head .tools .seg-wrap label:empty { display: none; }
 .seg-help { flex: 1 1 260px; font-size: 12px; color: var(--slate); align-self: center; line-height: 1.4; }
+.panel-head .tools .inline-sel { flex-direction: row; align-items: center; gap: 8px; min-width: 0; }
+.panel-head .tools .inline-sel select { max-width: 380px; }
+@media (max-width: 900px) { body:not(.printing) .panel-head:has(.inline-sel) { flex-wrap: wrap; } body:not(.printing) .panel-head .tools .inline-sel select { max-width: 100%; } }

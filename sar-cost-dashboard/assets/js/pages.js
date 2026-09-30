@@ -234,7 +234,7 @@
     if (n["Remarks/Concern"]) h += '<div class="note-box" style="margin-top:12px"><b>Remarks / concern:</b> ' + esc(n["Remarks/Concern"]) + "</div>";
     if (w["Reason for Delays"]) h += '<div class="note-box warn" style="margin-top:12px"><b>Reason for delays:</b> ' + esc(w["Reason for Delays"]) + "</div>";
     h += '<div class="qv-links">';
-    if (p.src) h += '<a class="icon-btn" data-go="project">Project progress →</a><a class="icon-btn ghost" data-go="timeline">Timeline →</a><a class="icon-btn ghost" data-go="progress-scurve">Progress S-curve →</a>';
+    if (p.src) h += '<a class="icon-btn" data-go="project">Project progress →</a><a class="icon-btn ghost" data-go="timeline">Timeline →</a><a class="icon-btn ghost" data-go="spi-outlook">S-curve & SPI →</a>';
     if (p.nsr) h += '<a class="icon-btn ghost" data-go="cost">Cost dashboard →</a>';
     if (p.issues) h += '<a class="icon-btn ghost" data-go="issues">Issues (' + p.issues + ") →</a>";
     h += "</div>";
@@ -244,6 +244,7 @@
         var to = a.getAttribute("data-go"); body.close();
         if (to === "cost") window.SARApp.go(to, { f: { proj: [p.short] } });
         else if (to === "issues") window.SARApp.go(to, { f: { code: [p.code] } });
+        else if (to === "spi-outlook") window.SARApp.go(to, { sc: p.src, f: {} });
         else window.SARApp.go(to, { src: p.src });
       });
     });
@@ -1104,6 +1105,40 @@
     hbar(b2, gn, [U.barDs("EV surplus / shortfall vs target", byG.map(function (o) { return -o.gapDec; }), byG.map(function (o) { var c0 = o.gapDec > 0 ? C.red : C.blue; return fd(o) ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
       function (i, e) { pick(ctx, "proj", gn[i], e); });
 
+    // Project S-curve (formerly the Progress S-Curve page): one project's weekly plan / actual / forecast + projection
+    var scList = projAll.filter(function (o) { return o.s.length; }).sort(function (a, b) { return D.projectLabel(a.src).localeCompare(D.projectLabel(b.src)); });
+    if (scList.length) {
+      if (f.proj.length === 1) { var fp = scList.filter(function (o) { return o.name === f.proj[0]; })[0]; if (fp) st.sc = fp.src; }
+      if (!scList.some(function (o) { return o.src === st.sc; })) st.sc = (proj.filter(function (o) { return o.s.length; }).sort(function (a, b) { return (a.spiNow || 9) - (b.spiNow || 9); })[0] || scList[0]).src;
+      var po = scList.filter(function (o) { return o.src === st.sc; })[0];
+      var sp = add(v, U.panel("Project progress S-curve", "Weekly cumulative plan, actual and forecast % · dashed black = projection to 31-Dec (" + esc(SPI_SCEN.filter(function (x) { return x[0] === st.scen; })[0][1]) + ")", "", ""));
+      var ps = U.select({ label: "Project", value: po.src, options: scList.map(function (o) { return { value: o.src, label: D.projectLabel(o.src) }; }), onChange: function (x) { st.sc = x; ctx.rerender(); } });
+      ps.classList.add("inline-sel"); sp.querySelector(".panel-head .tools").appendChild(ps);
+      var raw = {};                                                             // weekly rows, one per date (live row wins, as above)
+      D.t("S_Curve").forEach(function (r) { if (r["Source.Name"] !== po.src || !r["Report Date"]) return; var k = r["Report Date"], o = raw[k];
+        if (!o || live(r) > live(o)) raw[k] = r; });
+      var rws = Object.keys(raw).sort().map(function (k) { return raw[k]; });
+      var ptsP = rws.map(function (r) { return dnum(r["Report Date"]); });
+      if (ptsP.indexOf(ddn) < 0 && ddn >= ptsP[0]) { var at0 = ptsP.filter(function (n) { return n < ddn; }).length; ptsP.splice(at0, 0, ddn); rws.splice(at0, 0, { "Report Date": dd, "Cum Plan (%)": po.planNow, "Cum Actual (%)": po.actNow }); }
+      var gp0 = add(sp, '<div class="grid g-4 pc-ev"></div>');
+      gp0.innerHTML = U.info("Plan % today", fmt.pct(po.planNow)) + U.info("Actual % today", fmt.pct(po.actNow)) + U.info("SPI today → 31-Dec", spiTxt(po.spiNow) + " → " + spiTxt(po.spiDec)) +
+        U.info("Curve end", esc(fmt.date(rws[rws.length - 1]["Report Date"])) + " · " + rws.length + " weeks");
+      U.chart(chartBox(sp, "tall"), { type: "line", data: { labels: rws.map(function (r) { return fmt.date(r["Report Date"]); }), datasets: [
+        U.lineDs("Cum Plan (%)", rws.map(function (r) { return N(r["Cum Plan (%)"]); }), S.plan, { borderWidth: 2.5 }),
+        U.lineDs("Cum Actual (%)", rws.map(function (r, i) { return ptsP[i] <= ddn ? N(r["Cum Actual (%)"]) : null; }), S.actual, { borderWidth: 3, spanGaps: true }),
+        U.lineDs("Cum Forecast (%)", rws.map(function (r) { return N(r["Cum Forecast (%)"]); }), S.forecast, { borderDash: [6, 4], spanGaps: false }),
+        U.lineDs("Projection to 31-Dec", ptsP.map(function (n) { return n >= ddn && n <= yEndN ? po.proj(n, st.scen) : null; }), C.black, { borderDash: [7, 5], borderWidth: 2, spanGaps: false })] },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.pctTooltip() },
+          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 18, maxRotation: 0 } }), y: U.pctAxis(1) } } });
+      add(sp, '<h4 class="pc-sub">Weekly S-curve data</h4>');
+      tableIn(sp, { rows: rws, exportName: "Progress_S_Curve", search: false, maxHeight: 320, columns: [
+        { key: "Report Date", label: "Report Date", type: "date" }, { key: "Cum Plan (%)", label: "Cum Plan (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "Cum Actual (%)", label: "Cum Actual (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "Cum Forecast (%)", label: "Cum Forecast (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "This Week Plan (%)", label: "This Week Plan (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "This Week Actual (%)", label: "This Week Actual (%)", render: function (x) { return fmt.pct(x, 2); } }] });
+    }
+
     // table
     var tp = panelIn(v, "SPI outlook by project", proj.length + " projects · data date " + esc(fmt.date(dd)) + " · click a row for the project");
     tableIn(tp, { rows: proj, exportName: "SPI_Year_End_Outlook", totals: true, sort: { key: "spiDec", dir: 1 }, maxHeight: 640,
@@ -1264,43 +1299,6 @@
   /* ======================================================================
      Progress S-Curve
      ====================================================================== */
-  P["progress-scurve"] = function (ctx) {
-    var D = ctx.D, v = ctx.view, sc = D.t("S_Curve"), st = ctx.state;
-    var srcs = U.uniq(sc.map(function (r) { return r["Source.Name"]; }));
-    if (!srcs.length) { add(v, '<div class="empty">No S-Curve data.</div>'); return; }
-    if (srcs.indexOf(st.src) < 0) st.src = srcs[0];
-    var bar = add(v, '<div class="filters"></div>');
-    var s = U.select({ label: "Project", value: st.src, options: srcs.map(function (x) { return { value: x, label: D.projectLabel(x) }; }).sort(function (a, b) { return a.label.localeCompare(b.label); }),
-      onChange: function (x) { st.src = x; ctx.rerender(); } });
-    s.style.flex = "1"; s.querySelector("select").style.maxWidth = "none"; bar.appendChild(s);
-
-    var rows = sc.filter(function (r) { return r["Source.Name"] === st.src && r["Report Date"]; }).sort(function (a, b) { return a["Report Date"] < b["Report Date"] ? -1 : 1; });
-    var lastA = rows.filter(function (r) { return N(r["Cum Actual (%)"]) != null; }).pop() || {};
-    var fin = rows[rows.length - 1] || {};
-    var varc = N(lastA["Cum Actual (%)"]) != null && N(lastA["Cum Plan (%)"]) != null ? lastA["Cum Actual (%)"] - lastA["Cum Plan (%)"] : null;
-    var g = grid(v, "g-4");
-    g.innerHTML = U.tile({ value: fmt.pct(lastA["Cum Plan (%)"]), label: "Cum plan", note: "at " + fmt.date(lastA["Report Date"]) }) +
-      U.tile({ value: fmt.pct(lastA["Cum Actual (%)"]), label: "Cum actual", color: "yellow", note: "at " + fmt.date(lastA["Report Date"]) }) +
-      U.tile({ value: varc == null ? "—" : fmt.pct(varc), label: "Variance", color: varc != null && varc < -0.05 ? "red" : "mid", note: "Actual − plan" }) +
-      U.tile({ value: fmt.date(fin["Report Date"]), label: "Curve end date", color: "slate", note: rows.length + " weekly points" });
-
-    var p = panelIn(v, "Progress % S-curve", esc(D.projectLabel(st.src)));
-    p.style.marginBottom = "16px";
-    U.chart(chartBox(p, "xl"), { type: "line",
-      data: { labels: rows.map(function (r) { return fmt.date(r["Report Date"]); }), datasets: [
-        U.lineDs("Cum Plan (%)", rows.map(function (r) { return r["Cum Plan (%)"]; }), S.plan),
-        U.lineDs("Cum Actual (%)", rows.map(function (r) { return r["Cum Actual (%)"]; }), S.actual, { borderWidth: 3, spanGaps: false }),
-        U.lineDs("Cum Forecast (%)", rows.map(function (r) { return r["Cum Forecast (%)"]; }), S.forecast, { borderDash: [6, 4], spanGaps: false })] },
-      options: { plugins: { tooltip: U.pctTooltip() }, scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 18, maxRotation: 0 } }), y: U.pctAxis(1) } } });
-
-    tableIn(panelIn(v, "S-curve data", "Weekly values"), { rows: rows, exportName: "Progress_S_Curve", search: false, columns: [
-      { key: "Report Date", label: "Report Date", type: "date" }, { key: "Cum Plan (%)", label: "Cum Plan (%)", type: "pct", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "Cum Actual (%)", label: "Cum Actual (%)", type: "pct", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "Cum Forecast (%)", label: "Cum Forecast (%)", type: "pct", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "This Week Plan (%)", label: "This Week Plan (%)", type: "pct", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "This Week Actual (%)", label: "This Week Actual (%)", type: "pct", render: function (x) { return fmt.pct(x, 2); } }] });
-  };
-
   /* ======================================================================
      Gantt (Master Plan + Timeline)
      ====================================================================== */

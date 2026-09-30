@@ -18,10 +18,9 @@ opened straight from disk.
 | KPI Cost Summary | KPI Cost Summary | `KPI_Summary`, `KPI_Projects_Data` (KPI codes 7 & 8) |
 | Cost Dashboard | Cost Dashboard + Cost Dashboard graph + Cost S-Curve (merged into one page) | `NSR_Project_Data`, `Spending_Plan` |
 | KPI Year-End Outlook | *(new)* | `Spending_Plan`, `KPI_Projects_Data`, `KPI_Summary` (KPI codes 7 & 8): year-end = contractor Forecast Plan (invoicing plan) for the full year vs the Spend Plan and the −5% CAPEX target; invoice schedule from *Invoice Related actvities* |
-| SPI Year-End Outlook | *(new)* | `Weekly_Report_Updates`, `S_Curve`, `KPI_Summary` (KPI "Schedule performance index"): portfolio SPI = ΣEV ÷ ΣPV (EV = contract value × actual %, PV = contract value × planned %), projected to 31-Dec with three scenarios (current trend, same SPI, recover to plan) against the KPI target |
+| SPI & S-Curve Outlook | Progress S-Curve (merged) | `Weekly_Report_Updates`, `S_Curve`, `KPI_Summary` (KPI "Schedule performance index"): portfolio SPI = ΣEV ÷ ΣPV (EV = contract value × actual %, PV = contract value × planned %), projected to 31-Dec with three scenarios (current trend, same SPI, recover to plan) against the KPI target, plus each project's weekly progress S-curve (`S_Curve`, `MLS`) |
 | Weekly Progress Summary | Weekly Progress Summary | `Weekly_Report_Updates` |
 | Project Progress | Progress | `Weekly_Report_Updates`, `Contract_Details`, `Deliverable_Status`, `Project_Milestones_Progress`, `Interim_Payment_Certificate`, `Lookahead_Activities`, `Area_of_Concern` |
-| Progress S-Curve | Progress S-Curve | `S_Curve` (sheet *S-Curve*), `MLS` |
 | Projects Master Plan | Projects Master Plan | `Project_Milestones_Progress_Combine` |
 | Project Timeline | Timeline | `Project_Milestones_Progress` |
 | Project Cards | *(new)* | Every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx**, all sections |
