@@ -646,3 +646,28 @@ body.printing .iv-row.g-head { position: static; }
 .panel-head .tools .inline-sel { flex-direction: row; align-items: center; gap: 8px; min-width: 0; }
 .panel-head .tools .inline-sel select { max-width: 380px; }
 @media (max-width: 900px) { body:not(.printing) .panel-head:has(.inline-sel) { flex-wrap: wrap; } body:not(.printing) .panel-head .tools .inline-sel select { max-width: 100%; } }
+
+/* ----------------------------- Monthly spending plan matrix ------------- */
+.sm-wrap { max-height: 720px; overflow: auto; border: 1px solid var(--cool-gray); }
+table.sm { border-collapse: collapse; width: 100%; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+table.sm thead th { position: sticky; top: 0; z-index: 3; background: var(--sar-blue); color: var(--white); padding: 7px 6px; font-weight: 700; white-space: nowrap; text-align: center; }
+table.sm thead th small { display: block; font-size: 9.5px; font-weight: 600; opacity: .85; }
+table.sm thead th.fcst { background: var(--slate); }
+table.sm td, table.sm th { border-bottom: 1px solid var(--tint-10); }
+table.sm td { padding: 4px 6px; text-align: right; white-space: nowrap; }
+table.sm td.fcst { color: var(--slate); font-style: italic; background: repeating-linear-gradient(135deg, rgba(118,134,146,.07) 0 4px, transparent 4px 8px); }
+table.sm .cut { border-right: 3px solid var(--red) !important; }
+table.sm td.tot { font-weight: 700; background: var(--tint-5); border-left: 1px solid var(--cool-gray); }
+table.sm th.sm-l { text-align: left; font-weight: 600; color: var(--slate); padding: 4px 8px; white-space: nowrap; background: #FAFCFC; }
+table.sm th.sm-p { text-align: left; vertical-align: middle; padding: 6px 10px; width: 220px; min-width: 180px; color: var(--sar-black); font-weight: 400; background: var(--white); border-right: 1px solid var(--tint-10); }
+table.sm th.sm-p small { display: block; color: var(--slate); font-size: 10.5px; margin-top: 2px; }
+table.sm th.sm-p.clickable { cursor: pointer; } table.sm th.sm-p.clickable:hover { color: var(--sar-blue); }
+table.sm tr.first td, table.sm tr.first th { border-top: 2px solid var(--sar-blue); }
+table.sm tr.var td { font-weight: 700; }
+table.sm tr.var td.neg { color: var(--red); } table.sm tr.var td.pos { color: #2E7D32; }
+table.sm tr.ov th.sm-p { background: var(--sar-blue); color: var(--white); font-weight: 700; font-size: 13px; }
+table.sm tr.ov th.sm-p small { color: rgba(255,255,255,.8); }
+table.sm tr.ov td { background: var(--tint-5); }
+table.sm tr.ov td.fcst { background: repeating-linear-gradient(135deg, rgba(118,134,146,.1) 0 4px, var(--tint-5) 4px 8px); }
+body.printing .sm-wrap { max-height: none; overflow: visible; }
+body.printing table.sm thead th { position: static; }

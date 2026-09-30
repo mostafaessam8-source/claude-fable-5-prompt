@@ -867,6 +867,10 @@
       options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
       function (i) { monthModal(D, rowsF, mm[i].month); }));
 
+    // Monthly spending plan matrix (meeting format): M Plan, M Actual (Forecast Plan after the cut-off), cumulative, variance
+    var mp = panelIn(v, "Monthly spending plan", "Spend Plan vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum Plan · click a project to filter");
+    spendMatrix(mp, proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
+
     // Project contribution to the year-end variance
     var g2 = grid(v, "g-2-1");
     var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; });
@@ -899,6 +903,42 @@
         { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance (forecast − plan)", type: "money", signed: true, total: "sum" },
         { key: "pct", label: "Forecast ÷ plan", type: "meter" }, { key: "status", label: "Outlook", type: "badge" }] });
   };
+
+  /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
+  function spendMatrix(host, list, months, cut, onProj) {
+    var ci = months.indexOf(cut);
+    function rowsOf(get) {                                   // monthly plan / actual-or-forecast for a set of projects
+      return months.map(function (m) { return list.reduce(function (s, o) { var c = o.months[m]; return s + (c ? get(c) : 0); }, 0); });
+    }
+    function block(title, sub, plan, act, idx) {
+      var cp = 0, ca = 0, cumP = plan.map(function (x) { return cp += x; }), cumA = act.map(function (x) { return ca += x; });
+      var vr = cumA.map(function (x, i) { return x - cumP[i]; });
+      function cells(vals, cls) {
+        return vals.map(function (x, i) { var f = ci >= 0 && i > ci;
+          return '<td class="num' + (i === ci ? " cut" : "") + (f && cls !== "p" ? " fcst" : "") + (cls === "v" ? (x < -0.5 ? " neg" : x > 0.5 ? " pos" : "") : "") + '">' + (x === 0 && cls !== "v" && cls !== "c" ? "–" : fmt.money(x)) + "</td>"; }).join("");
+      }
+      var lab = [["M Plan", plan, "p"], ["M Actual / Forecast", act, "a"], ["Cum Plan", cumP, "c"], ["Cum Actual / Forecast", cumA, "c"], ["Variance", vr, "v"]];
+      var tot = [plan.reduce(function (a, b) { return a + b; }, 0), act.reduce(function (a, b) { return a + b; }, 0), null, null, vr[vr.length - 1]];
+      return lab.map(function (l, k) {
+        return '<tr class="' + (k === 0 ? "first" : "") + (k === 4 ? " var" : "") + '">' + (k === 0 ? '<th rowspan="5" class="sm-p' + (idx != null ? " clickable" : "") + '"' + (idx != null ? ' data-p="' + idx + '"' : "") + ">" + title + (sub ? "<small>" + sub + "</small>" : "") + "</th>" : "") +
+          '<th class="sm-l">' + l[0] + "</th>" + cells(l[1], l[2]) + '<td class="num tot' + (k === 4 ? (tot[k] < -0.5 ? " neg" : tot[k] > 0.5 ? " pos" : "") : "") + '">' + (tot[k] == null ? "" : fmt.money(tot[k])) + "</td></tr>";
+      }).join("");
+    }
+    var withData = list.filter(function (o) { return o.plan || o.fcFY || o.act; }).sort(function (a, b) { return b.plan - a.plan; });
+    var h = '<div class="table-wrap sm-wrap"><table class="sm"><thead><tr><th>Project</th><th></th>' +
+      months.map(function (m, i) { return '<th class="' + (i === ci ? "cut" : "") + (ci >= 0 && i > ci ? " fcst" : "") + '">' + esc(fmt.month(m)) + (ci >= 0 && i === ci + 1 ? "<small>Forecast →</small>" : i === ci ? "<small>Cut-off</small>" : "") + "</th>"; }).join("") +
+      "<th>Total 2026</th></tr></thead><tbody>";
+    function actOrFc(c) { return c.past ? (c.act || 0) : (c.fc || 0); }
+    h += block("Overall", withData.length + " projects", rowsOf(function (c) { return c.plan || 0; }), rowsOf(actOrFc), null).replace(/<tr class="first/, '<tr class="overall first').replace(/<tr class="/g, '<tr class="ov ');
+    withData.forEach(function (o, i) {
+      var one = [o];
+      var pl = months.map(function (m) { var c = o.months[m]; return c ? c.plan || 0 : 0; }), ac = months.map(function (m) { var c = o.months[m]; return c ? actOrFc(c) : 0; });
+      h += block("<b>" + esc(o.ID) + "</b> " + esc(o.name), esc(o.kpi), pl, ac, i);
+    });
+    h += "</tbody></table></div>";
+    var node = add(host, "<div>" + h + "</div>");
+    node.querySelectorAll(".sm-p.clickable").forEach(function (t) { t.addEventListener("click", function (e) { onProj(withData[+t.getAttribute("data-p")], e); }); });
+  }
 
   function outlookModal(list) {
     tableModal("Year-end outlook by project", list, [{ key: "ID", label: "ID" }, { key: "name", label: "Project" },
