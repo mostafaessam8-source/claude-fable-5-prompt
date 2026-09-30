@@ -866,13 +866,15 @@
 
     var g = grid(v, "g-6");
     var pc = T.pct, col = pc == null ? "slate" : pc >= TARGET ? "" : pc >= 0.85 ? "yellow" : "red";
-    g.innerHTML = mTile("Spend Plan 2026", T.plan, "", "Budgeting · " + fmt.money(T.plan) + " SAR") +
-      mTile("Forecast Plan to date", T.fcYtd, "slate", "Jan – " + esc(fmt.month(cut)) + " · actual " + fmt.m(T.act) + " M (reference)") +
-      mTile("Forecast Plan remaining", T.fcRem, "slate", esc(remLbl) + " · plan " + fmt.m(T.planRem) + " M") +
-      mTile("Year-end (Forecast Plan)", T.landing, "black", "Invoicing plan Jan – Dec") +
-      U.tile({ value: fmt.pct(pc, 1), label: "Forecast Plan vs Spend Plan", color: col, note: "Target ≥ " + Math.round(TARGET * 100) + "% · variance " + fmt.m(T.landing - T.plan) + " M" }) +
-      U.tile({ value: T.gap > 0 ? fmt.m(T.gap) : "0.00", unit: "M SAR", label: T.gap > 0 ? "Gap to KPI target" : "Target covered", color: T.gap > 0 ? "red" : "mid",
-        note: T.gap > 0 ? "Extra spend needed by Dec to reach " + Math.round(TARGET * 100) + "%" : "Headroom " + fmt.m(-T.gap) + " M above the target" });
+    // Full year: Spend Plan · Forecast Plan · variance | Year to date: YTD Plan · YTD Actual · variance
+    var fyVar = T.landing - T.plan, ytdVar = T.act - T.planYtd, ytdPct = T.planYtd ? T.act / T.planYtd : null;
+    g.innerHTML = mTile("Spend Plan 2026", T.plan, "", "Budgeting · Jan – Dec") +
+      mTile("Forecast Plan 2026", T.landing, "slate", "Invoicing plan · Jan – Dec") +
+      mTile("Variance 2026", fyVar, col || "mid", "Forecast − Spend Plan · " + fmt.pct(pc, 1) + " of plan" +
+        (T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + Math.round(TARGET * 100) + "% target" : " · " + Math.round(TARGET * 100) + "% target met")) +
+      mTile("YTD Plan", T.planYtd, "", "Spend Plan · Jan – " + esc(fmt.month(cut))) +
+      mTile("YTD Actual", T.act, "yellow", "Actual spend · Jan – " + esc(fmt.month(cut))) +
+      mTile("YTD Variance", ytdVar, ytdVar < 0 ? "red" : "mid", "Actual − Plan · " + fmt.pct(ytdPct, 1) + " achieved");
     clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; }));
 
     // KPI closing table
