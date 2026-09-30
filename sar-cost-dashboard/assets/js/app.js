@@ -24,6 +24,7 @@
     { id: "kpi-cost", group: "KPIs", title: "KPI Cost Summary", icon: "cost", sub: "CAPEX variance and non-KPI spending — budget vs forecast vs actual" },
     { id: "kpi-outlook", group: "Cost", title: "KPI Year-End Outlook", icon: "kpi", sub: "How the cost KPIs close the year — contractor Forecast Plan (invoicing plan) vs the Spend Plan" },
     { id: "cost", group: "Cost", title: "Cost Dashboard", icon: "table", sub: "Contract value, work confirmation and payments · 2026 Spend Plan vs Forecast Plan vs Actual · S-curve and detail tables" },
+    { id: "spi-outlook", group: "Progress", title: "SPI Year-End Outlook", icon: "curve", sub: "How the Schedule Performance Index KPI closes the year — EV ÷ PV from the project S-curves, projected to 31-Dec" },
     { id: "weekly", group: "Progress", title: "Weekly Progress Summary", icon: "table", sub: "Planned vs actual progress, SPI and payments for every project" },
     { id: "project", group: "Progress", title: "Project Progress", icon: "project", sub: "Single-project weekly report card" },
     { id: "progress-scurve", group: "Progress", title: "Progress S-Curve", icon: "curve", sub: "Cumulative plan, actual and forecast progress" },

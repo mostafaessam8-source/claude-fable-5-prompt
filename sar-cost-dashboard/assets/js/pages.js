@@ -961,6 +961,166 @@
   }
 
   /* ======================================================================
+     SPI Year-End Outlook — how the Schedule Performance Index KPI closes 2026.
+     EV = contract value × cumulative actual %, PV = contract value × cumulative
+     planned %, portfolio SPI = ΣEV ÷ ΣPV. PV at 31-Dec comes from each project's
+     S-curve; EV at 31-Dec from the chosen scenario. Data: Weekly_Report_Updates,
+     S_Curve, KPI_Summary (KPI "Schedule performance index").
+     ====================================================================== */
+  var DAY = 864e5;
+  function isoOf(n) { return new Date(n).toISOString().slice(0, 10); }
+  var SPI_SCEN = [["trend", "Current trend"], ["const", "Same SPI"], ["plan", "Recover to plan"]];
+  P["spi-outlook"] = function (ctx) {
+    var D = ctx.D, v = ctx.view, st = ctx.state;
+    var wkAll = D.t("Weekly_Report_Updates").filter(function (r) { return r["Source.Name"] && N(r["Contract Value"]); });
+    if (!wkAll.length) { add(v, '<div class="empty">No weekly report data.</div>'); return; }
+    var kpi = D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {};
+    var TGT = N(kpi["NSR Spend Plan 2026 as per Budgeting"]) || 0.9, W = N(kpi["KPI Weight (%)"]) || 0, repSpi = N(kpi["YTD Actual"]);
+    var dd = wkAll.map(function (r) { return r["Report Date"]; }).filter(Boolean).sort().pop(), ddn = dnum(dd);
+    var yEnd = dd.slice(0, 4) + "-12-31", yEndN = dnum(yEnd), y0 = dnum(dd.slice(0, 4) + "-01-01");
+    st.scen = st.scen || "trend"; st.win = st.win || 8;
+
+    // S-curve series per project
+    // One row per project and date. Some S-curve sheets repeat a date (old + revised baseline); keep the live row,
+    // i.e. the one carrying actual / forecast / weekly figures, else the first.
+    var ser = {}, seen = {};
+    function live(r) { return ["Cum Actual (%)", "Cum Forecast (%)", "This Week Plan (%)", "This Week Actual (%)"].filter(function (k) { return N(r[k]) != null; }).length; }
+    D.t("S_Curve").forEach(function (r) {
+      var s = r["Source.Name"], n = dnum(r["Report Date"]); if (!s || !n) return;
+      var k = s + "|" + n, rec = { n: n, plan: N(r["Cum Plan (%)"]), act: N(r["Cum Actual (%)"]), w: live(r) };
+      if (seen[k]) { if (rec.w > seen[k].w) Object.assign(seen[k], rec); return; }
+      seen[k] = rec; (ser[s] = ser[s] || []).push(rec);
+    });
+    Object.keys(ser).forEach(function (k) { ser[k].sort(function (a, b) { return a.n - b.n; }); });
+    function lastAt(list, t, key) { var x = null; for (var i = 0; i < list.length && list[i].n <= t; i++) if (list[i][key] != null) x = list[i][key]; return x; }
+
+    var projAll = wkAll.map(function (r) {
+      var s = ser[r["Source.Name"]] || [], cv = N(r["Contract Value"]);
+      var o = { src: r["Source.Name"], code: String(r["Project Code"] || ""), name: r["Project Name"], contractor: r.Contractor, status: r["Performance Status"] || "—",
+        pm: r["Project Manager"], phase: r["Current Phase"], cv: cv, planNow: N(r["Planned (%) - Cumulative"]) || 0, actNow: N(r["Actual (%) - Cumulative"]) || 0, s: s };
+      o.start = s.length ? s[0].n : null;
+      o.planAt = function (t) { if (t >= ddn - 3 * DAY && t <= ddn) return o.planNow; var p = lastAt(s, t, "plan"); return p == null ? (t >= ddn ? o.planNow : 0) : Math.max(p, t > ddn ? o.planNow : 0); };
+      o.actAt = function (t) { if (t >= ddn - 3 * DAY) return o.actNow; var a = lastAt(s, t, "act"); return a == null ? 0 : a; };
+      var past = ddn - st.win * 7 * DAY, a0 = lastAt(s, past, "act");
+      o.rate = a0 == null ? 0 : Math.max(0, (o.actNow - a0) / st.win);          // % per week over the trend window
+      o.spiNow = o.planNow ? o.actNow / o.planNow : null;
+      o.proj = function (t, sc) {                                           // projected cumulative actual % at t (t ≥ data date)
+        var w = (t - ddn) / (7 * DAY), p = o.planAt(t);
+        var x = sc === "trend" ? o.actNow + o.rate * w : sc === "const" ? (o.spiNow == null ? o.actNow : o.spiNow * p) : o.actNow + Math.max(0, p - o.planNow);
+        return Math.max(o.actNow, Math.min(1, x));
+      };
+      o.pvNow = cv * o.planNow; o.evNow = cv * o.actNow;
+      o.planDec = o.planAt(yEndN); o.pvDec = cv * o.planDec;
+      o.actDec = o.proj(yEndN, st.scen); o.evDec = cv * o.actDec;
+      o.spiDec = o.pvDec ? o.evDec / o.pvDec : null;
+      o.gapDec = TGT * o.pvDec - o.evDec;
+      o.outlook = o.spiDec == null ? "No plan" : o.spiDec >= TGT ? "On track" : o.spiDec >= TGT - 0.1 ? "At risk" : "Behind schedule";
+      return o;
+    });
+    var defs = [
+      { key: "status", label: "Performance Status", options: U.uniq(projAll.map(function (o) { return o.status; })).sort(), get: function (o) { return o.status; } },
+      { key: "out", label: "Dec-26 outlook", options: ["Behind schedule", "At risk", "On track", "No plan"].filter(function (x) { return projAll.some(function (o) { return o.outlook === x; }); }), get: function (o) { return o.outlook; } },
+      { key: "con", label: "Contractor", options: U.uniq(projAll.map(function (o) { return o.contractor; })).sort(), get: function (o) { return o.contractor; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(projAll.map(function (o) { return o.pm; })).sort(), get: function (o) { return o.pm; } },
+      { key: "proj", label: "Project", options: U.uniq(projAll.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
+    var f = filterBar(ctx, defs, projAll);
+    var ctl = add(v, '<div class="filters pg-ctl"></div>');
+    ctl.appendChild(seg("Year-end scenario", SPI_SCEN, st.scen, function (x) { st.scen = x; ctx.rerender(); }));
+    ctl.appendChild(seg("Trend window", [[4, "4 weeks"], [8, "8 weeks"], [12, "12 weeks"]], st.win, function (x) { st.win = x; ctx.rerender(); }));
+    add(ctl, '<div class="seg-help">' + ({ trend: "Each project keeps its average weekly progress of the last " + st.win + " weeks until 31-Dec.",
+      const: "Each project keeps today's SPI: actual grows in line with its planned progress.",
+      plan: "From now on each project achieves exactly its planned weekly progress (no further slippage, no catch-up)." })[st.scen] + "</div>");
+
+    var proj = projAll.filter(function (o) { return passes(o, defs, f); }), projX = projAll.filter(function (o) { return passes(o, defs, f, "proj"); });
+    function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
+    var T = { pv: tot(proj, "pvNow"), ev: tot(proj, "evNow"), pvD: tot(proj, "pvDec"), evD: tot(proj, "evDec") };
+    T.spi = T.pv ? T.ev / T.pv : null; T.spiD = T.pvD ? T.evD / T.pvD : null; T.gap = TGT * T.pvD - T.evD;
+    var ach = T.spiD != null ? Math.min(1, T.spiD / TGT) : null, achNow = T.spi != null ? Math.min(1, T.spi / TGT) : null;
+    function spiTxt(x) { return x == null ? "—" : x.toFixed(2); }
+    function spiCol(x) { return x == null ? "slate" : x >= TGT ? "" : x >= TGT - 0.1 ? "yellow" : "red"; }
+    var below = proj.filter(function (o) { return o.spiDec != null && o.spiDec < TGT; }).length;
+
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: spiTxt(T.spi), label: "SPI today", color: spiCol(T.spi), note: "ΣEV " + fmt.m(T.ev, 1) + " M ÷ ΣPV " + fmt.m(T.pv, 1) + " M · " + esc(fmt.date(dd)) }) +
+      U.tile({ value: TGT.toFixed(2), label: "KPI target", color: "black", note: "KPI sheet: SPI " + (repSpi != null ? repSpi.toFixed(2) : "—") + " · " + fmt.pct(N(kpi["% Achieved"]), 1) + " achieved" }) +
+      U.tile({ value: spiTxt(T.spiD), label: "Projected SPI " + fmt.month(yEnd), color: spiCol(T.spiD), note: esc(SPI_SCEN.filter(function (s) { return s[0] === st.scen; })[0][1]) + " · ΣEV " + fmt.m(T.evD, 1) + " ÷ ΣPV " + fmt.m(T.pvD, 1) + " M" }) +
+      U.tile({ value: fmt.pct(ach, 1), label: "Projected KPI achievement", color: ach >= 1 ? "" : ach >= 0.9 ? "yellow" : "red", note: "KPI result " + fmt.pct(ach != null ? ach * W : null, 1) + " of " + fmt.pct(W, 0) + " · today " + fmt.pct(achNow, 1) }) +
+      U.tile({ value: T.gap > 0 ? fmt.m(T.gap) : "0.00", unit: "M SAR", label: T.gap > 0 ? "EV gap to target" : "Target met", color: T.gap > 0 ? "red" : "mid",
+        note: T.gap > 0 ? "Extra earned value needed by 31-Dec for SPI " + TGT.toFixed(2) : "Headroom " + fmt.m(-T.gap) + " M of earned value" }) +
+      U.tile({ value: below + " / " + proj.length, label: "Projects below target", color: below ? "red" : "slate", note: "Projected SPI < " + TGT.toFixed(2) + " at 31-Dec · click to filter" });
+    clickTiles(g, [null, null, null, null, null, function () { var s = sel(ctx, "out"); s.length = 0; ["Behind schedule", "At risk"].forEach(function (x) { if (projAll.some(function (o) { return o.outlook === x; })) s.push(x); }); ctx.rerender(); }]);
+
+    add(v, '<div class="note-box ol-lead"><b>How SPI is calculated:</b> for every project <b>EV</b> = contract value × cumulative actual % and <b>PV</b> = contract value × cumulative planned % ' +
+      "(weekly report, S-curve). <b>Portfolio SPI = ΣEV ÷ ΣPV</b>, so larger contracts weigh more. KPI <b>% achieved = SPI ÷ target " + TGT.toFixed(2) +
+      "</b> (max 100%) and <b>KPI result = weight " + fmt.pct(W, 0) + " × % achieved</b>. Year-end: PV on 31-Dec uses each project's planned S-curve; EV uses the scenario above.</div>");
+
+    // weekly timeline: history from 1-Jan, projection to 31-Dec
+    var pts = [];
+    for (var t = ddn; t >= y0; t -= 7 * DAY) pts.unshift(t);
+    for (t = ddn + 7 * DAY; t < yEndN; t += 7 * DAY) pts.push(t);
+    pts.push(yEndN);
+    function portAt(t, sc) {
+      var pv = 0, ev = 0;
+      proj.forEach(function (o) { if (o.start != null && o.start > t && t < ddn) return; var p = o.planAt(t); pv += o.cv * p; ev += o.cv * (t <= ddn ? o.actAt(t) : o.proj(t, sc)); });
+      return { pv: pv, ev: ev, spi: pv ? ev / pv : null };
+    }
+    var hist = pts.map(function (t) { return t <= ddn ? portAt(t) : null; });
+    var scen = {}; SPI_SCEN.forEach(function (s) { scen[s[0]] = pts.map(function (t) { return t >= ddn ? portAt(t, s[0]) : null; }); });
+    var labs = pts.map(function (t) { return fmt.date(isoOf(t)).slice(0, 6); });
+    var g1 = grid(v, "g-2");
+    var sds = [U.lineDs("SPI actual", hist.map(function (x) { return x && x.spi; }), S.plan, { borderWidth: 3, pointRadius: 2, spanGaps: false })];
+    SPI_SCEN.forEach(function (s) {
+      var on = s[0] === st.scen;
+      sds.push(U.lineDs("Projection — " + s[1], scen[s[0]].map(function (x) { return x && x.spi; }), on ? C.black : C.gray, { borderDash: [7, 5], borderWidth: on ? 2.5 : 1.5, pointRadius: on ? 2 : 0, spanGaps: false }));
+    });
+    sds.push(U.lineDs("Target " + TGT.toFixed(2), pts.map(function () { return TGT; }), C.red, { borderDash: [4, 4], borderWidth: 1.2, pointRadius: 0 }));
+    U.chart(chartBox(panelIn(g1, "Portfolio SPI — " + dd.slice(0, 4), "Weekly ΣEV ÷ ΣPV · solid = actual to " + esc(fmt.date(dd)) + ", dashed = projection to 31-Dec (bold = selected scenario)"), "tall"),
+      { type: "line", data: { labels: labs, datasets: sds },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: { callbacks: { label: function (c) { return c.parsed.y == null ? null : " " + c.dataset.label + ": " + c.parsed.y.toFixed(3); } } } },
+          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: { suggestedMin: 0.6, suggestedMax: 1.1, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(2); } } } } } });
+    var sel0 = scen[st.scen];
+    U.chart(chartBox(panelIn(g1, "Earned value vs planned value", "Cumulative M SAR · PV from the planned S-curves, EV actual then projected (" + esc(SPI_SCEN.filter(function (s) { return s[0] === st.scen; })[0][1]) + ")"), "tall"),
+      { type: "line", data: { labels: labs, datasets: [
+        U.lineDs("Planned value (PV)", pts.map(function (t, i) { return (hist[i] || sel0[i] || {}).pv; }), S.plan, { borderWidth: 2.5, pointRadius: 0 }),
+        U.lineDs("Earned value (EV)", hist.map(function (x) { return x && x.ev; }), S.actual, { borderWidth: 3, pointRadius: 0, spanGaps: false }),
+        U.lineDs("EV projection", sel0.map(function (x) { return x && x.ev; }), S.actual, { borderDash: [7, 5], borderWidth: 2.5, pointRadius: 0, spanGaps: false }),
+        U.lineDs("EV needed for SPI " + TGT.toFixed(2), sel0.map(function (x) { return x && x.pv * TGT; }), C.red, { borderDash: [4, 4], borderWidth: 1.2, pointRadius: 0, spanGaps: false })] },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.moneyTooltip() }, scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: U.moneyAxis() } } });
+
+    // by project
+    var g2 = grid(v, "g-2");
+    var byS = projX.slice().sort(function (a, b) { return (a.spiDec == null ? 9 : a.spiDec) - (b.spiDec == null ? 9 : b.spiDec); }), names = byS.map(function (o) { return o.name; });
+    var b1 = chartBox(panelIn(g2, "SPI by project — today vs " + fmt.month(yEnd), "Target " + TGT.toFixed(2) + " · red = below target · click a project to filter"));
+    b1.style.height = Math.max(300, names.length * 34 + 70) + "px";
+    function colS(x, faded) { var c0 = x == null ? C.gray : x >= TGT ? C.blue : x >= TGT - 0.1 ? C.yellow : C.red; return faded ? U.fade(c0) : c0; }
+    function fd(o) { return f.proj.length && f.proj.indexOf(o.name) < 0; }
+    hbar(b1, names, [U.barDs("SPI today", byS.map(function (o) { return o.spiNow; }), byS.map(function (o) { return colS(o.spiNow, fd(o)); }), { maxBarThickness: 12 }),
+      U.fcBar("SPI " + fmt.month(yEnd) + " (projected)", byS.map(function (o) { return o.spiDec; }), byS.map(function (o) { return colS(o.spiDec, fd(o)); }), { maxBarThickness: 12 })],
+      function (i, e) { pick(ctx, "proj", names[i], e); }, { beginAtZero: true, suggestedMax: 1.2, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(1); } } },
+      { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + (c.parsed.x == null ? "—" : c.parsed.x.toFixed(2)); } } });
+    var byG = projX.slice().sort(function (a, b) { return b.gapDec - a.gapDec; }), gn = byG.map(function (o) { return o.name; });
+    var b2 = chartBox(panelIn(g2, "Contribution to the SPI target at " + fmt.month(yEnd), "EV − " + TGT.toFixed(2) + " × PV (M SAR) · red = pulls the portfolio below target · click to filter"));
+    b2.style.height = Math.max(300, gn.length * 34 + 70) + "px";
+    hbar(b2, gn, [U.barDs("EV surplus / shortfall vs target", byG.map(function (o) { return -o.gapDec; }), byG.map(function (o) { var c0 = o.gapDec > 0 ? C.red : C.blue; return fd(o) ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
+      function (i, e) { pick(ctx, "proj", gn[i], e); });
+
+    // table
+    var tp = panelIn(v, "SPI outlook by project", proj.length + " projects · data date " + esc(fmt.date(dd)) + " · click a row for the project");
+    tableIn(tp, { rows: proj, exportName: "SPI_Year_End_Outlook", totals: true, sort: { key: "spiDec", dir: 1 }, maxHeight: 640,
+      onRow: function (o) { quickView(D, o.code); }, rowTitle: "Open project",
+      columns: [{ key: "code", label: "Code", nowrap: true }, { key: "name", label: "Project", wrap: true },
+        { key: "cv", label: "Contract value", type: "money", total: "sum" }, { key: "planNow", label: "Plan % today", type: "meter", meterCls: "plan" }, { key: "actNow", label: "Actual % today", type: "meter" },
+        { key: "pvNow", label: "PV today", type: "money", total: "sum" }, { key: "evNow", label: "EV today", type: "money", total: "sum" },
+        { key: "spiNow", label: "SPI today", type: "dec", render: function (x) { return '<span class="' + (x != null && x < TGT ? "neg" : "pos") + '">' + spiTxt(x) + "</span>"; } },
+        { key: "rate", label: "Trend %/wk", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "planDec", label: "Plan % 31-Dec", type: "pct" }, { key: "actDec", label: "Actual % 31-Dec", type: "pct" },
+        { key: "pvDec", label: "PV 31-Dec", type: "money", total: "sum" }, { key: "evDec", label: "EV 31-Dec", type: "money", total: "sum" },
+        { key: "spiDec", label: "SPI 31-Dec", type: "dec", render: function (x) { return '<span class="' + (x != null && x < TGT ? "neg" : "pos") + '">' + spiTxt(x) + "</span>"; } },
+        { key: "gapDec", label: "EV gap to target", type: "money", total: "sum", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">' + fmt.money(x) + "</span>"; } },
+        { key: "outlook", label: "Outlook", type: "badge" }] });
+  };
+
+  /* ======================================================================
      Weekly Progress Summary
      ====================================================================== */
   function spiOf(r) { var pv = N(r["Cumulative PV (SAR)"]), ev = N(r["Cumulative EV (SAR)"]); return pv ? (ev || 0) / pv : 0; }
