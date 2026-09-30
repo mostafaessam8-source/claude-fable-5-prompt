@@ -754,13 +754,19 @@
     var D = ctx.D, f = costFilters(ctx, true), v = ctx.view, mm = monthly(f.sp);
     var labels = mm.map(function (o) { return fmt.month(o.month); });
     var last = mm[mm.length - 1] || {};
-    var lastAct = mm.filter(function (o) { return o.actCv != null; }).pop() || {};
-    var g = grid(v, "g-4");
-    var fvar = (last.invC || 0) - (last.planC || 0);
-    g.innerHTML = mTile("Spend Plan (FY)", last.planC) + mTile("Forecast Plan (FY)", last.invC, "slate", "Contractor cash-flow forecast") +
-      mTile("Actual to date", lastAct.actCv, "yellow", lastAct.month ? "Cumulative to " + fmt.month(lastAct.month) : "") +
-      mTile("Variance (FY)", fvar, fvar < 0 ? "red" : "mid", "Forecast Plan − Spend Plan · " + fmt.money(fvar) + " SAR");
-    clickTiles(g, [0, 1, 2, 3].map(function () { return function () { spendModal(D, f.sp); }; }));
+    // Same tile set as the KPI Year-End Outlook: full year (plan · forecast · variance), then YTD (plan · actual · variance)
+    var cut = lastActualMonth(D.t("Spending_Plan"));
+    var ytd = mm.filter(function (o) { return cut && o.month <= cut; }).pop() || {};
+    var g = grid(v, "g-6");
+    var fvar = (last.invC || 0) - (last.planC || 0), yPlan = ytd.planC || 0, yAct = ytd.actC || 0, yvar = yAct - yPlan;
+    var toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
+    g.innerHTML = mTile("Spend Plan 2026", last.planC, "", "Budgeting · Jan – Dec") +
+      mTile("Forecast Plan 2026", last.invC, "slate", "Invoicing plan · Jan – Dec") +
+      mTile("Variance 2026", fvar, fvar < 0 ? "red" : "mid", "Forecast − Spend Plan · " + fmt.pct(last.planC ? last.invC / last.planC : null, 1) + " of plan") +
+      mTile("YTD Plan", yPlan, "", "Spend Plan · " + toCut) +
+      mTile("YTD Actual", yAct, "yellow", "Actual spend · " + toCut) +
+      mTile("YTD Variance", yvar, yvar < 0 ? "red" : "mid", "Actual − Plan · " + fmt.pct(yPlan ? yAct / yPlan : null, 1) + " achieved");
+    clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { spendModal(D, f.sp); }; }));
 
     var p1 = panelIn(v, "Cumulative spend S-curve", "Click a month for the project breakdown");
     p1.style.marginBottom = "16px";
