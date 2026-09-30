@@ -635,3 +635,10 @@ body.printing .pg-row.g-head { position: static; }
 .iv-ms { top: 50% !important; margin-top: -5px; }
 body.printing .gantt.iv .gantt-inner { min-width: 0; }
 body.printing .iv-row.g-head { position: static; }
+
+/* ----------------------------- Section headings (merged pages) ---------- */
+.sec-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--sar-blue); }
+.sec-h h3 { margin: 0; font-size: 16px; color: var(--sar-blue); text-transform: uppercase; letter-spacing: .06em; }
+.sec-h span { font-size: 12px; color: var(--slate); }
+.stack { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.panel-head .tools .seg-wrap label:empty { display: none; }
