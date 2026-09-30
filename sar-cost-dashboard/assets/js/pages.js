@@ -970,7 +970,6 @@
      ====================================================================== */
   var DAY = 864e5;
   function isoOf(n) { return new Date(n).toISOString().slice(0, 10); }
-  var SPI_SCEN = [["trend", "Current trend"], ["const", "Same SPI"], ["plan", "Recover to plan"]];
   P["spi-outlook"] = function (ctx) {
     var D = ctx.D, v = ctx.view, st = ctx.state;
     var wkAll = D.t("Weekly_Report_Updates").filter(function (r) { return r["Source.Name"] && N(r["Contract Value"]); });
@@ -979,7 +978,7 @@
     var TGT = N(kpi["NSR Spend Plan 2026 as per Budgeting"]) || 0.9, W = N(kpi["KPI Weight (%)"]) || 0, repSpi = N(kpi["YTD Actual"]);
     var dd = wkAll.map(function (r) { return r["Report Date"]; }).filter(Boolean).sort().pop(), ddn = dnum(dd);
     var yEnd = dd.slice(0, 4) + "-12-31", yEndN = dnum(yEnd), y0 = dnum(dd.slice(0, 4) + "-01-01");
-    st.scen = st.scen || "trend"; st.win = st.win || 8;
+    st.win = st.win || 8;
 
     // S-curve series per project
     // One row per project and date. Some S-curve sheets repeat a date (old + revised baseline); keep the live row,
@@ -1005,14 +1004,12 @@
       var past = ddn - st.win * 7 * DAY, a0 = lastAt(s, past, "act");
       o.rate = a0 == null ? 0 : Math.max(0, (o.actNow - a0) / st.win);          // % per week over the trend window
       o.spiNow = o.planNow ? o.actNow / o.planNow : null;
-      o.proj = function (t, sc) {                                           // projected cumulative actual % at t (t ≥ data date)
-        var w = (t - ddn) / (7 * DAY), p = o.planAt(t);
-        var x = sc === "trend" ? o.actNow + o.rate * w : sc === "const" ? (o.spiNow == null ? o.actNow : o.spiNow * p) : o.actNow + Math.max(0, p - o.planNow);
-        return Math.max(o.actNow, Math.min(1, x));
+      o.proj = function (t) {                                               // current trend: cumulative actual % at t (t ≥ data date)
+        return Math.max(o.actNow, Math.min(1, o.actNow + o.rate * (t - ddn) / (7 * DAY)));
       };
       o.pvNow = cv * o.planNow; o.evNow = cv * o.actNow;
       o.planDec = o.planAt(yEndN); o.pvDec = cv * o.planDec;
-      o.actDec = o.proj(yEndN, st.scen); o.evDec = cv * o.actDec;
+      o.actDec = o.proj(yEndN); o.evDec = cv * o.actDec;
       o.spiDec = o.pvDec ? o.evDec / o.pvDec : null;
       o.gapDec = TGT * o.pvDec - o.evDec;
       o.outlook = o.spiDec == null ? "No plan" : o.spiDec >= TGT ? "On track" : o.spiDec >= TGT - 0.1 ? "At risk" : "Behind schedule";
@@ -1026,11 +1023,8 @@
       { key: "proj", label: "Project", options: U.uniq(projAll.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
     var f = filterBar(ctx, defs, projAll);
     var ctl = add(v, '<div class="filters pg-ctl"></div>');
-    ctl.appendChild(seg("Year-end scenario", SPI_SCEN, st.scen, function (x) { st.scen = x; ctx.rerender(); }));
     ctl.appendChild(seg("Trend window", [[4, "4 weeks"], [8, "8 weeks"], [12, "12 weeks"]], st.win, function (x) { st.win = x; ctx.rerender(); }));
-    add(ctl, '<div class="seg-help">' + ({ trend: "Each project keeps its average weekly progress of the last " + st.win + " weeks until 31-Dec.",
-      const: "Each project keeps today's SPI: actual grows in line with its planned progress.",
-      plan: "From now on each project achieves exactly its planned weekly progress (no further slippage, no catch-up)." })[st.scen] + "</div>");
+    add(ctl, '<div class="seg-help">Projection (current trend): each project keeps its average weekly progress of the last ' + st.win + " weeks until 31-Dec, capped at 100%.</div>");
 
     var proj = projAll.filter(function (o) { return passes(o, defs, f); }), projX = projAll.filter(function (o) { return passes(o, defs, f, "proj"); });
     function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
@@ -1044,7 +1038,7 @@
     var g = grid(v, "g-6");
     g.innerHTML = U.tile({ value: spiTxt(T.spi), label: "SPI today", color: spiCol(T.spi), note: "ΣEV " + fmt.m(T.ev, 1) + " M ÷ ΣPV " + fmt.m(T.pv, 1) + " M · " + esc(fmt.date(dd)) }) +
       U.tile({ value: TGT.toFixed(2), label: "KPI target", color: "black", note: "KPI sheet: SPI " + (repSpi != null ? repSpi.toFixed(2) : "—") + " · " + fmt.pct(N(kpi["% Achieved"]), 1) + " achieved" }) +
-      U.tile({ value: spiTxt(T.spiD), label: "Projected SPI " + fmt.month(yEnd), color: spiCol(T.spiD), note: esc(SPI_SCEN.filter(function (s) { return s[0] === st.scen; })[0][1]) + " · ΣEV " + fmt.m(T.evD, 1) + " ÷ ΣPV " + fmt.m(T.pvD, 1) + " M" }) +
+      U.tile({ value: spiTxt(T.spiD), label: "Projected SPI " + fmt.month(yEnd), color: spiCol(T.spiD), note: "Current trend · ΣEV " + fmt.m(T.evD, 1) + " ÷ ΣPV " + fmt.m(T.pvD, 1) + " M" }) +
       U.tile({ value: fmt.pct(ach, 1), label: "Projected KPI achievement", color: ach >= 1 ? "" : ach >= 0.9 ? "yellow" : "red", note: "KPI result " + fmt.pct(ach != null ? ach * W : null, 1) + " of " + fmt.pct(W, 0) + " · today " + fmt.pct(achNow, 1) }) +
       U.tile({ value: T.gap > 0 ? fmt.m(T.gap) : "0.00", unit: "M SAR", label: T.gap > 0 ? "EV gap to target" : "Target met", color: T.gap > 0 ? "red" : "mid",
         note: T.gap > 0 ? "Extra earned value needed by 31-Dec for SPI " + TGT.toFixed(2) : "Headroom " + fmt.m(-T.gap) + " M of earned value" }) +
@@ -1053,34 +1047,30 @@
 
     add(v, '<div class="note-box ol-lead"><b>How SPI is calculated:</b> for every project <b>EV</b> = contract value × cumulative actual % and <b>PV</b> = contract value × cumulative planned % ' +
       "(weekly report, S-curve). <b>Portfolio SPI = ΣEV ÷ ΣPV</b>, so larger contracts weigh more. KPI <b>% achieved = SPI ÷ target " + TGT.toFixed(2) +
-      "</b> (max 100%) and <b>KPI result = weight " + fmt.pct(W, 0) + " × % achieved</b>. Year-end: PV on 31-Dec uses each project's planned S-curve; EV uses the scenario above.</div>");
+      "</b> (max 100%) and <b>KPI result = weight " + fmt.pct(W, 0) + " × % achieved</b>. Year-end: PV on 31-Dec uses each project's planned S-curve; EV continues each project's current weekly trend.</div>");
 
     // weekly timeline: history from 1-Jan, projection to 31-Dec
     var pts = [];
     for (var t = ddn; t >= y0; t -= 7 * DAY) pts.unshift(t);
     for (t = ddn + 7 * DAY; t < yEndN; t += 7 * DAY) pts.push(t);
     pts.push(yEndN);
-    function portAt(t, sc) {
+    function portAt(t) {
       var pv = 0, ev = 0;
-      proj.forEach(function (o) { if (o.start != null && o.start > t && t < ddn) return; var p = o.planAt(t); pv += o.cv * p; ev += o.cv * (t <= ddn ? o.actAt(t) : o.proj(t, sc)); });
+      proj.forEach(function (o) { if (o.start != null && o.start > t && t < ddn) return; var p = o.planAt(t); pv += o.cv * p; ev += o.cv * (t <= ddn ? o.actAt(t) : o.proj(t)); });
       return { pv: pv, ev: ev, spi: pv ? ev / pv : null };
     }
     var hist = pts.map(function (t) { return t <= ddn ? portAt(t) : null; });
-    var scen = {}; SPI_SCEN.forEach(function (s) { scen[s[0]] = pts.map(function (t) { return t >= ddn ? portAt(t, s[0]) : null; }); });
+    var sel0 = pts.map(function (t) { return t >= ddn ? portAt(t) : null; });
     var labs = pts.map(function (t) { return fmt.date(isoOf(t)).slice(0, 6); });
     var g1 = grid(v, "g-2");
     var sds = [U.lineDs("SPI actual", hist.map(function (x) { return x && x.spi; }), S.plan, { borderWidth: 3, pointRadius: 2, spanGaps: false })];
-    SPI_SCEN.forEach(function (s) {
-      var on = s[0] === st.scen;
-      sds.push(U.lineDs("Projection — " + s[1], scen[s[0]].map(function (x) { return x && x.spi; }), on ? C.black : C.gray, { borderDash: [7, 5], borderWidth: on ? 2.5 : 1.5, pointRadius: on ? 2 : 0, spanGaps: false }));
-    });
+    sds.push(U.lineDs("Projection — Current trend", sel0.map(function (x) { return x && x.spi; }), C.black, { borderDash: [7, 5], borderWidth: 2.5, pointRadius: 2, spanGaps: false }));
     sds.push(U.lineDs("Target " + TGT.toFixed(2), pts.map(function () { return TGT; }), C.red, { borderDash: [4, 4], borderWidth: 1.2, pointRadius: 0 }));
-    U.chart(chartBox(panelIn(g1, "Portfolio SPI — " + dd.slice(0, 4), "Weekly ΣEV ÷ ΣPV · solid = actual to " + esc(fmt.date(dd)) + ", dashed = projection to 31-Dec (bold = selected scenario)"), "tall"),
+    U.chart(chartBox(panelIn(g1, "Portfolio SPI — " + dd.slice(0, 4), "Weekly ΣEV ÷ ΣPV · solid = actual to " + esc(fmt.date(dd)) + ", dashed = projection to 31-Dec (current trend)"), "tall"),
       { type: "line", data: { labels: labs, datasets: sds },
         options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: { callbacks: { label: function (c) { return c.parsed.y == null ? null : " " + c.dataset.label + ": " + c.parsed.y.toFixed(3); } } } },
           scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: { suggestedMin: 0.6, suggestedMax: 1.1, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(2); } } } } } });
-    var sel0 = scen[st.scen];
-    U.chart(chartBox(panelIn(g1, "Earned value vs planned value", "Cumulative M SAR · PV from the planned S-curves, EV actual then projected (" + esc(SPI_SCEN.filter(function (s) { return s[0] === st.scen; })[0][1]) + ")"), "tall"),
+    U.chart(chartBox(panelIn(g1, "Earned value vs planned value", "Cumulative M SAR · PV from the planned S-curves, EV actual then projected (current trend)"), "tall"),
       { type: "line", data: { labels: labs, datasets: [
         U.lineDs("Planned value (PV)", pts.map(function (t, i) { return (hist[i] || sel0[i] || {}).pv; }), S.plan, { borderWidth: 2.5, pointRadius: 0 }),
         U.lineDs("Earned value (EV)", hist.map(function (x) { return x && x.ev; }), S.actual, { borderWidth: 3, pointRadius: 0, spanGaps: false }),
@@ -1111,7 +1101,7 @@
       if (f.proj.length === 1) { var fp = scList.filter(function (o) { return o.name === f.proj[0]; })[0]; if (fp) st.sc = fp.src; }
       if (!scList.some(function (o) { return o.src === st.sc; })) st.sc = (proj.filter(function (o) { return o.s.length; }).sort(function (a, b) { return (a.spiNow || 9) - (b.spiNow || 9); })[0] || scList[0]).src;
       var po = scList.filter(function (o) { return o.src === st.sc; })[0];
-      var sp = add(v, U.panel("Project progress S-curve", "Weekly cumulative plan, actual and forecast % · dashed black = projection to 31-Dec (" + esc(SPI_SCEN.filter(function (x) { return x[0] === st.scen; })[0][1]) + ")", "", ""));
+      var sp = add(v, U.panel("Project progress S-curve", "Weekly cumulative plan, actual and forecast % · dashed black = projection to 31-Dec (current trend)", "", ""));
       var ps = U.select({ label: "Project", value: po.src, options: scList.map(function (o) { return { value: o.src, label: D.projectLabel(o.src) }; }), onChange: function (x) { st.sc = x; ctx.rerender(); } });
       ps.classList.add("inline-sel"); sp.querySelector(".panel-head .tools").appendChild(ps);
       var raw = {};                                                             // weekly rows, one per date (live row wins, as above)
@@ -1127,7 +1117,7 @@
         U.lineDs("Cum Plan (%)", rws.map(function (r) { return N(r["Cum Plan (%)"]); }), S.plan, { borderWidth: 2.5 }),
         U.lineDs("Cum Actual (%)", rws.map(function (r, i) { return ptsP[i] <= ddn ? N(r["Cum Actual (%)"]) : null; }), S.actual, { borderWidth: 3, spanGaps: true }),
         U.lineDs("Cum Forecast (%)", rws.map(function (r) { return N(r["Cum Forecast (%)"]); }), S.forecast, { borderDash: [6, 4], spanGaps: false }),
-        U.lineDs("Projection to 31-Dec", ptsP.map(function (n) { return n >= ddn && n <= yEndN ? po.proj(n, st.scen) : null; }), C.black, { borderDash: [7, 5], borderWidth: 2, spanGaps: false })] },
+        U.lineDs("Projection to 31-Dec", ptsP.map(function (n) { return n >= ddn && n <= yEndN ? po.proj(n) : null; }), C.black, { borderDash: [7, 5], borderWidth: 2, spanGaps: false })] },
         options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.pctTooltip() },
           scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 18, maxRotation: 0 } }), y: U.pctAxis(1) } } });
       add(sp, '<h4 class="pc-sub">Weekly S-curve data</h4>');
