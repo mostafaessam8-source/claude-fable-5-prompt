@@ -140,12 +140,22 @@
   };
   Pkg.prototype.cloneSlide = function (src, after) {
     var self = this, path = this.freeName("ppt/slides", "slide", ".xml"), jobs = [];
-    this.setRaw(path, this.orig[src]);
+    this.setRaw(path, this.orig[src].replace(/(<p14:creationId\b[^>]*\bval=")\d+"/, function (m, pre) { return pre + (1 + Math.floor(Math.random() * 4294967294)) + '"'; }));   // unique slide id, as PowerPoint does on duplicate
     var srcRels = this.orig[relsOf(src)];
     var rd = new DOMParser().parseFromString(srcRels, "application/xml");
     Array.prototype.slice.call(rd.getElementsByTagNameNS(NS.rel, "Relationship")).forEach(function (el) {
       var type = el.getAttribute("Type");
       if (type === REL.notes) { el.parentNode.removeChild(el); return; }
+      // embedded OLE objects (think-cell), tags and packages must not be shared between slides: PowerPoint repairs
+      // (and empties) slides that point at another slide's object. Give the copy its own part.
+      if (/\/(oleObject|tags|package)$/.test(type) && el.getAttribute("TargetMode") !== "External") {
+        var t0 = resolve(src, el.getAttribute("Target")), f0 = t0.slice(t0.lastIndexOf("/") + 1), m0 = /^(.*?)(\d*)(\.[^.]+)$/.exec(f0);
+        var np0 = self.freeName(dirOf(t0), m0[1] + "_s", m0[3]);
+        self.zip.file(np0, ""); jobs.push(self.copyPart(t0, np0));
+        var ct0 = self.contentType(t0); if (ct0) self.setOverride(np0, ct0);
+        el.setAttribute("Target", relTarget(path, np0));
+        return;
+      }
       if (type === REL.chart) {
         var chartSrc = resolve(src, el.getAttribute("Target")), chartNew = self.freeName("ppt/charts", "chart", ".xml");
         self.setRaw(chartNew, self.orig[chartSrc] || self.raw[chartSrc]);
