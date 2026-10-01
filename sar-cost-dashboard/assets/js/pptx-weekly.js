@@ -503,7 +503,8 @@
   }
 
   /* Program Values: the embedded "… Program - DB" workbook (Excel icon on the slide) is rebuilt from NSR data —
-     Old Projects (NSR legacy rows of the PD programme database) and the weekly SPI table — with an NSR icon label. */
+     NSR Program - DB (the PD programme database rows behind the slide figures), Old Projects (its legacy rows) and the
+     weekly SPI table — with an NSR icon label. */
   function xDate(s) { var t = ymd(s); return t ? new Date(Date.UTC(t.y, t.m - 1, t.d)) : null; }
   function valuesWorkbook(M) {
     var X = window.XLSX, wb = X.utils.book_new(), MONEY = "#,##0", PCT = "0.00%", DT = "dd-mmm-yy";
@@ -522,12 +523,14 @@
     // as on the slide's Legacy tile; without that file, the project cards in handover / closing / closed
     var db = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
     var old = db.filter(function (r) { return String(r.Type || "").trim().toLowerCase() === "legacy"; });
-    if (old.length) {
-      var keys = Object.keys(old[0]).filter(function (k) { return k !== "Source.Name"; });
-      var oRows = old.map(function (r, i) { return [i + 1].concat(keys.map(function (k) { var v = r[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? xDate(v) : v; })); });
-      X.utils.book_append_sheet(wb, sheet(null, null, ["S/No"].concat(keys), oRows, [null].concat(keys.map(function (k) { return /budget|amount|paid/i.test(k) ? MONEY : /(_SD|_ED|date)$/i.test(k) ? DT : null; })),
-        [6].concat(keys.map(function (k) { return /name/i.test(k) ? 40 : 14; }))), "Old Projects");
-    } else {
+    var keys = db.length ? Object.keys(db[0]).filter(function (k) { return k !== "Source.Name"; }) : [];
+    function dbSheet(list) {                // PD programme database rows, as in the source file
+      return sheet(null, null, ["S/No"].concat(keys), list.map(function (r, i) { return [i + 1].concat(keys.map(function (k) { var v = r[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? xDate(v) : v; })); }),
+        [null].concat(keys.map(function (k) { return /budget|amount|paid/i.test(k) ? MONEY : /(_SD|_ED|date)$/i.test(k) ? DT : null; })), [6].concat(keys.map(function (k) { return /name/i.test(k) ? 40 : 14; })));
+    }
+    if (db.length) X.utils.book_append_sheet(wb, dbSheet(db), "NSR Program - DB");   // every NSR row: the slide's figures come from here
+    if (old.length) X.utils.book_append_sheet(wb, dbSheet(old), "Old Projects");
+    else {
       var oc = M.cardList.filter(function (c) { return /^(handover|closing|closed)/i.test(c.ActualPhase || ""); });
       X.utils.book_append_sheet(wb, sheet(null, null, ["S/No", "Code", "Project Name", "Project Size", "Actual Phase", "Budget", "Contract Value", "Approved Paid Amount", "Overall Status"],
         oc.map(function (c, i) { var f = c.Fund || {}, p = c.Perf || {}; return [i + 1, c.Code, c.Name, c.Size, c.ActualPhase, N(f.Budget), N(f.CON), N(p.Paid), p.Status]; }),
@@ -565,6 +568,7 @@
     pkg.zip.file(rel.target, new Uint8Array(valuesWorkbook(M)));
     var png = iconPng("NSR Program - DB"); if (!png) return;
     var mp = pkg.freeName("ppt/media", "nsr_db", ".png"); pkg.zip.file(mp, png); pkg.ensureDefault("png", "image/png");
+    oles.forEach(function (o) { o.setAttribute("name", "NSR Program - DB"); });   // object name, also shown if Office redraws the icon
     oles.forEach(function (o) { E.all(o, NS.a, "blip").forEach(function (b) { pkg.setImage(path, b.getAttributeNS(NS.r, "embed"), mp); }); });
   }
 
