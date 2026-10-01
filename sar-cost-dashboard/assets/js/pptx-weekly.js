@@ -527,8 +527,11 @@
   }
 
   /* CAPEX status */
-  function fillCapex(pkg, path, M) {
-    var d = pkg.xml(path), cap = M.spend.filter(function (p) { return M.codeKpi[p.ID] === 7 && (p.fy || p.ytdAct || p.fcFY); }).sort(function (a, b) { return b.fy - a.fy; });
+  var CAPEX_ROWS = 4;                     // project rows per "CAPEX 2026 - Status" slide (tiles and charts repeat on every slide)
+  function capexList(M) { return M.spend.filter(function (p) { return M.codeKpi[p.ID] === 7 && (p.fy || p.ytdAct || p.fcFY); }).sort(function (a, b) { return b.fy - a.fy; }); }
+  function fillCapex(pkg, path, M, page, pi, pn) {
+    var d = pkg.xml(path), cap = capexList(M);
+    page = page || cap; pi = pi || 0; pn = pn || 1;
     var fy = sum(cap, function (p) { return p.fy; }), yp = sum(cap, function (p) { return p.ytdPlan; }), ya = sum(cap, function (p) { return p.ytdAct; }), rem = sum(cap, function (p) { return p.fcRem; });
     var cutM = M.cut ? MONTHS[+M.cut.slice(5, 7) - 1] : "";
     function byText(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); }); }
@@ -537,27 +540,26 @@
       if (/Planned Budget/.test(l)) E.setParas(s, sarM(yp)); else if (/Actual Budget/.test(l)) E.setParas(s, sarM(ya)); else if (/Variance/.test(l)) E.setParas(s, { text: sarM(ya - yp).replace("-", "\u2011").replace(" ", "\u00A0"), size: ya - yp < 0 ? 17 : null });   // narrow box: keep on one line
     });
     byText(/^(Planned|Actual) Budget/).forEach(function (s) { E.setRuns(s, 0, [E.text(s).split("(")[0], "(Till " + cutM + ")"]); });
-    var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, sarM(fy));
-    var vp = byText(/^-?\d+%$/)[0]; if (vp) E.setParas(vp, (yp ? Math.round((ya - yp) / yp * 100) : 0) + "%");
+    var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, sarM(fy).replace(" ", "\u00A0"));
+    var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 18 }); }   // one line in the narrow tile
+    var lt = byText(/^List of Capex projects/)[0]; if (lt) E.setParas(lt, "List of Capex projects" + (pn > 1 ? "  (" + (pi + 1) + " of " + pn + ")" : "") + " · " + cap.length + " projects");
     var yl = byText(/Yearly Budget/)[0]; if (yl) E.setParas(yl, "Yearly Budget – " + (M.D.hasRev ? "Rev Spend Plan" : "Spend Plan"));
     // table
     var frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), rs = E.rows(tbl), total = rs[rs.length - 1];
-    // the template's table holds 3 project rows: largest three, then the rest grouped (all of them are on "Monthly Plan - CAPEX")
-    var shown = cap.slice(0, cap.length > 4 ? 3 : cap.length), rest = cap.slice(shown.length);
-    if (rest.length) {
-      var agg = function (k) { return sum(rest, function (p) { return p[k]; }); };
-      shown.push({ ID: "", name: "Other CAPEX projects (" + rest.length + ")", fy: agg("fy"), ytdPlan: agg("ytdPlan"), ytdAct: agg("ytdAct"), fcRem: agg("fcRem") });
-    }
+    // every CAPEX project, CAPEX_ROWS per slide; the Total row is always the whole CAPEX portfolio
+    var shown = page;
     var body = E.resizeRows(tbl, 1, 1, shown.length); tbl.appendChild(total);
-    var w = Math.max.apply(null, [fy, yp, ya, rem, ya + rem, ya - yp].map(function (v) { return money(v).length; })), sz = w >= 11 ? 7 : w >= 10 ? 8 : null;
+    var sz = 10;                           // one readable size for the whole table (header is 10.5 pt)
     function cell(c, v) { E.cellText(c, typeof v === "object" ? { text: v.text, color: v.color, size: sz } : { text: v, size: sz }); }
     shown.forEach(function (p, i) {
       var c = E.cells(body[i]);
-      [p.ID, shortName(p.name, 40), money(p.fy), money(p.ytdPlan), money(p.ytdAct), null, money(p.fcRem), money(p.ytdAct + p.fcRem)].forEach(function (v, k) { if (c[k] && v != null) cell(c[k], v); });
+      body[i].setAttribute("h", "235000");
+      [p.ID, shortName(p.name, 44), money(p.fy), money(p.ytdPlan), money(p.ytdAct), null, money(p.fcRem), money(p.ytdAct + p.fcRem)].forEach(function (v, k) { if (c[k] && v != null) cell(c[k], v); });
       var vr = p.ytdAct - p.ytdPlan; cell(c[5], { text: money(vr), color: vr < 0 ? RED : GREEN });
     });
+    total.setAttribute("h", "235000");
     var tc = E.cells(total);
-    [null, "Total", money(fy), money(yp), money(ya), null, money(rem), money(ya + rem)].forEach(function (v, k) { if (tc[k] && v != null) cell(tc[k], v); });
+    [null, pn > 1 ? "Total – all " + cap.length + " CAPEX projects" : "Total", money(fy), money(yp), money(ya), null, money(rem), money(ya + rem)].forEach(function (v, k) { if (tc[k] && v != null) cell(tc[k], { text: v, bold: true }); });
     cell(tc[5], { text: money(ya - yp), color: ya - yp < 0 ? RED : GREEN });
     E.fitTable(frame);
     // charts
@@ -576,6 +578,9 @@
       } else if (/Planned Budget/.test(x)) {
         pkg.setChart(cp, { cats: cap.map(function (p) { return p.ID; }), series: [
           { name: "Planned Budget", values: cap.map(function (p) { return Math.round(p.ytdPlan / 1e6); }) }, { name: "Actual Budget", values: cap.map(function (p) { return Math.round(p.ytdAct / 1e6); }) }] });
+        // data labels: smaller, so the planned / actual values of neighbouring bars do not overlap
+        E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) { var dl = r.parentNode; while (dl && dl.localName !== "dLbls" && dl.localName !== "chartSpace") dl = dl.parentNode; if (dl && dl.localName === "dLbls") r.setAttribute("sz", "700"); });
+        E.all(pkg.xml(cp), NS.c, "gapWidth").forEach(function (g) { g.setAttribute("val", "60"); });
       }
     });
     var ins = byText(/^Achieved|The overall forecast/)[0];
@@ -735,6 +740,9 @@
       clones("spendActions", [behind], function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
       // CAPEX monthly plan: 3 projects per slide
       clones("monthly", chunk(cap, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
+      // CAPEX status: tiles + charts on every slide, project table CAPEX_ROWS per slide
+      var capPages = chunk(capexList(M), CAPEX_ROWS);
+      clones("capex", capPages, function (p, page, i) { fillCapex(pkg, p, M, page, i, capPages.length); });
       // KPI scorecard: whole KPI groups, split over as many slides as needed
       clones("kpi", kpiPages(M), function (p, page) { fillKpi(pkg, p, M, page); });
       // SPI cards: 11 per slide
@@ -750,7 +758,6 @@
         if (S.cover) fillCover(pkg, S.cover[0], M);
         if (S.overall) fillOverall(pkg, S.overall[0], M);
         if (S.values) fillValues(pkg, S.values[0], M);
-        if (S.capex) fillCapex(pkg, S.capex[0], M);
         if (S.org) fillOrg(pkg, S.org[0]);
         order.forEach(function (f) { f(); });
         pkg.slides().forEach(function (p) { renameProgram(pkg, p); });
