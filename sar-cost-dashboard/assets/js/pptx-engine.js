@@ -267,6 +267,9 @@
       kids(p, NS.a).forEach(function (k) { if (/^(r|br|fld)$/.test(k.localName)) p.removeChild(k); });
       var end = kids(p, NS.a, "endParaRPr")[0];
       var runs = Array.isArray(it) ? it : [it];
+      // a right-to-left template paragraph mirrors brackets and moves leading codes ("[To be filled[", "– 0301Fire"): use LTR for Latin text
+      var ppr = kids(p, NS.a, "pPr")[0], txt = runs.map(function (rr) { return rr == null ? "" : typeof rr === "object" ? String(rr.text == null ? "" : rr.text) : String(rr); }).join("");
+      if (ppr && ppr.getAttribute("rtl") === "1" && !/[\u0590-\u08FF]/.test(txt)) ppr.setAttribute("rtl", "0");
       runs.forEach(function (rr) {
         if (rr == null) return;
         var o = typeof rr === "object" ? rr : { text: String(rr) };

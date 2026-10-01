@@ -78,7 +78,37 @@
     var pv = sum(M.weekly, function (r) { return (N(r["Contract Value"]) || 0) * (N(r["Planned (%) - Cumulative"]) || 0); });
     M.spi = pv ? ev / pv : null;
     M.closing = D.t("Closing_Projects").filter(function (r) { return r.Code || r["Project Name"]; });
+    // projects in execution = project cards with Actual Phase = Execution (as on the site); weekly report when no cards are loaded
+    var wkBy = {}; M.weekly.forEach(function (r) { wkBy[String(r["Project Code"])] = r; });
+    var ce = Object.keys(M.cards).map(function (k) { return M.cards[k]; }).filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); });
+    M.exec = (ce.length ? ce.map(function (c) { return { code: String(c.Code), card: c, w: wkBy[String(c.Code)] || {} }; })
+      : M.weekly.map(function (r) { return { code: String(r["Project Code"]), card: M.cards[String(r["Project Code"])] || null, w: r }; }))
+      .map(function (x) { x.p = progOf(x); x.cv = N(x.w["Contract Value"]) || N(((x.card || {}).Fund || {}).CON) || N(((x.card || {}).Fund || {}).Budget) || 0; return x; })
+      .sort(function (a, b) { return b.cv - a.cv; });
     return M;
+  }
+  /* Progress of a project in execution — card section 7 (Execution Schedule, % to date) and section 8
+     (Project Timeline, execution phase dates and activities), as on the site; the weekly report only without a card. */
+  function progOf(x) {
+    var c = x.card, w = x.w || {};
+    if (c) {
+      var ex = c.Exec || {}, ph = (c.Timeline || []).filter(function (t) { return t.Level === 1 && /^execution/i.test(t.Name); })[0] || {};
+      var pl = N(ex.PlannedToDate), ac = N(ex.ActualToDate);
+      if (!pl && !ac) { pl = N(ph.Plan); ac = N(ph.Actual); }
+      if (!pl && !ac) { pl = null; ac = null; }
+      var acts = (c.Timeline || []).filter(function (t) { return t.Level === 2 && /^execution/i.test(t.Phase || ""); });
+      return { src: "card", plan: pl, act: ac, spi: pl ? (ac || 0) / pl : null, start: ph.RS || ph.BS, end: ph.RE || ph.BE, fe: ph.FE, acts: acts };
+    }
+    var p = N(w["Planned (%) - Cumulative"]), a = N(w["Actual (%) - Cumulative"]);
+    return { src: "weekly", plan: p, act: a, spi: wSpi(w), start: w["Start Date Baseline"], end: w["End Date Baseline"], fe: w["End Date (Forecast/Actual)"], acts: null };
+  }
+  /* short WBS label for the slide's milestone table: "Construction of RHL Line 2" → "CONST. RHL LN 2" */
+  function actAbbr(s) {
+    return String(s || "").toUpperCase().replace(/\s+/g, " ").trim()
+      .replace(/\bCONSTRUCTION\b/g, "CONST.").replace(/\bINSTALLATION\b/g, "INSTAL.").replace(/\bMOBILI[SZ]ATION\b/g, "MOBIL.")
+      .replace(/\bPROCUREMENT\b/g, "PROCUR.").replace(/\bENGINEERING\b/g, "ENG.").replace(/\bINVESTIGATIONS?\b/g, "INVEST.")
+      .replace(/\bDEMOBILI[SZ]ATION\b/g, "DEMOB.").replace(/\bTESTING AND COMMISSIONING\b|\bT ?& ?C\b/g, "T&C").replace(/\bLINE\b/g, "LN")
+      .replace(/\b(OF|THE|FOR)\b ?/g, "").replace(/ AND /g, " & ").replace(/\s+/g, " ").trim();
   }
   function wSpi(r) { var p = N(r["Planned (%) - Cumulative"]), a = N(r["Actual (%) - Cumulative"]); return p ? (a || 0) / p : N(r.SPI); }
   function critical(r, M) { var c = M.cards[String(r["Project Code"])]; return /^y/i.test(r["Critical Project"] || "") || (c && /^y/i.test((c.Fund || {}).Critical || "")); }
@@ -148,16 +178,25 @@
     var rs = E.rows(tbl), top = rs[1], cont = rs[2];
     rs.slice(1).forEach(function (r) { tbl.removeChild(r); });
     list.forEach(function (r, pi) {
+      // the step the close-out is waiting on: the first one not completed (or not applicable)
+      var cur = steps.filter(function (k) { var x = stepState(r, k).status; return x !== "Completed" && x !== "NA"; })[0];
       steps.forEach(function (k, si) {
-        var tr = (si === 0 ? top : cont).cloneNode(true), c = E.cells(tr), st = stepState(r, k);
+        var tr = (si === 0 ? top : cont).cloneNode(true), c = E.cells(tr), st = stepState(r, k), now = k === cur, done = st.status === "Completed" || st.status === "NA";
         if (si === 0) {
           [0, 1, 2].forEach(function (i) { c[i].setAttribute("rowSpan", String(steps.length)); });
           E.cellText(c[0], String(startNo + pi)); E.cellText(c[1], (r.Code || "") + " – " + clip(r["Project Name"], 40)); E.cellText(c[2], miss(null));
           E.cellText(c[7], clip([r["Current Status"], r["Action Plan"]].filter(Boolean).join(" · "), 160) || "");
         } else E.cellText(c[7], "");
-        E.cellText(c[3], si === 0 ? (r["Project Manager"] || stepOwner(k)) : stepOwner(k));
-        E.cellText(c[4], k);
-        E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
+        var owner = si === 0 ? (r["Project Manager"] || stepOwner(k)) : stepOwner(k);
+        if (now) {          // highlight who holds the action now
+          E.cellText(c[3], { text: "► " + owner, color: "FFFFFF", bold: true }); E.cellFill(c[3], TEAL);
+          E.cellText(c[4], { text: k, color: TEAL, bold: true }); E.cellFill(c[4], "E6F1F4");
+        } else {
+          E.cellText(c[3], done ? { text: owner, color: "A6A6A6", bold: false } : { text: owner, bold: false });
+          E.cellText(c[4], done ? { text: k, color: "A6A6A6", bold: false } : { text: k, bold: false });
+        }
+        E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending – current" : st.status, color: "C55A11", bold: true }
+          : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
         E.cellText(c[6], st.date ? st.date : miss(null));
         tbl.appendChild(tr);
       });
@@ -445,19 +484,20 @@
   }
 
   /* project in execution */
-  function fillExec(pkg, path, M, r, photo) {
-    var d = pkg.xml(path), code = String(r["Project Code"]), card = M.cards[code] || {}, src = r["Source.Name"];
+  function fillExec(pkg, path, M, x, photo) {
+    var r = x.w || {}, d = pkg.xml(path), code = x.code, card = x.card || {}, src = r["Source.Name"], pg = x.p || {};
+    var ctr = function (re) { return ((card.Contracts || []).filter(function (k) { return re.test(k.Role || "") && k.Entity; })[0] || {}).Entity; };
     function sh(id) { return E.shape(d, id); }
     function byName(re) { return E.shapesByName(d, re); }
     function textShape(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); })[0]; }
     var title = textShape(/^Project - /);
-    if (title) E.setParas(title, [[{ text: "Project - " + code + " : " + clip(r["Project Name"], 80) + " " }].concat(critical(r, M) ? [{ text: "(Critical Project)", color: "FF0000" }] : [])]);
+    if (title) E.setParas(title, [[{ text: "Project - " + code + " : " + clip(r["Project Name"] || card.Name, 80) + " " }].concat(critical({ "Project Code": code, "Critical Project": r["Critical Project"] }, M) ? [{ text: "(Critical Project)", color: "FF0000" }] : [])]);
     // contractor / consultant / funded by (one-row table)
     var top = E.all(d, NS.a, "tbl").filter(function (t) { return /Contractor/.test(t.textContent) && /Funded/.test(t.textContent); })[0];
-    if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor, 30))); E.cellText(c[3], miss(clip(r.PMC || r["Consultant (CSC)"], 24))); E.cellText(c[5], miss(r["Funding Source"])); }
+    if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], miss(clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24))); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org)); }
     // overall status
     var st = textShape(/^(On Track|At Risk|Delayed|Slightly Delayed|On Hold|Ahead)$/);
-    if (st) { var s = r["Performance Status"] || (card.Perf || {}).Status || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
+    if (st) { var s = (card.Perf || {}).Status || r["Performance Status"] || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
     var brief = textShape(/^To design|^The |^Design|^Supply|^Construct|^The project|^The scope/);
     var briefs = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 2000000 && p.y < 2500000 && E.text(x).length > 20; });
     if (briefs[0]) E.setParas(briefs[0], clip(r["Project Description"] || card.Description || "", 260) || miss(null));
@@ -466,48 +506,55 @@
     if (ach) E.setParas(ach, [r["Achievements Description"] ? clip(r["Achievements Description"], 110) : miss(null)].concat(la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"], 90); })));
     var iss = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 4900000 && p.y < 5300000 && E.text(x).trim(); })[0];
     var aoc = M.D.t("Area_of_Concern").filter(function (x) { return x["Source.Name"] === src && x["Issue /Concern Description"] && !/closed|resolved/i.test(x.Status || ""); }).slice(0, 4);
+    if (!src) aoc = M.D.t("Issue_register").filter(function (y) { return String(y["Poject Code"]) === code && !/resolved|closed/i.test(y["Issue Status"] || ""); })
+      .slice(0, 4).map(function (y) { return { "Issue /Concern Description": y["Issue Title"] || y["Issue (Description)"] }; });
     if (iss) E.setParas(iss, aoc.length ? aoc.map(function (x) { return clip(x["Issue /Concern Description"], 110); }) : (r["Issue/Concern Description"] && !/closed/i.test(r.Status || "") ? [clip(r["Issue/Concern Description"], 160)] : ["No open issues reported."]));
     // project information
     var info = textShape(/^Original Contract Value/);
     if (info) {
-      var be = r["End Date Baseline"], fe = r["End Date (Forecast/Actual)"], vo = N(r["Variation Order Amount"]);
-      E.setRuns(info, 0, [null, ": " + money(r["Contract Value"]) + " SAR"]); E.setRuns(info, 1, [null, ": " + (vo ? money(vo) + " SAR" : "-")]);
-      E.setRuns(info, 2, [null, ": " + (dLong(r["Start Date Baseline"]) || MISSING)]); E.setRuns(info, 3, [null, ": " + (dLong(be) || MISSING)]);
+      var be = pg.end, fe = pg.fe, vo = N(r["Variation Order Amount"]);
+      E.setRuns(info, 0, [null, ": " + (money(x.cv) || MISSING) + " SAR"]); E.setRuns(info, 1, [null, ": " + (vo ? money(vo) + " SAR" : "-")]);
+      E.setRuns(info, 2, [null, ": " + (dLong(pg.start) || MISSING)]); E.setRuns(info, 3, [null, ": " + (dLong(be) || MISSING)]);
       E.setRuns(info, 4, [null, fe && be && fe > be ? { text: " : " + MISSING, color: RED } : " : N/A"]); E.setRuns(info, 5, [null, ": " + (dLong(fe) || MISSING)]);
     }
     // CAPEX / KPI box
     var sp = M.spend.filter(function (p) { return p.ID === code; })[0];
     var kp = M.codeKpi[code], kl = textShape(/^CAPEX/);
-    if (kl) E.setParas(kl, kp === 7 ? "CAPEX - KPI" : kp === 8 ? "Non-KPI Spending" : (r["Budget Type"] || "") + " - No KPI");
+    if (kl) E.setParas(kl, kp === 7 ? "CAPEX - KPI" : kp === 8 ? "Non-KPI Spending" : (r["Budget Type"] ? r["Budget Type"] + " - No KPI" : "No KPI"));
     var bl = textShape(/^Yearly Budget/);
     if (bl) {
       if (sp) {
         var vr = sp.ytdAct - sp.ytdPlan;
-        E.setRuns(bl, 0, ["Yearly Budget  : " + mio(sp.fy)]); E.setRuns(bl, 1, ["YTD Plan           : " + mio(sp.ytdPlan)]); E.setRuns(bl, 2, ["YTD Actual       : " + mio(sp.ytdAct)]);
+        E.setRuns(bl, 0, [(M.D.hasRev ? "Rev Plan 2026 : " : "Yearly Budget  : ") + mio(sp.fy)]); E.setRuns(bl, 1, [(M.D.hasRev ? "YTD Rev Plan   : " : "YTD Plan           : ") + mio(sp.ytdPlan)]); E.setRuns(bl, 2, ["YTD Actual       : " + mio(sp.ytdAct)]);
         E.setRuns(bl, 3, ["Variance           :  ", { text: (vr > 0 ? "+ " : vr < 0 ? "- " : "") + mio(Math.abs(vr)), color: vr < 0 ? RED : GREEN }]); E.setRuns(bl, 4, ["Forecast 2026 : " + mio(sp.fcFY)]);
       } else E.setParas(bl, { text: "Not in the 2026 Spending Plan", color: RED });
     }
     // progress + SPI
-    var pl = N(r["Planned (%) - Cumulative"]), ac = N(r["Actual (%) - Cumulative"]), vr2 = (ac || 0) - (pl || 0), spi = wSpi(r);
+    var pl = pg.plan, ac = pg.act, vr2 = (ac || 0) - (pl || 0), spi = pg.spi;
+    var x0 = x, paidOf = N(r["Paid Amount"]) != null ? N(r["Paid Amount"]) : (N((card.Perf || {}).Paid) || 0);
     E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
       var x = pkg.xml(cp).documentElement.textContent;
       if (/Plan%/.test(x)) pkg.setChart(cp, { cats: ["Progress"], series: [{ name: "Actual", values: [ac] }, { name: "Plan%", values: [pl] }] });
-      else if (/IPC/.test(x)) { var paid = N(r["Paid Amount"]) || 0, cv = N(r["Contract Value"]) || 0; pkg.setChart(cp, { cats: ["IPC Paid / Approved", "Remaining Amount"], series: [{ name: "IPC", values: [paid, Math.max(0, cv - paid)] }] }); }
+      else if (/IPC/.test(x)) { var paid = paidOf, cv = x0.cv || 0; pkg.setChart(cp, { cats: ["IPC Paid / Approved", "Remaining Amount"], series: [{ name: "IPC", values: [paid, Math.max(0, cv - paid)] }] }); }
     });
     var varT = E.all(d, NS.a, "tbl").filter(function (t) { return /^Variance/.test(E.all(t, NS.a, "t").map(function (x) { return x.textContent; }).join("").trim()); })[0];
-    if (varT) E.cellText(E.cells(E.rows(varT)[0])[0], [[{ text: "Variance " }, { text: sgnPct(vr2) + " ", color: vr2 < 0 ? RED : GREEN }]]);
+    if (varT) E.cellText(E.cells(E.rows(varT)[0])[0], [[{ text: "Variance " }, pl == null ? { text: "- ", color: "768692" } : { text: sgnPct(vr2) + " ", color: vr2 < 0 ? RED : GREEN }]]);
     var box = byName(/^Rectangle: Rounded Corners 5$/)[0], arrow = byName(/^Arrow: Notched Right/)[0], good = spi != null && spi >= 1;
     if (box) { E.setParas(box, { text: spi == null ? "-" : spi.toFixed(2), color: good ? GREEN : RED }); E.setFill(box, good ? "CCFFCC" : "FFCCFF", good ? GREEN : RED); }
     if (arrow) { arrow.getElementsByTagNameNS(NS.a, "xfrm")[0].setAttribute("rot", good ? "16200000" : "5400000"); E.setFill(arrow, good ? GREEN : RED); }
-    var paidT = textShape(/^Paid \/ Approved IPCs/); if (paidT) E.setRuns(paidT, 1, [money(r["Paid Amount"]) + ".00 SAR"]);
+    var paidT = textShape(/^Paid \/ Approved IPCs/); if (paidT) E.setRuns(paidT, 1, [money(paidOf) + ".00 SAR"]);
     // milestones table
     var mt = E.all(d, NS.a, "tbl").filter(function (t) { return /MILESTONE/i.test(t.textContent); })[0];
     if (mt) {
-      var ms = M.D.t("Project_Milestones_Progress").filter(function (x) { return x["Source.Name"] === src && x.Description; }).sort(function (a, b) { return (N(a.Sort) || 0) - (N(b.Sort) || 0); }).slice(0, 5);
+      var ms;
+      if (pg.acts && pg.acts.length) {   // card section 8: execution activities (the 5 heaviest, in card order)
+        var top5 = pg.acts.slice().sort(function (a, b) { return (N(b.Weight) || 0) - (N(a.Weight) || 0); }).slice(0, 4);
+        ms = pg.acts.filter(function (t) { return top5.indexOf(t) >= 0; }).map(function (t) { return { Description: t.Name, "Planned progress": t.Plan, "Actual Progress": t.Actual }; });
+      } else ms = !src ? [] : M.D.t("Project_Milestones_Progress").filter(function (x) { return x["Source.Name"] === src && x.Description; }).sort(function (a, b) { return (N(a.Sort) || 0) - (N(b.Sort) || 0); }).slice(0, 5);
       var rows = E.resizeRows(mt, 1, 1, Math.max(ms.length, 1));
       if (!ms.length) { var c0 = E.cells(rows[0]); E.cellText(c0[0], miss(null)); E.cellText(c0[1], ""); E.cellText(c0[2], ""); }
-      ms.forEach(function (x, i) { var c = E.cells(rows[i]); E.cellText(c[0], clip(String(x.Description).toUpperCase(), 22)); E.cellText(c[1], pct(x["Planned progress"])); E.cellText(c[2], pct(x["Actual Progress"])); });
+      ms.forEach(function (x, i) { var c = E.cells(rows[i]); E.cellText(c[0], pg.acts && pg.acts.length ? { text: clip(actAbbr(x.Description), 17), size: 6.5 } : clip(String(x.Description).toUpperCase(), 22)); E.cellText(c[1], pct(x["Planned progress"])); E.cellText(c[2], pct(x["Actual Progress"])); });
       var fr = mt.parentNode; while (fr && fr.localName !== "graphicFrame") fr = fr.parentNode; if (fr) E.fitTable(fr);
     }
     // progress photos → placeholder
@@ -589,7 +636,7 @@
       // delivery KPI: 2 per slide
       clones("delivery", chunk(M.D.t("Delivery_KPI").filter(function (r) { return r["Project Code"] != null; }), 2), function (p, g) { fillDelivery(pkg, p, M, g); });
       // one slide per project in execution / in closing
-      clones("exec", M.weekly.map(function (r) { return r; }), function (p, r) { fillExec(pkg, p, M, r, photo); });
+      clones("exec", M.exec, function (p, x) { fillExec(pkg, p, M, x, photo); });
       clones("closing", openCl.length ? openCl : [null], function (p, r) { if (r) fillClosing(pkg, p, M, r); });
       return jobs.then(function () {
         if (S.cover) fillCover(pkg, S.cover[0], M);
