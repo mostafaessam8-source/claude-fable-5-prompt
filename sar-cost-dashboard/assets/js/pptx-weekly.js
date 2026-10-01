@@ -663,15 +663,16 @@
     page = page || cap; pi = pi || 0; pn = pn || 1;
     var fy = sum(cap, function (p) { return p.fy; }), yp = sum(cap, function (p) { return p.ytdPlan; }), ya = sum(cap, function (p) { return p.ytdAct; }), rem = sum(cap, function (p) { return p.fcRem; });
     var cutM = M.cut ? MONTHS[+M.cut.slice(5, 7) - 1] : "";
+    var PL = M.D.hasRev ? "Rev Spend Plan" : "Planned Budget";   // the plan figures are the Rev Spend Plan once Budget 2026 is loaded
     function byText(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); }); }
     byText(/^SAR [\d.]+M$/).forEach(function (s) {
       var p = E.pos(s), lbl = byText(/./).filter(function (x) { var q = E.pos(x); return q && Math.abs(q.x - p.x) < 400000 && q.y < p.y && p.y - q.y < 500000; })[0], l = lbl ? E.text(lbl) : "";
       if (/Planned Budget/.test(l)) E.setParas(s, { text: sarM(yp).replace(" ", "\u00A0"), size: 16 }); else if (/Actual Budget/.test(l)) E.setParas(s, { text: sarM(ya).replace(" ", "\u00A0"), size: 16 });
       else if (/Variance/.test(l)) E.setParas(s, { text: sarM(ya - yp).replace("-", "\u2011").replace(" ", "\u00A0"), size: 16 });   // narrow box: keep on one line
     });
-    byText(/^(Planned|Actual) Budget/).forEach(function (s) { E.setRuns(s, 0, [E.text(s).split("(")[0], "(Till " + cutM + ")"]); });
+    byText(/^(Planned|Actual) Budget/).forEach(function (s) { E.setRuns(s, 0, [E.text(s).split("(")[0].replace(/^Planned Budget/, PL), "(Till " + cutM + ")"]); });
     var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, { text: sarM(fy).replace(" ", "\u00A0"), size: 18 });
-    var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 16 }); }   // one line in the narrow tile
+    var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 16, color: vpv < 0 ? RED : GREEN }); }   // one line in the narrow tile
     var lt = byText(/^List of Capex projects/)[0]; if (lt) E.setParas(lt, "List of Capex projects" + (pn > 1 ? "  (" + (pi + 1) + " of " + pn + ")" : "") + " · " + cap.length + " projects");
     var yl = byText(/Yearly Budget/)[0]; if (yl) E.setParas(yl, "Yearly Budget – " + (M.D.hasRev ? "Rev Spend Plan" : "Spend Plan"));
     // table
@@ -680,7 +681,10 @@
     var shown = page;
     var body = E.resizeRows(tbl, 1, 1, shown.length); tbl.appendChild(total);
     var sz = 9;                            // one readable size for the whole table
-    E.cells(rs[0]).forEach(function (hc) { E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "950"); }); });
+    E.cells(rs[0]).forEach(function (hc) {
+      E.all(hc, NS.a, "t").forEach(function (t) { if (/^\s*Planned Budget\s*$/.test(t.textContent)) t.textContent = PL; });
+      E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "950"); });
+    });
     function cell(c, v) { E.cellText(c, typeof v === "object" ? { text: v.text, color: v.color, size: sz } : { text: v, size: sz }); }
     shown.forEach(function (p, i) {
       var c = E.cells(body[i]);
@@ -703,12 +707,12 @@
         var cumA = ov.act.map(function (v, i) { ca += v; return i <= ci ? Math.round(ca / 1e5) / 10 : null; });
         var cumF = ov.act.map(function (v, i) { cf += v; return i >= ci ? Math.round(cf / 1e5) / 10 : null; });
         pkg.setChart(cp, { cats: M.months.map(serial), catFmt: "mmm-yy", series: [
-          { name: "Planned Budget", values: ov.plan.map(function (v) { return Math.round(v / 1e5) / 10; }) },
+          { name: PL, values: ov.plan.map(function (v) { return Math.round(v / 1e5) / 10; }) },
           { name: "Actual Budget", values: ov.act.map(function (v, i) { return i <= ci ? Math.round(v / 1e5) / 10 : null; }) },
-          { name: "Cum Planned Budget", values: cumP }, { name: "Cum Actual Budget", values: cumA }, { name: "Cum Forecast Budget", values: cumF }] });
+          { name: "Cum " + PL, values: cumP }, { name: "Cum Actual Budget", values: cumA }, { name: "Cum Forecast Budget", values: cumF }] });
       } else if (/Planned Budget/.test(x)) {
         pkg.setChart(cp, { cats: cap.map(function (p) { return p.ID; }), series: [
-          { name: "Planned Budget", values: cap.map(function (p) { return Math.round(p.ytdPlan / 1e6); }) }, { name: "Actual Budget", values: cap.map(function (p) { return Math.round(p.ytdAct / 1e6); }) }] });
+          { name: PL, values: cap.map(function (p) { return Math.round(p.ytdPlan / 1e6); }) }, { name: "Actual Budget", values: cap.map(function (p) { return Math.round(p.ytdAct / 1e6); }) }] });
         // data labels: smaller, so the planned / actual values of neighbouring bars do not overlap
         E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) { var dl = r.parentNode; while (dl && dl.localName !== "dLbls" && dl.localName !== "chartSpace") dl = dl.parentNode; if (dl && dl.localName === "dLbls") r.setAttribute("sz", "700"); });
         E.all(pkg.xml(cp), NS.c, "gapWidth").forEach(function (g) { g.setAttribute("val", "60"); });
