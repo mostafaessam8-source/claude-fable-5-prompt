@@ -752,3 +752,19 @@ body.printing .iv-colband { display: none !important; }
 .cl-tbl td, .cl-tbl th { font-size: 12.5px; }
 .cl-tbl .icon-btn { padding: 3px 10px; font-size: 12px; }
 @media (max-width: 760px) { .cloud-grid { grid-template-columns: 1fr; } }
+
+/* 2027 Engineering Blockades */
+table.bk-plan, table.bk-ck { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.bk-plan th, table.bk-ck th { background: var(--sar-blue); color: var(--white); padding: 7px 8px; text-align: left; font-weight: 700; white-space: nowrap; position: sticky; top: 0; }
+table.bk-plan th.q { text-align: center; min-width: 80px; }
+table.bk-plan td, table.bk-ck td { padding: 6px 8px; border-bottom: 1px solid var(--tint-10); vertical-align: middle; }
+table.bk-plan tr.bk-p td { background: var(--tint-10); border-top: 3px solid var(--sar-black); cursor: pointer; }
+table.bk-plan tr.bk-p:hover td { background: #d6e9ee; }
+table.bk-plan tr.bk-a { cursor: pointer; } table.bk-plan tr.bk-a:hover td:not(.on) { background: var(--tint-5); }
+table.bk-plan td.bk-l { padding-left: 22px; }
+table.bk-plan td.q { text-align: center; border-left: 1px solid var(--tint-10); font-weight: 600; }
+table.bk-plan td.num, table.bk-ck td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.bk-plan sup { color: var(--slate); font-size: 9px; margin-left: 2px; }
+table.bk-ck th { white-space: normal; font-size: 11px; text-align: center; min-width: 70px; } table.bk-ck th:first-child { text-align: left; min-width: 200px; }
+table.bk-ck td.ck { text-align: center; font-size: 15px; font-weight: 700; }
+table.bk-ck td.ck.y { color: #2E7D32; background: rgba(46,125,50,.07); } table.bk-ck td.ck.p { color: #B07A00; background: rgba(241,180,52,.12); } table.bk-ck td.ck.n { color: var(--red); background: rgba(203,44,48,.07); }

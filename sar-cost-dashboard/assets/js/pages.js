@@ -2284,6 +2284,199 @@
         { key: "reason", label: "Reason for delay", wrap: true, render: function (x) { x = String(x || "").replace(/\s+/g, " "); return x ? '<span title="' + esc(x) + '">' + esc(x.length > 120 ? x.slice(0, 119) + "…" : x) + "</span>" : ""; } }]) });
   };
 
+  /* ======================================================================
+     2027 Engineering Blockades — inputs to the 2027 Delivery Plan / shutdown plan
+     (EPBU 2027 Engineering blockades -R<nn>.xlsx). Answers Planning's requests:
+     code · works · location · dates & durations (hours per day × number of days) · affected line ·
+     passenger / freight service stoppage · confirmed for 2027.
+     ====================================================================== */
+  var BQ = ["Q1", "Q2", "Q3", "Q4"], BK_ACCESS = ["Shutdown", "Blockage", "Possession"];
+  function bkDur(v) {                     // "48" (continuous hours) · "10 Hr during the day" · "4 Hrs … (expected duration 30 days)" · "N/A"
+    if (v == null || v === "") return null;
+    if (typeof v === "number") return { text: v + " h", hours: v, perDay: Math.min(24, v), days: Math.ceil(v / 24), cont: true };
+    var t = String(v).replace(/\s+/g, " ").trim();
+    if (/^n\/?a$/i.test(t) || /^-+$/.test(t)) return null;
+    var h = /(\d+(?:\.\d+)?)\s*h(?:rs?|ours?)?\b/i.exec(t), d = /(\d+)\s*days?/i.exec(t), n = /^\d+(?:\.\d+)?$/.test(t) ? +t : null;
+    if (n != null) return { text: n + " h", hours: n, perDay: Math.min(24, n), days: Math.ceil(n / 24), cont: true };
+    return { text: t, perDay: h ? +h[1] : null, days: d ? +d[1] : null, hours: h && d ? +h[1] * +d[1] : null, cont: false, needed: /when needed/i.test(t) };
+  }
+  function bkQuarters(s) {
+    s = String(s || "").toLowerCase(); var q = [];
+    [["1st", "first", "q1"], ["2nd", "second", "q2"], ["3rd", "third", "q3"], ["4th", "fourth", "q4"]].forEach(function (w, i) {
+      if (w.some(function (x) { return s.indexOf(x) >= 0; })) q.push(BQ[i]);
+    });
+    return q;
+  }
+  function bkModel(D) {
+    var raw = D.t("Blockades_2027"), have = raw.length ? Object.keys(raw[0]) : [];
+    function col(re) { return have.filter(function (k) { return re.test(k); })[0]; }
+    var C = { sd: col(/^shutdown/i), bl: col(/^blockage/i), po: col(/^pos+es+ion/i), tot: col(/^total hrs/i), ex: col(/^expected execution/i),
+      km: col(/^track kilomet/i), cul: col(/^culvert/i), works: col(/^actual works/i), freq: col(/^frequenc/i), net: col(/^network$/i), line: col(/^line$/i),
+      from: col(/^(from|start)/i), to: col(/^(to|end|finish)\b/i), pax: col(/passenger/i), frt: col(/freight/i), note: col(/^note$/i) };
+    var pkgNo = {};
+    return raw.map(function (r) {
+      var name = String(r.Project || ""), code = String(r.Code || "");
+      var o = { code: code, name: name.replace(/\s*\((?:un)?confirmed\)\s*/ig, " ").replace(/\s+/g, " ").trim(), raw: r };
+      o.confirmed = /\bconfirmed\b/i.test(name) && !/unconfirmed/i.test(name) ? "Confirmed" : "Not confirmed";
+      o.network = r[C.net] || "—"; o.line = r[C.line] || "—";
+      pkgNo[code] = (pkgNo[code] || 0) + 1; o.pkg = pkgNo[code];
+      o.qs = bkQuarters(r[C.ex]); o.qText = r[C.ex] || "";
+      o.km = String(r[C.km] || "").split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      o.culverts = String(r[C.cul] || "").split(/\n/).map(function (x) { return x.trim(); }).filter(function (x) { return x && !/^na$/i.test(x); });
+      o.works = r[C.works] || ""; o.freq = r[C.freq] || "";
+      o.acc = {}; o.access = [];
+      [["Shutdown", C.sd], ["Blockage", C.bl], ["Possession", C.po]].forEach(function (a) { var d = a[1] ? bkDur(r[a[1]]) : null; o.acc[a[0]] = d; if (d) o.access.push(a[0]); });
+      var ds = o.access.map(function (k) { return o.acc[k]; });
+      o.perDay = ds.map(function (d) { return d.perDay; }).filter(function (x) { return x != null; }).sort(function (a, b) { return b - a; })[0];
+      o.days = ds.map(function (d) { return d.days; }).filter(function (x) { return x != null; }).sort(function (a, b) { return b - a; })[0];
+      var tot = N(r[C.tot]);
+      o.hoursSrc = tot != null ? "sheet" : null;
+      o.hours = tot != null ? tot : (function () { var h = ds.map(function (d) { return d.hours; }).filter(function (x) { return x != null; }); return h.length ? Math.max.apply(null, h) : null; })();
+      if (o.hours != null && !o.hoursSrc) o.hoursSrc = "estimated";
+      if (o.days == null && o.perDay && tot != null) { o.days = Math.round(tot / o.perDay); o.daysDerived = true; }   // total hours ÷ hours per day
+      o.from = C.from ? r[C.from] : null; o.to = C.to ? r[C.to] : null;
+      o.pax = C.pax ? r[C.pax] : null; o.frt = C.frt ? r[C.frt] : null;
+      var isKm = o.km.length && o.km.every(function (x) { return /\d+\s*\+\s*\d+/.test(x); });
+      o.where = !o.km.length ? "—" : isKm ? (o.km.length > 1 ? o.km[0] + " … " + o.km[o.km.length - 1] + " (" + o.km.length + " locations)" : o.km[0]) : o.km[0].replace(/^\d+\.\s*/, "").slice(0, 60);
+      // Planning's checklist (2027 Delivery Plan e-mails of 17-Aug and 27-Sep-2026)
+      o.chk = {
+        code: !!code, works: !!o.works, location: o.km.length > 0, line: o.line !== "—",
+        dates: !!(o.from && o.to), perDay: o.perDay != null, days: o.days != null, total: o.hours != null && o.hoursSrc === "sheet",
+        service: !!(o.pax && o.frt), confirmed: o.confirmed === "Confirmed" };
+      var ks = Object.keys(o.chk); o.score = ks.filter(function (k) { return o.chk[k]; }).length / ks.length;
+      o.gaps = ks.filter(function (k) { return !o.chk[k]; });
+      o.ready = o.gaps.length ? "Gaps to close" : "Ready";
+      o.label = o.code + " · " + o.name;
+      return o;
+    });
+  }
+  var BK_CHECKS = [["code", "Project code"], ["works", "Works to be delivered"], ["location", "Location (track km)"], ["line", "Affected line"],
+    ["dates", "Dates From – To"], ["perDay", "Hours per day"], ["days", "Number of days"], ["total", "Total hours"], ["service", "Passenger / freight stoppage level"], ["confirmed", "Confirmed for 2027"]];
+
+  P.blockades = function (ctx) {
+    var D = ctx.D, v = ctx.view, st = ctx.state, all = bkModel(D);
+    if (!all.length) { add(v, '<div class="empty">No 2027 blockade inputs loaded. Import <b>EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
+    var f = ctx.state.f || (ctx.state.f = {});
+    function multi(key, list) { return function (o) { var s = f[key] || [], l = list(o); var hit = l.filter(function (x) { return s.indexOf(x) >= 0; })[0]; return hit || l[0] || "None"; }; }
+    function opts(get) { return U.uniq(all.map(get)).filter(Boolean).sort(); }
+    var defs = [
+      { key: "net", label: "Network", get: function (o) { return o.network; }, options: opts(function (o) { return o.network; }) },
+      { key: "line", label: "Line", get: function (o) { return o.line; }, options: opts(function (o) { return o.line; }) },
+      { key: "q", label: "Quarter 2027", get: multi("q", function (o) { return o.qs; }), options: BQ },
+      { key: "acc", label: "Access type", get: multi("acc", function (o) { return o.access; }), options: BK_ACCESS },
+      { key: "conf", label: "Status", get: function (o) { return o.confirmed; }, options: ["Confirmed", "Not confirmed"] },
+      { key: "ready", label: "Submission readiness", get: function (o) { return o.ready; }, options: ["Ready", "Gaps to close"] },
+      { key: "proj", label: "Project", get: function (o) { return o.code; }, options: U.uniq(all.map(function (o) { return o.code; })), display: function (k) { var o = all.filter(function (x) { return x.code === k; })[0]; return o ? o.label : k; } }];
+    filterBar(ctx, defs, all);
+    var rows = all.filter(function (o) { return passes(o, defs, f); });
+    function rowsX(key) { return all.filter(function (o) { return passes(o, defs, f, key); }); }
+    function sumF(list, fn) { return list.reduce(function (s, o) { return s + (fn(o) || 0); }, 0); }
+    var projs = U.uniq(rows.map(function (o) { return o.code; }));
+    var hrs = sumF(rows, function (o) { return o.hours; }), est = rows.filter(function (o) { return o.hoursSrc === "estimated"; }).length;
+    var gapItems = sumF(rows, function (o) { return o.gaps.length; }), ready = rows.filter(function (o) { return o.ready === "Ready"; }).length;
+    var conf = U.uniq(rows.filter(function (o) { return o.confirmed === "Confirmed"; }).map(function (o) { return o.code; }));
+
+    add(v, '<div class="note-box"><b>2027 Delivery Plan — engineering access requirements.</b> Planning (Master Planning &amp; Railway Interoperability) asked each programme for the works that need ' +
+      "a <b>shutdown, line blockage or possession</b> in 2027, with: project code · works · location (track km) · <b>dates From – To</b> · <b>hours per day and number of days</b> (not only the total) · " +
+      "affected line · <b>passenger / freight service stoppage</b> (Full / Partial / None) · and only <b>confirmed</b> projects (unconfirmed ones are left out of the initial draft). " +
+      "This page shows what the sheet already answers and what is still open before the October review.</div>");
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: projs.length, label: "Projects", note: conf.length + " confirmed for 2027" }) +
+      U.tile({ value: rows.length, label: "Work packages", note: sumF(rows, function (o) { return o.km.length || 1; }) + " track locations" }) +
+      U.tile({ value: fmt.int(hrs), unit: "h", label: "Requested access", color: "black", note: est ? est + " package(s) estimated from hours × days" : "From the sheet's Total Hrs" }) +
+      U.tile({ value: U.uniq(rows.map(function (o) { return o.line; })).length, label: "Lines affected", note: U.uniq(rows.map(function (o) { return o.network + " " + o.line; })).join(" · ") }) +
+      U.tile({ value: ready + " / " + rows.length, label: "Ready for submission", color: ready === rows.length ? "" : "yellow", note: "All 10 Planning items answered" }) +
+      U.tile({ value: gapItems, label: "Open items", color: gapItems ? "red" : "slate", note: "Missing answers across the packages · see the checklist" });
+
+    // charts
+    var g2 = grid(v, "g-3");
+    var pcs = U.uniq(rowsX("proj").map(function (o) { return o.code; })), pal = [C.blue, C.yellow, C.mid, C.slate, C.sky, C.red, C.black];
+    U.chart(chartBox(panelIn(g2, "Hours by quarter", "Spread over each package's expected quarters · by project"), "short"), { type: "bar",
+      data: { labels: BQ, datasets: pcs.map(function (c, i) { var l = rowsX("proj").filter(function (o) { return o.code === c; });
+        return U.barDs(c + " " + (l[0] || {}).name, BQ.map(function (q) { return sumF(l, function (o) { return o.qs.indexOf(q) >= 0 ? (o.hours || 0) / o.qs.length : 0; }); }), f.proj && f.proj.length && f.proj.indexOf(c) < 0 ? U.fade(pal[i % pal.length]) : pal[i % pal.length], { stack: "s" }); }) },
+      options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: { callbacks: { label: function (t) { return t.dataset.label + ": " + fmt.int(t.raw) + " h"; } } } },
+        scales: { x: Object.assign(U.catAxis(), { stacked: true }), y: { stacked: true, beginAtZero: true, ticks: { callback: function (x) { return fmt.int(x) + " h"; } } } } } });
+    var lr = rowsX("line"), lines = U.uniq(lr.map(function (o) { return o.network + " · " + o.line; }));
+    U.chart(chartBox(panelIn(g2, "Hours by network / line", "Click to filter"), "short"), U.clickable({ type: "bar",
+      data: { labels: lines, datasets: [U.barDs("Hours", lines.map(function (l) { return sumF(lr.filter(function (o) { return o.network + " · " + o.line === l; }), function (o) { return o.hours; }); }), U.hl(C.blue, lines.map(function (l) { return l.split(" · ")[1]; }), f.line), { maxBarThickness: 40 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", formatter: function (x) { return fmt.int(x) + " h"; } } }, layout: { padding: { right: 40 } },
+        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } } } }, function (i, e) { pick(ctx, "line", lines[i].split(" · ")[1], e); }));
+    var ar = rowsX("acc");
+    U.chart(chartBox(panelIn(g2, "Type of access", "Packages needing each type · click to filter"), "short"), U.clickable({ type: "bar",
+      data: { labels: BK_ACCESS, datasets: [U.barDs("Packages", BK_ACCESS.map(function (a) { return ar.filter(function (o) { return o.access.indexOf(a) >= 0; }).length; }), U.hl(C.mid, BK_ACCESS, f.acc), { maxBarThickness: 46 })] },
+      options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end" } }, layout: { padding: { top: 18 } }, scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 } } } } },
+      function (i, e) { pick(ctx, "acc", BK_ACCESS[i], e); }));
+
+    // 2027 plan: projects → packages × quarters
+    var plan = panelIn(v, "2027 access plan", "One line per work package · cells show the hours requested in each quarter · click a project to filter, a package for its details");
+    var byP = {}; rows.forEach(function (o) { (byP[o.code] = byP[o.code] || []).push(o); });
+    var h = '<div class="table-wrap"><table class="bk-plan"><thead><tr><th>Project / work package</th><th>Line</th><th>Access</th><th>Hours / day × days</th>' + BQ.map(function (q) { return "<th class='q'>" + q + " 2027</th>"; }).join("") + "<th>Total h</th></tr></thead><tbody>";
+    var maxH = Math.max.apply(null, rows.map(function (o) { return (o.hours || 0) / Math.max(1, o.qs.length); }).concat([1]));
+    Object.keys(byP).forEach(function (code) {
+      var l = byP[code], o0 = l[0];
+      h += '<tr class="bk-p" data-code="' + esc(code) + '"><td colspan="4"><b>' + esc(code) + "</b> " + esc(o0.name) + ' <span class="badge ' + (o0.confirmed === "Confirmed" ? "ok" : "warn") + '">' + esc(o0.confirmed) + "</span></td>" +
+        BQ.map(function (q) { var x = sumF(l, function (o) { return o.qs.indexOf(q) >= 0 ? (o.hours || 0) / o.qs.length : 0; }); return "<td class='q num'><b>" + (x ? fmt.int(x) : "") + "</b></td>"; }).join("") + "<td class='num'><b>" + fmt.int(sumF(l, function (o) { return o.hours; })) + "</b></td></tr>";
+      l.forEach(function (o, i) {
+        h += '<tr class="bk-a" data-i="' + rows.indexOf(o) + '"><td class="bk-l">Package ' + o.pkg + " · " + esc(o.where) + (o.culverts.length ? ' <span class="muted">(' + esc(o.culverts.join(", ")) + ")</span>" : "") + "</td><td>" + esc(o.network + " " + o.line) + "</td><td>" + esc(o.access.join(" + ") || "—") +
+          "</td><td>" + (o.perDay != null ? fmt.int(o.perDay) + " h" : '<span class="neg">?</span>') + " × " + (o.days != null ? (o.daysDerived ? "≈" : "") + fmt.int(o.days) + " d" : '<span class="neg">?</span>') + "</td>" +
+          BQ.map(function (q) { var on = o.qs.indexOf(q) >= 0, x = on ? (o.hours || 0) / o.qs.length : 0, a = on ? 0.18 + 0.62 * x / maxH : 0;
+            return "<td class='q num" + (on ? " on" : "") + "' style='" + (on ? "background:rgba(0,119,139," + a.toFixed(2) + ");color:" + (a > 0.5 ? "#fff" : "inherit") : "") + "'>" + (on ? (x ? fmt.int(x) + " h" : "✓") : "") + "</td>"; }).join("") +
+          "<td class='num'>" + (o.hours != null ? fmt.int(o.hours) + (o.hoursSrc === "estimated" ? "<sup title='Estimated: hours per day × days, or continuous hours'>est</sup>" : "") : "—") + "</td></tr>";
+      });
+    });
+    h += "</tbody></table></div>";
+    add(plan, h);
+    plan.querySelectorAll(".bk-p").forEach(function (r) { r.addEventListener("click", function (e) { pick(ctx, "proj", r.getAttribute("data-code"), e); }); });
+    plan.querySelectorAll(".bk-a").forEach(function (r) { r.addEventListener("click", function () { bkModal(rows[+r.getAttribute("data-i")]); }); });
+
+    // Planning's checklist
+    var ck = panelIn(v, "Planning checklist — what the submission still needs", "Items requested in the 2027 Delivery Plan e-mails (17-Aug and 27-Sep-2026) · ✓ answered in every package · n/N in some packages · ✗ missing · days marked ≈ are total hours ÷ hours per day");
+    var hc = '<div class="table-wrap"><table class="bk-ck"><thead><tr><th>Project</th>' + BK_CHECKS.map(function (c) { return "<th>" + esc(c[1]) + "</th>"; }).join("") + "<th>Readiness</th></tr></thead><tbody>";
+    Object.keys(byP).forEach(function (code) {
+      var l = byP[code], sc = sumF(l, function (o) { return o.score; }) / l.length;
+      hc += "<tr><td><b>" + esc(code) + "</b> " + esc(l[0].name) + "</td>" + BK_CHECKS.map(function (c) {
+        var n = l.filter(function (o) { return o.chk[c[0]]; }).length, cls = n === l.length ? "y" : n ? "p" : "n";
+        return "<td class='ck " + cls + "' title='" + n + " of " + l.length + " packages'>" + (cls === "y" ? "✓" : cls === "p" ? "<small>" + n + "/" + l.length + "</small>" : "✗") + "</td>"; }).join("") +
+        "<td>" + U.meter(sc) + "</td></tr>";
+    });
+    hc += "</tbody></table></div><div class='pc-note'>Dates From – To and the service-stoppage level (Full / Partial / None for passenger and freight) have no column in the sheet yet — add them (e.g. <i>From</i>, <i>To</i>, <i>Passenger stoppage</i>, <i>Freight stoppage</i>) and re-import; they are picked up automatically.</div>";
+    add(ck, hc);
+
+    // register + export
+    var tp = panelIn(v, "Work package register", rows.length + " packages · click a row for the full works description",
+      '<button type="button" class="icon-btn ghost bk-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Export Planning submission (.xlsx)</span></button>');
+    tp.querySelector(".bk-x").addEventListener("click", function () { bkExport(rows); });
+    tableIn(tp, { rows: rows, exportName: "Blockades_2027", maxHeight: 640, onRow: function (o) { bkModal(o); },
+      columns: [{ key: "code", label: "Code", nowrap: true }, { key: "name", label: "Project", wrap: true }, { key: "pkg", label: "Pkg", type: "int" },
+        { key: "network", label: "Network" }, { key: "line", label: "Line" }, { key: "where", label: "Location (track km)", wrap: true },
+        { key: "qText", label: "Expected execution" }, { key: "accText", label: "Shutdown / Blockage / Possession", wrap: true, get: function (o) { return o.access.map(function (a) { return a + ": " + o.acc[a].text; }).join(" · ") || "—"; } },
+        { key: "perDay", label: "Hours / day", type: "int" }, { key: "days", label: "Days", type: "int" }, { key: "hours", label: "Total hours", type: "int", total: "sum" },
+        { key: "confirmed", label: "Status", type: "badge" }, { key: "ready", label: "Readiness", type: "badge", get: function (o) { return o.ready === "Ready" ? "Ready" : o.gaps.length + " open"; } }],
+      totals: true });
+  };
+  function bkModal(o) {
+    U.modal(o.code + " · " + o.name + " — package " + o.pkg, '<div class="kv">' + [["Network / line", esc(o.network + " · " + o.line)], ["Expected execution", esc(o.qText || "—")],
+      ["Track km", esc(o.km.join(", ") || "—")], ["Culverts", esc(o.culverts.join(", ") || "—")]].concat(BK_ACCESS.map(function (a) { return [a, esc(o.acc[a] ? o.acc[a].text : "Not required")]; }))
+      .concat([["Hours per day × days", (o.perDay != null ? o.perDay + " h" : "?") + " × " + (o.days != null ? o.days + " days" : "?")], ["Total hours", o.hours != null ? fmt.int(o.hours) + (o.hoursSrc === "estimated" ? " (estimated)" : "") : "—"],
+        ["Access needed for", esc(o.freq || "—").replace(/\n/g, "<br>")], ["Works", esc(o.works || "—").replace(/\n/g, "<br>")],
+        ["Open items", o.gaps.length ? esc(o.gaps.map(function (g) { return BK_CHECKS.filter(function (c) { return c[0] === g; })[0][1]; }).join(", ")) : "None"]])
+      .map(function (p) { return "<div>" + p[0] + "</div><div>" + p[1] + "</div>"; }).join("") + "</div>", true);
+  }
+  function bkExport(rows) {
+    var aoa = [["Program", "Project Code", "Project Name", "Work package", "Works to be delivered", "Network", "Affected line(s)", "Location – track km", "Culverts",
+      "Date From", "Date To", "Expected quarter(s) 2027", "Shutdown", "Blockage", "Possession", "Hours per day", "Number of days", "Total duration (hrs)",
+      "Passenger service stoppage (Full/Partial/None)", "Freight service stoppage (Full/Partial/None)", "Confirmed for 2027", "Open items"]];
+    rows.forEach(function (o) {
+      aoa.push(["NSR", o.code, o.name, o.pkg, o.works, o.network, o.line, o.km.join(", "), o.culverts.join(", "), o.from || "", o.to || "", o.qs.join(", "),
+        o.acc.Shutdown ? o.acc.Shutdown.text : "N/A", o.acc.Blockage ? o.acc.Blockage.text : "N/A", o.acc.Possession ? o.acc.Possession.text : "N/A",
+        o.perDay != null ? o.perDay : "", o.days != null ? o.days : "", o.hours != null ? o.hours : "", o.pax || "", o.frt || "", o.confirmed === "Confirmed" ? "Yes" : "No",
+        o.gaps.map(function (g) { return BK_CHECKS.filter(function (c) { return c[0] === g; })[0][1]; }).join("; ")]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = aoa[0].map(function (hd, i) { return { wch: [6, 10, 34, 8, 50, 8, 8, 30, 20, 11, 11, 14, 14, 18, 22, 10, 10, 12, 16, 16, 10, 40][i] }; });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "NSR 2027 access");
+    XLSX.writeFile(wb, "NSR 2027 Delivery Plan - Engineering access requirements.xlsx");
+  }
+
   P.closing = function (ctx) {
     var D = ctx.D, v = ctx.view, all = D.t("Closing_Projects").filter(function (r) { return r.Code || r["Project Name"]; });
     if (!all.length) { add(v, '<div class="note-box">No closing-phase data. Import <b>Projects in Closing phase.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }

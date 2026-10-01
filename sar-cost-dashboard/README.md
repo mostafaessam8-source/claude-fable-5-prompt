@@ -28,6 +28,7 @@ opened straight from disk.
 | Portfolio Master Plan | *(new)* | Section 8 *Project Timeline* + section 10 *Critical Path Milestones* of every project card |
 | Projects in Closing | *(new)* | **Projects in Closing phase.xlsx** (sheet with the closing register; found by its header row): closure status, close-out checklist (every column between *Final Contract Value* and *Current Status*), time since contract finish, current status and action plans |
 | Issue Register | Issue | Section 12.1 *Issue Log* of every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx** |
+| 2027 Engineering Blockades | *(new)* | **EPBU 2027 Engineering blockades -R<nn>.xlsx** (found by its header row; merged project cells are filled down). For the 2027 Delivery Plan / shutdown plan, it shows hours per day × days, quarters, lines and access type (shutdown / blockage / possession). It also has a checklist of the items Planning asked for (code, works, location, From–To dates, hours/day, days, total hours, line, passenger/freight stoppage, confirmed) and an **Export Planning submission (.xlsx)** in the requested format |
 | Abbreviations | Abbreviations | `ABBREVIATIONS`, `ABBREVIATIONS_2` |
 | Data Import | — | — |
 

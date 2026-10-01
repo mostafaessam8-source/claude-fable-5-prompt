@@ -95,6 +95,18 @@
           "Final Contract Amount", "Total Paid", "Project_SD", "Project_ED", "PO#", "Contractor", "Project Size", "Overall Status"]
       }
     },
+    // "EPBU 2027 Engineering blockades -R0x.xlsx": inputs to the 2027 Delivery Plan / shutdown plan — one row per work
+    // package (location batch) with shutdown / blockage / possession needs. Found by its header row; merged project
+    // cells are filled down.
+    blockades: {
+      label: "2027 Engineering Blockades (Delivery Plan inputs)",
+      file: "EPBU 2027 Engineering blockades -R<nn>.xlsx",
+      sheetHeader: true,
+      tables: {
+        Blockades_2027: ["Code", "Project", "network", "Line", "Shutdown duration", "Blockage of the line duration", "Posession duration",
+          "Total Hrs", "Expected execution (TBC)", "Track kilometer", "Actual works (description)", "Frequencies (daily or weekly)"]
+      }
+    },
     // "Projects in Closing phase.xlsx": one sheet with a header row (Code · Project Name · … · Closeout Report ·
     // Retention Release · … · Current Status · Action Plan). Found by its header text, not by a table name.
     closing: {
@@ -536,6 +548,49 @@
     return null;
   }
 
+  function parseBlockades(XLSX, wb) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1, cols = [];
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 10) && hdr < 0; r++) {
+        var hs = [];
+        for (var c = rg.s.c; c <= rg.e.c; c++) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })]; hs.push({ c: c, key: cl ? normKey(cl.v) : "" }); }
+        var txt = hs.map(function (h) { return h.key.toLowerCase(); });
+        if (txt.some(function (t) { return /^shutdown duration/.test(t); }) && txt.some(function (t) { return /^blockage/.test(t); }) && txt.indexOf("project") >= 0) { hdr = r; cols = hs.filter(function (h) { return h.key; }); }
+      }
+      if (hdr < 0) continue;
+      // merged cells: copy the top-left value into every cell of the range
+      var merged = {};
+      (ws["!merges"] || []).forEach(function (m) {
+        var v = cellValue(XLSX, ws[XLSX.utils.encode_cell(m.s)]);
+        for (var mr = m.s.r; mr <= m.e.r; mr++) for (var mc = m.s.c; mc <= m.e.c; mc++) merged[mr + ":" + mc] = v;
+      });
+      function val(rr, cc) { var k = rr + ":" + cc; return k in merged ? merged[k] : cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: cc })]); }
+      var rows = [], blank = 0, last = {};
+      for (var rr = hdr + 1; rr <= rg.e.r && blank < 3; rr++) {
+        var rec = {}, any = false;
+        cols.forEach(function (h) {
+          var x = val(rr, h.c);
+          if (typeof x === "string") x = x.replace(/\r/g, "").trim();
+          if (typeof x === "number" && /^(code|unique id)$/i.test(h.key)) x = String(x);
+          if (x != null && x !== "") any = true;
+          rec[h.key] = x;
+        });
+        if (!any) { blank++; continue; }
+        blank = 0;
+        ["Unique ID", "Code", "Project"].forEach(function (k) { if (rec[k] == null || rec[k] === "") rec[k] = last[k]; else last[k] = rec[k]; });
+        if (rec.Project == null) continue;
+        rec.Row = rr + 1; rows.push(rec);
+      }
+      var have = cols.map(function (h) { return h.key; });
+      var missing = SOURCES.blockades.tables.Blockades_2027.filter(function (k) { return have.indexOf(normKey(k)) < 0; });
+      return { source: "blockades", label: SOURCES.blockades.label, tables: { Blockades_2027: rows },
+        report: [{ table: "Blockades_2027", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name }] };
+    }
+    return null;
+  }
+
   function parseClosing(XLSX, wb) {
     for (var si = 0; si < wb.SheetNames.length; si++) {
       var name = wb.SheetNames[si], ws = wb.Sheets[name];
@@ -625,6 +680,8 @@
     }
     if (!source) {
       var swb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
+      var bl = parseBlockades(XLSX, swb);
+      if (bl) return bl;
       var pd = parsePdData(XLSX, swb);
       if (pd) return pd;
       var closing = parseClosing(XLSX, swb);
