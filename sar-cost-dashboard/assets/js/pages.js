@@ -642,10 +642,15 @@
 
     /* 2 · Year-end outlook */
     sec("c-out", "Year-end outlook", plans + " vs Forecast Plan vs Actual · click a month for the project split, a bar to filter");
-    var g1 = grid(v, "g-1-2"), vr = T.landing - T.base;
-    waterfall(chartBox(panelIn(g1, plans + " vs year-end Forecast Plan", "2026 full year · variance vs " + baseLbl + " " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + ")"), "tall"),
+    var g0 = grid(v, "g-2"), vr = T.landing - T.base;
+    waterfall(chartBox(panelIn(g0, "Full year — " + plans + " vs year-end Forecast Plan", "2026 full year · variance vs " + baseLbl + " " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + ")"), "tall"),
       [{ label: RV ? "Original Spend Plan" : "Spend Plan 2026", value: T.plan, total: true, color: S.plan }].concat(RV ? [{ label: "Rev Spend Plan", value: T.rev, total: true, color: S.rev }] : [])
         .concat([{ label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }]), TARGET * T.base);
+    var T_fcYtd = tot(proj, "fcYtd"), T_bY = RV ? T.revYtd : T.planYtd, yv = T.act - T_bY;   // year to date (to the actuals cut-off)
+    waterfall(chartBox(panelIn(g0, "Year to date — " + plans + " vs Forecast Plan vs Actual", toCut + " · actual vs " + (RV ? "YTD Rev Plan " : "YTD plan ") + (yv >= 0 ? "+" : "") + fmt.m(yv) + " M (" + fmt.pct(T_bY ? T.act / T_bY : null, 1) + ")"), "tall"),
+      [{ label: RV ? "YTD Original Plan" : "YTD Spend Plan", value: T.planYtd, total: true, color: S.plan }].concat(RV ? [{ label: "YTD Rev Plan", value: T.revYtd, total: true, color: S.rev }] : [])
+        .concat([{ label: "YTD Forecast Plan", value: T_fcYtd, total: true, color: S.invoice }, { label: "YTD Actual", value: T.act, total: true, color: S.actual }]), TARGET * T_bY);
+    var g1 = grid(v, "g-1");
     var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
     var actLine = [], a2 = 0; mm.forEach(function (o, i) { a2 += o.act; actLine.push(i <= ci ? a2 : null); });
     function mClick(i) { if (mm[i]) monthModal(D, rowsF, mm[i].month); }
