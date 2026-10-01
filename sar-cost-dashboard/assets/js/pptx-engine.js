@@ -136,7 +136,7 @@
    */
   Pkg.prototype.snapshot = function () {
     var self = this; this.orig = {};
-    Object.keys(this.raw).forEach(function (p) { self.orig[p] = self.raw[p]; });
+    Object.keys(this.raw).forEach(function (p) { self.orig[p] = self.docs[p] ? new XMLSerializer().serializeToString(self.docs[p]) : self.raw[p]; });   // include edits made so far
   };
   Pkg.prototype.cloneSlide = function (src, after) {
     var self = this, path = this.freeName("ppt/slides", "slide", ".xml"), jobs = [];

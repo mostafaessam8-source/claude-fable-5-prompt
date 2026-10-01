@@ -120,9 +120,9 @@
   function findSlides(pkg) {
     var S = {}, list = pkg.slides();
     var rules = [
-      ["cover", /Balance Scorecard[\s\S]*Weekly Meeting/i], ["closingActions", /Old projects status/i], ["spendActions", /Spending plan as discussed/i],
+      ["cover", /Balance Scorecard[\s\S]*Weekly Meeting/i], ["closingActions", /Old projects status|Remaining Actions\/Deliverables/i], ["spendActions", /Spending plan as discussed|Action Points#[\s\S]*M Plan/i],
       ["overall", /Projects overall update/i], ["kpi", /KPI Balance Scorecard/i], ["spi", /Schedule Performance Index SPI/i],
-      ["values", /Program Values/i], ["delivery", /Delivery Against Approved Business Plan/i], ["capex", /CAPEX 2026 - Status/i],
+      ["values", /Program Values/i], ["delivery", /Delivery Against Approved Business Plan|DELIVERY PROGRESS/i], ["capex", /CAPEX 2026 - Status|List of Capex projects/i],
       ["monthly", /Monthly Plan - CAPEX/i], ["exec", /Projects in the Execution Phase/i], ["pending", /Pending Points/i],
       ["closing", /Projects in the Closing Phase/i], ["thanks", /THANK YOU/], ["org", /Organization Chart/i]];
     list.forEach(function (p) {
@@ -130,6 +130,37 @@
       for (var i = 0; i < rules.length; i++) if (rules[i][1].test(t)) { (S[rules[i][0]] = S[rules[i][0]] || []).push(p); break; }
     });
     return S;
+  }
+
+  /* Blank template support: the master NSR template is the PD sample with its data removed. Shapes the fillers find by
+     their text are empty there, so each one gets a neutral placeholder (by shape id, only when empty) before filling.
+     On the full sample deck nothing changes, because those shapes already hold text. */
+  var CARD_NAMES = [48, 51, 54, 58, 61, 128, 131, 134, 137, 12, 16], CARD_VALS = [49, 52, 55, 59, 62, 129, 132, 135, 138, 15, 20];
+  var SEEDS = {
+    closingActions: { 3: "Old projects status+ expected date to proceed:" },
+    spendActions: { 3: "Spending plan as discussed during the meeting+ why we couldn\u2019t spend?:" },
+    spi: (function () { var o = { 45: "Current SPI  \u2022  Target", 11: "0.00", 141: "0.00" }; CARD_NAMES.forEach(function (k) { o[k] = "Project"; }); CARD_VALS.forEach(function (k) { o[k] = "0.00"; }); return o; })(),
+    values: { 130: "0.00", 144: "Target:0", 68: ["", "    Legacy", "Projects", "SAR"], 69: ["CONTRACTED VALUE", "SAR", "Issued PO\u2019s"] },
+    delivery: { 9: "1", 10: "CODE", 12: "Project name", 14: "0,000,000", 23: "01-Jan-26", 24: "01-Jan-26", 25: "01-Jan-26", 49: "Planned", 52: "EOT", 4: "Note",
+      55: "2", 56: "CODE", 58: "Project name", 60: "0,000,000", 69: "01-Jan-26", 70: "01-Jan-26", 71: "01-Jan-26", 95: "Planned" },
+    capex: { 10: "SAR 0.0M", 13: "SAR 0.0M", 16: "SAR 0.0M", 19: "0%", 44: "SAR 0.0M", 41: "Achieved" },
+    exec: { 113: "Project brief placeholder text", 123: "Achievements placeholder", 187: "Issues placeholder", 343: "Yearly Budget", 6: "0.00",
+      323: ["Original Contract Value", "Change Order", "Start Date", "End Date", "EOT", "Forecast End Date"] },
+    closing: { 30: "Project brief placeholder text for the closing project" }
+  };
+  function seedSlide(pkg, path, key) {
+    var map = SEEDS[key]; if (!map) return;
+    var d = pkg.xml(path);
+    Object.keys(map).forEach(function (id) {
+      var sp = E.shape(d, id); if (!sp || E.text(sp).trim()) return;
+      var v = map[id], ps = E.all(sp, NS.a, "p");
+      (Array.isArray(v) ? v : [v]).forEach(function (txt, i) {
+        var p = ps[i]; if (!p || !txt) return;
+        var t = E.all(p, NS.a, "t")[0];
+        if (t) t.textContent = txt;
+        else { var r = p.ownerDocument.createElementNS(NS.a, "a:r"), tt = p.ownerDocument.createElementNS(NS.a, "a:t"); tt.textContent = txt; r.appendChild(tt); var end = E.kids(p, NS.a, "endParaRPr")[0]; p.insertBefore(r, end || null); }
+      });
+    });
   }
 
   /* ------------------------------------------------------------------ generic text replacement */
@@ -373,7 +404,9 @@
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.shapesByName(d, /^Chart \d/).forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
-      var x = pkg.xml(cp).documentElement.textContent, sp = M.cardSpi || 0;
+      var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
+      var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.cardSpi || 0;
+      if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
       if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] });
       else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) {
@@ -522,9 +555,9 @@
     var info = textShape(/^Original Contract Value/);
     if (info) {
       var be = pg.end, fe = pg.fe, vo = N(r["Variation Order Amount"]);
-      E.setRuns(info, 0, [null, ": " + (money(x.cv) || MISSING) + " SAR"]); E.setRuns(info, 1, [null, ": " + (vo ? money(vo) + " SAR" : "-")]);
-      E.setRuns(info, 2, [null, ": " + (dLong(pg.start) || MISSING)]); E.setRuns(info, 3, [null, ": " + (dLong(be) || MISSING)]);
-      E.setRuns(info, 4, [null, fe && be && fe > be ? { text: " : " + MISSING, color: RED } : " : N/A"]); E.setRuns(info, 5, [null, ": " + (dLong(fe) || MISSING)]);
+      E.setRuns(info, 0, ["Original Contract Value", ": " + (money(x.cv) || MISSING) + " SAR"]); E.setRuns(info, 1, ["Change Order", ": " + (vo ? money(vo) + " SAR" : "-")]);
+      E.setRuns(info, 2, ["Start Date", ": " + (dLong(pg.start) || MISSING)]); E.setRuns(info, 3, ["End Date", ": " + (dLong(be) || MISSING)]);
+      E.setRuns(info, 4, ["EOT ", fe && be && fe > be ? { text: ": " + MISSING, color: RED } : ": N/A"]); E.setRuns(info, 5, ["Forecast End Date ", ": " + (dLong(fe) || MISSING)]);
     }
     // CAPEX / KPI box
     var sp = M.spend.filter(function (p) { return p.ID === code; })[0];
@@ -603,11 +636,11 @@
     var d = pkg.xml(path);
     E.all(d, NS.p, "sp").forEach(function (s) {
       var tx = E.text(s).trim(), nm = s.getElementsByTagNameNS(NS.p, "cNvPr")[0].getAttribute("name") || "";
-      if (!tx || /^Title/.test(nm) || /Organization Chart/.test(tx) || /^SUMMARY$/i.test(tx)) return;
+      if ((!tx && !/^TextBox/.test(nm)) || /^Title/.test(nm) || /Organization Chart/.test(tx) || /^SUMMARY$/i.test(tx)) return;
       E.setParas(s, { text: MISSING, color: RED });
     });
     E.all(d, NS.a, "tc").forEach(function (tc) {   // the site-team table under the chart
-      if (E.all(tc, NS.a, "t").some(function (t) { return t.textContent.trim(); })) E.cellText(tc, { text: MISSING, color: "FFFFFF" });
+      E.cellText(tc, { text: MISSING, color: "FFFFFF" });
     });
   }
 
@@ -615,8 +648,9 @@
   function build(templateBuffer, D) {
     var M = model(D);
     return E.Pkg.open(templateBuffer).then(function (pkg) {
-      pkg.snapshot();
       var S = findSlides(pkg), jobs = Promise.resolve();
+      Object.keys(S).forEach(function (k) { S[k].forEach(function (p) { seedSlide(pkg, p, k); }); });
+      pkg.snapshot();                     // after seeding, so cloned slides carry the placeholders too
       function need(k) { if (!S[k] || !S[k].length) throw new Error("Template slide not found: " + k + ". Use the PD weekly Balance Scorecard template."); return S[k][0]; }
       var order = [];                     // [path, fill()] in slide order
       function clones(key, groups, fill) {

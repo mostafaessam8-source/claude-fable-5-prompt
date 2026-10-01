@@ -78,7 +78,7 @@ code (`node tools/build-publish-kit.js`).
 **Export Weekly PPT** in the header fills the PD weekly *Program – Balance Scorecard* deck with the NSR data
 loaded in the dashboard and downloads it, e.g. `NSR - Program - Balance Scorecard - WK38 - 2026-09-17.pptx`.
 
-1. The first time, load the template (`EAST - Program - Balance Scorecard - … - KPI.pptx`) in the dialog.
+1. The first time, load the master template (`NSR - Program - Balance Scorecard - Blank Template.pptx`, the PD sample with all data removed) in the dialog. The full PD sample deck also works.
    It is kept in this browser only (IndexedDB) and is never uploaded or committed, because it holds internal data.
 2. Click **Create NSR weekly PowerPoint**. The deck keeps the template's exact formatting (slides, tables,
    native charts with their Excel data). The engine clones or removes slides to fit the data:
