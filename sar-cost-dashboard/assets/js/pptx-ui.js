@@ -8,11 +8,13 @@
   var U = window.UI, esc = U.esc, fmt = U.fmt, KEY = "pptTemplate";
 
   function b64ToBuf(b64) { var s = atob(b64), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a.buffer; }
+  var OLD = /\bEAST\b/i;                 // the EAST sample deck is no longer a template: the NSR Blank Template is
   function current() {
     return SARStore.get(KEY).then(function (t) {
+      if (t && t.buffer && OLD.test(t.name || "")) { SARStore.del(KEY).catch(function () {}); t = null; }   // drop an old EAST template kept in this browser
       if (t && t.buffer) return t;
       var cloud = window.SARCloud && SARCloud.connected() ? SARCloud.index().then(function (ix) {
-        if (!ix.template) return null;
+        if (!ix.template || OLD.test(ix.template.fileName || "")) return null;
         return SARCloud.download(ix.template.path).then(function (buf) {
           var t = { name: ix.template.fileName, savedAt: ix.template.savedAt, buffer: buf };
           return SARStore.set(KEY, t).catch(function () {}).then(function () { t.cloud = true; return t; });
@@ -36,7 +38,7 @@
       body.innerHTML = '<div class="pub-grid"><div>' +
         '<div class="note-box" style="margin-bottom:12px"><b>Template:</b> ' + (tpl ? esc(tpl.name) + (tpl.local ? " (local copy)" : tpl.cloud ? " · from cloud storage" : " · saved in this browser") : "<span class='neg'>not loaded yet</span>") + "</div>" +
         '<label class="dropzone small" tabindex="0"><input type="file" accept=".pptx" hidden><h3>' + (tpl ? "Replace the template" : "Load the PD weekly template (.pptx)") +
-        "</h3><p>NSR - Program - Balance Scorecard - Blank Template.pptx · loaded once, kept in this browser only</p></label>" +
+        "</h3><p>NSR - Program - Balance Scorecard - Blank Template.pptx · loaded once, kept in this browser" + (window.SARCloud && SARCloud.connected() ? " and in your cloud storage" : "") + "</p></label>" +
         (tpl ? '<button class="icon-btn ghost" id="pptTplDl" type="button" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download the template</span></button><br>' : "") +
         '<button class="icon-btn" id="pptGo" type="button"' + (tpl ? "" : " disabled") + ' style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Create NSR weekly PowerPoint</span></button>' +
         '<div id="pptMsg" class="muted" style="margin-top:10px">' + (msg || "") + "</div></div>" +
@@ -44,10 +46,11 @@
         "<li>The same deck, slide by slide, with the template's exact formatting, filled with the NSR data in this dashboard (report date " + esc(fmt.date(rd)) + ").</li>" +
         "<li>One slide per project in execution and per project in the closing phase; tables, charts (with their Excel data) and the cut-off line follow the data.</li>" +
         "<li>Anything the dashboard does not hold — savings, approved EOTs, consultants, progress photos, the organisation chart — is marked <b style='color:#C00000'>[To be filled]</b> for you to complete.</li>" +
-        "</ol><p class='muted'>The template is stored only in this browser (it contains internal programme data) and is not uploaded anywhere.</p></div></div>";
+        "</ol><p class='muted'>The template contains internal programme data: it is kept in this browser and, when cloud storage is connected, in your private repository — never in the public site.</p></div></div>";
       var input = body.querySelector("input"), dz = body.querySelector(".dropzone");
       function take(f) {
         if (!f) return;
+        if (OLD.test(f.name)) { render(tpl, '<span class="neg">The EAST deck is no longer used as the template — load “NSR - Program - Balance Scorecard - Blank Template.pptx”.</span>'); return; }
         f.arrayBuffer().then(function (buf) {
           var t = { name: f.name, savedAt: new Date().toISOString(), buffer: buf };
           return SARStore.set(KEY, t).catch(function () {}).then(function () {
