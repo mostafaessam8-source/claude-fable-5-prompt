@@ -502,6 +502,81 @@
     });
   }
 
+  /* Program Values: the embedded "… Program - DB" workbook (Excel icon on the slide) is rebuilt from NSR data —
+     project cards summary, the PD programme database rows (NSR) and the weekly SPI table — with an NSR icon label. */
+  function xDate(s) { var t = ymd(s); return t ? new Date(Date.UTC(t.y, t.m - 1, t.d)) : null; }
+  function valuesWorkbook(M) {
+    var X = window.XLSX, wb = X.utils.book_new(), MONEY = "#,##0", PCT = "0.00%", DT = "dd-mmm-yy";
+    function sheet(title, sub, head, rows, fmts, widths) {
+      var aoa = (title ? [[null, null, title], [null, null, sub], []] : []).concat([head]).concat(rows);
+      var ws = X.utils.aoa_to_sheet(aoa, { cellDates: true }), r0 = title ? 4 : 1;
+      rows.forEach(function (row, i) { row.forEach(function (v, j) {
+        var a = X.utils.encode_cell({ r: r0 + i, c: j }), c = ws[a]; if (!c) return;
+        if (v && typeof v === "object" && v.f) { ws[a] = { t: "n", f: v.f }; c = ws[a]; }
+        if (fmts[j]) c.z = fmts[j];
+      }); });
+      ws["!cols"] = widths.map(function (w) { return { wch: w }; });
+      return ws;
+    }
+    var cards = M.cardList.slice().sort(function (a, b) { return String(a.Code).localeCompare(String(b.Code)); });
+    var cut = cards.map(function (c) { return (c.Exec || {}).ReportingPeriod; }).filter(Boolean).sort().pop() || M.rd;
+    var rows = cards.map(function (c, i) {
+      var f = c.Fund || {}, p = c.Perf || {}, ex = c.Exec || {}, st = c.Stake || {};
+      var ph = (c.Timeline || []).filter(function (t) { return t.Level === 1 && /^execution/i.test(t.Name); })[0] || {};
+      var con = ((c.Contracts || []).filter(function (k) { return /contractor/i.test(k.Role || "") && k.Entity; })[0] || {}).Entity;
+      var pe = N(ex.PlannedToDate), ae = N(ex.ActualToDate);
+      return [i + 1, c.Code, c.Name, c.Size, N(f.Budget), N(f.CON), N(p.Paid), c.PlannedPhase, c.ActualPhase, p.Status, N(p.Planned), N(p.Actual),
+        N(p.Planned) != null && N(p.Actual) != null ? N(p.Actual) - N(p.Planned) : null, xDate(ph.BS), xDate(ph.BE), xDate(ph.FE), p.Delay,
+        pe, ae, pe != null && ae != null ? ae - pe : null, st.Sponsor, con, st.PM];
+    });
+    X.utils.book_append_sheet(wb, sheet("               NSR Projects Summary", "               Cut-off Date : " + dLong(cut),
+      ["Ser.", "Code", "Project Name", "Project Size", "Budget", "Contract Value", "Approved Paid Amount", "Planned Phase", "Actual Phase", "Overall Status",
+        "Planned Progress %", "Actual Progress %", "Variance %", "Exec. BL Start Date", "Exec. BL Finish Date", "Exec. Forecast Finish Date", "Delay",
+        "Execution Planned %", "Execution Actual %", "Execution Variance %", "Sponsor BU", "Contractor", "PM"], rows,
+      [null, null, null, null, MONEY, MONEY, MONEY, null, null, null, PCT, PCT, PCT, DT, DT, DT, null, PCT, PCT, PCT],
+      [6, 9, 48, 10, 15, 15, 15, 14, 14, 14, 10, 10, 10, 12, 12, 12, 12, 10, 10, 10, 18, 30, 24]), "NSR Program - Data");
+    var db = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
+    if (db.length) {
+      var keys = Object.keys(db[0]).filter(function (k) { return k !== "Source.Name"; });
+      var dbRows = db.map(function (r) { return keys.map(function (k) { var v = r[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? xDate(v) : v; }); });
+      X.utils.book_append_sheet(wb, sheet(null, null, keys, dbRows, keys.map(function (k) { return /budget|amount|paid/i.test(k) ? MONEY : /(_SD|_ED|date)$/i.test(k) ? DT : null; }),
+        keys.map(function (k) { return /name/i.test(k) ? 40 : 14; })), "Program DB (NSR)");
+    }
+    var spi = M.weekly.filter(function (r) { return N(r["Contract Value"]); }).map(function (r, i) {
+      var n = i + 2, pl = N(r["Planned (%) - Cumulative"]), ac = N(r["Actual (%) - Cumulative"]);
+      return [String(r["Project Code"]), " " + (r["Project Name"] || "") + (critical(r, M) ? " - Critical" : ""), N(r["Contract Value"]), pl, ac,
+        { f: "D" + n + "*C" + n }, { f: "E" + n + "*C" + n }, { f: "IF(F" + n + "=0,\"\",G" + n + "/F" + n + ")" }, pl != null && ac != null ? ac - pl : null];
+    });
+    X.utils.book_append_sheet(wb, sheet(null, null, ["Code", "Project", "Contract Value", "Planned%", "Actual", "PV", "EV", "SPI", "Variance"], spi,
+      [null, null, MONEY, PCT, PCT, MONEY, MONEY, "0.00", PCT], [9, 60, 15, 10, 10, 15, 15, 8, 10]), "SPI");
+    return X.write(wb, { type: "array", bookType: "xlsx" });
+  }
+  function iconPng(label) {               // Excel icon + caption, as Office shows an embedded workbook "as icon"
+    if (typeof document === "undefined") return null;
+    var W = 384, H = 324, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d"); if (!g) return null;
+    var x = W / 2 - 66, y = 40;
+    g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#21A366"; g.fillRect(x + 40, y, 92, 120); g.fillStyle = "#33C481"; g.fillRect(x + 86, y, 46, 60); g.fillStyle = "#185C37"; g.fillRect(x + 40, y + 60, 46, 60);
+    g.fillStyle = "#107C41"; g.fillRect(x, y + 24, 76, 76);
+    g.fillStyle = "#FFFFFF"; g.font = "bold 58px Arial, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("X", x + 38, y + 64);
+    g.fillStyle = "#000000"; g.font = "30px 'Segoe UI', Arial, sans-serif"; g.fillText(label, W / 2, 230);
+    var b = atob(cv.toDataURL("image/png").split(",")[1]), u = new Uint8Array(b.length);
+    for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+    return u;
+  }
+  function embedValuesDb(pkg, path, M) {
+    if (!window.XLSX) return;
+    var d = pkg.xml(path), oles = E.all(d, NS.p, "oleObj").filter(function (o) { return /^Excel\./.test(o.getAttribute("progId") || ""); });
+    if (!oles.length) return;
+    var rid = oles[0].getAttributeNS(NS.r, "id"), rel = pkg.rels(path).filter(function (r) { return r.id === rid; })[0];
+    if (!rel || rel.external) return;
+    pkg.zip.file(rel.target, new Uint8Array(valuesWorkbook(M)));
+    var png = iconPng("NSR Program - DB"); if (!png) return;
+    var mp = pkg.freeName("ppt/media", "nsr_db", ".png"); pkg.zip.file(mp, png); pkg.ensureDefault("png", "image/png");
+    oles.forEach(function (o) { E.all(o, NS.a, "blip").forEach(function (b) { pkg.setImage(path, b.getAttributeNS(NS.r, "embed"), mp); }); });
+  }
+
   /* delivery KPI cards */
   function fillDelivery(pkg, path, M, list) {
     var d = pkg.xml(path), all = E.all(d, NS.p, "cNvPr").map(function (n) { return n.parentNode.parentNode; }).filter(function (s) { return s.parentNode && s.parentNode.localName === "spTree"; });
@@ -819,7 +894,7 @@
       return jobs.then(function () {
         if (S.cover) fillCover(pkg, S.cover[0], M);
         if (S.overall) fillOverall(pkg, S.overall[0], M);
-        if (S.values) fillValues(pkg, S.values[0], M);
+        if (S.values) { fillValues(pkg, S.values[0], M); embedValuesDb(pkg, S.values[0], M); }
         if (S.org) fillOrg(pkg, S.org[0]);
         order.forEach(function (f) { f(); });
         ["cover", "overall", "values", "org"].forEach(function (k) { if (S[k]) kinds.push([S[k][0], k]); });
