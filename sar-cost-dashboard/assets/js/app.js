@@ -42,7 +42,7 @@
 
   // A published weekly report (see publish.js) carries its data inside the file: no import, no stored data.
   var PUB = window.SAR_PUBLISHED || null;
-  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import"; });
+  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
 
   /* ----------------------------- dataset -------------------------------- */
   var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -168,7 +168,13 @@
       rerender: function () { var y = window.scrollY; render(page); window.scrollTo(0, y); }
     };
     ctx.actions.appendChild(SARPrint.button());
-    if (PUB && PUB.note && page.id === "overview") {
+    if (!PUB && page.id !== "import" && window.SARPublish) {   // publish just this page (or pick others in the dialog)
+      var pb = U.el('<button type="button" class="icon-btn ghost js-editor" title="Publish a report with this page only — you can add other pages in the dialog">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 15v6h16v-6"/></svg><span>Publish this page</span></button>');
+      pb.addEventListener("click", function () { SARPublish.open({ pages: [page.id] }); });
+      ctx.actions.appendChild(pb);
+    }
+    if (PUB && PUB.note && page.id === PAGES[0].id) {
       view.appendChild(U.el('<div class="note-box mgmt-note"><b>Management note — ' + esc(PUB.title) + "</b>" +
         (PUB.by ? '<span class="muted"> · ' + esc(PUB.by) + "</span>" : "") + "<p>" + esc(PUB.note).replace(/\n/g, "<br>") + "</p></div>"));
     }

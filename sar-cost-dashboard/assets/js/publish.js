@@ -49,15 +49,27 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
   }
 
-  function open() {
+  function open(opts) {
+    opts = opts || {};
     var D = window.SARApp.D, rd = D.reportDate, wk = U.isoWeek(rd);
-    var title = "NSR Weekly Report — WK" + (wk || "") + (rd ? " (" + fmt.date(rd) + ")" : "");
+    var PAGES = window.SARApp.PAGES.filter(function (p) { return p.id !== "import"; }), pre = opts.pages || PAGES.map(function (p) { return p.id; });
+    var one = pre.length === 1 ? PAGES.filter(function (p) { return p.id === pre[0]; })[0] : null;
+    var title = (one ? "NSR — " + one.title : "NSR Weekly Report") + " — WK" + (wk || "") + (rd ? " (" + fmt.date(rd) + ")" : "");
+    var groups = []; PAGES.forEach(function (p) { if (groups.indexOf(p.group) < 0) groups.push(p.group); });
+    var pick = '<fieldset class="pub-pages"><legend>Pages to include <span class="muted">· <a href="#" data-all="1">all</a> · <a href="#" data-all="0">none</a></span></legend>' +
+      groups.map(function (g) {
+        return '<div class="pp-g"><label class="pp-h"><input type="checkbox" data-grp="' + esc(g) + '"> ' + esc(g) + "</label>" +
+          PAGES.filter(function (p) { return p.group === g; }).map(function (p) {
+            return '<label class="pp-i"><input type="checkbox" data-pg="' + esc(p.id) + '" data-g="' + esc(g) + '"' + (pre.indexOf(p.id) >= 0 ? " checked" : "") + "> " + esc(p.title) + "</label>";
+          }).join("") + "</div>";
+      }).join("") + '<div class="pp-n muted"></div></fieldset>';
     var body = U.modal("Publish weekly report", "", true);
     body.innerHTML =
       '<div class="pub-grid"><div>' +
       '<label class="fld">Report title<input id="pubTitle" type="text" value="' + esc(title) + '"></label>' +
       '<label class="fld">Prepared by<input id="pubBy" type="text" placeholder="Name / Cost Control & Planning"></label>' +
-      '<label class="fld">Management note <span class="muted">(optional — shown at the top of the Executive Overview)</span>' +
+      pick +
+      '<label class="fld">Management note <span class="muted">(optional — shown at the top of the first page)</span>' +
       '<textarea id="pubNote" rows="5" placeholder="Key messages for this week: cost position, delays, decisions required…"></textarea></label>' +
       '<button class="icon-btn" id="pubGo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Create report file</span></button>' +
       '<div id="pubMsg" class="muted" style="margin-top:10px"></div></div>' +
@@ -69,19 +81,36 @@
       "</ol><p class='muted'>Tip: keep one file per week (the name includes the week number) so earlier reports stay available as an archive.</p>" +
       "<p class='muted'>Note: some SharePoint libraries download .html files instead of displaying them. The file still opens in the browser from Downloads; " +
       "for one-click viewing ask IT for an intranet/IIS folder that serves HTML.</p></div></div>";
+    var boxes = [].slice.call(body.querySelectorAll("input[data-pg]"));
+    function sel() { return boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.getAttribute("data-pg"); }); }
+    function sync() {
+      body.querySelectorAll("input[data-grp]").forEach(function (gb) {
+        var g = gb.getAttribute("data-grp"), m = boxes.filter(function (b) { return b.getAttribute("data-g") === g; }), n = m.filter(function (b) { return b.checked; }).length;
+        gb.checked = n === m.length; gb.indeterminate = n > 0 && n < m.length;
+      });
+      var n = sel().length; body.querySelector(".pp-n").textContent = n === boxes.length ? "Whole dashboard (" + n + " pages)" : n + " of " + boxes.length + " pages selected";
+    }
+    boxes.forEach(function (b) { b.addEventListener("change", sync); });
+    body.querySelectorAll("input[data-grp]").forEach(function (gb) { gb.addEventListener("change", function () {
+      boxes.filter(function (b) { return b.getAttribute("data-g") === gb.getAttribute("data-grp"); }).forEach(function (b) { b.checked = gb.checked; }); sync(); }); });
+    body.querySelectorAll("a[data-all]").forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); boxes.forEach(function (b) { b.checked = a.getAttribute("data-all") === "1"; }); sync(); }); });
+    sync();
     body.querySelector("#pubGo").addEventListener("click", function () {
-      var msg = body.querySelector("#pubMsg");
+      var msg = body.querySelector("#pubMsg"), pages = sel();
+      if (!pages.length) { msg.innerHTML = '<span class="neg">Select at least one page.</span>'; return; }
       msg.textContent = "Building report…";
       var meta = {
         title: body.querySelector("#pubTitle").value.trim() || title,
         by: body.querySelector("#pubBy").value.trim(),
         note: body.querySelector("#pubNote").value.trim(),
-        week: wk, reportDate: rd, publishedAt: new Date().toISOString()
+        week: wk, reportDate: rd, publishedAt: new Date().toISOString(),
+        pages: pages.length === boxes.length ? null : pages            // null = whole dashboard
       };
       loadKit().then(function (kit) {
         var ds = window.SARApp.dataset();
         var html = build(kit, { version: 1, tables: ds.tables, sources: ds.sources }, meta);
-        var name = "NSR_Weekly_Report_WK" + (wk || "") + "_" + (rd || new Date().toISOString().slice(0, 10)) + ".html";
+        var tag = !meta.pages ? "Weekly_Report" : meta.pages.length === 1 ? PAGES.filter(function (p) { return p.id === meta.pages[0]; })[0].title.replace(/[^\w]+/g, "_") : "Report_" + meta.pages.length + "_pages";
+        var name = "NSR_" + tag + "_WK" + (wk || "") + "_" + (rd || new Date().toISOString().slice(0, 10)) + ".html";
         download(name, html);
         msg.innerHTML = "✓ Saved <b>" + esc(name) + "</b> (" + Math.round(html.length / 1024) + " KB). Upload it and share the link.";
       }).catch(function (e) { msg.innerHTML = '<span class="neg">' + esc(e.message) + "</span>"; });

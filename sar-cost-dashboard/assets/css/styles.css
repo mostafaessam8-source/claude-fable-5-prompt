@@ -768,3 +768,12 @@ table.bk-plan sup { color: var(--slate); font-size: 9px; margin-left: 2px; }
 table.bk-ck th { white-space: normal; font-size: 11px; text-align: center; min-width: 70px; } table.bk-ck th:first-child { text-align: left; min-width: 200px; }
 table.bk-ck td.ck { text-align: center; font-size: 15px; font-weight: 700; }
 table.bk-ck td.ck.y { color: #2E7D32; background: rgba(46,125,50,.07); } table.bk-ck td.ck.p { color: #B07A00; background: rgba(241,180,52,.12); } table.bk-ck td.ck.n { color: var(--red); background: rgba(203,44,48,.07); }
+
+/* Publish: page picker */
+.pub-pages { border: 1px solid var(--cool-gray); padding: 8px 12px 10px; margin: 0 0 12px; max-height: 260px; overflow: auto; }
+.pub-pages legend { font-size: 12px; font-weight: 700; color: var(--sar-black); padding: 0 4px; }
+.pub-pages legend a { color: var(--sar-blue); }
+.pub-pages .pp-g { margin: 4px 0 6px; }
+.pub-pages .pp-h { display: block; font-weight: 700; font-size: 12px; color: var(--sar-blue); text-transform: uppercase; letter-spacing: .04em; }
+.pub-pages .pp-i { display: inline-flex; align-items: center; gap: 4px; margin: 2px 14px 2px 18px; font-size: 12.5px; }
+.pub-pages .pp-n { font-size: 11.5px; margin-top: 4px; }
