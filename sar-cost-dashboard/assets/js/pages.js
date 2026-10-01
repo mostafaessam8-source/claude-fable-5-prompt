@@ -588,7 +588,13 @@
       { key: "fund", label: "Fund Type", options: U.uniq(every.map(function (o) { return o.fund; })).sort(), get: function (o) { return o.fund; } },
       { key: "phase", label: "Project Phase", options: U.uniq(every.map(function (o) { return o.phase; })).sort(), get: function (o) { return o.phase; } },
       { key: "proj", label: "Project", options: U.uniq(every.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
-    var st = filterBar(ctx, defs, projAll);
+    // Month: a period slicer (no row getter, so project filters ignore it); drives the monthly visuals, period tiles,
+    // spend by project and the invoice schedule — full-year KPI / outlook figures stay full year
+    var mdef = { key: "month", label: "Month", options: months, display: fmt.month };
+    var st = filterBar(ctx, defs.concat([mdef]), projAll);
+    var selM = months.filter(function (m) { return st.month.indexOf(m) >= 0; }), hasM = selM.length > 0, vMonths = hasM ? selM : months;
+    var mLbl = hasM ? selM.map(fmt.month).join(", ") : "";
+    function inM(o) { var r = { plan: 0, rev: 0, fc: 0, act: 0 }; selM.forEach(function (m) { var c = o.months[m]; if (!c) return; r.plan += c.plan; r.rev += c.rev; r.fc += c.fc; r.act += c.act || 0; }); return r; }
     var proj = projAll.filter(function (o) { return passes(o, defs, st); }), projX = projAll.filter(function (o) { return passes(o, defs, st, "proj"); });
     var nsrF = nsrObj.filter(function (o) { return passes(o, defs, st); }), nsr = nsrF.map(function (o) { return o.r; });
     var nsrX = nsrObj.filter(function (o) { return passes(o, defs, st, "proj"); }).map(function (o) { return o.r; });
@@ -608,6 +614,14 @@
     spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: toCut,
       gapNote: T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + T95 + " target" : " · " + T95 + " target met" })
       .forEach(function (g) { clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; })); });
+    if (hasM) {                         // the selected months only
+      var PM = proj.map(inM).reduce(function (a, x) { a.plan += x.plan; a.rev += x.rev; a.fc += x.fc; a.act += x.act; return a; }, { plan: 0, rev: 0, fc: 0, act: 0 }), pb0 = RV ? PM.rev : PM.plan;
+      add(v, '<div class="period-h">Selected period: <b>' + esc(mLbl) + "</b></div>");
+      var gm = grid(v, "g-4");
+      gm.innerHTML = mTile(RV ? "Original Plan · period" : "Spend Plan · period", PM.plan, "", esc(mLbl)) + (RV ? mTile("Rev Spend Plan · period", PM.rev, "black", esc(mLbl)) : "") +
+        mTile("Forecast Plan · period", PM.fc, "slate", "Invoicing plan · " + esc(mLbl)) +
+        mTile("Actual · period", PM.act, "yellow", (pb0 ? fmt.pct(PM.act / pb0, 1) + " of " + (RV ? "Rev plan" : "plan") : "—") + " · months to " + esc(fmt.month(cut)));
+    }
     var krows = ksum.map(function (r) {
       var code = N(r["KPI Code"]), list = proj.filter(function (o) { return codeKpi[o.ID] === code; });
       var o = { KPI: r["Objective/ KPIs"], filt: r["KPI Filter"], w: kpiW[code], plan: tot(list, "plan"), rev: tot(list, "rev"), planYtd: tot(list, "planYtd"), revYtd: tot(list, "revYtd"), act: tot(list, "act"), fcFY: tot(list, "fcFY"), n: list.length };
@@ -644,9 +658,11 @@
         U.lineDs(T95 + " target", mm.map(function () { return TARGET * T.base; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })]) },
       options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } }, mClick));
     var g2 = grid(v, "g-2-1");
-    vbar(chartBox(panelIn(g2, "Monthly spend", "Incremental · click a month for the project split")), labels, [
-      U.barDs(RV ? "Original Plan" : "Spend Plan", mm.map(function (o) { return o.plan; }), S.plan)].concat(RV ? [U.barDs("Rev Spend Plan", mm.map(function (o) { return o.rev; }), S.rev)] : []).concat([
-      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), S.invoice), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), S.actual)]), mClick);
+    var mk = mm.map(function (o) { return o.month; });
+    vbar(chartBox(panelIn(g2, "Monthly spend", "Incremental · click a month to filter by it · Ctrl+click for several")), labels, [
+      U.barDs(RV ? "Original Plan" : "Spend Plan", mm.map(function (o) { return o.plan; }), U.hl(S.plan, mk, st.month))].concat(RV ? [U.barDs("Rev Spend Plan", mm.map(function (o) { return o.rev; }), U.hl(S.rev, mk, st.month))] : []).concat([
+      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), U.hl(S.invoice, mk, st.month)), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), U.hl(S.actual, mk, st.month))]),
+      function (i, e) { pick(ctx, "month", mk[i], e); });
     var rx = projAll.filter(function (o) { return passes(o, defs, st, "out"); }), outs = U.uniq(rx.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER));
     U.chart(chartBox(panelIn(g2, "Projects by year-end outlook", "On track ≥ 95% · at risk 85–95% · behind < 85% · click to filter")), U.clickable({ type: "bar", data: { labels: outs, datasets: [
       U.barDs("Projects", outs.map(function (s) { return rx.filter(function (o) { return o.status === s; }).length; }), outs.map(function (s) { var c0 = OUT_COLOR[s] || C.slate; return st.out.length && st.out.indexOf(s) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 26 })] },
@@ -654,11 +670,13 @@
         layout: { padding: { right: 24 } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
       function (i, e) { pick(ctx, "out", outs[i], e); }));
     var g3 = grid(v, "g-2");
-    var byP = projX.filter(function (o) { return o.plan || o.rev || o.landing || o.act; }).sort(function (a, b) { return (b.base || b.plan) - (a.base || a.plan); }), pn = byP.map(function (o) { return o.name; });
-    var pb = chartBox(panelIn(g3, "2026 spend by project", plans + " vs Forecast Plan vs YTD actual · click to filter")); pb.style.height = Math.max(320, pn.length * (RV ? 36 : 30) + 70) + "px";
-    hbar(pb, pn, [U.barDs(RV ? "Original Plan" : "Spend Plan", byP.map(function (o) { return o.plan; }), U.hl(S.plan, pn, st.proj))].concat(RV ? [
-      U.barDs("Rev Spend Plan", byP.map(function (o) { return o.rev; }), U.hl(S.rev, pn, st.proj))] : []).concat([
-      U.fcBar("Forecast Plan", byP.map(function (o) { return o.landing; }), U.hl(S.invoice, pn, st.proj)), U.barDs("YTD Actual", byP.map(function (o) { return o.act; }), U.hl(S.actual, pn, st.proj))]),
+    var sv = function (o) { if (!hasM) return { plan: o.plan, rev: o.rev, fc: o.landing, act: o.act }; return inM(o); };     // full year, or the selected months
+    var byP = projX.map(function (o) { return { o: o, x: sv(o) }; }).filter(function (q) { return q.x.plan || q.x.rev || q.x.fc || q.x.act; })
+      .sort(function (a, b) { return (RV ? b.x.rev : b.x.plan) - (RV ? a.x.rev : a.x.plan); }), pn = byP.map(function (q) { return q.o.name; });
+    var pb = chartBox(panelIn(g3, hasM ? "Spend by project — " + mLbl : "2026 spend by project", plans + " vs Forecast Plan vs " + (hasM ? "actual" : "YTD actual") + " · click to filter")); pb.style.height = Math.max(320, pn.length * (RV ? 36 : 30) + 70) + "px";
+    hbar(pb, pn, [U.barDs(RV ? "Original Plan" : "Spend Plan", byP.map(function (q) { return q.x.plan; }), U.hl(S.plan, pn, st.proj))].concat(RV ? [
+      U.barDs("Rev Spend Plan", byP.map(function (q) { return q.x.rev; }), U.hl(S.rev, pn, st.proj))] : []).concat([
+      U.fcBar("Forecast Plan", byP.map(function (q) { return q.x.fc; }), U.hl(S.invoice, pn, st.proj)), U.barDs(hasM ? "Actual" : "YTD Actual", byP.map(function (q) { return q.x.act; }), U.hl(S.actual, pn, st.proj))]),
       function (i, e) { pick(ctx, "proj", pn[i], e); });
     var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; }), vn = byV.map(function (o) { return o.name; });
     var vb = chartBox(panelIn(g3, "Year-end variance by project", "Forecast Plan − " + baseLbl + " · red = under-spend · click to filter")); vb.style.height = pb.style.height;
@@ -689,7 +707,7 @@
 
     /* 4 · Invoice schedule */
     sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
-    invoiceGantt(panelIn(v, "Invoice schedule", "Actual to " + esc(fmt.month(cut)) + " · contractor Forecast Plan after"), proj.slice().sort(function (a, b) { return b.plan - a.plan; }), months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
+    invoiceGantt(panelIn(v, "Invoice schedule", (hasM ? esc(mLbl) + " · " : "") + "Actual to " + esc(fmt.month(cut)) + " · contractor Forecast Plan after"), proj.slice().sort(function (a, b) { return b.plan - a.plan; }), vMonths, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
 
     /* 5 · Project details (one table per view) */
     sec("c-det", "Project details", "");
