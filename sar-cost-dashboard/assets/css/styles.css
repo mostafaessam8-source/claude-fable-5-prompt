@@ -638,6 +638,7 @@ body.printing .gantt.iv .gantt-inner { min-width: 0; }
 body.printing .iv-row.g-head { position: static; }
 
 /* ----------------------------- Section headings (merged pages) ---------- */
+.filters.pg-ctl { z-index: 1; }   /* page controls (trend window, project picker) stay under the sticky section bar */
 .sec-nav { position: sticky; top: var(--header-h); z-index: 30; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 8px 0; background: var(--tint-5); border-bottom: 1px solid var(--cool-gray); }
 .sec-nav a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--sar-blue); color: var(--sar-blue); font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .sec-nav a:hover { background: var(--sar-blue); color: #fff; }
