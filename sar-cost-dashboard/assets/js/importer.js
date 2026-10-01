@@ -83,6 +83,18 @@
       sheetHeader: true,
       tables: { Rev_Spend_Plan: ["ID", "Month", "Rev Spend Plan"] }
     },
+    // "PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx": the PD programme database (all programmes, one row per
+    // project). Found by its header row (Program Name · PMO List · Approved Budget · Final Contract Amount · Total Paid …),
+    // so the file name / date suffix and the Excel table name may change. Feeds the "Program Values" PPT slide.
+    pdData: {
+      label: "PD Programme Database (Program Values)",
+      file: "PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx",
+      sheetHeader: true,
+      tables: {
+        Program_DB: ["Program Name", "PMO List", "Project Name", "Type", "Project Phase", "Funding Source", "Approved Budget",
+          "Final Contract Amount", "Total Paid", "Project_SD", "Project_ED", "PO#", "Contractor", "Project Size", "Overall Status"]
+      }
+    },
     // "Projects in Closing phase.xlsx": one sheet with a header row (Code · Project Name · … · Closeout Report ·
     // Retention Release · … · Current Status · Action Plan). Found by its header text, not by a table name.
     closing: {
@@ -492,6 +504,38 @@
   }
 
   /* Closing-phase register: the first sheet whose header row has "Code", a close-out column and a retention column. */
+  function parsePdData(XLSX, wb) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1, cols = [];
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 10) && hdr < 0; r++) {
+        var hs = [];
+        for (var c = rg.s.c; c <= rg.e.c; c++) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })]; hs.push({ c: c, key: cl ? normKey(cl.v) : "" }); }
+        var txt = hs.map(function (h) { return h.key.toLowerCase(); });
+        if (txt.indexOf("program name") >= 0 && txt.indexOf("approved budget") >= 0 && txt.indexOf("total paid") >= 0 && txt.indexOf("project name") >= 0) { hdr = r; cols = hs.filter(function (h) { return h.key; }); }
+      }
+      if (hdr < 0) continue;
+      var rows = [], blank = 0;
+      for (var rr = hdr + 1; rr <= rg.e.r && blank < 3; rr++) {
+        var rec = {}, any = false;
+        cols.forEach(function (h) {
+          var x = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: h.c })]);
+          if (typeof x === "string") x = x.replace(/\s+/g, " ").trim();
+          if (x != null && x !== "") any = true;
+          if (!(h.key in rec) || rec[h.key] == null) rec[h.key] = x;
+        });
+        if (!any || !rec["Project Name"]) { blank++; continue; }
+        blank = 0; rows.push(rec);
+      }
+      var have = cols.map(function (h) { return h.key; });
+      var missing = SOURCES.pdData.tables.Program_DB.filter(function (k) { return have.indexOf(normKey(k)) < 0; });
+      return { source: "pdData", label: SOURCES.pdData.label, tables: { Program_DB: rows },
+        report: [{ table: "Program_DB", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name }] };
+    }
+    return null;
+  }
+
   function parseClosing(XLSX, wb) {
     for (var si = 0; si < wb.SheetNames.length; si++) {
       var name = wb.SheetNames[si], ws = wb.Sheets[name];
@@ -581,6 +625,8 @@
     }
     if (!source) {
       var swb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
+      var pd = parsePdData(XLSX, swb);
+      if (pd) return pd;
       var closing = parseClosing(XLSX, swb);
       if (closing) return closing;
       var budget = parseBudget(XLSX, swb);

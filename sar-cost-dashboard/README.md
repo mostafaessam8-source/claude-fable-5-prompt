@@ -131,6 +131,12 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
 > and formulas are fine: the site reads the values Excel last calculated, so save the file in Excel
 > before importing.
 
+**PD Programme Database** (`PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx`, any date/version suffix): recognised by its
+header row (Program Name · PMO List · Approved Budget · Final Contract Amount · Total Paid …), NSR rows only. It feeds the
+weekly PPT *Program Values* slide: approved budget, contracted value + issued POs, total paid, PMO list / execution /
+pipeline / legacy groups, phase and size donuts and the IPC donut. SPI stays from the Progress section; the execution status
+bar uses the file's *Overall Status* when filled, else the project cards. Without this file the slide falls back to the project cards.
+
 **Download an imported file:** every Excel file imported in this browser is kept as-is. On **Data Import** each loaded source card has
 **Download imported file**: download it, update it in Excel and import it again. The copy is stored only in this browser
 (IndexedDB) and is removed by *Discard imports & restore baseline data*. Files imported before this feature need one more

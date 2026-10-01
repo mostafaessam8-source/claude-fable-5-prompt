@@ -395,7 +395,54 @@
 
   /* program values dashboard */
   function setLine(el, pi, text) { E.setRuns(el, pi, [text]); }
+  /* Program Values from the PD programme database (PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx), NSR rows only */
+  function fillValuesPd(pkg, path, M, db) {
+    var d = pkg.xml(path), num = function (v) { var x = N(v); return x == null ? 0 : x; };
+    var T = function (r) { return String(r.Type || "").trim().toLowerCase(); }, PH = function (r) { return String(r["Project Phase"] || "").trim().toLowerCase(); };
+    var exe = db.filter(function (r) { return T(r) === "on going" || PH(r) === "execution"; }), pipe = db.filter(function (r) { return T(r) === "pipeline"; });
+    var leg = db.filter(function (r) { return T(r) === "legacy"; }), pmo = db.filter(function (r) { return /^y/i.test(r["PMO List"] || ""); });
+    var full = sum(db, function (r) { return num(r["Approved Budget"]); }), cv = sum(db, function (r) { return num(r["Final Contract Amount"]); }), paid = sum(db, function (r) { return num(r["Total Paid"]); });
+    var po = db.filter(function (r) { var x = r["PO#"]; return x != null && x !== "" && String(x) !== "0"; });
+    var poExe = po.filter(function (r) { return exe.indexOf(r) >= 0; }).length, poLeg = po.filter(function (r) { return leg.indexOf(r) >= 0; }).length;
+    var yrs = uniq(leg.map(function (r) { var y = r["Closed Year"] || String(r.Project_ED || "").slice(0, 4); return y ? String(y) : null; })).sort();
+    var byText = function (re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s).replace(/\s+/g, " ")); })[0]; };
+    function bsum(list) { return "SAR " + sarB(sum(list, function (r) { return num(r["Approved Budget"]); })); }
+    var b1 = byText(/APPROVED ?BUDGET/); if (b1) { setLine(b1, 1, "SAR " + bigB(full)); setLine(b1, 2, db.length + " projects"); }
+    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + po.length + " projects (" + poExe + " Execution" + (poLeg ? " + " + poLeg + " Legacy" : "") + ")"); }
+    var b3 = byText(/TOTAL ?PAID/); if (b3) { setLine(b3, 1, "SAR " + bigB(paid)); setLine(b3, 2, (cv ? Math.round(paid / cv * 100) : 0) + " % of contracted value"); }
+    function grp(re, list, label) { var b = byText(re); if (!b) return; if (label) setLine(b, 1, label); setLine(b, 2, list.length + " Projects"); setLine(b, 3, bsum(list)); }
+    grp(/PMO Reporting Card/, pmo);
+    grp(/Under Execution/, exe);
+    grp(/Pipeline/, pipe);
+    grp(/Legacy|Handover/, leg, "    Legacy ( Completed" + (yrs.length ? " – " + (yrs.length > 1 ? yrs[0] + "-" + yrs[yrs.length - 1] : yrs[0]) : "") + ")");
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : M.spi.toFixed(2));   // SPI: Progress section
+    var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
+    var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
+    E.all(d, NS.a, "t").forEach(function (t) { if (/East Program - DB/.test(t.textContent)) t.textContent = t.textContent.replace("East Program - DB", "NSR Program - DB"); });
+    var st = ["Delayed", "On Hold", "On Track", "At Risk"], norm = function (z) { z = String(z || ""); return /slight|risk/i.test(z) ? "At Risk" : /hold/i.test(z) ? "On Hold" : /track|on time/i.test(z) ? "On Track" : /delay/i.test(z) ? "Delayed" : z; };
+    var stCnt = st.map(function (z) {   // file's Overall Status, else the weekly report / project card of the execution projects
+      var n = exe.filter(function (r) { return norm(r["Overall Status"]) === z; }).length;
+      return n;
+    });
+    if (!sum(stCnt)) stCnt = st.map(function (z) { return M.cardList.filter(function (c) { return /^execution/i.test(c.ActualPhase || "") && norm((c.Perf || {}).Status) === z; }).length; });
+    var phases = [["Execution", function (r) { return PH(r) === "execution"; }], ["Planning", function (r) { return PH(r) === "planning"; }],
+      ["Tendering", function (r) { return PH(r) === "tendering"; }], ["Closing", function (r) { return /closing|completed|closed/.test(PH(r)); }], ["On Hold", function (r) { return PH(r) === "on hold"; }]]
+      .map(function (p) { return [p[0], db.filter(p[1]).length]; }).filter(function (p, i) { return i < 4 || p[1]; });
+    E.shapesByName(d, /^Chart \d/).forEach(function (f) {
+      var cp = pkg.chartOf(path, f); if (!cp) return;
+      var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
+      var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.spi || 0;
+      if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
+      if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] });
+      else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
+      else if (/Phase/.test(x) && /Execution/.test(x)) pkg.setChart(cp, { cats: phases.map(function (p) { return p[0]; }), series: [{ name: "Phase", values: phases.map(function (p) { return p[1]; }) }] });
+      else if (/Mega/.test(x)) { var sz = ["Mega", "Large", "Medium", "Small"]; pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (z) { return db.filter(function (r) { return String(r["Project Size"] || "").trim().toLowerCase() === z.toLowerCase(); }).length; }) }] }); }
+      else if (/On Track/.test(x) && /Delayed/.test(x)) pkg.setChart(cp, { cats: st, series: st.map(function (z, i) { return { name: z, values: st.map(function (q, j) { return j === i ? stCnt[i] : null; }) }; }) });
+    });
+  }
   function fillValues(pkg, path, M) {     // Project Cards section: every card of the monthly EP - NSR Projects workbook
+    var pdb = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
+    if (pdb.length) return fillValuesPd(pkg, path, M, pdb);
     var d = pkg.xml(path), cards = M.cardList;
     if (!cards.length) return;
     var bud = function (c) { return N((c.Fund || {}).Budget) || 0; };
