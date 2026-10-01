@@ -998,47 +998,38 @@
       h += block("<b>" + esc(o.ID) + "</b> " + esc(o.name), esc(o.kpi), pl, ac, i, rv);
     });
     h += "</tbody></table></div>";
-    var tools = '<div class="sm-tools"><button type="button" class="sm-ruler" aria-pressed="false" title="Reading ruler: highlights the row (and month) under the pointer">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 7v4M10 7v3M14 7v4M18 7v3"/></svg>Ruler</button>' +
-      '<span class="sm-hint">Follow a line across the months: hover a row, click to pin it, ↑ ↓ to move the pinned line, Esc to clear</span></div>';
+    var tools = '<div class="sm-tools"><span class="sm-hint">Reading ruler: hover a row to follow it across the months · click to pin it, ↑ ↓ to move, Esc to clear</span></div>';
     var node = add(host, "<div>" + tools + h + "</div>");
     node.querySelectorAll(".sm-p.clickable").forEach(function (t) { t.addEventListener("click", function (e) { onProj(withData[+t.getAttribute("data-p")], e); }); });
 
     // reading ruler: row highlight on hover (CSS), click pins a row, the hovered month column is tinted
-    var tbl = node.querySelector("table.sm"), btn = node.querySelector(".sm-ruler"), rows = [].slice.call(tbl.tBodies[0].rows), pinned = null;
+    var tbl = node.querySelector("table.sm"), rows = [].slice.call(tbl.tBodies[0].rows), pinned = null;
     function colOff() { tbl.querySelectorAll(".rl-col").forEach(function (c) { c.classList.remove("rl-col"); }); }
     function pin(tr) {
       if (pinned) pinned.classList.remove("rl-pin");
       pinned = tr && tr !== pinned ? tr : null;
       if (pinned) { pinned.classList.add("rl-pin"); pinned.scrollIntoView({ block: "nearest" }); }
     }
-    function setRuler(on) {
-      smRuler = on; tbl.classList.toggle("ruler", on); btn.classList.toggle("on", on); btn.setAttribute("aria-pressed", on ? "true" : "false");
-      if (!on) { pin(null); colOff(); }
-    }
-    btn.addEventListener("click", function () { setRuler(!smRuler); });
+    tbl.classList.add("ruler");          // always on
     tbl.addEventListener("mouseover", function (e) {
-      if (!smRuler) return;
       var c = e.target.closest("[data-c]"); colOff();
       if (c) tbl.querySelectorAll('[data-c="' + c.getAttribute("data-c") + '"]').forEach(function (x) { x.classList.add("rl-col"); });
     });
     tbl.addEventListener("mouseleave", colOff);
     tbl.addEventListener("click", function (e) {
-      if (!smRuler || e.target.closest(".sm-p.clickable")) return;
+      if (e.target.closest(".sm-p.clickable")) return;
       var tr = e.target.closest("tbody tr"); if (tr) pin(tr === pinned ? null : tr);
     });
     function onKey(e) {
       if (!document.body.contains(tbl)) { document.removeEventListener("keydown", onKey); return; }
-      if (!smRuler || !pinned) return;
+      if (!pinned) return;
       var i = rows.indexOf(pinned);
       if (e.key === "ArrowDown" && i < rows.length - 1) { e.preventDefault(); pin(rows[i + 1]); }
       else if (e.key === "ArrowUp" && i > 0) { e.preventDefault(); pin(rows[i - 1]); }
       else if (e.key === "Escape") pin(null);
     }
     document.addEventListener("keydown", onKey);
-    setRuler(smRuler);
   }
-  var smRuler = false;     // ruler on/off is kept while you move between pages
 
   function outlookModal(list) {
     tableModal("Year-end outlook by project", list, [{ key: "ID", label: "ID" }, { key: "name", label: "Project" },
