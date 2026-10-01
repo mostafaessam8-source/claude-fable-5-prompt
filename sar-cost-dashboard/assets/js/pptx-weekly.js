@@ -674,7 +674,7 @@
     var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, { text: sarM(fy).replace(" ", "\u00A0"), size: 18 });
     var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 16, color: vpv < 0 ? RED : GREEN }); }   // one line in the narrow tile
     var lt = byText(/^List of Capex projects/)[0]; if (lt) E.setParas(lt, "List of Capex projects" + (pn > 1 ? "  (" + (pi + 1) + " of " + pn + ")" : "") + " · " + cap.length + " projects");
-    var yl = byText(/Yearly Budget/)[0]; if (yl) E.setParas(yl, "Yearly Budget – " + (M.D.hasRev ? "Rev Spend Plan" : "Spend Plan"));
+    var yl = byText(/Yearly Budget/)[0]; if (yl) E.setParas(yl, M.D.hasRev ? "Rev Spend Plan 2026" : "Yearly Budget – Spend Plan");
     // table
     var frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), rs = E.rows(tbl), total = rs[rs.length - 1];
     // every CAPEX project, CAPEX_ROWS per slide; the Total row is always the whole CAPEX portfolio
@@ -682,7 +682,11 @@
     var body = E.resizeRows(tbl, 1, 1, shown.length); tbl.appendChild(total);
     var sz = 9;                            // one readable size for the whole table
     E.cells(rs[0]).forEach(function (hc) {
-      E.all(hc, NS.a, "t").forEach(function (t) { if (/^\s*Planned Budget\s*$/.test(t.textContent)) t.textContent = PL; });
+      E.all(hc, NS.a, "t").forEach(function (t) {
+        if (!M.D.hasRev) return;
+        if (/^\s*Planned Budget\s*$/.test(t.textContent)) t.textContent = "YTD Rev Spend Plan";
+        else if (/^\s*Yearly Budget\s*$/.test(t.textContent)) t.textContent = "Rev Spend Plan 2026";
+      });
       E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "950"); });
     });
     function cell(c, v) { E.cellText(c, typeof v === "object" ? { text: v.text, color: v.color, size: sz } : { text: v, size: sz }); }
@@ -722,7 +726,7 @@
     if (ins) {
       var ach = yp ? ya / yp : null, ov2 = ya + rem;
       E.setParas(ins, [[{ text: "YTD actual is ", size: 10 }, { text: pct(ach, 0), bold: true, size: 10 }, { text: " of the YTD " + (M.D.hasRev ? "Rev " : "") + "plan (till " + cutM + ").", size: 10 }],
-        [{ text: "The overall forecast is ", size: 10 }, { text: mio(ov2), bold: true, size: 10 }, { text: ov2 >= fy ? ", exceeding the yearly budget by " : ", below the yearly budget by ", size: 10 }, { text: mio(Math.abs(ov2 - fy)), bold: true, size: 10 }]]);
+        [{ text: "The overall forecast is ", size: 10 }, { text: mio(ov2), bold: true, size: 10 }, { text: (ov2 >= fy ? ", exceeding the " : ", below the ") + (M.D.hasRev ? "Rev Spend Plan 2026" : "yearly budget") + " by ", size: 10 }, { text: mio(Math.abs(ov2 - fy)), bold: true, size: 10 }]]);
     }
   }
 
