@@ -22,9 +22,7 @@
   var PAGES = [
     { id: "overview", group: "Overview", title: "Executive Overview", icon: "overview", sub: "Headline cost, progress and issue position across the NSR portfolio" },
     { id: "kpi-summary", group: "KPIs", title: "KPI Summary", icon: "kpi", sub: "NSR KPI scorecard — weight, achievement and result" },
-    { id: "kpi-cost", group: "KPIs", title: "KPI Cost Summary", icon: "cost", sub: "CAPEX variance and non-KPI spending — budget vs forecast vs actual" },
-    { id: "kpi-outlook", group: "Cost", title: "KPI Year-End Outlook", icon: "kpi", sub: "How the cost KPIs close the year — contractor Forecast Plan (invoicing plan) vs the Spend Plan" },
-    { id: "cost", group: "Cost", title: "Cost Dashboard", icon: "table", sub: "Contract value, work confirmation and payments · 2026 Spend Plan vs Forecast Plan vs Actual · S-curve and detail tables" },
+    { id: "cost", group: "Cost", title: "Cost & KPI Dashboard", icon: "cost", sub: "Cost KPIs today and at year-end · 2026 Spend Plan vs Forecast Plan vs Actual · contract & payments · invoice schedule · monthly spending plan" },
     { id: "spi-outlook", group: "Progress", title: "SPI & S-Curve Outlook", icon: "curve", sub: "Schedule Performance Index KPI to 31-Dec (ΣEV ÷ ΣPV from the project S-curves) and each project's progress S-curve" },
     { id: "weekly", group: "Progress", title: "Weekly Progress Summary", icon: "table", sub: "Planned vs actual progress, SPI and payments for every project" },
     { id: "project", group: "Progress", title: "Project Progress", icon: "project", sub: "Single-project weekly report card" },
@@ -43,6 +41,7 @@
 
   // A published weekly report (see publish.js) carries its data inside the file: no import, no stored data.
   var PUB = window.SAR_PUBLISHED || null;
+  if (PUB && PUB.pages) PUB.pages = PUB.pages.map(function (id) { return /^kpi-(cost|outlook)$/.test(id) ? "cost" : id; });   // reports published before the cost pages merged
   if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
 
   /* ----------------------------- dataset -------------------------------- */
@@ -147,7 +146,7 @@
   var pageState = {};
   function route() {
     var id = (location.hash.replace(/^#\/?/, "") || "overview").split("?")[0];
-    if (id === "cost-analysis" || id === "cost-scurve") id = "cost";   // merged into the Cost Dashboard
+    if (/^(cost-analysis|cost-scurve|kpi-cost|kpi-outlook)$/.test(id)) id = "cost";   // merged into the Cost & KPI Dashboard
     if (id === "progress-scurve") id = "spi-outlook";                   // merged into the SPI & S-Curve Outlook
     var page = PAGES.filter(function (p) { return p.id === id; })[0] || PAGES[0];
     document.body.classList.remove("nav-open");

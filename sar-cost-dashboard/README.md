@@ -15,9 +15,7 @@ opened straight from disk.
 |---|---|---|
 | Executive Overview | *(new summary page)* | all |
 | KPI Summary | KPI Summary | `KPI_Summary`, `Delivery_KPI`, `Weekly_Report_Updates` |
-| KPI Cost Summary | KPI Cost Summary | `KPI_Summary`, `KPI_Projects_Data` (KPI codes 7 & 8) |
-| Cost Dashboard | Cost Dashboard + Cost Dashboard graph + Cost S-Curve (merged into one page) | `NSR_Project_Data`, `Spending_Plan` |
-| KPI Year-End Outlook | *(new)* | `Spending_Plan`, `KPI_Projects_Data`, `KPI_Summary` (KPI codes 7 & 8): year-end = contractor Forecast Plan (invoicing plan) for the full year vs the Spend Plan and the −5% CAPEX target; invoice schedule from *Invoice Related actvities* |
+| Cost & KPI Dashboard (Cost section) | KPI Cost Summary + Cost Dashboard + Cost S-Curve + KPI Year-End Outlook (merged into one page; every figure shown once) | `Spending_Plan`, `NSR_Project_Data`, `KPI_Projects_Data`, `KPI_Summary` (KPI codes 7 & 8): section bar → cost KPI position (spend tiles + one KPI table, today and at year-end vs the −5% CAPEX target), year-end outlook (bridge, S-curve, monthly spend, outlook, spend and variance by project), contract & payments, invoice schedule, project details (2026 spend & outlook / cost register), monthly spending plan. Old links `#/kpi-cost` and `#/kpi-outlook` open this page |
 | SPI & S-Curve Outlook | Progress S-Curve (merged) | `Weekly_Report_Updates`, `S_Curve`, `KPI_Summary` (KPI "Schedule performance index"): portfolio SPI = ΣEV ÷ ΣPV (EV = contract value × actual %, PV = contract value × planned %), projected to 31-Dec on each project's current weekly trend against the KPI target, plus each project's weekly progress S-curve (`S_Curve`, `MLS`) |
 | Weekly Progress Summary | Weekly Progress Summary | `Weekly_Report_Updates` |
 | Project Progress | Progress | `Weekly_Report_Updates`, `Contract_Details`, `Deliverable_Status`, `Project_Milestones_Progress`, `Interim_Payment_Certificate`, `Lookahead_Activities`, `Area_of_Concern` |
@@ -113,8 +111,8 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
    * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
    * `Projects in Closing phase.xlsx` (closing-phase register; feeds **Projects in Closing**)
    * `Budget 2026.xlsx` (sheet *Curve*; the **Spending Plan (VP)** row of every project is the **Rev Spend Plan**. The
-     original Spend Plan stays as it is and both are shown on the Overview, KPI Cost Summary, KPI Year-End Outlook and
-     Cost Dashboard; variances and the year-end outlook are measured against the Rev plan once it is loaded)
+     original Spend Plan stays as it is and both are shown on the Overview and the
+     Cost & KPI Dashboard; variances and the year-end outlook are measured against the Rev plan once it is loaded)
 3. The site recognises each file by the **Excel tables inside it**, not by the file name. It reads those
    tables the same way Power BI's `Excel.Workbook(…){[Item="…",Kind="Table"]}` does, and shows a
    log of rows per table plus any missing columns.

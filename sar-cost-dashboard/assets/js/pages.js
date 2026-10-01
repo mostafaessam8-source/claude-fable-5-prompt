@@ -557,199 +557,157 @@
   /* ======================================================================
      KPI Cost Summary
      ====================================================================== */
-  P["kpi-cost"] = function (ctx) {
-    var D = ctx.D, v = ctx.view;
-    var sum = D.t("KPI_Summary").filter(isKPI([7, 8]));
-    var projAll = D.t("KPI_Projects_Data").filter(isKPI([7, 8]));
-    var M = function (k) { return function (r) { return G(r, k); }; };
-    var defs = [
-      { key: "kf", label: "KPI", options: U.uniq(projAll.map(function (r) { return r["Objective/ KPIs"]; })), get: function (r) { return r["Objective/ KPIs"]; } },
-      { key: "proj", label: "Project Name", options: U.uniq(projAll.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } }];
-    var st = filterBar(ctx, defs, projAll);
-    var proj = projAll.filter(function (r) { return passes(r, defs, st); });
-    var projX = projAll.filter(function (r) { return passes(r, defs, st, "proj"); }); // for cross-highlight
-    var yf = ytdForecast(D), ytdLbl = yf.month ? " (to " + fmt.month(yf.month) + ")" : "";
-    var fcF = function (r) { return N(G(r, FC_FTY)) || 0; };                 // Forecast Plan, full year
-    var fcY = function (r) { return ytdFc(D, r.Code); };                     // Forecast Plan, year to date
-    var RV = hasRev(), revF = function (r) { return N(r["Rev Spend Plan FTY 2026"]) || 0; };   // Rev Spend Plan (Budget 2026), full year
-    var byKpi = {};                                                          // Forecast Plan / Rev plan per KPI (summary rows)
-    var revY = function (r) { return ytdRev(D, r.Code); };                   // Rev Spend Plan, year to date
-    projAll.forEach(function (r) { var k = N(r["KPI Code"]), o = byKpi[k] || (byKpi[k] = { fty: 0, ytd: 0, rev: 0, revY: 0 }); o.fty += fcF(r); o.ytd += fcY(r); o.rev += revF(r); o.revY += revY(r); });
-    var kf = function (r) { return byKpi[N(r["KPI Code"])] || { fty: 0, ytd: 0, rev: 0, revY: 0 }; };
 
-    var sp = panelIn(v, "KPI financial summary", "FTY 2026 and year-to-date · click a KPI to filter");
-    sp.style.marginBottom = "16px";
-    tableIn(sp, { rows: sum, exportName: "KPI_Cost_Summary", autoHeight: true, search: false,
-      onRow: function (r, e) { pick(ctx, "kf", r["Objective/ KPIs"], e); }, rowTitle: "Filter by this KPI",
-      rowClass: function (r) { return st.kf.indexOf(r["Objective/ KPIs"]) >= 0 ? "selected" : ""; },
-      columns: [
-        { key: "KPI Filter", label: "KPI Filter", nowrap: true }, { key: "Objective/ KPIs", label: "Objective / KPIs", wrap: true },
-        { key: "KPI Weight (%)", label: "KPI Weight (%)", type: "pct" },
-        { key: "NSR Spend Plan 2026 as per Budgeting", label: RV ? "Original Spend Plan 2026" : "Spend Plan 2026", type: "money" }].concat(RV ? [
-        { get: function (r) { return kf(r).rev; }, label: "Rev Spend Plan 2026", type: "money" }] : []).concat([
-        { get: function (r) { return kf(r).fty; }, label: "Forecast Plan 2026", type: "money" }]).concat(RV ? [
-        { get: function (r) { return kf(r).fty - kf(r).rev; }, label: "FTY Variance (Forecast − Rev Plan)", type: "money", signed: true }] : []).concat([
-        { get: function (r) { return kf(r).fty - (N(r["NSR Spend Plan 2026 as per Budgeting"]) || 0); }, label: RV ? "FTY Variance (Forecast − Original)" : "FTY Variance (Forecast − Plan)", type: "money", signed: true },
-        { key: "YTD Spend Plan 2026 as per Budgeting", label: RV ? "YTD Original Plan" : "YTD Spend Plan", type: "money" }]).concat(RV ? [
-        { get: function (r) { return kf(r).revY; }, label: "YTD Rev Plan", type: "money" }] : []).concat([
-        { get: function (r) { return kf(r).ytd; }, label: "YTD Forecast Plan", type: "money" },
-        { key: "YTD Actual", label: "YTD Actual", type: "money" },
-        { key: "YTD Variance", label: RV ? "YTD Variance (vs Original)" : "YTD Variance", type: "money", signed: true }]).concat(RV ? [
-        { get: function (r) { return (N(r["YTD Actual"]) || 0) - kf(r).revY; }, label: "YTD Variance (vs Rev Plan)", type: "money", signed: true }] : []).concat([
-        { key: "% Achieved", label: "% Achieved", type: "meter" }]) });
-
-    var g0 = grid(v, "g-1-2");
-    var gl = add(g0, "<div></div>");
-    totalsChart(chartBox(panelIn(gl, "For the year", "FTY 2026")), [
-      { label: RV ? "Original Plan FTY 2026" : "Spend Plan FTY 2026", value: U.sum(proj, M("Spend Plan as per Budgeting (M) FTY 2026")), color: S.plan }].concat(RV ? [
-      { label: "Rev Spend Plan FTY 2026", value: U.sum(proj, revF), color: S.rev }] : []).concat([
-      { label: "Forecast Plan FTY 2026", value: U.sum(proj, fcF), color: S.invoice }]));
-    gl.lastChild.style.marginBottom = "16px";
-    totalsChart(chartBox(panelIn(gl, "Year to date", "YTD 2026" + ytdLbl)), [
-      { label: RV ? "YTD Original Plan" : "YTD Spend Plan", value: U.sum(proj, M("YTD Spend Plan as per Budgeting (M)")), color: S.plan }].concat(RV ? [
-      { label: "YTD Rev Plan", value: U.sum(proj, revY), color: S.rev }] : []).concat([
-      { label: "YTD Forecast Plan", value: U.sum(proj, fcY), color: S.invoice },
-      { label: "YTD Actual", value: U.sum(proj, M("YTD Actual (M)")), color: S.actual }]));
-    var byP = projX.slice().sort(function (a, b) { return sortNum(M("Spend Plan as per Budgeting (M) FTY 2026")(b), M("Spend Plan as per Budgeting (M) FTY 2026")(a)); });
-    var names = byP.map(function (r) { return r["Project Name"]; });
-    var pb = chartBox(panelIn(g0, "Spend by project", "Click a bar to filter · Ctrl+click for several"));
-    pb.style.height = Math.max(560, byP.length * 30 + 70) + "px";
-    hbar(pb, names, [
-      U.barDs(RV ? "Original Plan 2026" : "Spend Plan 2026", byP.map(M("Spend Plan as per Budgeting (M) FTY 2026")), U.hl(S.plan, names, st.proj))].concat(RV ? [
-      U.barDs("Rev Spend Plan 2026", byP.map(revF), U.hl(S.rev, names, st.proj))] : []).concat([
-      U.fcBar("Forecast Plan 2026", byP.map(fcF), U.hl(S.invoice, names, st.proj)),
-      U.barDs("YTD Actual", byP.map(M("YTD Actual (M)")), U.hl(S.actual, names, st.proj))]), function (i, e) { pick(ctx, "proj", names[i], e); });
-
-    var pp = panelIn(v, "Project spend detail", proj.length + " projects · click a row to filter");
-    tableIn(pp, { rows: proj, exportName: "KPI_Projects_Data", totals: true,
-      onRow: function (r, e) { pick(ctx, "proj", r["Project Name"], e); }, rowTitle: "Filter by this project",
-      rowClass: function (r) { return st.proj.indexOf(r["Project Name"]) >= 0 ? "selected" : ""; },
-      columns: [
-        { key: "KPI Filter", label: "KPI Filter", nowrap: true }, { key: "Objective/ KPIs", label: "Objective / KPIs", nowrap: true },
-        { key: "Code", label: "Code" }, { key: "Project Name", label: "Project Name", nowrap: true },
-        { get: M("Spend Plan as per Budgeting (M) FTY 2026"), label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money", total: "sum" }].concat(RV ? [
-        { get: revF, label: "Rev Spend Plan 2026", type: "money", total: "sum" }] : []).concat([
-        { get: fcF, label: "Forecast Plan 2026", type: "money", total: "sum" }]).concat(RV ? [
-        { get: function (r) { return fcF(r) - revF(r); }, label: "Variance 2026 (Forecast − Rev Plan)", type: "money", signed: true, total: "sum" }] : []).concat([
-        { get: function (r) { return fcF(r) - (N(G(r, "Spend Plan as per Budgeting (M) FTY 2026")) || 0); }, label: RV ? "Variance 2026 (Forecast − Original)" : "Variance 2026 (Forecast − Plan)", type: "money", signed: true, total: "sum" },
-        { get: M("YTD Spend Plan as per Budgeting (M)"), label: RV ? "YTD Original Plan" : "YTD Spend Plan", type: "money", total: "sum" }]).concat(RV ? [
-        { get: revY, label: "YTD Rev Plan", type: "money", total: "sum" }] : []).concat([
-        { get: fcY, label: "YTD Forecast Plan", type: "money", total: "sum" },
-        { get: M("YTD Actual (M)"), label: "YTD Actual", type: "money", total: "sum" },
-        { get: function (r) { return (N(G(r, "YTD Actual (M)")) || 0) - (N(G(r, "YTD Spend Plan as per Budgeting (M)")) || 0); }, label: RV ? "YTD Var. (Actual − Original)" : "YTD Var. (Actual − Plan)", type: "money", signed: true, total: "sum" }]).concat(RV ? [
-        { get: function (r) { return (N(G(r, "YTD Actual (M)")) || 0) - revY(r); }, label: "YTD Var. (Actual − Rev Plan)", type: "money", signed: true, total: "sum" }] : []).concat([
-        { get: function (r) { return (N(G(r, "YTD Actual (M)")) || 0) - fcY(r); }, label: "YTD Var. (Actual − Forecast)", type: "money", signed: true, total: "sum" }]) });
-  };
 
   /* ======================================================================
-     Cost filters shared by the cost pages. Returns fully filtered rows and
-     "cross" rows (all filters except the one a visual itself sets), so a
-     chart keeps showing every bar and highlights the selected ones.
-     ====================================================================== */
-  function costFilters(ctx, withPhase, withMonth) {
-    var nsrAll = ctx.D.t("NSR_Project_Data"), spAll = ctx.D.t("Spending_Plan");
-    var defs = [
-      { key: "proj", label: "Project Name", options: U.uniq(nsrAll.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } },
-      { key: "id", label: "Project ID", options: U.uniq(nsrAll.map(function (r) { return r.ID; })).sort(), get: function (r) { return r.ID; } },
-      { key: "fund", label: "Fund Type", options: U.uniq(nsrAll.map(function (r) { return r["Fund Type"]; })).sort(), get: function (r) { return r["Fund Type"]; } }];
-    if (withPhase) defs.push({ key: "phase", label: "Project Phase", options: U.uniq(nsrAll.map(function (r) { return r["Project Phase"]; })).sort(), get: function (r) { return r["Project Phase"]; } });
-    var mdef = { key: "month", label: "Month", options: U.uniq(spAll.map(function (r) { return r.Month; })).sort(), display: fmt.month, get: function (r) { return r.Month; } };
-    var st = filterBar(ctx, withMonth ? defs.concat([mdef]) : defs, nsrAll);
-    var prj = function (except) { return function (r) { return passes(r, defs, st, except); }; };
-    var mon = function (r) { return !withMonth || inSel(st.month, r.Month); };
-    return {
-      st: st,
-      nsr: nsrAll.filter(prj()),
-      nsrX: nsrAll.filter(prj("proj")),
-      sp: spAll.filter(function (r) { return prj()(r) && mon(r); }),
-      spXproj: spAll.filter(function (r) { return prj("proj")(r) && mon(r); }),
-      spXmonth: spAll.filter(prj())
-    };
-  }
-
-  /* ======================================================================
-     Cost Dashboard — one page for the cost register (contract & payments),
-     the 2026 spend (Spend Plan vs Forecast Plan vs Actual, S-curve) and the
-     detail tables. Replaces the former Cost Dashboard / Cost Analysis /
-     Cost S-Curve pages; every figure appears once.
+     Cost & KPI Dashboard — one page for the cost KPIs (today and at year-end),
+     the 2026 spend outlook (Spend Plan vs Forecast Plan vs Actual), the cost
+     register (contract & payments), the invoice schedule, the detail tables and
+     the monthly spending plan. Replaces the former KPI Cost Summary, KPI
+     Year-End Outlook and Cost Dashboard pages; every figure appears once.
      ====================================================================== */
   function secHead(v, title, sub) { return add(v, '<div class="sec-h"><h3>' + esc(title) + "</h3>" + (sub ? "<span>" + sub + "</span>" : "") + "</div>"); }
   P.cost = function (ctx) {
-    var D = ctx.D, f = costFilters(ctx, true, true), v = ctx.view, nsr = f.nsr, st = f.st;
+    var D = ctx.D, v = ctx.view, spAll = D.t("Spending_Plan"), kpd = D.t("KPI_Projects_Data"), ksum = D.t("KPI_Summary").filter(isKPI([7, 8]));
+    var nsrAll = D.t("NSR_Project_Data");
+    if (!spAll.length && !nsrAll.length) { add(v, '<div class="empty">No cost data — import the Spending Plan and the NSR Project Data.</div>'); return; }
+    var RV = hasRev(), baseLbl = RV ? "Rev Spend Plan" : "Spend Plan", plans = RV ? "Original & Rev Spend Plan" : "Spend Plan", T95 = Math.round(TARGET * 100) + "%";
+    var kpiName = {}, kpiW = {}, codeKpi = {};
+    ksum.forEach(function (r) { kpiName[N(r["KPI Code"])] = r["Objective/ KPIs"]; kpiW[N(r["KPI Code"])] = N(r["KPI Weight (%)"]) || 0; });
+    kpd.filter(isKPI([7, 8])).forEach(function (r) { codeKpi[String(r.Code)] = N(r["KPI Code"]); });
+    function kpiOf(id) { var k = codeKpi[id]; return k != null ? kpiName[k] || "KPI " + k : "Not in a cost KPI"; }
+    var cut = lastActualMonth(spAll), months = U.uniq(spAll.map(function (r) { return r.Month; })).sort(), toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
+    var projAll = outlookByProject(spAll, cut, kpiOf), byId = {};
+    projAll.forEach(function (o) { byId[o.ID] = o; });
+    // one filter bar for the whole page: spend projects and cost-register rows share KPI / outlook / fund / phase / project
+    var nsrObj = nsrAll.map(function (r) { var o = byId[String(r.ID)]; return { r: r, ID: String(r.ID), name: r["Project Name"], fund: r["Fund Type"], phase: r["Project Phase"], kpi: kpiOf(String(r.ID)), status: o ? o.status : "No 2026 plan" }; });
+    var every = projAll.concat(nsrObj);
+    var defs = [
+      { key: "kpi", label: "KPI", options: U.uniq(every.map(function (o) { return o.kpi; })), get: function (o) { return o.kpi; } },
+      { key: "out", label: "Year-end outlook", options: U.uniq(projAll.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER)), get: function (o) { return o.status; } },
+      { key: "fund", label: "Fund Type", options: U.uniq(every.map(function (o) { return o.fund; })).sort(), get: function (o) { return o.fund; } },
+      { key: "phase", label: "Project Phase", options: U.uniq(every.map(function (o) { return o.phase; })).sort(), get: function (o) { return o.phase; } },
+      { key: "proj", label: "Project", options: U.uniq(every.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
+    var st = filterBar(ctx, defs, projAll);
+    var proj = projAll.filter(function (o) { return passes(o, defs, st); }), projX = projAll.filter(function (o) { return passes(o, defs, st, "proj"); });
+    var nsrF = nsrObj.filter(function (o) { return passes(o, defs, st); }), nsr = nsrF.map(function (o) { return o.r; });
+    var nsrX = nsrObj.filter(function (o) { return passes(o, defs, st, "proj"); }).map(function (o) { return o.r; });
+    function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
+    var T = { plan: tot(proj, "plan"), planYtd: tot(proj, "planYtd"), rev: tot(proj, "rev"), revYtd: tot(proj, "revYtd"), act: tot(proj, "act"), fcRem: tot(proj, "fcRem"), fcFY: tot(proj, "fcFY") };
+    T.base = RV ? T.rev : T.plan; T.landing = T.fcFY; T.pct = T.base ? T.landing / T.base : null; T.gap = TARGET * T.base - T.landing;
+    var rowsF = spAll.filter(function (r) { var o = byId[String(r.ID)]; return o && proj.indexOf(o) >= 0; });
 
-    /* 1 · Contract & payments (NSR Project Data) */
-    secHead(v, "Contract & payments", "Cost register · project filters apply");
+    // in-page navigation: one page, five sections
+    var secs = [["c-kpi", "KPI position"], ["c-out", "Year-end outlook"], ["c-con", "Contract & payments"], ["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]];
+    var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
+    nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
+
+    /* 1 · KPI position — headline tiles (once) + one KPI table (cost summary and year-end closing together) */
+    sec("c-kpi", "Cost KPI position", "Year-end = contractor Forecast Plan (invoicing plan) vs the " + baseLbl + " · CAPEX Variance target: year-end spend ≥ " + T95 + " of plan · actual to " + esc(fmt.month(cut)) + " for reference");
+    spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: toCut,
+      gapNote: T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + T95 + " target" : " · " + T95 + " target met" })
+      .forEach(function (g) { clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; })); });
+    var krows = ksum.map(function (r) {
+      var code = N(r["KPI Code"]), list = proj.filter(function (o) { return codeKpi[o.ID] === code; });
+      var o = { KPI: r["Objective/ KPIs"], filt: r["KPI Filter"], w: kpiW[code], plan: tot(list, "plan"), rev: tot(list, "rev"), planYtd: tot(list, "planYtd"), revYtd: tot(list, "revYtd"), act: tot(list, "act"), fcFY: tot(list, "fcFY"), n: list.length };
+      o.base = RV ? o.rev : o.plan; o.baseYtd = RV ? o.revYtd : o.planYtd;
+      o.ytdPct = o.baseYtd ? o.act / o.baseYtd : null; o.landing = o.fcFY; o.var = o.landing - o.base; o.yePct = o.base ? o.landing / o.base : null;
+      o.nowRes = o.ytdPct != null ? o.w * Math.min(1, o.ytdPct) : null; o.yeRes = o.yePct != null ? o.w * Math.min(1, o.yePct) : null; o.gap = TARGET * o.base - o.landing;
+      return o;
+    }).filter(function (o) { return o.n; });
+    tableIn(panelIn(v, "Cost KPIs — today and at year-end", "KPI result = weight × % achieved · click a KPI to filter the page"), { rows: krows, search: false, autoHeight: true, exportName: "Cost_KPIs",
+      onRow: function (o, e) { pick(ctx, "kpi", o.KPI, e); }, rowTitle: "Filter by this KPI", rowClass: function (o) { return st.kpi.indexOf(o.KPI) >= 0 ? "selected" : ""; },
+      columns: [{ key: "KPI", label: "KPI", wrap: true }, { key: "w", label: "Weight", type: "pct" },
+        { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money" }].concat(RV ? [{ key: "rev", label: "Rev Spend Plan 2026", type: "money" }] : []).concat([
+        { key: "landing", label: "Year-end Forecast Plan", type: "money" }, { key: "var", label: "Variance vs " + (RV ? "Rev plan" : "plan"), type: "money", signed: true },
+        { key: "yePct", label: "Year-end % of plan", type: "meter" }, { key: "yeRes", label: "Projected KPI result", type: "pct" },
+        { key: "gap", label: "Gap to " + T95 + " target", type: "money", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">Covered</span>'; } },
+        { key: "baseYtd", label: "YTD " + (RV ? "Rev Plan" : "Plan"), type: "money" }, { key: "act", label: "YTD Actual", type: "money" },
+        { key: "ytdPct", label: "YTD % achieved", type: "meter" }, { key: "nowRes", label: "KPI result today", type: "pct" }]) });
+
+    /* 2 · Year-end outlook */
+    sec("c-out", "Year-end outlook", plans + " vs Forecast Plan vs Actual · click a month for the project split, a bar to filter");
+    var g1 = grid(v, "g-1-2"), vr = T.landing - T.base;
+    waterfall(chartBox(panelIn(g1, plans + " vs year-end Forecast Plan", "2026 full year · variance vs " + baseLbl + " " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + ")"), "tall"),
+      [{ label: RV ? "Original Spend Plan" : "Spend Plan 2026", value: T.plan, total: true, color: S.plan }].concat(RV ? [{ label: "Rev Spend Plan", value: T.rev, total: true, color: S.rev }] : [])
+        .concat([{ label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }]), TARGET * T.base);
+    var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
+    var actLine = [], a2 = 0; mm.forEach(function (o, i) { a2 += o.act; actLine.push(i <= ci ? a2 : null); });
+    function mClick(i) { if (mm[i]) monthModal(D, rowsF, mm[i].month); }
+    U.chart(chartBox(panelIn(g1, "Cumulative S-curve", "Cumulative " + plans + " vs Forecast Plan · actual to " + esc(fmt.month(cut))), "tall"), U.clickable({ type: "line",
+      data: { labels: labels, datasets: [
+        U.lineDs(RV ? "Original Spend Plan (cum)" : "Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 })].concat(RV ? [
+        U.lineDs("Rev Spend Plan (cum)", mm.map(function (o) { return o.revC; }), S.rev, { pointRadius: 3, borderWidth: 2.5 })] : []).concat([
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5, borderDash: [7, 5] }),
+        U.lineDs("Actual (cum)", actLine, S.actual, { pointRadius: 4, borderWidth: 3, spanGaps: false }),
+        U.lineDs(T95 + " target", mm.map(function () { return TARGET * T.base; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })]) },
+      options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } }, mClick));
+    var g2 = grid(v, "g-2-1");
+    vbar(chartBox(panelIn(g2, "Monthly spend", "Incremental · click a month for the project split")), labels, [
+      U.barDs(RV ? "Original Plan" : "Spend Plan", mm.map(function (o) { return o.plan; }), S.plan)].concat(RV ? [U.barDs("Rev Spend Plan", mm.map(function (o) { return o.rev; }), S.rev)] : []).concat([
+      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), S.invoice), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), S.actual)]), mClick);
+    var rx = projAll.filter(function (o) { return passes(o, defs, st, "out"); }), outs = U.uniq(rx.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER));
+    U.chart(chartBox(panelIn(g2, "Projects by year-end outlook", "On track ≥ 95% · at risk 85–95% · behind < 85% · click to filter")), U.clickable({ type: "bar", data: { labels: outs, datasets: [
+      U.barDs("Projects", outs.map(function (s) { return rx.filter(function (o) { return o.status === s; }).length; }), outs.map(function (s) { var c0 = OUT_COLOR[s] || C.slate; return st.out.length && st.out.indexOf(s) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 26 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } },
+        layout: { padding: { right: 24 } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
+      function (i, e) { pick(ctx, "out", outs[i], e); }));
+    var g3 = grid(v, "g-2");
+    var byP = projX.filter(function (o) { return o.plan || o.rev || o.landing || o.act; }).sort(function (a, b) { return (b.base || b.plan) - (a.base || a.plan); }), pn = byP.map(function (o) { return o.name; });
+    var pb = chartBox(panelIn(g3, "2026 spend by project", plans + " vs Forecast Plan vs YTD actual · click to filter")); pb.style.height = Math.max(320, pn.length * (RV ? 36 : 30) + 70) + "px";
+    hbar(pb, pn, [U.barDs(RV ? "Original Plan" : "Spend Plan", byP.map(function (o) { return o.plan; }), U.hl(S.plan, pn, st.proj))].concat(RV ? [
+      U.barDs("Rev Spend Plan", byP.map(function (o) { return o.rev; }), U.hl(S.rev, pn, st.proj))] : []).concat([
+      U.fcBar("Forecast Plan", byP.map(function (o) { return o.landing; }), U.hl(S.invoice, pn, st.proj)), U.barDs("YTD Actual", byP.map(function (o) { return o.act; }), U.hl(S.actual, pn, st.proj))]),
+      function (i, e) { pick(ctx, "proj", pn[i], e); });
+    var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; }), vn = byV.map(function (o) { return o.name; });
+    var vb = chartBox(panelIn(g3, "Year-end variance by project", "Forecast Plan − " + baseLbl + " · red = under-spend · click to filter")); vb.style.height = pb.style.height;
+    hbar(vb, vn, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
+      byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
+      function (i, e) { pick(ctx, "proj", vn[i], e); });
+
+    /* 3 · Contract & payments (cost register) */
+    sec("c-con", "Contract & payments", "NSR Project Data (cost register) · " + nsr.length + " projects");
     var g = grid(v, "g-5");
     g.innerHTML = mTile("Full Cost", U.sum(nsr, "Full Cost")) + mTile("Contract Value", U.sum(nsr, "Contract Value"), "black") +
       mTile("Total WC", U.sum(nsr, "Total WC"), "mid") + mTile("Paid", U.sum(nsr, PAID), "slate") + mTile("Remaining WC", U.sum(nsr, "Remaining WC"), "yellow");
     clickTiles(g, ["Full Cost", "Contract Value", "Total WC", PAID, "Remaining WC"].map(function (k, i) {
       return function () { costModal(D, ["Full cost", "Contract value", "Total WC", "Paid", "Remaining WC"][i], nsr, k); }; }));
-
-    var byCV = f.nsrX.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); });
-    var names = byCV.map(function (r) { return r["Project Name"]; });
-    var g1 = grid(v, "g-2-1");
-    var b1 = chartBox(panelIn(g1, "Contract value vs WC total vs paid", "By project · click a project to filter the page · Ctrl+click for several"));
-    b1.style.height = Math.max(320, names.length * 34 + 70) + "px";
-    hbar(b1, names, [
-      U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), U.hl(S.plan, names, st.proj)),
-      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), U.hl(S.forecast, names, st.proj)),
-      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), U.hl(S.actual, names, st.proj))], function (i, e) { pick(ctx, "proj", names[i], e); });
-    var side = add(g1, '<div class="stack"></div>');
-    [["phase", "Project Phase", "Contract value by phase"], ["fund", "Fund Type", "Contract value by fund type"]].forEach(function (c) {
-      var base = D.t("NSR_Project_Data").filter(function (r) { return passes(r, [
-        { key: "proj", get: function (x) { return x["Project Name"]; } }, { key: "id", get: function (x) { return x.ID; } },
-        { key: "fund", get: function (x) { return x["Fund Type"]; } }, { key: "phase", get: function (x) { return x["Project Phase"]; } }], st, c[0]); });
-      var keys = U.uniq(base.map(function (r) { return r[c[1]]; }));
-      var vals = keys.map(function (k) { return U.sum(base.filter(function (r) { return r[c[1]] === k; }), "Contract Value"); });
-      var box = chartBox(panelIn(side, c[2], "Click to filter"), "short");
-      box.style.height = Math.max(160, keys.length * 30 + 50) + "px";
+    var byCV = nsrX.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); }), cn = byCV.map(function (r) { return r["Project Name"]; });
+    var g4 = grid(v, "g-2-1");
+    var b1 = chartBox(panelIn(g4, "Contract value vs WC total vs paid", "By project · click to filter")); b1.style.height = Math.max(320, cn.length * 34 + 70) + "px";
+    hbar(b1, cn, [U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), U.hl(S.plan, cn, st.proj)),
+      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), U.hl(S.forecast, cn, st.proj)),
+      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), U.hl(S.actual, cn, st.proj))], function (i, e) { pick(ctx, "proj", cn[i], e); });
+    var side = add(g4, '<div class="stack"></div>');
+    [["phase", "Contract value by phase"], ["fund", "Contract value by fund type"]].forEach(function (c) {
+      var base = nsrObj.filter(function (o) { return passes(o, defs, st, c[0]); }), keys = U.uniq(base.map(function (o) { return o[c[0]]; }));
+      var vals = keys.map(function (k) { return U.sum(base.filter(function (o) { return o[c[0]] === k; }).map(function (o) { return o.r; }), "Contract Value"); });
+      var box = chartBox(panelIn(side, c[1], "Click to filter"), "short"); box.style.height = Math.max(160, keys.length * 30 + 50) + "px";
       hbar(box, keys, [U.barDs("Contract Value", vals, U.hl(S.plan, keys, st[c[0]]), { maxBarThickness: 18 })], function (i, e) { pick(ctx, c[0], keys[i], e); });
     });
 
-    /* 2 · 2026 spend (Spending Plan) */
-    var cut = lastActualMonth(D.t("Spending_Plan")), toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
-    secHead(v, "2026 spend — " + (hasRev() ? "Original & Rev Spend Plan" : "Spend Plan") + " vs Forecast Plan vs Actual", "Spending Plan" + (hasRev() ? " + Budget 2026" : "") + " · click a month to filter the month-based visuals");
-    var mm = monthly(f.spXmonth), months = mm.map(function (o) { return o.month; }), labels = months.map(fmt.month);
-    var last = mm[mm.length - 1] || {}, ytd = mm.filter(function (o) { return cut && o.month <= cut; }).pop() || {};
-    spendTiles(v, { orig: last.planC || 0, rev: last.revC || 0, fc: last.invC || 0, yOrig: ytd.planC || 0, yRev: ytd.revC || 0, yAct: ytd.actC || 0, toCut: toCut })
-      .forEach(function (g2) { clickTiles(g2, [0, 1, 2, 3, 4, 5].map(function () { return function () { spendModal(D, f.spXmonth); }; })); });
+    /* 4 · Invoice schedule */
+    sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
+    invoiceGantt(panelIn(v, "Invoice schedule", "Actual to " + esc(fmt.month(cut)) + " · contractor Forecast Plan after"), proj.slice().sort(function (a, b) { return b.plan - a.plan; }), months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
 
-    function mSel(i, e) { pick(ctx, "month", months[i], e); }
-    var g3 = grid(v, "g-2");
-    U.chart(chartBox(panelIn(g3, "Cumulative S-curve", (hasRev() ? "Original & Rev Spend Plan" : "Spend Plan") + " vs Forecast Plan vs Actual · click a month to filter"), "tall"), U.clickable({ type: "line",
-      data: { labels: labels, datasets: [
-        U.lineDs(hasRev() ? "Original Spend Plan (cum)" : "Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 })].concat(hasRev() ? [
-        U.lineDs("Rev Spend Plan (cum)", mm.map(function (o) { return o.revC; }), S.rev, { pointRadius: 3, borderWidth: 2.5 })] : []).concat([
-        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [7, 5], pointRadius: 3 }),
-        U.lineDs("Actual Spend (cum)", mm.map(function (o) { return o.actCv; }), S.actual, { borderWidth: 3, pointRadius: 4 })]) },
-      options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() }, interaction: { mode: "index", intersect: false } } }, mSel));
-    vbar(chartBox(panelIn(g3, "Monthly spend", "Incremental · click a month to filter"), "tall"), labels, [
-      U.barDs(hasRev() ? "Original Plan" : "Spend Plan", mm.map(function (o) { return o.plan; }), U.hl(S.plan, months, st.month))].concat(hasRev() ? [
-      U.barDs("Rev Spend Plan", mm.map(function (o) { return o.rev; }), U.hl(S.rev, months, st.month))] : []).concat([
-      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), U.hl(S.invoice, months, st.month)),
-      U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), U.hl(S.actual, months, st.month))]), mSel);
-
-    var byP = {}; f.spXproj.forEach(function (r) {
-      var o = byP[r["Project Name"]] || (byP[r["Project Name"]] = { plan: 0, rev: 0, act: 0, inv: 0 });
-      o.plan += N(G(r, SP.plan)) || 0; o.rev += N(G(r, SP.rev)) || 0; o.act += N(G(r, SP.act)) || 0; o.inv += N(G(r, SP.inv)) || 0;
-    });
-    var spNames = Object.keys(byP).sort(function (a, b) { return byP[b].plan - byP[a].plan; });
-    var b2 = chartBox(panelIn(v, "Spend by project", (st.month.length ? st.month.map(fmt.month).join(", ") : "2026") + " · " + (hasRev() ? "Original & Rev Spend Plan" : "Spend Plan") + " vs Forecast Plan vs Actual · click a project to filter"));
-    b2.style.height = Math.max(320, spNames.length * (hasRev() ? 38 : 30) + 70) + "px";
-    hbar(b2, spNames, [U.barDs(hasRev() ? "Original Plan" : "Spend Plan", spNames.map(function (n) { return byP[n].plan; }), U.hl(S.plan, spNames, st.proj))].concat(hasRev() ? [
-      U.barDs("Rev Spend Plan", spNames.map(function (n) { return byP[n].rev; }), U.hl(S.rev, spNames, st.proj))] : []).concat([
-      U.fcBar("Forecast Plan", spNames.map(function (n) { return byP[n].inv; }), U.hl(S.invoice, spNames, st.proj)),
-      U.barDs("Actual Spend", spNames.map(function (n) { return byP[n].act; }), U.hl(S.actual, spNames, st.proj))]),
-      function (i, e) { pick(ctx, "proj", spNames[i], e); });
-
-    /* 3 · Detail tables (one tab each) */
-    secHead(v, "Details", "");
-    st.tab = st.tab || "reg";
-    var tabs = [["reg", "Project cost register"], ["sc", "Monthly S-curve data"], ["inv", "Invoice plan"]];
+    /* 5 · Project details (one table per view) */
+    sec("c-det", "Project details", "");
+    st.tab = st.tab || "spend";
+    var tabs = [["spend", "2026 spend & year-end outlook"], ["reg", "Cost register (contract & payments)"]];
     var tp = add(v, U.panel(tabs.filter(function (t) { return t[0] === st.tab; })[0][1], "", ""));
     tp.querySelector(".panel-head .tools").appendChild(seg("", tabs, st.tab, function (x) { st.tab = x; ctx.rerender(); }));
-    if (st.tab === "reg") tableIn(tp, { rows: nsr, exportName: "NSR_Project_Data", totals: true, maxHeight: 620,
-      onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project",
+    if (st.tab === "spend") tableIn(tp, { rows: proj, exportName: "Cost_2026_Projects", totals: true, sort: { key: "variance", dir: 1 }, maxHeight: 640,
+      onRow: function (o, e) { pick(ctx, "proj", o.name, e); }, rowTitle: "Filter by this project", rowClass: function (o) { return st.proj.indexOf(o.name) >= 0 ? "selected" : ""; },
+      columns: [{ key: "ID", label: "ID", nowrap: true }, { key: "name", label: "Project", nowrap: true }, { key: "kpi", label: "KPI", nowrap: true },
+        { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money", total: "sum" }].concat(RV ? [{ key: "rev", label: "Rev Spend Plan 2026", type: "money", total: "sum" }] : []).concat([
+        { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance vs " + (RV ? "Rev plan" : "plan"), type: "money", signed: true, total: "sum" }]).concat(RV ? [
+        { key: "varOrig", label: "Variance vs original", type: "money", signed: true, total: "sum" }] : []).concat([
+        { key: "pct", label: "Forecast ÷ plan", type: "meter" }, { key: "status", label: "Outlook", type: "badge" },
+        { key: "baseYtd", label: "YTD " + (RV ? "Rev Plan" : "Plan"), type: "money", total: "sum" }, { key: "fcYtd", label: "YTD Forecast Plan", type: "money", total: "sum" },
+        { key: "act", label: "YTD Actual", type: "money", total: "sum" }, { get: function (o) { return o.act - o.baseYtd; }, label: "YTD Var. (Actual − Plan)", type: "money", signed: true, total: "sum" },
+        { key: "fcRem", label: "Forecast remaining", type: "money", total: "sum" }]) });
+    else tableIn(tp, { rows: nsr, exportName: "NSR_Project_Data", totals: true, maxHeight: 620, onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project",
       columns: [
         { key: "SN", label: "SN", type: "int" }, { key: "Fund Type", label: "Fund Type" }, { key: "PROG", label: "PROG" },
         { key: "PO Number", label: "PO Number", type: "text" }, { key: "ID", label: "ID" }, { key: "Project Name", label: "Project Name", nowrap: true },
@@ -759,42 +717,14 @@
         { key: "Remaining WC", label: "Remain WC", type: "money", total: "sum" },
         { key: "Start Date", label: "Start Date", type: "date" }, { key: "End Date", label: "End Date", type: "date" },
         { key: "Project Phase", label: "Project Phase", type: "badge" }, { key: "Remarks/Concern", label: "Remarks / Concern", wrap: true }] });
-    else if (st.tab === "sc") tableIn(tp, { rows: mm, exportName: "Cost_S_Curve", search: false, autoHeight: true, totals: true,
-      onRow: function (o) { monthModal(D, f.spXmonth, o.month); }, rowTitle: "Open month breakdown",
-      columns: [
-        { key: "month", label: "Month", render: function (x) { return esc(fmt.month(x)); } },
-        { key: "plan", label: hasRev() ? "Original Plan" : "Spend Plan", type: "money", total: "sum" }].concat(hasRev() ? [{ key: "rev", label: "Rev Spend Plan", type: "money", total: "sum" }] : []).concat([
-        { key: "inv", label: "Forecast Plan", type: "money", total: "sum" }, { key: "act", label: "Actual Spend", type: "money", total: "sum" },
-        { key: "planC", label: hasRev() ? "Original Plan (cum)" : "Spend Plan (cum)", type: "money" }]).concat(hasRev() ? [{ key: "revC", label: "Rev Spend Plan (cum)", type: "money" }] : []).concat([
-        { key: "invC", label: "Forecast Plan (cum)", type: "money" }, { key: "actCv", label: "Actual (cum)", type: "money" }]) });
-    else {
-      var inv = f.sp.filter(function (r) { return r["Invoice Related actvities"]; });
-      tableIn(tp, { rows: inv, exportName: "Invoice_Plan", totals: true, sort: { key: "Month", dir: 1 }, maxHeight: 620,
-        onRow: function (r, e) { pick(ctx, "proj", r["Project Name"], e); }, rowTitle: "Filter by this project",
-        rowClass: function (r) { return st.proj.indexOf(r["Project Name"]) >= 0 ? "selected" : ""; },
-        columns: [
-          { key: "Project Name", label: "Project Name", nowrap: true },
-          { key: "Invoice Related actvities", label: "Invoice Related Activities", wrap: true },
-          { get: function (r) { return G(r, SP.inv); }, label: "Forecast Plan", type: "money", total: "sum" },
-          { key: "Month", label: "Month", type: "date", render: function (x) { return esc(fmt.month(x)); } }] });
-    }
+
+    /* 6 · Monthly spending plan matrix (last section, meeting format) */
+    sec("c-mx", "Monthly spending plan", "");
+    spendMatrix(panelIn(v, "Monthly spending plan", plans + " vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum " + (RV ? "Rev " : "") + "Plan · click a project to filter"),
+      proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
   };
 
-  /** Spend plan / forecast / actual by project for a set of Spending Plan rows. */
-  function spendModal(D, rows) {
-    var by = {};
-    rows.forEach(function (r) {
-      var o = by[r.ID] || (by[r.ID] = { ID: r.ID, name: r["Project Name"], plan: 0, rev: 0, act: 0, inv: 0 });
-      o.plan += N(G(r, SP.plan)) || 0; o.rev += N(G(r, SP.rev)) || 0; o.act += N(G(r, SP.act)) || 0; o.inv += N(G(r, SP.inv)) || 0;
-    });
-    tableModal("Spend by project", Object.keys(by).map(function (k) { return by[k]; }), [
-      { key: "ID", label: "ID" }, { key: "name", label: "Project" },
-      { key: "plan", label: hasRev() ? "Original Plan" : "Spend Plan", type: "money", total: "sum" }].concat(hasRev() ? [{ key: "rev", label: "Rev Spend Plan", type: "money", total: "sum" }] : []).concat([
-      { key: "inv", label: "Forecast Plan", type: "money", total: "sum" },
-      { key: "act", label: "Actual Spend", type: "money", total: "sum" },
-      { get: function (o) { var b = hasRev() ? o.rev : o.plan; return b ? o.act / b : null; }, label: hasRev() ? "Actual ÷ Rev plan" : "Actual ÷ plan", type: "meter" }]),
-      { totals: true, autoHeight: true, sort: { key: "plan", dir: -1 }, onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project" });
-  }
+
 
   /* ======================================================================
      KPI Year-End Outlook — how the cost KPIs will close the year.
@@ -844,121 +774,6 @@
         tooltip: { callbacks: { label: function (c) { if (c.datasetIndex) return " Target: " + fmt.money(c.parsed.y) + " SAR"; var s = steps[c.dataIndex]; return " " + s.label + ": " + fmt.money(s.value) + " SAR"; } } } },
         scales: { x: U.catAxis(), y: Object.assign(U.moneyAxis(), { beginAtZero: true }) } } });
   }
-
-  P["kpi-outlook"] = function (ctx) {
-    var D = ctx.D, v = ctx.view, spAll = D.t("Spending_Plan"), kpd = D.t("KPI_Projects_Data"), ksum = D.t("KPI_Summary").filter(isKPI([7, 8]));
-    if (!spAll.length) { add(v, '<div class="empty">No Spending Plan data.</div>'); return; }
-    var kpiName = {}, kpiW = {}, codeKpi = {};
-    ksum.forEach(function (r) { kpiName[N(r["KPI Code"])] = r["Objective/ KPIs"]; kpiW[N(r["KPI Code"])] = N(r["KPI Weight (%)"]) || 0; });
-    kpd.filter(isKPI([7, 8])).forEach(function (r) { codeKpi[String(r.Code)] = N(r["KPI Code"]); });
-    function kpiOf(id) { var k = codeKpi[id]; return k != null ? kpiName[k] || "KPI " + k : "Not in a cost KPI"; }
-    var cut = lastActualMonth(spAll), months = U.uniq(spAll.map(function (r) { return r.Month; })).sort();
-    var projAll = outlookByProject(spAll, cut, kpiOf);
-    var defs = [
-      { key: "kpi", label: "KPI", options: U.uniq(projAll.map(function (o) { return o.kpi; })), get: function (o) { return o.kpi; } },
-      { key: "out", label: "Year-end outlook", options: U.uniq(projAll.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER)), get: function (o) { return o.status; } },
-      { key: "fund", label: "Fund Type", options: U.uniq(projAll.map(function (o) { return o.fund; })).sort(), get: function (o) { return o.fund; } },
-      { key: "phase", label: "Project Phase", options: U.uniq(projAll.map(function (o) { return o.phase; })).sort(), get: function (o) { return o.phase; } },
-      { key: "proj", label: "Project", options: U.uniq(projAll.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
-    // Open on the weighted KPI (CAPEX Variance): the target only applies to it. "Reset filters" shows both.
-    if (!ctx.state.f) ctx.state.f = { kpi: ksum.filter(function (r) { return kpiW[N(r["KPI Code"])] > 0; }).map(function (r) { return r["Objective/ KPIs"]; }) };
-    var st = filterBar(ctx, defs, projAll);
-    var proj = projAll.filter(function (o) { return passes(o, defs, st); });
-    var projX = projAll.filter(function (o) { return passes(o, defs, st, "proj"); });
-    function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
-    var T = { plan: tot(proj, "plan"), planYtd: tot(proj, "planYtd"), rev: tot(proj, "rev"), revYtd: tot(proj, "revYtd"), act: tot(proj, "act"), planRem: tot(proj, "planRem"), fcRem: tot(proj, "fcRem"), fcFY: tot(proj, "fcFY") };
-    var RV = hasRev(), baseLbl = RV ? "Rev Spend Plan" : "Spend Plan";
-    T.base = RV ? T.rev : T.plan;
-    T.fcYtd = T.fcFY - T.fcRem; T.landing = T.fcFY; T.pct = T.base ? T.landing / T.base : null; T.gap = TARGET * T.base - T.landing;
-    var remLbl = cut ? months.filter(function (m) { return m > cut; }).map(fmt.month) : [];
-    remLbl = remLbl.length ? remLbl[0] + " – " + remLbl[remLbl.length - 1] : "—";
-
-    add(v, '<div class="note-box ol-lead"><b>How the year closes:</b> year-end = the contractor <b>Forecast Plan (invoicing plan)</b> for Jan – Dec 2026, compared with the <b>' +
-      (RV ? "Rev Spend Plan</b> (Budget 2026, Spending Plan VP); the <b>original Spend Plan</b> (budgeting) is kept alongside for comparison" : "Spend Plan (budgeting)</b>") + ". " +
-      "Actual spend (to " + esc(fmt.month(cut)) + ") is shown for reference only and does not change the year-end figure. CAPEX Variance KPI target: year-end spend at least <b>" + Math.round(TARGET * 100) + "%</b> of the " + baseLbl + " (variance within −5%).</div>");
-
-    spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: "Jan – " + esc(fmt.month(cut)),
-      gapNote: T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + Math.round(TARGET * 100) + "% target" : " · " + Math.round(TARGET * 100) + "% target met" })
-      .forEach(function (g) { clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; })); });
-
-    // KPI closing table
-    var kp = panelIn(v, "KPI closing position", "Today's KPI result (YTD) and the projected year-end result · KPI result = weight × % achieved");
-    var krows = ksum.map(function (r) {
-      var code = N(r["KPI Code"]), list = proj.filter(function (o) { return codeKpi[o.ID] === code; });
-      var o = { KPI: r["Objective/ KPIs"], w: kpiW[code], plan: tot(list, "plan"), rev: tot(list, "rev"), planYtd: tot(list, "planYtd"), revYtd: tot(list, "revYtd"), act: tot(list, "act"), fcRem: tot(list, "fcRem"), fcFY: tot(list, "fcFY"), n: list.length };
-      o.base = RV ? o.rev : o.plan;
-      o.ytdPct = o.planYtd ? o.act / o.planYtd : null; o.landing = o.fcFY; o.yePct = o.base ? o.landing / o.base : null; o.yePctOrig = o.plan ? o.landing / o.plan : null;
-      o.nowRes = o.ytdPct != null ? o.w * Math.min(1, o.ytdPct) : null; o.yeRes = o.yePct != null ? o.w * Math.min(1, o.yePct) : null; o.gap = TARGET * o.base - o.landing;
-      return o;
-    }).filter(function (o) { return o.n; });
-    tableIn(kp, { rows: krows, search: false, autoHeight: true, exportName: "KPI_Year_End_Outlook", onRow: function (o, e) { pick(ctx, "kpi", o.KPI, e); }, rowTitle: "Filter by this KPI",
-      columns: [{ key: "KPI", label: "KPI", wrap: true }, { key: "w", label: "Weight", type: "pct" }, { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money" }].concat(RV ? [
-        { key: "rev", label: "Rev Spend Plan 2026", type: "money" }] : []).concat([
-        { key: "planYtd", label: RV ? "YTD Original Plan" : "YTD Plan (KPI sheet)", type: "money" }]).concat(RV ? [{ key: "revYtd", label: "YTD Rev Plan", type: "money" }] : []).concat([
-        { key: "act", label: "YTD Actual", type: "money" }, { key: "ytdPct", label: "YTD % achieved", type: "meter" },
-        { key: "nowRes", label: "KPI result today", type: "pct" }, { key: "landing", label: "Year-end Forecast Plan", type: "money" }]).concat(RV ? [
-        { key: "yePctOrig", label: "Year-end % of original", type: "pct" }] : []).concat([
-        { key: "yePct", label: "Year-end % of " + (RV ? "Rev plan" : "plan"), type: "meter" }, { key: "yeRes", label: "Projected KPI result", type: "pct" },
-        { key: "gap", label: "Gap to " + Math.round(TARGET * 100) + "% target", type: "money", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">Covered</span>'; } }]) });
-
-    // Bridge + S-curve
-    var g1 = grid(v, "g-1-2");
-    var vr = T.landing - T.base;
-    waterfall(chartBox(panelIn(g1, (RV ? "Original & Rev Spend Plan" : "Spend Plan") + " vs year-end Forecast Plan", "2026 full year · variance vs " + baseLbl + " " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + ")"), "tall"),
-      [{ label: RV ? "Original Spend Plan" : "Spend Plan 2026", value: T.plan, total: true, color: S.plan }].concat(RV ? [{ label: "Rev Spend Plan", value: T.rev, total: true, color: S.rev }] : [])
-        .concat([{ label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }]), TARGET * T.base);
-    var rowsF = spAll.filter(function (r) { var o = projAll.filter(function (x) { return x.ID === String(r.ID); })[0]; return o && passes(o, defs, st); });
-    var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
-    var actLine = [], a2 = 0; mm.forEach(function (o, i) { a2 += o.act; actLine.push(i <= ci ? a2 : null); });
-    U.chart(chartBox(panelIn(g1, "Year-end S-curve", "Cumulative " + (RV ? "Original & Rev Spend Plan" : "Spend Plan") + " vs Forecast Plan (invoicing plan) · actual to " + esc(fmt.month(cut)) + " for reference · click a month for the project split"), "tall"), U.clickable({ type: "line",
-      data: { labels: labels, datasets: [
-        U.lineDs(RV ? "Original Spend Plan (cum)" : "Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 })].concat(RV ? [
-        U.lineDs("Rev Spend Plan (cum)", mm.map(function (o) { return o.revC; }), S.rev, { pointRadius: 3, borderWidth: 2.5 })] : []).concat([
-        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5, borderDash: [7, 5] }),
-        U.lineDs("Actual (cum, reference)", actLine, S.actual, { pointRadius: 3, borderWidth: 2, spanGaps: false }),
-        U.lineDs(Math.round(TARGET * 100) + "% target", mm.map(function () { return TARGET * T.base; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })]) },
-      options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
-      function (i) { monthModal(D, rowsF, mm[i].month); }));
-
-    // Project contribution to the year-end variance
-    var g2 = grid(v, "g-2-1");
-    var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; });
-    var names = byV.map(function (o) { return o.name; });
-    var vb = chartBox(panelIn(g2, "Year-end variance by project", "Forecast Plan − " + baseLbl + " · red = under-spend, blue = over · click to filter")); vb.style.height = Math.max(320, names.length * 26 + 60) + "px";
-    hbar(vb, names, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
-      byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
-      function (i, e) { pick(ctx, "proj", names[i], e); });
-    var rx = projAll.filter(function (o) { return passes(o, defs, st, "out"); }), outs = U.uniq(rx.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER));
-    var ob = chartBox(panelIn(g2, "Projects by year-end outlook", "Forecast vs " + baseLbl + " · on track ≥ 95% · at risk 85–95% · behind < 85% · click to filter"));
-    U.chart(ob, U.clickable({ type: "bar", data: { labels: outs, datasets: [
-      U.barDs("Projects", outs.map(function (s) { return rx.filter(function (o) { return o.status === s; }).length; }), outs.map(function (s) { var c0 = OUT_COLOR[s] || C.slate; return st.out.length && st.out.indexOf(s) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 26 })] },
-      options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } },
-        layout: { padding: { right: 24 } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
-      function (i, e) { pick(ctx, "out", outs[i], e); }));
-
-    // Invoice schedule (Gantt by month)
-    var ip = panelIn(v, "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
-    invoiceGantt(ip, proj.slice().sort(function (a, b) { return b.plan - a.plan; }), months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
-
-    // Project table
-    var tp = panelIn(v, "Year-end outlook by project", proj.length + " projects · click a row to filter");
-    tableIn(tp, { rows: proj, exportName: "Year_End_Outlook_Projects", totals: true, sort: { key: "variance", dir: 1 }, maxHeight: 640,
-      onRow: function (o, e) { pick(ctx, "proj", o.name, e); }, rowTitle: "Filter by this project",
-      rowClass: function (o) { return st.proj.indexOf(o.name) >= 0 ? "selected" : ""; },
-      columns: [{ key: "ID", label: "ID", nowrap: true }, { key: "name", label: "Project", nowrap: true }, { key: "kpi", label: "KPI", nowrap: true },
-        { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money", total: "sum" }].concat(RV ? [{ key: "rev", label: "Rev Spend Plan 2026", type: "money", total: "sum" },
-        { key: "revDelta", label: "Rev − Original", type: "money", signed: true, total: "sum", get: function (o) { return o.rev - o.plan; } }] : []).concat([
-        { key: "planYtd", label: "YTD Original Plan", type: "money", total: "sum" }]).concat(RV ? [{ key: "revYtd", label: "YTD Rev Plan", type: "money", total: "sum" }] : []).concat([
-        { key: "fcYtd", label: "YTD Forecast Plan", type: "money", total: "sum" }, { key: "act", label: "YTD Actual (ref.)", type: "money", total: "sum" },
-        { key: "fcRem", label: "Forecast Plan remaining", type: "money", total: "sum" },
-        { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance (forecast − " + (RV ? "Rev plan" : "plan") + ")", type: "money", signed: true, total: "sum" }]).concat(RV ? [
-        { key: "varOrig", label: "Variance (forecast − original)", type: "money", signed: true, total: "sum" }] : []).concat([
-        { key: "pct", label: "Forecast ÷ " + (RV ? "Rev plan" : "plan"), type: "meter" }, { key: "status", label: "Outlook", type: "badge" }]) });
-
-    // Monthly spending plan matrix (last section of the page) (meeting format): M Plan, M Actual (Forecast Plan after the cut-off), cumulative, variance
-    var mp = panelIn(v, "Monthly spending plan", (RV ? "Original & Rev" : "") + " Spend Plan vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum " + (RV ? "Rev " : "") + "Plan · click a project to filter");
-    spendMatrix(mp, proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
-  };
 
   /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
   function spendMatrix(host, list, months, cut, onProj) {

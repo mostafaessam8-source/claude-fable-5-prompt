@@ -412,7 +412,7 @@ table.dt tfoot td {
 .print-head { display: none; }
 body.printing { background: var(--white); }
 body.printing .app-header, body.printing .sidenav, body.printing .filters, body.printing .page-head,
-body.printing .table-tools, body.printing .modal-back, body.printing .toast, body.printing .ms-pop { display: none !important; }
+body.printing .sec-nav, body.printing .table-tools, body.printing .modal-back, body.printing .toast, body.printing .ms-pop { display: none !important; }
 body.printing .layout { display: block; min-height: 0; }
 body.printing main.content { padding: 0; overflow: hidden; }
 body.printing #view { background: var(--white); }
@@ -637,6 +637,10 @@ body.printing .gantt.iv .gantt-inner { min-width: 0; }
 body.printing .iv-row.g-head { position: static; }
 
 /* ----------------------------- Section headings (merged pages) ---------- */
+.sec-nav { position: sticky; top: var(--header-h); z-index: 30; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 8px 0; background: var(--tint-5); border-bottom: 1px solid var(--cool-gray); }
+.sec-nav a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--sar-blue); color: var(--sar-blue); font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sec-nav a:hover { background: var(--sar-blue); color: #fff; }
+.sec-h[id] { scroll-margin-top: calc(var(--header-h) + 64px); margin-top: 22px; }
 .sec-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--sar-blue); }
 .sec-h h3 { margin: 0; font-size: 16px; color: var(--sar-blue); text-transform: uppercase; letter-spacing: .06em; }
 .sec-h span { font-size: 12px; color: var(--slate); }
