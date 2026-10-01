@@ -35,6 +35,7 @@
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
     { id: "closing", group: "Closing Phase", title: "Projects in Closing", icon: "close", sub: "Close-out status, checklist (AMP, handover, close-out report, retention, guarantees, final payment) and action plans" },
     { id: "blockades", group: "2027 Delivery Plan", title: "2027 Engineering Blockades", icon: "gantt", sub: "Shutdown, line-blockage and possession needs for the 2027 Delivery Plan — hours per day × days, lines, quarters and what Planning still needs" },
+    { id: "blockades-register", group: "2027 Delivery Plan", title: "Blockades Register", icon: "table", sub: "Every 2027 work package — location, shutdown / blockage / possession hours, hours per day × days, status and readiness · export the Planning submission" },
     { id: "issues", group: "Risks & Issues", title: "Issue Register", icon: "issue", sub: "NSR projects issue log" },
     { id: "abbreviations", group: "Reference", title: "Abbreviations", icon: "book", sub: "Project and report abbreviations" },
     { id: "import", group: "Data", title: "Data Import", icon: "upload", sub: "Update the dashboard from the Excel source files" }

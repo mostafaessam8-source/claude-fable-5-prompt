@@ -2353,7 +2353,9 @@
   var BK_CHECKS = [["code", "Project code"], ["works", "Works to be delivered"], ["location", "Location (track km)"], ["line", "Affected line"],
     ["dates", "Dates From – To"], ["perDay", "Hours per day"], ["days", "Number of days"], ["total", "Total hours"], ["service", "Passenger / freight stoppage level"], ["confirmed", "Confirmed for 2027"]];
 
-  P.blockades = function (ctx) {
+  P.blockades = function (ctx) { bkPage(ctx, false); };
+  P["blockades-register"] = function (ctx) { bkPage(ctx, true); };
+  function bkPage(ctx, regOnly) {
     var D = ctx.D, v = ctx.view, st = ctx.state, all = bkModel(D);
     if (!all.length) { add(v, '<div class="empty">No 2027 blockade inputs loaded. Import <b>EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
     var f = ctx.state.f || (ctx.state.f = {});
@@ -2375,6 +2377,7 @@
     var hrs = sumF(rows, function (o) { return o.hours; }), est = rows.filter(function (o) { return o.hoursSrc === "estimated"; }).length;
     var gapItems = sumF(rows, function (o) { return o.gaps.length; }), ready = rows.filter(function (o) { return o.ready === "Ready"; }).length;
     var conf = U.uniq(rows.filter(function (o) { return o.confirmed === "Confirmed"; }).map(function (o) { return o.code; }));
+    if (regOnly) return bkRegister(v, rows);
 
     add(v, '<div class="note-box"><b>2027 Delivery Plan — engineering access requirements.</b> Planning (Master Planning &amp; Railway Interoperability) asked each programme for the works that need ' +
       "a <b>shutdown, line blockage or possession</b> in 2027, with: project code · works · location (track km) · <b>dates From – To</b> · <b>hours per day and number of days</b> (not only the total) · " +
@@ -2442,7 +2445,16 @@
     hc += "</tbody></table></div><div class='pc-note'>Dates From – To and the service-stoppage level (Full / Partial / None for passenger and freight) have no column in the sheet yet — add them (e.g. <i>From</i>, <i>To</i>, <i>Passenger stoppage</i>, <i>Freight stoppage</i>) and re-import; they are picked up automatically.</div>";
     add(ck, hc);
 
-    // register + export
+    add(v, '<div class="note-box">The full <b>work package register</b> (every location, access hours and works description) and the <b>Planning submission export</b> are on the ' +
+      '<a href="#/blockades-register">Blockades Register</a> tab.</div>');
+  }
+  function bkRegister(v, rows) {
+    function sumF(list, fn) { return list.reduce(function (s, o) { return s + (fn(o) || 0); }, 0); }
+    var g = grid(v, "g-4");
+    g.innerHTML = U.tile({ value: rows.length, label: "Work packages", note: U.uniq(rows.map(function (o) { return o.code; })).length + " projects" }) +
+      U.tile({ value: sumF(rows, function (o) { return o.km.length || 1; }), label: "Track locations" }) +
+      U.tile({ value: fmt.int(sumF(rows, function (o) { return o.hours; })), unit: "h", label: "Total access hours", color: "black" }) +
+      U.tile({ value: rows.filter(function (o) { return o.ready === "Ready"; }).length + " / " + rows.length, label: "Ready for submission", color: "yellow" });
     var tp = panelIn(v, "Work package register", rows.length + " packages · click a row for the full works description",
       '<button type="button" class="icon-btn ghost bk-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Export Planning submission (.xlsx)</span></button>');
     tp.querySelector(".bk-x").addEventListener("click", function () { bkExport(rows); });
@@ -2453,7 +2465,7 @@
         { key: "perDay", label: "Hours / day", type: "int" }, { key: "days", label: "Days", type: "int" }, { key: "hours", label: "Total hours", type: "int", total: "sum" },
         { key: "confirmed", label: "Status", type: "badge" }, { key: "ready", label: "Readiness", type: "badge", get: function (o) { return o.ready === "Ready" ? "Ready" : o.gaps.length + " open"; } }],
       totals: true });
-  };
+  }
   function bkModal(o) {
     U.modal(o.code + " · " + o.name + " — package " + o.pkg, '<div class="kv">' + [["Network / line", esc(o.network + " · " + o.line)], ["Expected execution", esc(o.qText || "—")],
       ["Track km", esc(o.km.join(", ") || "—")], ["Culverts", esc(o.culverts.join(", ") || "—")]].concat(BK_ACCESS.map(function (a) { return [a, esc(o.acc[a] ? o.acc[a].text : "Not required")]; }))
