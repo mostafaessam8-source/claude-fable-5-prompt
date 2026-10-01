@@ -383,7 +383,7 @@
     cards.forEach(function (c, i) {
       var r = list[i];
       if (!r) { c.all.concat([c.box]).forEach(E.removeEl); return; }
-      var spi = wSpi(r), name = r["Project Code"] + " - " + shortName(r["Project Name"], 18);
+      var spi = wSpi(r), name = r["Project Code"] + " - " + shortName(r["Project Name"], 22);
       if (c.name) E.setParas(c.name, critical(r, M) ? [[{ text: name }, { text: " - Critical", color: RED }]] : name);
       if (c.value) E.setParas(c.value, { text: spi == null ? "-" : spi.toFixed(2), color: spi != null && spi < M.spiTarget ? RED : TEAL });
       if (c.chart) {
@@ -526,6 +526,37 @@
     var nb = E.shapesByName(d, /^TextBox 3$/)[0]; if (nb) E.setParas(nb, note.join(" · ") + ".");
   }
 
+  /* compact, professional type across the deck (the CAPEX 2026 - Status sizing): the template's 13-28 pt body text
+     and 11 pt chart text crowd the boxes once real data is in */
+  function compactChart(pkg, cp) {   // axes / legend 8 pt, data labels 7 pt bold, chart title 9 pt
+    E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) {
+      var n = r.parentNode; while (n && !/^(dLbls|dLbl|legend|catAx|valAx|dateAx|title|chartSpace)$/.test(n.localName)) n = n.parentNode;
+      var k = n ? n.localName : "";
+      r.setAttribute("sz", /dLbl/.test(k) ? "700" : k === "title" ? "900" : "800"); r.setAttribute("b", /dLbl/.test(k) ? "1" : "0");
+    });
+  }
+  function resz(el, map) {             // explicit run sizes (hundredths of a point) → compact size
+    ["rPr", "endParaRPr", "defRPr"].forEach(function (t) { E.all(el, NS.a, t).forEach(function (r) { var v = r.getAttribute("sz"); if (v && map[v]) r.setAttribute("sz", String(map[v])); }); });
+  }
+  var TYPE = {                         // per slide kind: template size → compact size (titles keep the template size)
+    overall: { 1400: 1050, 1200: 1000 },
+    spi: { 2000: 1600, 1400: 1100, 1200: 1100 },
+    values: { 2800: 2000, 1300: 1000 },
+    delivery: { 1800: 1400, 1600: 1400, 1500: 1200, 1350: 1100 },
+    exec: { 1800: 1200, 1624: 1300, 1600: 1200, 1462: 1200, 1400: 1100 },
+    closing: { 1624: 1300, 1525: 1050, 1462: 1200 }
+  };
+  function compactSlide(pkg, path, kind) {
+    if (kind === "cover" || kind === "org") return;
+    var d = pkg.xml(path), map = TYPE[kind];
+    if (map) E.all(d, NS.p, "cNvPr").forEach(function (n) {
+      var sh = n.parentNode.parentNode; if (!sh.parentNode || sh.parentNode.localName !== "spTree") return;   // top level (groups include their children)
+      if (!/^Title/.test(n.getAttribute("name") || "")) resz(sh, map);
+    });
+    if (kind === "delivery") E.shapesByName(d, /^TextBox 3$/).forEach(function (s) { resz(s, { 1100: 1000 }); });   // footnote
+    E.all(d, NS.p, "graphicFrame").forEach(function (f) { var cp = pkg.chartOf(path, f); if (cp) compactChart(pkg, cp); });
+  }
+
   /* CAPEX status */
   var CAPEX_ROWS = 4;                     // project rows per "CAPEX 2026 - Status" slide (tiles and charts repeat on every slide)
   function capexList(M) { return M.spend.filter(function (p) { return M.codeKpi[p.ID] === 7 && (p.fy || p.ytdAct || p.fcFY); }).sort(function (a, b) { return b.fy - a.fy; }); }
@@ -568,12 +599,6 @@
     E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
       var x = pkg.xml(cp).documentElement.textContent;
-      // compact chart text: axes / legend 8 pt, data labels 7 pt (template uses 11 pt, which crowds the axis and legend)
-      E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) {
-        var n = r.parentNode; while (n && !/^(dLbls|dLbl|legend|catAx|valAx|dateAx|title|chartSpace)$/.test(n.localName)) n = n.parentNode;
-        var k = n ? n.localName : "";
-        r.setAttribute("sz", /dLbl/.test(k) ? "700" : k === "title" ? "900" : "800"); r.setAttribute("b", /dLbl/.test(k) ? "1" : "0");
-      });
       if (/Cum Forecast/.test(x)) {
         var ci = M.months.indexOf(M.cut), ov = overallOf(cap, M), cp1 = 0, ca = 0, cf = 0;
         var cumP = ov.plan.map(function (v) { return Math.round((cp1 += v) / 1e5) / 10; });
@@ -657,7 +682,7 @@
       else if (/IPC/.test(x)) { var paid = paidOf, cv = x0.cv || 0; pkg.setChart(cp, { cats: ["IPC Paid / Approved", "Remaining Amount"], series: [{ name: "IPC", values: [paid, Math.max(0, cv - paid)] }] }); }
     });
     var varT = E.all(d, NS.a, "tbl").filter(function (t) { return /^Variance/.test(E.all(t, NS.a, "t").map(function (x) { return x.textContent; }).join("").trim()); })[0];
-    if (varT) E.cellText(E.cells(E.rows(varT)[0])[0], [[{ text: "Variance " }, pl == null ? { text: "- ", color: "768692" } : { text: sgnPct(vr2) + " ", color: vr2 < 0 ? RED : GREEN }]]);
+    if (varT) E.cellText(E.cells(E.rows(varT)[0])[0], [[{ text: "Variance ", size: 11 }, pl == null ? { text: "- ", color: "768692", size: 11 } : { text: sgnPct(vr2) + " ", color: vr2 < 0 ? RED : GREEN, size: 11, bold: true }]]);
     var box = byName(/^Rectangle: Rounded Corners 5$/)[0], arrow = byName(/^Arrow: Notched Right/)[0], good = spi != null && spi >= 1;
     if (box) { E.setParas(box, { text: spi == null ? "-" : spi.toFixed(2), color: good ? GREEN : RED }); E.setFill(box, good ? "CCFFCC" : "FFCCFF", good ? GREEN : RED); }
     if (arrow) { arrow.getElementsByTagNameNS(NS.a, "xfrm")[0].setAttribute("rot", good ? "16200000" : "5400000"); E.setFill(arrow, good ? GREEN : RED); }
@@ -700,7 +725,9 @@
       if (pend.length) items.push(["Pending close-out steps: " + pend.join(", "), null]);
       if (!items.length) items.push([null, null]);
       var rows = E.resizeRows(tbl, 1, 1, items.length);
-      items.forEach(function (it, i) { var c = E.cells(rows[i]); E.cellText(c[0], (i + 1) + "."); E.cellText(c[1], miss(it[0])); E.cellText(c[2], miss(it[1])); });
+      var z10 = function (v) { return typeof v === "object" && v ? { text: v.text, color: v.color, size: 10 } : { text: v, size: 10 }; };
+      items.forEach(function (it, i) { var c = E.cells(rows[i]); E.cellText(c[0], z10((i + 1) + ".")); E.cellText(c[1], z10(miss(it[0]))); E.cellText(c[2], z10(miss(it[1]))); });
+      E.cells(E.rows(tbl)[0]).forEach(function (hc) { E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "1050"); }); });
       var fr = tbl.parentNode; while (fr && fr.localName !== "graphicFrame") fr = fr.parentNode; if (fr) E.fitTable(fr);
     }
   }
@@ -726,12 +753,12 @@
       Object.keys(S).forEach(function (k) { S[k].forEach(function (p) { seedSlide(pkg, p, k); }); });
       pkg.snapshot();                     // after seeding, so cloned slides carry the placeholders too
       function need(k) { if (!S[k] || !S[k].length) throw new Error("Template slide not found: " + k + ". Use the PD weekly Balance Scorecard template."); return S[k][0]; }
-      var order = [];                     // [path, fill()] in slide order
+      var order = [], kinds = [];         // fill() in slide order; [path, slide kind] for the type pass
       function clones(key, groups, fill) {
         var master = need(key), last = master;
         groups.forEach(function (g, i) {
-          if (i === 0) { order.push(function () { fill(master, g, 0); }); return; }
-          jobs = jobs.then(function () { return pkg.cloneSlide(master, last).then(function (p) { last = p; order.push(function () { fill(p, g, i); }); }); });
+          if (i === 0) { order.push(function () { fill(master, g, 0); kinds.push([master, key]); }); return; }
+          jobs = jobs.then(function () { return pkg.cloneSlide(master, last).then(function (p) { last = p; order.push(function () { fill(p, g, i); kinds.push([p, key]); }); }); });
         });
         (S[key] || []).slice(1).forEach(function (p) { jobs = jobs.then(function () { pkg.deleteSlide(p); }); });
       }
@@ -768,6 +795,8 @@
         if (S.values) fillValues(pkg, S.values[0], M);
         if (S.org) fillOrg(pkg, S.org[0]);
         order.forEach(function (f) { f(); });
+        ["cover", "overall", "values", "org"].forEach(function (k) { if (S[k]) kinds.push([S[k][0], k]); });
+        kinds.forEach(function (k) { compactSlide(pkg, k[0], k[1]); });
         pkg.slides().forEach(function (p) { renameProgram(pkg, p); });
         pkg.gc();
         return pkg.finish();
