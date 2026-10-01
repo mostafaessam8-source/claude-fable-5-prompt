@@ -151,6 +151,10 @@ import before they can be downloaded.
 - the panel lists the files with **Download** buttons, and the source cards download from the cloud when this browser has no copy;
 - **Load latest files from cloud** imports them all on a new device, so the dashboard shows the same data anywhere;
 - **Upload the files stored in this browser** backfills the cloud from earlier imports.
+- **Connect another device** (on a connected device) makes a link holding the repository and token encrypted with a PIN
+  you choose (PBKDF2-SHA256, AES-GCM; in the URL fragment, never sent to a server). Open it on the other device and
+  enter the PIN — no need to find the token again (GitHub shows it only once). Lost everywhere? Create a new token
+  (expiration: *No expiration*) and connect with it; the files stay in the repository.
 Public repositories are refused, and the token stays in the browser (`localStorage`). Project files never go to this public repository.
 
 ## Baseline data (optional)

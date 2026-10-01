@@ -206,13 +206,26 @@
     }
     if (!C.connected()) {
       box.innerHTML = '<div class="panel-head"><h3>Cloud storage</h3><span class="sub">Keep every imported file in your private GitHub repository and download it from any device</span></div>' +
-        '<div class="cloud-grid"><ol class="cloud-steps">' +
+        '<div class="cloud-grid"><div><ol class="cloud-steps">' +
         '<li><a href="https://github.com/new?name=nsr-dashboard-data&amp;visibility=private&amp;description=NSR%20dashboard%20import%20files" target="_blank" rel="noopener">Create a <b>private</b> repository</a> named <b>nsr-dashboard-data</b> (once).</li>' +
-        '<li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token</a>: Repository access → <i>Only select repositories</i> → nsr-dashboard-data; Permissions → <b>Contents: Read and write</b>. Copy the token.</li>' +
+        '<li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token</a>: Expiration → <b>No expiration</b>; Repository access → <i>Only select repositories</i> → nsr-dashboard-data; Permissions → <b>Contents: Read and write</b>. Copy the token.</li>' +
         "<li>Enter both here, once on each device. The token is kept only in this browser.</li></ol>" +
+        '<p class="cl-note">GitHub shows a token only once. On a device that is already connected, use <b>Connect another device</b> to get a link — no need to find the token again. ' +
+        'Token lost on every device? Create a new one (step 2) and connect with it — the files stay in the repository; delete the old token on GitHub. Choose <b>Expiration → No expiration</b> (or the longest allowed) so it does not stop working.</p></div>' +
         '<div class="cloud-form"><label>Repository<input type="text" class="cl-repo" placeholder="owner/nsr-dashboard-data" value="mostafaessam8-source/nsr-dashboard-data"></label>' +
         '<label>Access token<input type="password" class="cl-tok" placeholder="github_pat_…" autocomplete="off"></label>' +
         '<button type="button" class="icon-btn cl-go">Connect</button><div class="cl-msg muted"></div></div></div>';
+      var lk = (location.hash.match(/[?&]link=([\w-]+)/) || [])[1];
+      if (lk) {                            // opened from a "Connect another device" link
+        box.querySelector(".cloud-form").insertAdjacentHTML("afterbegin", '<div class="cl-link"><b>Device link detected.</b> Enter the PIN chosen on the other device:' +
+          '<input type="password" class="cl-pin" autocomplete="off" placeholder="PIN"><button type="button" class="icon-btn cl-pgo">Connect with link</button></div>');
+        box.querySelector(".cl-pgo").addEventListener("click", function () {
+          var m = box.querySelector(".cl-msg"); m.textContent = "Checking…";
+          C.connectLink(lk, box.querySelector(".cl-pin").value).then(function () {
+            history.replaceState(null, "", location.pathname + "#/import"); U.toast("Cloud storage connected."); ctx.rerender();
+          }, function (e) { m.innerHTML = '<span class="neg">' + U.esc(e.message) + "</span>"; });
+        });
+      }
       box.querySelector(".cl-go").addEventListener("click", function () {
         var m = box.querySelector(".cl-msg"); m.textContent = "Checking…";
         C.connect(box.querySelector(".cl-repo").value, box.querySelector(".cl-tok").value).then(function () {
@@ -224,7 +237,8 @@
     box.innerHTML = '<div class="panel-head"><h3>Cloud storage</h3><span class="sub">☁ ' + U.esc(C.config().repo) + ' (private) · every import is saved there automatically</span></div>' +
       '<div class="cloud-actions"><button type="button" class="icon-btn cl-load">Load latest files from cloud</button>' +
       '<button type="button" class="icon-btn ghost cl-push">Upload the files stored in this browser</button>' +
-      '<button type="button" class="link-btn cl-off">Disconnect this device</button></div><div class="cl-list muted">Reading the cloud index…</div>';
+      '<button type="button" class="icon-btn ghost cl-dev">Connect another device</button>' +
+      '<button type="button" class="link-btn cl-off">Disconnect this device</button></div><div class="cl-devout"></div><div class="cl-list muted">Reading the cloud index…</div>';
     var list = box.querySelector(".cl-list");
     C.index().then(function (ix) {
       var changed = JSON.stringify(C._last || null) !== JSON.stringify(ix);
@@ -245,6 +259,21 @@
           function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; });
       }); });
     }, function (e) { list.innerHTML = '<span class="neg">' + U.esc(e.message) + "</span> — check the token, or disconnect and connect again."; });
+    box.querySelector(".cl-dev").addEventListener("click", function () {
+      var out = box.querySelector(".cl-devout");
+      out.innerHTML = '<div class="cl-link">Choose a PIN (6+ characters) — you will type it on the other device: <input type="password" class="cl-pin" autocomplete="off" placeholder="PIN">' +
+        '<button type="button" class="icon-btn cl-mk">Create link</button></div>';
+      out.querySelector(".cl-mk").addEventListener("click", function () {
+        C.deviceLink(out.querySelector(".cl-pin").value).then(function (url) {
+          out.innerHTML = '<div class="cl-link"><b>Device link</b> — send it to yourself (e-mail / WhatsApp) or bookmark it, open it on the other device and enter the PIN. ' +
+            'It holds the token encrypted with your PIN; keep the PIN separate from the link.<input type="text" class="cl-url" readonly><button type="button" class="icon-btn cl-cp">Copy link</button></div>';
+          var inp = out.querySelector(".cl-url"); inp.value = url;
+          out.querySelector(".cl-cp").addEventListener("click", function () {
+            inp.select(); (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { U.toast("Link copied."); }, function () { document.execCommand("copy"); U.toast("Link copied."); });
+          });
+        }, function (e) { U.toast(e.message, true); });
+      });
+    });
     box.querySelector(".cl-off").addEventListener("click", function () {
       if (!confirm("Disconnect cloud storage on this device? (Files stay in the repository.)")) return;
       C.disconnect(); ctx.rerender();

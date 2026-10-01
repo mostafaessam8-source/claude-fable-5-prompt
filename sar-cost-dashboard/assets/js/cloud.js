@@ -55,7 +55,34 @@
   }
   function safeName(n) { return String(n || "file").replace(/[\\/:*?"<>|#%]+/g, "_"); }
 
+  /* Device link: repository + token encrypted with a PIN the user chooses (PBKDF2-SHA256 → AES-GCM), carried in the
+     URL fragment (never sent to a server). Open it on another device and enter the PIN to connect there. */
+  var te = new TextEncoder();
+  function b64u(u) { var s = ""; u.forEach(function (c) { s += String.fromCharCode(c); }); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64u(t) { var s = atob(String(t).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, function (c) { return c.charCodeAt(0); }); }
+  function pinKey(pin, salt) {
+    return crypto.subtle.importKey("raw", te.encode(String(pin)), "PBKDF2", false, ["deriveKey"]).then(function (k) {
+      return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 600000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    });
+  }
+  function deviceCode(pin) {
+    var c = cfg(); if (!c) return Promise.reject(new Error("Cloud storage is not connected on this device."));
+    if (String(pin || "").length < 6) return Promise.reject(new Error("Use a PIN of at least 6 characters."));
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    return pinKey(pin, salt).then(function (k) { return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, te.encode(JSON.stringify({ repo: c.repo, token: c.token }))); })
+      .then(function (ct) { var u = new Uint8Array(28 + ct.byteLength); u.set(salt, 0); u.set(iv, 16); u.set(new Uint8Array(ct), 28); return b64u(u); });
+  }
+  function openCode(code, pin) {
+    var u; try { u = unb64u(code); } catch (e) { return Promise.reject(new Error("The device link is damaged — copy it again.")); }
+    return pinKey(pin, u.slice(0, 16)).then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(16, 28) }, k, u.slice(28)); })
+      .then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); }, function () { throw new Error("Wrong PIN."); });
+  }
+
   window.SARCloud = {
+    /** Link for another device (token encrypted with `pin`). */
+    deviceLink: function (pin) { return deviceCode(pin).then(function (code) { return location.origin + location.pathname + "#/import?link=" + code; }); },
+    /** Connect from a device link code + PIN. */
+    connectLink: function (code, pin) { var self = this; return openCode(code, pin).then(function (o) { return self.connect(o.repo, o.token); }); },
     config: cfg,
     connected: function () { var c = cfg(); return !!(c && c.repo && c.token); },
     /** Check the token and repository; refuses a public repository. */
