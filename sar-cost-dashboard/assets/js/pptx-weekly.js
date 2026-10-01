@@ -359,7 +359,7 @@
       list.forEach(function (r) {
         var tr = kpiTpl.cloneNode(true), c = E.cells(tr), F = kpiFig(r, M), ach = F.ach, name = r["Objective/ KPIs"] || "";
         var crit = /\(([-+±]?\d+%?)\)/.exec(name);
-        E.cellText(c[0], clip(name, 60)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(F.res, 1));
+        E.cellText(c[0], clip(name, 120)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(F.res, 1));
         E.cellText(c[3], crit ? crit[1] : (/schedule performance/i.test(name) ? String(M.spiTarget) : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
         E.cellText(c[4], kpiVal(F.target) || miss(null));
         E.cellText(c[5], kpiVal(F.plan) || "-"); E.cellText(c[6], kpiVal(F.act) || "-");
