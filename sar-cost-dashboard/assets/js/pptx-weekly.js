@@ -244,7 +244,37 @@
         tbl.appendChild(tr);
       });
     });
+    var body = E.rows(tbl).slice(1);
+    blockRule(body, list.map(function (r, pi) { return pi * steps.length; }));
+    ltr(tbl);
     E.fitTable(frame);
+  }
+
+  /* table block separators: a double rule between projects (top of a block's first row, bottom of the row above) */
+  var LN_ORDER = ["lnL", "lnR", "lnT", "lnB", "lnTlToBr", "lnBlToTr", "cell3D", "noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill", "headers", "extLst"];
+  function cellBorder(tc, side, opt) {
+    var doc = tc.ownerDocument, pr = E.all(tc, NS.a, "tcPr")[0];
+    if (!pr) { pr = doc.createElementNS(NS.a, "a:tcPr"); tc.appendChild(pr); }
+    var name = "ln" + side, old = Array.prototype.filter.call(pr.childNodes, function (k) { return k.localName === name; })[0]; if (old) pr.removeChild(old);
+    var ln = doc.createElementNS(NS.a, "a:" + name); ln.setAttribute("w", String(opt.w || 38100)); ln.setAttribute("cmpd", opt.cmpd || "dbl"); ln.setAttribute("cap", "flat");
+    var sf = doc.createElementNS(NS.a, "a:solidFill"), c = doc.createElementNS(NS.a, "a:srgbClr"); c.setAttribute("val", opt.color || "3D3935"); sf.appendChild(c); ln.appendChild(sf);
+    var dash = doc.createElementNS(NS.a, "a:prstDash"); dash.setAttribute("val", "solid"); ln.appendChild(dash);
+    var at = LN_ORDER.indexOf(name), before = Array.prototype.filter.call(pr.childNodes, function (k) { return LN_ORDER.indexOf(k.localName) > at; })[0] || null;
+    pr.insertBefore(ln, before);
+  }
+  function blockRule(rows, firstRows) {   // rows: all body rows; firstRows: indexes where a new block starts
+    firstRows.forEach(function (i) {
+      if (i <= 0 || !rows[i]) return;
+      E.cells(rows[i]).forEach(function (tc) { cellBorder(tc, "T", {}); });
+      E.cells(rows[i - 1]).forEach(function (tc) { cellBorder(tc, "B", {}); });
+    });
+  }
+  function ltr(el) {                       // template cells set right-to-left: Latin text and brackets read left to right
+    E.all(el, NS.a, "p").forEach(function (p) {
+      var pr = Array.prototype.filter.call(p.childNodes, function (k) { return k.localName === "pPr"; })[0];
+      if (!pr) { pr = p.ownerDocument.createElementNS(NS.a, "a:pPr"); p.insertBefore(pr, p.firstChild); }
+      pr.setAttribute("rtl", "0");
+    });
   }
 
   /* monthly spending matrix tables (slides "Spending plan as discussed" and "Monthly Plan - CAPEX") */
@@ -285,6 +315,7 @@
         E.cellText(c0[0], p.ID); E.cellText(c0[1], p.label || shortName(p.name, 40));
         matrixRows(p.mPlan, p.mAct).forEach(function (vals, k) { fillMatrixRow(E.cells(rows5[k]).slice(3), vals, k === 4, sz2); });
       });
+      blockRule(blocks, projects.map(function (p, pi) { return pi * 5; }));
       if (!projects.length) E.removeEl(f2); else E.fitTable(f2);
     }
     // cut-off markers: vertical connectors at the boundary after the cut-off month column
@@ -746,9 +777,17 @@
     });
     if (kind === "delivery") E.shapesByName(d, /^TextBox 3$/).forEach(function (s) { resz(s, { 1100: 1000 }); });   // footnote
     E.all(d, NS.p, "graphicFrame").forEach(function (f) { var cp = pkg.chartOf(path, f); if (cp) compactChart(pkg, cp); });
-    if (kind === "overall" || kind === "kpi") E.all(d, NS.p, "graphicFrame").forEach(function (f) {
+    if (/^(overall|kpi|spendActions|monthly|closingActions)$/.test(kind)) E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       if (f.parentNode.localName !== "spTree") return;
       inMargins(f);
+      if (/^(spendActions|monthly)$/.test(kind)) {   // the red cut-off line ends with the (possibly shorter) tables
+        var bottom = Math.max.apply(null, E.shapesByName(d, /^Table/).map(function (t) { var q = E.pos(t); return q ? q.y + q.h : 0; }));
+        E.shapesByName(d, /^Straight Connector/).forEach(function (cx) {
+          var q = E.pos(cx); if (!q || q.w >= 50000 || q.y >= bottom) return;
+          var xf = cx.getElementsByTagNameNS(NS.a, "xfrm")[0], ex = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0];
+          if (ex && q.y + q.h > bottom) ex.setAttribute("cy", String(bottom - q.y));
+        });
+      }
       var tr0 = kind === "kpi" && f.getElementsByTagNameNS(NS.a, "tr")[0];   // narrower columns: keep header words whole
       if (tr0) E.all(tr0, NS.a, "rPr").concat(E.all(tr0, NS.a, "endParaRPr")).forEach(function (r) { var z = +r.getAttribute("sz") || 0; if (!z || z > 850) r.setAttribute("sz", "850"); });
     });
