@@ -975,8 +975,8 @@
   /* ======================================================================
      Progress Dashboard — one page for the Progress section: SPI KPI position
      and year-end outlook, the portfolio trend, every project (charts + one
-     table), the master plan and a project focus (S-curve, timeline, weekly
-     report). Replaces the former SPI & S-Curve Outlook, Weekly Progress
+     table), the master plan and a project dashboard (weekly report card,
+     S-curve, milestone timeline). Replaces the former SPI & S-Curve Outlook, Weekly Progress
      Summary, Project Progress, Projects Master Plan and Project Timeline
      pages; every figure appears once.
      EV = contract value × cumulative actual %, PV = contract value × cumulative
@@ -1051,7 +1051,7 @@
     if (!projAll.some(function (o) { return o.src === st.sc; })) st.sc = (proj.slice().sort(function (a, b) { return (a.spiNow == null ? 9 : a.spiNow) - (b.spiNow == null ? 9 : b.spiNow); })[0] || scList[0]).src;
     function focus(o) { st.sc = o.src; st.jump = "p-focus"; ctx.rerender(); }
 
-    var secs = [["p-spi", "SPI position"], ["p-trend", "Portfolio trend"], ["p-proj", "Projects"], ["p-plan", "Master plan"], ["p-focus", "Project focus"]];
+    var secs = [["p-spi", "SPI position"], ["p-trend", "Portfolio trend"], ["p-proj", "Projects"], ["p-plan", "Master plan"], ["p-focus", "Project dashboard"]];
     var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
     nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
     function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
@@ -1101,7 +1101,7 @@
         options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.moneyTooltip() }, scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: U.moneyAxis() } } });
 
     /* 3 · Projects: charts + one table */
-    sec("p-proj", "Projects", "Click a bar to filter · click a table row to open the project in Project focus");
+    sec("p-proj", "Projects", "Click a bar to filter · click a table row to open the project dashboard");
     function fd(o) { return f.proj.length && f.proj.indexOf(o.name) < 0; }
     var g2 = grid(v, "g-2");
     var byP = projX.slice().sort(function (a, b) { return b.planNow - a.planNow; }), pn = byP.map(function (o) { return o.name; });
@@ -1116,7 +1116,7 @@
       function (i, e) { pick(ctx, "proj", sn[i], e); }, { beginAtZero: true, suggestedMax: 1.2, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(1); } } },
       { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + (c.parsed.x == null ? "—" : c.parsed.x.toFixed(2)); } } });
     tableIn(panelIn(v, "Project progress & SPI outlook", proj.length + " projects · weekly report " + esc(fmt.date(dd))), { rows: proj, exportName: "Progress_Projects", totals: true, sort: { key: "spiDec", dir: 1 }, maxHeight: 640,
-      onRow: focus, rowTitle: "Open in Project focus", rowClass: function (o) { return o.src === st.sc ? "selected" : ""; },
+      onRow: focus, rowTitle: "Open the project dashboard", rowClass: function (o) { return o.src === st.sc ? "selected" : ""; },
       columns: [{ key: "code", label: "Code", nowrap: true }, { key: "name", label: "Project", wrap: true }, { key: "status", label: "Status", type: "badge" },
         { key: "cv", label: "Contract value", type: "money", total: "sum" },
         { key: "planWk", label: "Plan % week", type: "pct" }, { key: "actWk", label: "Actual % week", type: "pct" },
@@ -1140,15 +1140,15 @@
     function isLate(r) { var p = dnum(r["Planned Finish"]), x = dnum(r["Actual/Forecast Finish"]); return p && x && x > p; }
     var nLate = ms.filter(isLate).length;
     sec("p-plan", "Master plan", U.uniq(ms.map(function (r) { return r["Source.Name"]; })).length + " projects · " + ms.length + " milestones · " + nLate + " forecast later than plan · data date " + esc(fmt.date((ms[0] || {})["Data Date"])));
-    var mp = add(v, U.panel("Projects master plan", "Hover a bar for dates · click a project heading to open it in Project focus, a milestone for details", "", ""));
+    var mp = add(v, U.panel("Projects master plan", "Hover a bar for dates · click a project heading to open its project dashboard, a milestone for details", "", ""));
     mp.querySelector(".panel-head .tools").appendChild(seg("", [["all", "All milestones"], ["late", "Forecast later than plan (" + nLate + ")"]], st.late, function (x) { st.late = x; ctx.rerender(); }));
     gantt(mp, st.late === "late" ? ms.filter(isLate) : ms, function (r) { return D.projectLabel(r["Source.Name"]); },
-      { goLabel: "Project focus →", onGroup: function (r) { var o = projAll.filter(function (x) { return x.src === r["Source.Name"]; })[0]; if (o) focus(o); },
+      { goLabel: "Project dashboard →", onGroup: function (r) { var o = projAll.filter(function (x) { return x.src === r["Source.Name"]; })[0]; if (o) focus(o); },
         onRow: function (r) { U.recordModal(r.Description + " — " + D.projectLabel(r["Source.Name"]), r); } });
 
-    /* 5 · Project focus: one project's weekly report, S-curve and timeline */
+    /* 5 · Project dashboard: one project's weekly report card, S-curve and milestone timeline */
     var po = projAll.filter(function (o) { return o.src === st.sc; })[0], r = po.r, src = po.src, code = po.code;
-    sec("p-focus", "Project focus", "One project · its weekly report, S-curve and milestone timeline");
+    sec("p-focus", "Project dashboard", "One project · weekly report card, S-curve and milestone timeline");
     var bar = add(v, '<div class="filters pg-ctl"></div>');
     var ps = U.select({ label: "Project", value: src, options: scList.map(function (o) { return { value: o.src, label: o.code + " — " + o.name }; }), onChange: function (x) { st.sc = x; st.jump = "p-focus"; ctx.rerender(); } });
     ps.style.flex = "1"; ps.querySelector("select").style.maxWidth = "none"; bar.appendChild(ps);
@@ -1163,59 +1163,73 @@
       U.tile({ value: spiTxt(po.spiNow), label: "SPI today → " + fmt.month(yEnd), color: spiCol(po.spiNow), note: "Projected " + spiTxt(po.spiDec) + " · " + esc(po.status) }) +
       U.tile({ value: fmt.pct(r["Paid (%) (I/E)"]), label: "Paid %", color: "slate", note: fmt.money(r["Paid Amount"]) + " SAR paid" }) +
       mTile("Contract value", po.cv, "black");
-    var g3 = grid(v, "g-2");
+    // project dashboard (the weekly report card): scope · cumulative progress · reason for delays
+    var g3 = grid(v, "g-3");
     var cd = D.t("Contract_Details").filter(function (x) { return String(x.Code) === code; })[0];
-    var sw = panelIn(g3, "Scope of work", cd ? esc(cd.Stage || "") : "");
-    add(sw, '<div class="scope">' + esc(cd && cd.Scope ? cd.Scope : r["Project Description"] || "No scope recorded in Contract details.") + "</div>");
-    add(sw, '<div class="note-box warn" style="margin-top:12px"><b>Reason for delays:</b> ' + esc(r["Reason for Delays"] || "None reported this week.") + "</div>");
-    // S-curve
+    add(panelIn(g3, "Scope of work", cd ? esc(cd.Stage || "") : ""), '<div class="scope">' + esc(cd && cd.Scope ? cd.Scope : r["Project Description"] || "No scope recorded in Contract details.") + "</div>");
+    U.chart(chartBox(panelIn(g3, "Cumulative progress", "Plan vs actual"), "short"), { type: "bar",
+      data: { labels: ["Cum Plan", "Cum Actual"], datasets: [U.barDs("Progress", [po.planNow, po.actNow], [S.plan, S.actual], { maxBarThickness: 40, borderRadius: { topRight: 4, bottomRight: 4 } })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: U.pctTooltip(),
+        datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return fmt.pct(x); } } },
+        layout: { padding: { right: 50 } }, scales: { x: U.pctAxis(1), y: { grid: { display: false } } } } });
+    add(panelIn(g3, "Reason for delays", ""), '<div class="note-box warn">' + esc(r["Reason for Delays"] || "No delay reason reported this week.") + "</div>");
+    // milestones progress · deliverables
+    var g4 = grid(v, "g-2");
+    var mr = bySrc("Project_Milestones_Progress").sort(function (a, b) { return sortNum(a.Sort, b.Sort); });
+    var mpp = panelIn(g4, "Project milestones progress", mr.length + " milestones");
+    if (mr.length) {
+      var mb = chartBox(mpp); mb.style.height = Math.max(240, mr.length * 44 + 70) + "px";
+      U.chart(mb, { type: "bar", data: { labels: mr.map(function (x) { return x.Description; }), datasets: [
+          U.barDs("Planned progress", mr.map(function (x) { return x["Planned progress"]; }), S.plan), U.barDs("Actual progress", mr.map(function (x) { return x["Actual Progress"]; }), S.actual)] },
+        options: { indexAxis: "y", elements: { bar: { borderRadius: { topRight: 4, bottomRight: 4 } } }, plugins: { tooltip: U.pctTooltip() }, scales: { x: U.pctAxis(1), y: { grid: { display: false } } } } });
+    } else add(mpp, '<div class="empty">No milestones for this project.</div>');
+    tableIn(panelIn(g4, "Deliverable status", "Submittals"), { rows: bySrc("Deliverable_Status"), exportName: "Deliverable_Status", search: false, autoHeight: true, totals: true, columns: [
+      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Project Deliverables", label: "Project Deliverables" },
+      { key: "Total Subm. (PL.Cum)", label: "Total Subm. (PL.Cum)", type: "int", total: "sum" }, { key: "Total Subm. (Act. Cum)", label: "Total Subm. (Act. Cum)", type: "int", total: "sum" },
+      { key: "Approved", label: "Approved", type: "int", total: "sum" }, { key: "U/R", label: "U/R", type: "int", total: "sum" }, { key: "Rejected", label: "Rejected", type: "int", total: "sum" }] });
+    // payments · lookahead
+    var g5 = grid(v, "g-2");
+    tableIn(panelIn(g5, "Interim payment certificates", "IPC / VO cumulative"), { rows: bySrc("Interim_Payment_Certificate").filter(function (x) { return N(x["Cum Sum"]) !== 0; }), exportName: "IPC", search: false, autoHeight: true, columns: [
+      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Description", label: "Description", wrap: true }, { key: "IPC / VO No.", label: "IPC / VO No." }, { key: "Cum Sum", label: "Cum Sum (SAR)", type: "money" }] });
+    tableIn(panelIn(g5, "Lookahead activities", "Next 7 days"), { rows: bySrc("Lookahead_Activities").filter(function (x) { return x["Lookahead Activities (7 Days) Description"]; }), exportName: "Lookahead", search: false, autoHeight: true, columns: [
+      { key: "Sr. No.", label: "Sr. No.", type: "int" }, { key: "Lookahead Activities (7 Days) Description", label: "Lookahead Activities (7 Days) Description", wrap: true }] });
+    var ac = bySrc("Area_of_Concern").filter(function (x) { return x["Issue /Concern Description"]; });
+    tableIn(panelIn(v, "Areas of concern", ac.length + " items"), { rows: ac, exportName: "Area_of_Concern", search: false, autoHeight: true, columns: [
+      { key: "Sr. No.", label: "SN", type: "int" }, { key: "Issue /Concern Description", label: "Issue / Concern Description", wrap: true },
+      { key: "Mitigation Action", label: "Mitigation Action", wrap: true }, { key: "Date Raised", label: "Date Raised", type: "date" },
+      { key: "Responsible", label: "Responsible" }, { key: "Target Date", label: "Target Date", type: "date" }, { key: "Status", label: "Status", type: "badge" }] });
+    // S-curve · milestone timeline
     var raw = {};
     D.t("S_Curve").forEach(function (x) { if (x["Source.Name"] !== src || !x["Report Date"]) return; var k = x["Report Date"], o = raw[k]; if (!o || live(x) > live(o)) raw[k] = x; });
     var rws = Object.keys(raw).sort().map(function (k) { return raw[k]; }), ptsP = rws.map(function (x) { return dnum(x["Report Date"]); });
-    var scp = panelIn(g3, "Progress S-curve", rws.length ? "Weekly cumulative % · dashed black = projection to 31-Dec · curve to " + esc(fmt.date(rws[rws.length - 1]["Report Date"])) : "");
+    var scp = add(v, U.panel("Progress S-curve", rws.length ? "Weekly cumulative % · dashed black = projection to 31-Dec · curve to " + esc(fmt.date(rws[rws.length - 1]["Report Date"])) : "", "", ""));
+    st.sct = st.sct || "chart";
+    scp.querySelector(".panel-head .tools").appendChild(seg("", [["chart", "Chart"], ["data", "Weekly data"]], st.sct, function (x) { st.sct = x; st.jump = "p-focus"; ctx.rerender(); }));
     if (rws.length) {
       if (ptsP.indexOf(ddn) < 0 && ddn >= ptsP[0]) { var at0 = ptsP.filter(function (n) { return n < ddn; }).length; ptsP.splice(at0, 0, ddn); rws.splice(at0, 0, { "Report Date": dd, "Cum Plan (%)": po.planNow, "Cum Actual (%)": po.actNow }); }
-      U.chart(chartBox(scp, "tall"), { type: "line", data: { labels: rws.map(function (x) { return fmt.date(x["Report Date"]); }), datasets: [
+      if (st.sct === "chart") U.chart(chartBox(scp, "tall"), { type: "line", data: { labels: rws.map(function (x) { return fmt.date(x["Report Date"]); }), datasets: [
         U.lineDs("Cum Plan (%)", rws.map(function (x) { return N(x["Cum Plan (%)"]); }), S.plan, { borderWidth: 2.5 }),
         U.lineDs("Cum Actual (%)", rws.map(function (x, i) { return ptsP[i] <= ddn ? N(x["Cum Actual (%)"]) : null; }), S.actual, { borderWidth: 3, spanGaps: true }),
         U.lineDs("Cum Forecast (%)", rws.map(function (x) { return N(x["Cum Forecast (%)"]); }), S.forecast, { borderDash: [6, 4], spanGaps: false }),
         U.lineDs("Projection to 31-Dec", ptsP.map(function (n) { return n >= ddn && n <= yEndN ? po.proj(n) : null; }), C.black, { borderDash: [7, 5], borderWidth: 2, spanGaps: false })] },
         options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.pctTooltip() },
-          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } }), y: U.pctAxis(1) } } });
+          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 16, maxRotation: 0 } }), y: U.pctAxis(1) } } });
+      else tableIn(scp, { rows: rws, exportName: "Progress_S_Curve", search: false, maxHeight: 420, columns: [
+        { key: "Report Date", label: "Report Date", type: "date" }, { key: "Cum Plan (%)", label: "Cum Plan (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "Cum Actual (%)", label: "Cum Actual (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "Cum Forecast (%)", label: "Cum Forecast (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "This Week Plan (%)", label: "This Week Plan (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "This Week Actual (%)", label: "This Week Actual (%)", render: function (x) { return fmt.pct(x, 2); } }] });
     } else add(scp, '<div class="empty">No S-curve for this project.</div>');
-    // timeline + detail tables, one at a time
-    st.ft = st.ft || "tl";
-    var tabs = [["tl", "Milestone timeline"], ["sc", "Weekly S-curve data"], ["del", "Deliverables"], ["ipc", "Payments (IPC)"], ["la", "Lookahead"], ["aoc", "Areas of concern"]];
-    var tp = add(v, U.panel(tabs.filter(function (x) { return x[0] === st.ft; })[0][1], esc(D.projectLabel(src)), ""));
-    tp.querySelector(".panel-head .tools").appendChild(seg("", tabs, st.ft, function (x) { st.ft = x; st.jump = "p-focus"; ctx.rerender(); }));
-    if (st.ft === "tl") {
-      var mr = bySrc("Project_Milestones_Progress").sort(function (a, b) { return sortNum(a.Sort, b.Sort); });
-      if (!mr.length) add(tp, '<div class="empty">No milestones for this project.</div>');
-      else {
-        gantt(tp, mr, function () { return D.projectLabel(src); });
-        tableIn(tp, { rows: mr, exportName: "Project_Milestones", search: false, autoHeight: true, columns: [
-          { key: "Sr No", label: "Sr No", type: "int" }, { key: "Description", label: "Description" },
-          { key: "Project Start", label: "Project Start", type: "date" }, { key: "Planned Finish", label: "Planned Finish", type: "date" },
-          { key: "Actual/Forecast Finish", label: "Actual / Forecast Finish", type: "date" },
-          { key: "Planned progress", label: "Planned Progress", type: "meter", meterCls: "plan" }, { key: "Actual Progress", label: "Actual Progress", type: "meter" },
-          { key: "Var.Days", label: "Var. Days", type: "int", signed: true }, { key: "Var.progress", label: "Var. Progress", type: "pct", signed: true }] });
-      }
-    } else if (st.ft === "sc") tableIn(tp, { rows: rws, exportName: "Progress_S_Curve", search: false, maxHeight: 420, columns: [
-      { key: "Report Date", label: "Report Date", type: "date" }, { key: "Cum Plan (%)", label: "Cum Plan (%)", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "Cum Actual (%)", label: "Cum Actual (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "Cum Forecast (%)", label: "Cum Forecast (%)", render: function (x) { return fmt.pct(x, 2); } },
-      { key: "This Week Plan (%)", label: "This Week Plan (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "This Week Actual (%)", label: "This Week Actual (%)", render: function (x) { return fmt.pct(x, 2); } }] });
-    else if (st.ft === "del") tableIn(tp, { rows: bySrc("Deliverable_Status"), exportName: "Deliverable_Status", search: false, autoHeight: true, totals: true, columns: [
-      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Project Deliverables", label: "Project Deliverables" },
-      { key: "Total Subm. (PL.Cum)", label: "Total Subm. (PL.Cum)", type: "int", total: "sum" }, { key: "Total Subm. (Act. Cum)", label: "Total Subm. (Act. Cum)", type: "int", total: "sum" },
-      { key: "Approved", label: "Approved", type: "int", total: "sum" }, { key: "U/R", label: "U/R", type: "int", total: "sum" }, { key: "Rejected", label: "Rejected", type: "int", total: "sum" }] });
-    else if (st.ft === "ipc") tableIn(tp, { rows: bySrc("Interim_Payment_Certificate").filter(function (x) { return N(x["Cum Sum"]) !== 0; }), exportName: "IPC", search: false, autoHeight: true, columns: [
-      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Description", label: "Description", wrap: true }, { key: "IPC / VO No.", label: "IPC / VO No." }, { key: "Cum Sum", label: "Cum Sum (SAR)", type: "money" }] });
-    else if (st.ft === "la") tableIn(tp, { rows: bySrc("Lookahead_Activities").filter(function (x) { return x["Lookahead Activities (7 Days) Description"]; }), exportName: "Lookahead", search: false, autoHeight: true, columns: [
-      { key: "Sr. No.", label: "Sr. No.", type: "int" }, { key: "Lookahead Activities (7 Days) Description", label: "Lookahead Activities (7 Days) Description", wrap: true }] });
-    else tableIn(tp, { rows: bySrc("Area_of_Concern").filter(function (x) { return x["Issue /Concern Description"]; }), exportName: "Area_of_Concern", search: false, autoHeight: true, columns: [
-      { key: "Sr. No.", label: "SN", type: "int" }, { key: "Issue /Concern Description", label: "Issue / Concern Description", wrap: true },
-      { key: "Mitigation Action", label: "Mitigation Action", wrap: true }, { key: "Date Raised", label: "Date Raised", type: "date" },
-      { key: "Responsible", label: "Responsible" }, { key: "Target Date", label: "Target Date", type: "date" }, { key: "Status", label: "Status", type: "badge" }] });
+    var tlp = panelIn(v, "Milestone timeline", esc(D.projectLabel(src)) + " · baseline vs forecast / actual");
+    if (!mr.length) add(tlp, '<div class="empty">No milestones for this project.</div>');
+    else {
+      gantt(tlp, mr, function () { return D.projectLabel(src); });
+      tableIn(tlp, { rows: mr, exportName: "Project_Milestones", search: false, autoHeight: true, columns: [
+        { key: "Sr No", label: "Sr No", type: "int" }, { key: "Description", label: "Description" },
+        { key: "Project Start", label: "Project Start", type: "date" }, { key: "Planned Finish", label: "Planned Finish", type: "date" },
+        { key: "Actual/Forecast Finish", label: "Actual / Forecast Finish", type: "date" },
+        { key: "Planned progress", label: "Planned Progress", type: "meter", meterCls: "plan" }, { key: "Actual Progress", label: "Actual Progress", type: "meter" },
+        { key: "Var.Days", label: "Var. Days", type: "int", signed: true }, { key: "Var.progress", label: "Var. Progress", type: "pct", signed: true }] });
+    }
     if (st.jump) { var jid = st.jump; delete st.jump; setTimeout(function () { var j = document.getElementById(jid); if (j) j.scrollIntoView({ block: "start" }); }, 60); }
   };
 

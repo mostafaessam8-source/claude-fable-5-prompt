@@ -23,7 +23,7 @@
     { id: "overview", group: "Overview", title: "Executive Overview", icon: "overview", sub: "Headline cost, progress and issue position across the NSR portfolio" },
     { id: "kpi-summary", group: "KPIs", title: "KPI Summary", icon: "kpi", sub: "NSR KPI scorecard — weight, achievement and result" },
     { id: "cost", group: "Cost", title: "Cost & KPI Dashboard", icon: "cost", sub: "Cost KPIs today and at year-end · 2026 Spend Plan vs Forecast Plan vs Actual · contract & payments · invoice schedule · monthly spending plan" },
-    { id: "progress", group: "Progress", title: "Progress Dashboard", icon: "curve", sub: "SPI KPI today and at 31-Dec · portfolio trend · planned vs actual progress of every project · master plan · project focus (weekly report, S-curve, timeline)" },
+    { id: "progress", group: "Progress", title: "Progress Dashboard", icon: "curve", sub: "SPI KPI today and at 31-Dec · portfolio trend · planned vs actual progress of every project · master plan · project dashboard (weekly report card, S-curve, timeline)" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
     { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project card in the execution phase — SPI and progress from card sections 7 & 8, schedule, status, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
