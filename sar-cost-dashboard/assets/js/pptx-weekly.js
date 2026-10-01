@@ -599,6 +599,44 @@
     oles.forEach(function (o) { E.all(o, NS.a, "blip").forEach(function (b) { pkg.setImage(path, b.getAttributeNS(NS.r, "embed"), mp); }); });
   }
 
+  /* keep filled text inside its box: estimate the wrapped height (average glyph ~0.55 em, line 1.2 em), step the font
+     down to minPt, then trim the end with "…" if it still does not fit. Boxes set to auto-grow are not resized by
+     PowerPoint until edited, so long data would otherwise spill out. */
+  function fitText(sh, minPt) {
+    if (!sh) return;
+    var p = E.pos(sh); if (!p || !p.w || !p.h) return;
+    var bp = sh.getElementsByTagNameNS(NS.a, "bodyPr")[0], ins = function (a, d) { var v = bp && bp.getAttribute(a); return (v != null ? +v : d) / 12700; };
+    var W = p.w / 12700 - ins("lIns", 91440) - ins("rIns", 91440), H = p.h / 12700 - ins("tIns", 45720) - ins("bIns", 45720);
+    if (W <= 10 || H <= 6) return;
+    var paras = E.all(sh, NS.a, "p").filter(function (q) { var n = q.parentNode; while (n && n.localName !== "tbl" && n !== sh) n = n.parentNode; return n === sh; });
+    function szOf(q) { var r = E.all(q, NS.a, "rPr").concat(E.all(q, NS.a, "endParaRPr")).filter(function (x) { return x.getAttribute("sz"); })[0]; return r ? +r.getAttribute("sz") / 100 : 12; }
+    function indent(q) { var pr = E.all(q, NS.a, "pPr")[0]; return pr && pr.getAttribute("marL") ? +pr.getAttribute("marL") / 12700 : 0; }
+    function txt(q) { return E.all(q, NS.a, "t").map(function (t) { return t.textContent; }).join(""); }
+    function height(k) {
+      return paras.reduce(function (h, q) {
+        var sz = szOf(q) * k, w = Math.max(10, W - indent(q)), chars = txt(q).length;
+        var lines = Math.max(1, Math.ceil(chars * sz * 0.55 / w));
+        return h + lines * sz * 1.2;
+      }, 0);
+    }
+    var base = Math.max.apply(null, paras.map(szOf).concat([1])), k = 1, minK = Math.min(1, (minPt || 7) / base);
+    while (k > minK && height(k) > H) k = Math.max(minK, k - 0.04);
+    if (k < 1) paras.forEach(function (q) {
+      E.all(q, NS.a, "rPr").concat(E.all(q, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", String(Math.max(100, Math.round(szOf(q) * k * 100 / 50) * 50))); });
+    });
+    // still too long at the minimum size: drop / shorten from the end
+    var guard = 400;
+    while (height(1) > H && guard-- > 0) {
+      var last = paras[paras.length - 1], ts = E.all(last, NS.a, "t"), lt = ts[ts.length - 1];
+      if (!lt) break;
+      if (paras.length > 1 && txt(last).length < 12) { last.parentNode.removeChild(last); paras.pop(); continue; }
+      var v = lt.textContent.replace(/…$/, "");
+      if (v.length <= 4) { if (paras.length > 1) { last.parentNode.removeChild(last); paras.pop(); continue; } break; }
+      lt.textContent = v.slice(0, Math.max(1, v.length - 8)).replace(/\s+\S*$/, "") + "…";
+    }
+    E.all(sh, NS.a, "spAutoFit").forEach(function (a) { a.parentNode.removeChild(a); });   // the box stays its template size
+  }
+
   /* delivery KPI cards */
   function fillDelivery(pkg, path, M, list, first) {   // first: number of the first card (cards run on across slides)
     var d = pkg.xml(path), all = E.all(d, NS.p, "cNvPr").map(function (n) { return n.parentNode.parentNode; }).filter(function (s) { return s.parentNode && s.parentNode.localName === "spTree"; });
@@ -618,7 +656,7 @@
       var code = byOrder.filter(function (s) { return E.text(s).trim().length <= 6 && /^[A-Z0-9]+$/.test(E.text(s).trim()) && s !== num; })[0];
       if (code) E.setParas(code, String(r["Project Code"]));
       var nameT = byOrder.filter(function (s) { var p = E.pos(s); return p.x < 2500000 && p.h > 300000 && !/CONTRACT|PROJECT CODE|^\d/.test(E.text(s)); })[0];
-      if (nameT) E.setParas(nameT, clip(r["NSR Plan"] || w["Project Name"], 60));
+      if (nameT) { E.setParas(nameT, clip(r["NSR Plan"] || w["Project Name"], 60)); fitText(nameT, 8); }
       var cvT = byOrder.filter(function (s) { return /^[\d,]+$/.test(E.text(s).trim()) && E.text(s).trim().length > 4; })[0];
       if (cvT) E.setParas(cvT, money(w["Contract Value"] || r["Budget (SAR)"]));
       var dates = byOrder.filter(function (s) { return /^\d{2}-[A-Z][a-z]{2}-\d{2}$/.test(E.text(s).trim()); }).sort(function (a, b) { return E.pos(a).x - E.pos(b).x; });
@@ -651,7 +689,7 @@
       }
       note.push((r["Project Code"]) + " forecast completion " + (mon(w["End Date (Forecast/Actual)"]) || MISSING));
     });
-    var nb = E.shapesByName(d, /^TextBox 3$/)[0]; if (nb) E.setParas(nb, note.join(" · ") + ".");
+    var nb = E.shapesByName(d, /^TextBox 3$/)[0]; if (nb) { E.setParas(nb, note.join(" · ") + "."); fitText(nb, 7); }
   }
 
   /* compact, professional type across the deck (the CAPEX 2026 - Status sizing): the template's 13-28 pt body text
@@ -845,6 +883,7 @@
       E.setRuns(info, 2, ["Start Date", ": " + (dLong(pg.start) || MISSING)]); E.setRuns(info, 3, ["End Date", ": " + (dLong(be) || MISSING)]);
       E.setRuns(info, 4, ["EOT ", fe && be && fe > be ? { text: ": " + MISSING, color: RED } : ": N/A"]); E.setRuns(info, 5, ["Forecast End Date ", ": " + (dLong(fe) || MISSING)]);
     }
+    [title, briefs[0], ach, iss, info].forEach(function (sh) { fitText(sh, 7); });
     // CAPEX / KPI box
     var sp = M.spend.filter(function (p) { return p.ID === code; })[0];
     var kp = M.codeKpi[code], kl = textShape(/^CAPEX/);
@@ -858,6 +897,7 @@
         ln.forEach(function (x, i) { E.setRuns(bl, i, x); });
         E.all(bl, NS.a, "rPr").concat(E.all(bl, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "850"); });   // 5 lines fit the template box
       } else E.setParas(bl, { text: "Not in the 2026 Spending Plan", color: RED });
+      fitText(bl, 7);
     }
     // progress + SPI
     var pl = pg.plan, ac = pg.act, vr2 = (ac || 0) - (pl || 0), spi = pg.spi;
@@ -908,7 +948,7 @@
     head(textShape(/^Consultant\s/), "Consultant            : ", miss(null));
     head(textShape(/^Funded by/), "Funded by             : ", miss(clip((card.Fund || {}).Org, 22)));
     var brief = E.all(d, NS.p, "sp").filter(function (s) { var p = E.pos(s); return p && p.y > 2400000 && p.y < 3200000 && E.text(s).length > 30; })[0];
-    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, color: RED, size: 10 }); }
+    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, color: RED, size: 10 }); fitText(brief, 7); }
     var tbl = E.all(d, NS.a, "tbl").filter(function (x) { return /ISSUES/.test(x.textContent); })[0];
     if (tbl) {
       var pend = closingSteps(M).filter(function (k) { return stepState(r, k).status !== "Completed" && stepState(r, k).status !== "NA"; });
