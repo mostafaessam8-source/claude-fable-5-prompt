@@ -34,7 +34,9 @@
   /* ------------------------------------------------------------------ NSR data model */
   function model(D) {
     var M = { D: D };
-    var wk = {}; D.t("Weekly_Report_Updates").forEach(function (r) { var s = r["Source.Name"]; if (s && (!wk[s] || r["Report Date"] > wk[s]["Report Date"])) wk[s] = r; });
+    // one row per project: its latest week (an older week's file left in the import never wins)
+    var wk = {}; D.t("Weekly_Report_Updates").forEach(function (r) { var s = r["Project Code"] != null && r["Project Code"] !== "" ? "c:" + String(r["Project Code"]) : r["Source.Name"] ? "s:" + r["Source.Name"] : null;
+      if (s && (!wk[s] || String(r["Report Date"] || "") > String(wk[s]["Report Date"] || ""))) wk[s] = r; });
     M.weekly = Object.keys(wk).map(function (k) { return wk[k]; }).filter(function (r) { return r["Project Code"] != null; })
       .sort(function (a, b) { return (N(b["Contract Value"]) || 0) - (N(a["Contract Value"]) || 0); });
     M.rd = D.reportDate || new Date().toISOString().slice(0, 10);
