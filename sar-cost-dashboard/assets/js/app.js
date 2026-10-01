@@ -23,11 +23,7 @@
     { id: "overview", group: "Overview", title: "Executive Overview", icon: "overview", sub: "Headline cost, progress and issue position across the NSR portfolio" },
     { id: "kpi-summary", group: "KPIs", title: "KPI Summary", icon: "kpi", sub: "NSR KPI scorecard — weight, achievement and result" },
     { id: "cost", group: "Cost", title: "Cost & KPI Dashboard", icon: "cost", sub: "Cost KPIs today and at year-end · 2026 Spend Plan vs Forecast Plan vs Actual · contract & payments · invoice schedule · monthly spending plan" },
-    { id: "spi-outlook", group: "Progress", title: "SPI & S-Curve Outlook", icon: "curve", sub: "Schedule Performance Index KPI to 31-Dec (ΣEV ÷ ΣPV from the project S-curves) and each project's progress S-curve" },
-    { id: "weekly", group: "Progress", title: "Weekly Progress Summary", icon: "table", sub: "Planned vs actual progress, SPI and payments for every project" },
-    { id: "project", group: "Progress", title: "Project Progress", icon: "project", sub: "Single-project weekly report card" },
-    { id: "master-plan", group: "Progress", title: "Projects Master Plan", icon: "gantt", sub: "Milestone schedule for all projects" },
-    { id: "timeline", group: "Progress", title: "Project Timeline", icon: "gantt", sub: "Milestone timeline for a single project" },
+    { id: "progress", group: "Progress", title: "Progress Dashboard", icon: "curve", sub: "SPI KPI today and at 31-Dec · portfolio trend · planned vs actual progress of every project · master plan · project focus (weekly report, S-curve, timeline)" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
     { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project card in the execution phase — SPI and progress from card sections 7 & 8, schedule, status, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
@@ -41,7 +37,8 @@
 
   // A published weekly report (see publish.js) carries its data inside the file: no import, no stored data.
   var PUB = window.SAR_PUBLISHED || null;
-  if (PUB && PUB.pages) PUB.pages = PUB.pages.map(function (id) { return /^kpi-(cost|outlook)$/.test(id) ? "cost" : id; });   // reports published before the cost pages merged
+  if (PUB && PUB.pages) PUB.pages = PUB.pages.map(function (id) { return /^kpi-(cost|outlook)$/.test(id) ? "cost" : /^(spi-outlook|weekly|project|master-plan|timeline)$/.test(id) ? "progress" : id; })
+    .filter(function (id, i, a) { return a.indexOf(id) === i; });   // reports published before the cost pages merged
   if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
 
   /* ----------------------------- dataset -------------------------------- */
@@ -147,7 +144,7 @@
   function route() {
     var id = (location.hash.replace(/^#\/?/, "") || "overview").split("?")[0];
     if (/^(cost-analysis|cost-scurve|kpi-cost|kpi-outlook)$/.test(id)) id = "cost";   // merged into the Cost & KPI Dashboard
-    if (id === "progress-scurve") id = "spi-outlook";                   // merged into the SPI & S-Curve Outlook
+    if (/^(progress-scurve|spi-outlook|weekly|project|master-plan|timeline)$/.test(id)) id = "progress";   // merged into the Progress Dashboard
     var page = PAGES.filter(function (p) { return p.id === id; })[0] || PAGES[0];
     document.body.classList.remove("nav-open");
     renderNav(page.id);
