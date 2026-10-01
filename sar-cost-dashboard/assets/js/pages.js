@@ -920,10 +920,6 @@
       options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
       function (i) { monthModal(D, rowsF, mm[i].month); }));
 
-    // Monthly spending plan matrix (meeting format): M Plan, M Actual (Forecast Plan after the cut-off), cumulative, variance
-    var mp = panelIn(v, "Monthly spending plan", (RV ? "Original & Rev" : "") + " Spend Plan vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum " + (RV ? "Rev " : "") + "Plan · click a project to filter");
-    spendMatrix(mp, proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
-
     // Project contribution to the year-end variance
     var g2 = grid(v, "g-2-1");
     var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; });
@@ -958,6 +954,10 @@
         { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance (forecast − " + (RV ? "Rev plan" : "plan") + ")", type: "money", signed: true, total: "sum" }]).concat(RV ? [
         { key: "varOrig", label: "Variance (forecast − original)", type: "money", signed: true, total: "sum" }] : []).concat([
         { key: "pct", label: "Forecast ÷ " + (RV ? "Rev plan" : "plan"), type: "meter" }, { key: "status", label: "Outlook", type: "badge" }]) });
+
+    // Monthly spending plan matrix (last section of the page) (meeting format): M Plan, M Actual (Forecast Plan after the cut-off), cumulative, variance
+    var mp = panelIn(v, "Monthly spending plan", (RV ? "Original & Rev" : "") + " Spend Plan vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum " + (RV ? "Rev " : "") + "Plan · click a project to filter");
+    spendMatrix(mp, proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
   };
 
   /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
