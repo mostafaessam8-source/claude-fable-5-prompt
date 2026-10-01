@@ -135,6 +135,7 @@ main.content { flex: 1; min-width: 0; padding: 24px 28px 48px; }
 
 /* ----------------------------- Filters (slicers) ------------------------ */
 .filters {
+  position: relative; z-index: 35;   /* its dropdowns open over the sticky section bar (z 30), under the header (z 40) */
   display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
   background: var(--white); padding: 12px 14px; margin-bottom: var(--gap);
   border-left: 4px solid var(--sar-blue);
