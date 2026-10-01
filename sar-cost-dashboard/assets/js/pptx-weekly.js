@@ -10,6 +10,7 @@
   var MISSING = "[To be filled]", RED = "C00000", GREEN = "00B050", AMBER = "FFC000", TEAL = "00778B";
   var SPI_OK = 0.98;                       // SPI colour rule for the whole deck: below 0.98 red, otherwise green
   function spiCol(v) { return v != null && v >= SPI_OK ? GREEN : RED; }
+  function tgtCol(v, M) { return v != null && v >= M.spiTarget ? GREEN : RED; }   // Program Values SPI donut: against the KPI target shown under it
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   /* ------------------------------------------------------------------ formatting */
@@ -433,7 +434,7 @@
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
     grp(/Legacy|Handover/, leg, "    Legacy ( Completed" + (yrs.length ? " – " + (yrs.length > 1 ? yrs[0] + "-" + yrs[yrs.length - 1] : yrs[0]) : "") + ")");
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : { text: M.spi.toFixed(2), color: spiCol(M.spi) });   // SPI: Progress section
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : { text: M.spi.toFixed(2), color: tgtCol(M.spi, M) });   // SPI: Progress section
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.all(d, NS.a, "t").forEach(function (t) { if (/East Program - DB/.test(t.textContent)) t.textContent = t.textContent.replace("East Program - DB", "NSR Program - DB"); });
@@ -451,7 +452,7 @@
       var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
       var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.spi || 0;
       if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
-      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, spiCol(sp)); }
+      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, tgtCol(sp, M)); }
       else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) pkg.setChart(cp, { cats: phases.map(function (p) { return p[0]; }), series: [{ name: "Phase", values: phases.map(function (p) { return p[1]; }) }] });
       else if (/Mega/.test(x)) { var sz = ["Mega", "Large", "Medium", "Small"]; pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (z) { return db.filter(function (r) { return String(r["Project Size"] || "").trim().toLowerCase() === z.toLowerCase(); }).length; }) }] }); }
@@ -478,7 +479,7 @@
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
     grp(/Legacy/, clo, "    Handover & Closing");
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : { text: M.cardSpi.toFixed(2), color: spiCol(M.cardSpi) });
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : { text: M.cardSpi.toFixed(2), color: tgtCol(M.cardSpi, M) });
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.shapesByName(d, /^Chart \d/).forEach(function (f) {
@@ -486,7 +487,7 @@
       var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
       var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.cardSpi || 0;
       if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
-      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, spiCol(sp)); }
+      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, tgtCol(sp, M)); }
       else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) {
         pkg.setChart(cp, { cats: ["Execution", "Planning", "Tendering", "Closing"], series: [{ name: "Phase", values: [exe.length,
