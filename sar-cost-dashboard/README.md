@@ -136,6 +136,14 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
 (IndexedDB) and is removed by *Discard imports & restore baseline data*. Files imported before this feature need one more
 import before they can be downloaded.
 
+**Cloud storage (any device):** connect the Data Import page once per device to a **private** GitHub repository
+(e.g. `nsr-dashboard-data`) with a fine-grained token (that repository only, *Contents: Read and write*). Then:
+- every import uploads the original workbook to `imports/<source>/<file>` (and the PPT template to `template/`), with an `index.json`;
+- the panel lists the files with **Download** buttons, and the source cards download from the cloud when this browser has no copy;
+- **Load latest files from cloud** imports them all on a new device, so the dashboard shows the same data anywhere;
+- **Upload the files stored in this browser** backfills the cloud from earlier imports.
+Public repositories are refused, and the token stays in the browser (`localStorage`). Project files never go to this public repository.
+
 ## Baseline data (optional)
 
 `data/default-data.js` is the dataset the site shows before anyone imports. It's built from the Excel

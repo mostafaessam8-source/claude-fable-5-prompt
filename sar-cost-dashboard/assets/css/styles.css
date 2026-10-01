@@ -738,3 +738,17 @@ body.printing .iv-colband { display: none !important; }
 .src-card .src-dl { margin-top: 10px; font-size: 12px; padding: 5px 10px; }
 .src-card .src-dl svg { width: 15px; height: 15px; }
 .src-card .src-dl-note { margin-top: 6px; font-size: 11.5px; color: #B07A00; }
+
+/* Cloud storage (private GitHub repository) */
+.cloud-panel { margin-bottom: 16px; }
+.cloud-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; padding: 4px 0 6px; }
+.cloud-steps { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--sar-black); }
+.cloud-steps a { color: var(--sar-blue); font-weight: 600; }
+.cloud-form { display: flex; flex-direction: column; gap: 8px; }
+.cloud-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--slate); font-weight: 600; }
+.cloud-form input { padding: 7px 9px; border: 1px solid var(--cool-gray); font: inherit; font-size: 13px; }
+.cloud-form .cl-go { align-self: flex-start; }
+.cloud-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 10px; }
+.cl-tbl td, .cl-tbl th { font-size: 12.5px; }
+.cl-tbl .icon-btn { padding: 3px 10px; font-size: 12px; }
+@media (max-width: 760px) { .cloud-grid { grid-template-columns: 1fr; } }

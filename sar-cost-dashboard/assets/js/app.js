@@ -190,12 +190,91 @@
   }
 
   /* ----------------------------- import page ---------------------------- */
+  /* Cloud storage panel (private GitHub repository) */
+  function cloudPanel(ctx, importFiles) {
+    var C = window.SARCloud, box = U.el('<section class="panel cloud-panel"></section>');
+    function dlBlob(name, buf, type) {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: type || XLSX_MIME })); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+    }
+    if (!C.connected()) {
+      box.innerHTML = '<div class="panel-head"><h3>Cloud storage</h3><span class="sub">Keep every imported file in your private GitHub repository and download it from any device</span></div>' +
+        '<div class="cloud-grid"><ol class="cloud-steps">' +
+        '<li><a href="https://github.com/new?name=nsr-dashboard-data&amp;visibility=private&amp;description=NSR%20dashboard%20import%20files" target="_blank" rel="noopener">Create a <b>private</b> repository</a> named <b>nsr-dashboard-data</b> (once).</li>' +
+        '<li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token</a>: Repository access → <i>Only select repositories</i> → nsr-dashboard-data; Permissions → <b>Contents: Read and write</b>. Copy the token.</li>' +
+        "<li>Enter both here, once on each device. The token is kept only in this browser.</li></ol>" +
+        '<div class="cloud-form"><label>Repository<input type="text" class="cl-repo" placeholder="owner/nsr-dashboard-data" value="mostafaessam8-source/nsr-dashboard-data"></label>' +
+        '<label>Access token<input type="password" class="cl-tok" placeholder="github_pat_…" autocomplete="off"></label>' +
+        '<button type="button" class="icon-btn cl-go">Connect</button><div class="cl-msg muted"></div></div></div>';
+      box.querySelector(".cl-go").addEventListener("click", function () {
+        var m = box.querySelector(".cl-msg"); m.textContent = "Checking…";
+        C.connect(box.querySelector(".cl-repo").value, box.querySelector(".cl-tok").value).then(function () {
+          U.toast("Cloud storage connected."); ctx.rerender();
+        }, function (e) { m.innerHTML = '<span class="neg">' + U.esc(e.message) + "</span>"; });
+      });
+      return box;
+    }
+    box.innerHTML = '<div class="panel-head"><h3>Cloud storage</h3><span class="sub">☁ ' + U.esc(C.config().repo) + ' (private) · every import is saved there automatically</span></div>' +
+      '<div class="cloud-actions"><button type="button" class="icon-btn cl-load">Load latest files from cloud</button>' +
+      '<button type="button" class="icon-btn ghost cl-push">Upload the files stored in this browser</button>' +
+      '<button type="button" class="link-btn cl-off">Disconnect this device</button></div><div class="cl-list muted">Reading the cloud index…</div>';
+    var list = box.querySelector(".cl-list");
+    C.index().then(function (ix) {
+      var changed = JSON.stringify(C._last || null) !== JSON.stringify(ix);
+      C._last = ix;
+      if (changed) { ctx.rerender(); return; }        // once, so the source cards can offer cloud downloads too
+      var rows = Object.keys(ix.sources).map(function (k) { var e = ix.sources[k], spec = SARImporter.SOURCES[k];
+        return { k: k, label: spec ? spec.label : k, e: e }; });
+      if (ix.template) rows.push({ k: "__tpl", label: "Weekly PowerPoint template", e: { path: ix.template.path, fileName: ix.template.fileName, importedAt: ix.template.savedAt, size: ix.template.size } });
+      if (!rows.length) { list.textContent = "No files in the cloud yet — import files (or use “Upload the files stored in this browser”)."; return; }
+      list.className = "cl-list";
+      list.innerHTML = '<table class="dt cl-tbl"><thead><tr><th>Source</th><th>File</th><th>Saved</th><th></th></tr></thead><tbody>' + rows.map(function (r, i) {
+        return "<tr><td>" + U.esc(r.label) + "</td><td>" + U.esc(r.e.fileName) + "</td><td class='nowrap'>" + U.esc(new Date(r.e.importedAt).toLocaleString("en-GB")) +
+          '</td><td><button type="button" class="icon-btn ghost cl-dl" data-i="' + i + '">Download</button></td></tr>';
+      }).join("") + "</tbody></table>";
+      list.querySelectorAll(".cl-dl").forEach(function (b) { b.addEventListener("click", function () {
+        var r = rows[+b.getAttribute("data-i")]; b.disabled = true;
+        C.download(r.e.path).then(function (buf) { dlBlob(r.e.fileName, buf, r.k === "__tpl" ? "application/vnd.openxmlformats-officedocument.presentationml.presentation" : null); },
+          function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; });
+      }); });
+    }, function (e) { list.innerHTML = '<span class="neg">' + U.esc(e.message) + "</span> — check the token, or disconnect and connect again."; });
+    box.querySelector(".cl-off").addEventListener("click", function () {
+      if (!confirm("Disconnect cloud storage on this device? (Files stay in the repository.)")) return;
+      C.disconnect(); ctx.rerender();
+    });
+    box.querySelector(".cl-load").addEventListener("click", function () {
+      var b = this; b.disabled = true; U.toast("Downloading the latest files from the cloud…");
+      C.index().then(function (ix) {
+        var ks = Object.keys(ix.sources); if (!ks.length) { U.toast("No files in the cloud yet.", true); return; }
+        return Promise.all(ks.map(function (k) { var e = ix.sources[k];
+          return C.download(e.path).then(function (buf) { return new File([buf], e.fileName, { type: XLSX_MIME }); }); })).then(importFiles);
+      }).catch(function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; });
+    });
+    box.querySelector(".cl-push").addEventListener("click", function () {
+      var b = this; b.disabled = true;
+      SARStore.load().then(function (st) {
+        var ks = Object.keys((st && st.sources) || {}), n = 0;
+        return ks.reduce(function (p, k) {
+          return p.then(function () { return SARStore.get("file:" + k); }).then(function (f) {
+            if (f && f.buffer) { n++; return C.uploadSource(k, f.name, f.buffer); }
+          });
+        }, Promise.resolve()).then(function () {
+          return SARStore.get("pptTemplate").then(function (t) { if (t && t.buffer) { n++; return C.uploadTemplate(t.name, t.buffer); } });
+        }).then(function () { U.toast(n ? n + " file(s) uploaded to the cloud." : "No stored files in this browser — import them first.", !n); ctx.rerender(); });
+      }).catch(function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; });
+    });
+    return box;
+  }
+
   function renderImport(ctx) {
     var view = ctx.view, S = SARImporter.SOURCES;
     view.appendChild(U.el('<div class="note-box" style="margin-bottom:16px">Drop one or more of the six source workbooks. Each file is recognised by its content, not its name: the <b>Excel tables</b> inside it ' +
       "(the same tables Power BI reads), or — for <b>EP – NSR Projects &lt;Month&gt;.xlsx</b> — the <b>…_Project Card</b> sheets, whose section 12.1 <b>Issue Log</b> feeds the Issue Register " +
       "(projects can be added or removed freely). File names may change, but <b>table names, column headers and the Issue Log layout must stay as they are</b>. " +
       "Only the tables of the files you import are replaced; everything else keeps its current data. Imported data is saved in this browser.</div>"));
+
+    var cloudIx = (window.SARCloud && SARCloud._last) || { sources: {}, template: null };
+    if (window.SARCloud && !PUB) view.appendChild(cloudPanel(ctx, function (files) { handleFiles(files, { fromCloud: true }); }));
 
     var dz = U.el('<label class="dropzone" tabindex="0"><input type="file" accept=".xlsx,.xlsm" multiple hidden>' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v4h16v-4"/></svg>' +
@@ -223,15 +302,20 @@
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +
         '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul>" +
-        (src && src.imported ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
+        (src && (src.imported || cloudIx.sources[k]) ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' +
-          (src.hasFile ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
+          (src.hasFile || cloudIx.sources[k] ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
     });
     view.appendChild(grid);
     grid.querySelectorAll(".src-dl").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-src");
         SARStore.get("file:" + k).then(function (f) {
+          if (f && f.buffer) return f;
+          if (!(window.SARCloud && SARCloud.connected())) return null;
+          return SARCloud.index().then(function (ix) { var e = ix.sources[k]; if (!e) return null;
+            return SARCloud.download(e.path).then(function (buf) { return { name: e.fileName, buffer: buf }; }); });
+        }).then(function (f) {
           if (!f || !f.buffer) { U.toast("This file was imported before downloads were available — import it once more, then download it.", true); return; }
           var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([f.buffer], { type: f.type || XLSX_MIME })); a.download = f.name;
           document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
@@ -257,13 +341,14 @@
 
     function write(line) { log.style.display = "block"; log.textContent += line + "\n"; log.scrollTop = log.scrollHeight; }
 
-    function handleFiles(files) {
+    function handleFiles(files, opts) {
+      opts = opts || {};
       files = Array.prototype.slice.call(files || []);
       if (!files.length) return;
       log.textContent = "";
       SARStore.load().then(function (stored) {
         stored = stored || { tables: {}, sources: {} };
-        var ok = 0, chain = Promise.resolve();
+        var ok = 0, chain = Promise.resolve(), toCloud = [];
         files.forEach(function (f) {
           chain = chain.then(function () {
             write("Reading " + f.name + " …");
@@ -271,6 +356,7 @@
             return f.arrayBuffer().then(function (buf) { orig = buf.slice(0); return SARImporter.parseWorkbook(buf, XLSX, JSZip); }).then(function (res) {
               Object.assign(stored.tables, res.tables);
               stored.sources[res.source] = { fileName: f.name, importedAt: new Date().toISOString(), report: res.report, hasFile: true, size: f.size };
+              if (!opts.fromCloud) toCloud.push({ source: res.source, name: f.name, buf: orig });
               // keep the original workbook so it can be downloaded, updated and imported again
               return SARStore.set("file:" + res.source, { name: f.name, type: f.type || XLSX_MIME, buffer: orig, savedAt: new Date().toISOString() }).catch(function () {
                 stored.sources[res.source].hasFile = false;
@@ -287,7 +373,15 @@
         });
         return chain.then(function () {
           if (!ok) { U.toast("No file could be imported — see the log.", true); return; }
-          return SARStore.save(stored).then(function () {
+          var up = Promise.resolve();
+          if (toCloud.length && window.SARCloud && SARCloud.connected()) {
+            write("Saving to cloud storage (" + SARCloud.config().repo + ") …");
+            toCloud.forEach(function (t) {
+              up = up.then(function () { return SARCloud.uploadSource(t.source, t.name, t.buf).then(function () { write("  ☁ saved " + t.name); },
+                function (e) { write("  ✗ cloud: " + t.name + " — " + e.message); }); });
+            });
+          }
+          return up.then(function () { return SARStore.save(stored); }).then(function () {
             mergeDataset(stored); renderHeader();
             U.toast(ok + " file(s) imported — dashboard updated.");
             var keep = log.textContent;

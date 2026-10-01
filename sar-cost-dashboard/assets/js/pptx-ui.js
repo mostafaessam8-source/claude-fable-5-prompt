@@ -11,8 +11,18 @@
   function current() {
     return SARStore.get(KEY).then(function (t) {
       if (t && t.buffer) return t;
-      var L = window.SAR_PPT_TEMPLATE;
-      return L && L.b64 ? { name: L.name, savedAt: L.builtAt, buffer: b64ToBuf(L.b64), local: true } : null;
+      var cloud = window.SARCloud && SARCloud.connected() ? SARCloud.index().then(function (ix) {
+        if (!ix.template) return null;
+        return SARCloud.download(ix.template.path).then(function (buf) {
+          var t = { name: ix.template.fileName, savedAt: ix.template.savedAt, buffer: buf };
+          return SARStore.set(KEY, t).catch(function () {}).then(function () { t.cloud = true; return t; });
+        });
+      }).catch(function () { return null; }) : Promise.resolve(null);
+      return cloud.then(function (c) {
+        if (c) return c;
+        var L = window.SAR_PPT_TEMPLATE;
+        return L && L.b64 ? { name: L.name, savedAt: L.builtAt, buffer: b64ToBuf(L.b64), local: true } : null;
+      });
     });
   }
   function download(name, blob) {
@@ -24,7 +34,7 @@
     var body = U.modal("Export Weekly PPT", "", true);
     function render(tpl, msg) {
       body.innerHTML = '<div class="pub-grid"><div>' +
-        '<div class="note-box" style="margin-bottom:12px"><b>Template:</b> ' + (tpl ? esc(tpl.name) + (tpl.local ? " (local copy)" : " · saved in this browser") : "<span class='neg'>not loaded yet</span>") + "</div>" +
+        '<div class="note-box" style="margin-bottom:12px"><b>Template:</b> ' + (tpl ? esc(tpl.name) + (tpl.local ? " (local copy)" : tpl.cloud ? " · from cloud storage" : " · saved in this browser") : "<span class='neg'>not loaded yet</span>") + "</div>" +
         '<label class="dropzone small" tabindex="0"><input type="file" accept=".pptx" hidden><h3>' + (tpl ? "Replace the template" : "Load the PD weekly template (.pptx)") +
         "</h3><p>NSR - Program - Balance Scorecard - Blank Template.pptx · loaded once, kept in this browser only</p></label>" +
         (tpl ? '<button class="icon-btn ghost" id="pptTplDl" type="button" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download the template</span></button><br>' : "") +
@@ -40,7 +50,12 @@
         if (!f) return;
         f.arrayBuffer().then(function (buf) {
           var t = { name: f.name, savedAt: new Date().toISOString(), buffer: buf };
-          return SARStore.set(KEY, t).catch(function () {}).then(function () { render(t, "✓ Template saved in this browser."); });
+          return SARStore.set(KEY, t).catch(function () {}).then(function () {
+            if (!(window.SARCloud && SARCloud.connected())) { render(t, "✓ Template saved in this browser."); return; }
+            render(t, "✓ Template saved in this browser · saving to cloud storage…");
+            return SARCloud.uploadTemplate(t.name, buf).then(function () { render(t, "✓ Template saved in this browser and in cloud storage."); },
+              function (e) { render(t, "✓ Template saved in this browser · cloud: " + esc(e.message)); });
+          });
         });
       }
       input.addEventListener("change", function () { take(input.files[0]); });
