@@ -8,7 +8,7 @@
   "use strict";
   var E = window.PptxEngine, NS = E.NS;
   var MISSING = "[To be filled]", RED = "C00000", GREEN = "00B050", AMBER = "FFC000", TEAL = "00778B";
-  var SPI_OK = 0.98;                       // SPI colour rule for the whole deck: below 0.98 red, otherwise green
+  var SPI_OK = 0.91;                       // SPI colour rule for the whole deck: below the KPI target red, otherwise green (set from the KPI sheet in build)
   function spiCol(v) { return v != null && v >= SPI_OK ? GREEN : RED; }
   function tgtCol(v, M) { return v != null && v >= M.spiTarget ? GREEN : RED; }   // Program Values SPI donut: against the KPI target shown under it
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -846,6 +846,7 @@
   /* ================================================================== main */
   function build(templateBuffer, D) {
     var M = model(D);
+    SPI_OK = M.spiTarget;                 // the SPI KPI target (0.91) drives every SPI colour in the deck
     return E.Pkg.open(templateBuffer).then(function (pkg) {
       var S = findSlides(pkg), jobs = Promise.resolve();
       Object.keys(S).forEach(function (k) { S[k].forEach(function (p) { seedSlide(pkg, p, k); }); });
