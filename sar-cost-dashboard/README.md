@@ -148,8 +148,8 @@ import before they can be downloaded.
 **Cloud storage (any device):** connect the Data Import page once per device to a **private** GitHub repository
 (e.g. `nsr-dashboard-data`) with a fine-grained token (that repository only, *Contents: Read and write*). Then:
 - every import uploads the original workbook to `imports/<source>/<file>` (and the PPT template to `template/`), with an `index.json`;
-- the panel lists the files with **Download** buttons, and the source cards download from the cloud when this browser has no copy;
-- **Load latest files from cloud** imports them all on a new device, so the dashboard shows the same data anywhere;
+- the panel lists the files with **Import** (straight into the dashboard, no download; *Use as template* for the PPT template) and **Download** buttons, and the source cards download from the cloud when this browser has no copy;
+- **Import all latest files from cloud** imports them all on a new device, so the dashboard shows the same data anywhere;
 - **Upload the files stored in this browser** backfills the cloud from earlier imports.
 - **Connect another device** (on a connected device) makes a link holding the repository and token encrypted with a PIN
   you choose (PBKDF2-SHA256, AES-GCM; in the URL fragment, never sent to a server). Open it on the other device and

@@ -235,7 +235,7 @@
       return box;
     }
     box.innerHTML = '<div class="panel-head"><h3>Cloud storage</h3><span class="sub">☁ ' + U.esc(C.config().repo) + ' (private) · every import is saved there automatically</span></div>' +
-      '<div class="cloud-actions"><button type="button" class="icon-btn cl-load">Load latest files from cloud</button>' +
+      '<div class="cloud-actions"><button type="button" class="icon-btn cl-load">Import all latest files from cloud</button>' +
       '<button type="button" class="icon-btn ghost cl-push">Upload the files stored in this browser</button>' +
       '<button type="button" class="icon-btn ghost cl-dev">Connect another device</button>' +
       '<button type="button" class="link-btn cl-off">Disconnect this device</button></div><div class="cl-devout"></div><div class="cl-list muted">Reading the cloud index…</div>';
@@ -251,8 +251,16 @@
       list.className = "cl-list";
       list.innerHTML = '<table class="dt cl-tbl"><thead><tr><th>Source</th><th>File</th><th>Saved</th><th></th></tr></thead><tbody>' + rows.map(function (r, i) {
         return "<tr><td>" + U.esc(r.label) + "</td><td>" + U.esc(r.e.fileName) + "</td><td class='nowrap'>" + U.esc(new Date(r.e.importedAt).toLocaleString("en-GB")) +
-          '</td><td><button type="button" class="icon-btn ghost cl-dl" data-i="' + i + '">Download</button></td></tr>';
+          '</td><td class="nowrap"><button type="button" class="icon-btn cl-imp" data-i="' + i + '" title="' + (r.k === "__tpl" ? "Use this file as the weekly PowerPoint template in this browser" : "Import this file into the dashboard straight from the cloud") + '">' +
+          (r.k === "__tpl" ? "Use as template" : "Import") + '</button> <button type="button" class="icon-btn ghost cl-dl" data-i="' + i + '">Download</button></td></tr>';
       }).join("") + "</tbody></table>";
+      list.querySelectorAll(".cl-imp").forEach(function (b) { b.addEventListener("click", function () {   // import straight from the cloud, no download
+        var r = rows[+b.getAttribute("data-i")], tpl = r.k === "__tpl", lbl = b.textContent; b.disabled = true; b.textContent = "…";
+        C.download(r.e.path).then(function (buf) {
+          if (tpl) return SARStore.set("pptTemplate", { name: r.e.fileName, savedAt: r.e.importedAt, buffer: buf }).then(function () { U.toast("Weekly PowerPoint template ready: " + r.e.fileName); });
+          importFiles([new File([buf], r.e.fileName, { type: XLSX_MIME })]);
+        }).catch(function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; b.textContent = lbl; });
+      }); });
       list.querySelectorAll(".cl-dl").forEach(function (b) { b.addEventListener("click", function () {
         var r = rows[+b.getAttribute("data-i")]; b.disabled = true;
         C.download(r.e.path).then(function (buf) { dlBlob(r.e.fileName, buf, r.k === "__tpl" ? "application/vnd.openxmlformats-officedocument.presentationml.presentation" : null); },
