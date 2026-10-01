@@ -44,6 +44,7 @@
   if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import"; });
 
   /* ----------------------------- dataset -------------------------------- */
+  var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   var base = window.SAR_DEFAULT_DATA || { tables: {}, sources: {} };
   var dataset = { tables: {}, sources: {} };
 
@@ -221,9 +222,21 @@
       }).join("");
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +
-        '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul></div>"));
+        '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul>" +
+        (src && src.imported && src.hasFile ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' : "") + "</div>"));
     });
     view.appendChild(grid);
+    grid.querySelectorAll(".src-dl").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.getAttribute("data-src");
+        SARStore.get("file:" + k).then(function (f) {
+          if (!f || !f.buffer) { U.toast("The original file is not stored in this browser — import it again to keep a copy.", true); return; }
+          var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([f.buffer], { type: f.type || XLSX_MIME })); a.download = f.name;
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+        });
+      });
+    });
     if (D.hasRev) {   // Budget 2026 ↔ Spending Plan project check
       var spNames = {}; D.t("Spending_Plan").forEach(function (r) { spNames[String(r.ID)] = r["Project Name"]; });
       view.appendChild(U.el('<div class="note-box' + (D.revOnly.length ? " warn" : "") + '" style="margin-top:16px"><b>Budget 2026 (Rev Spend Plan) check:</b> ' +
@@ -235,7 +248,9 @@
     var reset = U.el('<button class="icon-btn ghost" type="button">Discard imports &amp; restore baseline data</button>');
     reset.addEventListener("click", function () {
       if (!confirm("Remove all imported data from this browser and return to the baseline dataset?")) return;
-      SARStore.clear().then(function () { mergeDataset(null); renderHeader(); U.toast("Imported data cleared."); ctx.rerender(); });
+      SARStore.load().then(function (st) {
+        return Promise.all(Object.keys((st && st.sources) || {}).map(function (k) { return SARStore.del("file:" + k); }));
+      }).then(function () { return SARStore.clear(); }).then(function () { mergeDataset(null); renderHeader(); U.toast("Imported data cleared."); ctx.rerender(); });
     });
     ctx.actions.appendChild(reset);
 
@@ -251,9 +266,15 @@
         files.forEach(function (f) {
           chain = chain.then(function () {
             write("Reading " + f.name + " …");
-            return f.arrayBuffer().then(function (buf) { return SARImporter.parseWorkbook(buf, XLSX, JSZip); }).then(function (res) {
+            var orig = null;
+            return f.arrayBuffer().then(function (buf) { orig = buf.slice(0); return SARImporter.parseWorkbook(buf, XLSX, JSZip); }).then(function (res) {
               Object.assign(stored.tables, res.tables);
-              stored.sources[res.source] = { fileName: f.name, importedAt: new Date().toISOString(), report: res.report };
+              stored.sources[res.source] = { fileName: f.name, importedAt: new Date().toISOString(), report: res.report, hasFile: true, size: f.size };
+              // keep the original workbook so it can be downloaded, updated and imported again
+              return SARStore.set("file:" + res.source, { name: f.name, type: f.type || XLSX_MIME, buffer: orig, savedAt: new Date().toISOString() }).catch(function () {
+                stored.sources[res.source].hasFile = false;
+              }).then(function () { return res; });
+            }).then(function (res) {
               write("  ✓ recognised as: " + res.label);
               res.report.forEach(function (r) {
                 write("    " + (r.status === "ok" ? "✓" : r.status === "warning" ? "!" : "✗") + " " + r.table + " — " + r.rows + " rows" +

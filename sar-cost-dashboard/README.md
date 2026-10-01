@@ -131,6 +131,11 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
 > and formulas are fine: the site reads the values Excel last calculated, so save the file in Excel
 > before importing.
 
+**Download an imported file:** every Excel file imported in this browser is kept as-is. On **Data Import** each loaded source card has
+**Download imported file**: download it, update it in Excel and import it again. The copy is stored only in this browser
+(IndexedDB) and is removed by *Discard imports & restore baseline data*. Files imported before this feature need one more
+import before they can be downloaded.
+
 ## Baseline data (optional)
 
 `data/default-data.js` is the dataset the site shows before anyone imports. It's built from the Excel

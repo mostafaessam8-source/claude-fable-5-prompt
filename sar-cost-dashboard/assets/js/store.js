@@ -40,6 +40,7 @@
     /* other values (e.g. the weekly PowerPoint template) under their own key */
     get: function (key) { return tx("readonly", function (s) { return s.get(key); }).catch(function () { return null; }); },
     set: function (key, value) { return tx("readwrite", function (s) { s.put(value, key); }); },
+    del: function (key) { return tx("readwrite", function (s) { s.delete(key); }).catch(function () {}); },
     clear: function () {
       try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
       return tx("readwrite", function (s) { s.delete(KEY); }).catch(function () {});
