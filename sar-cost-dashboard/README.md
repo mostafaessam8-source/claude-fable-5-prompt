@@ -24,7 +24,7 @@ opened straight from disk.
 | Projects Master Plan | Projects Master Plan | `Project_Milestones_Progress_Combine` |
 | Project Timeline | Timeline | `Project_Milestones_Progress` |
 | Project Cards | *(new)* | Every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx**, all sections |
-| Projects in Execution | *(new)* | Weekly progress report (latest week) + project cards + S-curves + Spending Plan. Shows projects in the execution phase with SPI and its 12-week trend, planned vs actual, performance, finish slip, payments, 2026 spend, a below-target watch list and 10 filters |
+| Projects in Execution | *(new)* | Project cards with **Actual Phase = Execution**. All progress comes only from card **section 7** (Execution Schedule: planned/actual % to date and the monthly curve → SPI and its 12-month trend) and **section 8** (Project Timeline: execution-phase baseline / revised / forecast dates and the project total). Also shows status, payments, 2026 spend, a watch list and 10 filters |
 | Portfolio Master Plan | *(new)* | Section 8 *Project Timeline* + section 10 *Critical Path Milestones* of every project card |
 | Projects in Closing | *(new)* | **Projects in Closing phase.xlsx** (sheet with the closing register; found by its header row): closure status, close-out checklist (every column between *Final Contract Value* and *Current Status*), time since contract finish, current status and action plans |
 | Issue Register | Issue | Section 12.1 *Issue Log* of every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx** |

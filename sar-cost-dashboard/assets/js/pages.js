@@ -1980,34 +1980,15 @@
   }
 
   P.execution = function (ctx) {
-    var D = ctx.D, v = ctx.view, st = ctx.state;
-    var cards = {}; cardsOf(D).forEach(function (c) { cards[String(c.Code)] = c; });
-    var wk = {};
-    D.t("Weekly_Report_Updates").forEach(function (r) { var k = String(r["Project Code"] || ""); if (k && (!wk[k] || r["Report Date"] > wk[k]["Report Date"])) wk[k] = r; });
-    function isExec(s) { return /execution/i.test(s || ""); }
-    var codes = Object.keys(wk).filter(function (k) {
-      var r = wk[k], c = cards[k], cls = r["Phase Classification"] || r["Current Phase"];
-      return cls ? isExec(r["Phase Classification"]) || isExec(r["Current Phase"]) : !!(c && isExec(c.ActualPhase));
-    }).concat(Object.keys(cards).filter(function (k) { return !wk[k] && isExec(cards[k].ActualPhase); }));
-    if (!codes.length) { add(v, '<div class="empty">No projects in the execution phase. Import the weekly progress report and / or <b>EP - NSR Projects &lt;Month&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
-
+    var D = ctx.D, v = ctx.view;
+    var all0 = cardsOf(D).filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); });
+    if (!all0.length) { add(v, '<div class="empty">No project card has <b>Actual Phase = Execution</b>. Import <b>EP - NSR Projects &lt;Month&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
     var kpi = D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {};
     var TGT = N(kpi["NSR Spend Plan 2026 as per Budgeting"]) || 0.9;
-    var dd = Object.keys(wk).map(function (k) { return wk[k]["Report Date"]; }).filter(Boolean).sort().pop() || dataDate(cardsOf(D)), ddn = dnum(dd);
-
-    // S-curves (one row per project and date; the live row wins a duplicated date)
-    var ser = {}, seen = {};
-    D.t("S_Curve").forEach(function (r) {
-      var s = r["Source.Name"], n = dnum(r["Report Date"]); if (!s || !n) return;
-      var w = ["Cum Actual (%)", "Cum Forecast (%)", "This Week Plan (%)", "This Week Actual (%)"].filter(function (k) { return N(r[k]) != null; }).length;
-      var k = s + "|" + n, rec = { n: n, plan: N(r["Cum Plan (%)"]), act: N(r["Cum Actual (%)"]), w: w };
-      if (seen[k]) { if (w > seen[k].w) Object.assign(seen[k], rec); return; }
-      seen[k] = rec; (ser[s] = ser[s] || []).push(rec);
-    });
-    Object.keys(ser).forEach(function (k) { ser[k].sort(function (a, b) { return a.n - b.n; }); });
-    function at(list, t, key) { var x = null; for (var i = 0; i < list.length && list[i].n <= t; i++) if (list[i][key] != null) x = list[i][key]; return x; }
-    var weeks = []; for (var wi = 11; wi >= 0; wi--) weeks.push(ddn - wi * 7 * DAY);
-
+    var dd = dataDate(all0), ddn = dnum(dd);
+    // weekly report: non-progress context only (reason for delay, manpower)
+    var wk = {};
+    D.t("Weekly_Report_Updates").forEach(function (r) { var k = String(r["Project Code"] || ""); if (k && (!wk[k] || r["Report Date"] > wk[k]["Report Date"])) wk[k] = r; });
     // 2026 spend per project (Rev Spend Plan when Budget 2026 is loaded)
     var RV = hasRev(), spd = {}, spRows = D.t("Spending_Plan");
     var cut = spRows.filter(function (r) { return N(G(r, SP.act)) != null; }).map(function (r) { return r.Month; }).sort().pop() || null;
@@ -2016,106 +1997,113 @@
       var pl = N(G(r, RV ? SP.rev : SP.plan)) || 0, past = cut && r.Month <= cut;
       o.fy += pl; if (past) { o.ytdP += pl; o.ytdA += N(G(r, SP.act)) || 0; o.fc += N(G(r, SP.act)) || 0; } else o.fc += N(G(r, SP.inv)) || 0;
     });
-
+    // trend months: the last 12 month-ends up to the reporting period
+    var months = U.uniq([].concat.apply([], all0.map(function (c) { return ((c.Exec || {}).Months || []).map(function (m) { return m.Month; }); })))
+      .filter(function (m) { return !dd || m <= dd; }).sort().slice(-12);
     function yes(x) { return /^y/i.test(String(x || "")); }
-    var all = codes.map(function (k) {
-      var r = wk[k] || {}, c = cards[k] || {}, pfm = c.Perf || {}, sk = c.Stake || {}, sp = c.Code ? span(c) : {}, s = ser[r["Source.Name"]] || [];
-      var o = { code: k, name: r["Project Name"] || c.Name || k, card: !!c.Code, src: r["Source.Name"] || null, weekly: !!r["Project Code"] };
-      o.label = k + " — " + o.name;
-      o.crit = yes(r["Critical Project"]) || yes((c.Fund || {}).Critical) ? "Critical" : "Not critical";
-      o.pm = r["Project Manager"] || sk.PM || "Not set";
-      o.contractor = r.Contractor || ((c.Contracts || []).filter(function (x) { return x.Entity; })[0] || {}).Entity || "Not set";
-      o.region = String(r.Region || c.Location || "Not set").replace(/^Riaydh$/i, "Riyadh").replace(/^North$/i, "Northern");
-      o.stage = r["Current Phase"] && !isExec(r["Current Phase"]) ? r["Current Phase"] : (r["Phase Classification"] && !isExec(r["Phase Classification"]) ? r["Phase Classification"] : (c.ActualPhase || "Execution"));
-      o.btype = r["Budget Type"] || (k in spd ? (spd[k].fy ? "CAPEX" : "Not set") : "Not set");
-      o.status = r["Performance Status"] || pfm.Status || "Not set";
-      o.risk = pfm.Risk || "Not set";
-      o.cv = N(r["Contract Value"]) || N((c.Fund || {}).CON) || 0;
-      o.plan = r["Project Code"] ? N(r["Planned (%) - Cumulative"]) : N(pfm.Planned);
-      o.act = r["Project Code"] ? N(r["Actual (%) - Cumulative"]) : N(pfm.Actual);
+
+    var all = all0.map(function (c) {
+      var ex = c.Exec || {}, pfm = c.Perf || {}, sk = c.Stake || {}, fu = c.Fund || {}, tot = c.Total || {};
+      var ph = (c.Timeline || []).filter(function (t) { return t.Level === 1 && /^execution/i.test(t.Name); })[0] || {};
+      var r = wk[c.Code] || {};
+      var o = { code: c.Code, name: c.Name || c.Code, card: c };
+      o.label = o.code + " — " + o.name;
+      o.crit = yes(fu.Critical) ? "Critical" : "Not critical";
+      o.pm = sk.PM || "Not set";
+      o.contractor = ((c.Contracts || []).filter(function (x) { return /contractor/i.test(x.Role || "") && x.Entity; })[0] || {}).Entity || "Not set";
+      o.location = c.Location || "Not set"; o.size = c.Size || "Not set";
+      o.status = pfm.Status || "Not set"; o.risk = pfm.Risk || "Not set"; o.delay = pfm.Delay || "Not set";
+      o.cv = N(fu.CON) || 0; o.budget = N(fu.Budget) || 0; o.w = o.cv || o.budget;
+      // Section 7 — execution schedule: progress to date + monthly curve
+      o.plan = N(ex.PlannedToDate); o.act = N(ex.ActualToDate);
+      if (!o.plan && !o.act) { o.plan = N(ph.Plan); o.act = N(ph.Actual); }          // Section 8 execution row (same figures when both filled)
+      if (!o.plan && !o.act) { o.plan = null; o.act = null; }
       o.var = o.plan != null && o.act != null ? o.act - o.plan : null;
-      o.spi = N(r.SPI) != null ? N(r.SPI) : (o.plan ? (o.act || 0) / o.plan : null);
-      o.spark = weeks.map(function (t) { var p = at(s, t, "plan"), a = at(s, t, "act"); return p ? (a || 0) / p : null; });
-      if (o.spi != null && s.length) o.spark[o.spark.length - 1] = o.spi;
-      var p4 = at(s, ddn - 28 * DAY, "plan"), a4 = at(s, ddn - 28 * DAY, "act");
-      o.spi4 = p4 ? (a4 || 0) / p4 : null; o.dSpi = o.spi != null && o.spi4 != null ? o.spi - o.spi4 : null;
-      o.band = o.spi == null ? "No progress data" : o.spi >= 1 ? "SPI ≥ 1.00" : o.spi >= TGT ? "SPI " + TGT.toFixed(2) + " – 1.00" : "SPI < " + TGT.toFixed(2) + " (below target)";
-      o.bs = r["Start Date Baseline"] || sp.BS; o.be = r["End Date Baseline"] || sp.RE || sp.BE; o.fe = r["End Date (Forecast/Actual)"] || sp.FE;
-      // a forecast finish already in the past on an unfinished project is out of date (e.g. on-hold cards): no slip from it
+      o.spi = o.plan ? (o.act || 0) / o.plan : null;
+      var cp = 0, ca = 0, cum = {};
+      (ex.Months || []).forEach(function (m) { cp += m.Plan || 0; if (m.Actual != null) ca += m.Actual; cum[m.Month] = { p: cp, a: m.Actual != null || m.Month <= (ex.ReportingPeriod || dd) ? ca : null }; });
+      o.cum = function (m) { var x = null; Object.keys(cum).forEach(function (k) { if (k <= m) x = cum[k]; }); return x; };
+      o.spark = months.map(function (m) { var x = o.cum(m); return x && x.p ? x.a / x.p : null; });
+      var m3 = months.length > 3 ? o.cum(months[months.length - 4]) : null;
+      o.spi3 = m3 && m3.p ? m3.a / m3.p : null; o.dSpi = o.spi != null && o.spi3 != null ? o.spi - o.spi3 : null;
+      o.period = N(ex.Period); o.exStart = ex.Start;
+      // Section 8 — project timeline: execution phase + project total
+      o.bs = ph.BS; o.be = ph.BE; o.rs = ph.RS; o.re = ph.RE; o.fs = ph.FS; o.fe = ph.FE;
+      o.pPlan = N(tot.Plan); o.pAct = N(tot.Actual); o.pRe = tot.RE || tot.BE; o.pFe = tot.FE;
       o.feOld = !!(o.fe && dd && o.fe < dd && (o.act == null || o.act < 0.999));
-      o.slip = o.feOld ? null : days(o.be, o.fe);
-      o.paid = N(r["Paid Amount"]) != null ? N(r["Paid Amount"]) : N(pfm.Paid);
-      o.paidPct = N(r["Total Paid %"]) != null ? N(r["Total Paid %"]) : (o.cv && o.paid != null ? o.paid / o.cv : null);
-      o.wcPct = N(r["Total WC %"]);
-      var sd = spd[k] || {}; o.fy = sd.fy || 0; o.ytdP = sd.ytdP || 0; o.ytdA = sd.ytdA || 0; o.fc = sd.fc || 0;
-      o.issues = openIssues(D, k); o.risks = c.Code ? openRisks(c) : 0;
-      o.reason = r["Reason for Delays"] || ""; o.mp = N(r["Total Manpower (This Week)"]); o.lti = N(r["Lost Time Incident (Cumulative)"]); o.ncr = N(r["Open NCR"]);
-      o.source = o.weekly ? "Weekly report" : "Project card only";
+      o.slip = o.feOld ? null : days(o.re || o.be, o.fe);
+      o.slipBL = o.feOld ? null : days(o.be, o.fe);
+      o.band = o.spi == null ? "No progress in sections 7 / 8" : o.spi >= 1 ? "SPI ≥ 1.00" : o.spi >= TGT ? "SPI " + TGT.toFixed(2) + " – 1.00" : "SPI < " + TGT.toFixed(2) + " (below target)";
+      o.paid = N(pfm.Paid); o.paidPct = o.cv && o.paid != null ? o.paid / o.cv : null;
+      var sd = spd[c.Code] || {}; o.fy = sd.fy || 0; o.ytdP = sd.ytdP || 0; o.ytdA = sd.ytdA || 0; o.fc = sd.fc || 0;
+      o.issues = openIssues(D, c.Code); o.risks = openRisks(c);
+      o.reason = r["Reason for Delays"] || (c.Baseline || {}).DelayReason || "";
+      o.mp = N(r["Total Manpower (This Week)"]);
       return o;
     });
 
-    var BANDS = ["SPI < " + TGT.toFixed(2) + " (below target)", "SPI " + TGT.toFixed(2) + " – 1.00", "SPI ≥ 1.00", "No progress data"];
+    var BANDS = ["SPI < " + TGT.toFixed(2) + " (below target)", "SPI " + TGT.toFixed(2) + " – 1.00", "SPI ≥ 1.00", "No progress in sections 7 / 8"];
     function opts(get, order) { var x = U.uniq(all.map(get)); return order ? x.sort(order) : x.sort(); }
-    var STAT = ["On Time", "On Track", "Slightly Delayed", "At Risk", "Delayed", "On Hold", "Not set"];
     var defs = [
-      { key: "status", label: "Performance Status", get: function (o) { return o.status; }, options: opts(function (o) { return o.status; }, byOrder(STAT)) },
+      { key: "status", label: "Overall Status", get: function (o) { return o.status; }, options: opts(function (o) { return o.status; }, byOrder(STATUS_ORDER)) },
       { key: "band", label: "SPI band", get: function (o) { return o.band; }, options: BANDS.filter(function (b) { return all.some(function (o) { return o.band === b; }); }) },
+      { key: "risk", label: "Risk Level", get: function (o) { return o.risk; }, options: opts(function (o) { return o.risk; }, byOrder(RISK_ORDER)) },
+      { key: "delay", label: "Delay Level", get: function (o) { return o.delay; }, options: opts(function (o) { return o.delay; }) },
       { key: "crit", label: "Critical", get: function (o) { return o.crit; }, options: ["Critical", "Not critical"] },
-      { key: "btype", label: "Budget Type", get: function (o) { return o.btype; }, options: opts(function (o) { return o.btype; }) },
-      { key: "stage", label: "Stage", get: function (o) { return o.stage; }, options: opts(function (o) { return o.stage; }) },
-      { key: "region", label: "Region", get: function (o) { return o.region; }, options: opts(function (o) { return o.region; }) },
+      { key: "size", label: "Project Size", get: function (o) { return o.size; }, options: opts(function (o) { return o.size; }) },
+      { key: "loc", label: "Location", get: function (o) { return o.location; }, options: opts(function (o) { return o.location; }) },
       { key: "pm", label: "Project Manager", get: function (o) { return o.pm; }, options: opts(function (o) { return o.pm; }) },
       { key: "con", label: "Contractor", get: function (o) { return o.contractor; }, options: opts(function (o) { return o.contractor; }) },
-      { key: "source", label: "Source", get: function (o) { return o.source; }, options: opts(function (o) { return o.source; }) },
       { key: "proj", label: "Project", get: function (o) { return o.code; }, options: all.map(function (o) { return o.code; }).sort(), display: function (k) { var o = all.filter(function (x) { return x.code === k; })[0]; return o ? o.label : k; } }];
     var f = filterBar(ctx, defs, all);
     var rows = all.filter(function (o) { return passes(o, defs, f); });
     function rowsX(key) { return all.filter(function (o) { return passes(o, defs, f, key); }); }
     function sumF(list, fn) { return list.reduce(function (s, o) { var x = fn(o); return s + (x || 0); }, 0); }
-    var prog = rows.filter(function (o) { return o.cv && o.plan != null; });
-    var PV = sumF(prog, function (o) { return o.cv * o.plan; }), EV = sumF(prog, function (o) { return o.cv * (o.act || 0); }), CV = sumF(rows, function (o) { return o.cv; });
-    var SPI = PV ? EV / PV : null, CVp = sumF(prog, function (o) { return o.cv; });
-    function spiAt(t, list) { var pv = 0, ev = 0; list.forEach(function (o) { var s = ser[o.src] || []; var p = at(s, t, "plan"), a = at(s, t, "act"); if (o.cv && p) { pv += o.cv * p; ev += o.cv * (a || 0); } }); return pv ? ev / pv : null; }
-    var SPI4 = spiAt(ddn - 28 * DAY, prog);
+    var prog = rows.filter(function (o) { return o.w && o.plan; });
+    var PV = sumF(prog, function (o) { return o.w * o.plan; }), EV = sumF(prog, function (o) { return o.w * (o.act || 0); }), W = sumF(prog, function (o) { return o.w; });
+    var SPI = PV ? EV / PV : null, CV = sumF(rows, function (o) { return o.cv; });
+    function spiAt(m, list) { var pv = 0, ev = 0; list.forEach(function (o) { var x = o.cum(m); if (o.w && x && x.p) { pv += o.w * x.p; ev += o.w * (x.a || 0); } }); return pv ? ev / pv : null; }
+    var SPI3 = months.length > 3 ? spiAt(months[months.length - 4], prog) : null;
     var below = rows.filter(function (o) { return o.spi != null && o.spi < TGT; }), late = rows.filter(function (o) { return o.slip != null && o.slip > 0; });
-    var crit = rows.filter(function (o) { return o.crit === "Critical"; });
+    var crit = rows.filter(function (o) { return o.crit === "Critical"; }), noProg = rows.filter(function (o) { return o.spi == null; });
     function spiTxt(x) { return x == null ? "—" : x.toFixed(2); }
     function spiCol(x) { return x == null ? "slate" : x >= 1 ? "" : x >= TGT ? "yellow" : "red"; }
     function setF(key, vals) { var s = sel(ctx, key); s.length = 0; vals.forEach(function (x) { s.push(x); }); ctx.rerender(); }
 
-    add(v, '<div class="note-box">Data date <b>' + esc(fmt.date(dd)) + "</b> · " + all.filter(function (o) { return o.weekly; }).length + " projects from the weekly progress report (latest week), " +
-      all.filter(function (o) { return !o.weekly; }).length + " in the execution phase on their project card only (no weekly progress). SPI = earned ÷ planned progress; portfolio SPI is weighted by contract value (ΣEV ÷ ΣPV). KPI target " + TGT.toFixed(2) + ".</div>");
+    add(v, '<div class="note-box">Projects whose card shows <b>Actual Phase = Execution</b> · reporting period <b>' + esc(fmt.month(dd)) + "</b>. " +
+      "Progress comes only from the project cards: <b>section 7</b> (Execution Schedule — planned / actual % to date and the monthly curve) and <b>section 8</b> (Project Timeline — execution phase baseline, revised and forecast dates, and the project total). " +
+      "SPI = actual ÷ planned execution progress; the portfolio SPI is weighted by contract value (CON, else budget). KPI target " + TGT.toFixed(2) + ".</div>");
     var g = grid(v, "g-6");
-    g.innerHTML = U.tile({ value: rows.length, label: "Projects in execution", note: crit.length + " critical · " + rows.filter(function (o) { return o.weekly; }).length + " in the weekly report" }) +
-      mTile("Contract value", CV, "black") +
-      U.tile({ value: spiTxt(SPI), label: "Portfolio SPI", color: spiCol(SPI), note: "Target " + TGT.toFixed(2) + (SPI4 != null && SPI != null ? " · 4 weeks ago " + SPI4.toFixed(2) + " (" + (SPI - SPI4 >= 0 ? "+" : "") + (SPI - SPI4).toFixed(2) + ")" : "") }) +
-      U.tile({ value: fmt.pct(CVp ? EV / CVp : null, 1), label: "Actual progress", color: "yellow", note: "vs " + fmt.pct(CVp ? PV / CVp : null, 1) + " planned · weighted by contract value" }) +
+    g.innerHTML = U.tile({ value: rows.length, label: "Projects in execution", note: crit.length + " critical" + (noProg.length ? " · " + noProg.length + " without progress in section 7" : "") }) +
+      mTile("Contract value (CON)", CV, "black") +
+      U.tile({ value: spiTxt(SPI), label: "Portfolio SPI", color: spiCol(SPI), note: "Target " + TGT.toFixed(2) + (SPI3 != null && SPI != null ? " · 3 months ago " + SPI3.toFixed(2) + " (" + (SPI - SPI3 >= 0 ? "+" : "") + (SPI - SPI3).toFixed(2) + ")" : "") }) +
+      U.tile({ value: fmt.pct(W ? EV / W : null, 1), label: "Execution progress", color: "yellow", note: "Actual vs " + fmt.pct(W ? PV / W : null, 1) + " planned · section 7, weighted" }) +
       U.tile({ value: below.length, label: "Below SPI target", color: below.length ? "red" : "slate", note: "SPI < " + TGT.toFixed(2) + " · click to filter" }) +
-      U.tile({ value: late.length, label: "Finish later than baseline", color: late.length ? "red" : "slate", note: late.length ? "Average slip " + fmt.int(sumF(late, function (o) { return o.slip; }) / late.length) + " days · click to filter" : "All on baseline finish" });
+      U.tile({ value: late.length, label: "Finish after revised baseline", color: late.length ? "red" : "slate", note: late.length ? "Execution phase · average " + fmt.int(sumF(late, function (o) { return o.slip; }) / late.length) + " days · click to filter" : "Section 8 · none" });
     clickTiles(g, [function () { defs.forEach(function (d) { f[d.key].length = 0; }); ctx.rerender(); }, null, null, null,
       function () { setF("band", [BANDS[0]]); }, function () { setF("proj", late.map(function (o) { return o.code; })); }]);
     var g2 = grid(v, "g-4"), paid = sumF(rows, function (o) { return o.paid; });
     var yP = sumF(rows, function (o) { return o.ytdP; }), yA = sumF(rows, function (o) { return o.ytdA; }), fy = sumF(rows, function (o) { return o.fy; }), fc = sumF(rows, function (o) { return o.fc; });
-    g2.innerHTML = mTile("Paid to date", paid, "slate", fmt.pct(CV ? paid / CV : null, 1) + " of contract value") +
+    g2.innerHTML = mTile("Approved paid", paid, "slate", fmt.pct(CV ? paid / CV : null, 1) + " of contract value") +
       mTile("2026 YTD actual spend", yA, "yellow", "vs " + fmt.m(yP, 1) + " M " + (RV ? "Rev " : "") + "plan" + (cut ? " to " + esc(fmt.month(cut)) : "") + " · " + fmt.pct(yP ? yA / yP : null, 0)) +
       mTile("2026 year-end forecast", fc, "mid", "Actual + Forecast Plan · vs " + fmt.m(fy, 1) + " M " + (RV ? "Rev Spend Plan" : "Spend Plan") + " (" + fmt.pct(fy ? fc / fy : null, 0) + ")") +
-      U.tile({ value: sumF(rows, function (o) { return o.issues; }), label: "Open issues", color: "slate", note: sumF(rows, function (o) { return o.risks; }) + " open risks on the project cards" });
+      U.tile({ value: sumF(rows, function (o) { return o.issues; }), label: "Open issues", color: "slate", note: sumF(rows, function (o) { return o.risks; }) + " open risks on the cards" });
 
     // SPI by project · planned vs actual
     var gA = grid(v, "g-2"), selP = f.proj;
     var bySpi = rowsX("proj").filter(function (o) { return o.spi != null; }).sort(function (a, b) { return a.spi - b.spi; });
-    var p1 = panelIn(gA, "SPI by project", "Latest week · dashed line = KPI target " + TGT.toFixed(2) + " · click a bar to filter"), b1 = chartBox(p1);
-    b1.style.height = Math.max(260, bySpi.length * 26 + 60) + "px";
+    var p1 = panelIn(gA, "SPI by project", "Section 7 · dashed line = KPI target " + TGT.toFixed(2) + " · click a bar to filter"), b1 = chartBox(p1);
+    b1.style.height = Math.max(260, bySpi.length * 28 + 60) + "px";
     U.chart(b1, U.clickable({ type: "bar", plugins: [vLine(TGT, C.red, "Target " + TGT.toFixed(2)), vLine(1, C.slate, "")],
       data: { labels: bySpi.map(function (o) { return o.code + " · " + o.name; }), datasets: [U.barDs("SPI", bySpi.map(function (o) { return o.spi; }),
         bySpi.map(function (o) { var col = o.spi >= 1 ? C.blue : o.spi >= TGT ? C.yellow : C.red; return selP.length && selP.indexOf(o.code) < 0 ? U.fade(col) : col; }), { maxBarThickness: 16 })] },
       options: { indexAxis: "y", layout: { padding: { right: 30 } }, plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return x.toFixed(2); } },
-        tooltip: { callbacks: { label: function (t) { return "SPI " + t.raw.toFixed(2); } } } },
+        tooltip: { callbacks: { label: function (t) { var o = bySpi[t.dataIndex]; return ["SPI " + o.spi.toFixed(2), "Actual " + fmt.pct(o.act, 1) + " / planned " + fmt.pct(o.plan, 1)]; } } } },
         scales: { x: { beginAtZero: true, suggestedMax: 1.1, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false }, ticks: { callback: U.shortLabel(30) } } } } },
       function (i, e) { pick(ctx, "proj", bySpi[i].code, e); }));
     var byGap = rowsX("proj").filter(function (o) { return o.plan != null; }).sort(function (a, b) { return (a.var || 0) - (b.var || 0); });
-    var p2 = panelIn(gA, "Planned vs actual progress", "Cumulative % · largest shortfall first · click to filter"), b2 = chartBox(p2);
-    b2.style.height = Math.max(260, byGap.length * 26 + 60) + "px";
+    var p2 = panelIn(gA, "Execution progress — planned vs actual", "Section 7 · % to date · largest shortfall first · click to filter"), b2 = chartBox(p2);
+    b2.style.height = Math.max(260, byGap.length * 28 + 60) + "px";
     U.chart(b2, U.clickable({ type: "bar", data: { labels: byGap.map(function (o) { return o.code + " · " + o.name; }), datasets: [
       U.barDs("Planned", byGap.map(function (o) { return o.plan; }), U.hl(S.plan, byGap.map(function (o) { return o.code; }), selP), { maxBarThickness: 10 }),
       U.barDs("Actual", byGap.map(function (o) { return o.act; }), U.hl(S.actual, byGap.map(function (o) { return o.code; }), selP), { maxBarThickness: 10 })] },
@@ -2124,81 +2112,104 @@
 
     // status · SPI trend · finish slip
     var gB = grid(v, "g-3");
-    var rs = rowsX("status"), labs = U.uniq(rs.map(function (o) { return o.status; })).sort(byOrder(STAT));
-    function stCol(s) { return /on time|on track/i.test(s) ? C.blue : /slight/i.test(s) ? C.mid : /risk/i.test(s) ? C.yellow : /delay/i.test(s) ? C.red : C.slate; }
-    U.chart(chartBox(panelIn(gB, "Performance status", "Projects · click to filter"), "short"), U.clickable({ type: "bar",
+    var rs = rowsX("status"), labs = U.uniq(rs.map(function (o) { return o.status; })).sort(byOrder(STATUS_ORDER));
+    U.chart(chartBox(panelIn(gB, "Overall status", "Project card section 2 · click to filter"), "short"), U.clickable({ type: "bar",
       data: { labels: labs, datasets: [U.barDs("Projects", labs.map(function (l) { return rs.filter(function (o) { return o.status === l; }).length; }),
-        labs.map(function (l) { return f.status.length && f.status.indexOf(l) < 0 ? U.fade(stCol(l)) : stCol(l); }), { maxBarThickness: 46 })] },
+        labs.map(function (l) { var col = STATUS_COLOR[l] || C.slate; return f.status.length && f.status.indexOf(l) < 0 ? U.fade(col) : col; }), { maxBarThickness: 46 })] },
       options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } }, layout: { padding: { top: 20 } },
         scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } },
       function (i, e) { pick(ctx, "status", labs[i], e); }));
-    var trend = weeks.map(function (t) { return spiAt(t, prog); });
-    if (SPI != null) trend[trend.length - 1] = SPI;
-    U.chart(chartBox(panelIn(gB, "Portfolio SPI trend", "Last 12 weeks · ΣEV ÷ ΣPV of the filtered projects"), "short"), { type: "line",
-      data: { labels: weeks.map(function (t) { return fmt.date(new Date(t).toISOString().slice(0, 10)).replace(/-\d{4}$/, ""); }), datasets: [
+    var trend = months.map(function (m) { return spiAt(m, prog); }), tv = trend.filter(function (x) { return x != null; });
+    U.chart(chartBox(panelIn(gB, "Portfolio SPI trend", "Section 7 monthly curves · last 12 months · weighted"), "short"), { type: "line",
+      data: { labels: months.map(function (m) { return fmt.month(m); }), datasets: [
         U.lineDs("Portfolio SPI", trend, C.blue, { pointRadius: 3, borderWidth: 2.5 }),
-        U.lineDs("Target " + TGT.toFixed(2), weeks.map(function () { return TGT; }), C.red, { borderDash: [6, 4], borderWidth: 1.5 })] },
+        U.lineDs("Target " + TGT.toFixed(2), months.map(function () { return TGT; }), C.red, { borderDash: [6, 4], borderWidth: 1.5 })] },
       options: { plugins: { tooltip: { callbacks: { label: function (t) { return t.dataset.label + ": " + (t.raw == null ? "—" : t.raw.toFixed(2)); } } } },
-        scales: { x: U.catAxis(), y: { suggestedMin: Math.max(0, Math.min(TGT, Math.min.apply(null, trend.filter(function (x) { return x != null; }).concat([TGT]))) - 0.05), suggestedMax: 1.05, grid: { color: "rgba(200,201,199,.5)" } } } } });
+        scales: { x: U.catAxis(), y: { suggestedMin: Math.max(0, Math.min.apply(null, tv.concat([TGT])) - 0.05), suggestedMax: Math.max(1.05, Math.max.apply(null, tv.concat([1])) + 0.05), grid: { color: "rgba(200,201,199,.5)" } } } } });
     var bySlip = rowsX("proj").filter(function (o) { return o.slip != null; }).sort(function (a, b) { return b.slip - a.slip; });
-    var p3 = panelIn(gB, "Finish slip (days)", "Forecast − baseline finish · click to filter"), b3 = chartBox(p3, "short");
+    var p3 = panelIn(gB, "Execution finish slip (days)", "Section 8 · forecast − revised baseline finish · click to filter"), b3 = chartBox(p3, "short");
     if (bySlip.length > 8) b3.style.height = bySlip.length * 22 + 50 + "px";
     U.chart(b3, U.clickable({ type: "bar", data: { labels: bySlip.map(function (o) { return o.code; }), datasets: [U.barDs("Slip (days)", bySlip.map(function (o) { return o.slip; }),
         bySlip.map(function (o) { var col = o.slip > 90 ? C.red : o.slip > 0 ? C.yellow : C.blue; return selP.length && selP.indexOf(o.code) < 0 ? U.fade(col) : col; }), { maxBarThickness: 14 })] },
       options: { indexAxis: "y", layout: { padding: { right: 34 } }, plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return (x > 0 ? "+" : "") + fmt.int(x); } },
-        tooltip: { callbacks: { title: function (t) { return bySlip[t[0].dataIndex].label; }, label: function (t) { var o = bySlip[t.dataIndex]; return ["Baseline " + fmt.date(o.be) + " → forecast " + fmt.date(o.fe), "Slip " + fmt.int(o.slip) + " days"]; } } } },
+        tooltip: { callbacks: { title: function (t) { return bySlip[t[0].dataIndex].label; }, label: function (t) { var o = bySlip[t.dataIndex]; return ["Revised baseline " + fmt.date(o.re || o.be) + " → forecast " + fmt.date(o.fe), "Slip " + fmt.int(o.slip) + " days"]; } } } },
         scales: { x: { grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
       function (i, e) { pick(ctx, "proj", bySlip[i].code, e); }));
+
+    // Section 8: execution phase schedule (baseline vs revised vs forecast)
+    var sch = rowsX("proj").filter(function (o) { return o.be || o.re || o.fe; }).sort(function (a, b) { return String(a.fe || a.re || a.be).localeCompare(String(b.fe || b.re || b.be)); });
+    if (sch.length) {
+      var p5 = panelIn(v, "Execution phase schedule", "Section 8 · baseline vs revised baseline vs forecast (dashed) · red line = reporting period · click to filter"), b5 = chartBox(p5);
+      b5.style.height = Math.max(260, sch.length * 34 + 70) + "px";
+      function rng(o, a, b) { return o[a] && o[b] ? [dnum(o[a]), dnum(o[b])] : null; }
+      var ds5 = []; sch.forEach(function (o) { ["bs", "be", "rs", "re", "fs", "fe"].forEach(function (k) { if (o[k]) ds5.push(dnum(o[k])); }); }); ds5.push(ddn);
+      var lo5 = Math.min.apply(null, ds5), hi5 = Math.max.apply(null, ds5);
+      var labs5 = sch.map(function (o) { return o.code + " · " + o.name; }), codes5 = sch.map(function (o) { return o.code; });
+      U.chart(b5, U.clickable({ type: "bar", plugins: [vLine(ddn, C.red, fmt.month(dd))],
+        data: { labels: labs5, datasets: [
+          U.barDs("Baseline", sch.map(function (o) { return rng(o, "bs", "be"); }), U.hl(C.gray, codes5, selP), { maxBarThickness: 8, borderSkipped: false }),
+          U.barDs("Revised baseline", sch.map(function (o) { return rng(o, "rs", "re"); }), U.hl(S.plan, codes5, selP), { maxBarThickness: 8, borderSkipped: false }),
+          U.fcBar("Forecast", sch.map(function (o) { return rng(o, "fs", "fe"); }), U.hl(S.actual, codes5, selP), { maxBarThickness: 8, borderSkipped: false })] },
+        options: { indexAxis: "y", plugins: { datalabels: { display: false }, tooltip: { callbacks: { label: function (t) { var r = t.raw; return r ? t.dataset.label + ": " + fmt.date(new Date(r[0]).toISOString().slice(0, 10)) + " → " + fmt.date(new Date(r[1]).toISOString().slice(0, 10)) : ""; } } } },
+          scales: { x: { type: "linear", min: lo5 - 30 * DAY, max: hi5 + 30 * DAY, grid: { color: "rgba(200,201,199,.5)" }, ticks: { maxTicksLimit: 10, callback: function (x) { return fmt.month(new Date(x).toISOString().slice(0, 10)); } } },
+            y: { grid: { display: false }, ticks: { callback: U.shortLabel(34) } } } } },
+        function (i, e) { pick(ctx, "proj", sch[i].code, e); }));
+    }
 
     // 2026 spend by project
     var spendL = rowsX("proj").filter(function (o) { return o.fy || o.ytdA || o.fc; }).sort(function (a, b) { return b.fy - a.fy; });
     if (spendL.length) {
       var p4 = panelIn(v, "2026 spend by project", (RV ? "Rev Spend Plan" : "Spend Plan") + " (full year and to " + esc(fmt.month(cut)) + ") vs actual vs year-end forecast (actual + Forecast Plan, dashed) · click to filter");
-      U.chart(chartBox(p4), U.clickable({ type: "bar", data: { labels: spendL.map(function (o) { return o.code; }), datasets: [
-        U.barDs((RV ? "Rev Spend Plan" : "Spend Plan") + " 2026", spendL.map(function (o) { return o.fy; }), U.hl(RV ? S.rev : S.plan, spendL.map(function (o) { return o.code; }), selP)),
-        U.barDs("YTD plan", spendL.map(function (o) { return o.ytdP; }), U.hl(C.mid, spendL.map(function (o) { return o.code; }), selP)),
-        U.barDs("YTD actual", spendL.map(function (o) { return o.ytdA; }), U.hl(S.actual, spendL.map(function (o) { return o.code; }), selP)),
-        U.fcBar("Year-end forecast", spendL.map(function (o) { return o.fc; }), S.invoice)] },
+      var c4 = spendL.map(function (o) { return o.code; });
+      U.chart(chartBox(p4), U.clickable({ type: "bar", data: { labels: c4, datasets: [
+        U.barDs((RV ? "Rev Spend Plan" : "Spend Plan") + " 2026", spendL.map(function (o) { return o.fy; }), U.hl(RV ? S.rev : S.plan, c4, selP)),
+        U.barDs("YTD plan", spendL.map(function (o) { return o.ytdP; }), U.hl(C.mid, c4, selP)),
+        U.barDs("YTD actual", spendL.map(function (o) { return o.ytdA; }), U.hl(S.actual, c4, selP)),
+        U.fcBar("Year-end forecast", spendL.map(function (o) { return o.fc; }), U.hl(S.invoice, c4, selP))] },
         options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
         function (i, e) { pick(ctx, "proj", spendL[i].code, e); }));
     }
 
     // watch list: below the SPI target
     if (below.length) {
-      var wl = panelIn(v, "Watch list — below the SPI target", below.length + " project" + (below.length > 1 ? "s" : "") + " with SPI < " + TGT.toFixed(2) + " · reason for delay from the weekly report");
+      var wl = panelIn(v, "Watch list — below the SPI target", below.length + " project" + (below.length > 1 ? "s" : "") + " with SPI < " + TGT.toFixed(2) + " · click a card to filter");
       add(wl, '<div class="ex-watch">' + below.slice().sort(function (a, b) { return a.spi - b.spi; }).map(function (o) {
         return '<div class="ex-w" data-code="' + esc(o.code) + '"><div class="ex-w-h"><b>' + esc(o.code) + "</b> " + esc(o.name) + (o.crit === "Critical" ? ' <span class="ex-crit">Critical</span>' : "") + "</div>" +
-          '<div class="ex-w-k"><span class="ex-spi neg">SPI ' + o.spi.toFixed(2) + "</span>" + (o.dSpi != null ? "<span>" + (o.dSpi >= 0 ? "▲ +" : "▼ ") + o.dSpi.toFixed(2) + " in 4 wks</span>" : "") +
-          "<span>Actual " + fmt.pct(o.act, 1) + " / plan " + fmt.pct(o.plan, 1) + "</span>" + (o.slip != null ? "<span>" + (o.slip > 0 ? "+" : "") + fmt.int(o.slip) + " days</span>" : "") + "</div>" +
+          '<div class="ex-w-k"><span class="ex-spi neg">SPI ' + o.spi.toFixed(2) + "</span>" + (o.dSpi != null ? "<span>" + (o.dSpi >= 0 ? "▲ +" : "▼ ") + o.dSpi.toFixed(2) + " in 3 months</span>" : "") +
+          "<span>Actual " + fmt.pct(o.act, 1) + " / plan " + fmt.pct(o.plan, 1) + "</span>" + (o.slip != null ? "<span>" + (o.slip > 0 ? "+" : "") + fmt.int(o.slip) + " days</span>" : (o.feOld ? '<span class="neg">forecast date outdated</span>' : "")) + "</div>" +
           "<p>" + (o.reason ? esc(String(o.reason).replace(/\s+/g, " ").slice(0, 260)) + (String(o.reason).length > 260 ? "…" : "") : '<span class="muted">No reason for delay reported.</span>') + "</p></div>";
       }).join("") + "</div>");
       wl.querySelectorAll(".ex-w").forEach(function (n) { n.addEventListener("click", function (e) { pick(ctx, "proj", n.getAttribute("data-code"), e); }); });
     }
 
     // register
-    var tp = panelIn(v, "Execution register", rows.length + " projects · click a row to open the project card (or the weekly report card)");
+    var tp = panelIn(v, "Execution register", rows.length + " projects · progress from card sections 7 & 8 · click a row to open the project card");
     tableIn(tp, { rows: rows.slice().sort(function (a, b) { return (a.spi == null) - (b.spi == null) || (a.spi || 0) - (b.spi || 0); }), exportName: "Projects_in_Execution", maxHeight: 720, totals: true,
       rowClass: function (o) { return o.crit === "Critical" ? "ex-critrow" : ""; },
-      onRow: function (o) { if (o.card) window.SARApp.go("project-cards", { code: o.code }); else if (o.src) window.SARApp.go("project", { src: o.src }); },
-      rowTitle: "Open the project card",
+      onRow: function (o) { window.SARApp.go("project-cards", { code: o.code }); }, rowTitle: "Open the project card",
       columns: [
         { key: "code", label: "Code", nowrap: true },
         { key: "name", label: "Project", wrap: true, render: function (x, o) { return esc(x) + (o.crit === "Critical" ? ' <span class="ex-crit">Critical</span>' : ""); } },
-        { key: "stage", label: "Stage" }, { key: "pm", label: "Project Manager", wrap: true }, { key: "contractor", label: "Contractor", wrap: true },
+        { key: "pm", label: "Project Manager", wrap: true }, { key: "contractor", label: "Contractor", wrap: true },
         { key: "cv", label: "Contract (M)", type: "m", total: "sum" },
-        { key: "plan", label: "Planned %", type: "meter", meterCls: "plan", total: function () { return fmt.pct(CVp ? PV / CVp : null, 1); } },
-        { key: "act", label: "Actual %", type: "meter", total: function () { return fmt.pct(CVp ? EV / CVp : null, 1); } },
+        { key: "plan", label: "Exec. planned %", type: "meter", meterCls: "plan", total: function () { return fmt.pct(W ? PV / W : null, 1); } },
+        { key: "act", label: "Exec. actual %", type: "meter", total: function () { return fmt.pct(W ? EV / W : null, 1); } },
         { key: "var", label: "Variance", type: "pct", signed: true },
         { key: "spi", label: "SPI", type: "dec", render: function (x) { return x == null ? "—" : '<b class="' + (x >= 1 ? "" : x >= TGT ? "warn-t" : "neg") + '">' + x.toFixed(2) + "</b>"; }, total: function () { return spiTxt(SPI); } },
-        { key: "dSpi", label: "Δ SPI 4 wks", type: "dec", render: function (x) { return x == null ? "—" : '<span class="' + (x < -0.005 ? "neg" : "") + '">' + (x >= 0 ? "+" : "") + x.toFixed(2) + "</span>"; } },
-        { key: "spark", label: "SPI trend (12 wks)", render: function (x) { return sparkSvg(x, TGT); }, get: function (o) { return o.spark; } },
-        { key: "status", label: "Performance", type: "badge" }, { key: "risk", label: "Risk", type: "badge" },
-        { key: "bs", label: "BL Start", type: "date" }, { key: "be", label: "BL Finish", type: "date" }, { key: "fe", label: "Forecast Finish", type: "date", render: function (x, o) { return esc(fmt.date(x)) + (o.feOld ? '<br><small class="neg" title="Forecast finish is before the data date on an unfinished project">outdated</small>' : ""); } },
-        { key: "slip", label: "Slip (days)", type: "int", signed: true, render: function (x) { return x == null ? "—" : '<span class="' + (x > 0 ? "neg" : "") + '">' + (x > 0 ? "+" : "") + fmt.int(x) + "</span>"; } },
-        { key: "paidPct", label: "Paid %", type: "pct" }, { key: "wcPct", label: "WC %", type: "pct" },
+        { key: "dSpi", label: "Δ SPI 3 mo", type: "dec", render: function (x) { return x == null ? "—" : '<span class="' + (x < -0.005 ? "neg" : "") + '">' + (x >= 0 ? "+" : "") + x.toFixed(2) + "</span>"; } },
+        { key: "spark", label: "SPI trend (12 mo)", render: function (x) { return sparkSvg(x, TGT); } },
+        { key: "pPlan", label: "Project planned %", type: "pct" }, { key: "pAct", label: "Project actual %", type: "pct" },
+        { key: "status", label: "Overall status", type: "badge" }, { key: "risk", label: "Risk", type: "badge" },
+        { key: "exStart", label: "Exec. start", type: "date" }, { key: "period", label: "Period (months)", type: "int" },
+        { key: "be", label: "BL finish", type: "date" }, { key: "re", label: "Revised finish", type: "date" },
+        { key: "fe", label: "Forecast finish", type: "date", render: function (x, o) { return esc(fmt.date(x)) + (o.feOld ? '<br><small class="neg" title="Forecast finish is before the reporting period on an unfinished execution phase">outdated</small>' : ""); } },
+        { key: "slip", label: "Slip vs revised (days)", type: "int", render: function (x) { return x == null ? "—" : '<span class="' + (x > 0 ? "neg" : "") + '">' + (x > 0 ? "+" : "") + fmt.int(x) + "</span>"; } },
+        { key: "slipBL", label: "Slip vs BL (days)", type: "int", render: function (x) { return x == null ? "—" : '<span class="' + (x > 0 ? "neg" : "") + '">' + (x > 0 ? "+" : "") + fmt.int(x) + "</span>"; } },
+        { key: "pFe", label: "Project forecast finish", type: "date" },
+        { key: "paidPct", label: "Paid %", type: "pct" },
         { key: "fy", label: (RV ? "Rev Plan" : "Plan") + " 2026 (M)", type: "m", total: "sum" }, { key: "ytdA", label: "YTD actual (M)", type: "m", total: "sum" },
         { key: "fc", label: "YE forecast (M)", type: "m", total: "sum" },
-        { key: "issues", label: "Open issues", type: "int", total: "sum" }, { key: "mp", label: "Manpower (wk)", type: "int", total: "sum" },
+        { key: "issues", label: "Open issues", type: "int", total: "sum" }, { key: "risks", label: "Open risks", type: "int", total: "sum" },
         { key: "reason", label: "Reason for delay", wrap: true, render: function (x) { x = String(x || "").replace(/\s+/g, " "); return x ? '<span title="' + esc(x) + '">' + esc(x.length > 120 ? x.slice(0, 119) + "…" : x) + "</span>" : ""; } }] });
   };
 
