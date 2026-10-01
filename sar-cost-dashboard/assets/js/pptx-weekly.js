@@ -658,6 +658,24 @@
   /* CAPEX status */
   var CAPEX_ROWS = 4;                     // project rows per "CAPEX 2026 - Status" slide (tiles and charts repeat on every slide)
   function capexList(M) { return M.spend.filter(function (p) { return M.codeKpi[p.ID] === 7 && (p.fy || p.ytdAct || p.fcFY); }).sort(function (a, b) { return b.fy - a.fy; }); }
+  /* Monthly Spend chart: value labels on the Cum plan line (cut-off month and December) above it, and the
+     Cum Forecast labels below theirs, so each label reads against its own line */
+  function cumLabels(doc, ci, last) {
+    var C_ = NS.c;
+    function serOf(re) { return E.all(doc, C_, "ser").filter(function (s) { var v = E.all(s, C_, "v")[0]; return v && re.test(v.textContent); })[0]; }
+    var fc = serOf(/^Cum Forecast/), pl = serOf(/^Cum (Rev Spend Plan|Planned)/);
+    if (fc) E.all(fc, C_, "dLblPos").forEach(function (p) { if (p.parentNode.localName === "dLbls") p.setAttribute("val", "b"); });
+    if (!pl) return;
+    var old = E.all(pl, C_, "dLbls")[0];
+    var tx = '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="700" b="1"><a:solidFill><a:srgbClr val="21295C"/></a:solidFill></a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>';
+    function one(i) { return '<c:dLbl><c:idx val="' + i + '"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>' + tx + '<c:dLblPos val="t"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbl>'; }
+    var idx = [ci, last].filter(function (i, k, a) { return i >= 0 && a.indexOf(i) === k; });
+    var xml = '<c:dLbls xmlns:c="' + C_ + '" xmlns:a="' + NS.a + '">' + idx.map(one).join("") +
+      '<c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>';
+    var node = doc.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true);
+    if (old) pl.replaceChild(node, old);
+    else { var after = E.all(pl, C_, "marker")[0] || E.all(pl, C_, "spPr")[0]; pl.insertBefore(node, after ? after.nextSibling : null); }
+  }
   function fillCapex(pkg, path, M, page, pi, pn) {
     var d = pkg.xml(path), cap = capexList(M);
     page = page || cap; pi = pi || 0; pn = pn || 1;
@@ -714,6 +732,7 @@
           { name: PL, values: ov.plan.map(function (v) { return Math.round(v / 1e5) / 10; }) },
           { name: "Actual Budget", values: ov.act.map(function (v, i) { return i <= ci ? Math.round(v / 1e5) / 10 : null; }) },
           { name: "Cum " + PL, values: cumP }, { name: "Cum Actual Budget", values: cumA }, { name: "Cum Forecast Budget", values: cumF }] });
+        cumLabels(pkg.xml(cp), ci, M.months.length - 1);
       } else if (/Planned Budget/.test(x)) {
         pkg.setChart(cp, { cats: cap.map(function (p) { return p.ID; }), series: [
           { name: PL, values: cap.map(function (p) { return Math.round(p.ytdPlan / 1e6); }) }, { name: "Actual Budget", values: cap.map(function (p) { return Math.round(p.ytdAct / 1e6); }) }] });
