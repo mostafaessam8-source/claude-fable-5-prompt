@@ -1062,29 +1062,56 @@
     var gridL = months.map(function (m, i) { return '<span class="g-grid" style="left:' + left(i) + '"></span>'; }).join("") +
       (ci >= 0 ? '<span class="g-today" style="left:' + left(ci + 1) + '" title="Actuals cut-off ' + esc(fmt.month(cut)) + '"></span>' : "");
     var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual (invoiced)</span><span><i class="fc-sw"></i>Forecast Plan (contractor)</span>' +
-      '<span><i style="background:#fff;outline:2px dashed ' + C.red + ';outline-offset:-2px"></i>✕ Past activity not invoiced</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone (on the project row)</span>' +
+      '<span class="iv-leg-miss"><i style="background:' + C.red + '"></i>✕ Past activity not invoiced</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone (on the project row)</span>' +
       '<span><i style="background:' + C.yellow + ';width:3px"></i>Actuals cut-off ' + esc(fmt.month(cut)) + "</span></div>";
     h += '<div class="gantt iv"><div class="gantt-inner"><div class="iv-row g-head"><div>Project / invoice activity</div><div>Month</div><div class="num">M SAR</div><div class="g-track"><div class="g-months">' +
       months.map(function (m, i) { return '<span class="' + (m === cut ? "cut" : "") + '" style="left:' + left(i) + ";width:" + (100 / n).toFixed(4) + '%">' + esc(fmt.month(m)) + "</span>"; }).join("") + "</div></div></div>";
     var all = [];
     items.forEach(function (it, pi) {
       var o = it.o, inv = it.acts;
+      var nMiss = inv.filter(function (a) { return a.miss; }).length;
       var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
       h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
         '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M" + (hasRev() ? " · Rev plan " + fmt.m(o.rev, 1) + " M" : "") + " · Forecast Plan " + fmt.m(o.landing, 1) + " M · YTD " + (hasRev() ? "Rev " : "") + "Plan " + fmt.m(o.baseYtd, 1) +
-          " M · YTD Actual " + '<b class="' + (o.act < o.baseYtd ? "neg" : "pos") + '">' + fmt.m(o.act, 1) + " M</b>" + (o.baseYtd ? " (" + fmt.pct(o.act / o.baseYtd, 1) + ")" : "") + '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+          " M · YTD Actual " + '<b class="' + (o.act < o.baseYtd ? "neg" : "pos") + '">' + fmt.m(o.act, 1) + " M</b>" + (o.baseYtd ? " (" + fmt.pct(o.act / o.baseYtd, 1) + ")" : "") +
+          (nMiss ? ' · <b class="iv-miss-n">✕ ' + nMiss + " past activit" + (nMiss > 1 ? "ies" : "y") + " not invoiced</b>" : "") + '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
       it.acts.forEach(function (a) {
         var i = months.indexOf(a.m), idx = all.push(a) - 1;
         var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");
-        var bar = '<span class="iv-bar ' + (a.miss ? "miss" : a.c.past ? "act" : "fc") + '" style="left:calc(' + left(i) + ' + 3px);width:calc(' + (100 / n).toFixed(4) + '% - 6px)">' + (a.miss ? "✕" : fmt.m(a.val, 1)) + "</span>";
-        h += '<div class="iv-row iv-a" data-a="' + idx + '" title="' + esc(tip) + '"><div class="iv-lab">' + esc(a.label) + "</div><div>" + esc(fmt.month(a.m)) +
-          '</div><div class="num">' + (a.miss ? '<span class="neg">0.0</span>' : fmt.m(a.val, 1)) + '</div><div class="g-track">' + gridL + bar + "</div></div>";
+        var due = a.c.fc || a.c.plan || 0;     // what was expected to be invoiced that month
+        var bar = '<span class="iv-bar ' + (a.miss ? "miss" : a.c.past ? "act" : "fc") + '" style="left:calc(' + left(i) + ' + 3px);width:calc(' + (100 / n).toFixed(4) + '% - 6px)">' +
+          (a.miss ? "✕ " + (due ? fmt.m(due, 1) : "") : fmt.m(a.val, 1)) + "</span>";
+        if (a.miss) tip = "NOT INVOICED — " + tip;
+        h += '<div class="iv-row iv-a' + (a.miss ? " miss" : "") + '" data-a="' + idx + '" title="' + esc(tip) + '"><div class="iv-lab">' + (a.miss ? '<span class="iv-tag">Not invoiced</span>' : "") + esc(a.label) + "</div><div>" + esc(fmt.month(a.m)) +
+          '</div><div class="num">' + (a.miss ? '<span class="neg">0.0</span>' + (due ? '<small class="iv-due">of ' + fmt.m(due, 1) + "</small>" : "") : fmt.m(a.val, 1)) + '</div><div class="g-track">' + gridL + bar + "</div></div>";
       });
     });
     h += '</div></div><div class="pc-note">Each bar is one invoice-related activity from the Spending Plan (Invoice Related Activities column), placed in its month. Values in M SAR: actual spend up to ' +
       esc(fmt.month(cut)) + ", contractor Forecast Plan after it. Milestones come from the Spending Plan Milestones column.</div>";
+    h = h.replace('<div class="g-legend">', '<div class="sm-tools"><span class="sm-hint">Reading ruler: hover a row to follow it across the months · ↑ ↓ move between activities, Esc clears</span></div><div class="g-legend">');
     var node = add(host, "<div>" + h + "</div>");
     node.querySelectorAll(".iv-p").forEach(function (p) { p.addEventListener("click", function (e) { onProj(items[+p.getAttribute("data-p")].o, e); }); });
+    // reading ruler (always on): row band on hover (CSS), month column band, keyboard line-by-line
+    var gin = node.querySelector(".gantt-inner"), head = node.querySelector(".iv-row.g-head .g-track"), band = document.createElement("div"), rowsA = [].slice.call(node.querySelectorAll(".iv-row.iv-a, .iv-row.iv-p")), cur = null;
+    band.className = "iv-colband"; gin.appendChild(band); node.querySelector(".gantt").classList.add("ruler");
+    gin.addEventListener("mousemove", function (e) {
+      var r = head.getBoundingClientRect(), gi = gin.getBoundingClientRect(), x = e.clientX - r.left;
+      if (x < 0 || x > r.width) { band.style.display = "none"; return; }
+      var k = Math.floor(x / (r.width / n));
+      band.style.display = "block"; band.style.left = (r.left - gi.left + k * r.width / n) + "px"; band.style.width = (r.width / n) + "px";
+    });
+    gin.addEventListener("mouseleave", function () { band.style.display = "none"; });
+    function mark(tr) { if (cur) cur.classList.remove("rl-pin"); cur = tr; if (cur) { cur.classList.add("rl-pin"); cur.scrollIntoView({ block: "nearest" }); } }
+    rowsA.forEach(function (r) { r.addEventListener("mouseenter", function () { if (cur && cur !== r) mark(null); }); });
+    function onKey(e) {
+      if (!document.body.contains(gin)) { document.removeEventListener("keydown", onKey); return; }
+      var hov = gin.querySelector(".iv-row.iv-a:hover, .iv-row.iv-p:hover"), at = rowsA.indexOf(cur || hov);
+      if (at < 0) return;
+      if (e.key === "ArrowDown" && at < rowsA.length - 1) { e.preventDefault(); mark(rowsA[at + 1]); }
+      else if (e.key === "ArrowUp" && at > 0) { e.preventDefault(); mark(rowsA[at - 1]); }
+      else if (e.key === "Escape") mark(null);
+    }
+    document.addEventListener("keydown", onKey);
     node.querySelectorAll(".iv-a").forEach(function (r) { r.addEventListener("click", function () {
       var a = all[+r.getAttribute("data-a")], x = a.c, o = a.o;
       U.modal(o.name + " — " + fmt.month(a.m), '<div class="kv">' + [["Project", esc(o.ID + " — " + o.name)], ["Month", esc(fmt.month(a.m))], ["Invoice-related activity", esc(x.text || "—")],
