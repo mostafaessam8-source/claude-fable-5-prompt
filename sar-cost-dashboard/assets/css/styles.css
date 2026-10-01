@@ -737,3 +737,4 @@ body.printing .sm-tools { display: none; }
 body.printing .iv-colband { display: none !important; }
 .src-card .src-dl { margin-top: 10px; font-size: 12px; padding: 5px 10px; }
 .src-card .src-dl svg { width: 15px; height: 15px; }
+.src-card .src-dl-note { margin-top: 6px; font-size: 11.5px; color: #B07A00; }

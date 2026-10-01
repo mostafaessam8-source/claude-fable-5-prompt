@@ -223,15 +223,16 @@
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +
         '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul>" +
-        (src && src.imported && src.hasFile ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' : "") + "</div>"));
+        (src && src.imported ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' +
+          (src.hasFile ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
     });
     view.appendChild(grid);
     grid.querySelectorAll(".src-dl").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-src");
         SARStore.get("file:" + k).then(function (f) {
-          if (!f || !f.buffer) { U.toast("The original file is not stored in this browser — import it again to keep a copy.", true); return; }
+          if (!f || !f.buffer) { U.toast("This file was imported before downloads were available — import it once more, then download it.", true); return; }
           var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([f.buffer], { type: f.type || XLSX_MIME })); a.download = f.name;
           document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
         });

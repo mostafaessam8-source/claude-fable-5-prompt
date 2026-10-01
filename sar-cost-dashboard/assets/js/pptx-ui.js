@@ -27,6 +27,7 @@
         '<div class="note-box" style="margin-bottom:12px"><b>Template:</b> ' + (tpl ? esc(tpl.name) + (tpl.local ? " (local copy)" : " · saved in this browser") : "<span class='neg'>not loaded yet</span>") + "</div>" +
         '<label class="dropzone small" tabindex="0"><input type="file" accept=".pptx" hidden><h3>' + (tpl ? "Replace the template" : "Load the PD weekly template (.pptx)") +
         "</h3><p>NSR - Program - Balance Scorecard - Blank Template.pptx · loaded once, kept in this browser only</p></label>" +
+        (tpl ? '<button class="icon-btn ghost" id="pptTplDl" type="button" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download the template</span></button><br>' : "") +
         '<button class="icon-btn" id="pptGo" type="button"' + (tpl ? "" : " disabled") + ' style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Create NSR weekly PowerPoint</span></button>' +
         '<div id="pptMsg" class="muted" style="margin-top:10px">' + (msg || "") + "</div></div>" +
         '<div class="pub-help"><h4>What you get</h4><ol>' +
@@ -46,6 +47,8 @@
       ["dragenter", "dragover"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("over"); }); });
       ["dragleave", "drop"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("over"); }); });
       dz.addEventListener("drop", function (e) { take(e.dataTransfer.files[0]); });
+      var tdl = body.querySelector("#pptTplDl");
+      if (tdl) tdl.addEventListener("click", function () { download(tpl.name || "NSR - Program - Balance Scorecard - Template.pptx", new Blob([tpl.buffer], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" })); });
       var go = body.querySelector("#pptGo"), m = body.querySelector("#pptMsg");
       if (go) go.addEventListener("click", function () {
         go.disabled = true; m.textContent = "Building the PowerPoint…";
