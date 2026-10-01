@@ -640,7 +640,14 @@
   /* compact, professional type across the deck (the CAPEX 2026 - Status sizing): the template's 13-28 pt body text
      and 11 pt chart text crowd the boxes once real data is in */
   function compactChart(pkg, cp) {   // axes / legend 8 pt, data labels 7 pt bold, chart title 9 pt
-    E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) {
+    var cx = pkg.xml(cp);
+    // horizontal bars: room for the category names left of the plot (a narrow manual layout wraps "Delayed", "On Track")
+    if (E.all(cx, NS.c, "barDir").some(function (b) { return b.getAttribute("val") === "bar"; })) {
+      var pa = E.all(cx, NS.c, "plotArea")[0], ml = pa && E.all(pa, NS.c, "manualLayout")[0];
+      var lx = ml && E.all(ml, NS.c, "x")[0], lw = ml && E.all(ml, NS.c, "w")[0];
+      if (lx && lw && +lx.getAttribute("val") < 0.27) { lx.setAttribute("val", "0.27"); lw.setAttribute("val", String(Math.min(+lw.getAttribute("val"), 0.7))); }
+    }
+    E.all(cx, NS.a, "defRPr").forEach(function (r) {
       var n = r.parentNode; while (n && !/^(dLbls|dLbl|legend|catAx|valAx|dateAx|title|chartSpace)$/.test(n.localName)) n = n.parentNode;
       var k = n ? n.localName : "";
       r.setAttribute("sz", /dLbl/.test(k) ? "700" : k === "title" ? "900" : "800"); r.setAttribute("b", /dLbl/.test(k) ? "1" : "0");
