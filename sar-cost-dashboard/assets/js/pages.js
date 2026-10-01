@@ -793,9 +793,9 @@
       formatter: function (v, c) { var s = steps[c.dataIndex], x = s.total ? s.value : s.value; return (s.total || x < 0 ? "" : "+") + fmt.m(x) + " M"; } } }), colors.map(function (c) { return c === S.invoice; }))];
     if (target != null) ds.push(U.lineDs("Target (" + Math.round(TARGET * 100) + "% of plan)", steps.map(function () { return target; }), C.black, { borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, datalabels: { display: false } }));
     return U.chart(box, { type: "bar", data: { labels: steps.map(function (s) { return s.label; }), datasets: ds },
-      options: { layout: { padding: { top: 24 } }, plugins: { legend: { display: target != null, labels: { filter: function (i) { return i.datasetIndex > 0; } } },
+      options: { layout: { padding: { top: 24 } }, plugins: { legend: { display: target != null, position: "bottom", labels: { filter: function (i) { return i.datasetIndex > 0; } } },
         tooltip: { callbacks: { label: function (c) { if (c.datasetIndex) return " Target: " + fmt.money(c.parsed.y) + " SAR"; var s = steps[c.dataIndex]; return " " + s.label + ": " + fmt.money(s.value) + " SAR"; } } } },
-        scales: { x: U.catAxis(), y: Object.assign(U.moneyAxis(), { beginAtZero: true }) } } });
+        scales: { x: U.catAxis(), y: Object.assign(U.moneyAxis(), { beginAtZero: true, grace: "12%" }) } } });   // headroom: bar labels clear the top
   }
 
   /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
