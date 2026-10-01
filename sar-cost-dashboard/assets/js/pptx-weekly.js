@@ -604,15 +604,21 @@
       var ok = w["End Date (Forecast/Actual)"] && r["Target Completion Date"] && qtr(w["End Date (Forecast/Actual)"]) <= qtr(r["Target Completion Date"]);
       if (fq) E.setParas(fq, "Forecast Completion  " + (qtr(w["End Date (Forecast/Actual)"]) || MISSING) + (ok ? "  ✓" : "  ✗"));
       var act = t(/Actual$/), plan = t(/^Planned/), spiT = t(/^SPI/), eot = t(/^EOT/);
-      if (act) E.setParas(act, pct(w["Actual (%) - Cumulative"]) + "  Actual"); if (plan) E.setParas(plan, "Planned " + pct(w["Planned (%) - Cumulative"]));
-      var sv = wSpi(w); if (spiT) E.setParas(spiT, "SPI  " + (sv == null ? "-" : sv.toFixed(2)));
+      var sv = wSpi(w), dc = spiCol(sv);    // bar, actual % and SPI pill follow the SPI target rule (the template colours are fixed per card)
+      if (act) E.setParas(act, { text: pct(w["Actual (%) - Cumulative"]) + "  Actual", color: dc }); if (plan) E.setParas(plan, "Planned " + pct(w["Planned (%) - Cumulative"]));
+      if (spiT) E.setParas(spiT, "SPI  " + (sv == null ? "-" : sv.toFixed(2)));
       if (spiT) { var sq = E.pos(spiT), cxm = sq.x + sq.w / 2, cym = sq.y + sq.h / 2;   // the pill behind the SPI text
         shapes.filter(function (s) { var p = E.pos(s); return s !== spiT && s.localName === "sp" && p && p.w < 2500000 && cxm > p.x && cxm < p.x + p.w && cym > p.y && cym < p.y + p.h && s.getElementsByTagNameNS(NS.a, "solidFill").length; })
           .forEach(function (s) { E.setFill(s, spiCol(sv)); }); }
       if (eot) E.setParas(eot, [[{ text: "EOT: " }, { text: MISSING, color: RED }]]);
       // progress bar: the shorter of the two bar shapes is the "actual" fill
-      var bars = shapes.filter(function (s) { var p = E.pos(s); return s.localName === "sp" && !E.text(s).trim() && p && p.h < 150000 && p.w > 1000000; }).sort(function (a, b) { return E.pos(b).w - E.pos(a).w; });
-      if (bars.length >= 2) { var full = E.pos(bars[0]).w, a = Math.max(0.02, Math.min(1, N(w["Actual (%) - Cumulative"]) || 0)); var e = bars[1].getElementsByTagNameNS(NS.a, "ext")[0]; e.setAttribute("cx", String(Math.round(full * a))); }
+      var bars = shapes.filter(function (s) { var p = E.pos(s); return s.localName === "sp" && !E.text(s).trim() && p && p.h > 0 && p.h < 300000 && p.w > 1000000; }).sort(function (a, b) { return E.pos(b).w - E.pos(a).w; });
+      if (bars.length >= 2) {
+        var full = E.pos(bars[0]).w, a = Math.max(0.02, Math.min(1, N(w["Actual (%) - Cumulative"]) || 0));
+        var xf = bars[1].getElementsByTagNameNS(NS.a, "xfrm")[0], e = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0];
+        if (e) e.setAttribute("cx", String(Math.round(full * a)));
+        E.setFill(bars[1], dc);
+      }
       note.push((r["Project Code"]) + " forecast completion " + (mon(w["End Date (Forecast/Actual)"]) || MISSING));
     });
     var nb = E.shapesByName(d, /^TextBox 3$/)[0]; if (nb) E.setParas(nb, note.join(" · ") + ".");
