@@ -600,7 +600,7 @@
   }
 
   /* delivery KPI cards */
-  function fillDelivery(pkg, path, M, list) {
+  function fillDelivery(pkg, path, M, list, first) {   // first: number of the first card (cards run on across slides)
     var d = pkg.xml(path), all = E.all(d, NS.p, "cNvPr").map(function (n) { return n.parentNode.parentNode; }).filter(function (s) { return s.parentNode && s.parentNode.localName === "spTree"; });
     var tops = E.shapesByName(d, /^Shape 3$|^Shape 49$/).map(function (s) { return E.pos(s).y; }).sort(function (a, b) { return a - b; });
     if (tops.length < 2) tops = [1100000, 3900000];
@@ -614,7 +614,7 @@
       function t(re) { return texts.filter(function (s) { return re.test(E.text(s).trim()); })[0]; }
       var byOrder = texts.slice().sort(function (a, b) { var pa = E.pos(a), pb = E.pos(b); return pa.y - pb.y || pa.x - pb.x; });
       var num = byOrder.filter(function (s) { return /^\d{1,2}$/.test(E.text(s).trim()); })[0];
-      if (num) E.setParas(num, String(k + 1));
+      if (num) E.setParas(num, String((first || 1) + k));
       var code = byOrder.filter(function (s) { return E.text(s).trim().length <= 6 && /^[A-Z0-9]+$/.test(E.text(s).trim()) && s !== num; })[0];
       if (code) E.setParas(code, String(r["Project Code"]));
       var nameT = byOrder.filter(function (s) { var p = E.pos(s); return p.x < 2500000 && p.h > 300000 && !/CONTRACT|PROJECT CODE|^\d/.test(E.text(s)); })[0];
@@ -983,7 +983,7 @@
       var perSpi = 11;
       clones("spi", chunk(spiList, perSpi), function (p, g, i) { fillSpi(pkg, p, M, g, i === 0); });
       // delivery KPI: 2 per slide
-      clones("delivery", chunk(M.D.t("Delivery_KPI").filter(function (r) { return r["Project Code"] != null; }), 2), function (p, g) { fillDelivery(pkg, p, M, g); });
+      clones("delivery", chunk(M.D.t("Delivery_KPI").filter(function (r) { return r["Project Code"] != null; }), 2), function (p, g, i) { fillDelivery(pkg, p, M, g, i * 2 + 1); });
       // one slide per project in execution / in closing
       clones("exec", M.exec, function (p, x) { fillExec(pkg, p, M, x, photo); });
       clones("closing", openCl.length ? openCl : [null], function (p, r) { if (r) fillClosing(pkg, p, M, r); });
