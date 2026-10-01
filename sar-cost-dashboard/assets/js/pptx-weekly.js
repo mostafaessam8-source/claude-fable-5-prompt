@@ -168,6 +168,15 @@
     });
   }
 
+  /* program name: any template text still naming EAST (slides, layouts, masters) reads NSR */
+  function renameProgram(pkg, path) {
+    var d = pkg.xml(path);
+    E.all(d, NS.a, "t").forEach(function (t) {
+      var s = t.textContent, o = s.replace(/OVERALL EAST PROGRAM/g, "OVERALL NSR PROGRAM").replace(/Overall East Program/gi, "Overall NSR Program")
+        .replace(/\bEAST Program/g, "NSR Program").replace(/\bEast Program/g, "NSR Program").replace(/\bEWR Target/g, "NSR Target").replace(/^\s*EAST\s*$/, "NSR");
+      if (o !== s) t.textContent = o;
+    });
+  }
   function photoPlaceholder() {   // PNG "Add progress photo" tile, drawn on a canvas
     var c = document.createElement("canvas"); c.width = 640; c.height = 420;
     var g = c.getContext("2d"); g.fillStyle = "#F2F8F9"; g.fillRect(0, 0, 640, 420);
@@ -392,15 +401,17 @@
       if (k.localName === "spPr" || k.localName === "marker") E.all(k, NS.a, "srgbClr").forEach(function (c) { c.setAttribute("val", hex); });
     });
   }
-  function ptMarkers(pkg, cp, idx, vals) {   // one marker per point, coloured by that point's own value (template overrides removed)
+  function ptMarkers(pkg, cp, idx, vals) {   // each point (marker + the line segment into it) coloured by its own value; template overrides removed
     var doc = pkg.xml(cp), ser = E.all(doc, NS.c, "ser")[idx]; if (!ser) return;
     E.all(ser, NS.c, "dPt").forEach(function (p) { if (p.parentNode === ser) ser.removeChild(p); });
     var before = Array.prototype.filter.call(ser.childNodes, function (k) { return /^(dLbls|trendline|errBars|cat|val|smooth|extLst)$/.test(k.localName); })[0] || null;
     var mk = E.all(ser, NS.c, "marker")[0], sym = mk && E.all(mk, NS.c, "symbol")[0], size = mk && E.all(mk, NS.c, "size")[0];
+    var sl = Array.prototype.filter.call(ser.childNodes, function (k) { return k.localName === "spPr"; })[0], sln = sl && E.all(sl, NS.a, "ln")[0], lw = (sln && sln.getAttribute("w")) || "25400";
     vals.forEach(function (v, i) {
       if (v == null) return;
       var hex = spiCol(v), xml = '<c:dPt xmlns:c="' + NS.c + '" xmlns:a="' + NS.a + '"><c:idx val="' + i + '"/><c:marker><c:symbol val="' + (sym ? sym.getAttribute("val") : "circle") + '"/><c:size val="' + (size ? size.getAttribute("val") : "6") + '"/>' +
-        '<c:spPr><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill></a:ln></c:spPr></c:marker><c:bubble3D val="0"/></c:dPt>';
+        '<c:spPr><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill></a:ln></c:spPr></c:marker><c:bubble3D val="0"/>' +
+        '<c:spPr><a:ln w="' + lw + '" cap="rnd"><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill><a:round/></a:ln></c:spPr></c:dPt>';   // the segment leading to this point
       ser.insertBefore(doc.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true), before);
     });
   }
@@ -982,6 +993,9 @@
         if (S.values) { fillValues(pkg, S.values[0], M); embedValuesDb(pkg, S.values[0], M); }
         if (S.org) fillOrg(pkg, S.org[0]);
         order.forEach(function (f) { f(); });
+        var parts = []; pkg.zip.forEach(function (p) { if (/^ppt\/(slides\/slide|slideLayouts\/slideLayout|slideMasters\/slideMaster)\d+\.xml$/.test(p)) parts.push(p); });
+        pkg.slides().forEach(function (p) { if (parts.indexOf(p) < 0) parts.push(p); });
+        parts.forEach(function (p) { renameProgram(pkg, p); });
         ["cover", "overall", "values", "org"].forEach(function (k) { if (S[k]) kinds.push([S[k][0], k]); });
         kinds.forEach(function (k) { compactSlide(pkg, k[0], k[1]); });
         pkg.gc();
