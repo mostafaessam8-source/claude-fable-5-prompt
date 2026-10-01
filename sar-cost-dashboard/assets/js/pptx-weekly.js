@@ -16,7 +16,7 @@
   function mio(v, d) { v = N(v); return v == null ? "" : (v / 1e6).toFixed(d == null ? 1 : d) + " M"; }
   function sarM(v) { v = N(v); return v == null ? "" : "SAR " + (v / 1e6).toFixed(1) + "M"; }
   function sarB(v) { v = N(v); return v == null ? "" : (Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(2) + " B" : (v / 1e6).toFixed(1) + " M"); }
-  function bigB(v) { v = N(v); return v == null ? "" : (Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(1) + " B" : Math.round(v / 1e6) + " M"); }   // headline tiles fit ~9 characters
+  function bigB(v) { v = N(v); return v == null ? "" : (Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(1) + "\u00A0B" : Math.round(v / 1e6) + "M"); }   // headline tiles fit ~9 characters
   function pct(v, d) { v = N(v); return v == null ? "" : (v * 100).toFixed(d == null ? 2 : d) + "%"; }
   function sgnPct(v, d) { v = N(v); return v == null ? "" : (v > 0 ? "+" : "") + (v * 100).toFixed(d == null ? 2 : d) + "%"; }
   function ymd(s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
@@ -440,7 +440,7 @@
     function byText(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); }); }
     byText(/^SAR [\d.]+M$/).forEach(function (s) {
       var p = E.pos(s), lbl = byText(/./).filter(function (x) { var q = E.pos(x); return q && Math.abs(q.x - p.x) < 400000 && q.y < p.y && p.y - q.y < 500000; })[0], l = lbl ? E.text(lbl) : "";
-      if (/Planned Budget/.test(l)) E.setParas(s, sarM(yp)); else if (/Actual Budget/.test(l)) E.setParas(s, sarM(ya)); else if (/Variance/.test(l)) E.setParas(s, sarM(ya - yp));
+      if (/Planned Budget/.test(l)) E.setParas(s, sarM(yp)); else if (/Actual Budget/.test(l)) E.setParas(s, sarM(ya)); else if (/Variance/.test(l)) E.setParas(s, { text: sarM(ya - yp).replace("-", "\u2011").replace(" ", "\u00A0"), size: ya - yp < 0 ? 17 : null });   // narrow box: keep on one line
     });
     byText(/^(Planned|Actual) Budget/).forEach(function (s) { E.setRuns(s, 0, [E.text(s).split("(")[0], "(Till " + cutM + ")"]); });
     var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, sarM(fy));
@@ -533,9 +533,11 @@
     var bl = textShape(/^Yearly Budget/);
     if (bl) {
       if (sp) {
-        var vr = sp.ytdAct - sp.ytdPlan;
-        E.setRuns(bl, 0, [(M.D.hasRev ? "Rev Plan 2026 : " : "Yearly Budget  : ") + mio(sp.fy)]); E.setRuns(bl, 1, [(M.D.hasRev ? "YTD Rev Plan   : " : "YTD Plan           : ") + mio(sp.ytdPlan)]); E.setRuns(bl, 2, ["YTD Actual       : " + mio(sp.ytdAct)]);
-        E.setRuns(bl, 3, ["Variance           :  ", { text: (vr > 0 ? "+ " : vr < 0 ? "- " : "") + mio(Math.abs(vr)), color: vr < 0 ? RED : GREEN }]); E.setRuns(bl, 4, ["Forecast 2026 : " + mio(sp.fcFY)]);
+        var vr = sp.ytdAct - sp.ytdPlan, mm = function (v) { return mio(v).replace(" ", "\u00A0"); };   // keep "70.0 M" on one line
+        var ln = [[(M.D.hasRev ? "Rev Plan 2026" : "Yearly Budget") + " : " + mm(sp.fy)], [(M.D.hasRev ? "YTD Rev Plan" : "YTD Plan") + " : " + mm(sp.ytdPlan)], ["YTD Actual : " + mm(sp.ytdAct)],
+          ["Variance : ", { text: (vr > 0 ? "+" : vr < 0 ? "\u2011" : "") + mm(Math.abs(vr)), color: vr < 0 ? RED : GREEN }], ["Forecast 2026 : " + mm(sp.fcFY)]];
+        ln.forEach(function (x, i) { E.setRuns(bl, i, x); });
+        E.all(bl, NS.a, "rPr").concat(E.all(bl, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "850"); });   // 5 lines fit the template box
       } else E.setParas(bl, { text: "Not in the 2026 Spending Plan", color: RED });
     }
     // progress + SPI
