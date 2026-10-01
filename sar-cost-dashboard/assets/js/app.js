@@ -31,6 +31,7 @@
     { id: "master-plan", group: "Progress", title: "Projects Master Plan", icon: "gantt", sub: "Milestone schedule for all projects" },
     { id: "timeline", group: "Progress", title: "Project Timeline", icon: "gantt", sub: "Milestone timeline for a single project" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
+    { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project in the execution phase — SPI, planned vs actual, performance, finish slip, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
     { id: "closing", group: "Closing Phase", title: "Projects in Closing", icon: "close", sub: "Close-out status, checklist (AMP, handover, close-out report, retention, guarantees, final payment) and action plans" },
     { id: "issues", group: "Risks & Issues", title: "Issue Register", icon: "issue", sub: "NSR projects issue log" },
