@@ -645,6 +645,24 @@
     exec: { 1800: 1200, 1624: 1300, 1600: 1200, 1462: 1200, 1400: 1100 },
     closing: { 1624: 1200, 1525: 1000, 1462: 1100 }
   };
+  /* keep a full-width table inside the slide: side margins and a bottom limit above the footer; columns (and, when
+     needed, rows) are scaled to fit */
+  var SLIDE_W = 12192000, MARGIN = 380000, BOTTOM = 6400000;
+  function inMargins(frame) {
+    var p = E.pos(frame); if (!p) return;
+    var tbl = frame.getElementsByTagNameNS(NS.a, "tbl")[0]; if (!tbl) return;
+    var xf = frame.getElementsByTagNameNS(NS.p, "xfrm")[0], off = xf && xf.getElementsByTagNameNS(NS.a, "off")[0], ext = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0];
+    if (!off || !ext) return;
+    var x0 = Math.max(p.x, MARGIN), w = Math.min(p.x + p.w, SLIDE_W - MARGIN) - x0;
+    if (w < p.w) {
+      var cols = E.all(tbl, NS.a, "gridCol"), tw = cols.reduce(function (t, c) { return t + (+c.getAttribute("w") || 0); }, 0), f = w / tw;
+      cols.forEach(function (c) { c.setAttribute("w", String(Math.round((+c.getAttribute("w") || 0) * f))); });
+      off.setAttribute("x", String(x0)); ext.setAttribute("cx", String(w));
+    }
+    var rows = E.all(tbl, NS.a, "tr"), th = rows.reduce(function (t, r) { return t + (+r.getAttribute("h") || 0); }, 0), maxH = BOTTOM - p.y;
+    if (th > maxH && maxH > 0) { var g = maxH / th; rows.forEach(function (r) { r.setAttribute("h", String(Math.round((+r.getAttribute("h") || 0) * g))); }); th = maxH; }
+    ext.setAttribute("cy", String(th));
+  }
   function compactSlide(pkg, path, kind) {
     if (kind === "cover" || kind === "org") return;
     var d = pkg.xml(path), map = TYPE[kind];
@@ -654,6 +672,12 @@
     });
     if (kind === "delivery") E.shapesByName(d, /^TextBox 3$/).forEach(function (s) { resz(s, { 1100: 1000 }); });   // footnote
     E.all(d, NS.p, "graphicFrame").forEach(function (f) { var cp = pkg.chartOf(path, f); if (cp) compactChart(pkg, cp); });
+    if (kind === "overall" || kind === "kpi") E.all(d, NS.p, "graphicFrame").forEach(function (f) {
+      if (f.parentNode.localName !== "spTree") return;
+      inMargins(f);
+      var tr0 = kind === "kpi" && f.getElementsByTagNameNS(NS.a, "tr")[0];   // narrower columns: keep header words whole
+      if (tr0) E.all(tr0, NS.a, "rPr").concat(E.all(tr0, NS.a, "endParaRPr")).forEach(function (r) { var z = +r.getAttribute("sz") || 0; if (!z || z > 850) r.setAttribute("sz", "850"); });
+    });
   }
 
   /* CAPEX status */
