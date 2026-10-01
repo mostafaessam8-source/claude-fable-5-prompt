@@ -3,3 +3,6 @@ node_modules
 # (this repository is public). See README → "Baseline data".
 data/default-data.js
 *.xlsx
+# The PD weekly PowerPoint template holds internal programme data: kept out of the public repository
+data/ppt-template.js
+*.pptx

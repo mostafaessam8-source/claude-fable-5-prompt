@@ -37,6 +37,9 @@
         try { localStorage.setItem(KEY, JSON.stringify(ds)); } catch (e) { /* storage unavailable */ }
       });
     },
+    /* other values (e.g. the weekly PowerPoint template) under their own key */
+    get: function (key) { return tx("readonly", function (s) { return s.get(key); }).catch(function () { return null; }); },
+    set: function (key, value) { return tx("readwrite", function (s) { s.put(value, key); }); },
     clear: function () {
       try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
       return tx("readwrite", function (s) { s.delete(KEY); }).catch(function () {});
