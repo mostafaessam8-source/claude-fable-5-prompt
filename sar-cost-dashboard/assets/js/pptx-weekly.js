@@ -137,9 +137,9 @@
     return S;
   }
 
-  /* Blank template support: the master NSR template is the PD sample with its data removed. Shapes the fillers find by
-     their text are empty there, so each one gets a neutral placeholder (by shape id, only when empty) before filling.
-     On the full sample deck nothing changes, because those shapes already hold text. */
+  /* Master template: "NSR - Program - Balance Scorecard - Blank Template" (the PD layout with its data removed). Shapes
+     the fillers find by their text are empty there, so each one gets a neutral placeholder (by shape id, only when
+     empty) before filling. */
   var CARD_NAMES = [48, 51, 54, 58, 61, 128, 131, 134, 137, 12, 16], CARD_VALS = [49, 52, 55, 59, 62, 129, 132, 135, 138, 15, 20];
   var SEEDS = {
     closingActions: { 3: "Old projects status+ expected date to proceed:" },
@@ -168,15 +168,6 @@
     });
   }
 
-  /* ------------------------------------------------------------------ generic text replacement */
-  function renameProgram(pkg, path) {
-    var d = pkg.xml(path);
-    E.all(d, NS.a, "t").forEach(function (t) {
-      var s = t.textContent, o = s.replace(/OVERALL EAST PROGRAM/g, "OVERALL NSR PROGRAM").replace(/Overall East Program/gi, "Overall NSR Program")
-        .replace(/EAST Program/g, "NSR Program").replace(/East Program/g, "NSR Program").replace(/\bEWR Target/g, "NSR Target");
-      if (o !== s) t.textContent = o;
-    });
-  }
   function photoPlaceholder() {   // PNG "Add progress photo" tile, drawn on a canvas
     var c = document.createElement("canvas"); c.width = 640; c.height = 420;
     var g = c.getContext("2d"); g.fillStyle = "#F2F8F9"; g.fillRect(0, 0, 640, 420);
@@ -450,7 +441,6 @@
     var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : { text: M.spi.toFixed(2), color: tgtCol(M.spi, M) });   // SPI: Progress section
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
-    E.all(d, NS.a, "t").forEach(function (t) { if (/East Program - DB/.test(t.textContent)) t.textContent = t.textContent.replace("East Program - DB", "NSR Program - DB"); });
     var st = ["Delayed", "On Hold", "On Track", "At Risk"], norm = function (z) { z = String(z || ""); return /slight|risk/i.test(z) ? "At Risk" : /hold/i.test(z) ? "On Hold" : /track|on time/i.test(z) ? "On Track" : /delay/i.test(z) ? "Delayed" : z; };
     var stCnt = st.map(function (z) {   // file's Overall Status, else the weekly report / project card of the execution projects
       var n = exe.filter(function (r) { return norm(r["Overall Status"]) === z; }).length;
@@ -533,7 +523,7 @@
       ws["!cols"] = widths.map(function (w) { return { wch: w }; });
       return ws;
     }
-    // Old Projects (in place of EAST's "Legacy Projects"): the NSR legacy / completed rows of the PD programme database,
+    // Old Projects: the NSR legacy / completed rows of the PD programme database,
     // as on the slide's Legacy tile; without that file, the project cards in handover / closing / closed
     var db = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
     var old = db.filter(function (r) { return String(r.Type || "").trim().toLowerCase() === "legacy"; });
@@ -912,7 +902,7 @@
     }
   }
 
-  /* organisation chart: the template's EAST names are replaced by placeholders (NSR team to be entered) */
+  /* organisation chart: placeholders until the NSR team is entered */
   function fillOrg(pkg, path) {
     var d = pkg.xml(path);
     E.all(d, NS.p, "sp").forEach(function (s) {
@@ -982,7 +972,6 @@
         order.forEach(function (f) { f(); });
         ["cover", "overall", "values", "org"].forEach(function (k) { if (S[k]) kinds.push([S[k][0], k]); });
         kinds.forEach(function (k) { compactSlide(pkg, k[0], k[1]); });
-        pkg.slides().forEach(function (p) { renameProgram(pkg, p); });
         pkg.gc();
         return pkg.finish();
       });

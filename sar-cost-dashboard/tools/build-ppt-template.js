@@ -4,7 +4,7 @@
  * site can export the weekly PowerPoint without loading the template first. The output contains internal programme
  * data and is git-ignored (this repository is public).
  *
- *   node tools/build-ppt-template.js "EAST - Program - Balance Scorecard - KPI.pptx"
+ *   node tools/build-ppt-template.js "NSR - Program - Balance Scorecard - Blank Template.pptx"
  */
 const fs = require("fs"), path = require("path");
 const src = process.argv[2];
