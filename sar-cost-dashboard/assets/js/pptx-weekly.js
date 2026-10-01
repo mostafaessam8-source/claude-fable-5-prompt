@@ -167,6 +167,7 @@
 
   /* monthly spending matrix tables (slides "Spending plan as discussed" and "Monthly Plan - CAPEX") */
   function matrixRows(plan, act) {
+    plan = plan.map(Math.round); act = act.map(Math.round);   // whole riyals, so the cumulative rows and variance agree
     var cp = 0, ca = 0, cumP = plan.map(function (x) { return cp += x; }), cumA = act.map(function (x) { return ca += x; });
     return [plan, act, cumP, cumA, cumA.map(function (x, i) { return x - cumP[i]; })];
   }
@@ -573,12 +574,13 @@
       // closing action points: 2 projects per slide
       var openCl = openClosing(M);
       clones("closingActions", chunk(openCl, 2), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 2 + 1); });
-      // spending-plan action points: overall NSR + the 3 projects furthest behind their plan at the cut-off
+      // CAPEX projects only (KPI code 7) on both spending slides
       var ci = M.months.indexOf(M.cut), withPlan = M.spend.filter(function (p) { return p.fy || p.ytdAct || p.fcFY; });
-      var behind = withPlan.slice().sort(function (a, b) { var va = matrixRows(a.mPlan, a.mAct)[4][ci] || 0, vb = matrixRows(b.mPlan, b.mAct)[4][ci] || 0; return va - vb; }).slice(0, 3);
-      clones("spendActions", [behind], function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program", overallOf(withPlan, M), g); });
-      // CAPEX monthly plan: 3 projects per slide
       var cap = withPlan.filter(function (p) { return M.codeKpi[p.ID] === 7; }).sort(function (a, b) { return b.fy - a.fy; });
+      // spending-plan action points: overall CAPEX + the 3 CAPEX projects furthest behind their plan at the cut-off
+      var behind = cap.slice().sort(function (a, b) { var va = matrixRows(a.mPlan, a.mAct)[4][ci] || 0, vb = matrixRows(b.mPlan, b.mAct)[4][ci] || 0; return va - vb; }).slice(0, 3);
+      clones("spendActions", [behind], function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
+      // CAPEX monthly plan: 3 projects per slide
       clones("monthly", chunk(cap, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
       // SPI cards: 11 per slide
       var spiList = M.weekly.filter(function (r) { return M.scurve(r["Source.Name"]).length; });

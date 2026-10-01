@@ -84,7 +84,7 @@ loaded in the dashboard and downloads it, e.g. `NSR - Program - Balance Scorecar
    - one execution slide per weekly-report project;
    - one closing slide per open project in *Projects in Closing*;
    - SPI cards, 11 per slide;
-   - spending matrices, 3 projects per slide, with the cut-off line on the last month that has actuals.
+   - spending matrices (CAPEX projects only), 3 projects per slide, with the cut-off line on the last month that has actuals.
 3. Anything the dashboard does not hold shows in red as **[To be filled]**: savings, close-out dates,
    consultant, EOT, KPI criteria, progress photos and the organisation chart. Complete these in PowerPoint.
 
