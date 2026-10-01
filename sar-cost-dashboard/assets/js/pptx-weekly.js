@@ -631,6 +631,10 @@
         var xf = bars[1].getElementsByTagNameNS(NS.a, "xfrm")[0], e = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0];
         if (e) e.setAttribute("cx", String(Math.round(full * a)));
         E.setFill(bars[1], dc);
+        // planned marker: the thin vertical line across the bar, placed at the planned %
+        var b0 = E.pos(bars[0]), pl0 = Math.max(0, Math.min(1, N(w["Planned (%) - Cumulative"]) || 0));
+        shapes.filter(function (s) { var p = E.pos(s); return s.localName === "sp" && !E.text(s).trim() && p && p.w < 60000 && p.h > 150000 && Math.abs((p.y + p.h / 2) - (b0.y + b0.h / 2)) < 200000; })
+          .forEach(function (mk) { var p = E.pos(mk); E.move(mk, Math.round(b0.x + b0.w * pl0 - p.w / 2), null); });
       }
       note.push((r["Project Code"]) + " forecast completion " + (mon(w["End Date (Forecast/Actual)"]) || MISSING));
     });
