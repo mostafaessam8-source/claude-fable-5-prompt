@@ -75,6 +75,17 @@
         Contract_Details: ["Ref", "Code", "Contract", "Contractor", "Scope", "Value (SAR)", "Stage", "Owner"]
       }
     },
+    // "Projects in Closing phase.xlsx": one sheet with a header row (Code · Project Name · … · Closeout Report ·
+    // Retention Release · … · Current Status · Action Plan). Found by its header text, not by a table name.
+    closing: {
+      label: "Projects in Closing Phase",
+      file: "Projects in Closing phase.xlsx",
+      sheetHeader: true,
+      tables: {
+        Closing_Projects: ["Code", "PO", "Project Name", "Contractor", "Project Manager", "Actual Progress %", "Start", "Contract Finish",
+          "Final Contract Value", "Current Status", "Action Plan"]
+      }
+    },
     // Monthly "EP - NSR Projects <Mon><YY>.xlsx": one sheet per project ("<code>_Project Card").
     // The Issue Register is built from section 12.1 "Issue Log" of every card (see parseProjectCards).
     cards: {
@@ -472,6 +483,41 @@
     return { source: "cards", label: SOURCES.cards.label, tables: { Issue_register: rows, Project_Cards: cardRecs }, report: report, reportingPeriod: reportingPeriod };
   }
 
+  /* Closing-phase register: the first sheet whose header row has "Code", a close-out column and a retention column. */
+  function parseClosing(XLSX, wb) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1, cols = [];
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 15) && hdr < 0; r++) {
+        var hs = [];
+        for (var c = rg.s.c; c <= rg.e.c; c++) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })]; hs.push({ c: c, key: cl ? normKey(cl.v) : "" }); }
+        var txt = hs.map(function (h) { return h.key.toLowerCase(); });
+        if (txt.indexOf("code") >= 0 && txt.some(function (t) { return /clos[e]?\s?out/.test(t); }) && txt.some(function (t) { return /retention/.test(t); })) { hdr = r; cols = hs.filter(function (h) { return h.key; }); }
+      }
+      if (hdr < 0) continue;
+      var title = null;
+      for (var tr = rg.s.r; tr < hdr; tr++) { var tc = ws[XLSX.utils.encode_cell({ r: tr, c: rg.s.c })]; if (tc && tc.v) title = normKey(tc.v); }
+      var rows = [], blank = 0;
+      for (var rr = hdr + 1; rr <= rg.e.r && blank < 3; rr++) {
+        var rec = {}, any = false;
+        cols.forEach(function (h) {
+          var x = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: h.c })]);
+          if (typeof x === "number" && /^(code|po)$/i.test(h.key)) x = String(x);
+          if (x != null && x !== "") any = true;
+          if (!(h.key in rec) || rec[h.key] == null) rec[h.key] = x;
+        });
+        if (!any || (rec.Code == null && rec["Project Name"] == null)) { blank++; continue; }
+        blank = 0; rows.push(rec);
+      }
+      var have = cols.map(function (h) { return h.key; });
+      var missing = SOURCES.closing.tables.Closing_Projects.filter(function (k) { return have.indexOf(normKey(k)) < 0; });
+      return { source: "closing", label: SOURCES.closing.label, title: title, tables: { Closing_Projects: rows },
+        report: [{ table: "Closing_Projects", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name }] };
+    }
+    return null;
+  }
+
   async function parseWorkbook(buffer, XLSX, JSZip) {
     var zip = await JSZip.loadAsync(buffer);
     if (!zip.file("xl/workbook.xml")) throw new Error("Not an .xlsx workbook (xl/workbook.xml missing). Save the file as Excel Workbook (*.xlsx).");
@@ -483,7 +529,11 @@
       var cwb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false, sheets: cardSheets });
       return parseProjectCards(XLSX, cwb, cardSheets);
     }
-    if (!source) throw new Error("This workbook does not contain any of the expected Excel tables. Found tables: " + (names.join(", ") || "none"));
+    if (!source) {
+      var closing = parseClosing(XLSX, XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false }));
+      if (closing) return closing;
+      throw new Error("This workbook does not contain any of the expected Excel tables. Found tables: " + (names.join(", ") || "none"));
+    }
 
     var wb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
     var spec = SOURCES[source], out = {}, report = [];

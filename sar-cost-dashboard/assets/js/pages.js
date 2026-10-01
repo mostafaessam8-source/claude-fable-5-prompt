@@ -1885,6 +1885,127 @@
   };
 
   /* ======================================================================
+     Projects in Closing Phase ("Projects in Closing phase.xlsx")
+     Closure status from "Current Status" (Closed / Terminated / otherwise In closing).
+     The close-out checklist = every column between "Final Contract Value" and
+     "Current Status" (AMP-E1 … Performance guarantee release), so added steps
+     appear automatically. A step is done when it holds a date or Yes/Done/….
+     ====================================================================== */
+  var CL_ORDER = ["In closing", "Closed", "Terminated"];
+  var CL_COLOR = { "In closing": C.yellow, "Closed": C.blue, "Terminated": C.red };
+  function clStatus(r) { var s = String(r["Current Status"] || "").trim(); return /^closed\b/i.test(s) ? "Closed" : /terminat/i.test(s) ? "Terminated" : "In closing"; }
+  function clStep(r, k) {                                  // → { st: "done" | "na" | "wip" | "open", txt }
+    var x = r[k], s = x == null ? "" : String(x).trim();
+    if (s === "") return clStatus(r) === "Closed" ? { st: "done", txt: "Closed" } : clStatus(r) === "Terminated" ? { st: "na", txt: "Terminated" } : { st: "open", txt: "Pending" };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { st: "done", txt: fmt.date(s) };
+    if (x === true || x === 1 || /^(yes|y|done|complete|completed|issued|signed|released|approved|received|paid|submitted|ok|✓|✔)\b/i.test(s)) return { st: "done", txt: s };
+    if (/^(n\/?a|not applicable|-)$/i.test(s)) return { st: "na", txt: "N/A" };
+    if (x === false || x === 0 || /^(no|pending|not started)\b/i.test(s)) return { st: "open", txt: s || "Pending" };
+    return { st: "wip", txt: s };
+  }
+  P.closing = function (ctx) {
+    var D = ctx.D, v = ctx.view, all = D.t("Closing_Projects").filter(function (r) { return r.Code || r["Project Name"]; });
+    if (!all.length) { add(v, '<div class="note-box">No closing-phase data. Import <b>Projects in Closing phase.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
+    var keys = Object.keys(all[0]), a = keys.indexOf("Final Contract Value"), b = keys.indexOf("Current Status");
+    var steps = a >= 0 && b > a ? keys.slice(a + 1, b) : [];
+    var today = D.reportDate || new Date().toISOString().slice(0, 10);
+    all.forEach(function (r) {
+      r._st = clStatus(r);
+      var s = steps.map(function (k) { return clStep(r, k); }), app = s.filter(function (x) { return x.st !== "na"; });
+      r._steps = s; r._done = app.filter(function (x) { return x.st === "done"; }).length; r._app = app.length;
+      r._pct = app.length ? r._done / app.length : null;
+      r._pending = steps.filter(function (k, i) { return s[i].st === "open" || s[i].st === "wip"; });
+      r._age = r["Contract Finish"] ? days(r["Contract Finish"], today) : null;               // days since contract finish
+      r._year = r["Contract Finish"] ? String(r["Contract Finish"]).slice(0, 4) : "—";
+    });
+    var defs = [
+      { key: "st", label: "Closure Status", options: CL_ORDER.filter(function (x) { return all.some(function (r) { return r._st === x; }); }), get: function (r) { return r._st; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(all.map(function (r) { return r["Project Manager"]; })).sort(), get: function (r) { return r["Project Manager"]; } },
+      { key: "con", label: "Contractor", options: U.uniq(all.map(function (r) { return r.Contractor; })).sort(), get: function (r) { return r.Contractor; } },
+      { key: "yr", label: "Contract Finish Year", options: U.uniq(all.map(function (r) { return r._year; })).sort().reverse(), get: function (r) { return r._year; } },
+      { key: "proj", label: "Project", options: U.uniq(all.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } }];
+    if (steps.length) defs.splice(3, 0, { key: "pend", label: "Pending step", options: steps.slice(), get: null });
+    var f = filterBar(ctx, defs, all);
+    function ok(r, except) { return passes(r, defs, f, except) && (except === "pend" || !f.pend || !f.pend.length || f.pend.some(function (k) { return r._pending.indexOf(k) >= 0; })); }
+    var rows = all.filter(function (r) { return ok(r); });
+    var open = rows.filter(function (r) { return r._st === "In closing"; });
+    function cnt(s) { return rows.filter(function (r) { return r._st === s; }).length; }
+    function setSt(s) { return function () { var x = sel(ctx, "st"); x.length = 0; if (s) x.push(s); ctx.rerender(); }; }
+    var avgAge = open.filter(function (r) { return r._age != null && r._age > 0; });
+    var stepsDone = U.sum(open, "_done") || 0, stepsApp = U.sum(open, "_app") || 0;
+
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: rows.length, label: "Projects", note: "Closing-phase register" }) +
+      U.tile({ value: open.length, label: "In closing", color: "yellow", note: "Close-out still open · click" }) +
+      U.tile({ value: cnt("Closed"), label: "Closed", note: "Click to filter" }) +
+      U.tile({ value: cnt("Terminated"), label: "Terminated", color: "red", note: "Click to filter" }) +
+      mTile("Value in closing", U.sum(open, "Final Contract Value"), "black", "Final contract value of open close-outs") +
+      U.tile({ value: stepsApp ? fmt.pct(stepsDone / stepsApp, 0) : "—", label: "Close-out checklist", color: "slate",
+        note: stepsDone + " of " + stepsApp + " steps done" + (avgAge.length ? " · avg " + Math.round(U.sum(avgAge, "_age") / avgAge.length / 30.4) + " months since contract finish" : "") });
+    clickTiles(g, [setSt(null), setSt("In closing"), setSt("Closed"), setSt("Terminated"), setSt("In closing"), setSt("In closing")]);
+
+    var g1 = grid(v, "g-3");
+    var rs = all.filter(function (r) { return ok(r, "st"); }), sts = CL_ORDER.filter(function (s) { return rs.some(function (r) { return r._st === s; }); });
+    var sb = chartBox(panelIn(g1, "Projects by closure status", "Count and final contract value · click to filter"), "short");
+    U.chart(sb, U.clickable({ type: "bar", data: { labels: sts, datasets: [U.barDs("Projects", sts.map(function (s) { return rs.filter(function (r) { return r._st === s; }).length; }),
+      sts.map(function (s) { return f.st.length && f.st.indexOf(s) < 0 ? U.fade(CL_COLOR[s]) : CL_COLOR[s]; }), { maxBarThickness: 26 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: function (c) { return " Value: " + fmt.m(U.sum(rs.filter(function (r) { return r._st === sts[c.dataIndex]; }), "Final Contract Value")) + " M SAR"; } } },
+        datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } }, layout: { padding: { right: 24 } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } }, function (i, e) { pick(ctx, "st", sts[i], e); }));
+    var stP = panelIn(g1, "Close-out checklist by step", open.length + " projects in closing · done vs pending per step");
+    if (steps.length) {
+      var sbox = chartBox(stP, "short"); sbox.style.height = Math.max(220, steps.length * 28 + 60) + "px";
+      U.chart(sbox, U.clickable({ type: "bar", data: { labels: steps, datasets: [
+        U.barDs("Done", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "done"; }).length; }), C.blue, { maxBarThickness: 18 }),
+        U.barDs("In progress", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "wip"; }).length; }), C.yellow, { maxBarThickness: 18 }),
+        U.barDs("Pending", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "open"; }).length; }), C.gray, { maxBarThickness: 18 })] },
+        options: { indexAxis: "y", plugins: { legend: { display: true } }, scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { stacked: true, grid: { display: false } } } } },
+        function (i, e) { pick(ctx, "pend", steps[i], e); }));
+    } else add(stP, '<div class="empty">No checklist columns found between "Final Contract Value" and "Current Status".</div>');
+    var ag = open.filter(function (r) { return r._age != null; }).sort(function (x, y) { return y._age - x._age; }), an = ag.map(function (r) { return r["Project Name"]; });
+    var abox = chartBox(panelIn(g1, "Time since contract finish", "Projects in closing · months (negative = contract still running) · click a project"), "short");
+    abox.style.height = Math.max(220, ag.length * 26 + 60) + "px";
+    U.chart(abox, U.clickable({ type: "bar", data: { labels: an, datasets: [U.barDs("Months since contract finish", ag.map(function (r) { return Math.round(r._age / 30.4 * 10) / 10; }),
+      ag.map(function (r) { var m = r._age / 30.4, c0 = m > 12 ? C.red : m > 6 ? C.yellow : m > 0 ? C.mid : C.gray; return f.proj.length && f.proj.indexOf(r["Project Name"]) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 16 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return " " + c.parsed.x + " months · contract finish " + fmt.date(ag[c.dataIndex]["Contract Finish"]); } } } },
+        scales: { x: { grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false }, ticks: { callback: U.shortLabel(24) } } } } },
+      function (i, e) { pick(ctx, "proj", ag[i]["Project Name"], e); }));
+
+    // close-out checklist matrix (projects still in closing first)
+    var mx = rows.slice().sort(function (x, y) { return CL_ORDER.indexOf(x._st) - CL_ORDER.indexOf(y._st) || (y._age || 0) - (x._age || 0); });
+    var icon = { done: "✓", wip: "◐", open: "○", na: "–" };
+    var mp = panelIn(v, "Close-out checklist", "✓ done (date or Yes/Done) · ◐ in progress (other text) · ○ pending · – not applicable · hover a cell for its value · click a row for the full record");
+    if (!steps.length) add(mp, '<div class="empty">No checklist columns in the sheet.</div>');
+    else {
+      var h = '<div class="table-wrap cl-wrap"><table class="cl"><thead><tr><th>Code</th><th>Project</th><th>Status</th>' + steps.map(function (k) { return "<th>" + esc(k) + "</th>"; }).join("") +
+        '<th>Progress</th><th>Current status</th><th>Action plan</th></tr></thead><tbody>';
+      mx.forEach(function (r, i) {
+        h += '<tr data-i="' + i + '" class="' + (r._st === "In closing" ? "open" : "") + '"><td class="nw"><b>' + esc(r.Code || "") + '</b></td><td class="pn">' + esc(r["Project Name"] || "") +
+          '<small>' + esc(r["Project Manager"] || "") + "</small></td><td>" + U.badge(r._st) + "</td>" +
+          r._steps.map(function (x) { return '<td class="ck ' + x.st + '" title="' + esc(x.txt) + '">' + icon[x.st] + "</td>"; }).join("") +
+          "<td>" + (r._pct == null ? "" : U.meter(r._pct)) + '</td><td class="txt">' + esc(r["Current Status"] || "") + '</td><td class="txt">' + esc(r["Action Plan"] || "") + "</td></tr>";
+      });
+      h += "</tbody></table></div>";
+      var node = add(mp, "<div>" + h + "</div>");
+      node.querySelectorAll("tr[data-i]").forEach(function (tr) { tr.addEventListener("click", function () { var r = mx[+tr.getAttribute("data-i")]; U.recordModal((r.Code || "") + " — " + (r["Project Name"] || ""), clRecord(r)); }); });
+    }
+
+    var tp = panelIn(v, "Closing-phase register", rows.length + " projects · all columns of the sheet");
+    var cols = keys.map(function (k) {
+      var c = { key: k, label: k };
+      if (/value/i.test(k)) { c.type = "money"; c.total = "sum"; }
+      else if (/progress/i.test(k)) c.type = "meter";
+      else if (/^(start|contract finish)$/i.test(k)) c.type = "date";
+      else if (/status|action|project name/i.test(k)) c.wrap = true;
+      return c;
+    });
+    cols.splice(3, 0, { key: "_st", label: "Closure Status", type: "badge" });
+    tableIn(tp, { rows: rows, exportName: "Projects_in_Closing", totals: true, maxHeight: 640, columns: cols,
+      onRow: function (r) { U.recordModal((r.Code || "") + " — " + (r["Project Name"] || ""), clRecord(r)); } });
+  };
+  function clRecord(r) { var o = {}; Object.keys(r).forEach(function (k) { if (k.charAt(0) !== "_") o[k] = r[k]; }); o["Closure Status"] = r._st; return o; }
+
+  /* ======================================================================
      Issue Register
      ====================================================================== */
   var RATE_ORDER = ["Critical", "High", "Medium", "Low", "N/A"];

@@ -80,7 +80,7 @@
   /* status → badge class (icon dot + label, never colour alone) */
   function statusClass(s) {
     s = String(s || "").toLowerCase();
-    if (/critical|delay|escalat|overdue|behind|high risk/.test(s)) return "bad";
+    if (/critical|delay|escalat|overdue|behind|high risk|terminat/.test(s)) return "bad";
     if (/pending|on ?going|in progress|at risk|high|medium|open/.test(s)) return "warn";
     if (/resolved|closed|complete|done/.test(s)) return "done";
     if (/on ?track|ahead|ok|low|approved/.test(s)) return "ok";

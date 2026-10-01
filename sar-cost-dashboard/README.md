@@ -25,6 +25,7 @@ opened straight from disk.
 | Project Timeline | Timeline | `Project_Milestones_Progress` |
 | Project Cards | *(new)* | Every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx**, all sections |
 | Portfolio Master Plan | *(new)* | Section 8 *Project Timeline* + section 10 *Critical Path Milestones* of every project card |
+| Projects in Closing | *(new)* | **Projects in Closing phase.xlsx** (sheet with the closing register; found by its header row): closure status, close-out checklist (every column between *Final Contract Value* and *Current Status*), time since contract finish, current status and action plans |
 | Issue Register | Issue | Section 12.1 *Issue Log* of every `…_Project Card` sheet in **EP - NSR Projects &lt;Month&gt;.xlsx** |
 | Abbreviations | Abbreviations | `ABBREVIATIONS`, `ABBREVIATIONS_2` |
 | Data Import | — | — |
@@ -74,11 +75,12 @@ code (`node tools/build-publish-kit.js`).
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).
-2. Drop any of the four workbooks (one or several at once):
+2. Drop any of the five workbooks (one or several at once):
    * `PBI Weekly Report.xlsx`
    * `EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx`
    * `Contract details.xlsx`
    * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
+   * `Projects in Closing phase.xlsx` (closing-phase register; feeds **Projects in Closing**)
 3. The site recognises each file by the **Excel tables inside it**, not by the file name. It reads those
    tables the same way Power BI's `Excel.Workbook(…){[Item="…",Kind="Table"]}` does, and shows a
    log of rows per table plus any missing columns.
