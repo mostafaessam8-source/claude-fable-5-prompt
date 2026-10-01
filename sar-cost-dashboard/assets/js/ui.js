@@ -8,8 +8,8 @@
     tint5: "#F2F8F9", tint10: "#E6F1F4", white: "#FFFFFF"
   };
   // Series roles are fixed across every chart: plan = SAR Blue, forecast = mid blue,
-  // actual = yellow, contractor / invoice plan = slate.
-  var SERIES = { plan: C.blue, forecast: C.mid, actual: C.yellow, invoice: C.slate, extra: C.sky, alert: C.red };
+  // actual = yellow, contractor / invoice plan = slate, revised spend plan = black.
+  var SERIES = { plan: C.blue, rev: C.black, forecast: C.mid, actual: C.yellow, invoice: C.slate, extra: C.sky, alert: C.red };
 
   /* ----------------------------- formatting ----------------------------- */
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

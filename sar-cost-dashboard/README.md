@@ -75,12 +75,15 @@ code (`node tools/build-publish-kit.js`).
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).
-2. Drop any of the five workbooks (one or several at once):
+2. Drop any of the six workbooks (one or several at once):
    * `PBI Weekly Report.xlsx`
    * `EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx`
    * `Contract details.xlsx`
    * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
    * `Projects in Closing phase.xlsx` (closing-phase register; feeds **Projects in Closing**)
+   * `Budget 2026.xlsx` (sheet *Curve*; the **Spending Plan (VP)** row of every project is the **Rev Spend Plan**. The
+     original Spend Plan stays as it is and both are shown on the Overview, KPI Cost Summary, KPI Year-End Outlook and
+     Cost Dashboard; variances and the year-end outlook are measured against the Rev plan once it is loaded)
 3. The site recognises each file by the **Excel tables inside it**, not by the file name. It reads those
    tables the same way Power BI's `Excel.Workbook(…){[Item="…",Kind="Table"]}` does, and shows a
    log of rows per table plus any missing columns.

@@ -75,6 +75,14 @@
         Contract_Details: ["Ref", "Code", "Contract", "Contractor", "Scope", "Value (SAR)", "Stage", "Owner"]
       }
     },
+    // "Budget 2026.xlsx" (sheet "Curve"): per project a block of rows "Spending Plan (OG)", "(ABT)", "Forecast",
+    // "Spending Plan (VP)", "Actual" … with the months as columns. "Spending Plan (VP)" is the Revised Spend Plan.
+    budget: {
+      label: "Budget 2026 (Revised Spend Plan)",
+      file: "Budget 2026.xlsx",
+      sheetHeader: true,
+      tables: { Rev_Spend_Plan: ["ID", "Month", "Rev Spend Plan"] }
+    },
     // "Projects in Closing phase.xlsx": one sheet with a header row (Code · Project Name · … · Closeout Report ·
     // Retention Release · … · Current Status · Action Plan). Found by its header text, not by a table name.
     closing: {
@@ -518,6 +526,48 @@
     return null;
   }
 
+  /* Budget 2026: rows "<Category> | <code> | <measure> | Jan … Dec | Total"; month columns come from the
+     nearest date header row above each block. The budget file numbers Riyadh Dry Port one step later than the
+     delivery plan (0674C = construction, 0674D = design), so those codes are mapped to 0674 / 0674C. */
+  var BUDGET_MEASURES = { "spending plan (og)": "OG Spend Plan", "spending plan (abt)": "ABT Spend Plan", "forecast": "Budget Forecast",
+    "spending plan (vp)": "Rev Spend Plan", "actual": "Budget Actual" };
+  function parseBudget(XLSX, wb) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), found = false;
+      for (var r0 = rg.s.r; r0 <= Math.min(rg.e.r, 60) && !found; r0++) for (var c0 = rg.s.c; c0 <= Math.min(rg.e.c, 6); c0++) {
+        var x0 = ws[XLSX.utils.encode_cell({ r: r0, c: c0 })]; if (x0 && /^spending plan \(vp\)$/i.test(normKey(x0.v))) { found = true; break; }
+      }
+      if (!found) continue;
+      var monthCols = null, by = {}, codes = {};
+      for (var r = rg.s.r; r <= rg.e.r; r++) {
+        var dates = [];
+        for (var c = rg.s.c; c <= rg.e.c; c++) { var dv = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: c })]); if (typeof dv === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dv)) dates.push({ c: c, m: dv.slice(0, 7) + "-01" }); }
+        if (dates.length >= 6) { monthCols = dates; continue; }
+        var labC = -1, lab = null;
+        for (var lc = rg.s.c; lc <= Math.min(rg.e.c, 6); lc++) { var lv = ws[XLSX.utils.encode_cell({ r: r, c: lc })]; if (lv && BUDGET_MEASURES[normKey(lv.v).toLowerCase()]) { labC = lc; lab = BUDGET_MEASURES[normKey(lv.v).toLowerCase()]; break; } }
+        if (labC < 1 || !monthCols) continue;
+        var code = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: labC - 1 })]), cat = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: labC - 2 })]);
+        if (code == null) continue; code = String(code).trim();
+        if (!/\d/.test(code)) continue;                                     // skip the program summary block (e.g. "CAPEX")
+        codes[code] = 1;
+        monthCols.forEach(function (mc) {
+          var k = code + "|" + mc.m, o = by[k] || (by[k] = { "Budget Code": code, Category: cat, Month: mc.m });
+          var v = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r, c: mc.c })]);
+          o[lab] = typeof v === "number" ? v : (o[lab] != null ? o[lab] : null);
+        });
+      }
+      var shifted = codes["0674C"] && codes["0674D"], MAP = shifted ? { "0674C": "0674", "0674D": "0674C" } : {};
+      var rows = Object.keys(by).map(function (k) { var o = by[k]; o.ID = MAP[o["Budget Code"]] || o["Budget Code"]; return o; });
+      var mapped = Object.keys(MAP).map(function (k) { return k + " → " + MAP[k]; });
+      return { source: "budget", label: SOURCES.budget.label, tables: { Rev_Spend_Plan: rows },
+        report: [{ table: "Rev_Spend_Plan", rows: rows.length, status: rows.length ? "ok" : "missing", missing: [],
+          via: "sheet " + name + " · " + Object.keys(codes).length + " projects" + (mapped.length ? " · codes mapped: " + mapped.join(", ") : "") }] };
+    }
+    return null;
+  }
+
   async function parseWorkbook(buffer, XLSX, JSZip) {
     var zip = await JSZip.loadAsync(buffer);
     if (!zip.file("xl/workbook.xml")) throw new Error("Not an .xlsx workbook (xl/workbook.xml missing). Save the file as Excel Workbook (*.xlsx).");
@@ -530,8 +580,11 @@
       return parseProjectCards(XLSX, cwb, cardSheets);
     }
     if (!source) {
-      var closing = parseClosing(XLSX, XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false }));
+      var swb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
+      var closing = parseClosing(XLSX, swb);
       if (closing) return closing;
+      var budget = parseBudget(XLSX, swb);
+      if (budget) return budget;
       throw new Error("This workbook does not contain any of the expected Excel tables. Found tables: " + (names.join(", ") || "none"));
     }
 

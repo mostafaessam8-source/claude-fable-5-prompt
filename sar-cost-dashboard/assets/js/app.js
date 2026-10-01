@@ -67,6 +67,19 @@
   };
 
   function buildLookups() {
+    // Revised Spend Plan (Budget 2026, "Spending Plan (VP)") joined onto the Spending Plan rows by ID + month;
+    // the original "Spend Plan as per Budgeting" stays untouched.
+    var rev = {}, revFY = {};
+    D.hasRev = D.has("Rev_Spend_Plan");
+    D.t("Rev_Spend_Plan").forEach(function (r) {
+      var v = typeof r["Rev Spend Plan"] === "number" ? r["Rev Spend Plan"] : 0, id = String(r.ID);
+      rev[id + "|" + r.Month] = (rev[id + "|" + r.Month] || 0) + v; revFY[id] = (revFY[id] || 0) + v;
+    });
+    var spIds = {};
+    D.t("Spending_Plan").forEach(function (r) { spIds[String(r.ID)] = 1; r["Rev Spend Plan (Incr)"] = D.hasRev ? (rev[String(r.ID) + "|" + r.Month] || 0) : null; });
+    D.t("KPI_Projects_Data").forEach(function (r) { r["Rev Spend Plan FTY 2026"] = D.hasRev ? (revFY[String(r.Code)] || 0) : null; });
+    D.revOnly = Object.keys(revFY).filter(function (id) { return !spIds[id]; });           // in Budget 2026 but not in the Spending Plan
+    D.revMissing = D.hasRev ? Object.keys(spIds).filter(function (id) { return !(id in revFY); }) : [];
     var P = {};
     D.t("MLS").forEach(function (r) {
       var s = r["Source.Name"]; if (!s) return;
@@ -171,20 +184,20 @@
 
   function renderNoData(view) {
     view.appendChild(U.el('<div class="note-box"><b>No data loaded yet.</b> Open <a href="#/import">Data Import</a> and drop the Excel files ' +
-      "(PBI Weekly Report, EPBU 2026 Delivery Plan, Contract details, EP – NSR Projects, Projects in Closing phase) to populate every page.</div>"));
+      "(PBI Weekly Report, EPBU 2026 Delivery Plan, Contract details, EP – NSR Projects, Projects in Closing phase, Budget 2026) to populate every page.</div>"));
   }
 
   /* ----------------------------- import page ---------------------------- */
   function renderImport(ctx) {
     var view = ctx.view, S = SARImporter.SOURCES;
-    view.appendChild(U.el('<div class="note-box" style="margin-bottom:16px">Drop one or more of the five source workbooks. Each file is recognised by its content, not its name: the <b>Excel tables</b> inside it ' +
+    view.appendChild(U.el('<div class="note-box" style="margin-bottom:16px">Drop one or more of the six source workbooks. Each file is recognised by its content, not its name: the <b>Excel tables</b> inside it ' +
       "(the same tables Power BI reads), or — for <b>EP – NSR Projects &lt;Month&gt;.xlsx</b> — the <b>…_Project Card</b> sheets, whose section 12.1 <b>Issue Log</b> feeds the Issue Register " +
       "(projects can be added or removed freely). File names may change, but <b>table names, column headers and the Issue Log layout must stay as they are</b>. " +
       "Only the tables of the files you import are replaced; everything else keeps its current data. Imported data is saved in this browser.</div>"));
 
     var dz = U.el('<label class="dropzone" tabindex="0"><input type="file" accept=".xlsx,.xlsm" multiple hidden>' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v4h16v-4"/></svg>' +
-      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx</p></label>");
+      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx · Budget 2026.xlsx</p></label>");
     var input = dz.querySelector("input");
     ["dragenter", "dragover"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("over"); }); });
     ["dragleave", "drop"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("over"); }); });
@@ -210,6 +223,13 @@
         '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul></div>"));
     });
     view.appendChild(grid);
+    if (D.hasRev) {   // Budget 2026 ↔ Spending Plan project check
+      var spNames = {}; D.t("Spending_Plan").forEach(function (r) { spNames[String(r.ID)] = r["Project Name"]; });
+      view.appendChild(U.el('<div class="note-box' + (D.revOnly.length ? " warn" : "") + '" style="margin-top:16px"><b>Budget 2026 (Rev Spend Plan) check:</b> ' +
+        (D.revOnly.length ? "codes in Budget 2026 not found in the Spending Plan: <b>" + esc(D.revOnly.join(", ")) + "</b> (their Rev plan is not shown). " : "every Budget 2026 project matches a Spending Plan ID. ") +
+        (D.revMissing.length ? "Spending Plan projects without a Rev plan (Rev = 0): " + esc(D.revMissing.map(function (id) { return id + " " + (spNames[id] || ""); }).join(", ")) + ". " : "") +
+        "Riyadh Dry Port codes in Budget 2026 are mapped 0674C → 0674 (construction) and 0674D → 0674C (design).</div>"));
+    }
 
     var reset = U.el('<button class="icon-btn ghost" type="button">Discard imports &amp; restore baseline data</button>');
     reset.addEventListener("click", function () {

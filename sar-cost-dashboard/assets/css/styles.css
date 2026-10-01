@@ -691,3 +691,4 @@ table.cl td.ck.na { color: var(--cool-gray); }
 body.printing .cl-wrap { max-height: none; overflow: visible; }
 body.printing table.cl thead th { position: static; }
 table.cl td.pn { min-width: 220px; }
+table.sm tr.rev th.sm-l { color: var(--sar-black); font-weight: 700; } table.sm tr.rev td { font-weight: 600; }
