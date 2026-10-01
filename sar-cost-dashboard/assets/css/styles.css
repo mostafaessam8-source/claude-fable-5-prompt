@@ -806,3 +806,8 @@ body:not(.printing) .filters.fbar { position: sticky; top: var(--header-h); }
   .sec-nav::-webkit-scrollbar { display: none; }
   .sec-nav a { flex: 0 0 auto; }
 }
+
+/* SPI rule: at or above the KPI target green, below red */
+.tile.green .band { background: #1E8A44; }
+.spi-ok { color: #1E8A44; font-weight: 700; }
+.spi-bad { color: var(--red); font-weight: 700; }
