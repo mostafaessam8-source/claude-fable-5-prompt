@@ -315,24 +315,36 @@
 
   /* KPI balance scorecard */
   function kpiVal(v) { v = N(v); if (v == null) return ""; return Math.abs(v) >= 1000 ? mio(v) : Math.abs(v) <= 2 ? pct(v, 0) : String(Math.round(v * 100) / 100); }
-  function fillKpi(pkg, path, M) {
+  /* KPI groups split over slides: whole groups only, at most KPI_ROWS rows (group + KPI rows) per slide */
+  var KPI_ROWS = 11;
+  function kpiPages(M) {
+    var pages = [], cur = [], n = 0, all = uniq(M.kpi.map(function (r) { return r["KPI Filter"]; }));
+    all.forEach(function (g, gi) {
+      var k = 1 + M.kpi.filter(function (r) { return r["KPI Filter"] === g; }).length;
+      if (cur.length && n + k > KPI_ROWS) { pages.push(cur); cur = []; n = 0; }
+      cur.push({ g: g, no: gi + 1 }); n += k;
+    });
+    if (cur.length) pages.push(cur);
+    return pages.length ? pages : [[]];
+  }
+  function fillKpi(pkg, path, M, page) {
     var d = pkg.xml(path), frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), rs = E.rows(tbl);
     var hdr = rs[0], catTpl = rs[1], kpiTpl = rs[2], cutTxt = M.cut ? dShort(M.cut.slice(0, 8) + new Date(Date.UTC(+M.cut.slice(0, 4), +M.cut.slice(5, 7), 0)).getUTCDate()) : "";
     var hc = E.cells(hdr);
     if (hc[5]) E.cellText(hc[5], "YTD Plan till " + cutTxt); if (hc[6]) E.cellText(hc[6], "YTD Actual till " + cutTxt);
     rs.slice(1).forEach(function (r) { tbl.removeChild(r); });
-    var groups = uniq(M.kpi.map(function (r) { return r["KPI Filter"]; }));
-    groups.forEach(function (g, gi) {
+    (page || kpiPages(M)[0]).forEach(function (pg) {
+      var g = pg.g, gi = pg.no - 1;
       var list = M.kpi.filter(function (r) { return r["KPI Filter"] === g; });
       var cr = catTpl.cloneNode(true), cc = E.cells(cr), w = sum(list, function (r) { return r["KPI Weight (%)"]; }), res = sum(list, function (r) { return r["KPI Result"]; });
       E.cellText(cc[0], (gi + 1) + ". " + g + " (" + pct(w, 0) + ")"); E.cellText(cc[1], pct(w, 0)); E.cellText(cc[2], pct(res, 0));
       for (var i = 3; i < cc.length; i++) E.cellText(cc[i], "");
-      tbl.appendChild(cr);
+      cr.setAttribute("h", "300000"); tbl.appendChild(cr);
       list.forEach(function (r) {
         var tr = kpiTpl.cloneNode(true), c = E.cells(tr), ach = N(r["% Achieved"]), name = r["Objective/ KPIs"] || "";
         var crit = /\(([-+±]?\d+%?)\)/.exec(name);
         E.cellText(c[0], clip(name, 60)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(r["KPI Result"], 1));
-        E.cellText(c[3], crit ? crit[1] : (/schedule performance/i.test(name) ? String(M.spiTarget) : miss(null)));
+        E.cellText(c[3], crit ? crit[1] : (/schedule performance/i.test(name) ? String(M.spiTarget) : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
         E.cellText(c[4], kpiVal(r["NSR Spend Plan 2026 as per Budgeting"]) || miss(null));
         E.cellText(c[5], kpiVal(r["YTD Spend Plan 2026 as per Budgeting"]) || "-"); E.cellText(c[6], kpiVal(r["YTD Actual"]) || "-");
         E.cellText(c[7], pct(ach, 0)); E.cellFill(c[7], ach == null ? null : ach >= 0.95 ? GREEN : ach >= 0.85 ? AMBER : "FF0000");
@@ -342,7 +354,7 @@
           rem = "Revised Spend Plan 2026 (Budget 2026 VP): " + mio(sum(cap, function (p) { return p.fy; })) + " vs original " + mio(sum(cap, function (p) { return p.fyOrig; })) + "; year-end forecast " + mio(sum(cap, function (p) { return p.ytdAct + p.fcRem; }));
         }
         E.cellText(c[8], rem);
-        tbl.appendChild(tr);
+        tr.setAttribute("h", "350000"); tbl.appendChild(tr);
       });
     });
     E.fitTable(frame);
@@ -676,6 +688,8 @@
       clones("spendActions", [behind], function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
       // CAPEX monthly plan: 3 projects per slide
       clones("monthly", chunk(cap, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
+      // KPI scorecard: whole KPI groups, split over as many slides as needed
+      clones("kpi", kpiPages(M), function (p, page) { fillKpi(pkg, p, M, page); });
       // SPI cards: 11 per slide
       var spiList = M.weekly.filter(function (r) { return N(r["Contract Value"]); });   // Progress section: every weekly-report project (as on SPI & S-Curve Outlook)
       var perSpi = 11;
@@ -688,7 +702,6 @@
       return jobs.then(function () {
         if (S.cover) fillCover(pkg, S.cover[0], M);
         if (S.overall) fillOverall(pkg, S.overall[0], M);
-        if (S.kpi) fillKpi(pkg, S.kpi[0], M);
         if (S.values) fillValues(pkg, S.values[0], M);
         if (S.capex) fillCapex(pkg, S.capex[0], M);
         if (S.org) fillOrg(pkg, S.org[0]);
