@@ -263,7 +263,7 @@
       E.cellText(tc, { text: money(v), color: isVar ? (v > 0.5 ? GREEN : v < -0.5 ? RED : "000000") : null, size: size });
     });
   }
-  function fillMatrixSlide(pkg, path, M, title, overallLabel, overall, projects) {
+  function fillMatrixSlide(pkg, path, M, title, overallLabel, overall, projects, heads) {
     var d = pkg.xml(path), frames = E.shapesByName(d, /^Table/).sort(function (a, b) { return E.pos(a).y - E.pos(b).y; });
     var months = M.months.map(mon), ci = M.months.indexOf(M.cut);
     // overall table: rows 0..5, col0 label (rowSpan), col1 row label, cols 2.. months
@@ -277,11 +277,12 @@
     if (f2) {
       var t2 = E.table(f2), hdr = E.rows(t2)[0];
       months.forEach(function (m, i) { var c = E.cells(hdr)[3 + i]; if (c) E.cellText(c, m); });
+      if (heads) heads.forEach(function (h, i) { var c = E.cells(hdr)[i]; if (c) E.cellText(c, h); });   // e.g. Fund Type / Projects
       var blocks = E.resizeRows(t2, 1, 5, projects.length);
       var sz2 = matrixSize(projects.map(function (p) { return matrixRows(p.mPlan, p.mAct); }));
       projects.forEach(function (p, pi) {
         var rows5 = blocks.slice(pi * 5, pi * 5 + 5), c0 = E.cells(rows5[0]);
-        E.cellText(c0[0], p.ID); E.cellText(c0[1], shortName(p.name, 40) + (M.D.hasRev ? "" : ""));
+        E.cellText(c0[0], p.ID); E.cellText(c0[1], p.label || shortName(p.name, 40));
         matrixRows(p.mPlan, p.mAct).forEach(function (vals, k) { fillMatrixRow(E.cells(rows5[k]).slice(3), vals, k === 4, sz2); });
       });
       if (!projects.length) E.removeEl(f2); else E.fitTable(f2);
@@ -902,9 +903,13 @@
       // CAPEX projects only (KPI code 7) on both spending slides
       var ci = M.months.indexOf(M.cut), withPlan = M.spend.filter(function (p) { return p.fy || p.ytdAct || p.fcFY; });
       var cap = withPlan.filter(function (p) { return M.codeKpi[p.ID] === 7; }).sort(function (a, b) { return b.fy - a.fy; });
-      // spending-plan action points: overall CAPEX + the 3 CAPEX projects furthest behind their plan at the cut-off
-      var behind = cap.slice().sort(function (a, b) { var va = matrixRows(a.mPlan, a.mAct)[4][ci] || 0, vb = matrixRows(b.mPlan, b.mAct)[4][ci] || 0; return va - vb; }).slice(0, 3);
-      clones("spendActions", [behind], function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
+      // spending-plan action points: the overall NSR programme, then one block per Fund Type (CAPEX first), 3 per slide
+      var funds = {}; withPlan.forEach(function (p) { var f = String(p.fund || "Other").trim() || "Other"; (funds[f] = funds[f] || []).push(p); });
+      var fundRows = Object.keys(funds).map(function (f) { var o = overallOf(funds[f], M), n = funds[f].length;
+          return { ID: f, label: n + " project" + (n === 1 ? "" : "s"), mPlan: o.plan, mAct: o.act, fy: sum(funds[f], function (p) { return p.fy; }) }; })
+        .sort(function (a, b) { return (/^capex$/i.test(b.ID) ? 1 : 0) - (/^capex$/i.test(a.ID) ? 1 : 0) || b.fy - a.fy; });
+      var allPlan = overallOf(withPlan, M);
+      clones("spendActions", chunk(fundRows, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program", allPlan, g, ["Fund Type", "Projects"]); });
       // CAPEX monthly plan: 3 projects per slide
       clones("monthly", chunk(cap, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
       // CAPEX status: tiles + charts on every slide, project table CAPEX_ROWS per slide
