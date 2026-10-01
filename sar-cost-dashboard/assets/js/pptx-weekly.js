@@ -706,7 +706,7 @@
   /* CAPEX status */
   var CAPEX_ROWS = 4;                     // project rows per "CAPEX 2026 - Status" slide (tiles and charts repeat on every slide)
   function capexList(M) { return M.spend.filter(function (p) { return M.codeKpi[p.ID] === 7 && (p.fy || p.ytdAct || p.fcFY); }).sort(function (a, b) { return b.fy - a.fy; }); }
-  /* Monthly Spend chart: value labels on the Cum plan line (every month from the cut-off to December) above it, and the
+  /* Monthly Spend chart: value labels above every point of the Cum plan line, and the
      Cum Forecast labels below theirs, so each label reads against its own line */
   function cumLabels(doc, ci, last) {
     var C_ = NS.c;
@@ -717,7 +717,8 @@
     var old = E.all(pl, C_, "dLbls")[0];
     var tx = '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="700" b="1"><a:solidFill><a:srgbClr val="21295C"/></a:solidFill></a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>';
     function one(i) { return '<c:dLbl><c:idx val="' + i + '"/><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>' + tx + '<c:dLblPos val="t"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbl>'; }
-    var idx = []; for (var i = Math.max(0, ci); i <= last; i++) idx.push(i);   // cut-off month to December
+    var vals = {}; E.all(E.all(pl, C_, "val")[0] || pl, C_, "pt").forEach(function (pt) { var v = E.all(pt, C_, "v")[0]; vals[pt.getAttribute("idx")] = v ? +v.textContent : 0; });
+    var idx = []; for (var i = 0; i <= last; i++) if (vals[i]) idx.push(i);   // every month with a plan to date
     var xml = '<c:dLbls xmlns:c="' + C_ + '" xmlns:a="' + NS.a + '">' + idx.map(one).join("") +
       '<c:showLegendKey val="0"/><c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>';
     var node = doc.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true);
