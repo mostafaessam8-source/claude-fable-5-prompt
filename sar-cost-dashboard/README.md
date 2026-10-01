@@ -82,8 +82,11 @@ loaded in the dashboard and downloads it, e.g. `NSR - Program - Balance Scorecar
    It is kept in this browser only (IndexedDB) and is never uploaded or committed, because it holds internal data.
 2. Click **Create NSR weekly PowerPoint**. The deck keeps the template's exact formatting (slides, tables,
    native charts with their Excel data). The engine clones or removes slides to fit the data:
-   - one execution slide per project in execution (the same list as the *Projects in Execution* page). Progress, SPI, dates
-     and the milestone table come from card sections 7 & 8; the weekly report supplies achievements and issues;
+   - the slides keep the sample's order; *Old projects status* holds 3 close-out projects per slide, like the sample;
+   - one *Projects in the Execution Phase* slide per project of the Progress section (weekly progress report), with its weekly
+     progress; the project card fills contractor / consultant / funding gaps;
+   - *Program Values* comes from the Project Cards section (budget, contract value, paid, phase, size, status and the execution
+     SPI from card sections 7 & 8); the *SPI* slide comes from the Progress section (ΣEV ÷ ΣPV of the weekly report and S-curves);
    - on the old-projects action points, the step each close-out is waiting on is highlighted (owner in SAR blue);
    - one closing slide per open project in *Projects in Closing*;
    - SPI cards, 11 per slide;

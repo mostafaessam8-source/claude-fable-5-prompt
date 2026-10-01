@@ -273,6 +273,12 @@
       runs.forEach(function (rr) {
         if (rr == null) return;
         var o = typeof rr === "object" ? rr : { text: String(rr) };
+        if ((o.text == null || o.text === "") && runs.length === 1) {   // empty: no run, but keep the size on the paragraph end
+          var src = kids(o.tplRun || tplRun, NS.a, "rPr")[0], ep = end || p.appendChild(p.ownerDocument.createElementNS(NS.a, "a:endParaRPr"));
+          if (src && src.getAttribute("sz") && !ep.getAttribute("sz")) ep.setAttribute("sz", src.getAttribute("sz"));
+          if (o.size) ep.setAttribute("sz", String(Math.round(o.size * 100)));
+          return;
+        }
         var r = (o.tplRun || tplRun).cloneNode(true), rPr = kids(r, NS.a, "rPr")[0], t = kids(r, NS.a, "t")[0];
         if (!rPr) { rPr = r.ownerDocument.createElementNS(NS.a, "a:rPr"); r.insertBefore(rPr, r.firstChild); }
         rPr.removeAttribute("dirty");

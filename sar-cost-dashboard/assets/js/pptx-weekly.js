@@ -78,13 +78,14 @@
     var pv = sum(M.weekly, function (r) { return (N(r["Contract Value"]) || 0) * (N(r["Planned (%) - Cumulative"]) || 0); });
     M.spi = pv ? ev / pv : null;
     M.closing = D.t("Closing_Projects").filter(function (r) { return r.Code || r["Project Name"]; });
-    // projects in execution = project cards with Actual Phase = Execution (as on the site); weekly report when no cards are loaded
-    var wkBy = {}; M.weekly.forEach(function (r) { wkBy[String(r["Project Code"])] = r; });
-    var ce = Object.keys(M.cards).map(function (k) { return M.cards[k]; }).filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); });
-    M.exec = (ce.length ? ce.map(function (c) { return { code: String(c.Code), card: c, w: wkBy[String(c.Code)] || {} }; })
-      : M.weekly.map(function (r) { return { code: String(r["Project Code"]), card: M.cards[String(r["Project Code"])] || null, w: r }; }))
-      .map(function (x) { x.p = progOf(x); x.cv = N(x.w["Contract Value"]) || N(((x.card || {}).Fund || {}).CON) || N(((x.card || {}).Fund || {}).Budget) || 0; return x; })
-      .sort(function (a, b) { return b.cv - a.cv; });
+    // "Projects in the Execution Phase" slides: one per project of the Progress section (weekly progress report),
+    // with its weekly progress; the project card only fills gaps (contractor, consultant, funding, description)
+    M.exec = M.weekly.map(function (r) { var x = { code: String(r["Project Code"]), card: M.cards[String(r["Project Code"])] || null, w: r }; x.p = progOf({ w: r }); x.cv = N(r["Contract Value"]) || 0; return x; });
+    // project-card portfolio (Project Cards section): projects in execution and their SPI from card sections 7 & 8
+    M.cardList = Object.keys(M.cards).map(function (k) { return M.cards[k]; });
+    M.cardExec = M.cardList.filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); }).map(function (c) { var x = { card: c, w: {} }; x.p = progOf(x); x.wt = N((c.Fund || {}).CON) || N((c.Fund || {}).Budget) || 0; return x; });
+    var cpv = sum(M.cardExec, function (x) { return x.p.plan ? x.wt * x.p.plan : 0; }), cev = sum(M.cardExec, function (x) { return x.p.plan ? x.wt * (x.p.act || 0) : 0; });
+    M.cardSpi = cpv ? cev / cpv : null;
     return M;
   }
   /* Progress of a project in execution — card section 7 (Execution Schedule, % to date) and section 8
@@ -182,10 +183,11 @@
       var cur = steps.filter(function (k) { var x = stepState(r, k).status; return x !== "Completed" && x !== "NA"; })[0];
       steps.forEach(function (k, si) {
         var tr = (si === 0 ? top : cont).cloneNode(true), c = E.cells(tr), st = stepState(r, k), now = k === cur, done = st.status === "Completed" || st.status === "NA";
+        tr.setAttribute("h", String(si === 0 ? 245000 : 182000));    // 3 projects × 8 steps fit like the sample's slide
         if (si === 0) {
           [0, 1, 2].forEach(function (i) { c[i].setAttribute("rowSpan", String(steps.length)); });
           E.cellText(c[0], String(startNo + pi)); E.cellText(c[1], (r.Code || "") + " – " + clip(r["Project Name"], 40)); E.cellText(c[2], miss(null));
-          E.cellText(c[7], clip([r["Current Status"], r["Action Plan"]].filter(Boolean).join(" · "), 160) || "");
+          E.cellText(c[7], clip([r["Current Status"], r["Action Plan"]].filter(Boolean).join(" · "), 120) || "");
         } else E.cellText(c[7], "");
         var owner = si === 0 ? (r["Project Manager"] || stepOwner(k)) : stepOwner(k);
         if (now) {          // highlight who holds the action now
@@ -195,9 +197,14 @@
           E.cellText(c[3], done ? { text: owner, color: "A6A6A6", bold: false } : { text: owner, bold: false });
           E.cellText(c[4], done ? { text: k, color: "A6A6A6", bold: false } : { text: k, bold: false });
         }
-        E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending – current" : st.status, color: "C55A11", bold: true }
+        E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
         E.cellText(c[6], st.date ? st.date : miss(null));
+        // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
+        E.all(tr, NS.a, "p").forEach(function (pp) {
+          if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;
+          var ep = E.all(pp, NS.a, "endParaRPr")[0] || pp.appendChild(pp.ownerDocument.createElementNS(NS.a, "a:endParaRPr")); ep.setAttribute("sz", "600");
+        });
         tbl.appendChild(tr);
       });
     });
@@ -343,40 +350,42 @@
 
   /* program values dashboard */
   function setLine(el, pi, text) { E.setRuns(el, pi, [text]); }
-  function fillValues(pkg, path, M) {
-    var d = pkg.xml(path), D = M.D, nsr = D.t("NSR_Project_Data"), cards = Object.keys(M.cards).map(function (k) { return M.cards[k]; });
-    function sh(id) { return E.shape(d, id); }
-    var full = sum(nsr, function (r) { return r["Full Cost"]; }), cv = sum(nsr, function (r) { return r["Contract Value"]; }), paid = sum(nsr, function (r) { return r["Paid from CV as per ERP (Gross value)"]; });
-    var po = nsr.filter(function (r) { return r["PO Number"] != null && r["PO Number"] !== ""; }).length;
+  function fillValues(pkg, path, M) {     // Project Cards section: every card of the monthly EP - NSR Projects workbook
+    var d = pkg.xml(path), cards = M.cardList;
+    if (!cards.length) return;
+    var bud = function (c) { return N((c.Fund || {}).Budget) || 0; };
+    var full = sum(cards, bud), cv = sum(cards, function (c) { return (c.Fund || {}).CON; }), paid = sum(cards, function (c) { return (c.Perf || {}).Paid; });
+    var po = cards.filter(function (c) { return N((c.Fund || {}).CON) || (c.Contracts || []).some(function (k) { return /contractor/i.test(k.Role || "") && k["PO No."]; }); });
+    function ph(c) { return String(c.ActualPhase || ""); }
+    var exe = cards.filter(function (c) { return /^execution/i.test(ph(c)); }), pipe = cards.filter(function (c) { return /^(creation|initiation|planning|tendering)/i.test(ph(c)); });
+    var clo = cards.filter(function (c) { return /^(handover|closing|closed)/i.test(ph(c)); });
     var byText = function (re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s).replace(/\s+/g, " ")); })[0]; };
-    var b1 = byText(/APPROVED ?BUDGET/); if (b1) { setLine(b1, 1, "SAR " + bigB(full)); setLine(b1, 2, nsr.length + " projects"); }
-    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + po + " projects"); }
+    var b1 = byText(/APPROVED ?BUDGET/); if (b1) { setLine(b1, 1, "SAR " + bigB(full)); setLine(b1, 2, cards.length + " projects"); }
+    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + po.length + " projects (" + po.filter(function (c) { return /^execution/i.test(ph(c)); }).length + " Execution)"); }
     var b3 = byText(/TOTAL ?PAID/); if (b3) { setLine(b3, 1, "SAR " + bigB(paid)); setLine(b3, 2, (cv ? Math.round(paid / cv * 100) : 0) + " % of contracted value"); }
-    function grp(re, list) { var b = byText(re); if (!b) return; setLine(b, 2, list.length + " Projects"); setLine(b, 3, "SAR " + sarB(sum(list, function (c) { return (c.Fund || {}).Budget; }))); }
+    function grp(re, list, label) { var b = byText(re); if (!b) return; if (label) setLine(b, 1, label); setLine(b, 2, list.length + " Projects"); setLine(b, 3, "SAR " + sarB(sum(list, bud))); }
     grp(/PMO Reporting Card/, cards);
-    grp(/Under Execution/, cards.filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); }));
-    grp(/Pipeline/, cards.filter(function (c) { return /^(planning|tendering|initiation)/i.test(c.ActualPhase || ""); }));
-    var leg = byText(/Legacy/);
-    if (leg) { var cl = M.closing; setLine(leg, 1, "    Closing phase (closing sheet)"); setLine(leg, 2, cl.length + " Projects"); setLine(leg, 3, "SAR " + sarB(sum(cl, function (r) { return r["Final Contract Value"]; }))); }
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : M.spi.toFixed(2));
+    grp(/Under Execution/, exe);
+    grp(/Pipeline/, pipe);
+    grp(/Legacy/, clo, "    Handover & Closing");
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : M.cardSpi.toFixed(2));
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
-    var bud = byText(/Overall Budget/); if (bud) setLine(bud, 0, "SAR " + sarB(cv));
-    // charts by series name
+    var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.shapesByName(d, /^Chart \d/).forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
-      var x = pkg.xml(cp).documentElement.textContent;
-      if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round((M.spi || 0) * 100) / 100, Math.max(0, Math.round((1.2 - (M.spi || 0)) * 100) / 100)] }] });
-      else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round((cv - paid) / 1e5) / 10] }] });
+      var x = pkg.xml(cp).documentElement.textContent, sp = M.cardSpi || 0;
+      if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] });
+      else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) {
-        var ph = ["Execution", "Planning", "Tendering", "Closing"];
-        pkg.setChart(cp, { cats: ph, series: [{ name: "Phase", values: ph.map(function (p) { return cards.filter(function (c) { return (c.ActualPhase || "").indexOf(p) === 0; }).length; }) }] });
+        pkg.setChart(cp, { cats: ["Execution", "Planning", "Tendering", "Closing"], series: [{ name: "Phase", values: [exe.length,
+          cards.filter(function (c) { return /^(creation|initiation|planning)/i.test(ph(c)); }).length, cards.filter(function (c) { return /^tendering/i.test(ph(c)); }).length, clo.length] }] });
       } else if (/Mega/.test(x)) {
         var sz = ["Mega", "Large", "Medium", "Small"];
-        pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (s) { return cards.filter(function (c) { return c.Size === s; }).length; }) }] });
-      } else if (/On Track/.test(x) && /Delayed/.test(x)) {
-        var st = ["Delayed", "On Hold", "On Track", "At Risk"], norm = function (s) { return /slight/i.test(s) ? "At Risk" : s; };
-        var cnt = st.map(function (s) { return cards.filter(function (c) { return norm((c.Perf || {}).Status || "") === s; }).length; });
-        pkg.setChart(cp, { cats: st, series: st.map(function (s, i) { return { name: s, values: st.map(function (z, j) { return j === i ? cnt[i] : null; }) }; }) });
+        pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (z) { return cards.filter(function (c) { return String(c.Size || "").toLowerCase() === z.toLowerCase(); }).length; }) }] });
+      } else if (/On Track/.test(x) && /Delayed/.test(x)) {     // "Overall Status – Execution": cards in execution
+        var st = ["Delayed", "On Hold", "On Track", "At Risk"], norm = function (z) { return /slight/i.test(z) ? "At Risk" : z; };
+        var cnt = st.map(function (z) { return exe.filter(function (c) { return norm((c.Perf || {}).Status || "") === z; }).length; });
+        pkg.setChart(cp, { cats: st, series: st.map(function (z, i) { return { name: z, values: st.map(function (q, j) { return j === i ? cnt[i] : null; }) }; }) });
       }
     });
   }
@@ -497,7 +506,7 @@
     if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], miss(clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24))); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org)); }
     // overall status
     var st = textShape(/^(On Track|At Risk|Delayed|Slightly Delayed|On Hold|Ahead)$/);
-    if (st) { var s = (card.Perf || {}).Status || r["Performance Status"] || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
+    if (st) { var s = r["Performance Status"] || (card.Perf || {}).Status || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
     var brief = textShape(/^To design|^The |^Design|^Supply|^Construct|^The project|^The scope/);
     var briefs = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 2000000 && p.y < 2500000 && E.text(x).length > 20; });
     if (briefs[0]) E.setParas(briefs[0], clip(r["Project Description"] || card.Description || "", 260) || miss(null));
@@ -620,7 +629,7 @@
       jobs = jobs.then(function () { return photoPlaceholder().then(function (b) { photo = pkg.freeName("ppt/media", "nsr_photo", ".png"); pkg.zip.file(photo, b); pkg.ensureDefault("png", "image/png"); }); });
       // closing action points: 2 projects per slide
       var openCl = openClosing(M);
-      clones("closingActions", chunk(openCl, 2), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 2 + 1); });
+      clones("closingActions", chunk(openCl, 3), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 3 + 1); });
       // CAPEX projects only (KPI code 7) on both spending slides
       var ci = M.months.indexOf(M.cut), withPlan = M.spend.filter(function (p) { return p.fy || p.ytdAct || p.fcFY; });
       var cap = withPlan.filter(function (p) { return M.codeKpi[p.ID] === 7; }).sort(function (a, b) { return b.fy - a.fy; });
@@ -630,7 +639,7 @@
       // CAPEX monthly plan: 3 projects per slide
       clones("monthly", chunk(cap, 3), function (p, g) { fillMatrixSlide(pkg, p, M, null, "Overall NSR Program – CAPEX", overallOf(cap, M), g); });
       // SPI cards: 11 per slide
-      var spiList = M.weekly.filter(function (r) { return M.scurve(r["Source.Name"]).length; });
+      var spiList = M.weekly.filter(function (r) { return N(r["Contract Value"]); });   // Progress section: every weekly-report project (as on SPI & S-Curve Outlook)
       var perSpi = 11;
       clones("spi", chunk(spiList, perSpi), function (p, g, i) { fillSpi(pkg, p, M, g, i === 0); });
       // delivery KPI: 2 per slide
