@@ -392,6 +392,18 @@
       if (k.localName === "spPr" || k.localName === "marker") E.all(k, NS.a, "srgbClr").forEach(function (c) { c.setAttribute("val", hex); });
     });
   }
+  function ptMarkers(pkg, cp, idx, vals) {   // one marker per point, coloured by that point's own value (template overrides removed)
+    var doc = pkg.xml(cp), ser = E.all(doc, NS.c, "ser")[idx]; if (!ser) return;
+    E.all(ser, NS.c, "dPt").forEach(function (p) { if (p.parentNode === ser) ser.removeChild(p); });
+    var before = Array.prototype.filter.call(ser.childNodes, function (k) { return /^(dLbls|trendline|errBars|cat|val|smooth|extLst)$/.test(k.localName); })[0] || null;
+    var mk = E.all(ser, NS.c, "marker")[0], sym = mk && E.all(mk, NS.c, "symbol")[0], size = mk && E.all(mk, NS.c, "size")[0];
+    vals.forEach(function (v, i) {
+      if (v == null) return;
+      var hex = spiCol(v), xml = '<c:dPt xmlns:c="' + NS.c + '" xmlns:a="' + NS.a + '"><c:idx val="' + i + '"/><c:marker><c:symbol val="' + (sym ? sym.getAttribute("val") : "circle") + '"/><c:size val="' + (size ? size.getAttribute("val") : "6") + '"/>' +
+        '<c:spPr><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="' + hex + '"/></a:solidFill></a:ln></c:spPr></c:marker><c:bubble3D val="0"/></c:dPt>';
+      ser.insertBefore(doc.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true), before);
+    });
+  }
   function ptColor(pkg, cp, pt, hex) {   // one data point of the first series (doughnut slice)
     var ser = E.all(pkg.xml(cp), NS.c, "ser")[0]; if (!ser) return;
     E.all(ser, NS.c, "dPt").forEach(function (dp) { var i = E.all(dp, NS.c, "idx")[0]; if (i && +i.getAttribute("val") === pt) E.all(dp, NS.a, "srgbClr").forEach(function (c) { if (c.parentNode.parentNode.localName === "spPr") c.setAttribute("val", hex); }); });
@@ -411,7 +423,7 @@
       lineColor(c.box, spiCol(spi));
       if (c.chart) {
         var cp = pkg.chartOf(path, c.chart), s = spiSeries(M, r);
-        if (cp) { pkg.setChart(cp, { cats: s.cats, catFmt: "d-mmm", series: [{ name: "SPI", values: s.vals }, { name: "Target", values: s.cats.map(function () { return M.spiTarget; }) }] }); serColor(pkg, cp, 0, spiCol(spi)); }
+        if (cp) { pkg.setChart(cp, { cats: s.cats, catFmt: "d-mmm", series: [{ name: "SPI", values: s.vals }, { name: "Target", values: s.cats.map(function () { return M.spiTarget; }) }] }); serColor(pkg, cp, 0, spiCol(spi)); ptMarkers(pkg, cp, 0, s.vals); }
       }
     });
   }
