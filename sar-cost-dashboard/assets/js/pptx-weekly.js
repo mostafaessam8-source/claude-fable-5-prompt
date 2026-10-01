@@ -537,11 +537,12 @@
     function byText(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); }); }
     byText(/^SAR [\d.]+M$/).forEach(function (s) {
       var p = E.pos(s), lbl = byText(/./).filter(function (x) { var q = E.pos(x); return q && Math.abs(q.x - p.x) < 400000 && q.y < p.y && p.y - q.y < 500000; })[0], l = lbl ? E.text(lbl) : "";
-      if (/Planned Budget/.test(l)) E.setParas(s, sarM(yp)); else if (/Actual Budget/.test(l)) E.setParas(s, sarM(ya)); else if (/Variance/.test(l)) E.setParas(s, { text: sarM(ya - yp).replace("-", "\u2011").replace(" ", "\u00A0"), size: ya - yp < 0 ? 17 : null });   // narrow box: keep on one line
+      if (/Planned Budget/.test(l)) E.setParas(s, { text: sarM(yp).replace(" ", "\u00A0"), size: 16 }); else if (/Actual Budget/.test(l)) E.setParas(s, { text: sarM(ya).replace(" ", "\u00A0"), size: 16 });
+      else if (/Variance/.test(l)) E.setParas(s, { text: sarM(ya - yp).replace("-", "\u2011").replace(" ", "\u00A0"), size: 16 });   // narrow box: keep on one line
     });
     byText(/^(Planned|Actual) Budget/).forEach(function (s) { E.setRuns(s, 0, [E.text(s).split("(")[0], "(Till " + cutM + ")"]); });
-    var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, sarM(fy).replace(" ", "\u00A0"));
-    var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 18 }); }   // one line in the narrow tile
+    var yb = byText(/^SAR [\d.]+M$/).filter(function (s) { return E.pos(s).y < 2000000 && E.pos(s).x < 4000000; })[0]; if (yb) E.setParas(yb, { text: sarM(fy).replace(" ", "\u00A0"), size: 18 });
+    var vp = byText(/^-?\d+%$/)[0]; if (vp) { var vpv = yp ? Math.round((ya - yp) / yp * 100) : 0; E.setParas(vp, { text: (vpv < 0 ? "\u2011" + (-vpv) : vpv) + "%", size: 16 }); }   // one line in the narrow tile
     var lt = byText(/^List of Capex projects/)[0]; if (lt) E.setParas(lt, "List of Capex projects" + (pn > 1 ? "  (" + (pi + 1) + " of " + pn + ")" : "") + " · " + cap.length + " projects");
     var yl = byText(/Yearly Budget/)[0]; if (yl) E.setParas(yl, "Yearly Budget – " + (M.D.hasRev ? "Rev Spend Plan" : "Spend Plan"));
     // table
@@ -549,7 +550,8 @@
     // every CAPEX project, CAPEX_ROWS per slide; the Total row is always the whole CAPEX portfolio
     var shown = page;
     var body = E.resizeRows(tbl, 1, 1, shown.length); tbl.appendChild(total);
-    var sz = 10;                           // one readable size for the whole table (header is 10.5 pt)
+    var sz = 9;                            // one readable size for the whole table
+    E.cells(rs[0]).forEach(function (hc) { E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "950"); }); });
     function cell(c, v) { E.cellText(c, typeof v === "object" ? { text: v.text, color: v.color, size: sz } : { text: v, size: sz }); }
     shown.forEach(function (p, i) {
       var c = E.cells(body[i]);
@@ -566,6 +568,12 @@
     E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
       var x = pkg.xml(cp).documentElement.textContent;
+      // compact chart text: axes / legend 8 pt, data labels 7 pt (template uses 11 pt, which crowds the axis and legend)
+      E.all(pkg.xml(cp), NS.a, "defRPr").forEach(function (r) {
+        var n = r.parentNode; while (n && !/^(dLbls|dLbl|legend|catAx|valAx|dateAx|title|chartSpace)$/.test(n.localName)) n = n.parentNode;
+        var k = n ? n.localName : "";
+        r.setAttribute("sz", /dLbl/.test(k) ? "700" : k === "title" ? "900" : "800"); r.setAttribute("b", /dLbl/.test(k) ? "1" : "0");
+      });
       if (/Cum Forecast/.test(x)) {
         var ci = M.months.indexOf(M.cut), ov = overallOf(cap, M), cp1 = 0, ca = 0, cf = 0;
         var cumP = ov.plan.map(function (v) { return Math.round((cp1 += v) / 1e5) / 10; });
@@ -586,8 +594,8 @@
     var ins = byText(/^Achieved|The overall forecast/)[0];
     if (ins) {
       var ach = yp ? ya / yp : null, ov2 = ya + rem;
-      E.setParas(ins, [[{ text: "YTD actual is " }, { text: pct(ach, 0), bold: true }, { text: " of the YTD " + (M.D.hasRev ? "Rev " : "") + "plan (till " + cutM + ")." }],
-        [{ text: "The overall forecast is " }, { text: mio(ov2), bold: true }, { text: ov2 >= fy ? ", exceeding the yearly budget by " : ", below the yearly budget by " }, { text: mio(Math.abs(ov2 - fy)), bold: true }]]);
+      E.setParas(ins, [[{ text: "YTD actual is ", size: 10 }, { text: pct(ach, 0), bold: true, size: 10 }, { text: " of the YTD " + (M.D.hasRev ? "Rev " : "") + "plan (till " + cutM + ").", size: 10 }],
+        [{ text: "The overall forecast is ", size: 10 }, { text: mio(ov2), bold: true, size: 10 }, { text: ov2 >= fy ? ", exceeding the yearly budget by " : ", below the yearly budget by ", size: 10 }, { text: mio(Math.abs(ov2 - fy)), bold: true, size: 10 }]]);
     }
   }
 
