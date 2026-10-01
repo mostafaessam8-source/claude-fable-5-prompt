@@ -331,6 +331,18 @@
     if (cur.length) pages.push(cur);
     return pages.length ? pages : [[]];
   }
+  /* cost KPIs (codes 7 CAPEX Variance, 8 Non-KPI Spending): with Budget 2026 loaded the target and the YTD plan are
+     the Rev Spend Plan (FY and to the cut-off); % achieved and the weighted result follow from it */
+  function kpiFig(r, M) {
+    var code = N(r["KPI Code"]), o = { target: N(r["NSR Spend Plan 2026 as per Budgeting"]), plan: N(r["YTD Spend Plan 2026 as per Budgeting"]), act: N(r["YTD Actual"]),
+      ach: N(r["% Achieved"]), res: N(r["KPI Result"]) };
+    if (!M.D.hasRev || (code !== 7 && code !== 8)) return o;
+    var list = M.spend.filter(function (p) { return p.kpi === code; }); if (!list.length) return o;
+    o.target = sum(list, function (p) { return p.fy; }); o.plan = sum(list, function (p) { return p.ytdPlan; });
+    if (o.act == null) o.act = sum(list, function (p) { return p.ytdAct; });
+    o.ach = o.plan ? o.act / o.plan : null; o.res = o.ach == null ? o.res : (N(r["KPI Weight (%)"]) || 0) * Math.min(1, o.ach);
+    return o;
+  }
   function fillKpi(pkg, path, M, page) {
     var d = pkg.xml(path), frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), rs = E.rows(tbl);
     var hdr = rs[0], catTpl = rs[1], kpiTpl = rs[2], cutTxt = M.cut ? dShort(M.cut.slice(0, 8) + new Date(Date.UTC(+M.cut.slice(0, 4), +M.cut.slice(5, 7), 0)).getUTCDate()) : "";
@@ -340,22 +352,22 @@
     (page || kpiPages(M)[0]).forEach(function (pg) {
       var g = pg.g, gi = pg.no - 1;
       var list = M.kpi.filter(function (r) { return r["KPI Filter"] === g; });
-      var cr = catTpl.cloneNode(true), cc = E.cells(cr), w = sum(list, function (r) { return r["KPI Weight (%)"]; }), res = sum(list, function (r) { return r["KPI Result"]; });
+      var cr = catTpl.cloneNode(true), cc = E.cells(cr), w = sum(list, function (r) { return r["KPI Weight (%)"]; }), res = sum(list, function (r) { return kpiFig(r, M).res; });
       E.cellText(cc[0], (gi + 1) + ". " + g + " (" + pct(w, 0) + ")"); E.cellText(cc[1], pct(w, 0)); E.cellText(cc[2], pct(res, 0));
       for (var i = 3; i < cc.length; i++) E.cellText(cc[i], "");
       cr.setAttribute("h", "300000"); tbl.appendChild(cr);
       list.forEach(function (r) {
-        var tr = kpiTpl.cloneNode(true), c = E.cells(tr), ach = N(r["% Achieved"]), name = r["Objective/ KPIs"] || "";
+        var tr = kpiTpl.cloneNode(true), c = E.cells(tr), F = kpiFig(r, M), ach = F.ach, name = r["Objective/ KPIs"] || "";
         var crit = /\(([-+±]?\d+%?)\)/.exec(name);
-        E.cellText(c[0], clip(name, 60)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(r["KPI Result"], 1));
+        E.cellText(c[0], clip(name, 60)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(F.res, 1));
         E.cellText(c[3], crit ? crit[1] : (/schedule performance/i.test(name) ? String(M.spiTarget) : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
-        E.cellText(c[4], kpiVal(r["NSR Spend Plan 2026 as per Budgeting"]) || miss(null));
-        E.cellText(c[5], kpiVal(r["YTD Spend Plan 2026 as per Budgeting"]) || "-"); E.cellText(c[6], kpiVal(r["YTD Actual"]) || "-");
+        E.cellText(c[4], kpiVal(F.target) || miss(null));
+        E.cellText(c[5], kpiVal(F.plan) || "-"); E.cellText(c[6], kpiVal(F.act) || "-");
         E.cellText(c[7], pct(ach, 0)); E.cellFill(c[7], ach == null ? null : ach >= 0.95 ? GREEN : ach >= 0.85 ? AMBER : "FF0000");
         var rem = r.Remarks ? clip(r.Remarks, 90) : "";
         if (!rem && M.D.hasRev && /capex/i.test(name)) {
           var cap = M.spend.filter(function (p) { return p.kpi === 7; });
-          rem = "Revised Spend Plan 2026 (Budget 2026 VP): " + mio(sum(cap, function (p) { return p.fy; })) + " vs original " + mio(sum(cap, function (p) { return p.fyOrig; })) + "; year-end forecast " + mio(sum(cap, function (p) { return p.ytdAct + p.fcRem; }));
+          rem = "Target = Rev Spend Plan 2026 (Budget 2026 VP) " + mio(sum(cap, function (p) { return p.fy; })) + " · original " + mio(sum(cap, function (p) { return p.fyOrig; })) + " · year-end forecast " + mio(sum(cap, function (p) { return p.ytdAct + p.fcRem; }));
         }
         E.cellText(c[8], rem);
         tr.setAttribute("h", "350000"); tbl.appendChild(tr);
