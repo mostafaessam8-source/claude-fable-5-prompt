@@ -8,6 +8,8 @@
   "use strict";
   var E = window.PptxEngine, NS = E.NS;
   var MISSING = "[To be filled]", RED = "C00000", GREEN = "00B050", AMBER = "FFC000", TEAL = "00778B";
+  var SPI_OK = 0.98;                       // SPI colour rule for the whole deck: below 0.98 red, otherwise green
+  function spiCol(v) { return v != null && v >= SPI_OK ? GREEN : RED; }
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   /* ------------------------------------------------------------------ formatting */
@@ -367,17 +369,32 @@
   }
   function cardsOn(d) {   // SPI cards: card shape + name text + value text + chart inside its bounds
     var boxes = E.shapesByName(d, /^Shape 18$/).map(function (b) { return { box: b, p: E.pos(b) }; }).filter(function (o) { return o.p; });
-    var others = E.all(d, NS.p, "cNvPr").map(function (n) { return n.parentNode.parentNode; });
+    var others = E.all(d, NS.p, "cNvPr").map(function (n) { return n.parentNode.parentNode; })
+      .filter(function (s) { return s.parentNode && s.parentNode.localName === "spTree"; });   // group children use the group's own coordinates (e.g. the SPI gauge)
     return boxes.map(function (b) {
       var inside = others.filter(function (s) { if (s === b.box) return false; var p = E.pos(s); return p && p.x >= b.p.x - 20000 && p.y >= b.p.y - 20000 && p.x < b.p.x + b.p.w && p.y < b.p.y + b.p.h; });
       var texts = inside.filter(function (s) { return s.localName === "sp" && E.text(s).trim(); }).sort(function (a, c) { return E.pos(a).y - E.pos(c).y; });
       return { box: b.box, y: b.p.y, x: b.p.x, name: texts[0], value: texts[1], chart: inside.filter(function (s) { return s.localName === "graphicFrame" && s.getElementsByTagNameNS(NS.c, "chart").length; })[0], all: inside };
     }).sort(function (a, b) { return a.y - b.y || a.x - b.x; });
   }
+  function lineColor(sh, hex) {          // shape outline colour
+    var spPr = sh && sh.getElementsByTagNameNS(NS.p, "spPr")[0], ln = spPr && spPr.getElementsByTagNameNS(NS.a, "ln")[0]; if (!ln) return;
+    E.all(ln, NS.a, "srgbClr").forEach(function (c) { if (c.parentNode.parentNode === ln) c.setAttribute("val", hex); });
+  }
+  function serColor(pkg, cp, idx, hex) {  // line + markers of one chart series
+    var ser = E.all(pkg.xml(cp), NS.c, "ser")[idx]; if (!ser) return;
+    Array.prototype.forEach.call(ser.childNodes, function (k) {
+      if (k.localName === "spPr" || k.localName === "marker") E.all(k, NS.a, "srgbClr").forEach(function (c) { c.setAttribute("val", hex); });
+    });
+  }
+  function ptColor(pkg, cp, pt, hex) {   // one data point of the first series (doughnut slice)
+    var ser = E.all(pkg.xml(cp), NS.c, "ser")[0]; if (!ser) return;
+    E.all(ser, NS.c, "dPt").forEach(function (dp) { var i = E.all(dp, NS.c, "idx")[0]; if (i && +i.getAttribute("val") === pt) E.all(dp, NS.a, "srgbClr").forEach(function (c) { if (c.parentNode.parentNode.localName === "spPr") c.setAttribute("val", hex); }); });
+  }
   function fillSpi(pkg, path, M, list, first) {
     var d = pkg.xml(path), cards = cardsOn(d);
     var big = E.shapesByName(d, /^Text 7$/).filter(function (s) { return /^\d/.test(E.text(s).trim()); })[0];
-    if (big) E.setParas(big, M.spi == null ? miss(null) : M.spi.toFixed(2));
+    if (big) E.setParas(big, M.spi == null ? miss(null) : { text: M.spi.toFixed(2), color: spiCol(M.spi) });
     E.shapesByName(d, /^Text 8$/).forEach(function (s) { if (/Current SPI/i.test(E.text(s))) E.setParas(s, "Current SPI  •  Target " + M.spiTarget); });
     E.shapesByName(d, /^TextBox 10$/).forEach(function (s) { if (/^0\.\d+$/.test(E.text(s).trim())) E.setParas(s, String(M.spiTarget)); });
     cards.forEach(function (c, i) {
@@ -385,10 +402,11 @@
       if (!r) { c.all.concat([c.box]).forEach(E.removeEl); return; }
       var spi = wSpi(r), name = r["Project Code"] + " - " + shortName(r["Project Name"], 22);
       if (c.name) E.setParas(c.name, critical(r, M) ? [[{ text: name }, { text: " - Critical", color: RED }]] : name);
-      if (c.value) E.setParas(c.value, { text: spi == null ? "-" : spi.toFixed(2), color: spi != null && spi < M.spiTarget ? RED : TEAL });
+      if (c.value) E.setParas(c.value, { text: spi == null ? "-" : spi.toFixed(2), color: spiCol(spi) });
+      lineColor(c.box, spiCol(spi));
       if (c.chart) {
         var cp = pkg.chartOf(path, c.chart), s = spiSeries(M, r);
-        if (cp) pkg.setChart(cp, { cats: s.cats, catFmt: "d-mmm", series: [{ name: "SPI", values: s.vals }, { name: "Target", values: s.cats.map(function () { return M.spiTarget; }) }] });
+        if (cp) { pkg.setChart(cp, { cats: s.cats, catFmt: "d-mmm", series: [{ name: "SPI", values: s.vals }, { name: "Target", values: s.cats.map(function () { return M.spiTarget; }) }] }); serColor(pkg, cp, 0, spiCol(spi)); }
       }
     });
   }
@@ -415,7 +433,7 @@
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
     grp(/Legacy|Handover/, leg, "    Legacy ( Completed" + (yrs.length ? " – " + (yrs.length > 1 ? yrs[0] + "-" + yrs[yrs.length - 1] : yrs[0]) : "") + ")");
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : M.spi.toFixed(2));   // SPI: Progress section
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : { text: M.spi.toFixed(2), color: spiCol(M.spi) });   // SPI: Progress section
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.all(d, NS.a, "t").forEach(function (t) { if (/East Program - DB/.test(t.textContent)) t.textContent = t.textContent.replace("East Program - DB", "NSR Program - DB"); });
@@ -433,7 +451,7 @@
       var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
       var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.spi || 0;
       if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
-      if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] });
+      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, spiCol(sp)); }
       else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) pkg.setChart(cp, { cats: phases.map(function (p) { return p[0]; }), series: [{ name: "Phase", values: phases.map(function (p) { return p[1]; }) }] });
       else if (/Mega/.test(x)) { var sz = ["Mega", "Large", "Medium", "Small"]; pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (z) { return db.filter(function (r) { return String(r["Project Size"] || "").trim().toLowerCase() === z.toLowerCase(); }).length; }) }] }); }
@@ -460,7 +478,7 @@
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
     grp(/Legacy/, clo, "    Handover & Closing");
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : M.cardSpi.toFixed(2));
+    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : { text: M.cardSpi.toFixed(2), color: spiCol(M.cardSpi) });
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
     E.shapesByName(d, /^Chart \d/).forEach(function (f) {
@@ -468,7 +486,7 @@
       var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
       var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.cardSpi || 0;
       if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
-      if (/Remaining to target/.test(x)) pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] });
+      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, spiCol(sp)); }
       else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
       else if (/Phase/.test(x) && /Execution/.test(x)) {
         pkg.setChart(cp, { cats: ["Execution", "Planning", "Tendering", "Closing"], series: [{ name: "Phase", values: [exe.length,
@@ -517,6 +535,9 @@
       var act = t(/Actual$/), plan = t(/^Planned/), spiT = t(/^SPI/), eot = t(/^EOT/);
       if (act) E.setParas(act, pct(w["Actual (%) - Cumulative"]) + "  Actual"); if (plan) E.setParas(plan, "Planned " + pct(w["Planned (%) - Cumulative"]));
       var sv = wSpi(w); if (spiT) E.setParas(spiT, "SPI  " + (sv == null ? "-" : sv.toFixed(2)));
+      if (spiT) { var sq = E.pos(spiT), cxm = sq.x + sq.w / 2, cym = sq.y + sq.h / 2;   // the pill behind the SPI text
+        shapes.filter(function (s) { var p = E.pos(s); return s !== spiT && s.localName === "sp" && p && p.w < 2500000 && cxm > p.x && cxm < p.x + p.w && cym > p.y && cym < p.y + p.h && s.getElementsByTagNameNS(NS.a, "solidFill").length; })
+          .forEach(function (s) { E.setFill(s, spiCol(sv)); }); }
       if (eot) E.setParas(eot, [[{ text: "EOT: " }, { text: MISSING, color: RED }]]);
       // progress bar: the shorter of the two bar shapes is the "actual" fill
       var bars = shapes.filter(function (s) { var p = E.pos(s); return s.localName === "sp" && !E.text(s).trim() && p && p.h < 150000 && p.w > 1000000; }).sort(function (a, b) { return E.pos(b).w - E.pos(a).w; });
@@ -544,7 +565,7 @@
     values: { 2800: 2000, 1300: 1000 },
     delivery: { 1800: 1400, 1600: 1400, 1500: 1200, 1350: 1100 },
     exec: { 1800: 1200, 1624: 1300, 1600: 1200, 1462: 1200, 1400: 1100 },
-    closing: { 1624: 1300, 1525: 1050, 1462: 1200 }
+    closing: { 1624: 1200, 1525: 1000, 1462: 1100 }
   };
   function compactSlide(pkg, path, kind) {
     if (kind === "cover" || kind === "org") return;
@@ -683,8 +704,8 @@
     });
     var varT = E.all(d, NS.a, "tbl").filter(function (t) { return /^Variance/.test(E.all(t, NS.a, "t").map(function (x) { return x.textContent; }).join("").trim()); })[0];
     if (varT) E.cellText(E.cells(E.rows(varT)[0])[0], [[{ text: "Variance ", size: 11 }, pl == null ? { text: "- ", color: "768692", size: 11 } : { text: sgnPct(vr2) + " ", color: vr2 < 0 ? RED : GREEN, size: 11, bold: true }]]);
-    var box = byName(/^Rectangle: Rounded Corners 5$/)[0], arrow = byName(/^Arrow: Notched Right/)[0], good = spi != null && spi >= 1;
-    if (box) { E.setParas(box, { text: spi == null ? "-" : spi.toFixed(2), color: good ? GREEN : RED }); E.setFill(box, good ? "CCFFCC" : "FFCCFF", good ? GREEN : RED); }
+    var box = byName(/^Rectangle: Rounded Corners 5$/)[0], arrow = byName(/^Arrow: Notched Right/)[0], good = spi != null && spi >= SPI_OK;
+    if (box) { E.setParas(box, { text: spi == null ? "-" : spi.toFixed(2), color: good ? GREEN : RED }); E.setFill(box, good ? "CCFFCC" : "FFD9D9", good ? GREEN : RED); }
     if (arrow) { arrow.getElementsByTagNameNS(NS.a, "xfrm")[0].setAttribute("rot", good ? "16200000" : "5400000"); E.setFill(arrow, good ? GREEN : RED); }
     var paidT = textShape(/^Paid \/ Approved IPCs/); if (paidT) E.setRuns(paidT, 1, [money(paidOf) + ".00 SAR"]);
     // milestones table
@@ -712,11 +733,16 @@
     var d = pkg.xml(path), code = String(r.Code || ""), cd = M.D.t("Contract_Details").filter(function (x) { return String(x.Code) === code; })[0] || {}, card = M.cards[code] || {};
     function textShape(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); })[0]; }
     var t = textShape(/^Project - /); if (t) E.setParas(t, "Project - " + code + " : " + clip(r["Project Name"], 70));
-    var c1 = textShape(/^Contractor\s/); if (c1) E.setParas(c1, [[{ text: "Contractor            : " }, miss(clip(r.Contractor, 18))]]);
-    var c2 = textShape(/^Consultant\s/); if (c2) E.setParas(c2, [[{ text: "Consultant            : " }, miss(null)]]);
-    var c3 = textShape(/^Funded by/); if (c3) E.setParas(c3, [[{ text: "Funded by             : " }, miss((card.Fund || {}).Org)]]);
+    function head(sh, label, v) {        // one line, 9 pt: label, value after the template icon
+      if (!sh) return; v = typeof v === "object" ? { text: v.text, color: v.color, size: 9, bold: true } : { text: v, size: 9, bold: true };
+      E.setParas(sh, [[{ text: label, size: 9, bold: true }, v]]);
+      var xf = sh.getElementsByTagNameNS(NS.a, "xfrm")[0], ex = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0]; if (ex && +ex.getAttribute("cx") < 3000000) ex.setAttribute("cx", "3000000");   // room for one line
+    }
+    head(textShape(/^Contractor\s/), "Contractor            : ", miss(clip(r.Contractor, 22)));
+    head(textShape(/^Consultant\s/), "Consultant            : ", miss(null));
+    head(textShape(/^Funded by/), "Funded by             : ", miss(clip((card.Fund || {}).Org, 22)));
     var brief = E.all(d, NS.p, "sp").filter(function (s) { var p = E.pos(s); return p && p.y > 2400000 && p.y < 3200000 && E.text(s).length > 30; })[0];
-    if (brief) E.setParas(brief, clip(cd.Scope || card.Description || "", 230) || miss(null));
+    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, color: RED, size: 10 }); }
     var tbl = E.all(d, NS.a, "tbl").filter(function (x) { return /ISSUES/.test(x.textContent); })[0];
     if (tbl) {
       var pend = closingSteps(M).filter(function (k) { return stepState(r, k).status !== "Completed" && stepState(r, k).status !== "NA"; });
@@ -725,9 +751,10 @@
       if (pend.length) items.push(["Pending close-out steps: " + pend.join(", "), null]);
       if (!items.length) items.push([null, null]);
       var rows = E.resizeRows(tbl, 1, 1, items.length);
-      var z10 = function (v) { return typeof v === "object" && v ? { text: v.text, color: v.color, size: 10 } : { text: v, size: 10 }; };
+      var z10 = function (v) { return typeof v === "object" && v ? { text: v.text, color: v.color, size: 9.5 } : { text: v, size: 9.5 }; };
       items.forEach(function (it, i) { var c = E.cells(rows[i]); E.cellText(c[0], z10((i + 1) + ".")); E.cellText(c[1], z10(miss(it[0]))); E.cellText(c[2], z10(miss(it[1]))); });
-      E.cells(E.rows(tbl)[0]).forEach(function (hc) { E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "1050"); }); });
+      E.cells(E.rows(tbl)[0]).forEach(function (hc) { E.all(hc, NS.a, "rPr").concat(E.all(hc, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", "1000"); }); });
+      E.rows(tbl)[0].setAttribute("h", "300000"); rows.forEach(function (tr) { tr.setAttribute("h", "330000"); });   // rows grow with their text
       var fr = tbl.parentNode; while (fr && fr.localName !== "graphicFrame") fr = fr.parentNode; if (fr) E.fitTable(fr);
     }
   }
