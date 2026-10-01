@@ -89,9 +89,23 @@
    * When `rows` is given the slicers cascade: each list only offers values
    * present in rows that pass the *other* slicers, with a row count.
    */
+  /** Keep the slicer bar in view under the header while the page scrolls; it turns compact once stuck.
+      --fbar-h (its stuck height) lets the section bars and section jumps sit below it. */
+  function stickyBar(bar, sent) {
+    var root = document.documentElement;
+    if (window.__fbarObs) window.__fbarObs.forEach(function (o) { o.disconnect(); });
+    function setH() { root.style.setProperty("--fbar-h", (bar.classList.contains("stuck") ? bar.offsetHeight : 0) + "px"); }
+    var hh = parseFloat(getComputedStyle(root).getPropertyValue("--header-h")) || 72;
+    var io = new IntersectionObserver(function (es) { bar.classList.toggle("stuck", !es[0].isIntersecting); setH(); }, { rootMargin: "-" + (hh + 1) + "px 0px 0px 0px", threshold: 0 });
+    io.observe(sent);
+    var ro = window.ResizeObserver ? new ResizeObserver(setH) : null; if (ro) ro.observe(bar);
+    window.__fbarObs = [io].concat(ro ? [ro] : []);
+  }
   function filterBar(ctx, defs, rows) {
     var st = ctx.state.f || (ctx.state.f = {});
-    var bar = add(ctx.view, '<div class="filters collapsible' + (ctx.state.fOpen ? " open" : "") + '"></div>');
+    var sent = add(ctx.view, '<div class="fbar-sent"></div>');
+    var bar = add(ctx.view, '<div class="filters fbar collapsible' + (ctx.state.fOpen ? " open" : "") + '"></div>');
+    stickyBar(bar, sent);
     // Phones: the slicers fold away behind one button; active filters stay visible as chips.
     var nActive = defs.reduce(function (n, d) { return n + ((st[d.key] || []).length ? 1 : 0); }, 0);
     var tg = el('<button type="button" class="filters-toggle">⚲ Filters' + (nActive ? " <b>" + nActive + "</b>" : "") + (ctx.state.fOpen ? " ▴" : " ▾") + "</button>");

@@ -153,6 +153,8 @@
 
   function render(page) {
     var view = document.getElementById("view");
+    if (window.__fbarObs) { window.__fbarObs.forEach(function (o) { o.disconnect(); }); window.__fbarObs = null; }
+    document.documentElement.style.setProperty("--fbar-h", "0px");   // set again by a page's sticky filter bar
     U.destroyCharts();
     view.innerHTML = "";
     var head = U.el('<div class="page-head"><div class="page-title"><h2>' + esc(page.title) + "</h2><p>" + esc(page.sub) +
