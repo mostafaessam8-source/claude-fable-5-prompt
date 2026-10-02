@@ -252,6 +252,54 @@
     if (finK.length) txt.push("Finance: " + (finK.length > 1 ? finK.slice(0, -1).join(", ") + " & " + finK[finK.length - 1] : finK[0]) + " after close-out");
     return "Next: " + txt.join(" → ");
   }
+  /* Old projects (closing phase): forecast date for every close-out step not yet completed, worked out from the
+     closing register (progress, contract finish, current status / action plan), the project's own weekly report
+     (forecast finish) and the report date:
+     · works not finished → AMP-E1 one month after the works finish (weekly forecast, else contract finish if still
+       ahead, else two months from the report date); finished → one month from the report date
+     · blockers in the status add time: AMP-C still open +1 month, CR in process +1 month, waiting on an authority +1.5 months
+     · AMP-E2 after the 12-month defects liability period from the works finish (at least 1.5 months after AMP-E1)
+     · handover report AMP-E1 +1 month; close-out report AMP-E2 +1 month; AP guarantee AMP-E1 +2 months;
+       retention close-out +1.5 months; final payment close-out +2 months; performance guarantee after AMP-E2 and
+       the final payment +1 month
+     · a step with a text status (e.g. "In process") is due one month from the report date
+     Dates are rounded to month end. → { dates: { step: "yyyy-mm-dd" }, basis } */
+  function addDays(d, n) { return new Date(Date.parse(d) + n * 864e5).toISOString().slice(0, 10); }
+  function monthEnd(d) { var t = new Date(Date.parse(d)); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).toISOString().slice(0, 10); }
+  function maxD() { return [].slice.call(arguments).filter(Boolean).sort().pop(); }
+  function closingForecast(M, r, steps) {
+    var rd = M.rd, code = String(r.Code || ""), t = [r["Current Status"], r["Action Plan"]].join(" ");
+    var w = M.weekly.filter(function (x) { return String(x["Project Code"]) === code; })[0];
+    var act = N(r["Actual Progress %"]), cf = r["Contract Finish"], fe = w && w["End Date (Forecast/Actual)"];
+    var worksDone = act != null ? act >= 0.999 : !w;
+    var worksEnd = worksDone ? null : fe && fe >= rd ? fe : cf && cf >= rd ? cf : addDays(rd, 60);
+    var worksSrc = worksDone ? "" : fe && fe >= rd ? "weekly fcst" : cf && cf >= rd ? "contract finish" : "no fcst, +2 m assumed";
+    var lag = 0, why = [];
+    if (/amp[\s-]*c\b/i.test(t) && !/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t)) { lag += 30; why.push("AMP-C open +1 m"); }
+    if (/\bcr\b|change request/i.test(t) && /process|progress|pending/i.test(t)) { lag += 30; why.push("CR in process +1 m"); }
+    if (/\b(mot|moi|ministry|authority|municipal|stakeholder)\b|awaiting [^.;]*response/i.test(t)) { lag += 45; why.push("authority response +1.5 m"); }
+    var design = /\bdesign\b/i.test(r["Project Name"] || "") && !/construct/i.test(r["Project Name"] || "");   // design contracts: no defects liability period
+    var e2Now = /\bamp[\s-]*(e\s*)?2\b[^.;]*\b(in process|in progress|pending sign|under signature)\b|\be1\s*[&\/]\s*e?2\b[^.;]*\b(in process|in progress)\b/i.test(t);
+    var paperOnly = worksDone && /close[\s-]?out (is )?remaining|only close[\s-]?out/i.test(t);
+    var e1 = addDays(worksEnd || rd, 30 + lag), dlpEnd = design ? null : addDays(worksEnd || cf || rd, 365), e2, hand;
+    if (e2Now) { e1 = addDays(rd, 14); e2 = addDays(rd, 30); why.push("AMP-E2 already in process"); }
+    else if (paperOnly) { e1 = e2 = addDays(rd, 14); why.push("only close-out paperwork left"); }
+    else e2 = maxD(addDays(e1, 45), dlpEnd);
+    hand = paperOnly ? addDays(rd, 14) : addDays(e1, 30);
+    var co = addDays(e2, paperOnly ? 31 : 30), fp = addDays(co, 60);
+    var plan = { amp1: e1, amp2: e2, hand: hand, clos: co, ret: addDays(co, 45), apg: addDays(e1, 60), fin: fp, perf: addDays(maxD(e2, fp), 30) };
+    var keyOf = function (k) { return /^amp\s*-?\s*e\s*1/i.test(k) ? "amp1" : /^amp/i.test(k) ? "amp2" : /^hand/i.test(k) ? "hand" : /^clos/i.test(k) ? "clos" :
+      /^retention/i.test(k) ? "ret" : /^ap guarantee/i.test(k) ? "apg" : /^final payment/i.test(k) ? "fin" : /^performance/i.test(k) ? "perf" : null; };
+    var dates = {};
+    steps.forEach(function (k) {
+      var st = stepState(r, k).status, key = keyOf(k), d = st !== "Not Started" && st !== "Completed" && st !== "NA" ? addDays(rd, 30) : key ? plan[key] : addDays(rd, 30);
+      dates[k] = monthEnd(maxD(d, addDays(rd, 14)));
+    });
+    var basis = "Basis: " + (worksDone ? "works done" + (cf ? " (CF " + dShort(cf) + ")" : "") : "works finish " + dShort(worksEnd) + " (" + worksSrc + ")") +
+      (why.length ? "; " + why.join(", ") : "") + (e2Now || paperOnly ? "" : "; E1 +1 m, E2 " + (design ? "+1.5 m (design, no DLP)" :
+      "after 12-m DLP" + (dlpEnd < addDays(e1, 45) ? " (elapsed)" : ""))) + "; close-out & releases follow";
+    return { dates: dates, basis: basis };
+  }
   function openClosing(M) { return M.closing.filter(function (r) { var s = String(r["Current Status"] || ""); return !/^closed\b/i.test(s) && !/terminat/i.test(s); }); }
   function fillClosingActions(pkg, path, M, list, startNo) {
     var d = pkg.xml(path), frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), steps = closingSteps(M);
@@ -259,7 +307,7 @@
     rs.slice(1).forEach(function (r) { tbl.removeChild(r); });
     list.forEach(function (r, pi) {
       // the step the close-out is waiting on: the first one not completed (or not applicable)
-      var cur = steps.filter(function (k) { var x = stepState(r, k).status; return x !== "Completed" && x !== "NA"; })[0];
+      var cur = steps.filter(function (k) { var x = stepState(r, k).status; return x !== "Completed" && x !== "NA"; })[0], fc = closingForecast(M, r, steps);
       steps.forEach(function (k, si) {
         var tr = (si === 0 ? top : cont).cloneNode(true), c = E.cells(tr), st = stepState(r, k), now = k === cur, done = st.status === "Completed" || st.status === "NA";
         tr.setAttribute("h", String(si === 0 ? 245000 : 182000));    // 3 projects × 8 steps fit like the sample's slide
@@ -267,7 +315,7 @@
           [0, 1, 2].forEach(function (i) { c[i].setAttribute("rowSpan", String(steps.length)); });
           E.cellText(c[0], String(startNo + pi)); E.cellText(c[1], (r.Code || "") + " – " + clip(r["Project Name"], 40)); E.cellText(c[2], miss(null));
           E.cellText(c[7], clip([r["Current Status"], r["Action Plan"]].filter(Boolean).join(" · "), 120) || "");
-        } else E.cellText(c[7], "");
+        } else E.cellText(c[7], si === 1 ? { text: fc.basis, color: "7F7F7F", size: 6 } : "");
         var owner = si === 0 ? (r["Project Manager"] || stepOwner(k)) : stepOwner(k);
         if (now) {          // highlight who holds the action now
           E.cellText(c[3], { text: "► " + owner, color: "FFFFFF", bold: true }); E.cellFill(c[3], TEAL);
@@ -278,7 +326,7 @@
         }
         E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
-        E.cellText(c[6], st.date ? st.date : miss(null));
+        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
         // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
         E.all(tr, NS.a, "p").forEach(function (pp) {
           if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;
@@ -318,6 +366,8 @@
       if (!pr) { pr = p.ownerDocument.createElementNS(NS.a, "a:pPr"); p.insertBefore(pr, p.firstChild); }
       pr.setAttribute("rtl", "0");
     });
+    // runs tagged Arabic make PowerPoint mirror brackets and reorder "0301 – Name": tag them as English
+    E.all(el, NS.a, "rPr").concat(E.all(el, NS.a, "endParaRPr")).forEach(function (r) { if (/^ar/i.test(r.getAttribute("lang") || "")) r.setAttribute("lang", "en-US"); });
   }
 
   /* monthly spending matrix tables (slides "Spending plan as discussed" and "Monthly Plan - CAPEX") */
