@@ -579,12 +579,62 @@
       if (/approv|closed|signed/i.test(st)) { res.approved++; res.days += days; if (u > res.until) res.until = u; }
       else res.pending = { days: days, until: u > ((res.pending || {}).until || "") ? u : (res.pending || {}).until || "" };
     });
-    if (!res.pending) (weekly || []).forEach(function (w) {
-      var m = /\beot\b[^.]*?\bunti?ll?\s+([^.;]+)/i.exec(w["Reason for Delays"] || ""), u = m && txtDate(m[1]);
-      if (u && u > res.until) res.pending = { days: 0, until: u };
-    });
+    // "EOT ... until <date>" written in the weekly delay reason, else in the newest PM feedback entry that mentions one
+    function textEot(t) { var m = /\beot\d?\b[^.]*?\bunti?ll?\s+([^.;]+)/i.exec(t || ""); return m ? txtDate(m[1]) : ""; }
+    if (!res.pending) (weekly || []).forEach(function (w) { var u = textEot(w["Reason for Delays"]); if (u && u > res.until) res.pending = { days: 0, until: u }; });
+    if (!res.pending && !res.approved) { var u = textEot((card.Baseline || {}).PMFeedback); if (u) res.pending = { days: 0, until: u }; }
+    if (res.pending && res.pending.until && res.until && res.pending.until <= res.until) res.pending = null;   // already covered by an approved EOT
     if (dated) { if (!res.until) { res.approved = 0; res.days = 0; } if (res.pending && !res.pending.until) res.pending = null; }
     return res.approved || res.pending ? res : null;
+  }
+
+  /* EOT status for one project, explained from the data:
+     · completed, or BL finish not reached and forecast on time      → N/A
+     · approved EOT (date from the change log, else BL finish + approved days ≈) still running → "Approved until …",
+       flagged when the forecast already goes beyond it
+     · approved EOT whose date has passed while the work is < 100 %   → expired, new EOT needed
+     · EOT in process (open CR, delay reason or PM feedback "EOT until …") → "In process until …"
+     · BL finish passed, < 100 %, nothing recorded                    → "Not recorded – BL passed … ; forecast …"
+     · BL finish still ahead but forecast later                       → "Likely needed"
+     w: the latest weekly row; rd: report date (yyyy-mm-dd); f: date formatter.
+     → { kind, text, brief, cause, cell, color }   (brief = one short line next to the BL / forecast dates, cell = a table column) */
+  function eotStatus(card, w, rd, f) {
+    card = card || {}; w = w || {};
+    var be = w["End Date Baseline"] || "", fe = w["End Date (Forecast/Actual)"] || "", act = toNum(w["Actual (%) - Cumulative"]);
+    var done = act != null && act >= 0.999, e = eot(card, [w]), cause = String(w["Reason for Delays"] || (card.Baseline || {}).DelayReason || "").replace(/\s+/g, " ").trim();
+    var AMB = "C55A11", RED = "C00000";
+    function days(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 864e5); }
+    function fd(d) { return f(d); }
+    function pc() { return act == null ? "" : (Math.round(act * 1000) / 10) + "% done"; }
+    function addD(d, n) { var t = new Date(Date.parse(d) + n * 864e5); return t.toISOString().slice(0, 10); }
+    var out = function (kind, text, cell, color, brief) { return { kind: kind, text: text, brief: brief || text, cause: cause, cell: cell, color: color || null }; };
+    if (done) return out("done", "N/A", "N/A");
+    var fcLate = fe && be && fe > be, fcTxt = fe ? "forecast " + fd(fe) + (fcLate ? " (+" + days(be, fe) + " d vs BL)" : "") : "no forecast date";
+    if (e && e.approved) {
+      var until = e.until, est = false;
+      if (!until && e.days && be) { until = addD(be, e.days); est = true; }
+      if (until) {
+        var ut = (est ? "≈ " : "") + fd(until), dd = e.days ? " (+" + e.days + " days)" : "";
+        if (rd && until < rd) return e.pending && e.pending.until
+          ? out("expired", "Approved EOT ended " + ut + "; next EOT in process until " + fd(e.pending.until), fd(e.pending.until) + " (in process)", AMB)
+          : out("expired", "Approved EOT ended " + ut + " at " + pc() + "; " + fcTxt.replace(/ \(\+\d+ d vs BL\)/, "") + " – new EOT needed", "Expired", RED,
+            "Expired " + ut + " – new EOT needed");
+        if (fe && fe > until) return out("exceeds", "Approved until " + ut + dd + "; forecast " + fd(fe) + " is " + days(until, fe) + " d later – further EOT needed", fd(until) + " (exceeded)", AMB,
+          "Until " + ut + "; fcst +" + days(until, fe) + " d – more needed");
+        return out("approved", "Approved until " + ut + dd, (est ? "≈" : "") + fd(until));
+      }
+      return out("approved", "Approved +" + e.days + " days", "+" + e.days + " d");
+    }
+    if (e && e.pending) {
+      if (e.pending.until) return out("pending", "In process until " + fd(e.pending.until) + (fe && fe > e.pending.until ? "; forecast " + fd(fe) + " is later" : ""), fd(e.pending.until) + " (in process)", AMB);
+      return out("pending", "EOT request in process (no date yet); " + fcTxt, "In process", AMB);
+    }
+    if (be && rd && rd > be) return out("required", "Not recorded – BL finish " + fd(be) + " passed " + days(be, rd) + " d ago at " + pc() + "; " +
+      (fe && fe >= rd ? fcTxt : "forecast not updated") + " – EOT required", "Required", RED,
+      "Required – BL passed" + (fe && fe >= rd ? ", fcst +" + days(be, fe) + " d" : ", fcst not updated"));
+    if (fcLate) return out("likely", "Likely needed – forecast " + fd(fe) + " is " + days(be, fe) + " d after BL finish " + fd(be), "Likely", AMB,
+      "Likely needed – fcst +" + days(be, fe) + " d vs BL");
+    return out("none", "N/A", "N/A");
   }
 
   window.UI = {
@@ -594,6 +644,6 @@
     chart: chart, destroyCharts: destroyCharts, eachChart: eachChart, barDs: barDs, lineDs: lineDs, fcBar: fcBar, fcStyle: fcStyle,
     moneyAxis: moneyAxis, shortLabel: shortLabel, fade: fade, hl: hl, clickable: clickable, pctAxis: pctAxis, catAxis: catAxis, wrapLabel: wrapLabel,
     moneyTooltip: moneyTooltip, pctTooltip: pctTooltip,
-    modal: modal, recordModal: recordModal, toast: toast, eot: eot
+    modal: modal, recordModal: recordModal, toast: toast, eot: eot, eotStatus: eotStatus
   };
 })();
