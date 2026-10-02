@@ -26,7 +26,7 @@
   function dShort(s) { var t = ymd(s); return t ? (t.d < 10 ? "0" : "") + t.d + "-" + MONTHS[t.m - 1] + "-" + String(t.y).slice(2) : ""; }
   function dLong(s) { var t = ymd(s); return t ? t.d + " " + MONTHS[t.m - 1] + " " + t.y : ""; }
   /* Extension of Time per project (shared with the site: UI.eot) */
-  function eotOf(M, code) { code = String(code); return UI.eot(M.cards[code], M.weekly.filter(function (w) { return String(w["Project Code"]) === code; })); }
+  function eotOf(M, code) { code = String(code); return UI.eot(M.cards[code], M.weekly.filter(function (w) { return String(w["Project Code"]) === code; }), true); }   // an EOT without an end date shows N/A
   /* "+423 days (approved) – until 31 Jul 2026" / "In process – until 6 Apr 2027" */
   function eotText(e, fmt) {
     if (!e) return "";
@@ -353,9 +353,9 @@
       E.cellText(c[6], dShort(r["Start Date Baseline"])); E.cellText(c[7], dShort(r["End Date Baseline"]));
       var fe = r["End Date (Forecast/Actual)"], be = r["End Date Baseline"];
       var eo = eotOf(M, r["Project Code"]);
-      if (eo && eo.approved) E.cellText(c[8], eo.until ? dShort(eo.until) : "+" + eo.days + " d");
-      else if (eo) E.cellText(c[8], [[{ text: (eo.pending.until ? dShort(eo.pending.until) : "Submitted") + " (in process)", color: "C55A11" }]]);
-      else E.cellText(c[8], fe && be && fe > be ? dShort(fe) : "-");
+      if (eo && eo.approved) E.cellText(c[8], dShort(eo.until));
+      else if (eo) E.cellText(c[8], [[{ text: dShort(eo.pending.until) + " (in process)", color: "C55A11" }]]);
+      else E.cellText(c[8], "N/A");
     });
     E.fitTable(frame);
   }
@@ -719,8 +719,8 @@
       if (spiT) { var sq = E.pos(spiT), cxm = sq.x + sq.w / 2, cym = sq.y + sq.h / 2;   // the pill behind the SPI text
         shapes.filter(function (s) { var p = E.pos(s); return s !== spiT && s.localName === "sp" && p && p.w < 2500000 && cxm > p.x && cxm < p.x + p.w && cym > p.y && cym < p.y + p.h && s.getElementsByTagNameNS(NS.a, "solidFill").length; })
           .forEach(function (s) { E.setFill(s, spiCol(sv)); }); }
-      if (eot) { var eo = eotOf(M, r["Project Code"]), late = w["End Date (Forecast/Actual)"] && w["End Date Baseline"] && w["End Date (Forecast/Actual)"] > w["End Date Baseline"];
-        E.setParas(eot, [[{ text: "EOT: " }, eo ? { text: eotText(eo, dShort), color: eo.approved ? null : "C55A11" } : late ? { text: MISSING, color: RED } : { text: "N/A" }]]); fitText(eot, 7); }
+      if (eot) { var eo = eotOf(M, r["Project Code"]);
+        E.setParas(eot, [[{ text: "EOT: " }, eo ? { text: eotText(eo, dShort), color: eo.approved ? null : "C55A11" } : { text: "N/A" }]]); fitText(eot, 7); }
       // progress bar: the shorter of the two bar shapes is the "actual" fill
       var bars = shapes.filter(function (s) { var p = E.pos(s); return s.localName === "sp" && !E.text(s).trim() && p && p.h > 0 && p.h < 300000 && p.w > 1000000; }).sort(function (a, b) { return E.pos(b).w - E.pos(a).w; });
       if (bars.length >= 2) {
@@ -914,7 +914,7 @@
     if (title) E.setParas(title, [[{ text: "Project - " + code + " : " + clip(r["Project Name"] || card.Name, 80) + " " }].concat(critical({ "Project Code": code, "Critical Project": r["Critical Project"] }, M) ? [{ text: "(Critical Project)", color: "FF0000" }] : [])]);
     // contractor / consultant / funded by (one-row table)
     var top = E.all(d, NS.a, "tbl").filter(function (t) { return /Contractor/.test(t.textContent) && /Funded/.test(t.textContent); })[0];
-    if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], miss(clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24))); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org)); }
+    if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24) || "N/A"); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org)); }
     // overall status
     var st = textShape(/^(On Track|At Risk|Delayed|Slightly Delayed|On Hold|Ahead)$/);
     if (st) { var s = r["Performance Status"] || (card.Perf || {}).Status || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
@@ -936,7 +936,7 @@
       E.setRuns(info, 0, ["Original Contract Value", ": " + (money(x.cv) || MISSING) + " SAR"]); E.setRuns(info, 1, ["Change Order", ": " + (vo ? money(vo) + " SAR" : "-")]);
       E.setRuns(info, 2, ["Start Date", ": " + (dLong(pg.start) || MISSING)]); E.setRuns(info, 3, ["End Date", ": " + (dLong(be) || MISSING)]);
       var eo = eotOf(M, code);
-      E.setRuns(info, 4, ["EOT ", eo ? { text: ": " + eotText(eo, dLong), color: eo.approved ? null : "C55A11" } : fe && be && fe > be ? { text: ": " + MISSING, color: RED } : ": N/A"]); E.setRuns(info, 5, ["Forecast End Date ", ": " + (dLong(fe) || MISSING)]);
+      E.setRuns(info, 4, ["EOT ", eo ? { text: ": " + eotText(eo, dLong), color: eo.approved ? null : "C55A11" } : ": N/A"]); E.setRuns(info, 5, ["Forecast End Date ", ": " + (dLong(fe) || MISSING)]);
     }
     [title, briefs[0], ach, iss, info].forEach(function (sh) { fitText(sh, 7); });
     // CAPEX / KPI box
@@ -1000,7 +1000,7 @@
       var xf = sh.getElementsByTagNameNS(NS.a, "xfrm")[0], ex = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0]; if (ex && +ex.getAttribute("cx") < 3000000) ex.setAttribute("cx", "3000000");   // room for one line
     }
     head(textShape(/^Contractor\s/), "Contractor            : ", miss(clip(r.Contractor, 22)));
-    head(textShape(/^Consultant\s/), "Consultant            : ", miss(null));
+    head(textShape(/^Consultant\s/), "Consultant            : ", "N/A");
     head(textShape(/^Funded by/), "Funded by             : ", miss(clip((card.Fund || {}).Org, 22)));
     var brief = E.all(d, NS.p, "sp").filter(function (s) { var p = E.pos(s); return p && p.y > 2400000 && p.y < 3200000 && E.text(s).length > 30; })[0];
     if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, color: RED, size: 10 }); fitText(brief, 7); }

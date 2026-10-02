@@ -566,8 +566,9 @@
   }
   /* Extension of Time per project: approved schedule-impact CRs from the card change log (13.1), plus an EOT that is
      still in process (an open schedule CR, or "EOT until <date>" in the weekly report's delay reason).
-     card: the Project_Cards row; weekly: that project's weekly rows → null, or { days, until, approved, pending: { days, until } } */
-  function eot(card, weekly) {
+     card: the Project_Cards row; weekly: that project's weekly rows; dated: keep only extensions with a known end date
+     → null, or { days, until, approved, pending: { days, until } } */
+  function eot(card, weekly, dated) {
     card = card || {}; var res = { days: 0, until: "", approved: 0, pending: null };
     function until(r) { var t = [r["Comment / Notes"], r["Change Request (Description)"], r["Change Request Title"]].join(" "); return txtDate((/unti?ll?\s+(.+)/i.exec(t) || [])[1]); }
     (card.Changes || []).forEach(function (r) {
@@ -582,6 +583,7 @@
       var m = /\beot\b[^.]*?\bunti?ll?\s+([^.;]+)/i.exec(w["Reason for Delays"] || ""), u = m && txtDate(m[1]);
       if (u && u > res.until) res.pending = { days: 0, until: u };
     });
+    if (dated) { if (!res.until) { res.approved = 0; res.days = 0; } if (res.pending && !res.pending.until) res.pending = null; }
     return res.approved || res.pending ? res : null;
   }
 

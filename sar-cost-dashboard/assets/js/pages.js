@@ -1250,8 +1250,8 @@
   /* EOT cell: approved extension (card change log) and/or one in process (open CR / weekly delay reason) */
   function eotHtml(D, code, be, fe) {
     var card = D.t("Project_Cards").filter(function (c) { return c && String(c.Code) === String(code); })[0];
-    var e = U.eot(card, D.t("Weekly_Report_Updates").filter(function (w) { return String(w["Project Code"]) === String(code); }));
-    if (!e) return fe && be && fe > be ? '<span class="spi-bad">Not recorded</span><span class="sub">Forecast is past BL finish</span>' : "N/A";
+    var e = U.eot(card, D.t("Weekly_Report_Updates").filter(function (w) { return String(w["Project Code"]) === String(code); }), true);
+    if (!e) return "N/A";   // no EOT with a known end date
     var h = "";
     if (e.approved) h += (e.until ? fmt.date(e.until) : "+" + e.days + " days") + '<span class="sub">Approved' + (e.until && e.days ? " · +" + e.days + " days" : "") + (e.approved > 1 ? " · " + e.approved + " CRs" : "") + "</span>";
     if (e.pending) h += (h ? '<span class="sub warn">' : '<span style="color:#C55A11">') + (e.pending.until ? (h ? "Next until " : "") + fmt.date(e.pending.until) : (h ? "Next " : "") + "Submitted") + (h ? " · in process" : "") + "</span>" + (h ? "" : '<span class="sub warn">In process</span>');
