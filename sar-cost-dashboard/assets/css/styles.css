@@ -176,6 +176,7 @@ main.content { flex: 1; min-width: 0; padding: 24px 28px 48px; }
 .g-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .g-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .g-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.g-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .g-2-1 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 .g-1-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
 .span-2 { grid-column: span 2; }
@@ -226,6 +227,8 @@ main.content { flex: 1; min-width: 0; padding: 24px 28px 48px; }
 /* info cards (Project Progress header) */
 .info { background: var(--white); padding: 12px 16px; border-top: 3px solid var(--sar-blue); min-width: 0; }
 .info .k { font-size: 11px; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.info .v .sub { display: block; font-size: 11px; font-weight: 600; color: var(--slate); margin-top: 2px; }
+.info .v .sub.warn { color: #C55A11; }
 .info .v { font-size: 16px; font-weight: 700; margin-top: 4px; color: var(--sar-black); word-break: break-word; }
 
 /* progress meter */
@@ -350,6 +353,7 @@ table.dt tfoot td {
 /* ----------------------------- Responsive ------------------------------- */
 @media (max-width: 1280px) {
   body:not(.printing) .g-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body:not(.printing) .g-7 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   body:not(.printing) .g-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 1100px) {
@@ -384,13 +388,13 @@ table.dt tfoot td {
   body:not(.printing) .panel { padding: 14px 12px 14px; }
   body:not(.printing) .table-tools input[type=search] { min-width: 0; flex: 1 1 140px; }
   body:not(.printing) main.content { padding: 18px 16px 40px; }
-  body:not(.printing) .g-2, body:not(.printing) .g-5, body:not(.printing) .g-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body:not(.printing) .g-2, body:not(.printing) .g-5, body:not(.printing) .g-6, body:not(.printing) .g-7 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body:not(.printing) .filter, body:not(.printing) .filter select, body:not(.printing) .ms-btn { min-width: 0; width: 100%; max-width: none; }
   body:not(.printing) .filter { flex: 1 1 45%; }
 }
 @media (max-width: 560px) {
   body:not(.printing) .g-2, body:not(.printing) .g-3, body:not(.printing) .g-2-1, body:not(.printing) .g-1-2 { grid-template-columns: minmax(0, 1fr); }
-  body:not(.printing) .g-4, body:not(.printing) .g-5, body:not(.printing) .g-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  body:not(.printing) .g-4, body:not(.printing) .g-5, body:not(.printing) .g-6, body:not(.printing) .g-7 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   body:not(.printing) .tile .band { min-height: 62px; padding: 10px 12px; }
   body:not(.printing) .tile .value { font-size: 20px; }
   body:not(.printing) .tile .value small { font-size: 11px; }

@@ -25,32 +25,8 @@
   function ymd(s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
   function dShort(s) { var t = ymd(s); return t ? (t.d < 10 ? "0" : "") + t.d + "-" + MONTHS[t.m - 1] + "-" + String(t.y).slice(2) : ""; }
   function dLong(s) { var t = ymd(s); return t ? t.d + " " + MONTHS[t.m - 1] + " " + t.y : ""; }
-  /* "31-Dec-2025", "31-July-2026", "6 April 2027" → "2025-12-31" */
-  function txtDate(s) {
-    var m = /(\d{1,2})[\s\-\/]+([A-Za-z]{3,9})\.?[\s\-\/,]+(\d{4})/.exec(s || ""); if (!m) return "";
-    var mi = MONTHS.indexOf(m[2].slice(0, 1).toUpperCase() + m[2].slice(1, 3).toLowerCase()); if (mi < 0) return "";
-    return m[3] + "-" + (mi < 9 ? "0" : "") + (mi + 1) + "-" + (+m[1] < 10 ? "0" : "") + +m[1];
-  }
-  /* Extension of Time per project: approved schedule-impact CRs from the card change log (13.1), plus an EOT that is
-     still in process (an open schedule CR, or "EOT until <date>" in the weekly report's delay reason).
-     → null, or { days, until, approved, pending: { days, until } } */
-  function eotOf(M, code) {
-    code = String(code); var card = M.cards[code] || {}, res = { days: 0, until: "", approved: 0, pending: null };
-    function until(r) { var t = [r["Comment / Notes"], r["Change Request (Description)"], r["Change Request Title"]].join(" "); return txtDate((/unti?ll?\s+(.+)/i.exec(t) || [])[1]); }
-    (card.Changes || []).forEach(function (r) {
-      var days = N(r["Schedule Impact Duration (Calendar Days)"]) || 0;
-      if (!/^y/i.test(r["Schedule Impact?"] || "") && !days && !/\beot\b|extension of time/i.test(r["Change Request Title"] || "")) return;
-      var st = r["CR Status"] || "", u = until(r);
-      if (/reject|cancel|withdraw/i.test(st)) return;
-      if (/approv|closed|signed/i.test(st)) { res.approved++; res.days += days; if (u > res.until) res.until = u; }
-      else res.pending = { days: days, until: u > ((res.pending || {}).until || "") ? u : (res.pending || {}).until || "" };
-    });
-    if (!res.pending) M.weekly.filter(function (w) { return String(w["Project Code"]) === code; }).forEach(function (w) {
-      var m = /\beot\b[^.]*?\bunti?ll?\s+([^.;]+)/i.exec(w["Reason for Delays"] || ""), u = m && txtDate(m[1]);
-      if (u && u > res.until) res.pending = { days: 0, until: u };
-    });
-    return res.approved || res.pending ? res : null;
-  }
+  /* Extension of Time per project (shared with the site: UI.eot) */
+  function eotOf(M, code) { code = String(code); return UI.eot(M.cards[code], M.weekly.filter(function (w) { return String(w["Project Code"]) === code; })); }
   /* "+423 days (approved) – until 31 Jul 2026" / "In process – until 6 Apr 2027" */
   function eotText(e, fmt) {
     if (!e) return "";

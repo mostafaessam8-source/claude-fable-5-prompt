@@ -1161,9 +1161,9 @@
     ps.style.flex = "1"; ps.querySelector("select").style.maxWidth = "none"; bar.appendChild(ps);
     var rb = el('<button type="button" class="icon-btn ghost">Full weekly record</button>'); rb.addEventListener("click", function () { U.recordModal(code + " — " + po.name, r, WEEKLY_GROUPS); }); bar.appendChild(rb);
     function bySrc(tn) { return D.t(tn).filter(function (x) { return x["Source.Name"] === src; }); }
-    var gi = grid(v, "g-6");
+    var gi = grid(v, "g-7");
     gi.innerHTML = U.info("Contractor", esc(r.Contractor || "—")) + U.info("Project manager", esc(po.pm || "—")) + U.info("BL start", fmt.date(po.bs)) + U.info("BL finish", fmt.date(po.be)) +
-      U.info("Forecast finish", fmt.date(po.fe)) + U.info("Report date", fmt.date(r["Report Date"]));
+      U.info("Forecast finish", fmt.date(po.fe)) + U.info("EOT", eotHtml(D, code, po.be, po.fe)) + U.info("Report date", fmt.date(r["Report Date"]));
     var gt = grid(v, "g-5");
     gt.innerHTML = U.tile({ value: fmt.pct(po.planNow), label: "Cum plan %", note: "This week " + fmt.pct(po.planWk) }) +
       U.tile({ value: fmt.pct(po.actNow), label: "Cum actual %", color: "yellow", note: "This week " + fmt.pct(po.actWk) }) +
@@ -1243,6 +1243,16 @@
   /* ======================================================================
      Weekly report helpers (SPI from cumulative EV / PV, weekly record groups)
      ====================================================================== */
+  /* EOT cell: approved extension (card change log) and/or one in process (open CR / weekly delay reason) */
+  function eotHtml(D, code, be, fe) {
+    var card = D.t("Project_Cards").filter(function (c) { return c && String(c.Code) === String(code); })[0];
+    var e = U.eot(card, D.t("Weekly_Report_Updates").filter(function (w) { return String(w["Project Code"]) === String(code); }));
+    if (!e) return fe && be && fe > be ? '<span class="spi-bad">Not recorded</span><span class="sub">Forecast is past BL finish</span>' : "N/A";
+    var h = "";
+    if (e.approved) h += (e.until ? fmt.date(e.until) : "+" + e.days + " days") + '<span class="sub">Approved' + (e.until && e.days ? " · +" + e.days + " days" : "") + (e.approved > 1 ? " · " + e.approved + " CRs" : "") + "</span>";
+    if (e.pending) h += (h ? '<span class="sub warn">' : '<span style="color:#C55A11">') + (e.pending.until ? (h ? "Next until " : "") + fmt.date(e.pending.until) : (h ? "Next " : "") + "Submitted") + (h ? " · in process" : "") + "</span>" + (h ? "" : '<span class="sub warn">In process</span>');
+    return h;
+  }
   function spiOf(r) { var pv = N(r["Cumulative PV (SAR)"]), ev = N(r["Cumulative EV (SAR)"]); return pv ? (ev || 0) / pv : 0; }
   function spiCls(x) { return spiTxtCls(x); }
   var WEEKLY_GROUPS = [
