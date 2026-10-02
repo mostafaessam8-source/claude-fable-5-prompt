@@ -1023,8 +1023,18 @@
   }
 
   /* project in closing */
+  /* Contract details for a closing row: its own code, else the base code ("6203A" → "6203", "0674D" → "0674"), taking the
+     row whose stage / contract matches design or construction as the project name says */
+  function closingContract(M, r) {
+    var code = String(r.Code || ""), all = M.D.t("Contract_Details");
+    var own = all.filter(function (x) { return String(x.Code) === code; });
+    if (own.length) return own[0];
+    var base = code.replace(/[A-Z]+$/, ""), list = base !== code ? all.filter(function (x) { return String(x.Code) === base; }) : [];
+    var want = /design/i.test(r["Project Name"] || "") ? /design/i : /construct/i.test(r["Project Name"] || "") ? /construct/i : null;
+    return (want && list.filter(function (x) { return want.test((x.Stage || "") + " " + (x.Contract || "")); })[0]) || list[0] || {};
+  }
   function fillClosing(pkg, path, M, r) {
-    var d = pkg.xml(path), code = String(r.Code || ""), cd = M.D.t("Contract_Details").filter(function (x) { return String(x.Code) === code; })[0] || {}, card = M.cards[code] || {};
+    var d = pkg.xml(path), code = String(r.Code || ""), cd = closingContract(M, r), card = M.cards[code] || M.cards[code.replace(/[A-Z]+$/, "")] || {};
     function textShape(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); })[0]; }
     var t = textShape(/^Project - /); if (t) E.setParas(t, "Project - " + code + " : " + clip(r["Project Name"], 70));
     function head(sh, label, v) {        // one line, 9 pt: label, value after the template icon
