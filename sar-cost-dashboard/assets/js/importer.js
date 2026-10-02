@@ -118,6 +118,15 @@
           "Final Contract Value", "Current Status", "Action Plan"]
       }
     },
+    // "Projects_Department.xlsx": the department's Balanced Scorecard (Perspective · Objective / KPI · Unit · <year> Target ·
+    // KPI Weight · Data Source · Formula · Remarks). Found by its header row; objective rows (no unit / target) and merged
+    // perspective cells are folded into the KPI rows. Feeds "Criteria / Target" on the KPI scorecard.
+    kpiTargets: {
+      label: "Balanced Scorecard KPI Targets",
+      file: "Projects_Department.xlsx",
+      sheetHeader: true,
+      tables: { KPI_Targets: ["Perspective", "Objective", "KPI", "Unit", "Target", "KPI Weight", "Data Source", "Formula", "Remarks"] }
+    },
     // Monthly "EP - NSR Projects <Mon><YY>.xlsx": one sheet per project ("<code>_Project Card").
     // The Issue Register is built from section 12.1 "Issue Log" of every card (see parseProjectCards).
     cards: {
@@ -625,6 +634,43 @@
     return null;
   }
 
+  /* Balanced Scorecard targets: header row with "Objective / KPI", "... Target" and "KPI Weight" */
+  function parseKpiTargets(XLSX, wb) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1, col = {}, year = null;
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 15) && hdr < 0; r++) {
+        var m = {};
+        for (var c = rg.s.c; c <= rg.e.c; c++) {
+          var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })], k = cl ? normKey(cl.v).toLowerCase() : "";
+          if (/^objective\s*\/?\s*kpis?$/.test(k)) m.kpi = c; else if (/target/.test(k)) { m.target = c; year = (/(20\d\d)/.exec(k) || [])[1] || null; }
+          else if (/^kpi weight/.test(k)) m.weight = c; else if (/^perspective/.test(k)) m.persp = c; else if (/^unit/.test(k)) m.unit = c;
+          else if (/^data source/.test(k)) m.src = c; else if (/^formula/.test(k)) m.formula = c; else if (/^remarks?/.test(k)) m.rem = c;
+        }
+        if (m.kpi != null && m.target != null && m.weight != null) { hdr = r; col = m; }
+      }
+      if (hdr < 0) continue;
+      var title = [];
+      for (var tr = rg.s.r; tr < hdr; tr++) { var tc = ws[XLSX.utils.encode_cell({ r: tr, c: rg.s.c })]; if (tc && tc.v) title.push(normKey(tc.v)); }
+      function v(rr, c) { return c == null ? null : cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: c })]); }
+      var rows = [], persp = null, obj = null;
+      for (var rr = hdr + 1; rr <= rg.e.r; rr++) {
+        var p = v(rr, col.persp), kpi = v(rr, col.kpi), unit = v(rr, col.unit), tg = v(rr, col.target), w = v(rr, col.weight);
+        if (p) persp = normKey(p);
+        if (!kpi) continue;
+        if (unit == null && tg == null) { obj = normKey(kpi); continue; }   // objective heading row
+        rows.push({ Perspective: persp, Objective: obj, KPI: normKey(kpi), Unit: unit == null ? null : normKey(unit), Target: typeof tg === "string" ? normKey(tg) : tg,
+          "Target Year": year ? +year : null, "KPI Weight": w, "Data Source": v(rr, col.src) == null ? null : normKey(v(rr, col.src)),
+          Formula: v(rr, col.formula), Remarks: v(rr, col.rem) });
+      }
+      if (!rows.length) continue;
+      return { source: "kpiTargets", label: SOURCES.kpiTargets.label, title: title.join(" · ") || null, tables: { KPI_Targets: rows },
+        report: [{ table: "KPI_Targets", rows: rows.length, status: "ok", missing: [], via: "sheet " + name + (year ? " · " + year + " targets" : "") }] };
+    }
+    return null;
+  }
+
   /* Budget 2026: rows "<Category> | <code> | <measure> | Jan … Dec | Total"; month columns come from the
      nearest date header row above each block. The budget file numbers Riyadh Dry Port one step later than the
      delivery plan (0674C = construction, 0674D = design), so those codes are mapped to 0674 / 0674C. */
@@ -688,6 +734,8 @@
       if (closing) return closing;
       var budget = parseBudget(XLSX, swb);
       if (budget) return budget;
+      var kt = parseKpiTargets(XLSX, swb);
+      if (kt) return kt;
       throw new Error("This workbook does not contain any of the expected Excel tables. Found tables: " + (names.join(", ") || "none"));
     }
 

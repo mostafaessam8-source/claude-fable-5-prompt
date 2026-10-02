@@ -403,8 +403,10 @@
         var tr = kpiTpl.cloneNode(true), c = E.cells(tr), F = kpiFig(r, M), ach = F.ach, name = r["Objective/ KPIs"] || "";
         var crit = /\(([-+±]?\d+%?)\)/.exec(name);
         E.cellText(c[0], clip(name, 120)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(F.res, 1));
-        E.cellText(c[3], crit ? crit[1] : (/schedule performance/i.test(name) ? String(M.spiTarget) : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
-        E.cellText(c[4], kpiVal(F.target) || miss(null));
+        // Criteria / Target: the Balanced Scorecard target (Projects_Department.xlsx), else the one in the KPI name
+        E.cellText(c[3], r["Criteria / Target"] || (crit ? crit[1] : /schedule performance/i.test(name) ? String(M.spiTarget) : !N(r["KPI Weight (%)"]) ? "-" : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
+        var plain = /^(#|spi)$/i.test(r["Target Unit"] || "");    // index KPIs (FWI 0.25, IWI 0.547, SPI 0.91) are not percentages
+        E.cellText(c[4], (plain && N(F.target) != null ? String(Math.round(N(F.target) * 1000) / 1000) : kpiVal(F.target)) || miss(null));
         E.cellText(c[5], kpiVal(F.plan) || "-"); E.cellText(c[6], kpiVal(F.act) || "-");
         E.cellText(c[7], pct(ach, 0)); E.cellFill(c[7], ach == null ? null : ach >= 0.95 ? GREEN : ach >= 0.85 ? AMBER : "FF0000");
         var rem = r.Remarks ? clip(r.Remarks, 90) : "";

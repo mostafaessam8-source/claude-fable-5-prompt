@@ -106,6 +106,7 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
    * `Contract details.xlsx`
    * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
    * `Projects in Closing phase.xlsx` (closing-phase register; feeds **Projects in Closing**)
+   * `Projects_Department.xlsx` (the department Balanced Scorecard; found by its header row *Objective / KPI · <year> Target · KPI Weight*. Each target is matched to its KPI by name and fills **Criteria / Target** on the KPI scorecard slides and the KPI Summary page)
    * `Budget 2026.xlsx` (sheet *Curve*; the **Spending Plan (VP)** row of every project is the **Rev Spend Plan**. The
      original Spend Plan stays as it is and both are shown on the Overview and the
      Cost & KPI Dashboard; variances and the year-end outlook are measured against the Rev plan once it is loaded)

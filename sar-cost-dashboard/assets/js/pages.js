@@ -481,7 +481,10 @@
       U.info("Weight", fmt.pct(r["KPI Weight (%)"])) + U.info("Managed by", isManaged(r) ? "NSR" : "Other departments") +
       U.info("% achieved", fmt.pct(r["% Achieved"])) + U.info("KPI result", fmt.pct(r["KPI Result"], 2)) +
       U.info("Target (plan)", r["NSR Spend Plan 2026 as per Budgeting"] > 10 ? fmt.money(r["NSR Spend Plan 2026 as per Budgeting"]) : fmt.pct(r["NSR Spend Plan 2026 as per Budgeting"])) +
-      U.info("YTD actual", r["YTD Actual"] > 10 ? fmt.money(r["YTD Actual"]) : fmt.pct(r["YTD Actual"])) + "</div>";
+      U.info("YTD actual", r["YTD Actual"] > 10 ? fmt.money(r["YTD Actual"]) : fmt.pct(r["YTD Actual"])) +
+      (r["Criteria / Target"] ? U.info("Criteria / Target", esc(r["Criteria / Target"])) + U.info("Unit", esc(r["Target Unit"] || "—")) +
+        U.info("Data source", esc(r["Target Data Source"] || "—")) + U.info("Perspective", esc(r["Target Perspective"] || "—")) : "") + "</div>";
+    if (r["Target Formula"] && r["Target Formula"] !== "-") h += '<div class="note-box" style="margin-top:12px;white-space:pre-line"><b>Formula:</b> ' + esc(r["Target Formula"]) + "</div>";
     if (r.Remarks) h += '<div class="note-box" style="margin-top:12px">' + esc(r.Remarks) + "</div>";
     var body = U.modal(r["Objective/ KPIs"], h, true);
     var projs = D.t("KPI_Projects_Data").filter(function (p) { return N(p["KPI Code"]) === N(r["KPI Code"]) && p.Code !== "-"; });
@@ -538,6 +541,7 @@
         { key: "KPI Filter", label: "KPI Filter", nowrap: true },
         { key: "Objective/ KPIs", label: "Objective / KPIs", wrap: true },
         { key: "KPI Weight (%)", label: "KPI Weight (%)", type: "pct", total: "sum" },
+        { key: "Criteria / Target", label: "Criteria / Target", nowrap: true },
         { key: "% Achieved", label: "% Achieved", type: "meter" },
         { key: "KPI Result", label: "KPI Result", type: "pct", total: function (rs) { return fmt.pct(U.sum(rs, "KPI Result")); } }] });
 

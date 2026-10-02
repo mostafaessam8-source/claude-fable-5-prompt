@@ -66,6 +66,24 @@
     reportDate: null
   };
 
+  /* "CAPEX Variance (-5%)" ↔ "CAPEX Budget Variance": best word overlap (bracketed text ignored), at least 60 % */
+  function kpiWords(s) { return String(s || "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z0-9%]+/g, " ").split(" ").filter(function (w) { return w && !/^(of|the|and|by|with|for|to|in|mn|sar|sr)$/.test(w); }); }
+  function kpiTargetOf(name, list) {
+    var a = kpiWords(name), best = null, score = 0;
+    if (!a.length) return null;
+    (list || []).forEach(function (t) {
+      var b = kpiWords(t.KPI), n = a.filter(function (w) { return b.indexOf(w) >= 0; }).length, sc = b.length ? n / Math.min(a.length, b.length) - Math.abs(a.length - b.length) * 0.01 : 0;
+      if (sc > score) { score = sc; best = t; }
+    });
+    if (!best || score < 0.6) return null;
+    var v = best.Target, u = best.Unit || "", txt;
+    if (v == null || v === "") return null;
+    // "Mn SAR" is already in the KPI name, so million targets show the number only
+    if (typeof v === "number") txt = u === "%" ? (Math.abs(v) <= 1 && v !== 0 ? Math.round(v * 1000) / 10 : v) + "%" : /^mn/i.test(u) ? v.toLocaleString("en-US") : String(v) + (u && !/^(#|spi)$/i.test(u) ? " " + u : "");
+    else txt = String(v) + (u === "%" && !/%$/.test(v) ? "%" : "");
+    return { text: txt, unit: u, row: best };
+  }
+
   function buildLookups() {
     // Revised Spend Plan (Budget 2026, "Spending Plan (VP)") joined onto the Spending Plan rows by ID + month;
     // the original "Spend Plan as per Budgeting" stays untouched.
@@ -80,6 +98,11 @@
     D.t("KPI_Projects_Data").forEach(function (r) { r["Rev Spend Plan FTY 2026"] = D.hasRev ? (revFY[String(r.Code)] || 0) : null; });
     D.revOnly = Object.keys(revFY).filter(function (id) { return !spIds[id]; });           // in Budget 2026 but not in the Spending Plan
     D.revMissing = D.hasRev ? Object.keys(spIds).filter(function (id) { return !(id in revFY); }) : [];
+    // Balanced Scorecard targets (Projects_Department.xlsx) matched onto the KPI Summary rows by KPI name
+    D.hasKpiTargets = D.has("KPI_Targets");
+    var kt = D.t("KPI_Targets");
+    D.t("KPI_Summary").forEach(function (r) { var t = kpiTargetOf(r["Objective/ KPIs"], kt); r["Criteria / Target"] = t ? t.text : null; r["Target Unit"] = t ? t.unit : null;
+      r["Target Perspective"] = t ? t.row.Perspective : null; r["Target Data Source"] = t ? t.row["Data Source"] : null; r["Target Formula"] = t ? t.row.Formula : null; });
     var P = {};
     D.t("MLS").forEach(function (r) {
       var s = r["Source.Name"]; if (!s) return;
