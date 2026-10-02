@@ -214,6 +214,44 @@
     if (/^(n\/?a)$/i.test(s)) return { status: "NA", date: "" };
     return { status: s, date: "" };
   }
+  /* Closing slides — suggested mitigation when the closing register has no Action Plan:
+     · the current-status issue is read for its blocker (AMP sign-off, handover / authority response, CR, snags,
+       remaining works, close-out report, payments / guarantees) and gets the matching action
+     · the pending close-out steps get the next steps in order, each with its owner (STEP_OWNER) */
+  function statusMitigation(s) {
+    var t = String(s || ""), acts = [];
+    var amp = []; t.replace(/amp[\s-]*(c|e\s*1|e\s*2|e)\b(?:\s*[\/&]\s*(e?\s*[12]))?/gi, function (_, a, b) {
+      amp.push("AMP-" + a.replace(/\s+/g, "").toUpperCase()); if (b) amp.push("AMP-" + (/^e/i.test(b) ? "" : "E") + b.replace(/\s+/g, "").toUpperCase()); return _; });
+    amp = amp.filter(function (x, k) { return amp.indexOf(x) === k; });
+    var snagsOpen = /snag/i.test(t) && !/snags?[^.;]*\b(closed|cleared)\b|\b(closed|cleared)\b[^.;]*snag/i.test(t);
+    if (amp.length || /\bamp\b/i.test(t)) acts.push((/document|aconex|submission/i.test(t) ? "Contractor to submit the outstanding AMP documents" + (/aconex/i.test(t) ? " via Aconex" : "") + "; " : "") +
+      (snagsOpen ? "close the open snags; " : "") + "PM to follow up " + (amp.length ? amp.join(" / ") : "AMP") + " sign-off with the Asset Team weekly");
+    if (/\b(mot|moi|ministry|authority|municipal|stakeholder|stc|sec)\b|awaiting [^.;]*response/i.test(t)) acts.push("Escalate the handover / approval to the authority through SAR management and track the response weekly");
+    if (/\bcr\b|change request|variation/i.test(t)) acts.push("Expedite the CR approval, then update the baseline and contract value");
+    if (snagsOpen && !amp.length) acts.push("Contractor to close the remaining snags; PM to verify and sign off");
+    if (/\b(works?|construction|superstructure|asphalt|installation)\b[^.;]*\b(remaining|ongoing|in progress)\b|\b(remaining|ongoing)\b[^.;]*\b(works?|construction|superstructure|asphalt|installation)\b/i.test(t))
+      acts.push("Contractor to submit a recovery schedule for the remaining works; PM to monitor weekly to completion");
+    if (/close[\s-]?out/i.test(t)) acts.push("Compile and submit the close-out report with the as-built and handover documents");
+    if (/payment|retention|guarantee|invoice/i.test(t)) acts.push("Finance to process the pending payment / release once the close-out documents are signed");
+    if (/completed/i.test(t) && !acts.length) acts.push("Complete the remaining scope, then proceed to AMP-C / handover sign-off");
+    return acts.length ? acts.slice(0, 2).join(". ") : "PM to agree the corrective action and target date with the contractor and track it weekly";
+  }
+  /* pending close-out steps → the next actions in order, grouped by owner; the financial steps are summarised */
+  var STEP_SHORT = [[/^amp\s*-?\s*(e\d|c)/i, function (m) { return "AMP-" + m[1].toUpperCase(); }], [/^hand/i, "handover report to O&M"], [/^clos/i, "close-out report"],
+    [/^retention/i, "retention"], [/^ap guarantee/i, "AP guarantee"], [/^final payment/i, "final payment"], [/^performance/i, "performance guarantee (at DLP end)"]];
+  function stepShort(k) { for (var i = 0; i < STEP_SHORT.length; i++) { var m = STEP_SHORT[i][0].exec(k); if (m) return typeof STEP_SHORT[i][1] === "function" ? STEP_SHORT[i][1](m) : STEP_SHORT[i][1]; } return k; }
+  function stepsMitigation(pend) {
+    if (!pend.length) return "";
+    var groups = [];
+    pend.forEach(function (k) { var o = stepOwner(k), g = groups[groups.length - 1]; if (g && g.o === o) g.k.push(stepShort(k)); else groups.push({ o: o, k: [stepShort(k)] }); });
+    var fin = /finance/i, out = [], rest = [];
+    groups.forEach(function (g) { (fin.test(g.o) ? rest : out).push(g); });
+    var verb = function (g) { return /^AMP/.test(g.k[0]) ? g.k.join(" & ") + " sign-off" : "submit the " + g.k.join(" & "); };
+    var txt = out.slice(0, 3).map(function (g) { return verb(g) + " (" + g.o + ")"; });
+    var finK = [].concat.apply([], rest.map(function (g) { return g.k; }));
+    if (finK.length) txt.push("Finance: " + (finK.length > 1 ? finK.slice(0, -1).join(", ") + " & " + finK[finK.length - 1] : finK[0]) + " after close-out");
+    return "Next: " + txt.join(" → ");
+  }
   function openClosing(M) { return M.closing.filter(function (r) { var s = String(r["Current Status"] || ""); return !/^closed\b/i.test(s) && !/terminat/i.test(s); }); }
   function fillClosingActions(pkg, path, M, list, startNo) {
     var d = pkg.xml(path), frame = E.shapesByName(d, /^Table/)[0], tbl = E.table(frame), steps = closingSteps(M);
@@ -1003,8 +1041,8 @@
     if (tbl) {
       var pend = closingSteps(M).filter(function (k) { return stepState(r, k).status !== "Completed" && stepState(r, k).status !== "NA"; });
       var items = [];
-      if (r["Current Status"]) items.push([clip(r["Current Status"], 200), r["Action Plan"] ? clip(r["Action Plan"], 200) : null]);
-      if (pend.length) items.push(["Pending close-out steps: " + pend.join(", "), null]);
+      if (r["Current Status"]) items.push([clip(r["Current Status"], 200), clip(r["Action Plan"] || statusMitigation(r["Current Status"]), 260)]);
+      if (pend.length) items.push(["Pending close-out steps: " + pend.join(", "), stepsMitigation(pend)]);
       if (!items.length) items.push([null, null]);
       var rows = E.resizeRows(tbl, 1, 1, items.length);
       var z10 = function (v) { return typeof v === "object" && v ? { text: v.text, color: v.color, size: 9.5 } : { text: v, size: 9.5 }; };
