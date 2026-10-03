@@ -19,7 +19,8 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
 - `Projects in Closing phase.xlsx` → `Closing_Projects`: `Actual Progress %`, `Contract Finish`, `Current Status`,
   `Action Plan`, and the close-out step columns (between *Final Contract Value* and *Current Status*).
   A date in a step = Completed (shown as actual date); "Completed" / "Done" / "Signed" / "Yes" / "Available" = Completed
-  with no date (shown "Done" in green); "N/A" = not applicable; empty = Not Started; other text = in process.
+  with no date (shown as an estimated past date, see rule 9); "N/A" = not applicable; empty = Not Started; other text =
+  in process.
   Current Status may start "Not signed: AMP-B, AMP-D, AMP-E2." (from the AMP availability table) — read like any text.
 - The project's own weekly report (exact project code only, never the base code of a suffixed code):
   `End Date (Forecast/Actual)`.
@@ -47,10 +48,17 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
    Performance guarantee release = later of AMP-E2 and final payment + 1 month.
 7. A step whose register cell holds a status text (e.g. "In process") is due report date + 1 month.
 8. Every forecast is at least 2 weeks after the report date and is rounded to month end.
+9. **Completed without a date → estimated past date**, never "Done" and never a future date: the same sequence counted
+   from the contract finish (AMP-E1 = CF + 1 month, AMP-E2 = later of AMP-E1 + 1.5 months and CF + 12-month DLP,
+   handover = AMP-E1 + 1 month, close-out = AMP-E2 + 1 month, AP guarantee = AMP-E1 + 2 months, retention = close-out
+   + 1.5 months, final payment = close-out + 2 months, performance guarantee = later of AMP-E2 and final payment +
+   1 month), rounded to month end. If there is no contract finish, or the estimate is not before the report date, the
+   month end before the report date is used. Shown as `≈dd-Mmm-yy` in green.
 
 ## Output
 
-- Actual / Forecast Date column: completed → actual date; N/A → "N/A"; otherwise `dd-Mmm-yy (F)` in amber `C55A11`.
+- Actual / Forecast Date column: completed with a date → that date; completed without a date → `≈dd-Mmm-yy` (green,
+  rule 9); N/A → "N/A"; otherwise `dd-Mmm-yy (F)` in amber `C55A11`.
 - Comments column, second row of each project: grey 6 pt "Basis: …" line naming the works finish and its source,
   the blocker delays, and the DLP rule applied, so every date can be traced.
 - Table text is forced left-to-right and runs tagged Arabic are re-tagged English (`ltr`), so PowerPoint does not

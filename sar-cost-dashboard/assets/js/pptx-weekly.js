@@ -295,15 +295,22 @@
     var plan = { amp1: e1, amp2: e2, hand: hand, clos: co, ret: addDays(co, 45), apg: addDays(e1, 60), fin: fp, perf: addDays(maxD(e2, fp), 30) };
     var keyOf = function (k) { return /^amp\s*-?\s*e\s*1/i.test(k) ? "amp1" : /^amp/i.test(k) ? "amp2" : /^hand/i.test(k) ? "hand" : /^clos/i.test(k) ? "clos" :
       /^retention/i.test(k) ? "ret" : /^ap guarantee/i.test(k) ? "apg" : /^final payment/i.test(k) ? "fin" : /^performance/i.test(k) ? "perf" : null; };
-    var dates = {};
+    // steps marked done without a date get an estimated past date: the same sequence counted from the contract finish
+    // (AMP-E1 +1 m, AMP-E2 after the 12-month DLP, …), always before the report date
+    var lastME = monthEnd(addDays(rd.slice(0, 8) + "01", -1)), p0 = cf || null;
+    var pa1 = p0 && addDays(p0, 30), pa2 = p0 && maxD(addDays(pa1, 45), addDays(p0, 365)), pco = p0 && addDays(pa2, 30), pfp = p0 && addDays(pco, 60);
+    var past = p0 ? { amp1: pa1, amp2: pa2, hand: addDays(pa1, 30), clos: pco, ret: addDays(pco, 45), apg: addDays(pa1, 60), fin: pfp, perf: addDays(maxD(pa2, pfp), 30) } : {};
+    var dates = {}, doneAt = {};
     steps.forEach(function (k) {
-      var st = stepState(r, k).status, key = keyOf(k), d = st !== "Not Started" && st !== "Completed" && st !== "NA" ? addDays(rd, 30) : key ? plan[key] : addDays(rd, 30);
+      var st = stepState(r, k).status, key = keyOf(k);
+      if (st === "Completed") { var pd = key && past[key] ? monthEnd(past[key]) : lastME; doneAt[k] = pd < rd ? pd : lastME; return; }
+      var d = st !== "Not Started" && st !== "NA" ? addDays(rd, 30) : key ? plan[key] : addDays(rd, 30);
       dates[k] = monthEnd(maxD(d, addDays(rd, 14)));
     });
     var basis = "Basis: " + (worksDone ? "works done" + (cf ? " (CF " + dShort(cf) + ")" : "") : "works finish " + dShort(worksEnd) + " (" + worksSrc + ")") +
       (why.length ? "; " + why.join(", ") : "") + (e2Now || paperOnly || e2Done ? "" : (e1Done ? "; E2 " : "; E1 +1 m, E2 ") + (design ? "+1.5 m (design, no DLP)" :
       "after 12-m DLP" + (dlpEnd < addDays(e1, 45) ? " (elapsed)" : ""))) + "; close-out & releases follow";
-    return { dates: dates, basis: basis };
+    return { dates: dates, doneAt: doneAt, basis: basis };
   }
   function openClosing(M) { return M.closing.filter(function (r) { var s = String(r["Current Status"] || ""); return !/^closed\b/i.test(s) && !/terminat/i.test(s); }); }
   function fillClosingActions(pkg, path, M, list, startNo) {
@@ -331,7 +338,7 @@
         }
         E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
-        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "Done", color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
+        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "≈" + dShort(fc.doneAt[k]), color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
         // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
         E.all(tr, NS.a, "p").forEach(function (pp) {
           if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;
