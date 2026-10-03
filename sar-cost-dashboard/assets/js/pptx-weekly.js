@@ -1161,7 +1161,7 @@
       jobs = jobs.then(function () { return photoPlaceholder().then(function (b) { photo = pkg.freeName("ppt/media", "nsr_photo", ".png"); pkg.zip.file(photo, b); pkg.ensureDefault("png", "image/png"); }); });
       // closing action points: 2 projects per slide
       var openCl = openClosing(M);
-      // Old projects: only works fully done (actual progress 100 %); projects still finishing stay on the closing cards
+      // Old projects and the closing cards: only works fully done (actual progress 100 %)
       var oldPr = openCl.filter(function (r) { var a = N(r["Actual Progress %"]); return a != null && a >= 0.999; });
       clones("closingActions", chunk(oldPr, 3), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 3 + 1); });
       // CAPEX projects only (KPI code 7) on both spending slides
@@ -1189,7 +1189,7 @@
       clones("delivery", chunk(M.D.t("Delivery_KPI").filter(function (r) { return r["Project Code"] != null; }), 2), function (p, g, i) { fillDelivery(pkg, p, M, g, i * 2 + 1); });
       // one slide per project in execution / in closing
       clones("exec", M.exec, function (p, x) { fillExec(pkg, p, M, x, photo); });
-      clones("closing", openCl.length ? openCl : [null], function (p, r) { if (r) fillClosing(pkg, p, M, r); });
+      clones("closing", oldPr.length ? oldPr : [null], function (p, r) { if (r) fillClosing(pkg, p, M, r); });   // same 100 % filter as the Old projects slides
       return jobs.then(function () {
         if (S.cover) fillCover(pkg, S.cover[0], M);
         if (S.overall) fillOverall(pkg, S.overall[0], M);

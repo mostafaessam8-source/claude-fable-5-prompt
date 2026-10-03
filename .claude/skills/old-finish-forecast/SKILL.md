@@ -11,8 +11,8 @@ Logic: `closingForecast(M, r, steps)` in `sar-cost-dashboard/assets/js/pptx-week
 ## Which projects
 
 Closing-register rows that are open (Current Status not starting "Closed", not "Terminated") **and** whose
-`Actual Progress %` is 100 %. Rows still below 100 % never appear on the Old projects slides (they stay on the
-"Projects in the Closing Phase" cards). Three projects per slide, numbered on.
+`Actual Progress %` is 100 %. Rows still below 100 % appear neither on the Old projects slides nor on the
+"Projects in the Closing Phase" cards (both use the same list). Three projects per slide, numbered on.
 
 ## Inputs (imported Excel only)
 

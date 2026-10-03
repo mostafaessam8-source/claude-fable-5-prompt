@@ -5,7 +5,8 @@ description: Mitigation Action rules for the "Projects in the Closing Phase" sli
 
 # Closing-phase mitigation — project rules
 
-Every closing card (`fillClosing` in `sar-cost-dashboard/assets/js/pptx-weekly.js`) has an ISSUES / Mitigation Action
+Closing cards are made only for open closing-register rows at 100 % actual progress (same list as the Old projects
+slides). Every closing card (`fillClosing` in `sar-cost-dashboard/assets/js/pptx-weekly.js`) has an ISSUES / Mitigation Action
 table with up to two rows. The mitigation logic lives in `statusMitigation` and `stepsMitigation` (same file, above
 `openClosing`). Change the rule there and only there.
 
