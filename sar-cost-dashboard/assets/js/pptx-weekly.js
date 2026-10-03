@@ -213,6 +213,7 @@
     if (!s) return { status: "Not Started", date: "" };
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { status: "Completed", date: dShort(s) };
     if (/^(n\/?a)$/i.test(s)) return { status: "NA", date: "" };
+    if (/^(completed?|done|signed|yes|available)$/i.test(s)) return { status: "Completed", date: "" };   // done, date not recorded
     return { status: s, date: "" };
   }
   /* Closing slides — suggested mitigation when the closing register has no Action Plan:
@@ -221,7 +222,7 @@
      · the pending close-out steps get the next steps in order, each with its owner (STEP_OWNER) */
   function statusMitigation(s) {
     var t = String(s || ""), acts = [];
-    var amp = []; t.replace(/amp[\s-]*(c|e\s*1|e\s*2|e)\b(?:\s*[\/&]\s*(e?\s*[12]))?/gi, function (_, a, b) {
+    var amp = []; t.replace(/amp[\s-]*([a-d]|e\s*1|e\s*2|e)\b(?:\s*[\/&]\s*(e?\s*[12]))?/gi, function (_, a, b) {
       amp.push("AMP-" + a.replace(/\s+/g, "").toUpperCase()); if (b) amp.push("AMP-" + (/^e/i.test(b) ? "" : "E") + b.replace(/\s+/g, "").toUpperCase()); return _; });
     amp = amp.filter(function (x, k) { return amp.indexOf(x) === k; });
     var snagsOpen = /snag/i.test(t) && !/snags?[^.;]*\b(closed|cleared)\b|\b(closed|cleared)\b[^.;]*snag/i.test(t);
@@ -276,16 +277,19 @@
     var worksEnd = worksDone ? null : fe && fe >= rd ? fe : cf && cf >= rd ? cf : addDays(rd, 60);
     var worksSrc = worksDone ? "" : fe && fe >= rd ? "weekly fcst" : cf && cf >= rd ? "contract finish" : "no fcst, +2 m assumed";
     var lag = 0, why = [];
-    if (/amp[\s-]*c\b/i.test(t) && !/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t)) { lag += 30; why.push("AMP-C open +1 m"); }
+    if (/amp[\s-]*c\b/i.test(t) && !(/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t) && !/\bnot (been |yet )?(fully |completely )?(signed|completed)|not signed:[^.]*amp[\s-]*c\b/i.test(t))) { lag += 30; why.push("AMP-C open +1 m"); }
     if (/\bcr\b|change request/i.test(t) && /process|progress|pending/i.test(t)) { lag += 30; why.push("CR in process +1 m"); }
     if (/\b(mot|moi|ministry|authority|municipal|stakeholder)\b|awaiting [^.;]*response/i.test(t)) { lag += 45; why.push("authority response +1.5 m"); }
     var design = /\bdesign\b/i.test(r["Project Name"] || "") && !/construct/i.test(r["Project Name"] || "");   // design contracts: no defects liability period
     var e2Now = /\bamp[\s-]*(e\s*)?2\b[^.;]*\b(in process|in progress|pending sign|under signature)\b|\be1\s*[&\/]\s*e?2\b[^.;]*\b(in process|in progress)\b/i.test(t);
     var paperOnly = worksDone && /close[\s-]?out (is )?remaining|only close[\s-]?out/i.test(t);
     var e1 = addDays(worksEnd || rd, 30 + lag), dlpEnd = design ? null : addDays(worksEnd || cf || rd, 365), e2, hand;
-    if (e2Now) { e1 = addDays(rd, 14); e2 = addDays(rd, 30); why.push("AMP-E2 already in process"); }
+    var e2Done = steps.some(function (k) { return /^amp\s*-?\s*e\s*2/i.test(k) && stepState(r, k).status === "Completed"; });
+    var e1Done = steps.some(function (k) { return /^amp\s*-?\s*e\s*1/i.test(k) && stepState(r, k).status === "Completed"; });
+    if (e1Done) { e1 = rd; why.push("AMP-E1 signed"); }   // the following steps count from now
+    if (e2Now) { e1 = e1Done ? rd : addDays(rd, 14); e2 = addDays(rd, 30); why.push("AMP-E2 already in process"); }
     else if (paperOnly) { e1 = e2 = addDays(rd, 14); why.push("only close-out paperwork left"); }
-    else e2 = maxD(addDays(e1, 45), dlpEnd);
+    else e2 = e2Done ? rd : maxD(addDays(e1, 45), dlpEnd);
     hand = paperOnly ? addDays(rd, 14) : addDays(e1, 30);
     var co = addDays(e2, paperOnly ? 31 : 30), fp = addDays(co, 60);
     var plan = { amp1: e1, amp2: e2, hand: hand, clos: co, ret: addDays(co, 45), apg: addDays(e1, 60), fin: fp, perf: addDays(maxD(e2, fp), 30) };
@@ -297,7 +301,7 @@
       dates[k] = monthEnd(maxD(d, addDays(rd, 14)));
     });
     var basis = "Basis: " + (worksDone ? "works done" + (cf ? " (CF " + dShort(cf) + ")" : "") : "works finish " + dShort(worksEnd) + " (" + worksSrc + ")") +
-      (why.length ? "; " + why.join(", ") : "") + (e2Now || paperOnly ? "" : "; E1 +1 m, E2 " + (design ? "+1.5 m (design, no DLP)" :
+      (why.length ? "; " + why.join(", ") : "") + (e2Now || paperOnly || e2Done ? "" : (e1Done ? "; E2 " : "; E1 +1 m, E2 ") + (design ? "+1.5 m (design, no DLP)" :
       "after 12-m DLP" + (dlpEnd < addDays(e1, 45) ? " (elapsed)" : ""))) + "; close-out & releases follow";
     return { dates: dates, basis: basis };
   }
@@ -327,7 +331,7 @@
         }
         E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
-        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
+        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "Done", color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
         // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
         E.all(tr, NS.a, "p").forEach(function (pp) {
           if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;

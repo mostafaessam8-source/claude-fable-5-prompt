@@ -12,7 +12,9 @@ Logic: `closingForecast(M, r, steps)` in `sar-cost-dashboard/assets/js/pptx-week
 
 - `Projects in Closing phase.xlsx` → `Closing_Projects`: `Actual Progress %`, `Contract Finish`, `Current Status`,
   `Action Plan`, and the close-out step columns (between *Final Contract Value* and *Current Status*).
-  A date in a step = Completed (shown as actual date), "N/A" = not applicable, other text = in process.
+  A date in a step = Completed (shown as actual date); "Completed" / "Done" / "Signed" / "Yes" / "Available" = Completed
+  with no date (shown "Done" in green); "N/A" = not applicable; empty = Not Started; other text = in process.
+  Current Status may start "Not signed: AMP-B, AMP-D, AMP-E2." (from the AMP availability table) — read like any text.
 - The project's own weekly report (exact project code only, never the base code of a suffixed code):
   `End Date (Forecast/Actual)`.
 - Report date (cut-off of the imported weekly report).
@@ -31,6 +33,9 @@ Logic: `closingForecast(M, r, steps)` in `sar-cost-dashboard/assets/js/pptx-week
    - "AMP-E2 in process" or "E1 & E2 in process" → AMP-E1 = report date + 2 weeks, AMP-E2 = report date + 1 month.
    - Works done and only close-out paperwork left ("Close out remaining") → AMP-E1, AMP-E2 and handover = report date
      + 2 weeks.
+5b. AMP-E1 already Completed → AMP-E1 is taken as the report date (later steps count from now);
+   AMP-E2 already Completed → AMP-E2 is the report date (close-out etc. count from now, no DLP wait).
+   "AMP-C … not (been) signed" or "Not signed: … AMP-C" means AMP-C is still open (+1 month).
 6. Following steps: Hand Over Report = AMP-E1 + 1 month · Closeout Report = AMP-E2 + 1 month · AP guarantee release =
    AMP-E1 + 2 months · Retention release = close-out + 1.5 months · Final payment = close-out + 2 months ·
    Performance guarantee release = later of AMP-E2 and final payment + 1 month.
