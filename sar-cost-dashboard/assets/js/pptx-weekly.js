@@ -1154,7 +1154,9 @@
       jobs = jobs.then(function () { return photoPlaceholder().then(function (b) { photo = pkg.freeName("ppt/media", "nsr_photo", ".png"); pkg.zip.file(photo, b); pkg.ensureDefault("png", "image/png"); }); });
       // closing action points: 2 projects per slide
       var openCl = openClosing(M);
-      clones("closingActions", chunk(openCl, 3), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 3 + 1); });
+      // Old projects: only works fully done (actual progress 100 %); projects still finishing stay on the closing cards
+      var oldPr = openCl.filter(function (r) { var a = N(r["Actual Progress %"]); return a != null && a >= 0.999; });
+      clones("closingActions", chunk(oldPr, 3), function (p, g, i) { fillClosingActions(pkg, p, M, g, i * 3 + 1); });
       // CAPEX projects only (KPI code 7) on both spending slides
       var ci = M.months.indexOf(M.cut), withPlan = M.spend.filter(function (p) { return p.fy || p.ytdAct || p.fcFY; });
       var cap = withPlan.filter(function (p) { return M.codeKpi[p.ID] === 7; }).sort(function (a, b) { return b.fy - a.fy; });
