@@ -34,7 +34,8 @@
   function qtr(s) { var t = ymd(s); return t ? "Q" + Math.ceil(t.m / 3) + "-" + t.y : ""; }
   function serial(s) { var t = ymd(s); return t ? Math.round((Date.UTC(t.y, t.m - 1, t.d) - Date.UTC(1899, 11, 30)) / 864e5) : null; }
   function miss(v) { return v == null || v === "" ? { text: MISSING, color: RED } : String(v); }
-  function clip(s, n) { s = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  // text is never cut with "…": it goes in whole and the box shrinks its font (fitText) or the table cell wraps
+  function clip(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
   function chunk(a, n) { var o = []; for (var i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o.length ? o : [[]]; }
   function sum(a, f) { return a.reduce(function (s, x) { return s + (N(f ? f(x) : x) || 0); }, 0); }
   function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (x != null && x !== "" && !s[x]) { s[x] = 1; o.push(x); } }); return o; }
@@ -556,7 +557,7 @@
       var r = list[i];
       if (!r) { c.all.concat([c.box]).forEach(E.removeEl); return; }
       var spi = wSpi(r), name = r["Project Code"] + " - " + shortName(r["Project Name"], 22);
-      if (c.name) E.setParas(c.name, critical(r, M) ? [[{ text: name }, { text: " - Critical", color: RED }]] : name);
+      if (c.name) { E.setParas(c.name, critical(r, M) ? [[{ text: name }, { text: " - Critical", color: RED }]] : name); fitText(c.name, 7); }
       if (c.value) E.setParas(c.value, { text: spi == null ? "-" : spi.toFixed(2), color: spiCol(spi) });
       lineColor(c.box, spiCol(spi));
       if (c.chart) {
@@ -726,9 +727,9 @@
     oles.forEach(function (o) { E.all(o, NS.a, "blip").forEach(function (b) { pkg.setImage(path, b.getAttributeNS(NS.r, "embed"), mp); }); });
   }
 
-  /* keep filled text inside its box: estimate the wrapped height (average glyph ~0.55 em, line 1.2 em), step the font
-     down to minPt, then trim the end with "…" if it still does not fit. Boxes set to auto-grow are not resized by
-     PowerPoint until edited, so long data would otherwise spill out. */
+  /* keep filled text inside its box: estimate the wrapped height (average glyph ~0.55 em, line 1.2 em) and step the
+     font down to minPt; if it still does not fit, keep stepping down to 5 pt. Text is never cut. Boxes set to auto-grow
+     are not resized by PowerPoint until edited, so long data would otherwise spill out. */
   function fitText(sh, minPt) {
     if (!sh) return;
     var p = E.pos(sh); if (!p || !p.w || !p.h) return;
@@ -746,21 +747,12 @@
         return h + lines * sz * 1.2;
       }, 0);
     }
-    var base = Math.max.apply(null, paras.map(szOf).concat([1])), k = 1, minK = Math.min(1, (minPt || 7) / base);
+    var base = Math.max.apply(null, paras.map(szOf).concat([1])), k = 1, minK = Math.min(1, (minPt || 7) / base), floorK = Math.min(minK, 5 / base);
     while (k > minK && height(k) > H) k = Math.max(minK, k - 0.04);
+    while (k > floorK && height(k) > H) k = Math.max(floorK, k - 0.02);    // long text: smaller still, never cut
     if (k < 1) paras.forEach(function (q) {
       E.all(q, NS.a, "rPr").concat(E.all(q, NS.a, "endParaRPr")).forEach(function (r) { r.setAttribute("sz", String(Math.max(100, Math.round(szOf(q) * k * 100 / 50) * 50))); });
     });
-    // still too long at the minimum size: drop / shorten from the end
-    var guard = 400;
-    while (height(1) > H && guard-- > 0) {
-      var last = paras[paras.length - 1], ts = E.all(last, NS.a, "t"), lt = ts[ts.length - 1];
-      if (!lt) break;
-      if (paras.length > 1 && txt(last).length < 12) { last.parentNode.removeChild(last); paras.pop(); continue; }
-      var v = lt.textContent.replace(/…$/, "");
-      if (v.length <= 4) { if (paras.length > 1) { last.parentNode.removeChild(last); paras.pop(); continue; } break; }
-      lt.textContent = v.slice(0, Math.max(1, v.length - 8)).replace(/\s+\S*$/, "") + "…";
-    }
     E.all(sh, NS.a, "spAutoFit").forEach(function (a) { a.parentNode.removeChild(a); });   // the box stays its template size
   }
 
@@ -996,7 +988,14 @@
     if (title) E.setParas(title, [[{ text: "Project - " + code + " : " + clip(r["Project Name"] || card.Name, 80) + " " }].concat(critical({ "Project Code": code, "Critical Project": r["Critical Project"] }, M) ? [{ text: "(Critical Project)", color: "FF0000" }] : [])]);
     // contractor / consultant / funded by (one-row table)
     var top = E.all(d, NS.a, "tbl").filter(function (t) { return /Contractor/.test(t.textContent) && /Funded/.test(t.textContent); })[0];
-    if (top) { var c = E.cells(E.rows(top)[0]); E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24) || "N/A"); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org)); }
+    if (top) { var c = E.cells(E.rows(top)[0]);
+      var gw = E.all(top, NS.a, "gridCol").map(function (g) { return +g.getAttribute("w") || 0; });
+      // a long name keeps its row height: the font steps down until the whole name fits on two lines of its column
+      var cellFit = function (tc, w) {
+        var t = E.text(tc).trim(), rp = E.all(tc, NS.a, "rPr"), base = rp.length && rp[0].getAttribute("sz") ? +rp[0].getAttribute("sz") / 100 : 12;
+        var W = Math.max(20, w / 12700 - 14), sz = Math.min(base, 2 * W / (0.55 * Math.max(1, t.length)));
+        sz = Math.max(5.5, Math.floor(sz * 2) / 2); if (sz < base) rp.forEach(function (r) { r.setAttribute("sz", String(sz * 100)); });
+      }; E.cellText(c[1], miss(clip(r.Contractor || ctr(/contractor/i), 30))); E.cellText(c[3], clip(r.PMC || r["Consultant (CSC)"] || ctr(/^csc$/i) || ctr(/^pmc$/i), 24) || "N/A"); E.cellText(c[5], miss(r["Funding Source"] || (card.Fund || {}).Org));  [1, 3, 5].forEach(function (k) { if (c[k] && gw[k]) cellFit(c[k], gw[k]); }); }
     // overall status
     var st = textShape(/^(On Track|At Risk|Delayed|Slightly Delayed|On Hold|Ahead)$/);
     if (st) { var s = r["Performance Status"] || (card.Perf || {}).Status || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
@@ -1062,7 +1061,8 @@
       } else ms = !src ? [] : M.D.t("Project_Milestones_Progress").filter(function (x) { return x["Source.Name"] === src && x.Description; }).sort(function (a, b) { return (N(a.Sort) || 0) - (N(b.Sort) || 0); }).slice(0, 5);
       var rows = E.resizeRows(mt, 1, 1, Math.max(ms.length, 1));
       if (!ms.length) { var c0 = E.cells(rows[0]); E.cellText(c0[0], miss(null)); E.cellText(c0[1], ""); E.cellText(c0[2], ""); }
-      ms.forEach(function (x, i) { var c = E.cells(rows[i]); E.cellText(c[0], pg.acts && pg.acts.length ? { text: clip(actAbbr(x.Description), 17), size: 6.5 } : clip(String(x.Description).toUpperCase(), 22)); E.cellText(c[1], pct(x["Planned progress"])); E.cellText(c[2], pct(x["Actual Progress"])); });
+      ms.forEach(function (x, i) { var c = E.cells(rows[i]); var md = pg.acts && pg.acts.length ? clip(actAbbr(x.Description)) : clip(String(x.Description).toUpperCase());
+        E.cellText(c[0], { text: md, size: md.length > 34 ? 5.5 : md.length > 22 ? 6 : pg.acts && pg.acts.length ? 6.5 : undefined });   /* whole name, smaller when long */ E.cellText(c[1], pct(x["Planned progress"])); E.cellText(c[2], pct(x["Actual Progress"])); });
       var fr = mt.parentNode; while (fr && fr.localName !== "graphicFrame") fr = fr.parentNode; if (fr) E.fitTable(fr);
     }
     // progress photos → placeholder
@@ -1088,7 +1088,9 @@
     function textShape(re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s)); })[0]; }
     var t = textShape(/^Project - /); if (t) E.setParas(t, "Project - " + code + " : " + clip(r["Project Name"], 70));
     function head(sh, label, v) {        // one line, 9 pt: label, value after the template icon
-      if (!sh) return; v = typeof v === "object" ? { text: v.text, color: v.color, size: 9, bold: true } : { text: v, size: 9, bold: true };
+      if (!sh) return;
+      var vt = typeof v === "object" ? v.text : String(v), sz = vt.length > 26 ? Math.max(6, Math.round(9 * 26 / vt.length * 2) / 2) : 9;   // whole name on one line
+      v = typeof v === "object" ? { text: v.text, color: v.color, size: sz, bold: true } : { text: v, size: sz, bold: true };
       E.setParas(sh, [[{ text: label, size: 9, bold: true }, v]]);
       var xf = sh.getElementsByTagNameNS(NS.a, "xfrm")[0], ex = xf && xf.getElementsByTagNameNS(NS.a, "ext")[0]; if (ex && +ex.getAttribute("cx") < 3000000) ex.setAttribute("cx", "3000000");   // room for one line
     }
