@@ -678,7 +678,7 @@
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
           var cls = x ? "x" + x[1] : "", it = info[ref], ovr = calc && ref in calc && !(ref in e) ? calc[ref] : undefined;
           var unl = !!(x && (x[3] & 2));               // the cell's Excel "Locked" setting decides: unlocked = editable, locked = not
-          if (!unl) it = null;
+          if (!unl && !(it && it.c.p && !(x && (x[3] & 1)))) it = null;   // locked → read-only, except the monthly Actual Progress (team input; the cards keep it formatted "Locked" but sheets are not protected)
           else if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period
           else if (!it) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other unlocked cell of the card
           if (it) {
@@ -855,7 +855,8 @@
                   else { rep.status = "skipped"; rep.why = alt.length > 1 ? "row appears more than once — update by hand" : "row / column not found as a yellow cell"; report.push(rep); return; }
                 }
                 var tx = S.cells[ref];
-                if (tx && tx.locked) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
+                if (tx && tx.f && t.c.p) { rep.status = "skipped"; rep.why = "cell holds a formula in this file"; report.push(rep); return; }
+                if (tx && tx.locked && !t.c.p) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
                 if (tx && tx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                 rep.now = t.c.v;
                 writeCell(doc, ref, c.k, c.to, S.cells[ref]);

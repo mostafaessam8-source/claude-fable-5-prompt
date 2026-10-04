@@ -31,8 +31,11 @@ saves, Esc cancels, Tab goes to the next yellow cell; changed cells get an orang
   list / date / % / number / text; an empty General cell takes a number when the input is numeric.
 - Applying: same ref if section and row label still match, else the unique row with that label in the section; a cell
   that is locked in the new file is not written ("cell is locked in this file").
-- In the file used so far, the monthly Actual Progress (%) row and the PO progress cells are locked, so they are not
-  editable until they are unlocked in the master workbook.
+- **Exception — monthly Actual Progress (%)**: the section 7 row (and, for PO-split projects, the PO blocks' Actual
+  Progress rows) is the team's input even though the cards format it "Locked" (cell style *Percent*, C79:AN79 in all
+  29 Sep 26 cards; the sheets are not protected, so Excel lets anyone type there). These cells are editable for the
+  open months whatever their lock flag; a formula there (PO-linked row) stays read-only, and on apply a locked target
+  is still written for them (never over a formula).
 
 ## Yellow cells
 
