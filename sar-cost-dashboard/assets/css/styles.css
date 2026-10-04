@@ -950,3 +950,4 @@ textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); res
 .cu-sheet.cu-dragging, .cu-sheet.cu-dragging td { cursor: crosshair !important; }
 .cu-grid td.cu-pick { box-shadow: inset 0 0 0 2px #1F6FEB !important; background-image: linear-gradient(rgba(31,111,235,.10), rgba(31,111,235,.10)); }
 .cu-ctl.cu-fxbox { min-width: max(100%, 220px); font-family: Consolas, "Courier New", monospace; color: #0B3D91; }
+.cu-btn:disabled { opacity: .45; cursor: default; }

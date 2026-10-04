@@ -584,7 +584,8 @@
       '<div class="cu-jump"><label>Go to<select class="cu-sec-go"></select></label></div>' +
       '<div class="cu-zoom"><label>Zoom<select class="cu-z">' + [0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3].map(function (z) { return '<option value="' + z + '"' + (z === state.zoom ? " selected" : "") + ">" + Math.round(z * 100) + "%</option>"; }).join("") + "</select></label></div>" +
       '<div class="cu-acts"><span class="cu-saved"></span>' +
-      '<button type="button" class="cu-btn ghost" data-a="reset">Undo my changes (this project)</button>' +
+      '<button type="button" class="cu-btn ghost" data-a="undo" title="Undo the last change (Ctrl+Z)">↶ Undo</button>' +
+      '<button type="button" class="cu-btn ghost" data-a="redo" title="Redo (Ctrl+Y)">↷ Redo</button>' +
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
       '<div class="cu-help">The card exactly as in the Excel file. As in Excel, <b>unlocked</b> cells can be changed and <b>locked</b> cells cannot; you can also type a formula starting with <b>=</b> (e.g. <code>=K106+30</code>, <code>=EDATE(J107,3)</code>, <code>=K106</code>) — it is calculated here and written to the card as a formula — hover a cell: the pointer and a blue frame show it is open; click it and type (a later forecast finish opens more months, as in Excel); ' +
       'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
@@ -722,7 +723,32 @@
       }
       count();
     }
-    function count() { var n = changedCount(m, d, state.code); saved.dataset.n = n; wrap.querySelector('[data-a="reset"]').textContent = n ? "Undo my " + n + " change" + (n === 1 ? "" : "s") + " (this project)" : "Undo my changes (this project)"; }
+    function count() {
+      var n = changedCount(m, d, state.code), h = hist(); saved.dataset.n = n;
+      var u = wrap.querySelector('[data-a="undo"]'), r = wrap.querySelector('[data-a="redo"]');
+      u.disabled = !h.u.length; r.disabled = !h.r.length;
+      u.textContent = "↶ Undo" + (h.u.length ? " (" + h.u.length + ")" : ""); r.textContent = "↷ Redo" + (h.r.length ? " (" + h.r.length + ")" : "");
+    }
+    /* undo / redo, one step at a time (an edit, or one fill), per project — no confirmation */
+    var hists = {};
+    function hist() { return hists[state.code] || (hists[state.code] = { u: [], r: [] }); }
+    function snap(e, refs) { return refs.map(function (ref) { return { ref: ref, b: ref in e ? e[ref] : undefined }; }); }
+    function record(step, e) {                     // step: [{ ref, b }] taken before the change; the "after" read now
+      var ch = step.map(function (x) { return { ref: x.ref, b: x.b, a: x.ref in e ? e[x.ref] : undefined }; }).filter(function (x) { return x.a !== x.b; });
+      if (!ch.length) return;
+      var h = hist(); h.u.push(ch); if (h.u.length > 200) h.u.shift(); h.r = [];
+    }
+    function stepBack(redo) {
+      closeEd(false);
+      var h = hist(), st = (redo ? h.r : h.u).pop(); if (!st) return;
+      var e = d.edits[state.code] = d.edits[state.code] || {};
+      st.forEach(function (x) { var v = redo ? x.a : x.b; if (v === undefined) delete e[x.ref]; else e[x.ref] = v; });
+      (redo ? h.u : h.r).push(st);
+      persist();
+      var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; draw(); sw.scrollTop = st0; sw.scrollLeft = sl0;
+      var td = sheet.querySelector('td[data-ref="' + st[0].ref + '"]'); if (td) { state.active = st[0].ref; placeHandle(); }
+      saved.textContent = (redo ? "Redone: " : "Undone: ") + st.length + " cell" + (st.length === 1 ? "" : "s");
+    }
     /* in-place editor: one control at a time over the clicked yellow cell */
     var openEd = null;
     function closeEd(commit) {
@@ -737,8 +763,9 @@
         } else if (c.k === "pct") v = raw === "" ? "" : isNaN(+raw.replace("%", "")) ? raw : String(Math.round(+raw.replace("%", "") * 1e6) / 1e8);
         else if (c.k === "list" && listNum(raw) != null) v = String(listNum(raw));   // "100%" from a Yes/No-style list → 1, as Excel stores it
         else if (c.k === "num") v = raw === "" ? "" : isNaN(+raw.replace(/,/g, "")) ? raw : String(+raw.replace(/,/g, ""));
-        var e = d.edits[state.code] = d.edits[state.code] || {};
+        var e = d.edits[state.code] = d.edits[state.code] || {}, before = snap(e, [o.ref]);
         if (canon(v) === canon(c.v)) delete e[o.ref]; else e[o.ref] = v;
+        record(before, e);
         remember(o.ref, o.it);
         state.active = o.ref;
         persist();
@@ -824,7 +851,7 @@
     }
     function fillTo(src, targets) {
       var p = cur(), e = d.edits[state.code] = d.edits[state.code] || {}, it = info[src]; if (!it) return;
-      var a = splitRef(src), fx = srcFormula(p, src, e), v = src in e ? e[src] : it.c.v, done = 0, skipped = 0;
+      var a = splitRef(src), fx = srcFormula(p, src, e), v = src in e ? e[src] : it.c.v, done = 0, skipped = 0, before = snap(e, targets);
       targets.forEach(function (t) {
         var td = sheet.querySelector('td.cu-ed[data-ref="' + t + '"]'), ti = info[t];
         if (!td || !ti) { skipped++; return; }
@@ -835,6 +862,7 @@
         if (canon(nv) === canon(ti.c.v)) delete e[t]; else e[t] = nv;
         remember(t, ti); done++;
       });
+      record(before, e);
       persist(); count();
       var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; draw(); sw.scrollTop = st0; sw.scrollLeft = sl0;
       saved.textContent = "Filled " + done + " cell" + (done === 1 ? "" : "s") + (skipped ? " · " + skipped + " locked cell" + (skipped === 1 ? "" : "s") + " skipped" : "");
@@ -905,9 +933,13 @@
       if (td) jump(go.value); else { var tr = o && sheet.querySelector('tr[data-r="' + o.getAttribute("data-r") + '"]'); if (tr) tr.scrollIntoView({ block: "start", behavior: "smooth" }); }
       go.value = "";
     });
-    wrap.querySelector('[data-a="reset"]').addEventListener("click", function () {
-      if (!changedCount(m, d, state.code) || !confirm("Undo all your changes to " + state.code + "?")) return;
-      delete d.edits[state.code]; persist(); draw();
+    wrap.querySelector('[data-a="undo"]').addEventListener("click", function () { stepBack(false); });
+    wrap.querySelector('[data-a="redo"]').addEventListener("click", function () { stepBack(true); });
+    document.addEventListener("keydown", function (ev) {             // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) outside a cell being edited
+      if (openEd || !(ev.ctrlKey || ev.metaKey) || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "")) return;
+      var k = ev.key.toLowerCase();
+      if (k === "z" && !ev.shiftKey) { ev.preventDefault(); stepBack(false); }
+      else if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); stepBack(true); }
     });
     wrap.querySelector('[data-a="dl"]').addEventListener("click", function () {
       closeEd(true);

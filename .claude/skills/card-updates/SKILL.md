@@ -97,6 +97,12 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
   get the `_xlfn.` prefix), which Excel calculates on opening. References are written as typed (not shifted if rows moved).
 - NETWORKDAYS / WORKDAY use Excel's default Saturday–Sunday weekend so the page agrees with Excel.
 
+## Undo / Redo
+
+↶ Undo and ↷ Redo buttons (and Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z outside an open cell) step one change at a time — an
+edit, or one whole fill — per project, up to 200 steps, never with a confirmation. A new change clears the redo list.
+The history lives in the open page only (drafts themselves are kept in the browser).
+
 ## Fill handle (as in Excel)
 
 - The active cell (last clicked, green frame) has a small green square at its bottom-right. Drag it down / up or across:
