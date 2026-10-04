@@ -138,7 +138,8 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
      **Progress Photo** sheet (floating or placed in cells; logos and icons skipped) are scaled down and kept in this
      browser only. They show on the project dashboard (**Progress photos**) and fill the **PROGRESS PHOTOS** box of
      each execution-phase slide (up to 4). A project is matched by the file name (= the weekly report *Source.Name*),
-     else by the code in it. Projects without photos keep an empty box.
+     else by the code in it. Projects without photos keep an empty box. The archive itself is kept like the other source files
+     (*Download imported file* on the Progress photos card, and a cloud copy when cloud storage is connected).
 3. The site recognises each file by the **Excel tables inside it**, not by the file name. It reads those
    tables the same way Power BI's `Excel.Workbook(…){[Item="…",Kind="Table"]}` does, and shows a
    log of rows per table plus any missing columns.

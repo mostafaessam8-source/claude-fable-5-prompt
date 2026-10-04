@@ -29,8 +29,11 @@ A new import replaces only the projects it contains; the others keep their photo
 
 ## Storage
 
-IndexedDB key `photos` in the viewer's browser only. Never in the repository (public), never in the cloud repo,
-never in a published report. "Remove progress photos" on the import page clears them.
+Photos: IndexedDB key `photos` in the viewer's browser. The imported archive itself (.rar / .zip) is kept like the
+Excel sources: IndexedDB key `file:photos` ("Download imported file" on the Progress photos card) and, when cloud storage
+is connected, `imports/photos/<name>` in the user's PRIVATE data repository (source key `photos` in index.json — the
+cloud "Import" / "Load latest" re-imports it through the photo path, "Upload stored files" includes it). Never in the
+public repository, never in a published report. "Remove progress photos" clears the photos and the kept archive.
 
 ## Output
 

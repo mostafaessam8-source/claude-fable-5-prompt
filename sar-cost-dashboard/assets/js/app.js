@@ -270,7 +270,7 @@
       C._last = ix;
       if (changed) { ctx.rerender(); return; }        // once, so the source cards can offer cloud downloads too
       var rows = Object.keys(ix.sources).map(function (k) { var e = ix.sources[k], spec = SARImporter.SOURCES[k];
-        return { k: k, label: spec ? spec.label : k, e: e }; });
+        return { k: k, label: spec ? spec.label : k === "photos" ? "Progress photos (weekly report files)" : k, e: e }; });
       if (ix.template) rows.push({ k: "__tpl", label: "Weekly PowerPoint template", e: { path: ix.template.path, fileName: ix.template.fileName, importedAt: ix.template.savedAt, size: ix.template.size } });
       if (!rows.length) { list.textContent = "No files in the cloud yet — import files (or use “Upload the files stored in this browser”)."; return; }
       list.className = "cl-list";
@@ -329,6 +329,8 @@
           });
         }, Promise.resolve()).then(function () {
           return SARStore.get("pptTemplate").then(function (t) { if (t && t.buffer) { n++; return C.uploadTemplate(t.name, t.buffer); } });
+        }).then(function () {
+          return SARStore.get("file:photos").then(function (f) { if (f && f.buffer) { n++; return C.uploadSource("photos", f.name, f.buffer); } });
         }).then(function () { U.toast(n ? n + " file(s) uploaded to the cloud." : "No stored files in this browser — import them first.", !n); ctx.rerender(); });
       }).catch(function (e) { U.toast(e.message, true); }).then(function () { b.disabled = false; });
     });
@@ -389,8 +391,19 @@
         }).join("") : '<li><span>None imported yet</span><span><span class="badge bad">missing</span></span></li>';
         if (ps.length) {
           pc.querySelector(".fname").insertAdjacentHTML("beforebegin", '<div class="fname">' + ps.length + " projects · imported " + esc(new Date(st.updatedAt).toLocaleString("en-GB")) + "</div>");
+          SARStore.get("file:photos").then(function (f) {
+            if (!f || !f.buffer) return;
+            var db = U.el('<button type="button" class="icon-btn ghost src-dl-ph" title="Download the weekly report archive you imported">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>');
+            db.addEventListener("click", function () {
+              var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([f.buffer], { type: f.type || "application/octet-stream" })); a.download = f.name;
+              document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+            });
+            pc.querySelector(".ph-list").insertAdjacentElement("afterend", db);
+            pc.querySelector(".fname").insertAdjacentHTML("afterend", '<div class="fname">' + esc(f.name) + " · " + (f.size ? Math.round(f.size / 1048576 * 10) / 10 + " MB" : "") + "</div>");
+          });
           var cb = U.el('<button type="button" class="icon-btn ghost">Remove progress photos</button>');
-          cb.addEventListener("click", function () { if (confirm("Remove all progress photos from this browser?")) SARPhotos.clear().then(function () { U.toast("Progress photos removed."); ctx.rerender(); }); });
+          cb.addEventListener("click", function () { if (confirm("Remove all progress photos from this browser?")) SARPhotos.clear().then(function () { return SARStore.del("file:photos"); }).then(function () { U.toast("Progress photos removed."); ctx.rerender(); }); });
           pc.appendChild(cb);
         }
       });
@@ -442,7 +455,19 @@
         write("Progress photos:");
         return SARPhotos.importFiles(photoFiles, write).then(function (r) {
           if (r.photos) write("  ✓ " + r.photos + " photos saved for " + r.projects + " project(s) — used on the project dashboards and the weekly PowerPoint");
-          return r.photos;
+          if (!r.photos) return r.photos;
+          // keep the imported archive itself (download it again later / cloud copy), like the Excel sources
+          var arch = photoFiles.filter(function (f) { return SARPhotos.isArchiveName(f.name); });
+          return arch.reduce(function (p, f) {
+            return p.then(function () { return f.arrayBuffer(); }).then(function (buf) {
+              return SARStore.set("file:photos", { name: f.name, type: f.type || "application/octet-stream", buffer: buf, savedAt: new Date().toISOString(), size: f.size }).then(function () {
+                write("  ✓ kept " + f.name + " in this browser (Download imported file on the Progress photos card)");
+                if (opts.fromCloud || !(window.SARCloud && SARCloud.connected())) return;
+                write("  ☁ saving " + f.name + " to cloud storage …");
+                return SARCloud.uploadSource("photos", f.name, buf).then(function () { write("  ☁ saved " + f.name); }, function (e) { write("  ✗ cloud: " + f.name + " — " + e.message); });
+              }, function () { write("  ! " + f.name + " is too large to keep in this browser — the photos are saved"); });
+            });
+          }, Promise.resolve()).then(function () { return r.photos; });
         });
       }
       if (!files.length) {
