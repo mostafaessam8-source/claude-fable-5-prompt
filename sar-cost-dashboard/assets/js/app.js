@@ -363,7 +363,9 @@
         var rep = src && src.report ? src.report.filter(function (r) { return r.table === t; })[0] : null;
         var n = D.t(t).length;
         return "<li><span>" + esc(t) + (rep && rep.missing && rep.missing.length ? '<br><span class="missing">missing: ' + esc(rep.missing.join(", ")) + "</span>" : "") +
-          "</span><span>" + (n ? U.badge(n + " rows").replace("badge ", "badge ok ") : '<span class="badge bad">missing</span>') + "</span></li>";
+          "</span><span>" + (n ? U.badge(n + " rows").replace("badge ", "badge ok ") : src && src.report && !rep
+            ? '<span class="badge" title="Read by the site since the last import of this file — import the file again">re-import</span>'   // newer table, older import
+            : '<span class="badge bad">missing</span>') + "</span></li>";
       }).join("");
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +

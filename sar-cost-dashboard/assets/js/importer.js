@@ -42,7 +42,10 @@
         MLS: ["Code", "Source.Name", "Project Name"]
       },
       // Power BI reads the S-Curve from the sheet, not the table — fall back to it.
-      sheetFallback: { S_Curve: "S-Curve", Weekly_Achievements: "Weekly Achievements" }
+      sheetFallback: { S_Curve: "S-Curve", Weekly_Achievements: "Weekly Achievements" },
+      // last resort: any sheet whose header row has these columns (names compared loosely), renamed to the spec names
+      headerScan: { Weekly_Achievements: [["Source.Name", /^source\.?\s*name$/i], ["Sr. No.", /^s(r|erial)\.?\s*no\.?$/i, true],
+        ["Work Description", /work\s*desc|achiev/i]] }
     },
     plan: {
       label: "EPBU 2026 Delivery Plan (Milestone & Forecast)",
@@ -715,6 +718,31 @@
     return null;
   }
 
+  /* Find a header row (first 15 rows of any sheet) holding every required column of `cols` ([specName, regex, optional]),
+     then read the rows under it with the columns renamed to the spec names; blank rows are skipped. */
+  function scanHeader(XLSX, wb, cols) {
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name]; if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]);
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 15); r++) {
+        var map = {}, ok = true;
+        cols.forEach(function (c) {
+          for (var cc = rg.s.c; cc <= rg.e.c; cc++) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: cc })]; if (cl && c[1].test(normKey(cl.v))) { map[c[0]] = cc; return; } }
+          if (!c[2]) ok = false;
+        });
+        if (!ok) continue;
+        var rows = [];
+        for (var rr = r + 1; rr <= rg.e.r; rr++) {
+          var rec = {}, any = false;
+          Object.keys(map).forEach(function (k) { var v = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: map[k] })]); rec[k] = v; if (v != null && v !== "") any = true; });
+          if (any) rows.push(rec);
+        }
+        return { sheet: name, rows: rows };
+      }
+    }
+    return null;
+  }
+
   async function parseWorkbook(buffer, XLSX, JSZip) {
     var zip = await JSZip.loadAsync(buffer);
     if (!zip.file("xl/workbook.xml")) throw new Error("Not an .xlsx workbook (xl/workbook.xml missing). Save the file as Excel Workbook (*.xlsx).");
@@ -760,6 +788,7 @@
         via = "sheet";
         if (ws["!ref"]) rows = readRange(XLSX, ws, ws["!ref"], sheetHeaders(XLSX, ws, ws["!ref"]), 1, 0);
       }
+      if ((!rows || !rows.length) && spec.headerScan && spec.headerScan[tname]) { var hs = scanHeader(XLSX, wb, spec.headerScan[tname]); if (hs) { rows = hs.rows; via = "sheet " + hs.sheet; } }
       if (!rows) { report.push({ table: tname, rows: 0, status: "missing", missing: [] }); return; }
       var present = {};
       rows.forEach(function (r) { for (var k in r) present[k] = 1; });
