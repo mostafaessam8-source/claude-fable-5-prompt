@@ -608,7 +608,7 @@
     var full = sum(cards, bud), cv = sum(cards, function (c) { return (c.Fund || {}).CON; }), paid = sum(cards, function (c) { return (c.Perf || {}).Paid; });
     var po = cards.filter(function (c) { return N((c.Fund || {}).CON) || (c.Contracts || []).some(function (k) { return /contractor/i.test(k.Role || "") && k["PO No."]; }); });
     var poCodes = uniq(po.map(function (c) { return String(c.Code); }).concat(leg.po.map(function (r) { return String(r.Code); })));   // a code in both files counts once
-    function ph(c) { return String(c.ActualPhase || c.PlannedPhase || ""); }   // no actual phase on the card → its planned phase
+    function ph(c) { return String(c.ActualPhase || ""); }
     var exe = cards.filter(function (c) { return /^execution/i.test(ph(c)); }), pipe = cards.filter(function (c) { return /^(creation|initiation|planning|tendering)/i.test(ph(c)); });
     var clo = cards.filter(function (c) { return /^(handover|closing|closed)/i.test(ph(c)); });
     var byText = function (re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s).replace(/\s+/g, " ")); })[0]; };
@@ -616,7 +616,7 @@
     var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + poCodes.length + " projects (" + po.filter(function (c) { return /^execution/i.test(ph(c)); }).length + " Execution" + (leg.po.length ? " + " + leg.po.length + " Legacy" : "") + ")"); }
     var b3 = byText(/TOTAL ?PAID/); if (b3) { setLine(b3, 1, "SAR " + bigB(paid)); setLine(b3, 2, (cv ? Math.round(paid / cv * 100) : 0) + " % of contracted value"); }
     function grp(re, list, label) { var b = byText(re); if (!b) return; if (label) setLine(b, 1, label); setLine(b, 2, list.length + " Projects"); setLine(b, 3, "SAR " + sarB(sum(list, bud))); }
-    grp(/PMO Reporting Card/, exe.concat(pipe));   // PMO reporting = under execution + pipeline, so the three tiles add up
+    grp(/PMO Reporting Card/, cards);
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
     var bl = byText(/Legacy|Handover/); if (bl) { setLine(bl, 1, leg.label); setLine(bl, 2, leg.rows.length + " Projects"); setLine(bl, 3, "SAR " + sarB(leg.value)); }
