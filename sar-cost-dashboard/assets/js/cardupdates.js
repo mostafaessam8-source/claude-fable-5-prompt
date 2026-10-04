@@ -60,7 +60,8 @@
         b1.querySelector('[data-a="html"]').addEventListener("click", function (ev) {
           var btn = ev.currentTarget; btn.disabled = true;
           loadKit().then(function (kit) {
-            var self = (kit.scripts.filter(function (s) { return /cardform\.js$/.test(s.name); })[0] || {}).code;
+            var code = function (re) { return (kit.scripts.filter(function (s) { return re.test(s.name); })[0] || {}).code; };
+            var self = code(/xlcalc\.js$/) && code(/cardform\.js$/) ? code(/xlcalc\.js$/) + "\n" + code(/cardform\.js$/) : null;   // formula engine + form
             if (!self) throw new Error("The publish kit has no card form — run: npm run release");
             var html = SARCardForm.teamPage(m, kit, self), name = "NSR Project Cards - Team Update" + (m.month ? " - " + m.month : "") + ".html";
             SARCardForm.saveFile(name, html, "text/html;charset=utf-8");

@@ -62,6 +62,23 @@ under "Month Starting Date"; month columns = the "Month N" labels above "Months 
 - Written to the new month's file as numbers (fractions) into the same field (section · row · Month N); formula cells
   are never overwritten. Excel recalculates everything else on opening.
 
+## Live recalculation (formulas follow the team's changes)
+
+`assets/js/xlcalc.js` (`XLCalc`) is a small Excel formula engine for one sheet, embedded in the team page with
+cardform.js (both in the publish kit). The model carries per project every formula (`fx`; shared formulas as master text
++ `fsd` list of the cells reusing it, shifted with `XLCalc.shift`) and every value as Excel stored it (`cv`, typed;
+a formula's "" is kept — Excel treats it as text, an empty cell is 0).
+- After each edit the formulas that depend on the edited cells (transitively, plus INDIRECT users) are recalculated;
+  the rest keep Excel's stored values. Recalculated values that differ show in dark teal. A value typed over an unlocked
+  formula wins over that formula.
+- Formulas reading another workbook (`[1]…`) or another sheet keep Excel's value (the source is not in the page).
+- Excel semantics kept: numbers compared to 15 significant digits, 1900 date calendar (serial 0 = 0-Jan-1900),
+  "" vs empty, TEXT over ranges inside SUMPRODUCT, DATEDIF / EOMONTH / EDATE, SUMIFS / COUNTIFS criteria with wildcards.
+- **Check on any engine change**: recalc every formula of all cards from scratch (TODAY = file's modified date) and
+  compare to Excel's stored values — it must stay at 100 % (Sep 26 file: 37,962 / 37,962; 321 external kept).
+- Month cells of section 7 open as "Months Count" (row above Month Starting Date) becomes non-empty after recalculation.
+- Data-validation lists with numeric choices ("0%,100%") show formatted and are stored as numbers.
+
 ## Exchange format (.json)
 
 `{ kind:"sar-card-updates", v:1, file, month, by, savedAt, projects:{ <code>:{ name, cells:[{ ref, s, l, h, k, from, to }] } } }`

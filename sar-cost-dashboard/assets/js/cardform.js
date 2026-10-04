@@ -130,7 +130,9 @@
       else if (t === "str" || t === "e") val = raw == null ? "" : raw;
       else if (t === "b") val = raw === "1" ? "TRUE" : raw === "0" ? "FALSE" : "";
       else val = raw == null || raw === "" ? null : +raw;
-      cells[ref] = { r: p.r, c: p.c, ref: ref, s: s, t: t, val: val, f: !!f, locked: x.locked !== false, sharedMaster: !!(f && f.getAttribute("t") === "shared" && f.getAttribute("ref")), yellow: !!x.yellow, dark: !!x.dark, date: !!x.date && typeof val === "number", pct: !!x.pct, isDateFmt: !!x.date };
+      if (t === "b") val = raw === "1"; else if (t === "e") val = { e: raw || "#VALUE!" };
+      cells[ref] = { r: p.r, c: p.c, ref: ref, s: s, t: t, val: val, f: !!f, ft: f ? f.textContent : "", fsi: f && f.getAttribute("t") === "shared" ? f.getAttribute("si") : null,
+        locked: x.locked !== false, sharedMaster: !!(f && f.getAttribute("t") === "shared" && f.getAttribute("ref")), yellow: !!x.yellow, dark: !!x.dark, date: !!x.date && typeof val === "number", pct: !!x.pct, isDateFmt: !!x.date };
       if (p.r > maxR) maxR = p.r;
     });
     Array.prototype.forEach.call(doc.getElementsByTagNameNS(NS, "mergeCell"), function (m) {
@@ -150,6 +152,8 @@
   }
   function display(cell) {
     if (!cell || cell.val == null) return "";
+    if (typeof cell.val === "boolean") return cell.val ? "TRUE" : "FALSE";
+    if (typeof cell.val === "object") return cell.val.e || "";
     if (typeof cell.val === "number") {
       if (cell.date) return serialToIso(cell.val);
       return String(Math.round(cell.val * 1e10) / 1e10);
@@ -212,6 +216,8 @@
   }
   function cellText(x, xf) {
     if (!x || x.val == null) return "";
+    if (typeof x.val === "boolean") return x.val ? "TRUE" : "FALSE";
+    if (typeof x.val === "object") return x.val.e || "";
     if (typeof x.val === "number") { try { return fmtNum(x.val, xf && xf.fmt, xf && xf.date); } catch (e) { return String(Math.round(x.val * 1e10) / 1e10); } }
     return String(x.val);
   }
@@ -382,7 +388,18 @@
       var lb = at(rr, 2); if (lb && /^project name/i.test(text(lb))) { for (var cc = 3; cc <= 8 && !name; cc++) { var nv = at(rr, cc); name = text(nv); } }
     }
     var prog = progressOf(S, at, text, heads, order);
-    return { code: sh.code, sheet: sh.name, name: name, sections: order, prog: prog, heads: heads.map(function (h) { return [h.r, h.title, h.main ? 1 : 0]; }) };
+    // for live recalculation in the page: every formula (shared formulas as master text + the cells that reuse it) and
+    // every value as Excel stored it (typed: number / text / boolean / {e: error})
+    var fx = {}, fsd = {}, cv = {}, masters = {};
+    Object.keys(cells).forEach(function (ref) { var x = cells[ref]; if (x.f && x.fsi != null && x.ft) masters[x.fsi] = ref; });
+    Object.keys(cells).forEach(function (ref) {
+      var x = cells[ref];
+      if (x.val != null && (x.val !== "" || x.f)) cv[ref] = x.val;   /* a formula's "" is kept: Excel treats it as text */
+      if (!x.f) return;
+      if (x.ft) fx[ref] = x.ft;
+      else if (x.fsi != null && masters[x.fsi]) (fsd[masters[x.fsi]] = fsd[masters[x.fsi]] || []).push(ref);
+    });
+    return { code: sh.code, sheet: sh.name, name: name, sections: order, prog: prog, heads: heads.map(function (h) { return [h.r, h.title, h.main ? 1 : 0]; }), fx: fx, fsd: fsd, cv: cv };
   }
   /* Section 7 "Execution Schedule (Monthly Update)": the monthly Actual Progress (%) row is the team's to update.
      - typed numbers in that row → those month cells are editable;
@@ -506,11 +523,12 @@
   function changedCount(m, d, code) { var u = updatesOf(m, d, [code]).projects[code]; return u ? u.cells.length : 0; }
 
   /* the card as the Excel sheet: same columns, rows, colours, borders and merged cells; yellow cells editable in place */
+  function listNum(o) { var t = String(o == null ? "" : o).trim(), m = /^(-?\d+(?:\.\d+)?)(%?)$/.exec(t); return m ? +m[1] / (m[2] ? 100 : 1) : null; }
   function fmtCell(m, xfIdx, k, v) {            // a stored value (ISO date / number / fraction / text) → as Excel shows it
     if (v === "" || v == null) return "";
     var x = m.xf[xfIdx] || (k === "date" ? ["mmm-yy", 1] : k === "pct" ? ["0.0%", 0] : ["General", 0]);
     if (k === "date") { var n = isoToSerial(v); return n == null ? v : fmtNum(n, x[0], true); }
-    if ((k === "num" || k === "pct") && !isNaN(+v)) return fmtNum(+v, x[0], false);
+    if ((k === "num" || k === "pct" || k === "list" || k === "auto") && v !== "" && /^-?\d+(\.\d+)?([eE]-?\d+)?$/.test(String(v).trim())) return fmtNum(+v, x[0], !!x[1]);   // numbers keep the cell's format (also list choices like 1 → 100%)
     return v;
   }
   /* live month logic of section 7 (see progressOf): month count, month labels / dates, linked actual row, % to date */
@@ -580,6 +598,45 @@
       for (var q = r - 1; q > top; q--) { var t = gridText(q, c); if (t) return t.replace(/\s+/g, " ").trim(); }
       return "Column " + colStr(c);
     }
+    /* live recalculation (XLCalc): the team's edits as typed values, every formula depending on them recalculated */
+    var engines = {};
+    function typed(k, v) {
+      if (v == null || v === "") return null;
+      if (k === "date") { var t = Date.parse(v + "T00:00:00Z"); return isNaN(t) ? v : t / 864e5 + 25569; }
+      if (k === "num" || k === "pct" || k === "auto" || k === "list") { var n = +String(v).replace(/,/g, ""); return isNaN(n) || String(v).trim() === "" ? v : n; }
+      return v;
+    }
+    function engineOf(p) {
+      if (engines[p.code] || !window.XLCalc || !p.fx) return engines[p.code] || null;
+      var formulas = {}, g = p.grid, maxC = Math.max.apply(null, g.cols.concat([1])), maxR = g.rows.length ? g.rows[g.rows.length - 1][0] : 1;
+      Object.keys(p.fx).forEach(function (k) { formulas[k] = [p.fx[k], p.cv[k]]; });
+      Object.keys(p.fsd || {}).forEach(function (mr) { var a = splitRef(mr); p.fsd[mr].forEach(function (ref) { var b = splitRef(ref); formulas[ref] = [XLCalc.shift(p.fx[mr], b.r - a.r, b.c - a.c), p.cv[ref]]; }); });
+      var st = { edits: {} };
+      var eng = XLCalc.sheet({ name: p.sheet, book: m.file, maxR: maxR, maxC: maxC, formulas: formulas,
+        value: function (r, c) { var ref = colStr(c) + r; if (ref in st.edits) return st.edits[ref]; var v = p.cv[ref]; return v === undefined ? null : v; } });
+      eng.st = st; return (engines[p.code] = eng);
+    }
+    function recalcProject(p, e) {
+      var eng = engineOf(p); if (!eng) return null;
+      var keys = Object.keys(e || {}); if (!keys.length) return null;
+      eng.st.edits = {};
+      keys.forEach(function (ref) { var it0 = info[ref] || {}, k = (it0.c && it0.c.k) || (d.meta && d.meta[p.code] && d.meta[p.code][ref] && d.meta[p.code][ref].k) || "auto"; eng.st.edits[ref] = typed(k, e[ref]); });
+      eng.o.fixed = eng.st.edits;
+      try { var res = eng.recalc(keys); keys.forEach(function (k) { delete res[k]; }); return res; } catch (er) { return null; }
+    }
+    function curVal(p, calc, ref) { return calc && ref in calc ? calc[ref] : p.cv[ref]; }
+    function monthsOpen(p, calc) {               // months of section 7 currently open (row "Months Count" not empty)
+      var g = p.prog; if (!g) return 0;
+      return g.cols.filter(function (c) { var v = curVal(p, calc, colStr(c) + g.rCnt); return v != null && v !== ""; }).length;
+    }
+    function same(a, b) { if (a && typeof a === "object") return !!(b && b.e === a.e); if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) < 1e-9 * Math.max(1, Math.abs(a)); return (a == null ? "" : a) === (b == null ? "" : b); }
+    function showVal(xf, v) {
+      if (v == null) return "";
+      if (typeof v === "object") return v.e || "";
+      if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
+      if (typeof v === "number") { var x = m.xf[xf] || ["General", 0]; try { return fmtNum(v, x[0], !!x[1]); } catch (er) { return String(v); } }
+      return String(v);
+    }
     function anyField(g, ref, x) {
       var xi = m.xf[x[1]] || [], raw = x[4] != null ? String(x[4]) : x[2] || "", lst = g.lists && g.lists[ref];
       var k = lst ? "list" : xi[1] ? "date" : /%/.test(xi[0] || "") ? "pct" : x[4] != null ? "num" : x[2] ? "text" : "auto";
@@ -598,7 +655,7 @@
       rowsBy = {}; g.rows.forEach(function (row) { var o = {}; row[2].forEach(function (x) { o[x[0]] = x; }); rowsBy[row[0]] = o; });
       info = {};
       p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { info[c.ref] = { c: c, s: s.t, l: row.l }; fieldV[c.ref] = c.v; }); }); });
-      var ps = progState(p, e, fieldV);
+      var calc = recalcProject(p, e), ps = { total: monthsOpen(p, calc), text: {} };
       // spans over visible rows / columns; cells covered by a merge are skipped
       var colIx = {}; g.cols.forEach(function (c, i) { colIx[c] = i; });
       var rowIx = {}; g.rows.forEach(function (r, i) { rowIx[r[0]] = i; });
@@ -619,7 +676,7 @@
         g.cols.forEach(function (c) {
           var ref = colStr(c) + r; if (covered[ref]) return;
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
-          var cls = x ? "x" + x[1] : "", it = info[ref], ovr = ps && ps.text[ref];
+          var cls = x ? "x" + x[1] : "", it = info[ref], ovr = calc && ref in calc && !(ref in e) ? calc[ref] : undefined;
           var unl = !!(x && (x[3] & 2));               // the cell's Excel "Locked" setting decides: unlocked = editable, locked = not
           if (!unl) it = null;
           else if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period
@@ -630,9 +687,9 @@
               '<div class="cu-val">' + esc(shownOf(it.c, x && x[1], v)) + "</div></td>");
           } else {
             var txt = x && x[2] != null ? x[2] : "";
-            if (ovr) txt = ovr[0] === "text" ? ovr[1] : fmtCell(m, x ? x[1] : "", ovr[0], ovr[1]);   // recomputed month labels / dates / linked progress
+            if (ovr !== undefined) txt = showVal(x ? x[1] : "", ovr);   // recalculated from the team's changes
             var xi = x && m.xf[x[1]], ov = txt && !sp && xi && !xi[3] && !/center|right/.test(xi[2]) && !byC[c + 1] && txt.length > 3;   // text runs into the empty cell to its right, as in Excel
-            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + (ovr ? " cu-calc" : "") + '"' + at + ">" + (txt ? (ov ? "<span>" + esc(txt) + "</span>" : esc(txt)) : "") + "</td>");
+            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + (ovr !== undefined && !same(ovr, p.cv[ref]) ? " cu-calc" : "") + '"' + at + ">" + (txt ? (ov ? "<span>" + esc(txt) + "</span>" : esc(txt)) : "") + "</td>");
           }
         });
         h.push("</tr>");
@@ -662,6 +719,7 @@
       if (commit) {
         var c = o.it.c, raw = o.ctl.value.trim(), v = raw;
         if (c.k === "pct") v = raw === "" ? "" : isNaN(+raw.replace("%", "")) ? raw : String(Math.round(+raw.replace("%", "") * 1e6) / 1e8);
+        else if (c.k === "list" && listNum(raw) != null) v = String(listNum(raw));   // "100%" from a Yes/No-style list → 1, as Excel stores it
         else if (c.k === "num") v = raw === "" ? "" : isNaN(+raw.replace(/,/g, "")) ? raw : String(+raw.replace(/,/g, ""));
         var e = d.edits[state.code] = d.edits[state.code] || {};
         if (canon(v) === canon(c.v)) delete e[o.ref]; else e[o.ref] = v;
@@ -675,7 +733,7 @@
         if (ch) o.td.title = "Was: " + (shownOf(c, o.xf, c.v) || "(empty)"); else o.td.removeAttribute("title");
         o.td.querySelector(".cu-val").textContent = shownOf(c, o.xf, ch ? e[o.ref] : c.v);
         count();
-        if (cur() && cur().prog) { var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl); draw(); sw.scrollTop = st0; sw.scrollLeft = sl0; return; }
+        if (cur()) { var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl); draw(); sw.scrollTop = st0; sw.scrollLeft = sl0; return; }   // formulas follow the change
       }
       if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl);
       o.td.classList.remove("cu-open");
@@ -685,7 +743,10 @@
       closeEd(true);
       var ref = td.getAttribute("data-ref"), it = info[ref]; if (!it) return;
       var c = it.c, e = d.edits[state.code] || {}, v = ref in e ? e[ref] : c.v, xf = td.getAttribute("data-xf"), ctl;
-      if (c.k === "list") { ctl = document.createElement("select"); ctl.innerHTML = '<option value=""></option>' + c.o.map(function (o) { return "<option" + (o === v ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") + (v && c.o.indexOf(v) < 0 ? "<option selected>" + esc(v) + "</option>" : ""); }
+      if (c.k === "list") { ctl = document.createElement("select");
+        var lab = function (o) { var t = fmtCell(m, xf, "list", o); return t === o ? o : t; }, eqo = function (o) { var a = listNum(o), b = listNum(v); return o === v || (a != null && b != null && Math.abs(a - b) < 1e-12); };
+        ctl.innerHTML = '<option value=""></option>' + c.o.map(function (o) { return '<option value="' + esc(o) + '"' + (eqo(o) ? " selected" : "") + ">" + esc(lab(o)) + "</option>"; }).join("") +
+          (v && !c.o.some(eqo) ? '<option value="' + esc(v) + '" selected>' + esc(lab(v)) + "</option>" : ""); }
       else if (c.k === "date") { ctl = document.createElement("input"); ctl.type = "date"; ctl.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ""; }
       else if (c.k === "num" || c.k === "pct") { ctl = document.createElement("input"); ctl.type = "text"; ctl.inputMode = "decimal"; ctl.value = c.k === "pct" && v !== "" && !isNaN(+v) ? String(Math.round(+v * 1e6) / 1e4) : v; ctl.placeholder = c.k === "pct" ? "%" : ""; }
       else { ctl = document.createElement("textarea"); ctl.value = v; }
@@ -836,7 +897,7 @@
     var num = null;
     if (k === "date") num = isoToSerial(v);
     else if ((k === "num" || k === "pct") && !isNaN(+v)) num = +v;
-    if (num == null && k !== "text" && k !== "list" && /^-?\d+(\.\d+)?$/.test(v) && (k === "auto" || old && typeof old.val === "number")) num = +v;
+    if (num == null && k !== "text" && /^-?\d+(\.\d+)?$/.test(v) && (k === "auto" || k === "list" || old && typeof old.val === "number")) num = +v;   /* numeric list choices are numbers */
     if (num != null) { var ve = doc.createElementNS(NS, "v"); ve.textContent = String(num); c.appendChild(ve); return; }
     c.setAttribute("t", "inlineStr");
     var is = doc.createElementNS(NS, "is"), t = doc.createElementNS(NS, "t"); t.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve"); t.textContent = v; is.appendChild(t); c.appendChild(is);
@@ -853,9 +914,9 @@
       ".cu-brand .sub{color:var(--slate);font-size:13px}\n</style></head><body>" +
       '<header class="cu-brand">' + (logo ? '<img src="' + logo + '" alt="SAR">' : "") + "<div><h1>" + esc(title) + '</h1><div class="sub">Source: ' + esc(m.file) +
       " · " + m.projects.length + " projects · prepared " + esc(new Date(m.extractedAt).toLocaleDateString("en-GB")) + '</div></div></header><main class="cu-page" id="cu"></main>' +
-      "<script>window.SAR_CARD_MODEL = " + safeJson(m) + ";</script>\n<script>/* cardform.js */\n" + selfCode.replace(/<\/script/gi, "<\\/script") + "\n</script>\n" +
+      "<script>window.SAR_CARD_MODEL = " + safeJson(m) + ";</script>\n<script>/* xlcalc.js + cardform.js */\n" + selfCode.replace(/<\/script/gi, "<\\/script") + "\n</script>\n" +
       "<script>SARCardForm.editor(document.getElementById('cu'), window.SAR_CARD_MODEL);</script></body></html>";
   }
 
-  window.SARCardForm = { extract: extract, editor: editor, apply: apply, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
+  window.SARCardForm = { fmtNum: fmtNum, isDateFmt: isDateFmt, extract: extract, editor: editor, apply: apply, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
 })();
