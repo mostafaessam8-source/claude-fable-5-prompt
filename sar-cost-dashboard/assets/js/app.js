@@ -16,7 +16,8 @@
     book: '<path d="M4 4h7a3 3 0 013 3v13a2 2 0 00-2-2H4zM20 4h-6M20 4v14h-6"/>',
     card: '<path d="M3 5h18v14H3zM7 9h4v4H7zM14 9h4M14 13h4M7 16h11"/>',
     close: '<path d="M9 12l2 2 4-4M4 4h16v16H4z"/>',
-    upload: '<path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V4h16v3"/>'
+    upload: '<path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V4h16v3"/>',
+    edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>'
   };
 
   var PAGES = [
@@ -27,6 +28,7 @@
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
     { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project card in the execution phase — SPI and progress from card sections 7 & 8, schedule, status, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
+    { id: "card-updates", group: "Project Cards", title: "Card Updates (Team)", icon: "edit", sub: "Monthly update of the project cards by the project teams — team update page, received updates, apply to the new month's file" },
     { id: "closing", group: "Closing Phase", title: "Projects in Closing", icon: "close", sub: "Close-out status, checklist (AMP, handover, close-out report, retention, guarantees, final payment) and action plans" },
     { id: "blockades", group: "2027 Delivery Plan", title: "2027 Engineering Blockades", icon: "gantt", sub: "Shutdown, line-blockage and possession needs for the 2027 Delivery Plan — hours per day × days, lines, quarters and what Planning still needs" },
     { id: "blockades-register", group: "2027 Delivery Plan", title: "Blockades Register", icon: "table", sub: "Every 2027 work package — location, shutdown / blockage / possession hours, hours per day × days, status and readiness · export the Planning submission" },
@@ -39,7 +41,7 @@
   var PUB = window.SAR_PUBLISHED || null;
   if (PUB && PUB.pages) PUB.pages = PUB.pages.map(function (id) { return /^kpi-(cost|outlook)$/.test(id) ? "cost" : /^(spi-outlook|weekly|project|master-plan|timeline)$/.test(id) ? "progress" : id; })
     .filter(function (id, i, a) { return a.indexOf(id) === i; });   // reports published before the cost pages merged
-  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
+  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && p.id !== "card-updates" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
 
   /* ----------------------------- dataset -------------------------------- */
   var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -190,7 +192,7 @@
       rerender: function () { var y = window.scrollY; render(page); window.scrollTo(0, y); }
     };
     ctx.actions.appendChild(SARPrint.button());
-    if (!PUB && page.id !== "import" && window.SARPublish) {   // publish just this page (or pick others in the dialog)
+    if (!PUB && page.id !== "import" && page.id !== "card-updates" && window.SARPublish) {   // publish just this page (or pick others in the dialog)
       var pb = U.el('<button type="button" class="icon-btn ghost js-editor" title="Publish a report with this page only — you can add other pages in the dialog">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 15v6h16v-6"/></svg><span>Publish this page</span></button>');
       pb.addEventListener("click", function () { SARPublish.open({ pages: [page.id] }); });
@@ -202,6 +204,7 @@
     }
     try {
       if (page.id === "import") renderImport(ctx);
+      else if (page.id === "card-updates") window.SARPages[page.id](ctx);   // works from its own files, with or without imported data
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
       else window.SARPages[page.id](ctx);
     } catch (e) {

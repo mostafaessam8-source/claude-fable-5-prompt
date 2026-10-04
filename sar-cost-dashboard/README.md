@@ -99,6 +99,23 @@ The template is found by slide titles. A newer week's template from PD works as 
 For a local copy that needs no loading, run `node tools/build-ppt-template.js <template.pptx>`. It writes
 `data/ppt-template.js`, which is git-ignored.
 
+## Card Updates (Team) — monthly update of the project cards
+
+Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Project Card` sheet in
+`EP - NSR Projects <Month>.xlsx` are the ones the project teams update; all other cells are filled by other teams.
+
+1. **Team update page** — from the current month's card file (imported on Data Import): *Create team update page (.html)*
+   gives one self-contained page to share inside SAR (SharePoint / Teams / e-mail). An engineer opens it, enters their
+   name, picks a project and edits the yellow cells only (dates, numbers, %, Yes/No lists, text); other values are shown
+   read-only for context. Drafts stay in their browser; *Download my updates* saves a small `NSR_Card_Updates_….json`
+   that they send back. The original workbook is never changed.
+2. **Team updates received** — drop the `.json` files (any number); they are kept in this browser.
+3. **Apply to the new month's file** — drop the new `EP - NSR Projects <Month>.xlsx`. Each value goes into the same
+   project · section · row · column (found again if rows moved); projects removed from the new file, rows no longer
+   found and formula cells are listed as *not applied*; new projects simply have no updates. When two files change the
+   same cell, the latest saved one wins (shown in the report). Download the updated workbook (only those cells change,
+   formats untouched, formulas recalculate on opening) and import it on Data Import; a CSV change report is available.
+
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).
@@ -188,6 +205,8 @@ assets/js/store.js         IndexedDB persistence of imports
 assets/js/photos.js        progress photos from the weekly report files (.rar / .zip / .xlsx)
 assets/js/ui.js            formatters, tables, slicers, KPI tiles, chart defaults
 assets/js/pages.js         one renderer per page
+assets/js/cardform.js      card updates: yellow-cell form, team page, apply to the new month's workbook
+assets/js/cardupdates.js   Card Updates (Team) page
 assets/js/app.js           dataset, routing, navigation, import page
 assets/js/print.js         A4 one-page / multi-page printing
 assets/js/publish.js       Publish: builds the self-contained weekly report file

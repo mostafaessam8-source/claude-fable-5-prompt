@@ -20,6 +20,7 @@ const SCRIPTS = [
   "assets/js/store.js",
   "assets/js/ui.js",
   "assets/js/pages.js",
+  "assets/js/cardform.js",   // also the code of the team update page (Card Updates)
   "assets/js/print.js",
   "assets/js/app.js"   // publish.js is left out: a published report cannot publish again
 ];
