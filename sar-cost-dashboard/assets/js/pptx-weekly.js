@@ -1058,7 +1058,11 @@
     var ach = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 3300000 && p.y < 3600000 && E.text(x).trim(); })[0];
     var la = M.D.t("Lookahead_Activities").filter(function (x) { return x["Source.Name"] === src && x["Lookahead Activities (7 Days) Description"]; }).slice(0, 2);
     // achievements: the weekly report's achievement (else its key milestone activity), then the lookahead; nothing found → left empty
-    var achL = [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : null]
+    // the "Weekly Achievements" sheet (all of the week's achievements, duplicates dropped) when imported
+    var wa = []; M.D.t("Weekly_Achievements").filter(function (y) { return y["Source.Name"] === src; })
+      .sort(function (a, b) { return (N(a["Sr. No."]) || 0) - (N(b["Sr. No."]) || 0); })
+      .forEach(function (y) { var t = clip(y["Work Description"]); if (t && wa.indexOf(t) < 0) wa.push(t); });
+    var achL = (wa.length ? wa : [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : null])
       .concat(la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"]); })).filter(Boolean);
     if (ach) E.setParas(ach, achL.length ? achL : [""]);
     var iss = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 4900000 && p.y < 5300000 && E.text(x).trim(); })[0];

@@ -1185,13 +1185,19 @@
     // key achievements (weekly report "Achievements Description", newest week first) — the cumulative plan / actual
     // is already in the tiles above, so this column carries the week's progress in words instead of a second chart
     var wk = D.t("Weekly_Report_Updates").filter(function (x) { return x["Source.Name"] === src; }).sort(function (a, b) { return String(b["Report Date"]).localeCompare(String(a["Report Date"])); });
+    // the "Weekly Achievements" sheet (one row per achievement) when imported, else the weekly row's single achievement
+    var wa = [];
+    bySrc("Weekly_Achievements").sort(function (a, b) { return sortNum(a["Sr. No."], b["Sr. No."]); }).forEach(function (x) {
+      var t = String(x["Work Description"] || "").replace(/\s+/g, " ").trim(); if (t && wa.indexOf(t) < 0) wa.push(t); });
     var achs = wk.filter(function (x) { return String(x["Achievements Description"] || "").trim(); });
     var km = String(r["KM Activitiy Description"] || "").trim();
-    var ah = achs.length ? '<ul class="ach-list">' + achs.slice(0, 6).map(function (x, i) {
+    var ah = wa.length ? '<ol class="ach-list la ach">' + wa.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol>"
+      : achs.length ? '<ul class="ach-list">' + achs.slice(0, 6).map(function (x, i) {
         return '<li><span class="ach-date' + (i ? "" : " now") + '">' + (i ? esc(fmt.date(x["Report Date"])) : "This week") + "</span>" + esc(x["Achievements Description"]) + "</li>"; }).join("") + "</ul>"
       : '<div class="empty-note">No achievement reported in the weekly report' + (wk.length ? " for " + esc(fmt.date(wk[0]["Report Date"])) : "") + ".</div>";
     if (km) ah += '<div class="ach-km"><b>Key milestone activity:</b> ' + esc(km) + "</div>";
-    add(panelIn(g3, "Key achievements", achs.length + (achs.length === 1 ? " entry" : " entries") + " · weekly report"), "<div>" + ah + "</div>");
+    var nAch = wa.length || achs.length;
+    add(panelIn(g3, "Key achievements", nAch + (nAch === 1 ? " item" : " items") + " · " + (wa.length ? "Weekly Achievements" : "weekly report")), "<div>" + ah + "</div>");
     add(panelIn(g3, "Reason for delays", ""), '<div class="note-box warn">' + esc(r["Reason for Delays"] || "No delay reason reported this week.") + "</div>");
     // milestones progress · deliverables
     var g4 = grid(v, "g-2");

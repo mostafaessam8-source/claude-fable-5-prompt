@@ -291,6 +291,7 @@ table.dt tfoot td {
 .ach-list .ach-date.now { color: var(--sar-blue); }
 .ach-list.la { counter-reset: la; }
 .ach-list.la li { counter-increment: la; position: relative; padding-left: 40px; border-left-color: var(--yellow); }
+.ach-list.la.ach li { border-left-color: var(--sar-blue); }
 .ach-list.la li::before { content: counter(la); position: absolute; left: 12px; top: 9px; font-weight: 700; color: var(--slate); }
 .ach-km { margin-top: 12px; font-size: 13px; color: var(--sar-black); }
 .empty-note { background: var(--tint-5); padding: 14px; font-size: 13px; color: var(--slate); font-style: italic; }

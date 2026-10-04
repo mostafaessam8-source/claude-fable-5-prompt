@@ -30,6 +30,8 @@
         S_Curve: ["Source.Name", "Report Date", "Cum Plan (%)", "Cum Actual (%)", "Cum Forecast (%)"],
         Deliverable_Status: ["Source.Name", "Sr.No", "Project Deliverables", "Total Subm. (PL.Cum)", "Total Subm. (Act. Cum)", "Approved", "Rejected", "U/R"],
         Lookahead_Activities: ["Source.Name", "Sr. No.", "Lookahead Activities (7 Days) Description"],
+        // sheet "Weekly Achievements": the week's achievements per project (Sr. No. 1, 2, … with a Work Description)
+        Weekly_Achievements: ["Source.Name", "Sr. No.", "Work Description"],
         Interim_Payment_Certificate: ["Source.Name", "Sr.No", "Description", "IPC / VO No.", "Cum Sum"],
         Area_of_Concern: ["Source.Name", "Sr. No.", "Issue /Concern Description", "Mitigation Action", "Status"],
         // Issue_register is no longer read from this file — it comes from the Project Cards workbook ("cards").
@@ -40,7 +42,7 @@
         MLS: ["Code", "Source.Name", "Project Name"]
       },
       // Power BI reads the S-Curve from the sheet, not the table — fall back to it.
-      sheetFallback: { S_Curve: "S-Curve" }
+      sheetFallback: { S_Curve: "S-Curve", Weekly_Achievements: "Weekly Achievements" }
     },
     plan: {
       label: "EPBU 2026 Delivery Plan (Milestone & Forecast)",
@@ -744,6 +746,12 @@
 
     Object.keys(spec.tables).forEach(function (tname) {
       var t = meta.tables[tname], rows = null, via = "table";
+      if (!t) {   // a table under another name but with this table's columns (e.g. "Table12" holding Weekly_Achievements)
+        var want = spec.tables[tname].map(normKey);
+        var alt = Object.keys(meta.tables).filter(function (n) {
+          return !spec.tables[n] && want.every(function (c) { return meta.tables[n].columns.indexOf(c) >= 0; }); })[0];
+        t = alt ? meta.tables[alt] : null;
+      }
       if (t && wb.Sheets[t.sheet]) {
         var headers = t.columns.length ? t.columns : sheetHeaders(XLSX, wb.Sheets[t.sheet], t.ref);
         rows = readRange(XLSX, wb.Sheets[t.sheet], t.ref, headers, t.headerRowCount, t.totalsRowCount);
