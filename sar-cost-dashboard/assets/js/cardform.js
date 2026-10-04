@@ -641,6 +641,11 @@
       if (typeof v === "number") { var x = m.xf[xf] || ["General", 0]; try { return fmtNum(v, x[0], !!x[1]); } catch (er) { return String(v); } }
       return String(v);
     }
+    function remember(ref, it) {                  // where an "any cell" edit is (section · row label · column), for the new month's file
+      if (!it || !it.g) return;
+      var pr = splitRef(ref), pp = cur(), mt = (d.meta = d.meta || {})[state.code] = (d.meta && d.meta[state.code]) || {};
+      mt[ref] = { s: secTitleOf(pp.heads, pr.r), l: anyLabel(function (cc) { return gridText(pr.r, cc); }, pr.c), h: gridHeader(pp, pr.r, pr.c), k: it.c.k, v: it.c.v };
+    }
     function anyField(g, ref, x) {
       var xi = m.xf[x[1]] || [], raw = x[4] != null ? String(x[4]) : x[2] || "", lst = g.lists && g.lists[ref];
       var k = lst ? "list" : xi[1] ? "date" : /%/.test(xi[0] || "") ? "pct" : x[4] != null ? "num" : x[2] ? "text" : "auto";
@@ -695,7 +700,7 @@
             var txt = x && x[2] != null ? x[2] : "";
             if (ovr !== undefined) txt = showVal(x ? x[1] : "", ovr);   // recalculated from the team's changes
             var xi = x && m.xf[x[1]], ov = txt && !sp && xi && !xi[3] && !/center|right/.test(xi[2]) && !byC[c + 1] && txt.length > 3;   // text runs into the empty cell to its right, as in Excel
-            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + (ovr !== undefined && !same(ovr, p.cv[ref]) ? " cu-calc" : "") + '"' + at + ">" + (txt ? (ov ? "<span>" + esc(txt) + "</span>" : esc(txt)) : "") + "</td>");
+            h.push('<td data-ref="' + ref + '" class="' + cls + (ov ? " cu-ov" : "") + (ovr !== undefined && !same(ovr, p.cv[ref]) ? " cu-calc" : "") + '"' + at + ">" + (txt ? (ov ? "<span>" + esc(txt) + "</span>" : esc(txt)) : "") + "</td>");
           }
         });
         h.push("</tr>");
@@ -704,6 +709,7 @@
       var hh = 22;
       (g.img || []).forEach(function (im) { if (m.media[im[0]]) h.push('<img class="cu-pic" alt="" src="' + m.media[im[0]] + '" style="left:' + (im[1] + 42) + "px;top:" + (im[2] + hh) + "px;width:" + im[3] + "px;height:" + im[4] + 'px">'); });
       sheet.innerHTML = h.join("");
+      placeHandle();
       sheet.style.zoom = state.zoom;
       syncBar(); setTimeout(syncBar, 60);
       go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + esc(s.rows[0].c[0] ? s.rows[0].c[0].ref : "") + '" data-r="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
@@ -733,10 +739,8 @@
         else if (c.k === "num") v = raw === "" ? "" : isNaN(+raw.replace(/,/g, "")) ? raw : String(+raw.replace(/,/g, ""));
         var e = d.edits[state.code] = d.edits[state.code] || {};
         if (canon(v) === canon(c.v)) delete e[o.ref]; else e[o.ref] = v;
-        if (o.it.g) {                                  // remember where this cell is (section · row label · column) for the new month's file
-          var pr = splitRef(o.ref), pp = cur(), mt = (d.meta = d.meta || {})[state.code] = (d.meta && d.meta[state.code]) || {};
-          mt[o.ref] = { s: secTitleOf(pp.heads, pr.r), l: anyLabel(function (cc) { return gridText(pr.r, cc); }, pr.c), h: gridHeader(pp, pr.r, pr.c), k: c.k, v: c.v };
-        }
+        remember(o.ref, o.it);
+        state.active = o.ref;
         persist();
         var ch = o.ref in e;
         o.td.classList.toggle("cu-chg", ch);
@@ -776,7 +780,80 @@
         else if (ev.key === "Tab") { ev.preventDefault(); var td0 = openEd && openEd.td, all = Array.prototype.slice.call(sheet.querySelectorAll("td.cu-ed")), i = all.indexOf(td0); closeEd(true); var nx = all[i + (ev.shiftKey ? -1 : 1)]; if (nx) openAt(nx); }
       });
     }
-    sheet.addEventListener("click", function (ev) { var td = ev.target.closest && ev.target.closest("td.cu-ed"); if (td && !ev.target.classList.contains("cu-ctl")) openAt(td); });
+    sheet.addEventListener("click", function (ev) {
+      if (ev.target.classList.contains("cu-fill")) return;
+      var td = ev.target.closest && ev.target.closest("td.cu-ed"); if (td && !ev.target.classList.contains("cu-ctl")) { state.active = td.getAttribute("data-ref"); placeHandle(); openAt(td); }
+    });
+    /* ---- fill handle (as in Excel): drag the small square of the active cell down / across, or double-click it to fill
+       down the editable block below. Formulas are copied with their relative references shifted ($ references stay);
+       a date continues day by day; any other value is copied. Locked cells are skipped. */
+    function placeHandle() {
+      var old = sheet.querySelector(".cu-fill"); if (old) old.remove();
+      var td = state.active && sheet.querySelector('td.cu-ed[data-ref="' + state.active + '"]'); if (!td) return;
+      var hd = document.createElement("div"); hd.className = "cu-fill"; hd.title = "Drag to copy down / across (double-click: fill down)"; td.appendChild(hd);
+      td.classList.add("cu-act"); Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-act"), function (x) { if (x !== td) x.classList.remove("cu-act"); });
+    }
+    function srcFormula(p, ref, e) {               // the formula of the source cell: typed by the team, else the card's own
+      if (ref in e) return isFx(e[ref]) ? e[ref].trim().slice(1) : null;
+      if (p.fx && p.fx[ref]) return p.fx[ref];
+      var hit = null; Object.keys(p.fsd || {}).forEach(function (mr) { if (p.fsd[mr].indexOf(ref) >= 0) { var a = splitRef(mr), b = splitRef(ref); hit = XLCalc.shift(p.fx[mr], b.r - a.r, b.c - a.c); } });
+      return hit;
+    }
+    function fillTo(src, targets) {
+      var p = cur(), e = d.edits[state.code] = d.edits[state.code] || {}, it = info[src]; if (!it) return;
+      var a = splitRef(src), fx = srcFormula(p, src, e), v = src in e ? e[src] : it.c.v, done = 0, skipped = 0;
+      targets.forEach(function (t) {
+        var td = sheet.querySelector('td.cu-ed[data-ref="' + t + '"]'), ti = info[t];
+        if (!td || !ti) { skipped++; return; }
+        var b = splitRef(t), dr = b.r - a.r, dc = b.c - a.c, nv;
+        if (fx != null) nv = "=" + XLCalc.shift(fx, dr, dc);
+        else if (it.c.k === "date" && /^\d{4}-\d{2}-\d{2}$/.test(v)) { var tt = Date.parse(v + "T00:00:00Z") + (dr + dc) * 864e5; nv = new Date(tt).toISOString().slice(0, 10); }
+        else nv = v;
+        if (canon(nv) === canon(ti.c.v)) delete e[t]; else e[t] = nv;
+        remember(t, ti); done++;
+      });
+      persist(); count();
+      var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; draw(); sw.scrollTop = st0; sw.scrollLeft = sl0;
+      saved.textContent = "Filled " + done + " cell" + (done === 1 ? "" : "s") + (skipped ? " · " + skipped + " locked cell" + (skipped === 1 ? "" : "s") + " skipped" : "");
+    }
+    var drag = null;
+    sheet.addEventListener("mousedown", function (ev) {
+      if (!ev.target.classList.contains("cu-fill")) return;
+      ev.preventDefault(); ev.stopPropagation(); closeEd(true);
+      drag = { src: state.active, end: state.active };
+    });
+    document.addEventListener("mousemove", function (ev) {
+      if (!drag) return;
+      var el = document.elementFromPoint(ev.clientX, ev.clientY), td = el && el.closest && el.closest("td[data-ref], td"); if (!td || !sheet.contains(td)) return;
+      var tr = td.parentNode, r = +tr.getAttribute("data-r"), ci = Array.prototype.indexOf.call(tr.children, td);
+      var a = splitRef(drag.src), ref = td.getAttribute("data-ref");
+      var col = ref ? splitRef(ref).c : null;
+      if (!r) return;
+      // the target: same column below (or above), or same row to the right / left — whichever the pointer moved further along
+      var dRows = Math.abs(r - a.r), dCols = col ? Math.abs(col - a.c) : 0;
+      drag.end = dRows >= dCols ? colStr(a.c) + r : colStr(col) + a.r;
+      Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-fsel"), function (x) { x.classList.remove("cu-fsel"); });
+      rangeOf(drag.src, drag.end).forEach(function (k) { var x = sheet.querySelector('td[data-ref="' + k + '"]'); if (x) x.classList.add("cu-fsel"); });
+    });
+    document.addEventListener("mouseup", function () {
+      if (!drag) return;
+      var dg = drag; drag = null;
+      Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-fsel"), function (x) { x.classList.remove("cu-fsel"); });
+      var t = rangeOf(dg.src, dg.end); if (t.length) fillTo(dg.src, t);
+    });
+    sheet.addEventListener("dblclick", function (ev) {
+      if (!ev.target.classList.contains("cu-fill")) return;
+      ev.preventDefault(); var a = splitRef(state.active), t = [];
+      for (var r = a.r + 1; r < a.r + 2000; r++) { var x = sheet.querySelector('td.cu-ed[data-ref="' + colStr(a.c) + r + '"]'); if (!x) { if (sheet.querySelector('tr[data-r="' + r + '"]')) break; else continue; } t.push(colStr(a.c) + r); }
+      if (t.length) fillTo(state.active, t);
+    });
+    function rangeOf(src, end) {                   // cells from the source (exclusive) to end, one line
+      var a = splitRef(src), b = splitRef(end), out = [];
+      if (!b || (a.r === b.r && a.c === b.c)) return out;
+      if (a.c === b.c) { var st = b.r > a.r ? 1 : -1; for (var r = a.r + st; st > 0 ? r <= b.r : r >= b.r; r += st) out.push(colStr(a.c) + r); }
+      else { var sc = b.c > a.c ? 1 : -1; for (var c = a.c + sc; sc > 0 ? c <= b.c : c >= b.c; c += sc) out.push(colStr(c) + a.r); }
+      return out;
+    }
     document.addEventListener("mousedown", function (ev) { if (openEd && !openEd.td.contains(ev.target)) closeEd(true); });
     wrap.querySelector(".cu-by").addEventListener("change", function (ev) { d.by = ev.target.value.trim(); persist(); });
     sel.addEventListener("change", function () { closeEd(true); state.code = d.last = sel.value; saveDraft(m, d); draw(); });

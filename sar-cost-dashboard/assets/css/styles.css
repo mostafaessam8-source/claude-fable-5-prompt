@@ -944,3 +944,7 @@ textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); res
 .cu-top { position: static; }
 .cu-grid td.cu-ufx { position: relative; }
 .cu-grid td.cu-ufx::after { content: "fx"; position: absolute; top: 0; right: 1px; font: italic 700 9px Georgia, serif; color: #C55A11; line-height: 1; }
+.cu-grid td.cu-act { box-shadow: inset 0 0 0 2px #107C41; overflow: visible; }
+.cu-fill { position: absolute; right: -4px; bottom: -4px; width: 7px; height: 7px; background: #107C41; border: 1px solid #fff; cursor: crosshair; z-index: 7; }
+.cu-grid td.cu-fsel { box-shadow: inset 0 0 0 1px #107C41; background-image: linear-gradient(rgba(16,124,65,.10), rgba(16,124,65,.10)); }
+.cu-sheet.cu-dragging, .cu-sheet.cu-dragging td { cursor: crosshair !important; }

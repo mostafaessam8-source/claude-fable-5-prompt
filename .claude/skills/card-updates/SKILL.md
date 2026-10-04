@@ -93,6 +93,16 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
   get the `_xlfn.` prefix), which Excel calculates on opening. References are written as typed (not shifted if rows moved).
 - NETWORKDAYS / WORKDAY use Excel's default Saturday–Sunday weekend so the page agrees with Excel.
 
+## Fill handle (as in Excel)
+
+- The active cell (last clicked, green frame) has a small green square at its bottom-right. Drag it down / up or across:
+  the cells passed are highlighted, and on release each **editable** target gets the source copied; locked cells are
+  skipped (status line: "Filled n cells · m locked cells skipped"). Double-click the square: fill down the editable
+  block below (stops at the first locked / missing cell of the column).
+- Copy rule: a formula (typed by the team, or the card's own formula of the source cell, shared formulas expanded) is
+  copied with relative references shifted by the row / column offset (`XLCalc.shift`, `$` parts fixed); a date value
+  continues +1 day per step (Excel's single-date series); any other value is copied as is.
+
 ## Exchange format (.json)
 
 `{ kind:"sar-card-updates", v:1, file, month, by, savedAt, projects:{ <code>:{ name, cells:[{ ref, s, l, h, k, from, to }] } } }`
