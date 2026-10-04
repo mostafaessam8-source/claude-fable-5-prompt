@@ -906,3 +906,25 @@ body.pv-open { overflow: hidden; }
 .cu-x { border: 0; background: none; color: var(--red); cursor: pointer; font-size: 14px; }
 .cu-list-acts { margin-top: 8px; }
 @media (max-width: 720px) { .cu-row { grid-template-columns: 1fr; } .cu-top input, .cu-top select { min-width: 0; width: 100%; } .cu-who, .cu-pick { width: 100%; } }
+
+/* card updates: the card drawn as the Excel sheet */
+.cu-jump select, .cu-zoom select { min-width: 0 !important; }
+.cu-or { outline: 2px solid #C55A11; padding: 0 3px; }
+.cu-sheet-wrap { overflow: auto; max-height: calc(100vh - 150px); min-height: 400px; background: #fff; border: 1px solid #C8C9C7; border-radius: 8px; }
+.cu-sheet { position: relative; width: max-content; }
+.cu-grid { border-collapse: collapse; table-layout: fixed; background: #fff; color: #000; }
+.cu-grid td { padding: 0 3px; overflow: hidden; white-space: nowrap; line-height: 1.2; vertical-align: bottom; }
+.cu-grid td.cu-ov { overflow: visible; position: relative; }
+.cu-grid td.cu-ov > span { position: relative; z-index: 1; }
+.cu-grid thead th { position: sticky; top: 0; z-index: 3; height: 22px; background: #F3F3F3; border: 1px solid #D4D4D4; color: #555; font: 400 11px Arial, sans-serif; }
+.cu-grid tbody th { position: sticky; left: 0; z-index: 2; background: #F3F3F3; border: 1px solid #D4D4D4; color: #555; font: 400 11px Arial, sans-serif; text-align: center; }
+.cu-grid thead th.cu-corner { left: 0; z-index: 4; }
+.cu-grid td.cu-ed { cursor: cell; position: relative; }
+.cu-grid td.cu-ed:hover { box-shadow: inset 0 0 0 2px #00778B; }
+.cu-grid td.cu-chg { box-shadow: inset 0 0 0 2px #C55A11; }
+.cu-grid td.cu-open { overflow: visible; z-index: 5; }
+.cu-grid td.cu-open > .cu-val { visibility: hidden; }
+.cu-val { overflow: hidden; max-height: 100%; }
+.cu-ctl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; min-height: 26px; box-sizing: border-box; border: 2px solid #00778B; background: #fff; font: inherit; color: #000; padding: 1px 3px; margin: 0; z-index: 6; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); resize: both; white-space: pre-wrap; }
+.cu-pic { position: absolute; pointer-events: none; }

@@ -9,6 +9,16 @@ Code: `sar-cost-dashboard/assets/js/cardform.js` (`SARCardForm`: extract · edit
 `assets/js/cardupdates.js`. The team page is one self-contained .html built from the publish kit (site CSS + logo +
 cardform.js) with the month's card model embedded — so `cardform.js` must stay in `tools/build-publish-kit.js` SCRIPTS.
 
+## How the team page looks
+
+The card is drawn exactly as the Excel sheet (`gridOf` + `xfCss` + `fmtNum` in cardform.js): visible columns / rows
+with Excel's widths (chars × 7 + 5 px) and heights (pt × 4/3), cell styles from styles.xml (fill incl. theme colours
+with tint, font, borders, alignment, wrap, indent), merged cells as row/col spans, number and date formats as Excel
+shows them, text overflowing into an empty right-hand cell, pictures (logo) at their anchors, Excel-style column letters
+and row numbers (sticky), zoom 60–130 % and "Go to" section. Conditional formatting and charts are not drawn.
+Editing: click a yellow cell → one control over it (date picker / number / % / list / text box); Enter or click away
+saves, Esc cancels, Tab goes to the next yellow cell; changed cells get an orange frame with the old value as tooltip.
+
 ## What the team may edit
 
 - Only **yellow** cells of `<code>_Project Card` sheets: solid fill with R ≥ F0, G ≥ E0, B ≤ CC (FFFF99, FFFF00 …) or

@@ -21,7 +21,7 @@
   /* ------------------------------------------------------------------ helpers */
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function parse(s) { return new DOMParser().parseFromString(s, "application/xml"); }
-  function kids(el, name) { return Array.prototype.filter.call(el ? el.childNodes : [], function (n) { return n.nodeType === 1 && n.localName === name; }); }
+  function kids(el, name) { return Array.prototype.filter.call(el ? el.childNodes : [], function (n) { return n.nodeType === 1 && (!name || n.localName === name); }); }
   function kid(el, name) { return kids(el, name)[0] || null; }
   function colNum(s) { var n = 0; for (var i = 0; i < s.length; i++) n = n * 26 + s.charCodeAt(i) - 64; return n; }
   function colStr(n) { var s = ""; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; } return s; }
@@ -44,29 +44,72 @@
   function canon(v) { return v == null ? "" : String(v).trim(); }
 
   /* ------------------------------------------------------------------ workbook reading (shared by extract / apply) */
+  var INDEXED = ["000000","FFFFFF","FF0000","00FF00","0000FF","FFFF00","FF00FF","00FFFF","000000","FFFFFF","FF0000","00FF00","0000FF","FFFF00","FF00FF","00FFFF",
+    "800000","008000","000080","808000","800080","008080","C0C0C0","808080","9999FF","993366","FFFFCC","CCFFFF","660066","FF8080","0066CC","CCCCFF",
+    "000080","FF00FF","FFFF00","00FFFF","800080","800000","008080","0000FF","00CCFF","CCFFFF","CCFFCC","FFFF99","99CCFF","FF99CC","CC99FF","FFCC99",
+    "3366FF","33CCCC","99CC00","FFCC00","FF9900","FF6600","666699","969696","003366","339966","003300","333300","993300","993366","333399","333333"];
+  function tint(hex, t) {                         // Excel tint: HSL lightness towards white (t > 0) or black (t < 0)
+    if (!t) return hex;
+    var r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, b = parseInt(hex.slice(4, 6), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, sat = 0, d = mx - mn;
+    if (d) { sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; }
+    l = t < 0 ? l * (1 + t) : l * (1 - t) + t;
+    function f(p, q, x) { if (x < 0) x += 1; if (x > 1) x -= 1; return x < 1 / 6 ? p + (q - p) * 6 * x : x < 1 / 2 ? q : x < 2 / 3 ? p + (q - p) * (2 / 3 - x) * 6 : p; }
+    var q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, pp = 2 * l - q;
+    var o = sat ? [f(pp, q, h + 1 / 3), f(pp, q, h), f(pp, q, h - 1 / 3)] : [l, l, l];
+    return o.map(function (x) { return ("0" + Math.round(x * 255).toString(16)).slice(-2); }).join("").toUpperCase();
+  }
+  function colorOf(el, theme) {
+    if (!el || el.getAttribute("auto") === "1") return null;
+    var hex = null, rgb = el.getAttribute("rgb"), th = el.getAttribute("theme"), ix = el.getAttribute("indexed");
+    if (rgb) hex = rgb.slice(-6).toUpperCase();
+    else if (th != null && theme[+th]) hex = theme[+th];
+    else if (ix != null) hex = +ix === 64 ? null : INDEXED[+ix] || null;
+    return hex ? tint(hex, +(el.getAttribute("tint") || 0)) : null;
+  }
+  var BUILTIN = { 1: "0", 2: "0.00", 3: "#,##0", 4: "#,##0.00", 9: "0%", 10: "0.00%", 11: "0.00E+00", 14: "dd/mm/yyyy", 15: "d-mmm-yy", 16: "d-mmm", 17: "mmm-yy",
+    18: "h:mm AM/PM", 19: "h:mm:ss AM/PM", 20: "h:mm", 21: "h:mm:ss", 22: "dd/mm/yyyy h:mm", 37: "#,##0 ;(#,##0)", 38: "#,##0 ;(#,##0)", 39: "#,##0.00;(#,##0.00)", 40: "#,##0.00;(#,##0.00)", 49: "@" };
   function readBook(zip) {
     function xml(p) { var f = zip.file(p); return f ? f.async("string").then(parse) : Promise.resolve(null); }
-    return Promise.all([xml("xl/workbook.xml"), xml("xl/_rels/workbook.xml.rels"), xml("xl/sharedStrings.xml"), xml("xl/styles.xml")]).then(function (x) {
-      var wb = x[0], rels = {}, ss = [], st = x[3];
+    return Promise.all([xml("xl/workbook.xml"), xml("xl/_rels/workbook.xml.rels"), xml("xl/sharedStrings.xml"), xml("xl/styles.xml"), xml("xl/theme/theme1.xml")]).then(function (x) {
+      var wb = x[0], rels = {}, ss = [], st = x[3], theme = [];
       if (!wb) throw new Error("Not an Excel workbook");
       if (x[1]) Array.prototype.forEach.call(x[1].getElementsByTagNameNS(NS_REL, "Relationship"), function (e) { rels[e.getAttribute("Id")] = join("xl/workbook.xml", e.getAttribute("Target")); });
       if (x[2]) Array.prototype.forEach.call(x[2].getElementsByTagNameNS(NS, "si"), function (si) { ss.push(Array.prototype.map.call(si.getElementsByTagNameNS(NS, "t"), function (t) {
         var p = t.parentNode; return p.localName === "rPh" ? "" : t.textContent; }).join("")); });
-      var fmts = {}, fills = [], xfs = [];
+      if (x[4]) {                                   // theme colour order in cell styles: lt1, dk1, lt2, dk2, accent1–6, hlink, folHlink
+        var cs = x[4].getElementsByTagNameNS("*", "clrScheme")[0], named = {};
+        kids(cs, null).forEach(function (n) { if (n.nodeType !== 1) return; var c = n.firstElementChild; if (c) named[n.localName] = (c.getAttribute("val") && c.localName === "srgbClr" ? c.getAttribute("val") : c.getAttribute("lastClr") || "000000").toUpperCase(); });
+        theme = ["lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6", "hlink", "folHlink"].map(function (k) { return named[k] || null; });
+      }
+      var fmts = {}, fills = [], fillCss = [], fonts = [], borders = [], xfs = [];
       if (st) {
         Array.prototype.forEach.call(st.getElementsByTagNameNS(NS, "numFmt"), function (n) { fmts[+n.getAttribute("numFmtId")] = n.getAttribute("formatCode"); });
-        var fl = st.getElementsByTagNameNS(NS, "fills")[0];
-        kids(fl, "fill").forEach(function (f) { var pf = kid(f, "patternFill"); fills.push(pf && pf.getAttribute("patternType") === "solid" ? rgbOf(kid(pf, "fgColor")) : null); });
-        var cx = st.getElementsByTagNameNS(NS, "cellXfs")[0];
-        kids(cx, "xf").forEach(function (xf) {
-          var id = +(xf.getAttribute("numFmtId") || 0), fill = fills[+(xf.getAttribute("fillId") || 0)] || null;
-          xfs.push({ fill: fill, yellow: isYellow(fill), dark: isDark(fill), date: isDateFmt(id, fmts[id]), pct: isPctFmt(id, fmts[id]) });
+        kids(st.getElementsByTagNameNS(NS, "fills")[0], "fill").forEach(function (f) {
+          var pf = kid(f, "patternFill"), solid = pf && pf.getAttribute("patternType") === "solid";
+          fills.push(solid ? rgbOf(kid(pf, "fgColor")) : null); fillCss.push(solid ? colorOf(kid(pf, "fgColor"), theme) : null);
+        });
+        kids(st.getElementsByTagNameNS(NS, "fonts")[0], "font").forEach(function (f) {
+          var g = function (n) { return kid(f, n); }, sz = g("sz"), nm = g("name");
+          fonts.push({ b: !!g("b") && g("b").getAttribute("val") !== "0", i: !!g("i") && g("i").getAttribute("val") !== "0", u: !!g("u"), s: !!g("strike"),
+            sz: sz ? +sz.getAttribute("val") : 11, name: nm ? nm.getAttribute("val") : "Calibri", color: colorOf(g("color"), theme) });
+        });
+        kids(st.getElementsByTagNameNS(NS, "borders")[0], "border").forEach(function (b) {
+          var o = {}; ["left", "right", "top", "bottom"].forEach(function (k) { var e = kid(b, k), sty = e && e.getAttribute("style"); if (sty) o[k] = [sty, colorOf(kid(e, "color"), theme) || "000000"]; });
+          borders.push(o);
+        });
+        kids(st.getElementsByTagNameNS(NS, "cellXfs")[0], "xf").forEach(function (xf) {
+          var id = +(xf.getAttribute("numFmtId") || 0), fi = +(xf.getAttribute("fillId") || 0), fill = fills[fi] || null, al = kid(xf, "alignment");
+          xfs.push({ fill: fill, yellow: isYellow(fill), dark: isDark(fill), date: isDateFmt(id, fmts[id]), pct: isPctFmt(id, fmts[id]),
+            fmtId: id, fmt: fmts[id] != null ? fmts[id] : BUILTIN[id] || "General", bg: fillCss[fi] || null, font: fonts[+(xf.getAttribute("fontId") || 0)] || fonts[0] || {},
+            border: borders[+(xf.getAttribute("borderId") || 0)] || {}, h: al && al.getAttribute("horizontal") || "", v: al && al.getAttribute("vertical") || "bottom",
+            wrap: !!(al && al.getAttribute("wrapText") === "1"), indent: al ? +(al.getAttribute("indent") || 0) : 0, rot: al ? +(al.getAttribute("textRotation") || 0) : 0 });
         });
       }
       var sheets = Array.prototype.map.call(wb.getElementsByTagNameNS(NS, "sheet"), function (s) {
         return { name: s.getAttribute("name"), path: rels[s.getAttributeNS(NS_R, "id")], hidden: /hidden/i.test(s.getAttribute("state") || "") };
       });
-      return { zip: zip, wb: wb, ss: ss, xfs: xfs, sheets: sheets };
+      return { zip: zip, wb: wb, ss: ss, xfs: xfs, sheets: sheets, defFont: fonts[0] || { sz: 11, name: "Calibri" } };
     });
   }
   function cardSheets(book) {
@@ -111,6 +154,147 @@
       return String(Math.round(cell.val * 1e10) / 1e10);
     }
     return String(cell.val);
+  }
+
+  /* ------------------------------------------------------------------ Excel number formats (display only) */
+  var MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  function fmtSections(code) { var out = [], cur = "", q = false; for (var i = 0; i < code.length; i++) { var ch = code[i]; if (ch === '"') q = !q; if (ch === ";" && !q) { out.push(cur); cur = ""; } else cur += ch; } out.push(cur); return out; }
+  function fmtDate(n, code) {
+    var d = new Date(Math.round((n - 25569) * 864e5)); if (isNaN(d)) return String(n);
+    var Y = d.getUTCFullYear(), M = d.getUTCMonth(), D = d.getUTCDate(), h = d.getUTCHours(), mi = d.getUTCMinutes(), se = d.getUTCSeconds();
+    var c = code.replace(/\[[^\]]*\]/g, ""), out = "", i = 0, ampm = /AM\/PM/i.test(c), pad = function (x) { return ("0" + x).slice(-2); }, lastH = false;
+    while (i < c.length) {
+      var rest = c.slice(i), m;
+      if (rest[0] === '"') { var j = c.indexOf('"', i + 1); out += c.slice(i + 1, j < 0 ? c.length : j); i = j < 0 ? c.length : j + 1; continue; }
+      if (rest[0] === "\\") { out += rest[1] || ""; i += 2; continue; }
+      if ((m = /^(yyyy|yy|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|AM\/PM)/i.exec(rest))) {
+        var t = m[1].toLowerCase();
+        if (t === "yyyy") out += Y; else if (t === "yy") out += pad(Y % 100);
+        else if (t === "mmmmm") out += MON[M][0]; else if (t === "mmmm") out += MON[M]; else if (t === "mmm") out += MON[M].slice(0, 3);
+        else if (t === "mm" || t === "m") out += lastH ? (t === "mm" ? pad(mi) : mi) : (t === "mm" ? pad(M + 1) : M + 1);
+        else if (t === "dddd") out += DAY[d.getUTCDay()]; else if (t === "ddd") out += DAY[d.getUTCDay()].slice(0, 3); else if (t === "dd") out += pad(D); else if (t === "d") out += D;
+        else if (t === "hh" || t === "h") { var hh = ampm ? (h % 12 || 12) : h; out += t === "hh" ? pad(hh) : hh; }
+        else if (t === "ss" || t === "s") out += t === "ss" ? pad(se) : se;
+        else if (t === "am/pm") out += h < 12 ? "AM" : "PM";
+        lastH = t === "hh" || t === "h"; i += m[1].length; continue;
+      }
+      if (/[_*]/.test(rest[0])) { i += 2; continue; }
+      out += rest[0]; i++;
+    }
+    return out;
+  }
+  function fmtNum(v, code, isDate) {
+    if (typeof v !== "number") return v == null ? "" : String(v);
+    code = code || "General";
+    if (isDate) return fmtDate(v, fmtSections(code)[0]);
+    var secs = fmtSections(code), sec = v < 0 && secs.length > 1 ? secs[1] : v === 0 && secs.length > 2 ? secs[2] : secs[0], neg = v < 0 && secs.length < 2;
+    if (/^\s*@?\s*$/.test(sec) && secs.length > 3 && sec === secs[3]) return String(v);
+    var body = sec.replace(/\[[^\]]*\]/g, "");
+    if (/general/i.test(body) || !/[0#?]/.test(body)) {
+      if (/general/i.test(body) || !body.trim()) { var a = Math.abs(v), g = a !== 0 && (a >= 1e11 || a < 1e-9) ? v.toExponential(5) : String(Math.round(v * 1e10) / 1e10); return body.replace(/general/i, "").trim() ? body.replace(/general/i, g).replace(/"/g, "") : g; }
+    }
+    var x = Math.abs(v), pct = /%/.test(body.replace(/"[^"]*"/g, ""));
+    if (pct) x *= 100;
+    var nm = /[#0?,.]*[0#?][#0?,.]*/.exec(body.replace(/"[^"]*"/g, function (q) { return q.replace(/[#0?,.]/g, " "); }));
+    if (!nm) return String(Math.round(v * 1e10) / 1e10);
+    var num = nm[0];
+    var scale = /[0#?](,+)(?![0#?])/.exec(num); if (scale) { x /= Math.pow(1000, scale[1].length); num = num.slice(0, num.length - scale[1].length); }
+    var dec = (num.split(".")[1] || "").replace(/[^0#?]/g, ""), minDec = (dec.match(/0/g) || []).length, grp = /,/.test(num);
+    var str = x.toFixed(dec.length); if (dec.length > minDec) str = str.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+    var ip = str.split(".")[0], fp = str.split(".")[1];
+    if (grp) ip = ip.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var minInt = ((num.split(".")[0] || "").match(/0/g) || []).length; if (ip === "0" && !minInt) ip = "";
+    var formatted = ip + (fp ? "." + fp : "");
+    var pos = body.indexOf(num), pre = body.slice(0, pos), post = body.slice(pos + num.length);
+    function lit(t) { return t.replace(/"([^"]*)"/g, "$1").replace(/\\(.)/g, "$1").replace(/_./g, " ").replace(/\*./g, ""); }
+    return (neg ? "-" : "") + lit(pre) + formatted + lit(post);
+  }
+  function cellText(x, xf) {
+    if (!x || x.val == null) return "";
+    if (typeof x.val === "number") { try { return fmtNum(x.val, xf && xf.fmt, xf && xf.date); } catch (e) { return String(Math.round(x.val * 1e10) / 1e10); } }
+    return String(x.val);
+  }
+  /* cell style → CSS (class per used style index) */
+  var BSTY = { thin: "1px solid", hair: "1px dotted", dotted: "1px dotted", dashed: "1px dashed", dashDot: "1px dashed", dashDotDot: "1px dashed", medium: "2px solid",
+    mediumDashed: "2px dashed", mediumDashDot: "2px dashed", mediumDashDotDot: "2px dashed", slantDashDot: "2px dashed", thick: "3px solid", double: "3px double" };
+  function xfCss(xf, def) {
+    var f = xf.font || {}, o = [];
+    if (xf.bg) o.push("background:#" + xf.bg);
+    if (f.b) o.push("font-weight:700"); if (f.i) o.push("font-style:italic");
+    var deco = (f.u ? "underline " : "") + (f.s ? "line-through" : ""); if (deco) o.push("text-decoration:" + deco.trim());
+    if (f.sz && f.sz !== def.sz) o.push("font-size:" + (f.sz * 4 / 3).toFixed(1) + "px");
+    if (f.name && f.name !== def.name) o.push("font-family:'" + f.name.replace(/'/g, "") + "',Calibri,Arial,sans-serif");
+    if (f.color && f.color !== "000000") o.push("color:#" + f.color);
+    var h = { center: "center", centerContinuous: "center", right: "right", left: "left", justify: "justify", distributed: "center", fill: "left" }[xf.h];
+    if (h) o.push("text-align:" + h);
+    o.push("vertical-align:" + ({ top: "top", center: "middle", bottom: "bottom", justify: "middle", distributed: "middle" }[xf.v] || "bottom"));
+    if (xf.wrap) o.push("white-space:pre-wrap;overflow-wrap:anywhere");
+    if (xf.indent) o.push("padding-" + (h === "right" ? "right" : "left") + ":" + (2 + xf.indent * 9) + "px");
+    ["left", "right", "top", "bottom"].forEach(function (k) { var b = xf.border && xf.border[k]; if (b && BSTY[b[0]]) o.push("border-" + k + ":" + BSTY[b[0]] + " #" + b[1]); });
+    return o.join(";");
+  }
+  /* the sheet as a grid: visible columns / rows with sizes, cells (style index + displayed text), merges, pictures */
+  function gridOf(book, sh, S, doc, media) {
+    var fp = doc.getElementsByTagNameNS(NS, "sheetFormatPr")[0], defH = fp && fp.getAttribute("defaultRowHeight") ? +fp.getAttribute("defaultRowHeight") : 15;
+    var defW = fp && fp.getAttribute("defaultColWidth") ? +fp.getAttribute("defaultColWidth") : (fp && fp.getAttribute("baseColWidth") ? +fp.getAttribute("baseColWidth") : 8) + 0.43;
+    var colW = {}, colHid = {}, rowH = {}, rowHid = {};
+    Array.prototype.forEach.call(doc.getElementsByTagNameNS(NS, "col"), function (c) {
+      var a = +c.getAttribute("min"), b = Math.min(+c.getAttribute("max"), 400), w = c.getAttribute("width") != null ? +c.getAttribute("width") : defW, hid = c.getAttribute("hidden") === "1";
+      for (var i = a; i <= b; i++) { colW[i] = w; if (hid) colHid[i] = 1; }
+    });
+    Array.prototype.forEach.call(doc.getElementsByTagNameNS(NS, "row"), function (r) {
+      var n = +r.getAttribute("r"); if (r.getAttribute("ht")) rowH[n] = +r.getAttribute("ht"); if (r.getAttribute("hidden") === "1") rowHid[n] = 1;
+    });
+    var maxR = 0, maxC = 0, used = {};
+    Object.keys(S.cells).forEach(function (ref) {
+      var x = S.cells[ref], xf = book.xfs[x.s] || {}, vis = (x.val != null && x.val !== "") || xf.bg || (xf.border && Object.keys(xf.border).length);
+      if (!vis) return; if (x.r > maxR) maxR = x.r; if (x.c > maxC) maxC = x.c;
+    });
+    S.merges.forEach(function (m) { if (m.r2 > maxR && m.r2 - maxR < 5) maxR = m.r2; if (m.c2 > maxC && m.c2 - maxC < 5) maxC = m.c2; });
+    var cols = [], cw = [], px = function (w) { return Math.floor(w * 7 + 5); };
+    for (var c = 1; c <= maxC; c++) if (!colHid[c]) { cols.push(c); cw.push(px(colW[c] != null ? colW[c] : defW)); }
+    var rows = [], yOf = {}, y = 0;
+    for (var r = 1; r <= maxR; r++) {
+      if (rowHid[r]) continue;
+      var h = Math.round((rowH[r] != null ? rowH[r] : defH) * 4 / 3); yOf[r] = y; y += h;
+      var line = [];
+      cols.forEach(function (cc) {
+        var x = S.cells[colStr(cc) + r]; if (!x) return;
+        var xf = book.xfs[x.s] || {}, t = cellText(x, xf);
+        if (!t && !xf.bg && !(xf.border && Object.keys(xf.border).length)) return;
+        used[x.s] = 1; line.push(t ? [cc, x.s, t] : [cc, x.s]);
+      });
+      rows.push([r, h, line]);
+    }
+    var mg = S.merges.filter(function (m) { return m.r1 <= maxR && m.c1 <= maxC; }).map(function (m) { return [m.r1, m.c1, m.r2, m.c2]; });
+    // pictures (e.g. the logo): drawing anchors → pixel boxes over the grid
+    var xOf = {}, xx = 0; for (var c2 = 1; c2 <= maxC + 1; c2++) { xOf[c2] = xx; if (!colHid[c2]) xx += px(colW[c2] != null ? colW[c2] : defW); }
+    var yAt = function (row) { var v = 0; for (var q = 1; q < row; q++) if (!rowHid[q]) v += Math.round((rowH[q] != null ? rowH[q] : defH) * 4 / 3); return v; };
+    var img = [], jobs = [];
+    var sr = kids(doc.documentElement, "drawing")[0], rid = sr && sr.getAttributeNS(NS_R, "id");
+    if (rid) jobs.push(book.zip.file(relsPath(sh.path)) ? book.zip.file(relsPath(sh.path)).async("string").then(function (rx) {
+      var rel = Array.prototype.filter.call(parse(rx).getElementsByTagNameNS(NS_REL, "Relationship"), function (e) { return e.getAttribute("Id") === rid; })[0];
+      if (!rel) return; var dp = join(sh.path, rel.getAttribute("Target")), df = book.zip.file(dp); if (!df) return;
+      return Promise.all([df.async("string"), book.zip.file(relsPath(dp)) ? book.zip.file(relsPath(dp)).async("string") : Promise.resolve("")]).then(function (z) {
+        var dd = parse(z[0]), drel = {};
+        if (z[1]) Array.prototype.forEach.call(parse(z[1]).getElementsByTagNameNS(NS_REL, "Relationship"), function (e) { drel[e.getAttribute("Id")] = join(dp, e.getAttribute("Target")); });
+        var XDR = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing";
+        kids(dd.documentElement, null).forEach(function (a) {
+          var blip = a.getElementsByTagNameNS("*", "blip")[0], emb = blip && (blip.getAttributeNS(NS_R, "embed") || blip.getAttribute("r:embed")), mp = emb && drel[emb];
+          if (!mp || !/\.(png|jpe?g|gif|bmp|svg)$/i.test(mp)) return;
+          var pt = function (el) { if (!el) return null; var g = function (n) { var e = el.getElementsByTagNameNS(XDR, n)[0]; return e ? +e.textContent : 0; };
+            var col = g("col") + 1, row = g("row") + 1; return { x: (xOf[col] || 0) + g("colOff") / 9525, y: yAt(row) + g("rowOff") / 9525 }; };
+          var from = pt(a.getElementsByTagNameNS(XDR, "from")[0]), to = pt(a.getElementsByTagNameNS(XDR, "to")[0]), ext = a.getElementsByTagNameNS(XDR, "ext")[0];
+          if (!from) return;
+          var w = to ? to.x - from.x : ext ? +ext.getAttribute("cx") / 9525 : 0, hh = to ? to.y - from.y : ext ? +ext.getAttribute("cy") / 9525 : 0;
+          if (w <= 0 || hh <= 0) return;
+          img.push([mp, Math.round(from.x), Math.round(from.y), Math.round(w), Math.round(hh)]);
+          if (!media[mp]) media[mp] = book.zip.file(mp) ? book.zip.file(mp).async("base64").then(function (b) {
+            var ext2 = mp.split(".").pop().toLowerCase(); return "data:image/" + (ext2 === "jpg" ? "jpeg" : ext2 === "svg" ? "svg+xml" : ext2) + ";base64," + b; }) : null;
+        });
+      });
+    }) : Promise.resolve());
+    return Promise.all(jobs).then(function () { return { cols: cols, cw: cw, rows: rows, mg: mg, img: img, used: used, top: yOf }; });
   }
 
   /* ------------------------------------------------------------------ extract: workbook → model */
@@ -185,26 +369,34 @@
   function extract(buffer, fileName) {
     return JSZip.loadAsync(buffer).then(readBook).then(function (book) {
       var cs = cardSheets(book); if (!cs.length) throw new Error("No “…_Project Card” sheets found — use the monthly EP - NSR Projects workbook.");
-      var chain = Promise.resolve([]);
+      var chain = Promise.resolve([]), media = {}, used = {};
       cs.forEach(function (sh) {
         chain = chain.then(function (acc) {
           var f = book.zip.file(sh.path); if (!f) return acc;
-          return f.async("string").then(function (s) { acc.push(model(book, sh, readSheet(book, sh, parse(s)))); return acc; });
+          return f.async("string").then(function (s) {
+            var doc = parse(s), S = readSheet(book, sh, doc), mdl = model(book, sh, S);
+            return gridOf(book, sh, S, doc, media).then(function (g) {
+              Object.keys(g.used).forEach(function (k) { used[k] = 1; }); delete g.used; delete g.top;
+              mdl.grid = g; acc.push(mdl); return acc;
+            });
+          });
         });
       });
       return chain.then(function (projects) {
-        var m = /([A-Za-z]{3,9})[\s_-]?(\d{2,4})\s*(\.xlsx)?$/i.exec(String(fileName || "").replace(/\.xls[xm]$/i, "")) || [];
-        return { kind: "sar-card-model", v: 1, file: fileName || "", month: m[1] ? m[1] + (m[2] ? " " + m[2] : "") : "", extractedAt: new Date().toISOString(),
-          projects: projects.sort(function (a, b) { return String(a.code).localeCompare(String(b.code)); }) };
+        var keys = Object.keys(media);
+        return Promise.all(keys.map(function (k) { return media[k]; })).then(function (data) {
+          var med = {}; keys.forEach(function (k, i) { if (data[i]) med[k] = data[i]; });
+          var def = book.defFont || {}, css = [".cu-grid td{font-family:'" + String(def.name || "Calibri").replace(/'/g, "") + "',Calibri,Arial,sans-serif;font-size:" + ((def.sz || 11) * 4 / 3).toFixed(1) + "px}"], xf = {};
+          Object.keys(used).forEach(function (k) { var x = book.xfs[+k]; if (!x) return; var c = xfCss(x, def); if (c) css.push(".cu-grid .x" + k + "{" + c + "}"); xf[k] = [x.fmt, x.date ? 1 : 0, x.h || "", x.wrap ? 1 : 0]; });
+          var m = /([A-Za-z]{3,9})[\s_-]?(\d{2,4})\s*(\.xlsx)?$/i.exec(String(fileName || "").replace(/\.xls[xm]$/i, "")) || [];
+          return { kind: "sar-card-model", v: 2, file: fileName || "", month: m[1] ? m[1] + (m[2] ? " " + m[2] : "") : "", extractedAt: new Date().toISOString(),
+            css: css.join("\n"), xf: xf, media: med, projects: projects.sort(function (a, b) { return String(a.code).localeCompare(String(b.code)); }) };
+        });
       });
     });
   }
 
   /* ------------------------------------------------------------------ editor (site page and the team .html) */
-  function fmtShow(c, v) { return c.k === "pct" && v !== "" && !isNaN(+v) ? Math.round(+v * 10000) / 100 + "" : v; }
-  function fmtStore(c, v) { v = canon(v); if (c.k === "pct" && v !== "" && !isNaN(+v)) return String(Math.round(+v * 1e6) / 1e8); return v; }
-  function prettyDate(iso) { var t = Date.parse(iso + "T00:00:00Z"); if (isNaN(t)) return iso; var d = new Date(t); return d.getUTCDate() + "-" + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getUTCMonth()] + "-" + d.getUTCFullYear(); }
-  function shown(c, v) { return v === "" ? "—" : c.k === "date" ? prettyDate(v) : c.k === "pct" ? fmtShow(c, v) + "%" : v; }
   function storeKey(m) { return "sar-card-updates:" + (m.file || "") + ":" + (m.extractedAt || ""); }
   function loadDraft(m) { try { return JSON.parse(localStorage.getItem(storeKey(m)) || "null") || { by: "", edits: {} }; } catch (e) { return { by: "", edits: {} }; } }
   function saveDraft(m, d) { try { localStorage.setItem(storeKey(m), JSON.stringify(d)); return true; } catch (e) { return false; } }
@@ -229,91 +421,140 @@
   }
   function changedCount(m, d, code) { var u = updatesOf(m, d, [code]).projects[code]; return u ? u.cells.length : 0; }
 
+  /* the card as the Excel sheet: same columns, rows, colours, borders and merged cells; yellow cells editable in place */
+  function fmtCell(m, xfIdx, k, v) {            // a stored value (ISO date / number / fraction / text) → as Excel shows it
+    if (v === "" || v == null) return "";
+    var x = m.xf[xfIdx] || ["General", 0];
+    if (k === "date") { var n = isoToSerial(v); return n == null ? v : fmtNum(n, x[0], true); }
+    if ((k === "num" || k === "pct") && !isNaN(+v)) return fmtNum(+v, x[0], false);
+    return v;
+  }
   function editor(host, m, opts) {
     opts = opts || {};
     var d = loadDraft(m), last = d.last && m.projects.some(function (p) { return p.code === d.last; }) ? d.last : null;
-    var state = { code: opts.code || last || (m.projects[0] && m.projects[0].code), q: "" };
+    var state = { code: opts.code || last || (m.projects[0] && m.projects[0].code), zoom: d.zoom || 0.8 };
+    if (!document.getElementById("cu-css")) { var stl = document.createElement("style"); stl.id = "cu-css"; stl.textContent = m.css || ""; document.head.appendChild(stl); }
     host.innerHTML = "";
     var wrap = document.createElement("div"); wrap.className = "cu"; host.appendChild(wrap);
     wrap.innerHTML =
       '<div class="cu-top"><div class="cu-who"><label>Your name<input type="text" class="cu-by" placeholder="Name of the person updating" value="' + esc(d.by) + '"></label></div>' +
       '<div class="cu-pick"><label>Project<select class="cu-proj"></select></label></div>' +
+      '<div class="cu-jump"><label>Go to<select class="cu-sec-go"></select></label></div>' +
+      '<div class="cu-zoom"><label>Zoom<select class="cu-z">' + [0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3].map(function (z) { return '<option value="' + z + '"' + (z === state.zoom ? " selected" : "") + ">" + Math.round(z * 100) + "%</option>"; }).join("") + "</select></label></div>" +
       '<div class="cu-acts"><span class="cu-saved"></span>' +
       '<button type="button" class="cu-btn ghost" data-a="reset">Undo my changes (this project)</button>' +
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
-      '<div class="cu-help">Only the <b class="cu-yel">yellow</b> cells of the card can be updated here; grey values are filled by other teams and are shown for reference. ' +
-      'Your changes are kept in this browser until you download them. Send the downloaded file to the Projects Department.</div>' +
-      '<div class="cu-filter"><input type="search" class="cu-q" placeholder="Filter rows (activity, milestone, column…)"><label class="cu-only"><input type="checkbox" class="cu-chg"> Changed only</label></div>' +
-      '<div class="cu-body"></div>';
-    var sel = wrap.querySelector(".cu-proj"), body = wrap.querySelector(".cu-body"), saved = wrap.querySelector(".cu-saved");
+      '<div class="cu-help">The card exactly as in the Excel file. Only the <b class="cu-yel">yellow</b> cells can be changed — click a yellow cell and type; ' +
+      'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
+      '<div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
+    var sel = wrap.querySelector(".cu-proj"), sheet = wrap.querySelector(".cu-sheet"), saved = wrap.querySelector(".cu-saved"), go = wrap.querySelector(".cu-sec-go");
+    var info = {};                                // ref → { c (field), s (section), l (row label) } of the current project
+    function cur() { return m.projects.filter(function (x) { return x.code === state.code; })[0]; }
     function fillSel() {
       sel.innerHTML = m.projects.map(function (p) { var n = changedCount(m, d, p.code);
         return '<option value="' + esc(p.code) + '"' + (p.code === state.code ? " selected" : "") + ">" + esc(p.code + " — " + (p.name || p.sheet)) + (n ? "  (" + n + " changed)" : "") + "</option>"; }).join("");
     }
     function persist() { var ok = saveDraft(m, d); saved.textContent = ok ? "Saved in this browser · " + new Date().toLocaleTimeString() : "Could not save in this browser — download your updates now"; fillSel(); if (opts.onChange) opts.onChange(d); }
-    function input(c, v) {
-      var cur = fmtShow(c, v), a = ' data-ref="' + esc(c.ref) + '"';
-      if (c.f) return '<div class="cu-ro" title="Calculated by a formula in the card">' + esc(shown(c, c.v)) + "</div>";
-      if (c.k === "list") return "<select" + a + '><option value=""></option>' + c.o.map(function (o) { return '<option' + (o === v ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") +
-        (v && c.o.indexOf(v) < 0 ? "<option selected>" + esc(v) + "</option>" : "") + "</select>";
-      if (c.k === "date") return '<input type="date"' + a + ' value="' + esc(/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "") + '">';
-      if (c.k === "num" || c.k === "pct") return '<span class="cu-num"><input type="number" step="any"' + a + ' value="' + esc(cur) + '">' + (c.k === "pct" ? "<i>%</i>" : "") + "</span>";
-      return String(v).length > 60 ? "<textarea rows=\"3\"" + a + ">" + esc(v) + "</textarea>" : '<input type="text"' + a + ' value="' + esc(v) + '">';
-    }
+    function shownOf(c, xfIdx, v) { return fmtCell(m, xfIdx, c.k, v); }
     function draw() {
-      var p = m.projects.filter(function (x) { return x.code === state.code; })[0];
-      if (!p) { body.innerHTML = '<div class="cu-empty">No project selected.</div>'; return; }
-      var e = d.edits[p.code] || {}, q = state.q.toLowerCase(), only = wrap.querySelector(".cu-chg").checked;
-      var html = '<div class="cu-proj-head"><b>' + esc(p.code) + "</b> " + esc(p.name || p.sheet) + '<span class="cu-count"></span></div>';
-      p.sections.forEach(function (s, si) {
-        var rows = s.rows.filter(function (row) {
-          if (q && (row.l + " " + s.t + " " + row.c.map(function (c) { return c.h; }).join(" ")).toLowerCase().indexOf(q) < 0) return false;
-          if (only && !row.c.some(function (c) { return c.ref in e && canon(e[c.ref]) !== canon(c.v); })) return false;
-          return true;
-        });
-        if (!rows.length) return;
-        html += '<details class="cu-sec"' + (rows.length <= 12 || q || only ? " open" : "") + '><summary>' + esc(s.t) + '<span class="cu-n">' + rows.length + " row" + (rows.length === 1 ? "" : "s") + "</span></summary>";
-        rows.forEach(function (row) {
-          html += '<div class="cu-row"><div class="cu-lbl">' + esc(row.l) + (row.x.length ? '<div class="cu-ctx">' + row.x.map(function (x) {
-            return "<span><i>" + esc(x[0]) + "</i> " + esc(/^\d{4}-\d{2}-\d{2}$/.test(x[1]) ? prettyDate(x[1]) : x[1]) + "</span>"; }).join("") + "</div>" : "") + '</div><div class="cu-fields">';
-          row.c.forEach(function (c) {
-            var v = c.ref in e ? e[c.ref] : c.v, ch = c.ref in e && canon(e[c.ref]) !== canon(c.v);
-            html += '<label class="cu-f' + (ch ? " changed" : "") + (c.f ? " ro" : "") + '"><span class="cu-h">' + esc(c.h) + "</span>" + input(c, v) +
-              (ch ? '<span class="cu-was">was: ' + esc(shown(c, c.v)) + "</span>" : "") + "</label>";
-          });
-          html += "</div></div>";
-        });
-        html += "</details>";
+      var p = cur(); if (!p) { sheet.innerHTML = '<div class="cu-empty">No project selected.</div>'; return; }
+      var g = p.grid, e = d.edits[p.code] || {};
+      info = {};
+      p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { info[c.ref] = { c: c, s: s.t, l: row.l }; }); }); });
+      // spans over visible rows / columns; cells covered by a merge are skipped
+      var colIx = {}; g.cols.forEach(function (c, i) { colIx[c] = i; });
+      var rowIx = {}; g.rows.forEach(function (r, i) { rowIx[r[0]] = i; });
+      var span = {}, covered = {};
+      g.mg.forEach(function (mm) {
+        var cs = 0, rs = 0; for (var c = mm[1]; c <= mm[3]; c++) if (c in colIx) cs++; for (var r = mm[0]; r <= mm[2]; r++) if (r in rowIx) rs++;
+        if (!cs || !rs) return;
+        var r0 = mm[0], c0 = mm[1]; while (!(r0 in rowIx) && r0 <= mm[2]) r0++; while (!(c0 in colIx) && c0 <= mm[3]) c0++;
+        span[colStr(c0) + r0] = [rs, cs];
+        for (var r2 = mm[0]; r2 <= mm[2]; r2++) for (var c2 = mm[1]; c2 <= mm[3]; c2++) if (!(r2 === r0 && c2 === c0)) covered[colStr(c2) + r2] = 1;
       });
-      body.innerHTML = html || '<div class="cu-empty">No rows match.</div>';
-      var n = changedCount(m, d, p.code), cnt = body.querySelector(".cu-count"); if (cnt) cnt.textContent = n ? " · " + n + " changed" : "";
+      var tw = g.cw.reduce(function (a, b) { return a + b; }, 0) + 42;
+      var h = ['<table class="cu-grid" style="width:' + tw + 'px"><colgroup><col style="width:42px">' + g.cw.map(function (w) { return '<col style="width:' + w + 'px">'; }).join("") + "</colgroup>",
+        '<thead><tr><th class="cu-corner"></th>' + g.cols.map(function (c) { return "<th>" + colStr(c) + "</th>"; }).join("") + "</tr></thead><tbody>"];
+      g.rows.forEach(function (row) {
+        var r = row[0], byC = {}; row[2].forEach(function (x) { byC[x[0]] = x; });
+        h.push('<tr style="height:' + row[1] + 'px" data-r="' + r + '"><th>' + r + "</th>");
+        g.cols.forEach(function (c) {
+          var ref = colStr(c) + r; if (covered[ref]) return;
+          var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
+          var cls = x ? "x" + x[1] : "", it = info[ref];
+          if (it && !it.c.f) {
+            var v = ref in e ? e[ref] : it.c.v, ch = ref in e && canon(e[ref]) !== canon(it.c.v);
+            h.push('<td class="' + cls + " cu-ed" + (ch ? " cu-chg" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (ch ? ' title="Was: ' + esc(shownOf(it.c, x && x[1], it.c.v) || "(empty)") + '"' : "") + ">" +
+              '<div class="cu-val">' + esc(shownOf(it.c, x && x[1], v)) + "</div></td>");
+          } else {
+            var xi = x && m.xf[x[1]], ov = x && x[2] && !sp && xi && !xi[3] && !/center|right/.test(xi[2]) && !byC[c + 1] && typeof x[2] === "string" && x[2].length > 3;   // text runs into the empty cell to its right, as in Excel
+            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + '"' + at + ">" + (x && x[2] != null ? (ov ? "<span>" + esc(x[2]) + "</span>" : esc(x[2])) : "") + "</td>");
+          }
+        });
+        h.push("</tr>");
+      });
+      h.push("</tbody></table>");
+      var hh = 22;
+      (g.img || []).forEach(function (im) { if (m.media[im[0]]) h.push('<img class="cu-pic" alt="" src="' + m.media[im[0]] + '" style="left:' + (im[1] + 42) + "px;top:" + (im[2] + hh) + "px;width:" + im[3] + "px;height:" + im[4] + 'px">'); });
+      sheet.innerHTML = h.join("");
+      sheet.style.zoom = state.zoom;
+      go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
+      count();
     }
-    function cellOf(ref) {
-      var p = m.projects.filter(function (x) { return x.code === state.code; })[0], hit = null;
-      p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { if (c.ref === ref) hit = c; }); }); });
-      return hit;
+    function count() { var n = changedCount(m, d, state.code); saved.dataset.n = n; wrap.querySelector('[data-a="reset"]').textContent = n ? "Undo my " + n + " change" + (n === 1 ? "" : "s") + " (this project)" : "Undo my changes (this project)"; }
+    /* in-place editor: one control at a time over the clicked yellow cell */
+    var openEd = null;
+    function closeEd(commit) {
+      if (!openEd) return;
+      var o = openEd; openEd = null;
+      if (commit) {
+        var c = o.it.c, raw = o.ctl.value.trim(), v = raw;
+        if (c.k === "pct") v = raw === "" ? "" : isNaN(+raw.replace("%", "")) ? raw : String(Math.round(+raw.replace("%", "") * 1e6) / 1e8);
+        else if (c.k === "num") v = raw === "" ? "" : isNaN(+raw.replace(/,/g, "")) ? raw : String(+raw.replace(/,/g, ""));
+        var e = d.edits[state.code] = d.edits[state.code] || {};
+        if (canon(v) === canon(c.v)) delete e[o.ref]; else e[o.ref] = v;
+        persist();
+        var ch = o.ref in e;
+        o.td.classList.toggle("cu-chg", ch);
+        if (ch) o.td.title = "Was: " + (shownOf(c, o.xf, c.v) || "(empty)"); else o.td.removeAttribute("title");
+        o.td.querySelector(".cu-val").textContent = shownOf(c, o.xf, ch ? e[o.ref] : c.v);
+        count();
+      }
+      if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl);
+      o.td.classList.remove("cu-open");
     }
-    body.addEventListener("change", function (ev) {
-      var t = ev.target, ref = t.getAttribute && t.getAttribute("data-ref"); if (!ref) return;
-      var c = cellOf(ref); if (!c) return;
-      var e = d.edits[state.code] = d.edits[state.code] || {}, v = fmtStore(c, t.value);
-      if (canon(v) === canon(c.v)) delete e[ref]; else e[ref] = v;
-      persist();
-      var lab = t.closest(".cu-f"), ch = ref in e;
-      lab.classList.toggle("changed", ch);
-      var was = lab.querySelector(".cu-was"); if (was) was.remove();
-      if (ch) lab.insertAdjacentHTML("beforeend", '<span class="cu-was">was: ' + esc(shown(c, c.v)) + "</span>");
-      var n = changedCount(m, d, state.code), cnt = body.querySelector(".cu-count"); if (cnt) cnt.textContent = n ? " · " + n + " changed" : "";
-    });
+    function openAt(td) {
+      if (openEd && openEd.td === td) return;
+      closeEd(true);
+      var ref = td.getAttribute("data-ref"), it = info[ref]; if (!it) return;
+      var c = it.c, e = d.edits[state.code] || {}, v = ref in e ? e[ref] : c.v, xf = td.getAttribute("data-xf"), ctl;
+      if (c.k === "list") { ctl = document.createElement("select"); ctl.innerHTML = '<option value=""></option>' + c.o.map(function (o) { return "<option" + (o === v ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") + (v && c.o.indexOf(v) < 0 ? "<option selected>" + esc(v) + "</option>" : ""); }
+      else if (c.k === "date") { ctl = document.createElement("input"); ctl.type = "date"; ctl.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ""; }
+      else if (c.k === "num" || c.k === "pct") { ctl = document.createElement("input"); ctl.type = "text"; ctl.inputMode = "decimal"; ctl.value = c.k === "pct" && v !== "" && !isNaN(+v) ? String(Math.round(+v * 1e6) / 1e4) : v; ctl.placeholder = c.k === "pct" ? "%" : ""; }
+      else { ctl = document.createElement("textarea"); ctl.value = v; }
+      ctl.className = "cu-ctl";
+      td.classList.add("cu-open"); td.appendChild(ctl);
+      openEd = { td: td, ref: ref, it: it, ctl: ctl, xf: xf };
+      ctl.focus(); if (ctl.select && ctl.tagName !== "SELECT") try { ctl.select(); } catch (er) { /* date input */ }
+      ctl.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") { ev.preventDefault(); closeEd(false); }
+        else if (ev.key === "Enter" && (ctl.tagName !== "TEXTAREA" || !ev.shiftKey && !ev.altKey)) { ev.preventDefault(); closeEd(true); }
+        else if (ev.key === "Tab") { ev.preventDefault(); var all = Array.prototype.slice.call(sheet.querySelectorAll("td.cu-ed")), i = all.indexOf(td); closeEd(true); var nx = all[i + (ev.shiftKey ? -1 : 1)]; if (nx) openAt(nx); }
+      });
+      if (ctl.tagName === "SELECT") ctl.addEventListener("change", function () { closeEd(true); });
+    }
+    sheet.addEventListener("click", function (ev) { var td = ev.target.closest && ev.target.closest("td.cu-ed"); if (td && !ev.target.classList.contains("cu-ctl")) openAt(td); });
+    document.addEventListener("mousedown", function (ev) { if (openEd && !openEd.td.contains(ev.target)) closeEd(true); });
     wrap.querySelector(".cu-by").addEventListener("change", function (ev) { d.by = ev.target.value.trim(); persist(); });
-    sel.addEventListener("change", function () { state.code = d.last = sel.value; saveDraft(m, d); draw(); });
-    var qt; wrap.querySelector(".cu-q").addEventListener("input", function (ev) { clearTimeout(qt); qt = setTimeout(function () { state.q = ev.target.value.trim(); draw(); }, 200); });
-    wrap.querySelector(".cu-chg").addEventListener("change", draw);
+    sel.addEventListener("change", function () { closeEd(true); state.code = d.last = sel.value; saveDraft(m, d); draw(); });
+    wrap.querySelector(".cu-z").addEventListener("change", function (ev) { state.zoom = d.zoom = +ev.target.value; saveDraft(m, d); sheet.style.zoom = state.zoom; });
+    go.addEventListener("change", function () { var tr = sheet.querySelector('tr[data-r="' + go.value + '"]'); if (tr) tr.scrollIntoView({ block: "start", behavior: "smooth" }); go.value = ""; });
     wrap.querySelector('[data-a="reset"]').addEventListener("click", function () {
       if (!changedCount(m, d, state.code) || !confirm("Undo all your changes to " + state.code + "?")) return;
       delete d.edits[state.code]; persist(); draw();
     });
     wrap.querySelector('[data-a="dl"]').addEventListener("click", function () {
+      closeEd(true);
       if (!d.by) { alert("Please enter your name first."); wrap.querySelector(".cu-by").focus(); return; }
       var u = updatesOf(m, d), codes = Object.keys(u.projects);
       if (!codes.length) { alert("No changes yet."); return; }
