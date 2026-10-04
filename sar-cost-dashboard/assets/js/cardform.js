@@ -364,7 +364,68 @@
     for (var rr = 1; rr <= Math.min(40, S.maxR) && !name; rr++) {
       var lb = at(rr, 2); if (lb && /^project name/i.test(text(lb))) { for (var cc = 3; cc <= 8 && !name; cc++) { var nv = at(rr, cc); name = text(nv); } }
     }
-    return { code: sh.code, sheet: sh.name, name: name, sections: order };
+    var prog = progressOf(S, at, text, heads, order);
+    return { code: sh.code, sheet: sh.name, name: name, sections: order, prog: prog };
+  }
+  /* Section 7 "Execution Schedule (Monthly Update)": the monthly Actual Progress (%) row is the team's to update.
+     - typed numbers in that row → those month cells are editable;
+     - a formula there (projects split into POs) → the row is the contract-value-weighted average of the PO blocks on the
+       right (AA "PO1…": Contract Value, Months Count, Month Starting Date, Planned / Actual Progress (%)), so the PO
+       "Actual Progress (%)" month cells are editable instead.
+     The number of month columns follows the card's own formulas: C70 = MAX(DATEDIF(G105,H105,"M")+1, DATEDIF(J105,K105,"M")+2),
+     F70 = FCC months, and a later forecast finish (K106…) opens more months. The page recomputes this live (prog). */
+  function progressOf(S, at, text, heads, order) {
+    var cells = S.cells, find = function (re, col, from, to) { for (var r = from || 1; r <= (to || S.maxR); r++) { var x = cells[colStr(col) + r]; if (x && re.test(text(x))) return r; } return 0; };
+    var sec7 = heads.filter(function (h) { return h.main && /^7\b/.test(h.title); })[0]; if (!sec7) return null;
+    var sec8 = heads.filter(function (h) { return h.main && h.r > sec7.r; })[0], end7 = sec8 ? sec8.r - 1 : sec7.r + 15;
+    var rAct = find(/^Actual Progress \(%\)$/i, 2, sec7.r, end7), rPl = find(/^Planned Progress \(%\)$/i, 2, sec7.r, end7), rCnt = find(/^Months Count$/i, 2, sec7.r, end7), rDate = find(/^Month Starting Date$/i, 2, sec7.r, end7);
+    var rPer = find(/^Execution Period/i, 2, sec7.r, end7), rToDate = find(/^Actual Progress \(% to Date\)/i, 2, sec7.r, end7), rRep = find(/^Reporting Period/i, 2, sec7.r, end7);
+    if (!rAct || !rDate || !rCnt) return null;
+    var rLab = rCnt - 1, cols = [];
+    for (var c = 3; c < 400; c++) { var lx = cells[colStr(c) + rLab]; if (!lx || !/^Month \d+$/i.test(text(lx))) break; cols.push(c); }
+    if (!cols.length) return null;
+    var key = function (r, c) { return colStr(c) + r; }, iso = function (x) { return x && typeof x.val === "number" ? serialToIso(x.val) : ""; };
+    var sect = order.filter(function (o) { return /^7\b/.test(o.t); })[0] || null, secTitle = "7 Execution Schedule (Monthly Update)";
+    var h7 = heads.filter(function (h) { return h.r === sec7.r; })[0]; if (h7) secTitle = h7.title;
+    function addRow(title, label, r, refsByCol) {
+      var o = order.filter(function (q) { return q.t === title; })[0]; if (!o) { o = { t: title, rows: [] }; order.push(o); }
+      o.rows.push({ r: r, l: label, x: [], c: refsByCol.map(function (q) { return { ref: q.ref, h: "Month " + q.i, v: q.v, k: "pct", mi: q.i, p: 1 }; }) });
+    }
+    var actRefs = [], linked = false;
+    cols.forEach(function (c, i) { var x = cells[key(rAct, c)]; if (x && x.f) linked = true; else actRefs.push({ ref: key(rAct, c), i: i + 1, v: x ? display(x) : "" }); });
+    if (actRefs.length && !linked) addRow(secTitle, "Actual Progress (%)", rAct, actRefs);
+    // PO blocks to the right (projects with several contracts)
+    var po = [];
+    for (var r = sec7.r; r <= S.maxR; r++) {
+      for (var cc = 20; cc <= 40; cc++) {
+        var x = cells[key(r, cc)]; if (!x || !/^PO\s*\d+$/i.test(text(x))) continue;
+        var lab = function (re) { for (var q = r; q <= r + 7; q++) { var y = cells[key(q, cc)]; if (y && re.test(text(y))) return q; } return 0; };
+        var rCv = lab(/^Contract Value$/i), rA = lab(/^Actual Progress \(%\)$/i), rP = lab(/^Planned Progress \(%\)$/i), rMc = lab(/^Months Count$/i);
+        if (!rA) continue;
+        var cv = rCv && cells[key(rCv, cc + 1)] ? cells[key(rCv, cc + 1)].val : null, poNo = cells[key(r, cc + 1)] ? display(cells[key(r, cc + 1)]) : "";
+        var refs = [];
+        for (var k = 0; k < cols.length; k++) { var ax = cells[key(rA, cc + 1 + k)]; if (ax && ax.f) continue; refs.push({ ref: key(rA, cc + 1 + k), i: k + 1, v: ax ? display(ax) : "" }); }
+        var pname = text(x).replace(/\s+/g, "");
+        po.push({ name: pname, no: poNo, cvRef: rCv ? key(rCv, cc + 1) : null, cv: typeof cv === "number" ? cv : 0, actRow: rA, planRow: rP, col0: cc + 1, mcRow: rMc });
+        if (linked && (typeof cv === "number" && cv > 0 || poNo)) addRow(secTitle + " · " + pname + (poNo ? " (PO " + poNo + ")" : ""), "Actual Progress (%)", rA, refs);
+      }
+    }
+    // the execution-phase activity rows of section 8 (their dates drive the month count)
+    var ex = heads.filter(function (h) { return !h.main && /^Execution Phase$/i.test(h.title) && sec8 && h.r > sec8.r; })[0], exRows = [];
+    if (ex) { var nxt = heads.filter(function (h) { return h.r > ex.r; })[0]; for (var q = ex.r + 1; q < (nxt ? nxt.r : ex.r + 12); q++) exRows.push(q); }
+    var raw = {};
+    function keep(ref) { var x = cells[ref]; raw[ref] = x ? (x.date || x.isDateFmt && typeof x.val === "number" ? iso(x) : display(x)) : ""; }
+    if (ex) ["G", "H", "J", "K"].forEach(function (L) { keep(L + ex.r); exRows.forEach(function (q) { keep(L + q); }); });
+    ["F71", "F72", "I73", "C70", "F70"].forEach(function (ref) { /* fixed card layout: FCC start / end, TOC flag, cached month counts */ keep(ref); });
+    var fcc = { start: "F" + (rPer + 1), end: "F" + (rPer + 2), toc: "I" + (rPer + 3) };
+    [fcc.start, fcc.end, fcc.toc].forEach(keep);
+    var rep = rRep ? cells[key(rRep, 3)] : null;
+    return { cols: cols, rLab: rLab, rCnt: rCnt, rDate: rDate, rAct: rAct, rPl: rPl, rPer: rPer, rToDate: rToDate, linked: linked, po: po,
+      ex: ex ? { head: ex.r, rows: exRows, G: cells["G" + ex.r] && cells["G" + ex.r].f, H: cells["H" + ex.r] && cells["H" + ex.r].f, J: cells["J" + ex.r] && cells["J" + ex.r].f, K: cells["K" + ex.r] && cells["K" + ex.r].f } : null,
+      fcc: fcc, raw: raw, rep: rep && typeof rep.val === "number" ? serialToIso(rep.val) : "",
+      c70: cells[key(rPer, 3)] && typeof cells[key(rPer, 3)].val === "number" ? cells[key(rPer, 3)].val : null,
+      planVals: cols.map(function (c) { var x = cells[key(rPl, c)]; return x && typeof x.val === "number" ? x.val : null; }),
+      poVals: po.map(function (p) { return { act: cols.map(function (c, k) { var x = cells[key(p.actRow, p.col0 + k)]; return x && typeof x.val === "number" ? x.val : null; }) }; }) };
   }
   function extract(buffer, fileName) {
     return JSZip.loadAsync(buffer).then(readBook).then(function (book) {
@@ -424,10 +485,50 @@
   /* the card as the Excel sheet: same columns, rows, colours, borders and merged cells; yellow cells editable in place */
   function fmtCell(m, xfIdx, k, v) {            // a stored value (ISO date / number / fraction / text) → as Excel shows it
     if (v === "" || v == null) return "";
-    var x = m.xf[xfIdx] || ["General", 0];
+    var x = m.xf[xfIdx] || (k === "date" ? ["mmm-yy", 1] : k === "pct" ? ["0.0%", 0] : ["General", 0]);
     if (k === "date") { var n = isoToSerial(v); return n == null ? v : fmtNum(n, x[0], true); }
     if ((k === "num" || k === "pct") && !isNaN(+v)) return fmtNum(+v, x[0], false);
     return v;
+  }
+  /* live month logic of section 7 (see progressOf): month count, month labels / dates, linked actual row, % to date */
+  function eom(iso, add) { var t = Date.parse(iso + "T00:00:00Z"); if (isNaN(t)) return ""; var d = new Date(t); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1 + (add || 0), 0)).toISOString().slice(0, 10); }
+  function datedifM(a, b) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a) || !/^\d{4}-\d{2}-\d{2}$/.test(b) || b < a) return NaN;
+    var x = a.split("-").map(Number), y = b.split("-").map(Number); return (y[0] - x[0]) * 12 + (y[1] - x[1]) - (y[2] < x[2] ? 1 : 0);
+  }
+  function progState(p, e, fieldV) {
+    var g = p.prog; if (!g) return null;
+    var val = function (ref) { return ref in e ? e[ref] : ref in fieldV ? fieldV[ref] : g.raw[ref] != null ? g.raw[ref] : ""; };
+    var isoOk = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null; };
+    function agg(L, fn) {
+      if (!g.ex) return "";
+      if (!g.ex[L]) return isoOk(val(L + g.ex.head)) || "";
+      var vs = g.ex.rows.map(function (r) { return isoOk(val(L + r)); }).filter(Boolean).sort();
+      return vs.length ? (fn === "min" ? vs[0] : vs[vs.length - 1]) : "";
+    }
+    var G = agg("G", "min"), H = agg("H", "max"), J = agg("J", "min"), K = agg("K", "max");
+    var c70 = Math.max(datedifM(G, H) + 1, datedifM(J, K) + 2); if (isNaN(c70)) c70 = g.c70 || 0;
+    var toc = String(val(g.fcc.toc) || ""), fs = val(g.fcc.start), fe = val(g.fcc.end), f70 = /^no$/i.test(toc) ? 0 : datedifM(fs, fe) + 1; if (isNaN(f70)) f70 = 0;
+    var total = Math.min(g.cols.length, c70 + f70), text = {}, dates = [], cur = "";
+    g.cols.forEach(function (c, i) {
+      var n = i + 1, L = colStr(c);
+      text[L + g.rCnt] = n <= total ? ["text", "Month " + n] : ["text", ""];
+      if (n > total) cur = ""; else if (n === 1) cur = eom(G, 0); else if (n === c70 + 1 && isoOk(fs)) cur = eom(fs, 0); else cur = cur ? eom(cur, 1) : "";
+      dates.push(n <= total ? cur : ""); text[L + g.rDate] = ["date", n <= total ? cur : ""];
+    });
+    var act = g.cols.map(function (c, i) {
+      if (!g.linked) { var v = val(colStr(c) + g.rAct); return v === "" || isNaN(+v) ? null : +v; }
+      var num = 0, den = 0;
+      g.po.forEach(function (q, k) { if (!(q.cv > 0)) return; var ref = colStr(q.col0 + i) + q.actRow, v = ref in e ? e[ref] : ref in fieldV ? fieldV[ref] : g.poVals[k].act[i];
+        num += (v === "" || v == null || isNaN(+v) ? 0 : +v) * q.cv; den += q.cv; });
+      return den ? num / den : 0;
+    });
+    if (g.linked) g.cols.forEach(function (c, i) { text[colStr(c) + g.rAct] = ["pct", act[i] == null ? "" : String(act[i])]; });
+    var lim = g.rep ? eom(g.rep, 0) : "9999-12-31", td = 0;
+    act.forEach(function (v, i) { if (v != null && dates[i] && dates[i] <= lim) td += v; });
+    if (g.rToDate) text["C" + g.rToDate] = ["pct", String(Math.round(td * 1e8) / 1e8)];
+    if (g.rPer) text["C" + g.rPer] = ["num", String(c70)];
+    return { total: total, text: text };
   }
   function editor(host, m, opts) {
     opts = opts || {};
@@ -444,7 +545,7 @@
       '<div class="cu-acts"><span class="cu-saved"></span>' +
       '<button type="button" class="cu-btn ghost" data-a="reset">Undo my changes (this project)</button>' +
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
-      '<div class="cu-help">The card exactly as in the Excel file. Only the <b class="cu-yel">yellow</b> cells can be changed — click a yellow cell and type; ' +
+      '<div class="cu-help">The card exactly as in the Excel file. Only the <b class="cu-yel">yellow</b> cells and the monthly <b class="cu-pgk">Actual Progress (%)</b> of section 7 can be changed — click a cell and type (a later forecast finish opens more months, as in Excel); ' +
       'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
       '<div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
     var sel = wrap.querySelector(".cu-proj"), sheet = wrap.querySelector(".cu-sheet"), saved = wrap.querySelector(".cu-saved"), go = wrap.querySelector(".cu-sec-go");
@@ -458,9 +559,10 @@
     function shownOf(c, xfIdx, v) { return fmtCell(m, xfIdx, c.k, v); }
     function draw() {
       var p = cur(); if (!p) { sheet.innerHTML = '<div class="cu-empty">No project selected.</div>'; return; }
-      var g = p.grid, e = d.edits[p.code] || {};
+      var g = p.grid, e = d.edits[p.code] || {}, fieldV = {};
       info = {};
-      p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { info[c.ref] = { c: c, s: s.t, l: row.l }; }); }); });
+      p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { info[c.ref] = { c: c, s: s.t, l: row.l }; fieldV[c.ref] = c.v; }); }); });
+      var ps = progState(p, e, fieldV);
       // spans over visible rows / columns; cells covered by a merge are skipped
       var colIx = {}; g.cols.forEach(function (c, i) { colIx[c] = i; });
       var rowIx = {}; g.rows.forEach(function (r, i) { rowIx[r[0]] = i; });
@@ -481,14 +583,17 @@
         g.cols.forEach(function (c) {
           var ref = colStr(c) + r; if (covered[ref]) return;
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
-          var cls = x ? "x" + x[1] : "", it = info[ref];
+          var cls = x ? "x" + x[1] : "", it = info[ref], ovr = ps && ps.text[ref];
+          if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period: not editable
           if (it && !it.c.f) {
             var v = ref in e ? e[ref] : it.c.v, ch = ref in e && canon(e[ref]) !== canon(it.c.v);
-            h.push('<td class="' + cls + " cu-ed" + (ch ? " cu-chg" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (ch ? ' title="Was: ' + esc(shownOf(it.c, x && x[1], it.c.v) || "(empty)") + '"' : "") + ">" +
+            h.push('<td class="' + cls + " cu-ed" + (it.c.p ? " cu-pg" : "") + (ch ? " cu-chg" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (ch ? ' title="Was: ' + esc(shownOf(it.c, x && x[1], it.c.v) || "(empty)") + '"' : "") + ">" +
               '<div class="cu-val">' + esc(shownOf(it.c, x && x[1], v)) + "</div></td>");
           } else {
-            var xi = x && m.xf[x[1]], ov = x && x[2] && !sp && xi && !xi[3] && !/center|right/.test(xi[2]) && !byC[c + 1] && typeof x[2] === "string" && x[2].length > 3;   // text runs into the empty cell to its right, as in Excel
-            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + '"' + at + ">" + (x && x[2] != null ? (ov ? "<span>" + esc(x[2]) + "</span>" : esc(x[2])) : "") + "</td>");
+            var txt = x && x[2] != null ? x[2] : "";
+            if (ovr) txt = ovr[0] === "text" ? ovr[1] : fmtCell(m, x ? x[1] : "", ovr[0], ovr[1]);   // recomputed month labels / dates / linked progress
+            var xi = x && m.xf[x[1]], ov = txt && !sp && xi && !xi[3] && !/center|right/.test(xi[2]) && !byC[c + 1] && txt.length > 3;   // text runs into the empty cell to its right, as in Excel
+            h.push('<td class="' + cls + (ov ? " cu-ov" : "") + (ovr ? " cu-calc" : "") + '"' + at + ">" + (txt ? (ov ? "<span>" + esc(txt) + "</span>" : esc(txt)) : "") + "</td>");
           }
         });
         h.push("</tr>");
@@ -498,7 +603,14 @@
       (g.img || []).forEach(function (im) { if (m.media[im[0]]) h.push('<img class="cu-pic" alt="" src="' + m.media[im[0]] + '" style="left:' + (im[1] + 42) + "px;top:" + (im[2] + hh) + "px;width:" + im[3] + "px;height:" + im[4] + 'px">'); });
       sheet.innerHTML = h.join("");
       sheet.style.zoom = state.zoom;
-      go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
+      go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + esc(s.rows[0].c[0] ? s.rows[0].c[0].ref : "") + '" data-r="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
+      var nb = wrap.querySelector(".cu-po-note"); if (nb) nb.remove();
+      if (p.prog && p.prog.linked) {
+        var po = p.sections.filter(function (s) { return / · PO/.test(s.t); });
+        wrap.querySelector(".cu-sheet-wrap").insertAdjacentHTML("beforebegin", '<div class="cu-po-note">This project\'s monthly <b>Actual Progress (%)</b> (row ' + p.prog.rAct + ') is calculated from its POs, weighted by contract value. ' +
+          "Update each PO's Actual Progress in the PO table to the right" + (po.length ? ': ' + po.map(function (s) { return '<a href="#" data-go="' + esc(s.rows[0].c[0].ref) + '">' + esc(s.t.split(" · ").pop()) + "</a>"; }).join(" · ") : "") + ".</div>");
+        wrap.querySelectorAll(".cu-po-note a").forEach(function (a) { a.addEventListener("click", function (ev) { ev.preventDefault(); jump(a.getAttribute("data-go")); }); });
+      }
       count();
     }
     function count() { var n = changedCount(m, d, state.code); saved.dataset.n = n; wrap.querySelector('[data-a="reset"]').textContent = n ? "Undo my " + n + " change" + (n === 1 ? "" : "s") + " (this project)" : "Undo my changes (this project)"; }
@@ -519,6 +631,7 @@
         if (ch) o.td.title = "Was: " + (shownOf(c, o.xf, c.v) || "(empty)"); else o.td.removeAttribute("title");
         o.td.querySelector(".cu-val").textContent = shownOf(c, o.xf, ch ? e[o.ref] : c.v);
         count();
+        if (cur() && cur().prog) { var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl); draw(); sw.scrollTop = st0; sw.scrollLeft = sl0; return; }
       }
       if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl);
       o.td.classList.remove("cu-open");
@@ -548,7 +661,12 @@
     wrap.querySelector(".cu-by").addEventListener("change", function (ev) { d.by = ev.target.value.trim(); persist(); });
     sel.addEventListener("change", function () { closeEd(true); state.code = d.last = sel.value; saveDraft(m, d); draw(); });
     wrap.querySelector(".cu-z").addEventListener("change", function (ev) { state.zoom = d.zoom = +ev.target.value; saveDraft(m, d); sheet.style.zoom = state.zoom; });
-    go.addEventListener("change", function () { var tr = sheet.querySelector('tr[data-r="' + go.value + '"]'); if (tr) tr.scrollIntoView({ block: "start", behavior: "smooth" }); go.value = ""; });
+    function jump(ref) { var td = ref && sheet.querySelector('td[data-ref="' + ref + '"]'); if (td) td.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" }); }
+    go.addEventListener("change", function () {
+      var o = go.selectedOptions[0], td = go.value && sheet.querySelector('td[data-ref="' + go.value + '"]');
+      if (td) jump(go.value); else { var tr = o && sheet.querySelector('tr[data-r="' + o.getAttribute("data-r") + '"]'); if (tr) tr.scrollIntoView({ block: "start", behavior: "smooth" }); }
+      go.value = "";
+    });
     wrap.querySelector('[data-a="reset"]').addEventListener("click", function () {
       if (!changedCount(m, d, state.code) || !confirm("Undo all your changes to " + state.code + "?")) return;
       delete d.edits[state.code]; persist(); draw();

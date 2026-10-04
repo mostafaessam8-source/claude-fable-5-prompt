@@ -108,7 +108,10 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    gives one self-contained page to share inside SAR (SharePoint / Teams / e-mail). An engineer opens it, enters their
    name and picks a project: the card is drawn **exactly as the Excel sheet** (column letters, row numbers, widths,
    heights, colours, fonts, borders, merged cells, number / date formats, logo). Only the yellow cells can be clicked and
-   edited in place (dates, numbers, %, Yes/No lists, text); changed cells get an orange frame (hover = old value). Drafts stay in their browser; *Download my updates* saves a small `NSR_Card_Updates_….json`
+   edited in place (dates, numbers, %, Yes/No lists, text); changed cells get an orange frame (hover = old value).
+   The monthly **Actual Progress (%)** of section 7 is editable too: directly where the row holds numbers, or in the
+   PO blocks when the row is linked to several POs (the row then recalculates as the contract-value-weighted average).
+   A later forecast finish opens more month columns, exactly as the card's formulas do. Drafts stay in their browser; *Download my updates* saves a small `NSR_Card_Updates_….json`
    that they send back. The original workbook is never changed.
 2. **Team updates received** — drop the `.json` files (any number); they are kept in this browser.
 3. **Apply to the new month's file** — drop the new `EP - NSR Projects <Month>.xlsx`. Each value goes into the same

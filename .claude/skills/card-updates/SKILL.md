@@ -30,6 +30,23 @@ saves, Esc cancels, Tab goes to the next yellow cell; changed cells get an orang
   non-yellow text left of the first yellow cell; column header = nearest text above in the same column that is not a
   data row or a section title (merged group title prefixed). Read-only context: other values of the row, columns A–P.
 
+## Monthly Actual Progress (%) — section 7 (`progressOf` / `progState` in cardform.js)
+
+Besides the yellow cells, the team updates the monthly **Actual Progress (%)** row of section 7 (row "Actual Progress (%)"
+under "Month Starting Date"; month columns = the "Month N" labels above "Months Count").
+- Typed numbers in that row → its month cells are editable (field key: section 7 · "Actual Progress (%)" · "Month N").
+- A formula in that row → the project is split into POs: the row is the contract-value-weighted average of the PO blocks
+  to the right (label "PO1…" then Contract Value, Months Count, Month Starting Date, Planned / Actual Progress (%)). The
+  PO blocks' Actual Progress month cells are editable instead (section "7 … · PO1 (PO <no>)"), only for POs with a
+  contract value or PO number; the page recomputes the row live as Σ(PO actual × CV) / Σ CV (CV > 0).
+- Months open as in the card's formulas: execution months = MAX(DATEDIF(G,H,"M")+1, DATEDIF(J,K,"M")+2) on the Execution
+  Phase head row (G/J = MIN, H/K = MAX of the activity rows when the head holds a formula), + FCC months
+  (0 when the TOC flag is "No", else DATEDIF(FCC start, FCC end)+1). A later forecast finish opens more month cells; month
+  N > total is locked. Month labels, month dates (EOMONTH chain, the FCC month restarting at the FCC start),
+  Execution Period and Actual Progress (% to Date) (sum up to the reporting month) are recomputed on screen.
+- Written to the new month's file as numbers (fractions) into the same field (section · row · Month N); formula cells
+  are never overwritten. Excel recalculates everything else on opening.
+
 ## Exchange format (.json)
 
 `{ kind:"sar-card-updates", v:1, file, month, by, savedAt, projects:{ <code>:{ name, cells:[{ ref, s, l, h, k, from, to }] } } }`
