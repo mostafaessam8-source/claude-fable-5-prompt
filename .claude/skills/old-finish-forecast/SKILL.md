@@ -60,6 +60,17 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
    1 month), rounded to month end. If there is no contract finish, or the estimate is not before the report date, the
    month end before the report date is used. Shown as `≈dd-Mmm-yy` in green.
 
+## Comment ↔ date check (run on every change and when asked to review)
+
+For each project, read its comment (Current Status / Action Plan) next to its dates and confirm:
+- every blocker the comment names (AMP-C open, CR, authority, missing item, owner left, resistance) appears as a delay
+  in the Basis line and has moved the next sign-off; a delay named in Basis must also be applied to the dates;
+- a step the comment says is "in process" is due within about a month; "once X is signed, Y follows" puts Y after X;
+- nothing the comment says is done is forecast in the future, and nothing still open shows as done;
+- the order holds: AMP-E1 ≤ handover, AMP-E1 ≤ AMP-E2 ≤ close-out ≤ retention / final payment ≤ performance guarantee.
+Where the AMP table and the remark disagree (e.g. a stage marked signed but the remark says it is not), follow the
+remark and tell the user so they can correct the Excel.
+
 ## Output
 
 - Actual / Forecast Date column: completed with a date → that date; completed without a date → `≈dd-Mmm-yy` (green,
