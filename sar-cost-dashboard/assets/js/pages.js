@@ -629,12 +629,34 @@
     var rowsF = spAll.filter(function (r) { var o = byId[String(r.ID)]; return o && proj.indexOf(o) >= 0; });
 
     // in-page navigation: one page, five sections
-    var secs = [["c-kpi", "KPI position"], ["c-out", "Year-end outlook"], ["c-con", "Contract & payments"], ["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]];
+    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"], ["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]];
     var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
     nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
     function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
 
-    /* 1 · KPI position — headline tiles (once) + one KPI table (cost summary and year-end closing together) */
+    /* 1 · Contract & payments (cost register) — first on the page */
+    sec("c-con", "Contract & payments", "NSR Project Data (cost register) · " + nsr.length + " projects");
+    var g = grid(v, "g-5");
+    g.innerHTML = mTile("Full Cost", U.sum(nsr, "Full Cost")) + mTile("Contract Value", U.sum(nsr, "Contract Value"), "black") +
+      mTile("Total WC", U.sum(nsr, "Total WC"), "mid") + mTile("Paid", U.sum(nsr, PAID), "slate") + mTile("Remaining WC", U.sum(nsr, "Remaining WC"), "yellow");
+    clickTiles(g, ["Full Cost", "Contract Value", "Total WC", PAID, "Remaining WC"].map(function (k, i) {
+      return function () { costModal(D, ["Full cost", "Contract value", "Total WC", "Paid", "Remaining WC"][i], nsr, k); }; }));
+    var byCV = nsrX.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); }), cn = byCV.map(function (r) { return r["Project Name"]; });
+    var g4 = grid(v, "g-2-1");
+    var b1 = chartBox(panelIn(g4, "Contract value vs WC total vs paid", "By project · click to filter")); b1.style.height = Math.max(320, cn.length * 34 + 70) + "px";
+    hbar(b1, cn, [U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), U.hl(S.plan, cn, st.proj)),
+      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), U.hl(S.forecast, cn, st.proj)),
+      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), U.hl(S.actual, cn, st.proj))], function (i, e) { pick(ctx, "proj", cn[i], e); });
+    var side = add(g4, '<div class="stack"></div>');
+    [["phase", "Contract value by phase"], ["fund", "Contract value by fund type"]].forEach(function (c) {
+      var base = nsrObj.filter(function (o) { return passes(o, defs, st, c[0]); }), keys = U.uniq(base.map(function (o) { return o[c[0]]; }));
+      var vals = keys.map(function (k) { return U.sum(base.filter(function (o) { return o[c[0]] === k; }).map(function (o) { return o.r; }), "Contract Value"); });
+      var box = chartBox(panelIn(side, c[1], "Click to filter"), "short"); box.style.height = Math.max(160, keys.length * 30 + 50) + "px";
+      hbar(box, keys, [U.barDs("Contract Value", vals, U.hl(S.plan, keys, st[c[0]]), { maxBarThickness: 18 })], function (i, e) { pick(ctx, c[0], keys[i], e); });
+    });
+
+
+    /* 2 · KPI position — headline tiles (once) + one KPI table (cost summary and year-end closing together) */
     sec("c-kpi", "Cost KPI position", "Year-end = contractor Forecast Plan (invoicing plan) vs the " + baseLbl + " · CAPEX Variance target: year-end spend ≥ " + T95 + " of plan · actual to " + esc(fmt.month(cut)) + " for reference");
     spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: toCut,
       gapNote: T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + T95 + " target" : " · " + T95 + " target met" })
@@ -713,27 +735,6 @@
     hbar(vb, vn, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
       byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
       function (i, e) { pick(ctx, "proj", vn[i], e); });
-
-    /* 3 · Contract & payments (cost register) */
-    sec("c-con", "Contract & payments", "NSR Project Data (cost register) · " + nsr.length + " projects");
-    var g = grid(v, "g-5");
-    g.innerHTML = mTile("Full Cost", U.sum(nsr, "Full Cost")) + mTile("Contract Value", U.sum(nsr, "Contract Value"), "black") +
-      mTile("Total WC", U.sum(nsr, "Total WC"), "mid") + mTile("Paid", U.sum(nsr, PAID), "slate") + mTile("Remaining WC", U.sum(nsr, "Remaining WC"), "yellow");
-    clickTiles(g, ["Full Cost", "Contract Value", "Total WC", PAID, "Remaining WC"].map(function (k, i) {
-      return function () { costModal(D, ["Full cost", "Contract value", "Total WC", "Paid", "Remaining WC"][i], nsr, k); }; }));
-    var byCV = nsrX.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); }), cn = byCV.map(function (r) { return r["Project Name"]; });
-    var g4 = grid(v, "g-2-1");
-    var b1 = chartBox(panelIn(g4, "Contract value vs WC total vs paid", "By project · click to filter")); b1.style.height = Math.max(320, cn.length * 34 + 70) + "px";
-    hbar(b1, cn, [U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), U.hl(S.plan, cn, st.proj)),
-      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), U.hl(S.forecast, cn, st.proj)),
-      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), U.hl(S.actual, cn, st.proj))], function (i, e) { pick(ctx, "proj", cn[i], e); });
-    var side = add(g4, '<div class="stack"></div>');
-    [["phase", "Contract value by phase"], ["fund", "Contract value by fund type"]].forEach(function (c) {
-      var base = nsrObj.filter(function (o) { return passes(o, defs, st, c[0]); }), keys = U.uniq(base.map(function (o) { return o[c[0]]; }));
-      var vals = keys.map(function (k) { return U.sum(base.filter(function (o) { return o[c[0]] === k; }).map(function (o) { return o.r; }), "Contract Value"); });
-      var box = chartBox(panelIn(side, c[1], "Click to filter"), "short"); box.style.height = Math.max(160, keys.length * 30 + 50) + "px";
-      hbar(box, keys, [U.barDs("Contract Value", vals, U.hl(S.plan, keys, st[c[0]]), { maxBarThickness: 18 })], function (i, e) { pick(ctx, c[0], keys[i], e); });
-    });
 
     /* 4 · Invoice schedule */
     sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
