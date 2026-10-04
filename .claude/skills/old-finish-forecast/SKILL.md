@@ -42,7 +42,8 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
      + 2 weeks.
 5b. AMP-E1 already Completed → AMP-E1 is taken as the report date (later steps count from now);
    AMP-E2 already Completed → AMP-E2 is the report date (close-out etc. count from now, no DLP wait).
-   "AMP-C … not (been) signed" or "Not signed: … AMP-C" means AMP-C is still open (+1 month).
+   "AMP-C … not (yet) (been) signed / completed", "pending sign-off" or "Not signed: … AMP-C" means AMP-C is still
+   open (+1 month).
 6. Following steps: Hand Over Report = AMP-E1 + 1 month · Closeout Report = AMP-E2 + 1 month · AP guarantee release =
    AMP-E1 + 2 months · Retention release = close-out + 1.5 months · Final payment = close-out + 2 months ·
    Performance guarantee release = later of AMP-E2 and final payment + 1 month.

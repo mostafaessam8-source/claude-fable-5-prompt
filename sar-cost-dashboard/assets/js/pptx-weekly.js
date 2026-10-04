@@ -277,7 +277,7 @@
     var worksEnd = worksDone ? null : fe && fe >= rd ? fe : cf && cf >= rd ? cf : addDays(rd, 60);
     var worksSrc = worksDone ? "" : fe && fe >= rd ? "weekly fcst" : cf && cf >= rd ? "contract finish" : "no fcst, +2 m assumed";
     var lag = 0, why = [];
-    if (/amp[\s-]*c\b/i.test(t) && !(/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t) && !/\bnot (been |yet )?(fully |completely )?(signed|completed)|not signed:[^.]*amp[\s-]*c\b/i.test(t))) { lag += 30; why.push("AMP-C open +1 m"); }
+    if (/amp[\s-]*c\b/i.test(t) && !(/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t) && !/\bnot (yet |been |yet been )*(fully |completely )?(signed|completed)|not signed:[^.]*amp[\s-]*c\b|\bpending sign/i.test(t))) { lag += 30; why.push("AMP-C open +1 m"); }
     if (/\bcr\b|change request/i.test(t) && /process|progress|pending/i.test(t)) { lag += 30; why.push("CR in process +1 m"); }
     if (/\b(mot|moi|ministry|authority|municipal|stakeholder)\b|awaiting [^.;]*response/i.test(t)) { lag += 45; why.push("authority response +1.5 m"); }
     var design = /\bdesign\b/i.test(r["Project Name"] || "") && !/construct/i.test(r["Project Name"] || "");   // design contracts: no defects liability period
