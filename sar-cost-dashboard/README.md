@@ -84,8 +84,10 @@ loaded in the dashboard and downloads it, e.g. `NSR - Program - Balance Scorecar
    - the slides keep the sample's order; *Old projects status* holds 3 close-out projects per slide, like the sample;
    - one *Projects in the Execution Phase* slide per project of the Progress section (weekly progress report), with its weekly
      progress; the project card fills contractor / consultant / funding gaps;
-   - *Program Values* comes from the Project Cards section (budget, contract value, paid, phase, size, status and the execution
-     SPI from card sections 7 & 8); the *SPI* slide comes from the Progress section (ΣEV ÷ ΣPV of the weekly report and S-curves);
+   - *Program Values* comes from the Project Cards section (`EP - NSR Projects <Month>.xlsx`: budget, contract value, paid,
+     phase, size, status and the execution SPI from card sections 7 & 8), except the **Legacy ( Completed – years)** tile,
+     which counts every row of `Projects in Closing phase.xlsx` (Final Contract Value, years of Contract Finish). The embedded
+     *NSR Program - DB* workbook is rebuilt from the same two files (sheets NSR Program - DB · Old Projects · SPI); the *SPI* slide comes from the Progress section (ΣEV ÷ ΣPV of the weekly report and S-curves);
    - on the old-projects action points, the step each close-out is waiting on is highlighted (owner in SAR blue);
    - one closing slide per open project in *Projects in Closing*;
    - SPI cards, 11 per slide;
@@ -137,11 +139,8 @@ For a local copy that needs no loading, run `node tools/build-ppt-template.js <t
 > and formulas are fine: the site reads the values Excel last calculated, so save the file in Excel
 > before importing.
 
-**PD Programme Database** (`PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx`, any date/version suffix): recognised by its
-header row (Program Name · PMO List · Approved Budget · Final Contract Amount · Total Paid …), NSR rows only. It feeds the
-weekly PPT *Program Values* slide: approved budget, contracted value + issued POs, total paid, PMO list / execution /
-pipeline / legacy groups, phase and size donuts and the IPC donut. SPI stays from the Progress section; the execution status
-bar uses the file's *Overall Status* when filled, else the project cards. Without this file the slide falls back to the project cards.
+**PD Programme Database** (`PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx`): still recognised on import, but no longer
+used by the *Program Values* slide (project cards + closing register instead).
 
 **Download an imported file:** every Excel file imported in this browser is kept as-is. On **Data Import** each loaded source card has
 **Download imported file**: download it, update it in Excel and import it again. The copy is stored only in this browser

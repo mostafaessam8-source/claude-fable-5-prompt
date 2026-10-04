@@ -592,70 +592,34 @@
 
   /* program values dashboard */
   function setLine(el, pi, text) { E.setRuns(el, pi, [text]); }
-  /* Program Values from the PD programme database (PD_PPT_Data_Requirement_For_all_Program_<date>.xlsx), NSR rows only */
-  function fillValuesPd(pkg, path, M, db) {
-    var d = pkg.xml(path), num = function (v) { var x = N(v); return x == null ? 0 : x; };
-    var T = function (r) { return String(r.Type || "").trim().toLowerCase(); }, PH = function (r) { return String(r["Project Phase"] || "").trim().toLowerCase(); };
-    var exe = db.filter(function (r) { return T(r) === "on going" || PH(r) === "execution"; }), pipe = db.filter(function (r) { return T(r) === "pipeline"; });
-    var leg = db.filter(function (r) { return T(r) === "legacy"; }), pmo = db.filter(function (r) { return /^y/i.test(r["PMO List"] || ""); });
-    var full = sum(db, function (r) { return num(r["Approved Budget"]); }), cv = sum(db, function (r) { return num(r["Final Contract Amount"]); }), paid = sum(db, function (r) { return num(r["Total Paid"]); });
-    var po = db.filter(function (r) { var x = r["PO#"]; return x != null && x !== "" && String(x) !== "0"; });
-    var poExe = po.filter(function (r) { return exe.indexOf(r) >= 0; }).length, poLeg = po.filter(function (r) { return leg.indexOf(r) >= 0; }).length;
-    var yrs = uniq(leg.map(function (r) { var y = r["Closed Year"] || String(r.Project_ED || "").slice(0, 4); return y ? String(y) : null; })).sort();
-    var byText = function (re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s).replace(/\s+/g, " ")); })[0]; };
-    function bsum(list) { return "SAR " + sarB(sum(list, function (r) { return num(r["Approved Budget"]); })); }
-    var b1 = byText(/APPROVED ?BUDGET/); if (b1) { setLine(b1, 1, "SAR " + bigB(full)); setLine(b1, 2, db.length + " projects"); }
-    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + po.length + " projects (" + poExe + " Execution" + (poLeg ? " + " + poLeg + " Legacy" : "") + ")"); }
-    var b3 = byText(/TOTAL ?PAID/); if (b3) { setLine(b3, 1, "SAR " + bigB(paid)); setLine(b3, 2, (cv ? Math.round(paid / cv * 100) : 0) + " % of contracted value"); }
-    function grp(re, list, label) { var b = byText(re); if (!b) return; if (label) setLine(b, 1, label); setLine(b, 2, list.length + " Projects"); setLine(b, 3, bsum(list)); }
-    grp(/PMO Reporting Card/, pmo);
-    grp(/Under Execution/, exe);
-    grp(/Pipeline/, pipe);
-    grp(/Legacy|Handover/, leg, "    Legacy ( Completed" + (yrs.length ? " – " + (yrs.length > 1 ? yrs[0] + "-" + yrs[yrs.length - 1] : yrs[0]) : "") + ")");
-    var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.spi == null ? "-" : { text: M.spi.toFixed(2), color: tgtCol(M.spi, M) });   // SPI: Progress section
-    var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
-    var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
-    var st = ["Delayed", "On Hold", "On Track", "At Risk"], norm = function (z) { z = String(z || ""); return /slight|risk/i.test(z) ? "At Risk" : /hold/i.test(z) ? "On Hold" : /track|on time/i.test(z) ? "On Track" : /delay/i.test(z) ? "Delayed" : z; };
-    var stCnt = st.map(function (z) {   // file's Overall Status, else the weekly report / project card of the execution projects
-      var n = exe.filter(function (r) { return norm(r["Overall Status"]) === z; }).length;
-      return n;
-    });
-    if (!sum(stCnt)) stCnt = st.map(function (z) { return M.cardList.filter(function (c) { return /^execution/i.test(c.ActualPhase || "") && norm((c.Perf || {}).Status) === z; }).length; });
-    var phases = [["Execution", function (r) { return PH(r) === "execution"; }], ["Planning", function (r) { return PH(r) === "planning"; }],
-      ["Tendering", function (r) { return PH(r) === "tendering"; }], ["Closing", function (r) { return /closing|completed|closed/.test(PH(r)); }], ["On Hold", function (r) { return PH(r) === "on hold"; }]]
-      .map(function (p) { return [p[0], db.filter(p[1]).length]; }).filter(function (p, i) { return i < 4 || p[1]; });
-    E.shapesByName(d, /^Chart \d/).forEach(function (f) {
-      var cp = pkg.chartOf(path, f); if (!cp) return;
-      var cx = pkg.xml(cp), sv = E.all(cx, NS.c, "tx").map(function (t) { var v = E.all(t, NS.c, "v")[0]; return v ? v.textContent : ""; })[0] || "";
-      var x = cx.documentElement.textContent + " |ser:" + sv, sp = M.spi || 0;
-      if (/^\s*SPI\s*$/.test(sv)) x += " Remaining to target"; if (/^\s*Phase\s*$/.test(sv)) x += " Phase Execution"; if (/^\s*Size\s*$/.test(sv)) x += " Mega";
-      if (/Remaining to target/.test(x)) { pkg.setChart(cp, { cats: ["Achieved", "Remaining to target 1.20"], series: [{ name: "SPI", values: [Math.round(sp * 100) / 100, Math.max(0, Math.round((1.2 - sp) * 100) / 100)] }] }); ptColor(pkg, cp, 0, tgtCol(sp, M)); }
-      else if (/IPC Budget/.test(x)) pkg.setChart(cp, { cats: ["Approved IPCs ", "Remaining "], series: [{ name: "IPC Budget", values: [Math.round(paid / 1e5) / 10, Math.round(Math.max(0, cv - paid) / 1e5) / 10] }] });
-      else if (/Phase/.test(x) && /Execution/.test(x)) pkg.setChart(cp, { cats: phases.map(function (p) { return p[0]; }), series: [{ name: "Phase", values: phases.map(function (p) { return p[1]; }) }] });
-      else if (/Mega/.test(x)) { var sz = ["Mega", "Large", "Medium", "Small"]; pkg.setChart(cp, { cats: sz, series: [{ name: "Size", values: sz.map(function (z) { return db.filter(function (r) { return String(r["Project Size"] || "").trim().toLowerCase() === z.toLowerCase(); }).length; }) }] }); }
-      else if (/On Track/.test(x) && /Delayed/.test(x)) pkg.setChart(cp, { cats: st, series: st.map(function (z, i) { return { name: z, values: st.map(function (q, j) { return j === i ? stCnt[i] : null; }) }; }) });
-    });
+  /* Program Values: the Legacy tile from the closing register (Projects in Closing phase.xlsx, every row), everything
+     else from the project cards of the monthly EP - NSR Projects workbook */
+  function legacyOf(M) {
+    var rows = M.closing, yrs = uniq(rows.map(function (r) { var t = ymd(r["Contract Finish"]); return t ? t.y : null; }).filter(Boolean)).sort();
+    return { rows: rows, value: sum(rows, function (r) { return N(r["Final Contract Value"]) || 0; }),
+      po: rows.filter(function (r) { var x = r.PO; return x != null && x !== "" && String(x) !== "0"; }),
+      label: "    Legacy ( Completed" + (yrs.length ? " – " + (yrs.length > 1 ? yrs[0] + "-" + yrs[yrs.length - 1] : yrs[0]) : "") + ")" };
   }
-  function fillValues(pkg, path, M) {     // Project Cards section: every card of the monthly EP - NSR Projects workbook
-    var pdb = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
-    if (pdb.length) return fillValuesPd(pkg, path, M, pdb);
-    var d = pkg.xml(path), cards = M.cardList;
+  function fillValues(pkg, path, M) {
+    var d = pkg.xml(path), cards = M.cardList, leg = legacyOf(M);
+    if (!cards.length && !leg.rows.length) return;
     if (!cards.length) return;
     var bud = function (c) { return N((c.Fund || {}).Budget) || 0; };
     var full = sum(cards, bud), cv = sum(cards, function (c) { return (c.Fund || {}).CON; }), paid = sum(cards, function (c) { return (c.Perf || {}).Paid; });
     var po = cards.filter(function (c) { return N((c.Fund || {}).CON) || (c.Contracts || []).some(function (k) { return /contractor/i.test(k.Role || "") && k["PO No."]; }); });
+    var poCodes = uniq(po.map(function (c) { return String(c.Code); }).concat(leg.po.map(function (r) { return String(r.Code); })));   // a code in both files counts once
     function ph(c) { return String(c.ActualPhase || ""); }
     var exe = cards.filter(function (c) { return /^execution/i.test(ph(c)); }), pipe = cards.filter(function (c) { return /^(creation|initiation|planning|tendering)/i.test(ph(c)); });
     var clo = cards.filter(function (c) { return /^(handover|closing|closed)/i.test(ph(c)); });
     var byText = function (re) { return E.all(d, NS.p, "sp").filter(function (s) { return re.test(E.text(s).replace(/\s+/g, " ")); })[0]; };
     var b1 = byText(/APPROVED ?BUDGET/); if (b1) { setLine(b1, 1, "SAR " + bigB(full)); setLine(b1, 2, cards.length + " projects"); }
-    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + po.length + " projects (" + po.filter(function (c) { return /^execution/i.test(ph(c)); }).length + " Execution)"); }
+    var b2 = byText(/CONTRACTED ?VALUE/); if (b2) { setLine(b2, 1, "SAR " + bigB(cv)); setLine(b2, 2, "Issued PO's - " + poCodes.length + " projects (" + po.filter(function (c) { return /^execution/i.test(ph(c)); }).length + " Execution" + (leg.po.length ? " + " + leg.po.length + " Legacy" : "") + ")"); }
     var b3 = byText(/TOTAL ?PAID/); if (b3) { setLine(b3, 1, "SAR " + bigB(paid)); setLine(b3, 2, (cv ? Math.round(paid / cv * 100) : 0) + " % of contracted value"); }
     function grp(re, list, label) { var b = byText(re); if (!b) return; if (label) setLine(b, 1, label); setLine(b, 2, list.length + " Projects"); setLine(b, 3, "SAR " + sarB(sum(list, bud))); }
     grp(/PMO Reporting Card/, cards);
     grp(/Under Execution/, exe);
     grp(/Pipeline/, pipe);
-    grp(/Legacy/, clo, "    Handover & Closing");
+    var bl = byText(/Legacy|Handover/); if (bl) { setLine(bl, 1, leg.label); setLine(bl, 2, leg.rows.length + " Projects"); setLine(bl, 3, "SAR " + sarB(leg.value)); }
     var spiTxt = byText(/^\s*\d\.\d+\s*$/); if (spiTxt) E.setParas(spiTxt, M.cardSpi == null ? "-" : { text: M.cardSpi.toFixed(2), color: tgtCol(M.cardSpi, M) });
     var tg = byText(/^Target:/); if (tg) E.setParas(tg, "Target:" + M.spiTarget);
     var ob = byText(/Overall Budget/); if (ob) setLine(ob, 0, "SAR " + sarB(cv));
@@ -680,9 +644,9 @@
     });
   }
 
-  /* Program Values: the embedded "… Program - DB" workbook (Excel icon on the slide) is rebuilt from NSR data —
-     NSR Program - DB (the PD programme database rows behind the slide figures), Old Projects (its legacy rows) and the
-     weekly SPI table — with an NSR icon label. */
+  /* Program Values: the embedded "… Program - DB" workbook (Excel icon on the slide) is rebuilt from the slide's own
+     sources — NSR Program - DB (the project cards), Old Projects (the closing register, the Legacy tile) and SPI (the
+     cards in execution) — with an NSR icon label. */
   function xDate(s) { var t = ymd(s); return t ? new Date(Date.UTC(t.y, t.m - 1, t.d)) : null; }
   function valuesWorkbook(M) {
     var X = window.XLSX, wb = X.utils.book_new(), MONEY = "#,##0", PCT = "0.00%", DT = "dd-mmm-yy";
@@ -697,27 +661,20 @@
       ws["!cols"] = widths.map(function (w) { return { wch: w }; });
       return ws;
     }
-    // Old Projects: the NSR legacy / completed rows of the PD programme database,
-    // as on the slide's Legacy tile; without that file, the project cards in handover / closing / closed
-    var db = M.D.t("Program_DB").filter(function (r) { return /^\s*NSR\s*$/i.test(r["Program Name"] || ""); });
-    var old = db.filter(function (r) { return String(r.Type || "").trim().toLowerCase() === "legacy"; });
-    var keys = db.length ? Object.keys(db[0]).filter(function (k) { return k !== "Source.Name"; }) : [];
-    function dbSheet(list) {                // PD programme database rows, as in the source file
-      return sheet(null, null, ["S/No"].concat(keys), list.map(function (r, i) { return [i + 1].concat(keys.map(function (k) { var v = r[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? xDate(v) : v; })); }),
-        [null].concat(keys.map(function (k) { return /budget|amount|paid/i.test(k) ? MONEY : /(_SD|_ED|date)$/i.test(k) ? DT : null; })), [6].concat(keys.map(function (k) { return /name/i.test(k) ? 40 : 14; })));
-    }
-    if (db.length) X.utils.book_append_sheet(wb, dbSheet(db), "NSR Program - DB");   // every NSR row: the slide's figures come from here
-    if (old.length) X.utils.book_append_sheet(wb, dbSheet(old), "Old Projects");
-    else {
-      var oc = M.cardList.filter(function (c) { return /^(handover|closing|closed)/i.test(c.ActualPhase || ""); });
-      X.utils.book_append_sheet(wb, sheet(null, null, ["S/No", "Code", "Project Name", "Project Size", "Actual Phase", "Budget", "Contract Value", "Approved Paid Amount", "Overall Status"],
-        oc.map(function (c, i) { var f = c.Fund || {}, p = c.Perf || {}; return [i + 1, c.Code, c.Name, c.Size, c.ActualPhase, N(f.Budget), N(f.CON), N(p.Paid), p.Status]; }),
-        [null, null, null, null, null, MONEY, MONEY, MONEY, null], [6, 9, 48, 10, 14, 15, 15, 15, 14]), "Old Projects");
-    }
-    var spi = M.weekly.filter(function (r) { return N(r["Contract Value"]); }).map(function (r, i) {
-      var n = i + 2, pl = N(r["Planned (%) - Cumulative"]), ac = N(r["Actual (%) - Cumulative"]);
-      return [String(r["Project Code"]), " " + (r["Project Name"] || "") + (critical(r, M) ? " - Critical" : ""), N(r["Contract Value"]), pl, ac,
-        { f: "D" + n + "*C" + n }, { f: "E" + n + "*C" + n }, { f: "IF(F" + n + "=0,\"\",G" + n + "/F" + n + ")" }, pl != null && ac != null ? ac - pl : null];
+    // NSR Program - DB: the project cards behind every tile and chart except Legacy
+    var cards = M.cardList;
+    X.utils.book_append_sheet(wb, sheet(null, null, ["S/No", "Code", "Project Name", "Project Size", "Actual Phase", "Approved Budget", "Contract Value", "Approved Paid Amount", "Overall Status", "Planned %", "Actual %"],
+      cards.map(function (c, i) { var f = c.Fund || {}, p = c.Perf || {}; return [i + 1, c.Code, c.Name, c.Size, c.ActualPhase, N(f.Budget), N(f.CON), N(p.Paid), p.Status, N(p.Planned), N(p.Actual)]; }),
+      [null, null, null, null, null, MONEY, MONEY, MONEY, null, PCT, PCT], [6, 9, 48, 10, 14, 15, 15, 15, 14, 10, 10]), "NSR Program - DB");
+    // Old Projects: the Legacy tile — every row of the closing register, its columns as in the source file
+    var keys = M.closing.length ? Object.keys(M.closing[0]).filter(function (k) { return k !== "Source.Name"; }) : ["Code", "Project Name", "Final Contract Value"];
+    X.utils.book_append_sheet(wb, sheet(null, null, ["S/No"].concat(keys), M.closing.map(function (r, i) { return [i + 1].concat(keys.map(function (k) { var v = r[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? xDate(v) : v; })); }),
+      [null].concat(keys.map(function (k) { return /value|amount/i.test(k) ? MONEY : /progress/i.test(k) ? PCT : /start|finish|date/i.test(k) ? DT : null; })),
+      [6].concat(keys.map(function (k) { return /name|status|plan/i.test(k) ? 40 : 14; }))), "Old Projects");
+    // SPI: the cards in execution, weighted by contract value (the slide's SPI = sum EV / sum PV)
+    var spi = M.cardExec.filter(function (x) { return x.p.plan != null; }).map(function (x, i) {
+      var n = i + 2, c = x.card;
+      return [String(c.Code), " " + (c.Name || ""), x.wt, x.p.plan, x.p.act, { f: "D" + n + "*C" + n }, { f: "E" + n + "*C" + n }, { f: "IF(F" + n + "=0,\"\",G" + n + "/F" + n + ")" }, x.p.act != null ? x.p.act - x.p.plan : null];
     });
     X.utils.book_append_sheet(wb, sheet(null, null, ["Code", "Project", "Contract Value", "Planned%", "Actual", "PV", "EV", "SPI", "Variance"], spi,
       [null, null, MONEY, PCT, PCT, MONEY, MONEY, "0.00", PCT], [9, 60, 15, 10, 10, 15, 15, 8, 10]), "SPI");
