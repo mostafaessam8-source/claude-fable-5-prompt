@@ -262,7 +262,10 @@
         var x = S.cells[colStr(cc) + r]; if (!x) return;
         var xf = book.xfs[x.s] || {}, t = cellText(x, xf);
         if (!t && !xf.bg && !(xf.border && Object.keys(xf.border).length)) return;
-        used[x.s] = 1; line.push(t ? [cc, x.s, t] : [cc, x.s]);
+        used[x.s] = 1;
+        var el = t ? [cc, x.s, t] : [cc, x.s], raw = typeof x.val === "number" ? display(x) : null;
+        if (x.f || raw != null) { if (!t) el.push(""); el.push(x.f ? 1 : 0); if (raw != null) el.push(raw); }   // [col, style, text, formula?, raw value]
+        line.push(el);
       });
       rows.push([r, h, line]);
     }
@@ -294,7 +297,19 @@
         });
       });
     }) : Promise.resolve());
-    return Promise.all(jobs).then(function () { return { cols: cols, cw: cw, rows: rows, mg: mg, img: img, used: used, top: yOf }; });
+    var lists = {}; Object.keys(S.lists).forEach(function (ref) { var x = S.cells[ref]; if (x && !x.f && x.r <= maxR) lists[ref] = S.lists[ref].join("|"); });
+    return Promise.all(jobs).then(function () { return { cols: cols, cw: cw, rows: rows, mg: mg, img: img, used: used, top: yOf, lists: lists }; });
+  }
+
+  /* labels for "any cell" edits — the same rule in the page (from the grid) and when applying (from the sheet):
+     section = the dark title above (main · sub); row label = leftmost text cell left of the column (row numbers skipped) */
+  function secTitleOf(heads, r) {
+    var main = null, sub = null; (heads || []).forEach(function (h) { if (h[0] <= r) { if (h[2]) { main = h[1]; sub = null; } else sub = h[1]; } });
+    return (main || "General") + (sub ? " · " + sub : "");
+  }
+  function anyLabel(textAt, col) {
+    for (var c = 1; c < col; c++) { var t = String(textAt(c) || "").replace(/\s+/g, " ").trim(); if (t && !/^[\d.]+$/.test(t)) return t; }
+    return "";
   }
 
   /* ------------------------------------------------------------------ extract: workbook → model */
@@ -365,7 +380,7 @@
       var lb = at(rr, 2); if (lb && /^project name/i.test(text(lb))) { for (var cc = 3; cc <= 8 && !name; cc++) { var nv = at(rr, cc); name = text(nv); } }
     }
     var prog = progressOf(S, at, text, heads, order);
-    return { code: sh.code, sheet: sh.name, name: name, sections: order, prog: prog };
+    return { code: sh.code, sheet: sh.name, name: name, sections: order, prog: prog, heads: heads.map(function (h) { return [h.r, h.title, h.main ? 1 : 0]; }) };
   }
   /* Section 7 "Execution Schedule (Monthly Update)": the monthly Actual Progress (%) row is the team's to update.
      - typed numbers in that row → those month cells are editable;
@@ -476,6 +491,12 @@
         if (!(c.ref in e) || canon(e[c.ref]) === canon(c.v)) return;
         list.push({ ref: c.ref, s: s.t, l: row.l, h: c.h, k: c.k, from: c.v, to: canon(e[c.ref]) });
       }); }); });
+      var meta = (d.meta && d.meta[p.code]) || {}, known = {}; list.forEach(function (c) { known[c.ref] = 1; });
+      p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { known[c.ref] = 1; }); }); });
+      Object.keys(meta).forEach(function (ref) {      // any other non-formula cell the team changed
+        if (known[ref] || !(ref in e) || canon(e[ref]) === canon(meta[ref].v)) return;
+        var g = meta[ref]; list.push({ ref: ref, s: g.s, l: g.l, h: g.h, k: g.k, from: g.v, to: canon(e[ref]), g: 1 });
+      });
       if (list.length) out.projects[p.code] = { name: p.name, cells: list };
     });
     return out;
@@ -545,11 +566,23 @@
       '<div class="cu-acts"><span class="cu-saved"></span>' +
       '<button type="button" class="cu-btn ghost" data-a="reset">Undo my changes (this project)</button>' +
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
-      '<div class="cu-help">The card exactly as in the Excel file. Only the <b class="cu-yel">yellow</b> cells and the monthly <b class="cu-pgk">Actual Progress (%)</b> of section 7 can be changed — click a cell and type (a later forecast finish opens more months, as in Excel); ' +
+      '<div class="cu-help">The card exactly as in the Excel file. Every cell that is <b>not a formula</b> can be changed — click it and type (the <b class="cu-yel">yellow</b> cells are the team\'s usual fields; for projects split into POs the monthly <b class="cu-pgk">Actual Progress (%)</b> is entered per PO; a later forecast finish opens more months, as in Excel). Formula cells are calculated and locked; ' +
       'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
       '<div class="cu-hbar" title="Scroll left / right"><div></div></div><div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
     var sel = wrap.querySelector(".cu-proj"), sheet = wrap.querySelector(".cu-sheet"), saved = wrap.querySelector(".cu-saved"), go = wrap.querySelector(".cu-sec-go");
     var info = {};                                // ref → { c (field), s (section), l (row label) } of the current project
+    var rowsBy = {};                              // grid row → { col: [col, style, text, formula?, raw] }
+    function gridText(r, c) { var x = rowsBy[r] && rowsBy[r][c]; return x && x[2] && x[4] == null && !x[3] ? x[2] : ""; }
+    function gridHeader(p, r, c) {               // nearest text above in the same column, inside the section
+      var top = 0; (p.heads || []).forEach(function (h) { if (h[0] <= r && h[2]) top = h[0]; });
+      for (var q = r - 1; q > top; q--) { var t = gridText(q, c); if (t) return t.replace(/\s+/g, " ").trim(); }
+      return "Column " + colStr(c);
+    }
+    function anyField(g, ref, x) {
+      var xi = m.xf[x[1]] || [], raw = x[4] != null ? String(x[4]) : x[2] || "", lst = g.lists && g.lists[ref];
+      var k = lst ? "list" : xi[1] ? "date" : /%/.test(xi[0] || "") ? "pct" : x[4] != null ? "num" : x[2] ? "text" : "auto";
+      var f = { ref: ref, v: raw, k: k, g: 1 }; if (lst) f.o = lst.split("|"); return f;
+    }
     function cur() { return m.projects.filter(function (x) { return x.code === state.code; })[0]; }
     function fillSel() {
       sel.innerHTML = m.projects.map(function (p) { var n = changedCount(m, d, p.code);
@@ -560,6 +593,7 @@
     function draw() {
       var p = cur(); if (!p) { sheet.innerHTML = '<div class="cu-empty">No project selected.</div>'; return; }
       var g = p.grid, e = d.edits[p.code] || {}, fieldV = {};
+      rowsBy = {}; g.rows.forEach(function (row) { var o = {}; row[2].forEach(function (x) { o[x[0]] = x; }); rowsBy[row[0]] = o; });
       info = {};
       p.sections.forEach(function (s) { s.rows.forEach(function (row) { row.c.forEach(function (c) { info[c.ref] = { c: c, s: s.t, l: row.l }; fieldV[c.ref] = c.v; }); }); });
       var ps = progState(p, e, fieldV);
@@ -585,6 +619,7 @@
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
           var cls = x ? "x" + x[1] : "", it = info[ref], ovr = ps && ps.text[ref];
           if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period: not editable
+          else if (!it && x && !x[3] && !ovr) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other non-formula cell of the card
           if (it && !it.c.f) {
             var v = ref in e ? e[ref] : it.c.v, ch = ref in e && canon(e[ref]) !== canon(it.c.v);
             h.push('<td class="' + cls + " cu-ed" + (it.c.p ? " cu-pg" : "") + (ch ? " cu-chg" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (ch ? ' title="Was: ' + esc(shownOf(it.c, x && x[1], it.c.v) || "(empty)") + '"' : "") + ">" +
@@ -626,6 +661,10 @@
         else if (c.k === "num") v = raw === "" ? "" : isNaN(+raw.replace(/,/g, "")) ? raw : String(+raw.replace(/,/g, ""));
         var e = d.edits[state.code] = d.edits[state.code] || {};
         if (canon(v) === canon(c.v)) delete e[o.ref]; else e[o.ref] = v;
+        if (o.it.g) {                                  // remember where this cell is (section · row label · column) for the new month's file
+          var pr = splitRef(o.ref), pp = cur(), mt = (d.meta = d.meta || {})[state.code] = (d.meta && d.meta[state.code]) || {};
+          mt[o.ref] = { s: secTitleOf(pp.heads, pr.r), l: anyLabel(function (cc) { return gridText(pr.r, cc); }, pr.c), h: gridHeader(pp, pr.r, pr.c), k: c.k, v: c.v };
+        }
         persist();
         var ch = o.ref in e;
         o.td.classList.toggle("cu-chg", ch);
@@ -730,6 +769,19 @@
               var changed = 0;
               perSheet[code].forEach(function (w) {
                 var c = w.c, t = idx[c.ref], ref = c.ref, rep = { code: code, ref: c.ref, s: c.s, l: c.l, h: c.h, from: c.from, to: c.to, by: w.by, over: w.over };
+                if (c.g) {                                     // any non-formula cell: same section · row label · column
+                  var pc = splitRef(c.ref), lab = function (r) { return anyLabel(function (cc) { var x = S.cells[colStr(cc) + r]; return x && typeof x.val === "string" ? x.val : ""; }, pc.c); };
+                  if (!(secTitleOf(mdl.heads, pc.r) === c.s && lab(pc.r) === c.l)) {
+                    var hit = []; for (var rr = 1; rr <= S.maxR; rr++) if (secTitleOf(mdl.heads, rr) === c.s && lab(rr) === c.l) hit.push(rr);
+                    if (hit.length !== 1) { rep.status = "skipped"; rep.why = hit.length ? "row appears more than once — update by hand" : "row not found in this file"; report.push(rep); return; }
+                    ref = colStr(pc.c) + hit[0]; rep.moved = c.ref + " → " + ref;
+                  }
+                  var gx = S.cells[ref];
+                  if (gx && gx.f) { rep.status = "skipped"; rep.why = "cell holds a formula in this file"; report.push(rep); return; }
+                  rep.now = gx ? display(gx) : "";
+                  writeCell(doc, ref, c.k, c.to, gx);
+                  rep.ref = ref; rep.status = "applied"; changed++; report.push(rep); return;
+                }
                 if (!(t && t.l === c.l && t.h === c.h)) {      // the row moved / changed: find the same section · row · column
                   var alt = byKey[c.s + "|" + c.l + "|" + c.h] || [];
                   if (alt.length === 1) { ref = alt[0]; t = idx[ref]; rep.moved = c.ref + " → " + ref; }
@@ -777,7 +829,7 @@
     var num = null;
     if (k === "date") num = isoToSerial(v);
     else if ((k === "num" || k === "pct") && !isNaN(+v)) num = +v;
-    if (num == null && k !== "text" && k !== "list" && /^-?\d+(\.\d+)?$/.test(v) && old && typeof old.val === "number") num = +v;
+    if (num == null && k !== "text" && k !== "list" && /^-?\d+(\.\d+)?$/.test(v) && (k === "auto" || old && typeof old.val === "number")) num = +v;
     if (num != null) { var ve = doc.createElementNS(NS, "v"); ve.textContent = String(num); c.appendChild(ve); return; }
     c.setAttribute("t", "inlineStr");
     var is = doc.createElementNS(NS, "is"), t = doc.createElementNS(NS, "t"); t.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve"); t.textContent = v; is.appendChild(t); c.appendChild(is);
