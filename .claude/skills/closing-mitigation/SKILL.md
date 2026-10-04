@@ -22,10 +22,14 @@ table with up to two rows. The mitigation logic lives in `statusMitigation` and 
 
 ## Row 1 — mitigation from the Current Status text (`statusMitigation`)
 
-Checks run in this order; at most two actions are kept, joined with ". ":
+Blocker-specific actions come first (same blockers that delay the old-projects forecast, so dates and mitigation agree); checks run in this order; at most two actions are kept, joined with ". ":
 
 | text mentions | action |
 |---|---|
+| resistance / refusal / "no valid reason" to sign (checked first) | Escalate the sign-off to SAR management (FM & Asset when named) with the closed snag list as evidence (when snags / observations are mentioned) |
+| "missing <item>" (checked first) | Contractor to complete the missing <item, as written> and resubmit for sign-off |
+| outstanding requirement / not submitted / despite reminders (no "missing") | Issue a formal notice to the contractor to submit the outstanding requirement with a firm date |
+| the responsible person / PM left, no owner (checked first) | Assign a new responsible person (for the AMP stage named) and hand over the file |
 | AMP / AMP-C / AMP-E1 / AMP-E2 (stages named in the text are listed, "E1/E2" and "E1 & E2" expand) | "PM to follow up <stages> sign-off with the Asset Team weekly"; prefixed by "Contractor to submit the outstanding AMP documents (via Aconex)" when documents / submission / Aconex are mentioned, and by "close the open snags" only when snags are mentioned and NOT stated as closed / cleared |
 | MoT / MOI / ministry / authority / municipality / stakeholder / STC / SEC, or "awaiting … response" | Escalate the handover / approval to the authority through SAR management and track the response weekly |
 | CR / change request / variation | Expedite the CR approval, then update the baseline and contract value |

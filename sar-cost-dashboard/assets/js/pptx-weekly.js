@@ -226,6 +226,14 @@
       amp.push("AMP-" + a.replace(/\s+/g, "").toUpperCase()); if (b) amp.push("AMP-" + (/^e/i.test(b) ? "" : "E") + b.replace(/\s+/g, "").toUpperCase()); return _; });
     amp = amp.filter(function (x, k) { return amp.indexOf(x) === k; });
     var snagsOpen = /snag/i.test(t) && !/snags?[^.;]*\b(closed|cleared)\b|\b(closed|cleared)\b[^.;]*snag/i.test(t);
+    // the specific blocker the comment names comes first (same blockers that delay the old-projects forecast)
+    if (/resistance|refus|no valid reason|reject(ed|s) (to )?sign/i.test(t))
+      acts.push("Escalate the sign-off to SAR management" + (/\bFM\b|asset/i.test(t) ? " (FM & Asset)" : "") + (/snag|observation/i.test(t) ? " with the closed snag list as evidence" : ""));
+    var miss = /\bmissing\s+([^.;,]+?)(?:\s+(?:that|which|despite)\b|[.;,]|$)/i.exec(t);
+    if (miss) acts.push("Contractor to complete the missing " + miss[1].replace(/\s+should be submitted.*$/i, "").trim() + " and resubmit for sign-off");
+    else if (/outstanding (requirement|document|item)|not (yet )?(been )?submitted|despite [^.;]*reminders/i.test(t)) acts.push("Issue a formal notice to the contractor to submit the outstanding requirement with a firm date");
+    var left = /\b(AMP[\s-]*[A-E]\d?)?\s*(project manager|pm|responsible)[^.;]*\b(left|resigned)\b/i.exec(t);
+    if (left || /no (owner|responsible)/i.test(t)) acts.push("Assign a new responsible person" + (left && left[1] ? " for " + left[1].replace(/\s+/g, "-").toUpperCase() : "") + " and hand over the file");
     if (amp.length || /\bamp\b/i.test(t)) acts.push((/document|aconex|submission/i.test(t) ? "Contractor to submit the outstanding AMP documents" + (/aconex/i.test(t) ? " via Aconex" : "") + "; " : "") +
       (snagsOpen ? "close the open snags; " : "") + "PM to follow up " + (amp.length ? amp.join(" / ") : "AMP") + " sign-off with the Asset Team weekly");
     if (/\b(mot|moi|ministry|authority|municipal|stakeholder|stc|sec)\b|awaiting [^.;]*response/i.test(t)) acts.push("Escalate the handover / approval to the authority through SAR management and track the response weekly");
