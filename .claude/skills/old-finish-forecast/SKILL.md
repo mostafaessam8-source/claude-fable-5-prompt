@@ -33,6 +33,10 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
 2. **Blockers in Current Status / Action Plan** delay AMP-E1:
    AMP-C still open +1 month · CR / change request in process +1 month · waiting on an authority
    (MoT / MOI / ministry / municipality / stakeholder, or "awaiting … response") +1.5 months.
+2b. Blockers named in the comment (Current Status / Action Plan) also add time to the next sign-off:
+   a missing item / outstanding requirement / "not submitted" / "despite reminders" +1 month · the responsible person
+   left / no owner +1 month · resistance / refusal / "no valid reason" to sign (escalation) +1 month. Every delay
+   applied is named in the Basis line.
 3. **AMP-E1** = works finish (or report date when works are done) + 1 month + blocker delays.
 4. **AMP-E2** = the later of AMP-E1 + 1.5 months and the end of the 12-month DLP (works finish + 365 days).
    Design-only contracts (project name says Design, not Construction) have no DLP: AMP-E2 = AMP-E1 + 1.5 months.
@@ -40,7 +44,7 @@ Closing-register rows that are open (Current Status not starting "Closed", not "
    - "AMP-E2 in process" or "E1 & E2 in process" → AMP-E1 = report date + 2 weeks, AMP-E2 = report date + 1 month.
    - Works done and only close-out paperwork left ("Close out remaining") → AMP-E1, AMP-E2 and handover = report date
      + 2 weeks.
-5b. AMP-E1 already Completed → AMP-E1 is taken as the report date (later steps count from now);
+5b. AMP-E1 already Completed → AMP-E1 is taken as the report date + blocker delays (later steps count from there);
    AMP-E2 already Completed → AMP-E2 is the report date (close-out etc. count from now, no DLP wait).
    "AMP-C … not (yet) (been) signed / completed", "pending sign-off" or "Not signed: … AMP-C" means AMP-C is still
    open (+1 month).

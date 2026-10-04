@@ -280,14 +280,18 @@
     if (/amp[\s-]*c\b/i.test(t) && !(/amp[\s-]*c\b[^.;]*\b(signed|completed|issued)\b/i.test(t) && !/\bnot (yet |been |yet been )*(fully |completely )?(signed|completed)|not signed:[^.]*amp[\s-]*c\b|\bpending sign/i.test(t))) { lag += 30; why.push("AMP-C open +1 m"); }
     if (/\bcr\b|change request/i.test(t) && /process|progress|pending/i.test(t)) { lag += 30; why.push("CR in process +1 m"); }
     if (/\b(mot|moi|ministry|authority|municipal|stakeholder)\b|awaiting [^.;]*response/i.test(t)) { lag += 45; why.push("authority response +1.5 m"); }
+    // blockers named in the comment that hold the next sign-off
+    if (/\bmissing\b|outstanding (requirement|document|item)|not (yet )?(been )?submitted|despite [^.;]*reminders/i.test(t)) { lag += 30; why.push("missing item to close +1 m"); }
+    if (/responsible left|has left|left the (company|project)|resigned|no (owner|responsible)/i.test(t)) { lag += 30; why.push("owner to be reassigned +1 m"); }
+    if (/resistance|refus|no valid reason|reject(ed|s) (to )?sign/i.test(t)) { lag += 30; why.push("sign-off resisted, escalation +1 m"); }
     var design = /\bdesign\b/i.test(r["Project Name"] || "") && !/construct/i.test(r["Project Name"] || "");   // design contracts: no defects liability period
     var e2Now = /\bamp[\s-]*(e\s*)?2\b[^.;]*\b(in process|in progress|pending sign|under signature)\b|\be1\s*[&\/]\s*e?2\b[^.;]*\b(in process|in progress)\b/i.test(t);
     var paperOnly = worksDone && /close[\s-]?out (is )?remaining|only close[\s-]?out/i.test(t);
     var e1 = addDays(worksEnd || rd, 30 + lag), dlpEnd = design ? null : addDays(worksEnd || cf || rd, 365), e2, hand;
     var e2Done = steps.some(function (k) { return /^amp\s*-?\s*e\s*2/i.test(k) && stepState(r, k).status === "Completed"; });
     var e1Done = steps.some(function (k) { return /^amp\s*-?\s*e\s*1/i.test(k) && stepState(r, k).status === "Completed"; });
-    if (e1Done) { e1 = rd; why.push("AMP-E1 signed"); }   // the following steps count from now
-    if (e2Now) { e1 = e1Done ? rd : addDays(rd, 14); e2 = addDays(rd, 30); why.push("AMP-E2 already in process"); }
+    if (e1Done) { e1 = addDays(rd, lag); why.push("AMP-E1 signed"); }   // the following steps count from now, after the blockers
+    if (e2Now) { e1 = e1Done ? rd : addDays(rd, 14 + lag); e2 = addDays(rd, 30 + lag); why.push("AMP-E2 already in process"); }
     else if (paperOnly) { e1 = e2 = addDays(rd, 14); why.push("only close-out paperwork left"); }
     else e2 = e2Done ? rd : maxD(addDays(e1, 45), dlpEnd);
     hand = paperOnly ? addDays(rd, 14) : addDays(e1, 30);
