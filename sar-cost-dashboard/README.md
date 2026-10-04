@@ -110,7 +110,8 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    heights, colours, fonts, borders, merged cells, number / date formats, logo). As in Excel, unlocked cells can be clicked and
    edited in place and locked cells cannot (the cell's Format Cells → Protection → Locked setting decides). Formulas recalculate live as in Excel (built-in
    formula engine `xlcalc.js`): change a forecast date and the month count, progress and dependent cells follow; formulas
-   reading other workbooks keep Excel's value (dates, numbers, %, Yes/No lists, text); changed cells get an orange frame (hover = old value).
+   reading other workbooks keep Excel's value. Editable cells also take a formula typed by the engineer (`=K106+30`, `=J107`,
+   `=EDATE(K105,3)`): calculated live, and written to the card as a real formula (dates, numbers, %, Yes/No lists, text); changed cells get an orange frame (hover = old value).
    The monthly **Actual Progress (%)** of section 7 is editable too: directly where the row holds numbers, or in the
    PO blocks when the row is linked to several POs (the row then recalculates as the contract-value-weighted average).
    A later forecast finish opens more month columns, exactly as the card's formulas do. Drafts stay in their browser; *Download my updates* saves a small `NSR_Card_Updates_….json`

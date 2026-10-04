@@ -351,7 +351,10 @@
       if (u === "YD") { var yy = B.y - (B.m < A.m || (B.m === A.m && B.d < A.d) ? 1 : 0); return t - serial(yy, A.m, A.d); }
       return ERR("#NUM!");
     },
-    NETWORKDAYS: function (sh, a) { var s = Math.floor(N1(sh, a[0])), t = Math.floor(N1(sh, a[1])), n = 0, st = s <= t ? 1 : -1; for (var d = s; st > 0 ? d <= t : d >= t; d += st) { var w = ymd(d).wd; if (w !== 5 && w !== 6) n++; } return n * st; },
+    /* Excel's default weekend (Saturday + Sunday), so the page agrees with Excel once the formula is in the card */
+    NETWORKDAYS: function (sh, a) { var s = Math.floor(N1(sh, a[0])), t = Math.floor(N1(sh, a[1])), n = 0, st = s <= t ? 1 : -1; for (var d = s; st > 0 ? d <= t : d >= t; d += st) { var w = ymd(d).wd; if (w !== 0 && w !== 6) n++; } return n * st; },
+    WORKDAY: function (sh, a) { var d = Math.floor(N1(sh, a[0])), n = Math.trunc(N1(sh, a[1])), st = n < 0 ? -1 : 1; while (n !== 0) { d += st; var w = ymd(d).wd; if (w !== 0 && w !== 6) n -= st; } return d; },
+    DAYS: function (sh, a) { var e = N1(sh, a[0]), b = N1(sh, a[1]), er = errOf(e, b); return er || Math.floor(e) - Math.floor(b); },
     SUMIF: function (sh, a) { var g = grid(sh.ev(a[0])), f = crit(scalar(sh.ev(a[1]))), s = a[2] ? grid(sh.ev(a[2])) : g, t = 0;
       g.forEach(function (r, i) { r.forEach(function (v, j) { if (f(v)) { var x = s[i] && s[i][j]; if (typeof x === "number") t += x; } }); }); return t; },
     SUMIFS: function (sh, a) { var s = grid(sh.ev(a[0])), pr = []; for (var i = 1; i + 1 < a.length; i += 2) pr.push([a[i], a[i + 1]]); var m = ifsMatch(sh, pr), t = 0;
@@ -422,9 +425,10 @@
     sh.deps = rev; sh.dyn = dyn;
   };
   /* the formula cells that depend (directly or not) on the changed cells, recalculated */
-  Sheet.prototype.recalc = function (changed) {
+  Sheet.prototype.recalc = function (changed, selfDirty) {
     var sh = this; if (!sh.deps) sh.buildDeps();
     var dirty = {}, q = changed.slice();
+    (selfDirty || []).forEach(function (f) { dirty[f] = 1; });   // formulas the user typed: computed themselves too
     while (q.length) { var k = q.pop(); (sh.deps[k] || []).forEach(function (f) { if (!(f in dirty)) { dirty[f] = 1; q.push(f); } }); }
     if (Object.keys(dirty).length) sh.dyn.forEach(function (f) { if (!(f in dirty)) { dirty[f] = 1; (sh.deps[f] || []).forEach(function (g) { q.push(g); }); } });
     while (q.length) { var k2 = q.pop(); (sh.deps[k2] || []).forEach(function (f) { if (!(f in dirty)) { dirty[f] = 1; q.push(f); } }); }
@@ -441,5 +445,13 @@
     sh.calc = null; return out;
   };
 
-  window.XLCalc = { sheet: function (o) { return new Sheet(o); }, parse: parse, shift: shift, tokenize: tokenize, isErr: isErr };
+  /* a formula typed by the user: null when it can be calculated, else the reason */
+  function check(src) {
+    var ast; try { ast = parse(src); } catch (e) { return e.message; }
+    var bad = [];
+    (function walk(n) { if (!n || typeof n !== "object") return; if (n[0] === "fn" && !FN[n[1]]) bad.push(n[1]); if (n[0] === "e" && n[1] === "#NAME?") bad.push("an unknown name");
+      if (n[0] === "fn") n[2].forEach(walk); else if (n[0] === "op") { walk(n[2]); walk(n[3]); } else if (n[0] === "neg" || n[0] === "pct") walk(n[1]); })(ast);
+    return bad.length ? "Unknown function: " + bad.join(", ") : null;
+  }
+  window.XLCalc = { sheet: function (o) { return new Sheet(o); }, parse: parse, shift: shift, tokenize: tokenize, isErr: isErr, check: check, functions: function () { return Object.keys(FN).filter(function (k) { return !/_OLD$/.test(k); }); } };
 })();

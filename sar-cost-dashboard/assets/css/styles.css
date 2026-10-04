@@ -942,3 +942,5 @@ textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); res
 .cu-hbar::-webkit-scrollbar-thumb:hover, .cu-sheet-wrap::-webkit-scrollbar-thumb:hover { background: var(--sar-blue); }
 .cu-hbar::-webkit-scrollbar-track, .cu-sheet-wrap::-webkit-scrollbar-track { background: #F3F3F3; }
 .cu-top { position: static; }
+.cu-grid td.cu-ufx { position: relative; }
+.cu-grid td.cu-ufx::after { content: "fx"; position: absolute; top: 0; right: 1px; font: italic 700 9px Georgia, serif; color: #C55A11; line-height: 1; }

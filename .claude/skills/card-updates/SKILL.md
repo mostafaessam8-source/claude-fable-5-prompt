@@ -82,6 +82,17 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
 - Month cells of section 7 open as "Months Count" (row above Month Starting Date) becomes non-empty after recalculation.
 - Data-validation lists with numeric choices ("0%,100%") show formatted and are stored as numbers.
 
+## Formulas typed by the team
+
+- Any editable cell accepts a formula starting with "=" (e.g. `=K106+30`, `=J107`, `=EDATE(K105,3)`, `=WORKDAY(K107,10)`);
+  on a date cell, pressing "=" switches the date picker to a formula box. `XLCalc.check` refuses unknown functions
+  (the message lists the available ones).
+- The formula is calculated in the page (the cell shows its result in the cell's format, an orange "fx" mark, tooltip =
+  the formula) and everything depending on it recalculates; changing the cell it points to updates it too.
+- Stored in the update file as `to: "=…"` and written to the new month's card as a real formula (`<f>`; newer functions
+  get the `_xlfn.` prefix), which Excel calculates on opening. References are written as typed (not shifted if rows moved).
+- NETWORKDAYS / WORKDAY use Excel's default Saturday–Sunday weekend so the page agrees with Excel.
+
 ## Exchange format (.json)
 
 `{ kind:"sar-card-updates", v:1, file, month, by, savedAt, projects:{ <code>:{ name, cells:[{ ref, s, l, h, k, from, to }] } } }`
