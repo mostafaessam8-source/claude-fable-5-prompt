@@ -616,23 +616,23 @@
       if (until) {
         var ut = (est ? "≈ " : "") + fd(until), dd = e.days ? " (+" + e.days + " days)" : "";
         if (rd && until < rd) return e.pending && e.pending.until
-          ? out("expired", "Approved EOT ended " + ut + "; next EOT in process until " + fd(e.pending.until), fd(e.pending.until) + " (in process)", AMB)
-          : out("expired", "Approved EOT ended " + ut + " at " + pc() + "; " + fcTxt.replace(/ \(\+\d+ d vs BL\)/, "") + " – new EOT needed", "Expired", RED,
+          ? out("expired", "Approved EOT ended " + ut + "; next EOT in process until " + fd(e.pending.until), "In process", AMB)
+          : out("expired", "Approved EOT ended " + ut + " at " + pc() + "; " + fcTxt.replace(/ \(\+\d+ d vs BL\)/, "") + " – new EOT needed", ut, RED,
             "Expired " + ut + " – new EOT needed");
-        if (fe && fe > until) return out("exceeds", "Approved until " + ut + dd + "; forecast " + fd(fe) + " is " + days(until, fe) + " d later – further EOT needed", fd(until) + " (exceeded)", AMB,
+        if (fe && fe > until) return out("exceeds", "Approved until " + ut + dd + "; forecast " + fd(fe) + " is " + days(until, fe) + " d later – further EOT needed", ut, AMB,
           "Until " + ut + "; fcst +" + days(until, fe) + " d – more needed");
         return out("approved", "Approved until " + ut + dd, (est ? "≈" : "") + fd(until));
       }
-      return out("approved", "Approved +" + e.days + " days", "+" + e.days + " d");
+      return out("approved", "Approved +" + e.days + " days", "N/A");
     }
     if (e && e.pending) {
-      if (e.pending.until) return out("pending", "In process until " + fd(e.pending.until) + (fe && fe > e.pending.until ? "; forecast " + fd(fe) + " is later" : ""), fd(e.pending.until) + " (in process)", AMB);
+      if (e.pending.until) return out("pending", "In process until " + fd(e.pending.until) + (fe && fe > e.pending.until ? "; forecast " + fd(fe) + " is later" : ""), "In process", AMB);
       return out("pending", "EOT request in process (no date yet); " + fcTxt, "In process", AMB);
     }
     if (be && rd && rd > be) return out("required", "Not recorded – BL finish " + fd(be) + " passed " + days(be, rd) + " d ago at " + pc() + "; " +
-      (fe && fe >= rd ? fcTxt : "forecast not updated") + " – EOT required", "Required", RED,
-      "Required – BL passed" + (fe && fe >= rd ? ", fcst +" + days(be, fe) + " d" : ", fcst not updated"));
-    if (fcLate) return out("likely", "Likely needed – forecast " + fd(fe) + " is " + days(be, fe) + " d after BL finish " + fd(be), "Likely", AMB,
+      (fe && fe >= rd ? fcTxt : "forecast not updated") + " – no EOT recorded yet", "N/A", null,
+      "Not recorded – BL passed" + (fe && fe >= rd ? ", fcst +" + days(be, fe) + " d" : ", fcst not updated"));
+    if (fcLate) return out("likely", "Likely needed – forecast " + fd(fe) + " is " + days(be, fe) + " d after BL finish " + fd(be), "N/A", null,
       "Likely needed – fcst +" + days(be, fe) + " d vs BL");
     return out("none", "N/A", "N/A");
   }

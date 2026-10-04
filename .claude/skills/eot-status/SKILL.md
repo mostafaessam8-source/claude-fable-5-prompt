@@ -30,13 +30,16 @@ Baseline versions (card section 6) are NOT used: they are programme-level and in
 | kind | when | slide line (brief) | table cell | colour |
 |---|---|---|---|---|
 | done | actual progress ≥ 100 % | N/A | N/A | — |
-| approved | approved EOT, end date ≥ report date and forecast ≤ it. No written date → BL finish + approved days, shown with "≈" | Approved until <date> (+N days) | <date> | — |
-| exceeds | approved EOT still running but forecast is later | Until <date>; fcst +N d – more needed | <date> (exceeded) | amber |
-| expired | approved EOT end date < report date and progress < 100 % | Expired <date> – new EOT needed | Expired | red |
-| pending | EOT in process (dated) | In process until <date> | <date> (in process) | amber |
-| required | BL finish < report date, progress < 100 %, nothing recorded | Required – BL passed, fcst +N d (or "fcst not updated" when the forecast is before the report date) | Required | red |
-| likely | BL finish still ahead but forecast is after it | Likely needed – fcst +N d vs BL | Likely | amber |
+| approved | approved EOT, end date ≥ report date and forecast ≤ it. No written date → BL finish + approved days, shown with "≈" | Approved until <date> (+N days) | <date> (no date at all → N/A) | — |
+| exceeds | approved EOT still running but forecast is later | Until <date>; fcst +N d – more needed | <date> | amber |
+| expired | approved EOT end date < report date and progress < 100 % | Expired <date> – new EOT needed | <date> (the expired date) | red |
+| pending | EOT in process (dated or not; also an expired EOT with a new one in process) | In process until <date> | In process | amber |
+| required | BL finish < report date, progress < 100 %, nothing recorded | Not recorded – BL passed, fcst +N d (or "fcst not updated") | N/A | — |
+| likely | BL finish still ahead but forecast is after it | Likely needed – fcst +N d vs BL | N/A | — |
 | none | BL ahead and forecast on time | N/A | N/A | — |
+
+**Table cell rule (user):** an EOT date when there is one (even expired), "In process" when an EOT is in process,
+otherwise N/A. The word "Required" is never written anywhere (cell, slide line, site, full text).
 
 Amber = `C55A11`, red = `C00000`. `+N d` is forecast minus BL finish (or minus the approved EOT end date for
 "exceeds"). Every result also carries the full sentence (`text`) and the cause = weekly `Reason for Delays`, else the
