@@ -750,6 +750,7 @@
         if (cur()) { var sw = wrap.querySelector(".cu-sheet-wrap"), st0 = sw.scrollTop, sl0 = sw.scrollLeft; if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl); draw(); sw.scrollTop = st0; sw.scrollLeft = sl0; return; }   // formulas follow the change
       }
       if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl);
+      Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-pick"), function (x) { x.classList.remove("cu-pick"); }); lastIns = null;
       o.td.classList.remove("cu-open");
     }
     function openAt(td) {
@@ -761,9 +762,9 @@
       else if (c.k === "list") { ctl = document.createElement("select");
         var lab = function (o) { var t = fmtCell(m, xf, "list", o); return t === o ? o : t; }, eqo = function (o) { var a = listNum(o), b = listNum(v); return o === v || (a != null && b != null && Math.abs(a - b) < 1e-12); };
         ctl.innerHTML = '<option value=""></option>' + c.o.map(function (o) { return '<option value="' + esc(o) + '"' + (eqo(o) ? " selected" : "") + ">" + esc(lab(o)) + "</option>"; }).join("") +
-          (v && !c.o.some(eqo) ? '<option value="' + esc(v) + '" selected>' + esc(lab(v)) + "</option>" : ""); }
+          (v && !c.o.some(eqo) ? '<option value="' + esc(v) + '" selected>' + esc(lab(v)) + "</option>" : ""); toFormulaOnEq(ctl); }
       else if (c.k === "date") { ctl = document.createElement("input"); ctl.type = "date"; ctl.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
-        ctl.addEventListener("keydown", function (ev) { if (ev.key === "=") { ev.preventDefault(); var t = document.createElement("input"); t.type = "text"; t.className = "cu-ctl"; t.value = "="; ctl.parentNode.replaceChild(t, ctl); openEd.ctl = t; wire(t); t.focus(); t.setSelectionRange(1, 1); } }); }   // "=" starts a formula
+        toFormulaOnEq(ctl); }
       else if (c.k === "num" || c.k === "pct") { ctl = document.createElement("input"); ctl.type = "text"; ctl.inputMode = "decimal"; ctl.value = c.k === "pct" && v !== "" && !isNaN(+v) ? String(Math.round(+v * 1e6) / 1e4) : v; ctl.placeholder = c.k === "pct" ? "%" : ""; }
       else { ctl = document.createElement("textarea"); ctl.value = v; }
       ctl.className = "cu-ctl";
@@ -773,7 +774,28 @@
       wire(ctl);
       if (ctl.tagName === "SELECT") ctl.addEventListener("change", function () { closeEd(true); });
     }
+    /* Excel "point mode": while a formula is being typed, clicking a cell writes its address at the cursor; clicking
+       another cell right away replaces that address (as in Excel); type + - * / ( , and click the next cell */
+    var lastIns = null;
+    function inFormula() { var c = openEd && openEd.ctl; return !!(c && c.tagName !== "SELECT" && c.type !== "date" && /^\s*=/.test(c.value)); }
+    function insertRef(ref, td) {
+      var c = openEd.ctl, s0 = c.value, pos = c.selectionStart != null ? c.selectionStart : s0.length, end = c.selectionEnd != null ? c.selectionEnd : pos, st = pos;
+      if (lastIns && lastIns.end === pos && pos === end && s0.slice(lastIns.start, lastIns.end) === lastIns.ref) st = lastIns.start;   // replace the address just added
+      c.value = s0.slice(0, st) + ref + s0.slice(end);
+      var np = st + ref.length; c.focus(); try { c.setSelectionRange(np, np); } catch (er) { /* */ }
+      lastIns = { start: st, end: np, ref: ref };
+      Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-pick"), function (x) { x.classList.remove("cu-pick"); });
+      if (td) td.classList.add("cu-pick");
+    }
+    function toFormulaOnEq(ctl) {                  // date picker / list: pressing "=" switches to a formula box
+      ctl.addEventListener("keydown", function (ev) {
+        if (ev.key !== "=") return; ev.preventDefault();
+        var t = document.createElement("input"); t.type = "text"; t.className = "cu-ctl cu-fxbox"; t.value = "=";
+        ctl.parentNode.replaceChild(t, ctl); openEd.ctl = t; wire(t); t.focus(); t.setSelectionRange(1, 1);
+      });
+    }
     function wire(ctl) {
+      ctl.addEventListener("input", function () { ctl.classList.toggle("cu-fxbox", /^\s*=/.test(ctl.value)); if (lastIns && ctl.selectionStart !== lastIns.end) lastIns = null; });
       ctl.addEventListener("keydown", function (ev) {
         if (ev.key === "Escape") { ev.preventDefault(); closeEd(false); }
         else if (ev.key === "Enter" && (ctl.tagName !== "TEXTAREA" || !ev.shiftKey && !ev.altKey)) { ev.preventDefault(); closeEd(true); }
@@ -782,6 +804,7 @@
     }
     sheet.addEventListener("click", function (ev) {
       if (ev.target.classList.contains("cu-fill")) return;
+      if (openEd && inFormula()) return;              // pointing at cells while writing a formula
       var td = ev.target.closest && ev.target.closest("td.cu-ed"); if (td && !ev.target.classList.contains("cu-ctl")) { state.active = td.getAttribute("data-ref"); placeHandle(); openAt(td); }
     });
     /* ---- fill handle (as in Excel): drag the small square of the active cell down / across, or double-click it to fill
@@ -854,7 +877,14 @@
       else { var sc = b.c > a.c ? 1 : -1; for (var c = a.c + sc; sc > 0 ? c <= b.c : c >= b.c; c += sc) out.push(colStr(c) + a.r); }
       return out;
     }
-    document.addEventListener("mousedown", function (ev) { if (openEd && !openEd.td.contains(ev.target)) closeEd(true); });
+    document.addEventListener("mousedown", function (ev) {
+      if (openEd && inFormula()) {
+        var tdp = ev.target.closest && ev.target.closest("td[data-ref]");
+        if (tdp && sheet.contains(tdp) && tdp !== openEd.td) { ev.preventDefault(); insertRef(tdp.getAttribute("data-ref"), tdp); return; }
+        if (ev.target === openEd.ctl) return;
+      }
+      if (openEd && !openEd.td.contains(ev.target)) closeEd(true);
+    });
     wrap.querySelector(".cu-by").addEventListener("change", function (ev) { d.by = ev.target.value.trim(); persist(); });
     sel.addEventListener("change", function () { closeEd(true); state.code = d.last = sel.value; saveDraft(m, d); draw(); });
     wrap.querySelector(".cu-z").addEventListener("change", function (ev) { state.zoom = d.zoom = +ev.target.value; saveDraft(m, d); sheet.style.zoom = state.zoom; syncBar(); });

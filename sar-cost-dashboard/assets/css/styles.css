@@ -948,3 +948,5 @@ textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); res
 .cu-fill { position: absolute; right: -4px; bottom: -4px; width: 7px; height: 7px; background: #107C41; border: 1px solid #fff; cursor: crosshair; z-index: 7; }
 .cu-grid td.cu-fsel { box-shadow: inset 0 0 0 1px #107C41; background-image: linear-gradient(rgba(16,124,65,.10), rgba(16,124,65,.10)); }
 .cu-sheet.cu-dragging, .cu-sheet.cu-dragging td { cursor: crosshair !important; }
+.cu-grid td.cu-pick { box-shadow: inset 0 0 0 2px #1F6FEB !important; background-image: linear-gradient(rgba(31,111,235,.10), rgba(31,111,235,.10)); }
+.cu-ctl.cu-fxbox { min-width: max(100%, 220px); font-family: Consolas, "Courier New", monospace; color: #0B3D91; }

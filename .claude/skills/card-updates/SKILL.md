@@ -87,6 +87,10 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
 - Any editable cell accepts a formula starting with "=" (e.g. `=K106+30`, `=J107`, `=EDATE(K105,3)`, `=WORKDAY(K107,10)`);
   on a date cell, pressing "=" switches the date picker to a formula box. `XLCalc.check` refuses unknown functions
   (the message lists the available ones).
+- **Point mode (as in Excel)**: while the cell's text starts with "=", clicking any cell (locked or not) writes its
+  address at the cursor instead of closing the editor; clicking another cell right away replaces that address; type
+  `+ - * / ( ,` and click the next cell; Enter calculates, Esc cancels. The picked cell gets a blue frame. On a date
+  picker or a list, pressing "=" switches to a formula box.
 - The formula is calculated in the page (the cell shows its result in the cell's format, an orange "fx" mark, tooltip =
   the formula) and everything depending on it recalculates; changing the cell it points to updates it too.
 - Stored in the update file as `to: "=…"` and written to the new month's card as a real formula (`<f>`; newer functions
