@@ -19,16 +19,20 @@ and row numbers (sticky), zoom 60–130 % and "Go to" section. Conditional forma
 Editing: click a yellow cell → one control over it (date picker / number / % / list / text box); Enter or click away
 saves, Esc cancels, Tab goes to the next yellow cell; changed cells get an orange frame with the old value as tooltip.
 
-## What the team may edit (rule from the user: anything that is not a formula)
+## What the team may edit (rule from the user: the cell's Excel lock)
 
-- **Every cell drawn in the card that is not a formula** is editable (values and styled empty cells; formula cells stay
-  locked and show their value). Yellow cells and the section 7 progress fields keep their rich labels (below); any other
-  cell ("any cell", flag `g:1` in the update file) is keyed by section (dark title above, `secTitleOf`) · row label
-  (leftmost text left of the column, row numbers skipped, `anyLabel`) · column header (nearest text above in the section).
-  Type from the cell: list (literal data validation) / date format / % format / number / text; an empty General cell
-  takes a number when the input is numeric. Month cells of section 7 beyond the execution period stay locked.
-- Applying an "any cell" update: same ref if its section and row label still match, else the unique row in the same
-  section with that label (same column), else not applied; never over a formula.
+- A cell is editable **only if it is unlocked** in Excel (Format Cells → Protection → Locked unchecked, i.e. its style has
+  `<protection locked="0"/>`); locked cells are read-only — whatever their colour and even if they hold no formula.
+  An unlocked cell holding a formula is editable too (the typed value replaces the formula in the new file), except a
+  shared-formula master cell (reported "update by hand").
+- Grid flags per cell: 1 = formula, 2 = unlocked. Yellow / section-7 progress fields keep their rich labels but follow
+  the same lock rule (month cells beyond the execution period stay closed). Other unlocked cells ("any cell", flag `g:1`
+  in the update file) are keyed by section (`secTitleOf`) · row label (`anyLabel`) · column header. Type from the cell:
+  list / date / % / number / text; an empty General cell takes a number when the input is numeric.
+- Applying: same ref if section and row label still match, else the unique row with that label in the section; a cell
+  that is locked in the new file is not written ("cell is locked in this file").
+- In the file used so far, the monthly Actual Progress (%) row and the PO progress cells are locked, so they are not
+  editable until they are unlocked in the master workbook.
 
 ## Yellow cells
 

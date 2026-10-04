@@ -103,7 +103,8 @@
           xfs.push({ fill: fill, yellow: isYellow(fill), dark: isDark(fill), date: isDateFmt(id, fmts[id]), pct: isPctFmt(id, fmts[id]),
             fmtId: id, fmt: fmts[id] != null ? fmts[id] : BUILTIN[id] || "General", bg: fillCss[fi] || null, font: fonts[+(xf.getAttribute("fontId") || 0)] || fonts[0] || {},
             border: borders[+(xf.getAttribute("borderId") || 0)] || {}, h: al && al.getAttribute("horizontal") || "", v: al && al.getAttribute("vertical") || "bottom",
-            wrap: !!(al && al.getAttribute("wrapText") === "1"), indent: al ? +(al.getAttribute("indent") || 0) : 0, rot: al ? +(al.getAttribute("textRotation") || 0) : 0 });
+            wrap: !!(al && al.getAttribute("wrapText") === "1"), indent: al ? +(al.getAttribute("indent") || 0) : 0, rot: al ? +(al.getAttribute("textRotation") || 0) : 0,
+            locked: !(kid(xf, "protection") && kid(xf, "protection").getAttribute("locked") === "0") });   /* Excel "Locked" (Format Cells → Protection); default locked */
         });
       }
       var sheets = Array.prototype.map.call(wb.getElementsByTagNameNS(NS, "sheet"), function (s) {
@@ -129,7 +130,7 @@
       else if (t === "str" || t === "e") val = raw == null ? "" : raw;
       else if (t === "b") val = raw === "1" ? "TRUE" : raw === "0" ? "FALSE" : "";
       else val = raw == null || raw === "" ? null : +raw;
-      cells[ref] = { r: p.r, c: p.c, ref: ref, s: s, t: t, val: val, f: !!f, yellow: !!x.yellow, dark: !!x.dark, date: !!x.date && typeof val === "number", pct: !!x.pct, isDateFmt: !!x.date };
+      cells[ref] = { r: p.r, c: p.c, ref: ref, s: s, t: t, val: val, f: !!f, locked: x.locked !== false, sharedMaster: !!(f && f.getAttribute("t") === "shared" && f.getAttribute("ref")), yellow: !!x.yellow, dark: !!x.dark, date: !!x.date && typeof val === "number", pct: !!x.pct, isDateFmt: !!x.date };
       if (p.r > maxR) maxR = p.r;
     });
     Array.prototype.forEach.call(doc.getElementsByTagNameNS(NS, "mergeCell"), function (m) {
@@ -264,7 +265,8 @@
         if (!t && !xf.bg && !(xf.border && Object.keys(xf.border).length)) return;
         used[x.s] = 1;
         var el = t ? [cc, x.s, t] : [cc, x.s], raw = typeof x.val === "number" ? display(x) : null;
-        if (x.f || raw != null) { if (!t) el.push(""); el.push(x.f ? 1 : 0); if (raw != null) el.push(raw); }   // [col, style, text, formula?, raw value]
+        var fl = (x.f ? 1 : 0) | (x.locked ? 0 : 2);
+        if (fl || raw != null) { if (!t) el.push(""); el.push(fl); if (raw != null) el.push(raw); }   // [col, style, text, flags (1 formula · 2 unlocked), raw value]
         line.push(el);
       });
       rows.push([r, h, line]);
@@ -566,7 +568,7 @@
       '<div class="cu-acts"><span class="cu-saved"></span>' +
       '<button type="button" class="cu-btn ghost" data-a="reset">Undo my changes (this project)</button>' +
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
-      '<div class="cu-help">The card exactly as in the Excel file. Every cell that is <b>not a formula</b> can be changed — click it and type (the <b class="cu-yel">yellow</b> cells are the team\'s usual fields; for projects split into POs the monthly <b class="cu-pgk">Actual Progress (%)</b> is entered per PO; a later forecast finish opens more months, as in Excel). Formula cells are calculated and locked; ' +
+      '<div class="cu-help">The card exactly as in the Excel file. As in Excel, <b>unlocked</b> cells can be changed and <b>locked</b> cells cannot — hover a cell: the pointer and a blue frame show it is open; click it and type (a later forecast finish opens more months, as in Excel); ' +
       'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
       '<div class="cu-hbar" title="Scroll left / right"><div></div></div><div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
     var sel = wrap.querySelector(".cu-proj"), sheet = wrap.querySelector(".cu-sheet"), saved = wrap.querySelector(".cu-saved"), go = wrap.querySelector(".cu-sec-go");
@@ -618,9 +620,11 @@
           var ref = colStr(c) + r; if (covered[ref]) return;
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
           var cls = x ? "x" + x[1] : "", it = info[ref], ovr = ps && ps.text[ref];
-          if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period: not editable
-          else if (!it && x && !x[3] && !ovr) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other non-formula cell of the card
-          if (it && !it.c.f) {
+          var unl = !!(x && (x[3] & 2));               // the cell's Excel "Locked" setting decides: unlocked = editable, locked = not
+          if (!unl) it = null;
+          else if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period
+          else if (!it) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other unlocked cell of the card
+          if (it) {
             var v = ref in e ? e[ref] : it.c.v, ch = ref in e && canon(e[ref]) !== canon(it.c.v);
             h.push('<td class="' + cls + " cu-ed" + (it.c.p ? " cu-pg" : "") + (ch ? " cu-chg" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (ch ? ' title="Was: ' + esc(shownOf(it.c, x && x[1], it.c.v) || "(empty)") + '"' : "") + ">" +
               '<div class="cu-val">' + esc(shownOf(it.c, x && x[1], v)) + "</div></td>");
@@ -641,8 +645,8 @@
       syncBar(); setTimeout(syncBar, 60);
       go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + esc(s.rows[0].c[0] ? s.rows[0].c[0].ref : "") + '" data-r="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
       var nb = wrap.querySelector(".cu-po-note"); if (nb) nb.remove();
-      if (p.prog && p.prog.linked) {
-        var po = p.sections.filter(function (s) { return / · PO/.test(s.t); });
+      if (p.prog && p.prog.linked && p.sections.some(function (s) { return / · PO/.test(s.t) && s.rows[0].c.some(function (c) { return sheet.querySelector('td.cu-ed[data-ref="' + c.ref + '"]'); }); })) {
+        var po = p.sections.filter(function (s) { return / · PO/.test(s.t) && s.rows[0].c.some(function (c) { return sheet.querySelector('td.cu-ed[data-ref="' + c.ref + '"]'); }); });
         wrap.querySelector(".cu-sheet-wrap").insertAdjacentHTML("beforebegin", '<div class="cu-po-note">This project\'s monthly <b>Actual Progress (%)</b> (row ' + p.prog.rAct + ') is calculated from its POs, weighted by contract value. ' +
           "Update each PO's Actual Progress in the PO table to the right" + (po.length ? ': ' + po.map(function (s) { return '<a href="#" data-go="' + esc(s.rows[0].c[0].ref) + '">' + esc(s.t.split(" · ").pop()) + "</a>"; }).join(" · ") : "") + ".</div>");
         wrap.querySelectorAll(".cu-po-note a").forEach(function (a) { a.addEventListener("click", function (ev) { ev.preventDefault(); jump(a.getAttribute("data-go")); }); });
@@ -777,7 +781,8 @@
                     ref = colStr(pc.c) + hit[0]; rep.moved = c.ref + " → " + ref;
                   }
                   var gx = S.cells[ref];
-                  if (gx && gx.f) { rep.status = "skipped"; rep.why = "cell holds a formula in this file"; report.push(rep); return; }
+                  if (!gx || gx.locked) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
+                  if (gx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                   rep.now = gx ? display(gx) : "";
                   writeCell(doc, ref, c.k, c.to, gx);
                   rep.ref = ref; rep.status = "applied"; changed++; report.push(rep); return;
@@ -788,7 +793,9 @@
                   else if (t && t.s === c.s && (t.l === c.l || /^Row \d+$/.test(c.l))) { /* same place, label edited by the team */ }
                   else { rep.status = "skipped"; rep.why = alt.length > 1 ? "row appears more than once — update by hand" : "row / column not found as a yellow cell"; report.push(rep); return; }
                 }
-                if (t.c.f) { rep.status = "skipped"; rep.why = "cell holds a formula in this file"; report.push(rep); return; }
+                var tx = S.cells[ref];
+                if (tx && tx.locked) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
+                if (tx && tx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                 rep.now = t.c.v;
                 writeCell(doc, ref, c.k, c.to, S.cells[ref]);
                 rep.ref = ref; rep.status = "applied"; changed++; report.push(rep);
