@@ -592,7 +592,7 @@
      · completed, or BL finish not reached and forecast on time      → N/A
      · approved EOT (date from the change log, else BL finish + approved days ≈) still running → "Approved until …",
        flagged when the forecast already goes beyond it
-     · approved EOT whose date has passed while the work is < 100 %   → expired, new EOT needed
+     · approved EOT whose date has passed while the work is < 100 %   → expired
      · EOT in process (open CR, delay reason or PM feedback "EOT until …") → "In process until …"
      · BL finish passed, < 100 %, nothing recorded                    → "Not recorded – BL passed … ; forecast …"
      · BL finish still ahead but forecast later                       → "Likely needed"
@@ -617,8 +617,8 @@
         var ut = (est ? "≈ " : "") + fd(until), dd = e.days ? " (+" + e.days + " days)" : "";
         if (rd && until < rd) return e.pending && e.pending.until
           ? out("expired", "Approved EOT ended " + ut + "; next EOT in process until " + fd(e.pending.until), "In process", AMB)
-          : out("expired", "Approved EOT ended " + ut + " at " + pc() + "; " + fcTxt.replace(/ \(\+\d+ d vs BL\)/, "") + " – new EOT needed", ut, RED,
-            "Expired " + ut + " – new EOT needed");
+          : out("expired", "Approved EOT ended " + ut + " at " + pc() + "; " + fcTxt.replace(/ \(\+\d+ d vs BL\)/, ""), ut, RED,
+            "Expired " + ut);
         if (fe && fe > until) return out("exceeds", "Approved until " + ut + dd + "; forecast " + fd(fe) + " is " + days(until, fe) + " d later – further EOT needed", ut, AMB,
           "Until " + ut + "; fcst +" + days(until, fe) + " d – more needed");
         return out("approved", "Approved until " + ut + dd, (est ? "≈" : "") + fd(until));

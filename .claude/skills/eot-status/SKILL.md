@@ -32,7 +32,7 @@ Baseline versions (card section 6) are NOT used: they are programme-level and in
 | done | actual progress ≥ 100 % | N/A | N/A | — |
 | approved | approved EOT, end date ≥ report date and forecast ≤ it. No written date → BL finish + approved days, shown with "≈" | Approved until <date> (+N days) | <date> (no date at all → N/A) | — |
 | exceeds | approved EOT still running but forecast is later | Until <date>; fcst +N d – more needed | <date> | amber |
-| expired | approved EOT end date < report date and progress < 100 % | Expired <date> – new EOT needed | <date> (the expired date) | red |
+| expired | approved EOT end date < report date and progress < 100 % | Expired <date> (the words "new EOT needed" are never written) | <date> (the expired date) | red |
 | pending | EOT in process (dated or not; also an expired EOT with a new one in process) | In process until <date> | In process | amber |
 | required | BL finish < report date, progress < 100 %, nothing recorded | Not recorded – BL passed, fcst +N d (or "fcst not updated") | N/A | — |
 | likely | BL finish still ahead but forecast is after it | Likely needed – fcst +N d vs BL | N/A | — |
