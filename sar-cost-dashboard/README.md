@@ -84,7 +84,7 @@ loaded in the dashboard and downloads it, e.g. `NSR - Program - Balance Scorecar
    - the slides keep the sample's order; *Old projects status* holds 3 close-out projects per slide, like the sample;
    - one *Projects in the Execution Phase* slide per project of the Progress section (weekly progress report), with its weekly
      progress; the project card fills contractor / consultant / funding gaps;
-   - *Program Values* comes from the Project Cards section (`EP - NSR Projects <Month>.xlsx`: budget, contract value, paid,
+   - *Program Values* comes from the Project Cards section (PMO Reporting Card = Under Execution + Pipeline) (`EP - NSR Projects <Month>.xlsx`: budget, contract value, paid,
      phase, size, status and the execution SPI from card sections 7 & 8), except the **Legacy ( Completed – years)** tile,
      which counts every row of `Projects in Closing phase.xlsx` (Final Contract Value, years of Contract Finish). The embedded
      *NSR Program - DB* workbook is rebuilt from the same two files (sheets NSR Program - DB · Old Projects · SPI); the *SPI* slide comes from the Progress section (ΣEV ÷ ΣPV of the weekly report and S-curves);
