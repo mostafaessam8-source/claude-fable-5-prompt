@@ -803,6 +803,39 @@
     if (put(ach, [])) return;
     for (var k = ach.length - 1; k >= 1; k--) { var more = ach.length - k; if (put(ach.slice(0, k).concat(["+" + more + " more " + (more === 1 ? "activity" : "activities") + " ongoing"]), [])) return; }
   }
+  /* One paragraph (project brief) shortened to its box the same way: as is → compact wording → whole sentences from the
+     start while they fit → the first sentence cut at a clause / whole word before a preposition. mk(text) → setParas
+     items, so the box keeps its own formatting. */
+  function shortenParaToBox(sh, text, minPt, mk) {
+    if (!sh) return;
+    mk = mk || function (t) { return t; };
+    function put(t) { E.setParas(sh, mk(t)); var tb = textBox(sh); return !tb || tb.height(Math.min(1, minPt / tb.base)) <= tb.H; }
+    text = clip(text); if (!text || put(text)) return;
+    var c = compact(text); if (put(c)) return;
+    var sents = c.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [c], keep = "";
+    for (var i = 0; i < sents.length; i++) { var nx = (keep + sents[i]).trim(); if (!put(nx)) break; keep = nx + " "; }
+    // fill the rest of the box with the next sentence up to a clause (before a preposition / after a comma)
+    var JOIN = /^(for|at|of|in|on|to|with|between|including|incl\.|from|by|which|where|and|&|that|while|as)$/i;
+    function partial(sent, head) {
+      var w = sent.trim().replace(/[.!?]+$/, "").split(/\s+/), any = null;
+      for (var L = w.length - 1; L >= 4; L--) {
+        var good = JOIN.test(w[L]) || /,$/.test(w[L - 1]);
+        if (!good && any) continue;
+        var cand = (head + w.slice(0, L).join(" ")).replace(/[\s,&\-–—(]+$/, "") + ".";
+        if (put(cand)) { if (good) return cand; any = any || cand; }
+      }
+      return any;
+    }
+    if (keep.trim()) {
+      var more = i < sents.length ? partial(sents[i], keep) : null;
+      put(more || keep.trim()); return;
+    }
+    var first = sents[0].trim().replace(/[.!?]+$/, ""), tb = textBox(sh), cap = tb ? Math.floor(tb.lineChars(minPt) * Math.max(1, Math.floor(tb.H / (minPt * 1.25)))) : 200;
+    var cut = first.slice(0, cap + 1).replace(/\s+\S*$/, ""), m, last = -1, re = /\s(for|at|of|in|on|to|with|between|including|incl\.|from|by|which|where)\s|,\s/gi;
+    while ((m = re.exec(cut))) last = m.index;
+    if (last > cut.length * 0.5) cut = cut.slice(0, last);
+    put(cut.replace(/[\s,&\-–—(]+$/, "") + ".");
+  }
   function fitText(sh, minPt) {
     if (!sh) return;
     var tb = textBox(sh); if (!tb) return;
@@ -1099,7 +1132,7 @@
     if (st) { var s = r["Performance Status"] || (card.Perf || {}).Status || MISSING, col = /track|ahead|on time|complete/i.test(s) ? "046A38" : /risk|slight/i.test(s) ? AMBER : RED; E.setParas(st, { text: s, color: col === AMBER ? "000000" : "FFFFFF" }); E.setFill(st, col); }
     var brief = textShape(/^To design|^The |^Design|^Supply|^Construct|^The project|^The scope/);
     var briefs = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 2000000 && p.y < 2500000 && E.text(x).length > 20; });
-    if (briefs[0]) E.setParas(briefs[0], clip(r["Project Description"] || card.Description || "", 260) || miss(null));
+    if (briefs[0]) { var bText = clip(r["Project Description"] || card.Description || ""); if (bText) shortenParaToBox(briefs[0], bText, 7.5); else E.setParas(briefs[0], miss(null)); }   // skill: achievement-shorten
     var ach = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 3300000 && p.y < 3600000 && E.text(x).trim(); })[0];
     var la = M.D.t("Lookahead_Activities").filter(function (x) { return x["Source.Name"] === src && x["Lookahead Activities (7 Days) Description"]; }).slice(0, 2);
     // achievements: the weekly report's achievement (else its key milestone activity), then the lookahead; nothing found → left empty
@@ -1203,7 +1236,7 @@
     head(textShape(/^Consultant\s/), "Consultant            : ", "N/A");
     head(textShape(/^Funded by/), "Funded by             : ", miss(clip((card.Fund || {}).Org, 22)));
     var brief = E.all(d, NS.p, "sp").filter(function (s) { var p = E.pos(s); return p && p.y > 2400000 && p.y < 3200000 && E.text(s).length > 30; })[0];
-    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, size: 10 }); fitText(brief, 7); }
+    if (brief) { var bt = clip(cd.Scope || card.Description || ""); if (bt) shortenParaToBox(brief, bt, 8, function (t) { return { text: t, size: 10 }; }); else E.setParas(brief, { text: MISSING, size: 10 }); fitText(brief, 7); }
     var tbl = E.all(d, NS.a, "tbl").filter(function (x) { return /ISSUES/.test(x.textContent); })[0];
     if (tbl) {
       var pend = closingSteps(M).filter(function (k) { return stepState(r, k).status !== "Completed" && stepState(r, k).status !== "NA"; });

@@ -1,9 +1,9 @@
 ---
 name: achievement-shorten
-description: Rules for fitting the Achievements box on the "Projects in the Execution Phase" slides of the weekly PPT in sar-cost-dashboard — the achievements are entered first, then shortened step by step until they fit the box at a readable size. Use whenever achievements spill out of their box, look too small, are shortened wrongly, or the user asks to change how they are condensed. Arabic triggers: "achievement", "الإنجازات", "اختصر", "shorten", "الكلام طالع برة البوكس".
+description: Rules for fitting the Achievements box and the Project Brief box on the weekly PPT in sar-cost-dashboard (execution-phase slides; the brief also on the closing cards) — the text is entered first, then shortened step by step until it fits the box at a readable size. Use whenever achievements or a brief spill out of their box, look too small, are shortened wrongly, or the user asks to change how they are condensed. Arabic triggers: "achievement", "الإنجازات", "brief", "البريف", "اختصر", "shorten", "الكلام طالع برة البوكس".
 ---
 
-# Achievements — shorten to the box
+# Achievements & Project Brief — shorten to the box
 
 Code: `shortenToBox(sh, ach, next, 7.5)` in `sar-cost-dashboard/assets/js/pptx-weekly.js` (with `SHORT`, `compact`,
 `mainClause`, and the shared text measure `textBox`), called from `fillExec`; `fitText(sh, 7)` runs after it.
@@ -34,6 +34,18 @@ Change the rule there only.
 
 Never "…", never a cut mid-word. After shortening, `fitText` may still step the font down (minimum 7 pt, never below
 5 pt) for the final fit.
+
+## Project Brief (one paragraph) — `shortenParaToBox(sh, text, minPt, mk)`
+
+Used for the execution-slide brief (7.5 pt target; source: weekly `Project Description`, else the card description)
+and the closing-card brief (8 pt target, 10 pt base; source: Contract details scope, else the card description).
+Steps, each only if still needed:
+1. As is.
+2. Compact wording (same `SHORT` list as the achievements).
+3. Whole sentences from the start while they fit, then the next sentence up to a clause — ending before a
+   preposition / conjunction or after a comma — so the box is filled and the text still ends cleanly with ".".
+4. If even the first sentence is too long: that sentence cut at a clause / whole word, ending with ".".
+Empty source → "_".
 
 ## The measure (`textBox`)
 
