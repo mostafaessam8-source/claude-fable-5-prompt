@@ -22,6 +22,62 @@
 
   function N(v) { return U.toNum(v); }
   function G(r, k) { return window.SARApp.D.g(r, k); }
+  /* full-screen photo viewer inside the site: zoom (buttons, wheel, double-click, drag to move), save, previous / next, close */
+  function photoViewer(urls, at, title, code) {
+    var ic = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>"; };
+    var box = el('<div class="pv" role="dialog" aria-modal="true" aria-label="Progress photo"><div class="pv-bar"><div class="pv-title"></div><div class="pv-tools">' +
+      '<button type="button" data-a="out" title="Zoom out">' + ic('<circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-5-5"/>') + "</button>" +
+      '<span class="pv-zoom">100%</span>' +
+      '<button type="button" data-a="in" title="Zoom in">' + ic('<circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M21 21l-5-5"/>') + "</button>" +
+      '<button type="button" data-a="fit" title="Fit to screen">' + ic('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>') + "</button>" +
+      '<button type="button" data-a="save" title="Save photo">' + ic('<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/>') + "<span>Save</span></button>" +
+      '<button type="button" data-a="close" class="pv-close" title="Close (Esc)">' + ic('<path d="M6 6l12 12M18 6L6 18"/>') + "<span>Close</span></button>" +
+      '</div></div><div class="pv-stage"><img alt=""></div>' +
+      '<button type="button" class="pv-nav prev" data-a="prev" title="Previous">' + ic('<path d="M15 5l-7 7 7 7"/>') + "</button>" +
+      '<button type="button" class="pv-nav next" data-a="next" title="Next">' + ic('<path d="M9 5l7 7-7 7"/>') + "</button></div>");
+    var img = box.querySelector("img"), stage = box.querySelector(".pv-stage"), zl = box.querySelector(".pv-zoom");
+    var z = 1, x = 0, y = 0, drag = null;
+    function apply() { img.style.transform = "translate(" + x + "px," + y + "px) scale(" + z + ")"; zl.textContent = Math.round(z * 100) + "%"; stage.classList.toggle("zoomed", z > 1); }
+    function zoom(k, cx, cy) {
+      var nz = Math.max(1, Math.min(8, z * k)), r = stage.getBoundingClientRect();
+      if (cx == null) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+      var px = cx - r.left - r.width / 2, py = cy - r.top - r.height / 2;   // keep the point under the cursor in place
+      x = px - (px - x) * nz / z; y = py - (py - y) * nz / z; z = nz;
+      if (z === 1) { x = 0; y = 0; }
+      apply();
+    }
+    function show(i) {
+      at = (i + urls.length) % urls.length; z = 1; x = 0; y = 0; apply();
+      img.src = urls[at]; box.querySelector(".pv-title").textContent = title + " · photo " + (at + 1) + " of " + urls.length;
+      box.querySelectorAll(".pv-nav").forEach(function (b) { b.style.display = urls.length > 1 ? "" : "none"; });
+    }
+    function close() { document.removeEventListener("keydown", key); box.remove(); document.body.classList.remove("pv-open"); }
+    function save() {
+      var a = document.createElement("a"); a.href = urls[at]; a.download = (code || "project") + "_progress_photo_" + (at + 1) + ".jpg";
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    function key(e) {
+      if (e.key === "Escape") close(); else if (e.key === "ArrowRight") show(at + 1); else if (e.key === "ArrowLeft") show(at - 1);
+      else if (e.key === "+" || e.key === "=") zoom(1.25); else if (e.key === "-") zoom(0.8); else return;
+      e.preventDefault();
+    }
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-a]"), a = b && b.getAttribute("data-a");
+      if (a === "close") close(); else if (a === "in") zoom(1.25); else if (a === "out") zoom(0.8); else if (a === "fit") { z = 1; x = 0; y = 0; apply(); }
+      else if (a === "save") save(); else if (a === "prev") show(at - 1); else if (a === "next") show(at + 1);
+      else if (e.target === stage) close();   // click on the dark background
+    });
+    stage.addEventListener("wheel", function (e) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    img.addEventListener("dblclick", function (e) { if (z > 1) { z = 1; x = 0; y = 0; apply(); } else zoom(2.5, e.clientX, e.clientY); });
+    img.addEventListener("pointerdown", function (e) { if (z <= 1) return; e.preventDefault(); drag = { sx: e.clientX - x, sy: e.clientY - y }; img.setPointerCapture(e.pointerId); });
+    img.addEventListener("pointermove", function (e) { if (!drag) return; x = e.clientX - drag.sx; y = e.clientY - drag.sy; apply(); });
+    img.addEventListener("pointerup", function () { drag = null; });
+    img.addEventListener("pointercancel", function () { drag = null; });
+    img.draggable = false;
+    document.addEventListener("keydown", key);
+    document.body.appendChild(box); document.body.classList.add("pv-open");
+    show(at); box.querySelector(".pv-close").focus();
+  }
   function add(host, html) { var n = typeof html === "string" ? el(html) : html; host.appendChild(n); return n; }
   function grid(host, cls) { return add(host, '<div class="grid ' + cls + '"></div>'); }
   function panelIn(host, title, sub, tools) { return add(host, U.panel(title, sub, "", tools)); }
@@ -1207,10 +1263,11 @@
         if (!list.length) { phb.innerHTML = '<div class="empty-note">No progress photos imported for this project — import the weekly report files (.rar / .zip) on Data Import.</div>'; return; }
         var phs = php.querySelector(".panel-head .sub"); if (phs) phs.textContent = list.length + " photo" + (list.length === 1 ? "" : "s") + " · weekly report Progress Photo sheet";
         phb.innerHTML = "";
-        list.forEach(function (ph, i) {
-          var url = URL.createObjectURL(new Blob([ph.data], { type: ph.type || "image/jpeg" }));
-          var a = el('<a class="photo" target="_blank" rel="noopener" title="Open full size"><img alt="Progress photo ' + (i + 1) + '" loading="lazy"></a>');
-          a.href = url; a.querySelector("img").src = url; phb.appendChild(a);
+        var urls = list.map(function (ph) { return URL.createObjectURL(new Blob([ph.data], { type: ph.type || "image/jpeg" })); });
+        urls.forEach(function (url, i) {
+          var a = el('<button type="button" class="photo" title="Open photo"><img alt="Progress photo ' + (i + 1) + '" loading="lazy"></button>');
+          a.querySelector("img").src = url; phb.appendChild(a);
+          a.addEventListener("click", function () { photoViewer(urls, i, code + " — " + po.name, code); });
         });
       });
     }

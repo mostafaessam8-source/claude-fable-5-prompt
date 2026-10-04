@@ -34,7 +34,10 @@ never in a published report. "Remove progress photos" on the import page clears 
 
 ## Output
 
-- Site → Progress Dashboard → Project dashboard: "Progress photos" panel, all photos in a 4:3 grid, click = full size.
+- Site → Progress Dashboard → Project dashboard: "Progress photos" panel, all photos in a 4:3 grid. A click opens the
+  photo inside the site (`photoViewer` in `pages.js`, never a new tab): Zoom out / % / Zoom in / Fit, Save (downloads
+  `<code>_progress_photo_<n>.jpg`), Close (also Esc or a click on the dark background); mouse wheel and double-click
+  zoom at the pointer, drag moves a zoomed photo, ← / → or the side arrows go to the previous / next photo.
   None → a note telling the user to import the weekly report files.
 - PPT execution slide: the first 4 photos side by side inside the frame under the "PROGRESS PHOTOS" title; equal
   cells no wider than 4:3, each photo centre-cropped (`srcRect`) to fill its cell, thin white line, row centred.
