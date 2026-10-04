@@ -1181,11 +1181,16 @@
     var g3 = grid(v, "g-3");
     var cd = D.t("Contract_Details").filter(function (x) { return String(x.Code) === code; })[0];
     add(panelIn(g3, "Scope of work", cd ? esc(cd.Stage || "") : ""), '<div class="scope">' + esc(cd && cd.Scope ? cd.Scope : r["Project Description"] || "No scope recorded in Contract details.") + "</div>");
-    U.chart(chartBox(panelIn(g3, "Cumulative progress", "Plan vs actual"), "short"), { type: "bar",
-      data: { labels: ["Cum Plan", "Cum Actual"], datasets: [U.barDs("Progress", [po.planNow, po.actNow], [S.plan, S.actual], { maxBarThickness: 40, borderRadius: { topRight: 4, bottomRight: 4 } })] },
-      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: U.pctTooltip(),
-        datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return fmt.pct(x); } } },
-        layout: { padding: { right: 50 } }, scales: { x: U.pctAxis(1), y: { grid: { display: false } } } } });
+    // key achievements (weekly report "Achievements Description", newest week first) — the cumulative plan / actual
+    // is already in the tiles above, so this column carries the week's progress in words instead of a second chart
+    var wk = D.t("Weekly_Report_Updates").filter(function (x) { return x["Source.Name"] === src; }).sort(function (a, b) { return String(b["Report Date"]).localeCompare(String(a["Report Date"])); });
+    var achs = wk.filter(function (x) { return String(x["Achievements Description"] || "").trim(); });
+    var km = String(r["KM Activitiy Description"] || "").trim();
+    var ah = achs.length ? '<ul class="ach-list">' + achs.slice(0, 6).map(function (x, i) {
+        return '<li><span class="ach-date' + (i ? "" : " now") + '">' + (i ? esc(fmt.date(x["Report Date"])) : "This week") + "</span>" + esc(x["Achievements Description"]) + "</li>"; }).join("") + "</ul>"
+      : '<div class="empty-note">No achievement reported in the weekly report' + (wk.length ? " for " + esc(fmt.date(wk[0]["Report Date"])) : "") + ".</div>";
+    if (km) ah += '<div class="ach-km"><b>Key milestone activity:</b> ' + esc(km) + "</div>";
+    add(panelIn(g3, "Key achievements", achs.length + (achs.length === 1 ? " entry" : " entries") + " · weekly report"), "<div>" + ah + "</div>");
     add(panelIn(g3, "Reason for delays", ""), '<div class="note-box warn">' + esc(r["Reason for Delays"] || "No delay reason reported this week.") + "</div>");
     // milestones progress · deliverables
     var g4 = grid(v, "g-2");
@@ -1205,8 +1210,10 @@
     var g5 = grid(v, "g-2");
     tableIn(panelIn(g5, "Interim payment certificates", "IPC / VO cumulative"), { rows: bySrc("Interim_Payment_Certificate").filter(function (x) { return N(x["Cum Sum"]) !== 0; }), exportName: "IPC", search: false, autoHeight: true, columns: [
       { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Description", label: "Description", wrap: true }, { key: "IPC / VO No.", label: "IPC / VO No." }, { key: "Cum Sum", label: "Cum Sum (SAR)", type: "money" }] });
-    tableIn(panelIn(g5, "Lookahead activities", "Next 7 days"), { rows: bySrc("Lookahead_Activities").filter(function (x) { return x["Lookahead Activities (7 Days) Description"]; }), exportName: "Lookahead", search: false, autoHeight: true, columns: [
-      { key: "Sr. No.", label: "Sr. No.", type: "int" }, { key: "Lookahead Activities (7 Days) Description", label: "Lookahead Activities (7 Days) Description", wrap: true }] });
+    var las = bySrc("Lookahead_Activities").filter(function (x) { return x["Lookahead Activities (7 Days) Description"]; }).sort(function (a, b) { return sortNum(a["Sr. No."], b["Sr. No."]); });
+    add(panelIn(g5, "Lookahead activities", "Next 7 days · " + las.length + " activities"), las.length
+      ? '<ol class="ach-list la">' + las.map(function (x) { return "<li>" + esc(x["Lookahead Activities (7 Days) Description"]) + "</li>"; }).join("") + "</ol>"
+      : '<div class="empty-note">No lookahead activities reported for the next 7 days.</div>');
     var ac = bySrc("Area_of_Concern").filter(function (x) { return x["Issue /Concern Description"]; });
     tableIn(panelIn(v, "Areas of concern", ac.length + " items"), { rows: ac, exportName: "Area_of_Concern", search: false, autoHeight: true, columns: [
       { key: "Sr. No.", label: "SN", type: "int" }, { key: "Issue /Concern Description", label: "Issue / Concern Description", wrap: true },

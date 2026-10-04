@@ -285,6 +285,15 @@ table.dt tfoot td {
 .scope { font-size: 13.5px; line-height: 1.6; white-space: pre-line; max-height: 260px; overflow: auto; }
 .note-box { background: var(--tint-5); border-left: 5px solid var(--sar-blue); padding: 12px 14px; font-size: 13px; line-height: 1.55; }
 .note-box.warn { border-left-color: var(--yellow); }
+.ach-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.5; }
+.ach-list li { background: var(--tint-5); border-left: 4px solid var(--sar-blue); padding: 9px 12px; }
+.ach-list .ach-date { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--slate); margin-bottom: 2px; }
+.ach-list .ach-date.now { color: var(--sar-blue); }
+.ach-list.la { counter-reset: la; }
+.ach-list.la li { counter-increment: la; position: relative; padding-left: 40px; border-left-color: var(--yellow); }
+.ach-list.la li::before { content: counter(la); position: absolute; left: 12px; top: 9px; font-weight: 700; color: var(--slate); }
+.ach-km { margin-top: 12px; font-size: 13px; color: var(--sar-black); }
+.empty-note { background: var(--tint-5); padding: 14px; font-size: 13px; color: var(--slate); font-style: italic; }
 
 /* ----------------------------- Gantt ------------------------------------ */
 .gantt { border: 1px solid var(--cool-gray); overflow: auto; max-height: 680px; background: var(--white); }
