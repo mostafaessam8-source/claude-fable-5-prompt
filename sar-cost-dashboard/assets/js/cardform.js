@@ -547,7 +547,7 @@
       '<button type="button" class="cu-btn" data-a="dl">Download my updates</button></div></div>' +
       '<div class="cu-help">The card exactly as in the Excel file. Only the <b class="cu-yel">yellow</b> cells and the monthly <b class="cu-pgk">Actual Progress (%)</b> of section 7 can be changed — click a cell and type (a later forecast finish opens more months, as in Excel); ' +
       'changed cells get an <b class="cu-or">orange frame</b> (hover to see the old value). Your changes stay in this browser until you click <b>Download my updates</b>; send that file to the Projects Department.</div>' +
-      '<div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
+      '<div class="cu-hbar" title="Scroll left / right"><div></div></div><div class="cu-sheet-wrap"><div class="cu-sheet"></div></div>';
     var sel = wrap.querySelector(".cu-proj"), sheet = wrap.querySelector(".cu-sheet"), saved = wrap.querySelector(".cu-saved"), go = wrap.querySelector(".cu-sec-go");
     var info = {};                                // ref → { c (field), s (section), l (row label) } of the current project
     function cur() { return m.projects.filter(function (x) { return x.code === state.code; })[0]; }
@@ -603,6 +603,7 @@
       (g.img || []).forEach(function (im) { if (m.media[im[0]]) h.push('<img class="cu-pic" alt="" src="' + m.media[im[0]] + '" style="left:' + (im[1] + 42) + "px;top:" + (im[2] + hh) + "px;width:" + im[3] + "px;height:" + im[4] + 'px">'); });
       sheet.innerHTML = h.join("");
       sheet.style.zoom = state.zoom;
+      syncBar(); setTimeout(syncBar, 60);
       go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + esc(s.rows[0].c[0] ? s.rows[0].c[0].ref : "") + '" data-r="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
       var nb = wrap.querySelector(".cu-po-note"); if (nb) nb.remove();
       if (p.prog && p.prog.linked) {
@@ -660,7 +661,18 @@
     document.addEventListener("mousedown", function (ev) { if (openEd && !openEd.td.contains(ev.target)) closeEd(true); });
     wrap.querySelector(".cu-by").addEventListener("change", function (ev) { d.by = ev.target.value.trim(); persist(); });
     sel.addEventListener("change", function () { closeEd(true); state.code = d.last = sel.value; saveDraft(m, d); draw(); });
-    wrap.querySelector(".cu-z").addEventListener("change", function (ev) { state.zoom = d.zoom = +ev.target.value; saveDraft(m, d); sheet.style.zoom = state.zoom; });
+    wrap.querySelector(".cu-z").addEventListener("change", function (ev) { state.zoom = d.zoom = +ev.target.value; saveDraft(m, d); sheet.style.zoom = state.zoom; syncBar(); });
+    /* horizontal scroll bar above the sheet (mirrors the sheet's own), and the sheet sized to the window so its bottom bar shows too */
+    var hbar = wrap.querySelector(".cu-hbar"), sw = wrap.querySelector(".cu-sheet-wrap"), lock = false;
+    function syncBar() {
+      hbar.firstChild.style.width = sw.scrollWidth + "px";
+      var top = sw.getBoundingClientRect().top + (window.scrollY || 0);
+      sw.style.height = Math.max(320, window.innerHeight - top - 12) + "px";
+    }
+    hbar.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; sw.scrollLeft = hbar.scrollLeft; });
+    sw.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; hbar.scrollLeft = sw.scrollLeft; });
+    window.addEventListener("resize", syncBar); window.addEventListener("load", syncBar);
+    if (window.ResizeObserver) new ResizeObserver(function () { syncBar(); }).observe(wrap.querySelector(".cu-top"));
     function jump(ref) { var td = ref && sheet.querySelector('td[data-ref="' + ref + '"]'); if (td) td.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" }); }
     go.addEventListener("change", function () {
       var o = go.selectedOptions[0], td = go.value && sheet.querySelector('td[data-ref="' + go.value + '"]');
