@@ -825,3 +825,10 @@ body:not(.printing) .filters.fbar { position: sticky; top: var(--header-h); }
 .tile.green .band { background: #1E8A44; }
 .spi-ok { color: #1E8A44; font-weight: 700; }
 .spi-bad { color: var(--red); font-weight: 700; }
+
+/* progress photos (project dashboard) */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.photo-grid .photo { display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; border: 1px solid var(--tint-10); background: var(--tint-5); }
+.photo-grid .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.photo-grid .photo:hover img { transform: scale(1.04); }
+.photo-grid .empty-note { grid-column: 1 / -1; }

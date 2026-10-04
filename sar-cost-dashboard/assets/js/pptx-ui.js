@@ -70,7 +70,9 @@
       var go = body.querySelector("#pptGo"), m = body.querySelector("#pptMsg");
       if (go) go.addEventListener("click", function () {
         go.disabled = true; m.textContent = "Building the PowerPoint…";
-        window.SARWeeklyPpt.build(tpl.buffer.slice(0), D).then(function (blob) {
+        (window.SARPhotos ? SARPhotos.load() : Promise.resolve(null)).then(function (photos) {
+          return window.SARWeeklyPpt.build(tpl.buffer.slice(0), D, photos);
+        }).then(function (blob) {
           var name = "NSR - Program - Balance Scorecard - WK" + (wk || "") + " - " + (rd || "") + ".pptx";
           download(name, blob);
           m.innerHTML = "✓ Saved <b>" + esc(name) + "</b> (" + Math.round(blob.size / 1024) + " KB). Complete the <b>_</b> items before sharing.";

@@ -6,3 +6,4 @@ data/default-data.js
 # The PD weekly PowerPoint template holds internal programme data: kept out of the public repository
 data/ppt-template.js
 *.pptx
+*.rar

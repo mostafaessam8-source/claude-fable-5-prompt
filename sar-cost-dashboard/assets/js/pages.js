@@ -1199,6 +1199,21 @@
     var nAch = wa.length || achs.length;
     add(panelIn(g3, "Key achievements", nAch + (nAch === 1 ? " item" : " items") + " · " + (wa.length ? "Weekly Achievements" : "weekly report")), "<div>" + ah + "</div>");
     add(panelIn(g3, "Reason for delays", ""), '<div class="note-box warn">' + esc(r["Reason for Delays"] || "No delay reason reported this week.") + "</div>");
+    // progress photos from the weekly report file's "Progress Photo" sheet (imported on Data Import, kept in this browser)
+    if (window.SARPhotos) {
+      var php = panelIn(v, "Progress photos", "Weekly report · Progress Photo sheet"), phb = add(php, '<div class="photo-grid"><div class="empty-note">Loading…</div></div>');
+      SARPhotos.load().then(function (pst) {
+        var list = SARPhotos.forProject(pst, src, code);
+        if (!list.length) { phb.innerHTML = '<div class="empty-note">No progress photos imported for this project — import the weekly report files (.rar / .zip) on Data Import.</div>'; return; }
+        var phs = php.querySelector(".panel-head .sub"); if (phs) phs.textContent = list.length + " photo" + (list.length === 1 ? "" : "s") + " · weekly report Progress Photo sheet";
+        phb.innerHTML = "";
+        list.forEach(function (ph, i) {
+          var url = URL.createObjectURL(new Blob([ph.data], { type: ph.type || "image/jpeg" }));
+          var a = el('<a class="photo" target="_blank" rel="noopener" title="Open full size"><img alt="Progress photo ' + (i + 1) + '" loading="lazy"></a>');
+          a.href = url; a.querySelector("img").src = url; phb.appendChild(a);
+        });
+      });
+    }
     // milestones progress · deliverables
     var g4 = grid(v, "g-2");
     var mr = bySrc("Project_Milestones_Progress").sort(function (a, b) { return sortNum(a.Sort, b.Sort); });

@@ -1211,10 +1211,40 @@
         E.cellText(c[0], { text: md, size: md.length > 34 ? 5.5 : md.length > 22 ? 6 : pg.acts && pg.acts.length ? 6.5 : undefined });   /* whole name, smaller when long */ E.cellText(c[1], pct(x["Planned progress"])); E.cellText(c[2], pct(x["Actual Progress"])); });
       var fr = mt.parentNode; while (fr && fr.localName !== "graphicFrame") fr = fr.parentNode; if (fr) E.fitTable(fr);
     }
-    // progress photos → placeholder
-    if (photo) E.all(d, NS.p, "pic").forEach(function (pic) {
+    // progress photos: the project's own photos in the PROGRESS PHOTOS box, else the template's photo frames get the placeholder
+    if (x.photos && x.photos.length) progressPhotos(pkg, path, d, x.photos);
+    else if (photo) E.all(d, NS.p, "pic").forEach(function (pic) {
       var p = E.pos(pic); if (!p || p.y < 4900000 || p.w < 1000000) return;
       var blip = pic.getElementsByTagNameNS(NS.a, "blip")[0]; if (blip) pkg.setImage(path, blip.getAttributeNS(NS.r, "embed"), photo);
+    });
+  }
+  /* Up to PHOTO_MAX photos side by side inside the box under the "PROGRESS PHOTOS" title: equal cells (no wider than 4:3),
+     each photo cropped from its centre to fill its cell, thin white frame, the row centred in the box. */
+  var PHOTO_MAX = 4, PHOTO_PAD = 45720, PHOTO_GAP = 45720;
+  function progressPhotos(pkg, path, d, media) {
+    var sps = E.all(d, NS.p, "sp"), title = sps.filter(function (s) { return /^\s*PROGRESS PHOTOS?\s*$/i.test(E.text(s)); })[0], tp = title && E.pos(title);
+    if (!tp) return;
+    var box = null, bp = null;
+    sps.forEach(function (s) {   // the empty frame right under the title, overlapping it horizontally
+      var q = E.pos(s); if (!q || s === title || E.text(s).trim() || q.y < tp.y + tp.h * 0.5 || q.h < 300000) return;
+      if (q.x > tp.x + tp.w || q.x + q.w < tp.x) return;
+      if (!bp || q.y < bp.y || (q.y === bp.y && q.w * q.h > bp.w * bp.h)) { box = s; bp = q; }
+    });
+    if (!bp) bp = { x: tp.x, y: tp.y + tp.h + PHOTO_GAP, w: tp.w, h: Math.max(0, 6400000 - tp.y - tp.h) };
+    var list = media.slice(0, PHOTO_MAX), n = list.length;
+    var ih = bp.h - 2 * PHOTO_PAD, cw = Math.min((bp.w - 2 * PHOTO_PAD - (n - 1) * PHOTO_GAP) / n, ih * 4 / 3), x0 = bp.x + (bp.w - (n * cw + (n - 1) * PHOTO_GAP)) / 2;
+    var tree = (box || title).parentNode, after = (box || title).nextSibling;
+    var ids = E.all(d, NS.p, "cNvPr").map(function (e) { return +e.getAttribute("id") || 0; }), next = Math.max.apply(null, ids.concat([1])) + 1;
+    list.forEach(function (m, i) {
+      var rid = pkg.addRel(path, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", m.path);
+      var r = m.w / m.h, c = cw / ih, l = 0, t = 0;   // centre crop to the cell's shape (thousandths of a percent)
+      if (r > c) l = Math.round((1 - c / r) / 2 * 100000); else t = Math.round((1 - r / c) / 2 * 100000);
+      var xml = '<p:pic xmlns:p="' + NS.p + '" xmlns:a="' + NS.a + '" xmlns:r="' + NS.r + '"><p:nvPicPr><p:cNvPr id="' + (next++) + '" name="Progress Photo ' + (i + 1) + '" descr="Progress photo ' + (i + 1) + '"/>' +
+        '<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="' + rid + '"/>' +
+        '<a:srcRect l="' + l + '" t="' + t + '" r="' + l + '" b="' + t + '"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>' +
+        '<p:spPr><a:xfrm><a:off x="' + Math.round(x0 + i * (cw + PHOTO_GAP)) + '" y="' + Math.round(bp.y + PHOTO_PAD) + '"/><a:ext cx="' + Math.round(cw) + '" cy="' + Math.round(ih) + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:ln w="9525"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></p:spPr></p:pic>';
+      tree.insertBefore(d.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true), after);
     });
   }
 
@@ -1275,7 +1305,7 @@
   }
 
   /* ================================================================== main */
-  function build(templateBuffer, D) {
+  function build(templateBuffer, D, photos) {
     var M = model(D);
     SPI_OK = M.spiTarget;                 // the SPI KPI target (0.91) drives every SPI colour in the deck
     return E.Pkg.open(templateBuffer).then(function (pkg) {
@@ -1323,6 +1353,13 @@
       // delivery KPI: 2 per slide
       clones("delivery", chunk(M.D.t("Delivery_KPI").filter(function (r) { return r["Project Code"] != null; }), 2), function (p, g, i) { fillDelivery(pkg, p, M, g, i * 2 + 1); });
       // one slide per project in execution / in closing
+      // progress photos (imported from the weekly report files): written once per project into ppt/media
+      if (photos && window.SARPhotos) M.exec.forEach(function (x) {
+        x.photos = SARPhotos.forProject(photos, (x.w || {})["Source.Name"], x.code).slice(0, PHOTO_MAX).map(function (ph) {
+          var mp = pkg.freeName("ppt/media", "nsr_progress", ".jpeg"); pkg.zip.file(mp, new Uint8Array(ph.data)); pkg.ensureDefault("jpeg", "image/jpeg");
+          return { path: mp, w: ph.w, h: ph.h };
+        });
+      });
       clones("exec", M.exec, function (p, x) { fillExec(pkg, p, M, x, photo); });
       clones("closing", oldPr.length ? oldPr : [null], function (p, r) { if (r) fillClosing(pkg, p, M, r); });   // same 100 % filter as the Old projects slides
       return jobs.then(function () {

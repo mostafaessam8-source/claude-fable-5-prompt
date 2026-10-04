@@ -342,9 +342,9 @@
     var cloudIx = (window.SARCloud && SARCloud._last) || { sources: {}, template: null };
     if (window.SARCloud && !PUB) view.appendChild(cloudPanel(ctx, function (files) { handleFiles(files, { fromCloud: true }); }));
 
-    var dz = U.el('<label class="dropzone" tabindex="0"><input type="file" accept=".xlsx,.xlsm" multiple hidden>' +
+    var dz = U.el('<label class="dropzone" tabindex="0"><input type="file" accept=".xlsx,.xlsm,.rar,.zip" multiple hidden>' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v4h16v-4"/></svg>' +
-      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx · Budget 2026.xlsx · PD_PPT_Data_Requirement_For_all_Program_&lt;date&gt;.xlsx · EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx</p></label>");
+      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx · Budget 2026.xlsx · PD_PPT_Data_Requirement_For_all_Program_&lt;date&gt;.xlsx · EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx · <b>Weekly report files (.rar / .zip, or the project .xlsx files) → progress photos</b></p></label>");
     var input = dz.querySelector("input");
     ["dragenter", "dragover"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("over"); }); });
     ["dragleave", "drop"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("over"); }); });
@@ -375,6 +375,23 @@
           (src.hasFile || cloudIx.sources[k] ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
     });
     view.appendChild(grid);
+    if (window.SARPhotos) {   // progress photos from the per-project weekly report files (kept in this browser only)
+      var pc = U.el('<div class="src-card"><h4>Progress photos</h4><div class="fname">Expected file: Weekly report files in a .rar / .zip (one NSR_&lt;code&gt;_….xlsx per project), sheet “Progress Photo”</div><ul class="ph-list"><li><span>Loading…</span></li></ul></div>');
+      grid.appendChild(pc);
+      SARPhotos.load().then(function (st) {
+        var ps = st && st.projects ? Object.keys(st.projects).map(function (k) { return st.projects[k]; }).sort(function (a, b) { return String(a.code).localeCompare(String(b.code)); }) : [];
+        if (ps.length) pc.classList.add("loaded");
+        pc.querySelector(".ph-list").innerHTML = ps.length ? ps.map(function (p) {
+          return '<li><span title="' + esc(p.file) + '">' + esc(p.code || p.file) + "</span><span>" + U.badge(p.photos.length + " photo" + (p.photos.length === 1 ? "" : "s")).replace("badge ", "badge ok ") + "</span></li>";
+        }).join("") : '<li><span>None imported yet</span><span><span class="badge bad">missing</span></span></li>';
+        if (ps.length) {
+          pc.querySelector(".fname").insertAdjacentHTML("beforebegin", '<div class="fname">' + ps.length + " projects · imported " + esc(new Date(st.updatedAt).toLocaleString("en-GB")) + "</div>");
+          var cb = U.el('<button type="button" class="icon-btn ghost">Remove progress photos</button>');
+          cb.addEventListener("click", function () { if (confirm("Remove all progress photos from this browser?")) SARPhotos.clear().then(function () { U.toast("Progress photos removed."); ctx.rerender(); }); });
+          pc.appendChild(cb);
+        }
+      });
+    }
     grid.querySelectorAll(".src-dl").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-src");
@@ -414,6 +431,26 @@
       files = Array.prototype.slice.call(files || []);
       if (!files.length) return;
       log.textContent = "";
+      // .rar / .zip of weekly report files → progress photos; Excel files that are not a known source are tried for photos too
+      var photoFiles = window.SARPhotos ? files.filter(function (f) { return SARPhotos.isArchiveName(f.name); }) : [];
+      files = files.filter(function (f) { return photoFiles.indexOf(f) < 0; });
+      function photos() {
+        if (!photoFiles.length) return Promise.resolve(0);
+        write("Progress photos:");
+        return SARPhotos.importFiles(photoFiles, write).then(function (r) {
+          if (r.photos) write("  ✓ " + r.photos + " photos saved for " + r.projects + " project(s) — used on the project dashboards and the weekly PowerPoint");
+          return r.photos;
+        });
+      }
+      if (!files.length) {
+        photos().then(function (n) {
+          if (!n) { U.toast("No progress photos found — see the log.", true); return; }
+          U.toast(n + " progress photos imported.");
+          var keep = log.textContent; ctx.rerender();
+          var nl = document.querySelector(".log"); if (nl) { nl.style.display = "block"; nl.textContent = keep; }
+        });
+        return;
+      }
       SARStore.load().then(function (stored) {
         stored = stored || { tables: {}, sources: {} };
         var ok = 0, chain = Promise.resolve(), toCloud = [];
@@ -436,10 +473,16 @@
                   (r.missing.length ? " (missing columns: " + r.missing.join(", ") + ")" : "") + (r.status === "missing" ? " (table not found)" : ""));
               });
               ok++;
-            }).catch(function (e) { write("  ✗ " + e.message); });
+            }).catch(function (e) {
+              if (window.SARPhotos && /\.xls[xm]$/i.test(f.name)) { write("  – not a data source; checking it for progress photos"); photoFiles.push(f); return; }
+              write("  ✗ " + e.message);
+            });
           });
         });
+        var nPh = 0;
+        chain = chain.then(photos).then(function (n) { nPh = n; });
         return chain.then(function () {
+          if (!ok && nPh) { U.toast(nPh + " progress photos imported."); var k0 = log.textContent; ctx.rerender(); var l0 = document.querySelector(".log"); if (l0) { l0.style.display = "block"; l0.textContent = k0; } return; }
           if (!ok) { U.toast("No file could be imported — see the log.", true); return; }
           var up = Promise.resolve();
           if (toCloud.length && window.SARCloud && SARCloud.connected()) {
