@@ -989,6 +989,17 @@
   }
 
   /* project in execution */
+  /* fixed value-axis bounds (setChart clears the template's): c:scaling children go logBase, orientation, max, min */
+  function valRange(pkg, cp, min, max) {
+    var d = pkg.xml(cp);
+    E.all(d, NS.c, "valAx").forEach(function (ax) {
+      var sc = E.all(ax, NS.c, "scaling")[0]; if (!sc) return;
+      Array.prototype.slice.call(sc.childNodes).forEach(function (k) { if (/^(max|min)$/.test(k.localName)) sc.removeChild(k); });
+      var after = Array.prototype.filter.call(sc.childNodes, function (k) { return k.localName === "orientation" || k.localName === "logBase"; }).pop();
+      var mx = d.createElementNS(NS.c, "c:max"), mn = d.createElementNS(NS.c, "c:min"); mx.setAttribute("val", String(max)); mn.setAttribute("val", String(min));
+      var ref = after ? after.nextSibling : sc.firstChild; sc.insertBefore(mx, ref); sc.insertBefore(mn, mx.nextSibling);
+    });
+  }
   function fillExec(pkg, path, M, x, photo) {
     var r = x.w || {}, d = pkg.xml(path), code = x.code, card = x.card || {}, src = r["Source.Name"], pg = x.p || {};
     var ctr = function (re) { return ((card.Contracts || []).filter(function (k) { return re.test(k.Role || "") && k.Entity; })[0] || {}).Entity; };
@@ -1053,7 +1064,8 @@
     E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
       var x = pkg.xml(cp).documentElement.textContent;
-      if (/Plan%/.test(x)) pkg.setChart(cp, { cats: ["Progress"], series: [{ name: "Actual", values: [ac] }, { name: "Plan%", values: [pl] }] });
+      if (/Plan%/.test(x)) { pkg.setChart(cp, { cats: ["Progress"], series: [{ name: "Actual", values: [ac] }, { name: "Plan%", values: [pl] }] });
+        valRange(pkg, cp, 0, Math.max(1, N(ac) || 0, N(pl) || 0)); }   // bars always read on a fixed 0–100 % scale
       else if (/IPC/.test(x)) { var paid = paidOf, cv = x0.cv || 0; pkg.setChart(cp, { cats: ["IPC Paid / Approved", "Remaining Amount"], series: [{ name: "IPC", values: [paid, Math.max(0, cv - paid)] }] }); }
     });
     var varT = E.all(d, NS.a, "tbl").filter(function (t) { return /^Variance/.test(E.all(t, NS.a, "t").map(function (x) { return x.textContent; }).join("").trim()); })[0];
