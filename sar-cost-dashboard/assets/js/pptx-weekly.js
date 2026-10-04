@@ -745,23 +745,68 @@
   /* keep filled text inside its box: estimate the wrapped height (average glyph ~0.55 em, line 1.2 em) and step the
      font down to minPt; if it still does not fit, keep stepping down to 5 pt. Text is never cut. Boxes set to auto-grow
      are not resized by PowerPoint until edited, so long data would otherwise spill out. */
-  function fitText(sh, minPt) {
-    if (!sh) return;
-    var p = E.pos(sh); if (!p || !p.w || !p.h) return;
+  /* text measure for a box: usable width / height and the estimated wrapped height at font scale k. Glyphs average
+     ~0.58 em, lines 1.25 em plus the paragraph's space before/after, and bulleted paragraphs lose a hanging indent even
+     when it comes from the list style — tuned so PowerPoint does not spill text the estimate thought would fit. */
+  function textBox(sh) {
+    var p = E.pos(sh); if (!p || !p.w || !p.h) return null;
     var bp = sh.getElementsByTagNameNS(NS.a, "bodyPr")[0], ins = function (a, d) { var v = bp && bp.getAttribute(a); return (v != null ? +v : d) / 12700; };
     var W = p.w / 12700 - ins("lIns", 91440) - ins("rIns", 91440), H = p.h / 12700 - ins("tIns", 45720) - ins("bIns", 45720);
-    if (W <= 10 || H <= 6) return;
+    if (W <= 10 || H <= 6) return null;
     var paras = E.all(sh, NS.a, "p").filter(function (q) { var n = q.parentNode; while (n && n.localName !== "tbl" && n !== sh) n = n.parentNode; return n === sh; });
     function szOf(q) { var r = E.all(q, NS.a, "rPr").concat(E.all(q, NS.a, "endParaRPr")).filter(function (x) { return x.getAttribute("sz"); })[0]; return r ? +r.getAttribute("sz") / 100 : 12; }
-    function indent(q) { var pr = E.all(q, NS.a, "pPr")[0]; return pr && pr.getAttribute("marL") ? +pr.getAttribute("marL") / 12700 : 0; }
+    function pPr(q) { return E.all(q, NS.a, "pPr")[0]; }
+    function indent(q) { var pr = pPr(q), m = pr && pr.getAttribute("marL") ? +pr.getAttribute("marL") / 12700 : 0; return Math.max(m, paras.length > 1 && !(pr && E.all(pr, NS.a, "buNone").length) ? 18 : 0); }
+    function spc(q, sz) { var pr = pPr(q); if (!pr) return 0; var t = 0; ["spcBef", "spcAft"].forEach(function (n) { var e = E.all(pr, NS.a, n)[0], pts = e && E.all(e, NS.a, "spcPts")[0], pc = e && E.all(e, NS.a, "spcPct")[0];
+      if (pts) t += +pts.getAttribute("val") / 100; else if (pc) t += sz * +pc.getAttribute("val") / 100000; }); return t; }
     function txt(q) { return E.all(q, NS.a, "t").map(function (t) { return t.textContent; }).join(""); }
-    function height(k) {
-      return paras.reduce(function (h, q) {
+    return { W: W, H: H, paras: paras, szOf: szOf, base: Math.max.apply(null, paras.map(szOf).concat([1])),
+      lineChars: function (pt) { return Math.floor((W - (paras.length > 1 ? 18 : 0)) / (pt * 0.58)); },
+      height: function (k) { return paras.reduce(function (h, q) {
         var sz = szOf(q) * k, w = Math.max(10, W - indent(q)), chars = txt(q).length;
-        var lines = Math.max(1, Math.ceil(chars * sz * 0.55 / w));
-        return h + lines * sz * 1.2;
-      }, 0);
-    }
+        return h + Math.max(1, Math.ceil(chars * sz * 0.58 / w)) * sz * 1.25 + spc(q, sz) * Math.min(1, k + 0.3);
+      }, 0); } };
+  }
+  /* Achievements shortened to their box (readable at ≥ 7.5 pt), in steps, each only if still needed:
+     1 compact wording (same meaning, fewer letters); 2 one lookahead line, then none; 3 each achievement to its main
+     clause; 4 the last achievements folded into "+N more activities ongoing". Text is never cut mid-word. */
+  var SHORT = [[/\b(is|are) (now )?(still )?(in progress|ongoing|under progress)\b/gi, "ongoing"], [/\bin progress\b/gi, "ongoing"], [/\bunder progress\b/gi, "ongoing"],
+    [/\bhas been |have been /gi, ""], [/\bInstallation\b/g, "Install."], [/\binstallation\b/g, "install."], [/\bConstruction\b/g, "Constr."], [/\bconstruction\b/g, "constr."],
+    [/\bConcrete\b/g, "Conc."], [/\bconcrete\b/g, "conc."], [/\bpreparation\b/gi, "prep."], [/\bExcavation\b/g, "Excav."], [/\bexcavation\b/g, "excav."],
+    [/\bSubmittals?\b/g, "Subm."], [/\bsubmittals?\b/g, "subm."], [/\bSubmission\b/g, "Subm."], [/\bsubmission\b/g, "subm."], [/\bapproximately\b/gi, "~"],
+    [/\bincluding\b/gi, "incl."], [/\band\b/g, "&"], [/\bReinforcement\b/g, "Rebar"], [/\breinforcement\b/g, "rebar"], [/\bKilometers?\b/gi, "KM"],
+    [/\bFixing of rebars?\b/g, "Rebar fixing"], [/\bfixing of rebars?\b/g, "rebar fixing"], [/^(the|a)\s+/i, ""], [/\s+([,;.])/g, "$1"], [/\s{2,}/g, " "]];
+  function compact(t) { return SHORT.reduce(function (x, r) { return x.replace(r[0], r[1]); }, String(t)).trim(); }
+  function mainClause(t) {
+    var pre = t.match(/^(Next|Key milestone): /), body = pre ? t.slice(pre[0].length) : t;
+    var parts = body.split(/\s+[—–]\s+|;\s*|\s+-\s+|,\s+(?=[A-Za-z])/);
+    var out = parts[0]; if (out.length < 28 && parts[1]) out += ", " + parts[1];
+    return (pre ? pre[0] : "") + out.trim();
+  }
+  function shortenToBox(sh, ach, next, minPt) {
+    if (!sh) return;
+    function put(a, n) { var L = a.concat(n); E.setParas(sh, L.length ? L : [""]); var tb = textBox(sh); return !tb || tb.height(Math.min(1, minPt / tb.base)) <= tb.H; }
+    if (put(ach, next)) return;
+    ach = ach.map(compact); next = next.map(compact);
+    if (put(ach, next) || put(ach, next.slice(0, 1)) || put(ach, [])) return;
+    ach = ach.map(mainClause);
+    if (put(ach, [])) return;
+    // one line each: cut at a whole word within the line, never ending on a joining word
+    var tb0 = textBox(sh), cap = tb0 ? tb0.lineChars(minPt) : 50;
+    ach = ach.map(function (t) {
+      if (t.length <= cap) return t;
+      var cut = t.slice(0, cap + 1).replace(/\s+\S*$/, ""), m, last = -1, re = /\s(for|at|of|in|on|to|with|between|behind|from|by)\s/gi;
+      while ((m = re.exec(cut))) last = m.index;
+      if (last > 14) cut = cut.slice(0, last);   // end before the phrase that would be split
+      return cut.replace(/[\s,&\-–—(]+$/, "").replace(/\s+(at|for|of|in|on|to|with|the|and|from|by)$/i, "").replace(/[\s,&\-–—(]+$/, "");
+    });
+    if (put(ach, [])) return;
+    for (var k = ach.length - 1; k >= 1; k--) { var more = ach.length - k; if (put(ach.slice(0, k).concat(["+" + more + " more " + (more === 1 ? "activity" : "activities") + " ongoing"]), [])) return; }
+  }
+  function fitText(sh, minPt) {
+    if (!sh) return;
+    var tb = textBox(sh); if (!tb) return;
+    var H = tb.H, paras = tb.paras, szOf = tb.szOf, height = tb.height;
     var base = Math.max.apply(null, paras.map(szOf).concat([1])), k = 1, minK = Math.min(1, (minPt || 7) / base), floorK = Math.min(minK, 5 / base);
     while (k > minK && height(k) > H) k = Math.max(minK, k - 0.04);
     while (k > floorK && height(k) > H) k = Math.max(floorK, k - 0.02);    // long text: smaller still, never cut
@@ -1062,9 +1107,9 @@
     var wa = []; M.D.t("Weekly_Achievements").filter(function (y) { return y["Source.Name"] === src; })
       .sort(function (a, b) { return (N(a["Sr. No."]) || 0) - (N(b["Sr. No."]) || 0); })
       .forEach(function (y) { var t = clip(y["Work Description"]); if (t && wa.indexOf(t) < 0) wa.push(t); });
-    var achL = (wa.length ? wa : [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : null])
-      .concat(la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"]); })).filter(Boolean);
-    if (ach) E.setParas(ach, achL.length ? achL : [""]);
+    var achA = (wa.length ? wa : [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : null]).filter(Boolean);
+    var achN = la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"]); });
+    shortenToBox(ach, achA, achN, 7.5);   // shortened to the box (skill: achievement-shorten), then fitText below
     var iss = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 4900000 && p.y < 5300000 && E.text(x).trim(); })[0];
     var aoc = M.D.t("Area_of_Concern").filter(function (x) { return x["Source.Name"] === src && x["Issue /Concern Description"] && !/closed|resolved/i.test(x.Status || ""); }).slice(0, 4);
     if (!src) aoc = M.D.t("Issue_register").filter(function (y) { return String(y["Poject Code"]) === code && !/resolved|closed/i.test(y["Issue Status"] || ""); })
