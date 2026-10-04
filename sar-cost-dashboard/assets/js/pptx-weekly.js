@@ -989,16 +989,43 @@
   }
 
   /* project in execution */
-  /* fixed value-axis bounds (setChart clears the template's): c:scaling children go logBase, orientation, max, min */
-  function valRange(pkg, cp, min, max) {
-    var d = pkg.xml(cp);
-    E.all(d, NS.c, "valAx").forEach(function (ax) {
-      var sc = E.all(ax, NS.c, "scaling")[0]; if (!sc) return;
-      Array.prototype.slice.call(sc.childNodes).forEach(function (k) { if (/^(max|min)$/.test(k.localName)) sc.removeChild(k); });
-      var after = Array.prototype.filter.call(sc.childNodes, function (k) { return k.localName === "orientation" || k.localName === "logBase"; }).pop();
-      var mx = d.createElementNS(NS.c, "c:max"), mn = d.createElementNS(NS.c, "c:min"); mx.setAttribute("val", String(max)); mn.setAttribute("val", String(min));
-      var ref = after ? after.nextSibling : sc.firstChild; sc.insertBefore(mx, ref); sc.insertBefore(mn, mx.nextSibling);
+  /* Progress Status: Plan % and Actual as SAR-styled progress tracks drawn in place of the template chart —
+     a light track for the full 0–100 % (the shaded part is what remains), the filled part in SAR blue / teal,
+     the value always outside to the right, row names on the left and a legend underneath. */
+  var PB = { plan: "00778B", act: "3FB4C8", track: "E3E8EB", trackLn: "C9D2D7", text: "3D3935", muted: "768692" };
+  function progressBars(d, frame, pl, ac) {
+    var p = E.pos(frame); if (!p) return;
+    var tree = frame.parentNode, ids = E.all(d, NS.p, "cNvPr").map(function (n) { return +n.getAttribute("id") || 0; }), next = Math.max.apply(null, ids.concat([1])) + 1;
+    var esc = function (t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+    function sp(name, x, y, w, h, geom, fill, ln, txt) {
+      var xml = '<p:sp xmlns:p="' + NS.p + '" xmlns:a="' + NS.a + '"><p:nvSpPr><p:cNvPr id="' + (next++) + '" name="' + name + '"/><p:cNvSpPr' + (txt ? ' txBox="1"' : "") + '/><p:nvPr/></p:nvSpPr>' +
+        '<p:spPr><a:xfrm><a:off x="' + Math.round(x) + '" y="' + Math.round(y) + '"/><a:ext cx="' + Math.max(1, Math.round(w)) + '" cy="' + Math.round(h) + '"/></a:xfrm>' +
+        '<a:prstGeom prst="' + geom + '"><a:avLst>' + (geom === "roundRect" ? '<a:gd name="adj" fmla="val 22000"/>' : "") + '</a:avLst></a:prstGeom>' +
+        (fill ? '<a:solidFill><a:srgbClr val="' + fill + '"/></a:solidFill>' : "<a:noFill/>") + (ln ? '<a:ln w="6350"><a:solidFill><a:srgbClr val="' + ln + '"/></a:solidFill></a:ln>' : "<a:ln><a:noFill/></a:ln>") + "</p:spPr>" +
+        '<p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/><a:lstStyle/>' +
+        (txt || []).map(function (para) { return '<a:p><a:pPr algn="' + (para.algn || "l") + '"/>' + para.runs.map(function (r) {
+          return '<a:r><a:rPr lang="en-US" sz="' + Math.round(r.size * 100) + '" b="' + (r.bold ? 1 : 0) + '" dirty="0"><a:solidFill><a:srgbClr val="' + r.color + '"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr><a:t>' + esc(r.text) + "</a:t></a:r>"; }).join("") + "</a:p>"; }).join("") +
+        (txt ? "" : "<a:p><a:endParaRPr lang=\"en-US\" sz=\"800\"/></a:p>") + "</p:txBody></p:sp>";
+      var el = d.importNode(new DOMParser().parseFromString(xml, "application/xml").documentElement, true);
+      tree.insertBefore(el, frame); return el;
+    }
+    var nameW = p.w * 0.17, valW = p.w * 0.2, tx = p.x + nameW, tw = p.w - nameW - valW - p.w * 0.03;
+    var rowH = p.h * 0.16, gap = p.h * 0.12, y0 = p.y + p.h * 0.12;
+    [["Plan %", pl, PB.plan], ["Actual", ac, PB.act]].forEach(function (row, i) {
+      var v = N(row[1]), y = y0 + i * (rowH + gap), f = v == null ? 0 : Math.max(0, Math.min(1, v));
+      sp("Progress Name " + (i + 1), p.x, y, nameW - p.w * 0.02, rowH, "rect", null, null, [{ algn: "r", runs: [{ text: row[0], size: 9, bold: true, color: PB.muted }] }]);
+      sp("Progress Track " + (i + 1), tx, y, tw, rowH, "roundRect", PB.track, PB.trackLn);
+      if (f > 0) sp("Progress Fill " + (i + 1), tx, y, tw * f, rowH, f * tw < rowH * 0.6 ? "rect" : "roundRect", row[2], null);   // exact length
+      sp("Progress Value " + (i + 1), tx + tw + p.w * 0.03, y, valW, rowH, "rect", null, null, [{ runs: [{ text: v == null ? "-" : pct(v), size: 11, bold: true, color: v == null ? PB.muted : row[2] === PB.plan ? PB.plan : PB.text }] }]);
     });
+    // legend: Plan % · Actual · Remaining
+    var ly = y0 + 2 * rowH + gap + p.h * 0.12, lh = p.h * 0.09, lx = tx, items = [["Plan %", PB.plan], ["Actual", PB.act], ["Remaining", PB.track]];
+    items.forEach(function (it, i) {
+      var x = lx + i * (tw / 3 + p.w * 0.02);
+      sp("Progress Legend Key " + (i + 1), x, ly + lh * 0.15, lh * 0.7, lh * 0.7, "rect", it[1], it[1] === PB.track ? PB.trackLn : null);
+      sp("Progress Legend " + (i + 1), x + lh, ly, tw / 3, lh, "rect", null, null, [{ runs: [{ text: it[0], size: 8, color: PB.muted }] }]);
+    });
+    E.removeEl(frame);
   }
   function fillExec(pkg, path, M, x, photo) {
     var r = x.w || {}, d = pkg.xml(path), code = x.code, card = x.card || {}, src = r["Source.Name"], pg = x.p || {};
@@ -1064,8 +1091,7 @@
     E.all(d, NS.p, "graphicFrame").forEach(function (f) {
       var cp = pkg.chartOf(path, f); if (!cp) return;
       var x = pkg.xml(cp).documentElement.textContent;
-      if (/Plan%/.test(x)) { pkg.setChart(cp, { cats: ["Progress"], series: [{ name: "Actual", values: [ac] }, { name: "Plan%", values: [pl] }] });
-        valRange(pkg, cp, 0, Math.max(1, N(ac) || 0, N(pl) || 0)); }   // bars always read on a fixed 0–100 % scale
+      if (/Plan%/.test(x)) progressBars(d, f, pl, ac);   // the template chart is replaced by drawn progress tracks
       else if (/IPC/.test(x)) { var paid = paidOf, cv = x0.cv || 0; pkg.setChart(cp, { cats: ["IPC Paid / Approved", "Remaining Amount"], series: [{ name: "IPC", values: [paid, Math.max(0, cv - paid)] }] }); }
     });
     var varT = E.all(d, NS.a, "tbl").filter(function (t) { return /^Variance/.test(E.all(t, NS.a, "t").map(function (x) { return x.textContent; }).join("").trim()); })[0];
