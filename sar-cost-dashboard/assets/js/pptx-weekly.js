@@ -2,12 +2,12 @@
  * Export Weekly PPT — fills the PD weekly "Balance Scorecard" template (.pptx) with the NSR data loaded in the site.
  * The template's slides, tables, charts and styling are kept exactly; only text, table rows and chart data change.
  * Template slides are recognised by their titles, so the deck may be re-saved / re-ordered by the PMO.
- * Anything the site does not hold is written as "[To be filled]" (red) so it can be completed by hand.
+ * Anything the site does not hold is written as "_" so it can be completed by hand.
  */
 (function () {
   "use strict";
   var E = window.PptxEngine, NS = E.NS;
-  var MISSING = "[To be filled]", RED = "C00000", GREEN = "00B050", AMBER = "FFC000", TEAL = "00778B";
+  var MISSING = "_", RED = "C00000", GREEN = "00B050", AMBER = "FFC000", TEAL = "00778B";
   var SPI_OK = 0.91;                       // SPI colour rule for the whole deck: below the KPI target red, otherwise green (set from the KPI sheet in build)
   function spiCol(v) { return v != null && v >= SPI_OK ? GREEN : RED; }
   function tgtCol(v, M) { return v != null && v >= M.spiTarget ? GREEN : RED; }   // Program Values SPI donut: against the KPI target shown under it
@@ -33,7 +33,7 @@
   function mon(s) { var t = ymd(s); return t ? MONTHS[t.m - 1] + "-" + String(t.y).slice(2) : ""; }
   function qtr(s) { var t = ymd(s); return t ? "Q" + Math.ceil(t.m / 3) + "-" + t.y : ""; }
   function serial(s) { var t = ymd(s); return t ? Math.round((Date.UTC(t.y, t.m - 1, t.d) - Date.UTC(1899, 11, 30)) / 864e5) : null; }
-  function miss(v) { return v == null || v === "" ? { text: MISSING, color: RED } : String(v); }
+  function miss(v) { return v == null || v === "" ? MISSING : String(v); }
   // text is never cut with "…": it goes in whole and the box shrinks its font (fitText) or the table cell wraps
   function clip(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
   function chunk(a, n) { var o = []; for (var i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o.length ? o : [[]]; }
@@ -187,7 +187,7 @@
     var c = document.createElement("canvas"); c.width = 640; c.height = 420;
     var g = c.getContext("2d"); g.fillStyle = "#F2F8F9"; g.fillRect(0, 0, 640, 420);
     g.strokeStyle = "#00778B"; g.lineWidth = 6; g.setLineDash([18, 12]); g.strokeRect(10, 10, 620, 400);
-    g.fillStyle = "#C00000"; g.font = "bold 44px Arial"; g.textAlign = "center"; g.fillText("[To be filled]", 320, 200);
+    g.fillStyle = "#768692"; g.font = "bold 44px Arial"; g.textAlign = "center"; g.fillText("_", 320, 200);
     g.fillStyle = "#768692"; g.font = "30px Arial"; g.fillText("Add progress photo", 320, 255);
     return new Promise(function (res) { c.toBlob(function (b) { b.arrayBuffer().then(function (x) { res(new Uint8Array(x)); }); }, "image/png"); });
   }
@@ -498,7 +498,7 @@
         var crit = /\(([-+±]?\d+%?)\)/.exec(name);
         E.cellText(c[0], clip(name, 120)); E.cellText(c[1], pct(r["KPI Weight (%)"], 0)); E.cellText(c[2], pct(F.res, 1));
         // Criteria / Target: the Balanced Scorecard target (Projects_Department.xlsx), else the one in the KPI name
-        E.cellText(c[3], r["Criteria / Target"] || (crit ? crit[1] : /schedule performance/i.test(name) ? String(M.spiTarget) : !N(r["KPI Weight (%)"]) ? "-" : { text: MISSING, color: RED, size: 6.5 }));   // one line, keeps rows compact
+        E.cellText(c[3], r["Criteria / Target"] || (crit ? crit[1] : /schedule performance/i.test(name) ? String(M.spiTarget) : !N(r["KPI Weight (%)"]) ? "-" : { text: MISSING, size: 6.5 }));   // one line, keeps rows compact
         var plain = /^(#|spi)$/i.test(r["Target Unit"] || "");    // index KPIs (FWI 0.25, IWI 0.547, SPI 0.91) are not percentages
         E.cellText(c[4], (plain && N(F.target) != null ? String(Math.round(N(F.target) * 1000) / 1000) : kpiVal(F.target)) || miss(null));
         E.cellText(c[5], kpiVal(F.plan) || "-"); E.cellText(c[6], kpiVal(F.act) || "-");
@@ -1150,7 +1150,7 @@
     head(textShape(/^Consultant\s/), "Consultant            : ", "N/A");
     head(textShape(/^Funded by/), "Funded by             : ", miss(clip((card.Fund || {}).Org, 22)));
     var brief = E.all(d, NS.p, "sp").filter(function (s) { var p = E.pos(s); return p && p.y > 2400000 && p.y < 3200000 && E.text(s).length > 30; })[0];
-    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, color: RED, size: 10 }); fitText(brief, 7); }
+    if (brief) { var bt = clip(cd.Scope || card.Description || "", 300); E.setParas(brief, bt ? { text: bt, size: 10 } : { text: MISSING, size: 10 }); fitText(brief, 7); }
     var tbl = E.all(d, NS.a, "tbl").filter(function (x) { return /ISSUES/.test(x.textContent); })[0];
     if (tbl) {
       var pend = closingSteps(M).filter(function (k) { return stepState(r, k).status !== "Completed" && stepState(r, k).status !== "NA"; });
@@ -1173,7 +1173,7 @@
     E.all(d, NS.p, "sp").forEach(function (s) {
       var tx = E.text(s).trim(), nm = s.getElementsByTagNameNS(NS.p, "cNvPr")[0].getAttribute("name") || "";
       if ((!tx && !/^TextBox/.test(nm)) || /^Title/.test(nm) || /Organization Chart/.test(tx) || /^SUMMARY$/i.test(tx)) return;
-      E.setParas(s, { text: MISSING, color: RED });
+      E.setParas(s, MISSING);
     });
     E.all(d, NS.a, "tc").forEach(function (tc) {   // the site-team table under the chart
       E.cellText(tc, { text: MISSING, color: "FFFFFF" });

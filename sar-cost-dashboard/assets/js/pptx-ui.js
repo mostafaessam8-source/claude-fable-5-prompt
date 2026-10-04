@@ -45,7 +45,7 @@
         '<div class="pub-help"><h4>What you get</h4><ol>' +
         "<li>The same deck, slide by slide, with the template's exact formatting, filled with the NSR data in this dashboard (report date " + esc(fmt.date(rd)) + ").</li>" +
         "<li>One slide per project in execution and per project in the closing phase; tables, charts (with their Excel data) and the cut-off line follow the data.</li>" +
-        "<li>Anything the dashboard does not hold — savings, approved EOTs, consultants, progress photos, the organisation chart — is marked <b style='color:#C00000'>[To be filled]</b> for you to complete.</li>" +
+        "<li>Anything the dashboard does not hold — savings, approved EOTs, consultants, progress photos, the organisation chart — is marked <b>_</b> for you to complete.</li>" +
         "</ol><p class='muted'>The template contains internal programme data: it is kept in this browser and, when cloud storage is connected, in your private repository — never in the public site.</p></div></div>";
       var input = body.querySelector("input"), dz = body.querySelector(".dropzone");
       function take(f) {
@@ -73,7 +73,7 @@
         window.SARWeeklyPpt.build(tpl.buffer.slice(0), D).then(function (blob) {
           var name = "NSR - Program - Balance Scorecard - WK" + (wk || "") + " - " + (rd || "") + ".pptx";
           download(name, blob);
-          m.innerHTML = "✓ Saved <b>" + esc(name) + "</b> (" + Math.round(blob.size / 1024) + " KB). Complete the red <b>[To be filled]</b> items before sharing.";
+          m.innerHTML = "✓ Saved <b>" + esc(name) + "</b> (" + Math.round(blob.size / 1024) + " KB). Complete the <b>_</b> items before sharing.";
           go.disabled = false;
         }).catch(function (e) { console.error(e); m.innerHTML = '<span class="neg">' + esc(e.message) + "</span>"; go.disabled = false; });
       });
