@@ -1053,7 +1053,10 @@
     if (briefs[0]) E.setParas(briefs[0], clip(r["Project Description"] || card.Description || "", 260) || miss(null));
     var ach = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 3300000 && p.y < 3600000 && E.text(x).trim(); })[0];
     var la = M.D.t("Lookahead_Activities").filter(function (x) { return x["Source.Name"] === src && x["Lookahead Activities (7 Days) Description"]; }).slice(0, 2);
-    if (ach) E.setParas(ach, [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : miss(null)].concat(la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"], 90); })));
+    // achievements: the weekly report's achievement (else its key milestone activity), then the lookahead; nothing found → left empty
+    var achL = [r["Achievements Description"] ? clip(r["Achievements Description"]) : r["KM Activitiy Description"] ? "Key milestone: " + clip(r["KM Activitiy Description"]) : null]
+      .concat(la.map(function (x) { return "Next: " + clip(x["Lookahead Activities (7 Days) Description"]); })).filter(Boolean);
+    if (ach) E.setParas(ach, achL.length ? achL : [""]);
     var iss = E.all(d, NS.p, "sp").filter(function (x) { var p = E.pos(x); return p && p.x < 600000 && p.y > 4900000 && p.y < 5300000 && E.text(x).trim(); })[0];
     var aoc = M.D.t("Area_of_Concern").filter(function (x) { return x["Source.Name"] === src && x["Issue /Concern Description"] && !/closed|resolved/i.test(x.Status || ""); }).slice(0, 4);
     if (!src) aoc = M.D.t("Issue_register").filter(function (y) { return String(y["Poject Code"]) === code && !/resolved|closed/i.test(y["Issue Status"] || ""); })
