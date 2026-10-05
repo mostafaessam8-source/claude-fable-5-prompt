@@ -32,6 +32,49 @@
     input.addEventListener("change", function () { onFiles(Array.prototype.slice.call(input.files)); input.value = ""; });
     return dz;
   }
+  /* the Progress data (weekly report workbooks) per execution project, for the S-curve update of a month (YYYY-MM):
+     cumulative actual of the last report up to the month end, forecast completion, contract (value / PO / contractor), phases */
+  function isoOf(v) {
+    if (v == null || v === "") return "";
+    if (v instanceof Date) return isNaN(v) ? "" : v.toISOString().slice(0, 10);
+    if (typeof v === "number") return v > 20000 && v < 80000 ? new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 10) : "";
+    var m = /^(\d{4}-\d{2}-\d{2})/.exec(String(v)); if (m) return m[1];
+    var d = new Date(v); return isNaN(d) ? "" : d.toISOString().slice(0, 10);
+  }
+  function nOf(v) { var n = typeof v === "number" ? v : parseFloat(String(v == null ? "" : v).replace(/[,%]/g, "")); return isNaN(n) ? null : n; }
+  function tab(name) { var D = window.SARApp && window.SARApp.D; try { return D ? D.t(name) || [] : []; } catch (e) { return []; } }
+  function defaultMonth() {
+    var last = ""; tab("Weekly_Report_Updates").forEach(function (r) { var d = isoOf(r["Report Date"]); if (d && d > last) last = d; });   // the reports' date
+    if (!last) { var t = new Date(); last = t.toISOString().slice(0, 10); }
+    return last.slice(0, 7);
+  }
+  function progressData(month) {
+    var end = month + "-31", out = { month: month, projects: {} }, sc = tab("S_Curve");
+    var reps = tab("Weekly_Report_Updates").slice().sort(function (a, b) { return isoOf(a["Report Date"]).localeCompare(isoOf(b["Report Date"])); });
+    reps.forEach(function (r) {
+      var code = String(r["Project Code"] == null ? "" : r["Project Code"]).trim(), src = r["Source.Name"]; if (!code || !src) return;
+      var pts = sc.filter(function (x) { return x["Source.Name"] === src; }).map(function (x) { return { d: isoOf(x["Report Date"]), a: nOf(x["Cum Actual (%)"]), f: nOf(x["Cum Forecast (%)"]) }; })
+        .sort(function (a, b) { return a.d.localeCompare(b.d); });
+      var cut = isoOf(r["Report Date"]); cut = cut && cut < end ? cut : end;   // actuals after the report's own date are not real yet
+      var act = pts.filter(function (x) { return x.d && x.d <= cut && x.a != null; }), last = act[act.length - 1], warn = [];
+      var cum = last ? last.a : null, repDate = last ? last.d : "";
+      if (last && last.d.slice(0, 7) !== month) warn.push("no report in " + month + " — latest actual is from " + last.d);
+      var fc = isoOf(r["End Date (Forecast/Actual)"]), today = isoOf(r["Report Date"]) || repDate;
+      if ((!fc || fc < today) && cum != null && cum < 0.9999) {
+        var hit = pts.filter(function (x) { return x.f != null && x.f >= 0.9999; })[0];
+        warn.push("forecast completion in the report (" + (fc || "empty") + ") is " + (fc ? "already past while the project is not complete" : "missing") + (hit ? " — the date the S-curve forecast reaches 100% (" + hit.d + ") is used" : " — dates kept"));
+        fc = hit ? hit.d : "";
+      }
+      var phases = {};
+      tab("Project_Milestones_Progress_Combine").concat(tab("Project_Milestones_Progress")).forEach(function (x) {
+        if (x["Source.Name"] !== src) return; var k = String(x.WSB || x.Description || "").trim(), v = nOf(x["Actual Progress"]);
+        ["Engineering", "Procurement", "Mobilization", "Construction"].forEach(function (p) { if (new RegExp("^" + p, "i").test(k) && v != null && phases[p] == null) phases[p] = v; });
+      });
+      out.projects[code] = { name: r["Project Name"] || "", cum: cum, repDate: repDate, fcst: fc, warn: warn, phases: phases,
+        cv: nOf(r["Revised Contract Value"]) || nOf(r["Contract Value"]), po: r["(Con) PO Number"] != null ? String(r["(Con) PO Number"]) : "", contractor: r.Contractor || "" };
+    });
+    return out;
+  }
   var cache = { name: null, model: null };   // the extracted current month model (re-read when the file changes)
 
   function render(ctx) {
@@ -114,16 +157,59 @@
 
     /* ---- 3 · apply to the new month */
     var p3 = U.el(U.panel("3 · Apply to the new month's file", "Writes the team's values into the yellow cells", "", "")); v.appendChild(p3);
-    var out = U.el('<div class="cu-out"></div>');
+    var out = U.el('<div class="cu-out"></div>'), f3 = null;      // f3: the new month's file { name, buffer, team: result of step 3 }
     p3.appendChild(dropzone(".xlsx,.xlsm", "Drop the new month's EP - NSR Projects file here", "The file is not changed: you download an updated copy", function (files) {
       var f = files[0]; if (!f) return;
-      out.innerHTML = '<div class="empty-note">Applying the updates to ' + esc(f.name) + " …</div>";
+      out.innerHTML = '<div class="empty-note">Applying the updates to ' + esc(f.name) + " …</div>"; out2.innerHTML = "";
       Promise.all([f.arrayBuffer(), getUpdates()]).then(function (x) {
-        if (!x[1].length) throw new Error("No team update files yet (step 2).");
-        return SARCardForm.apply(x[0], x[1].map(function (u) { return u.data; }), f.name);
-      }).then(function (res) { showResult(f.name, res); }).catch(function (e) { out.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
+        f3 = { name: f.name, buffer: x[0], team: null }; sc.querySelector('[data-a="sc"]').disabled = false;
+        if (!x[1].length) { out.innerHTML = '<div class="note-box">No team update files yet (step 2) — the file is loaded: you can still update the S-curve below.</div>'; return; }
+        return SARCardForm.apply(x[0].slice(0), x[1].map(function (u) { return u.data; }), f.name).then(function (res) { f3.team = res; showResult(f.name, res); });
+      }).catch(function (e) { out.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
     }));
     p3.appendChild(out);
+
+    /* ---- S-curve & forecast finish from the Progress data (execution projects) — on the same new month file */
+    var sc = U.el('<div class="cu-sc"><div class="cu-sum"><div><b>S-curve &amp; forecast finish from the Progress data</b><br><span class="muted">Execution projects in the Progress tab: ' +
+      "the month's Actual Progress (%) so the card total equals the report, the Execution Phase activities' % and the forecast finish of unfinished activities. " +
+      'Works on the file dropped above (after the team updates when there are any) — one updated workbook.</span></div>' +
+      '<div class="cu-sum-acts"><label class="cu-mon">Month <input type="month" class="cu-month"></label>' +
+      '<button type="button" class="icon-btn" data-a="sc" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg><span>Update S-curve from Progress</span></button></div></div></div>');
+    var out2 = U.el('<div class="cu-out"></div>');
+    p3.appendChild(sc); p3.appendChild(out2);
+    sc.querySelector(".cu-month").value = defaultMonth();
+    sc.querySelector('[data-a="sc"]').addEventListener("click", function () {
+      if (!f3) return;
+      var month = sc.querySelector(".cu-month").value; if (!/^\d{4}-\d{2}$/.test(month)) { U.toast("Pick the month first.", true); return; }
+      var prog = progressData(month);
+      if (!Object.keys(prog.projects).length) { out2.innerHTML = '<div class="note-box warn">No execution projects in the Progress data — import the weekly report files on Data Import first.</div>'; return; }
+      out2.innerHTML = '<div class="empty-note">Updating the S-curve for ' + esc(month) + " …</div>";
+      (f3.team ? f3.team.blob.arrayBuffer() : Promise.resolve(f3.buffer.slice(0))).then(function (buf) {
+        return SARCardForm.scurve(buf, prog, f3.name);
+      }).then(function (res) { showScurve(f3.name, res, !!f3.team); }).catch(function (e) { out2.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
+    });
+    function showScurve(fname, res, withTeam) {
+      var ext = (/\.xlsm$/i.test(fname) ? ".xlsm" : ".xlsx"), stem = fname.replace(/(\.xls[xm])$/i, ""), newName = stem + (withTeam ? " - team updates + S-curve" : " - S-curve") + ext;
+      var rank = { skipped: 0, warning: 1, applied: 2 }, rows = res.report.slice().sort(function (a, b) { return (rank[a.status] - rank[b.status]) || String(a.code).localeCompare(String(b.code)); });
+      var ok = rows.filter(function (r) { return r.status === "applied"; }).length, warn = rows.filter(function (r) { return r.status === "warning"; }).length, sk = rows.filter(function (r) { return r.status === "skipped"; }).length;
+      out2.innerHTML = '<div class="cu-sum"><div><b>' + ok + " cells updated</b> from the Progress data (" + esc(res.month) + ")" + (warn ? ' · <span class="neg">' + warn + " warnings</span>" : "") + (sk ? ' · <span class="neg">' + sk + " not applied</span>" : "") +
+        '</div><div class="cu-sum-acts"><button type="button" class="icon-btn" data-a="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download updated workbook</span></button>' +
+        '<button type="button" class="icon-btn ghost" data-a="csv">Download S-curve report (.csv)</button></div></div>' +
+        '<div class="muted cu-note">' + (withTeam ? "Includes the team updates above. " : "") + "Formulas (totals, month columns, row 79 of PO projects) recalculate when it is opened in Excel.</div>" +
+        '<table class="cu-tbl"><thead><tr><th>Project</th><th>What</th><th>Cell</th><th>In the file</th><th>New value</th><th>Source</th><th>Result</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return "<tr" + (r.status !== "applied" ? ' class="cu-skip"' : "") + "><td>" + esc(r.code) + "</td><td>" + esc(r.what) + "</td><td>" + esc(r.ref) + "</td><td>" + esc(r.from || "") + "</td><td><b>" + esc(r.to || "") +
+            "</b></td><td>" + esc(r.src || "") + "</td><td>" + (r.status === "applied" ? '<span class="pos">applied</span>' + (r.why ? '<div class="muted">' + esc(r.why) + "</div>" : "") : '<span class="neg">' + (r.status === "warning" ? "warning: " : "") + esc(r.why) + "</span>") + "</td></tr>";
+        }).join("") + "</tbody></table>";
+      out2.querySelector('[data-a="xlsx"]').addEventListener("click", function () {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(res.blob); a.download = newName; document.body.appendChild(a); a.click(); a.remove();
+      });
+      out2.querySelector('[data-a="csv"]').addEventListener("click", function () {
+        var q = function (x) { return '"' + String(x == null ? "" : x).replace(/"/g, '""') + '"'; };
+        var csv = ["Project,What,Cell,In the file,New value,Source,Result,Note"].concat(rows.map(function (r) { return [r.code, r.what, r.ref, r.from, r.to, r.src, r.status, r.why].map(q).join(","); })).join("\r\n");
+        SARCardForm.saveFile(stem + " - S-curve report.csv", "\ufeff" + csv, "text/csv;charset=utf-8");
+      });
+    }
     function showResult(fname, res) {
       var ok = res.report.filter(function (r) { return r.status === "applied"; }), sk = res.report.filter(function (r) { return r.status !== "applied"; });
       var ext = (/\.xlsm$/i.test(fname) ? ".xlsm" : ".xlsx"), newName = fname.replace(/(\.xls[xm])$/i, "") + " - team updates" + ext;   // a macro workbook keeps .xlsm

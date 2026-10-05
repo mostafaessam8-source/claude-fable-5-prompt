@@ -154,6 +154,34 @@ The history lives in the open page only (drafts themselves are kept in the brows
   cells change and Excel would "repair" the file; Excel rebuilds it. A `.xlsm` input is downloaded as `.xlsm`. Dates → Excel serial, numbers → `<v>`, text → inline string.
 - The uploaded new month file itself is never modified; the user downloads "<name> - team updates.xlsx" + CSV report.
 
+## S-curve & forecast finish from the Progress data (step 3, "Update S-curve from Progress")
+
+Rules from the user (Oct 2026). Works on the file dropped in step 3 (after the team updates when there are any) and
+gives one workbook + CSV report. Code: `SARCardForm.scurve` (cardform.js) + `progressData` (cardupdates.js).
+- Projects: every project of the Progress data (Weekly_Report_Updates + S_Curve of the PBI Weekly Report) that has a
+  `<code>_Project Card` sheet. Month = the month picked (default: the reports' date).
+- Report value = Cum Actual (%) of the last S_Curve row dated ≤ min(month end, the project's own Report Date) — rows
+  after the report date are pre-filled, not real.
+- **Month cell** (section 7 Actual Progress (%), column of that month from the Month Starting Date row, recalculated with
+  XLCalc after the date edits) = report cumulative − sum of the earlier months → the card total equals the report (as the
+  team does by hand: 0214 Sep-26 = 97.83% − 82.89% = 14.94%). **Negative → write 0.0001 (never 0) and flag a warning.**
+  Later months are not touched. Month column not open → skipped with the reason (execution period ends earlier, or a
+  "Month N" label missing on the card, e.g. 0626 R75 — never repaired silently).
+- **Sub-projects (PO blocks, row 79 = contract-value-weighted formula)**: the report's contract is matched to a PO block by
+  contract value (±1) or PO number (labels "PO1" or "PO1/14308"); the month value goes in that block's Actual Progress
+  row; other POs untouched. No match → project skipped. The block's own activity row (name holds the PO number, e.g.
+  "(PO#14622) …", else a contractor word, e.g. "Construction (Yapi)", else same order as the POs) gets % = report cumulative.
+- **Activity % (col N, Execution Phase rows with a weight in col O)**: start from max(last %, the report phase % —
+  Engineering / Procurement / Mobilization / Construction from Project_Milestones_Progress(_Combine), matched by words in
+  the activity name; T&C / testing / handover has no phase), then share the rest so Σ O·N / Σ O = the S-curve total
+  (activities under way or with a phase first; one not started moves only when those are full). An activity is never
+  lowered and 100% stays 100%; if the last % already add up to more than the report, all are kept and flagged.
+- **Forecast finish (col K)**: every activity not complete (< 100% after the update) = the report's "End Date
+  (Forecast/Actual)". Completed activities keep their date. Revised dates (section 6) are never touched. A forecast date
+  that is missing or already past while the project is not complete (e.g. 0674 typed 27-May-26) → the date the report's
+  S-curve forecast reaches 100% is used, flagged.
+- Protected / formula / shared-master cells are never written (reported); calcChain removed; Excel recalculates on open.
+
 ## Privacy
 
 Project data never goes into the repository (public). The team page and update files are shared inside SAR only;

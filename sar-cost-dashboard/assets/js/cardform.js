@@ -492,14 +492,14 @@
     var po = [];
     for (var r = sec7.r; r <= S.maxR; r++) {
       for (var cc = 20; cc <= 40; cc++) {
-        var x = cells[key(r, cc)]; if (!x || !/^PO\s*\d+$/i.test(text(x))) continue;
+        var x = cells[key(r, cc)]; if (!x || !/^PO\s*\d+(\s*\/\s*\d+)?$/i.test(text(x))) continue;   // "PO1" or "PO1/14308"
         var lab = function (re) { for (var q = r; q <= r + 7; q++) { var y = cells[key(q, cc)]; if (y && re.test(text(y))) return q; } return 0; };
         var rCv = lab(/^Contract Value$/i), rA = lab(/^Actual Progress \(%\)$/i), rP = lab(/^Planned Progress \(%\)$/i), rMc = lab(/^Months Count$/i);
         if (!rA) continue;
-        var cv = rCv && cells[key(rCv, cc + 1)] ? cells[key(rCv, cc + 1)].val : null, poNo = cells[key(r, cc + 1)] ? display(cells[key(r, cc + 1)]) : "";
+        var cv = rCv && cells[key(rCv, cc + 1)] ? cells[key(rCv, cc + 1)].val : null, poNo = /\//.test(text(x)) ? text(x).split("/")[1].trim() : cells[key(r, cc + 1)] ? display(cells[key(r, cc + 1)]) : "";
         var refs = [];
         for (var k = 0; k < cols.length; k++) { var ax = cells[key(rA, cc + 1 + k)]; if (ax && ax.f) continue; refs.push({ ref: key(rA, cc + 1 + k), i: k + 1, v: ax ? display(ax) : "" }); }
-        var pname = text(x).replace(/\s+/g, "");
+        var pname = text(x).split("/")[0].replace(/\s+/g, "");
         po.push({ name: pname, no: poNo, cvRef: rCv ? key(rCv, cc + 1) : null, cv: typeof cv === "number" ? cv : 0, actRow: rA, planRow: rP, col0: cc + 1, mcRow: rMc });
         if (linked && (typeof cv === "number" && cv > 0 || poNo)) addRow(secTitle + " · " + pname + (poNo ? " (PO " + poNo + ")" : ""), "Actual Progress (%)", rA, refs);
       }
@@ -1073,6 +1073,174 @@
 
   /* ------------------------------------------------------------------ apply: updates → new month workbook */
   /* updates: [{ kind:"sar-card-updates", by, savedAt, projects:{ code:{ cells:[{ref,s,l,h,k,from,to}] } } }] (latest savedAt wins per cell) */
+  /* ------------------------------------------------------------------ S-curve update from the Progress data
+     For each execution project in the Progress data (weekly report workbooks), on the new month's card:
+     · section 7 "Actual Progress (%)" of the month = report cumulative (last report up to the month end) − the card's
+       cumulative of the earlier months, so the card total equals the report. A negative result is written 0.0001 and flagged.
+       Projects with several POs: written in the PO block of the report's contract (matched by contract value / PO no.);
+       row 79 recalculates as the contract-value-weighted average.
+     · Execution Phase activities: their actual % (col N) is spread from the report's phases (Engineering / Procurement /
+       Mobilization / Construction) so that Σ weight × % = the S-curve total; a PO project's own activity gets its report %.
+     · Forecast finish (col K) of every activity not yet complete = the report's forecast completion date.
+     Protected / formula cells are never written (reported). */
+  var PHASES = [[/engineer|design|survey|investigat|stud/i, "Engineering"], [/procure|supply|material/i, "Procurement"],
+    [/mobili|permit/i, "Mobilization"], [/construct|install|civil|track|work|implement|erect/i, "Construction"]];
+  function phaseOf(name) {
+    if (/\bt\s*&\s*c\b|testing|commission|handover/i.test(name)) return null;
+    for (var i = 0; i < PHASES.length; i++) if (PHASES[i][0].test(name)) return PHASES[i][1];
+    return null;
+  }
+  /* new % per activity: start from max(last %, its phase %), then move every unfinished activity the same share of its
+     remaining work (or back towards its last %) until Σ w·% = T·Σ w */
+  function spreadActs(acts, T, ph) {
+    var W = 0; acts.forEach(function (a) { W += a.w; }); if (!(W > 0)) return false;
+    acts.forEach(function (a) { var p = a.ph && ph && ph[a.ph] != null ? ph[a.ph] : null; a.prev = a.n == null ? 0 : a.n; a.b = Math.min(1, Math.max(a.prev, p == null ? a.prev : p)); });
+    var X = Math.min(1, Math.max(0, T)) * W, A = 0; acts.forEach(function (a) { A += a.w * a.b; });
+    if (X >= A) {
+      // first the activities under way or with a phase in the report; one not started yet moves only when those are full
+      var g1 = acts.filter(function (a) { return a.ph || a.prev > 0 || a.b > 0; }), g2 = acts.filter(function (a) { return g1.indexOf(a) < 0; }), left = X - A;
+      acts.forEach(function (a) { a.nn = a.b; });
+      [g1, g2].forEach(function (grp) {
+        var R = 0; grp.forEach(function (a) { R += a.w * (1 - a.b); }); if (!(R > 0) || left <= 0) return;
+        var s = Math.min(1, left / R); grp.forEach(function (a) { a.nn = a.b + s * (1 - a.b); }); left -= s * R;
+      });
+    } else {
+      var SL = 0; acts.forEach(function (a) { SL += a.w * a.prev; });
+      if (SL > X + 1e-9) { acts.forEach(function (a) { a.nn = a.prev; }); acts.below = true; }   // never lower an activity: kept, flagged
+      else { var t = A - SL > 0 ? (X - SL) / (A - SL) : 0; acts.forEach(function (a) { a.nn = a.prev + t * (a.b - a.prev); }); }
+    }
+    acts.forEach(function (a) { a.nn = Math.round(a.nn * 1e6) / 1e6; });
+    return true;
+  }
+  function scurve(buffer, prog, fileName) {
+    var report = [], month = prog.month, mLab = (function () { var m = /^(\d{4})-(\d{2})$/.exec(month); return m ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1] + "-" + m[1].slice(2) : month; })();
+    return JSZip.loadAsync(buffer).then(function (zip) {
+      return readBook(zip).then(function (book) {
+        var cs = cardSheets(book), chain = Promise.resolve(), seen = {};
+        cs.forEach(function (sh) {
+          var P = prog.projects[sh.code]; if (!P) return; seen[sh.code] = 1;
+          chain = chain.then(function () {
+            return zip.file(sh.path).async("string").then(function (xs) {
+              var doc = parse(xs), S = readSheet(book, sh, doc), mdl = model(book, sh, S), g = mdl.prog, cells = S.cells, writes = [];
+              var base = { code: sh.code, name: P.name || mdl.name, src: P.repDate ? "report " + P.repDate : "" };
+              function say(what, ref, from, to, status, why) { report.push({ code: base.code, name: base.name, what: what, ref: ref || "", from: from, to: to, status: status, why: why || "", src: base.src }); }
+              function text0(x) { return x && typeof x.val === "string" ? x.val.trim() : ""; }
+              function num(ref) { var x = cells[ref]; return x && typeof x.val === "number" ? x.val : null; }
+              function txt(ref) { var x = cells[ref]; return x && typeof x.val === "string" ? x.val.replace(/\s+/g, " ").trim() : ""; }
+              function blocked(ref) { var x = cells[ref]; if (x && x.hard) return "cell is protected in this file — kept as is"; if (x && x.f) return "cell holds a formula — kept as is"; if (x && x.sharedMaster) return "cell starts a shared formula"; return ""; }
+              var pct = function (v) { return v == null ? "" : (Math.round(v * 10000) / 100) + "%"; }, day = function (s) { return s || ""; };
+              if (P.cum == null) { say("Actual progress", "", "", "", "skipped", "no actual progress in the Progress data up to " + mLab); return; }
+              if (!g || !g.ex) { say("Actual progress", "", "", "", "skipped", "S-curve / Execution Phase table not found on this card"); return; }
+              (P.warn || []).forEach(function (w) { say("Progress data", "", "", "", "warning", w); });
+              // the execution-phase activities
+              var acts = g.ex.rows.map(function (r) { return { r: r, name: txt("B" + r), w: num("O" + r) || 0, n: num("N" + r), k: num("K" + r) }; })
+                .filter(function (a) { return a.name && !/^\[insert/i.test(a.name) && (a.w > 0 || a.n != null); });
+              acts.forEach(function (a) { a.ph = phaseOf(a.name); });
+              // PO block of the report's contract (projects with several contracts)
+              var blk = null, blkIdx = -1;
+              if (g.linked) {
+                g.po.forEach(function (p, i) { if (blk) return; if ((P.cv && p.cv && Math.abs(p.cv - P.cv) < 1) || (P.po && p.no && String(p.no).replace(/\D/g, "") === String(P.po).replace(/\D/g, ""))) { blk = p; blkIdx = i; } });
+                if (!blk) { say("Actual progress", "", "", "", "skipped", "the report's contract (PO " + (P.po || "?") + ", value " + (P.cv || "?") + ") matches no PO block on the card — update by hand"); return; }
+              }
+              var scope = acts;                                // activities this report covers
+              if (blk) {
+                var toks = String(P.contractor || "").toLowerCase().split(/[^a-z0-9ıçşğüö]+/).filter(function (t) { return t.length >= 4 && !/^(construction|company|branch|arabia|arabian|contracting|contractors?|trading|group|saudi|establishment|limited|international|engineering)$/.test(t); });
+                var pno = String(blk.no || P.po || "").replace(/\D/g, "");
+                var hit = pno ? acts.filter(function (a) { return a.name.replace(/\D+/g, " ").split(" ").indexOf(pno) >= 0; }) : [];   // "(PO#14622) …"
+                if (hit.length !== 1) hit = acts.filter(function (a) { var nm = a.name.toLowerCase(); return toks.some(function (t) { return nm.indexOf(t) >= 0; }); });
+                var poLive = g.po.filter(function (p) { return p.cv > 0; });
+                if (hit.length !== 1 && acts.filter(function (a) { return a.w > 0; }).length === poLive.length) hit = [acts.filter(function (a) { return a.w > 0; })[poLive.indexOf(blk)]].filter(Boolean);
+                scope = hit.length === 1 ? hit : [];
+                if (!scope.length) say("Activities", "", "", "", "warning", "no Execution Phase activity matched to " + blk.name + " (" + (P.contractor || "contractor?") + ") — activity % and dates kept");
+                scope.forEach(function (a) {
+                  var v = Math.min(1, Math.max(0, P.cum));
+                  if (a.n != null && v < a.n - 1e-9) { say("Activity % · " + a.name, "N" + a.r, pct(a.n), pct(v), "warning", "the report (" + pct(P.cum) + ") is below the activity's last % — kept (never lowered)"); v = a.n; }
+                  a.nn = v;
+                });
+              } else if (!spreadActs(acts, P.cum, P.phases)) say("Activities", "", "", "", "warning", "no activity weights (column O) — activity % kept");
+              else if (acts.below) say("Activities", "", "", "", "warning", "the activities' last % already add up to more than the report (" + pct(P.cum) + ") — activity % kept (never lowered)");
+              var edits = {};
+              scope.forEach(function (a) {
+                if (a.nn == null) return; var ref = "N" + a.r;
+                if (a.n != null && Math.abs(a.nn - a.n) < 5e-7) return;
+                var why = blocked(ref); if (why) { say("Activity % · " + a.name, ref, pct(a.n), pct(a.nn), "skipped", why); return; }
+                edits[ref] = a.nn; writes.push([ref, "pct", String(a.nn)]); say("Activity % · " + a.name, ref, pct(a.n), pct(a.nn), "applied", a.ph && !blk ? "phase " + a.ph + (P.phases && P.phases[a.ph] != null ? " " + pct(P.phases[a.ph]) : "") : "");
+              });
+              // forecast finish of the unfinished activities
+              var fs = P.fcst ? isoToSerial(P.fcst) : null;
+              if (fs == null) say("Forecast finish", "", "", "", "warning", "no forecast completion date in the Progress data — dates kept");
+              else scope.forEach(function (a) {
+                var done = (a.nn != null ? a.nn : a.n) >= 0.99995, ref = "K" + a.r; if (done || a.k == null) return;
+                if (Math.abs(a.k - fs) < 0.5) return;
+                var why = blocked(ref); if (why) { say("Forecast finish · " + a.name, ref, serialToIso(a.k), P.fcst, "skipped", why); return; }
+                edits[ref] = fs; writes.push([ref, "date", P.fcst]); say("Forecast finish · " + a.name, ref, day(serialToIso(a.k)), P.fcst, "applied", "");
+              });
+              // recalculate the card (month columns follow the new dates), then find the month's column
+              var formulas = {}, maxR = S.maxR, maxC = 1;
+              Object.keys(cells).forEach(function (ref) { if (cells[ref].c > maxC) maxC = cells[ref].c; });
+              Object.keys(mdl.fx).forEach(function (k) { formulas[k] = [mdl.fx[k], mdl.cv[k]]; });
+              Object.keys(mdl.fsd || {}).forEach(function (mr) { var a = splitRef(mr); mdl.fsd[mr].forEach(function (ref) { var b = splitRef(ref); formulas[ref] = [XLCalc.shift(mdl.fx[mr], b.r - a.r, b.c - a.c), mdl.cv[ref]]; }); });
+              var calc = {};
+              try {
+                var eng = XLCalc.sheet({ name: sh.name, book: fileName, maxR: maxR, maxC: maxC, formulas: formulas,
+                  value: function (r, c) { var ref = colStr(c) + r; if (ref in edits) return edits[ref]; var v = mdl.cv[ref]; return v === undefined ? null : v; } });
+                calc = eng.recalcAll();
+              } catch (er) { calc = {}; }
+              var val = function (ref) { return ref in edits ? edits[ref] : ref in calc ? calc[ref] : mdl.cv[ref]; };
+              var dRow = g.rDate, aRow = g.rAct, colAt = function (k) { return g.cols[k]; };
+              if (blk) {
+                dRow = 0; for (var q = blk.actRow - 4; q <= blk.actRow; q++) if (/^Month Starting Date$/i.test(txt(colStr(blk.col0 - 1) + q))) dRow = q;
+                aRow = blk.actRow; colAt = function (k) { return blk.col0 + k; };
+                if (!dRow) { say("Actual progress", "", "", "", "skipped", "month dates not found in " + blk.name + " block"); }
+              }
+              var target = null, before = 0;
+              if (dRow) g.cols.forEach(function (c0, k) {
+                var c = colAt(k), dv = val(colStr(c) + dRow); if (typeof dv !== "number" || dv <= 0) return;
+                var ym = serialToIso(dv).slice(0, 7);
+                if (ym < month) { var av = val(colStr(c) + aRow); if (typeof av === "number") before += av; }
+                else if (ym === month && !target) target = colStr(c) + aRow;
+              });
+              if (dRow && !target) {
+                var lastOpen = ""; g.cols.forEach(function (c0, k) { var dv = val(colStr(colAt(k)) + dRow); if (typeof dv === "number" && dv > 0) lastOpen = serialToIso(dv).slice(0, 7); });
+                var nx = g.cols[g.cols.length - 1] + 1, lbl = cells[colStr(nx) + g.rLab], cnt = cells[colStr(nx) + g.rCnt], lastD = val(colStr(colAt(g.cols.length - 1)) + dRow);
+                var hint = !text0(lbl) && cnt && cnt.f ? "the label “Month " + (g.cols.length + 1) + "” in " + colStr(nx) + g.rLab + " is empty on this card, so its month dates stop at " + (typeof lastD === "number" ? serialToIso(lastD).slice(0, 7) : "?") + " — restore the label and run again"
+                  : "no " + mLab + " column open on the S-curve" + (blk ? " (" + blk.name + ")" : "") + (P.cum >= 0.9999 ? " (project complete)" : " — the card's execution period ends " + (lastOpen ? "in " + lastOpen : "earlier") + " (months follow the execution dates, as in Excel)");
+                say("Actual progress " + mLab, "", "", "", "skipped", hint);
+              }
+              else if (target) {
+                var inc = P.cum - before, old = num(target), why2 = blocked(target), flag = "";
+                if (inc < -1e-9) { flag = "card total before " + mLab + " (" + pct(before) + ") is above the report (" + pct(P.cum) + ") — written 0.0001"; inc = 0.0001; }
+                inc = Math.round(inc * 1e10) / 1e10;
+                var what = "Actual progress " + mLab + (blk ? " · " + blk.name + (blk.no ? " (PO " + blk.no + ")" : "") : "");
+                if (why2) say(what, target, pct(old), pct(inc), "skipped", why2);
+                else { writes.push([target, "pct", String(inc)]); say(what, target, pct(old), pct(inc), flag ? "warning" : "applied", flag || ("total " + pct(before) + " → " + pct(before + inc) + " (report " + pct(P.cum) + ")")); }
+              }
+              if (!writes.length) return;
+              writes.forEach(function (w) { writeCell(doc, w[0], w[1], w[2], cells[w[0]], null); });
+              zip.file(sh.path, new XMLSerializer().serializeToString(doc), { createFolders: false });
+            });
+          });
+        });
+        Object.keys(prog.projects).forEach(function (code) { if (!seen[code]) report.push({ code: code, name: prog.projects[code].name, what: "Project", ref: "", from: "", to: "", status: "skipped", why: "no " + code + "_Project Card sheet in this file", src: "" }); });
+        return chain.then(function () {
+          return zip.file("xl/workbook.xml").async("string").then(function (w) {
+            var d = parse(w), cp = d.getElementsByTagNameNS(NS, "calcPr")[0];
+            if (!cp) {
+              cp = d.createElementNS(NS, "calcPr");
+              var after = ["oleSize", "customWorkbookViews", "pivotCaches", "smartTagPr", "smartTagTypes", "webPublishing", "fileRecoveryPr", "webPublishObjects", "extLst"], nx = null;
+              Array.prototype.some.call(d.documentElement.childNodes, function (n) { if (n.nodeType === 1 && after.indexOf(n.localName) >= 0) { nx = n; return true; } });
+              d.documentElement.insertBefore(cp, nx);
+            }
+            cp.setAttribute("fullCalcOnLoad", "1");
+            zip.file("xl/workbook.xml", new XMLSerializer().serializeToString(d), { createFolders: false });
+            return dropCalcChain(zip);
+          }).then(function () {
+            return zip.generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          });
+        }).then(function (blob) { return { blob: blob, report: report, name: fileName, month: month }; });
+      });
+    });
+  }
   /* xl/calcChain.xml lists the formula cells; once cells change between value and formula it no longer matches and
      Excel "repairs" the file on opening. Excel rebuilds the chain itself, so it is removed (with its relationship and
      content type) — the usual way to edit a workbook outside Excel. Nothing else (protection included) is touched. */
@@ -1234,5 +1402,5 @@
       "<script>SARCardForm.editor(document.getElementById('cu'), window.SAR_CARD_MODEL);</script></body></html>";
   }
 
-  window.SARCardForm = { plainOf: plainOf, fmtNum: fmtNum, isDateFmt: isDateFmt, extract: extract, editor: editor, apply: apply, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
+  window.SARCardForm = { plainOf: plainOf, fmtNum: fmtNum, isDateFmt: isDateFmt, extract: extract, editor: editor, apply: apply, scurve: scurve, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
 })();

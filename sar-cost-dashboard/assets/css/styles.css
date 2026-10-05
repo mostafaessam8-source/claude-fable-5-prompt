@@ -981,3 +981,7 @@ body.printing .hbar { display: none !important; }
 .cu-rbtns .cu-btn { padding: 5px 14px; font-size: 12px; }
 .cu-rhint { margin-right: auto; font: 11px Arial, sans-serif; color: var(--slate); }
 .cu-grid td.cu-open > .cu-fill { display: none; }
+.cu-sc { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line, #D4D4D4); }
+.cu-mon { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.cu-mon input { padding: 5px 8px; border: 1px solid #C8C9C7; border-radius: 6px; font: inherit; }
+.cu-sc .icon-btn:disabled { opacity: .5; cursor: not-allowed; }
