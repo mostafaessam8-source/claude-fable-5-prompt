@@ -115,6 +115,8 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    down / across with shifted references, exactly as in Excel (double-click = fill down) (dates, numbers, %, Yes/No lists, text); changed cells get an orange frame (hover = old value).
    Text cells open a Word-like box (bold, italic, underline, size, colour, bullets) with OK / Cancel under it; Enter = new line;
    the formatting is written to the card as Excel rich text.
+   Sheets protected by other teams keep their protection: their locked cells (and password edit ranges) are read-only on the team
+   page and never written, and the sheet / workbook protection with its password is copied unchanged into the updated file.
    The monthly **Actual Progress (%)** of section 7 is editable too: directly where the row holds numbers, or in the
    PO blocks when the row is linked to several POs (the row then recalculates as the contract-value-weighted average).
    A later forecast finish opens more month columns, exactly as the card's formulas do. Drafts stay in their browser; *Download my updates* saves a small `NSR_Card_Updates_….json`

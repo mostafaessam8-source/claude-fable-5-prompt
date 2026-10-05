@@ -36,6 +36,15 @@ saves, Esc cancels, Tab goes to the next yellow cell; changed cells get an orang
   29 Sep 26 cards; the sheets are not protected, so Excel lets anyone type there). These cells are editable for the
   open months whatever their lock flag; a formula there (PO-linked row) stays read-only, and on apply a locked target
   is still written for them (never over a formula).
+- **Protection set by other teams (rule from the user: it must stay locked with the same password)**: when a card sheet is
+  protected (`<sheetProtection sheet="1">`), its Locked cells are "hard" locked (grid flag 4): never editable on the
+  team page and never written on apply ("cell is protected in this file … kept as is") — the progress exception does
+  not apply to them. Cells inside a password Allow-Edit-Range (`<protectedRange>` with a password / hash) are hard
+  locked too. `<sheetProtection>`, `<protectedRanges>`, `<workbookProtection>` (with their password hashes) and every
+  cell style are copied untouched, so the downloaded file opens locked with the same passwords. Never remove, rewrite
+  or re-hash a protection element.
+- A file with a password to **open** (encrypted package, starts D0 CF 11 E0) cannot be read: apply stops with a message
+  asking to remove only the open password; sheet / cell protection may stay.
 
 ## Yellow cells
 
@@ -141,7 +150,7 @@ The history lives in the open page only (drafts themselves are kept in the brows
   same section · row · header is used (reported as moved); otherwise **not applied** (row not found / appears twice).
 - Project missing from the new file → not applied. New projects → nothing to apply. Formula cell → not applied.
 - Only the sheet XML of changed cards (cell value only, style kept) and `calcPr fullCalcOnLoad` change; every other part
-  of the workbook stays byte-identical. Dates → Excel serial, numbers → `<v>`, text → inline string.
+  of the workbook stays byte-identical (protection elements included). A missing `calcPr` is inserted in schema order. Dates → Excel serial, numbers → `<v>`, text → inline string.
 - The uploaded new month file itself is never modified; the user downloads "<name> - team updates.xlsx" + CSV report.
 
 ## Privacy

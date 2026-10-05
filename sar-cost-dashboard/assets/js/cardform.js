@@ -197,7 +197,18 @@
         for (var r = p.r; r <= q.r && r - p.r < 2000; r++) for (var c = p.c; c <= q.c && c - p.c < 200; c++) lists[colStr(c) + r] = opts;
       });
     });
-    return { cells: cells, maxR: maxR, merges: merges, lists: lists };
+    /* another team's protection: a protected sheet makes its "Locked" cells really locked; a range with its own password
+       (Review → Allow Edit Ranges) is locked too. These cells ("hard" locked) are never offered to the team or written. */
+    var sp = doc.getElementsByTagNameNS(NS, "sheetProtection")[0], prot = !!(sp && /^(1|true)$/.test(sp.getAttribute("sheet") || ""));
+    if (prot) Object.keys(cells).forEach(function (ref) { if (cells[ref].locked) cells[ref].hard = 1; });
+    if (prot) Array.prototype.forEach.call(doc.getElementsByTagNameNS(NS, "protectedRange"), function (pr) {
+      if (!(pr.getAttribute("password") || pr.getAttribute("hashValue") || pr.getAttribute("securityDescriptor"))) return;
+      (pr.getAttribute("sqref") || "").split(/\s+/).forEach(function (rg) {
+        var a = rg.split(":"), p = splitRef(a[0]), q = splitRef(a[1] || a[0]); if (!p || !q) return;
+        for (var r = p.r; r <= q.r && r - p.r < 2000; r++) for (var c = p.c; c <= q.c && c - p.c < 200; c++) { var x = cells[colStr(c) + r]; if (x) { x.hard = 1; x.locked = true; } }
+      });
+    });
+    return { cells: cells, maxR: maxR, merges: merges, lists: lists, prot: prot };
   }
   function display(cell) {
     if (!cell || cell.val == null) return "";
@@ -320,8 +331,8 @@
         if (!t && !xf.bg && !(xf.border && Object.keys(xf.border).length)) return;
         used[x.s] = 1;
         var el = t ? [cc, x.s, t] : [cc, x.s], raw = typeof x.val === "number" ? display(x) : null;
-        var fl = (x.f ? 1 : 0) | (x.locked ? 0 : 2);
-        if (fl || raw != null) { if (!t) el.push(""); el.push(fl); if (raw != null) el.push(raw); }   // [col, style, text, flags (1 formula · 2 unlocked), raw value]
+        var fl = (x.f ? 1 : 0) | (x.locked ? 0 : 2) | (x.hard ? 4 : 0);
+        if (fl || raw != null) { if (!t) el.push(""); el.push(fl); if (raw != null) el.push(raw); }   // [col, style, text, flags (1 formula · 2 unlocked · 4 protected by sheet / range password), raw value]
         line.push(el);
       });
       rows.push([r, h, line]);
@@ -738,7 +749,8 @@
           var x = byC[c], sp = span[ref], at = sp ? (sp[0] > 1 ? ' rowspan="' + sp[0] + '"' : "") + (sp[1] > 1 ? ' colspan="' + sp[1] + '"' : "") : "";
           var cls = x ? "x" + x[1] : "", it = info[ref], ovr = calc && ref in calc && !(ref in e) ? calc[ref] : undefined;
           var unl = !!(x && (x[3] & 2));               // the cell's Excel "Locked" setting decides: unlocked = editable, locked = not
-          if (!unl && !(it && it.c.p && !(x && (x[3] & 1)))) it = null;   // locked → read-only, except the monthly Actual Progress (team input; the cards keep it formatted "Locked" but sheets are not protected)
+          if (x && (x[3] & 4)) it = null;              // protected sheet / range password (another team's lock): never editable
+          else if (!unl && !(it && it.c.p && !(x && (x[3] & 1)))) it = null;   // locked → read-only, except the monthly Actual Progress (team input; the cards keep it formatted "Locked" but sheets are not protected)
           else if (it && it.c.p && ps && it.c.mi > ps.total) it = null;   // month not (yet) in the execution period
           else if (!it) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other unlocked cell of the card
           if (it) {
@@ -1062,7 +1074,11 @@
   /* ------------------------------------------------------------------ apply: updates → new month workbook */
   /* updates: [{ kind:"sar-card-updates", by, savedAt, projects:{ code:{ cells:[{ref,s,l,h,k,from,to}] } } }] (latest savedAt wins per cell) */
   function apply(buffer, updates, fileName) {
-    var report = [];
+    var report = [], sig = new Uint8Array(buffer.slice ? buffer.slice(0, 4) : buffer, 0, 4);
+    if (sig[0] === 0xD0 && sig[1] === 0xCF && sig[2] === 0x11 && sig[3] === 0xE0)   // password to OPEN (encrypted package)
+      return Promise.reject(new Error("This file has a password to open it. Open it in Excel, remove the open password (File → Info → Protect Workbook → Encrypt with Password → clear it), save, and upload it again; sheet / cell protection can stay — it is kept as is."));
+    /* Protection is never touched: <sheetProtection> (with its password hash), protected ranges, <workbookProtection> and
+       each cell's style (Locked) are copied exactly, so the downloaded file stays locked with the same passwords. */
     return JSZip.loadAsync(buffer).then(function (zip) {
       return readBook(zip).then(function (book) {
         var cs = cardSheets(book), byCode = {}; cs.forEach(function (s) { byCode[s.code] = s; });
@@ -1100,6 +1116,7 @@
                     ref = colStr(pc.c) + hit[0]; rep.moved = c.ref + " → " + ref;
                   }
                   var gx = S.cells[ref];
+                  if (gx && gx.hard) { rep.status = "skipped"; rep.why = "cell is protected in this file (sheet protection / range password) — kept as is"; report.push(rep); return; }
                   if (!gx || gx.locked) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
                   if (gx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                   rep.now = gx ? display(gx) : "";
@@ -1114,6 +1131,7 @@
                 }
                 var tx = S.cells[ref];
                 if (tx && tx.f && t.c.p) { rep.status = "skipped"; rep.why = "cell holds a formula in this file"; report.push(rep); return; }
+                if (tx && tx.hard) { rep.status = "skipped"; rep.why = "cell is protected in this file (sheet protection / range password) — kept as is"; report.push(rep); return; }
                 if (tx && tx.locked && !t.c.p) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
                 if (tx && tx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                 rep.now = t.c.v;
@@ -1128,7 +1146,12 @@
           // recalculate on open (formulas reading the updated cells)
           return zip.file("xl/workbook.xml").async("string").then(function (w) {
             var d = parse(w), cp = d.getElementsByTagNameNS(NS, "calcPr")[0];
-            if (!cp) { cp = d.createElementNS(NS, "calcPr"); d.documentElement.appendChild(cp); }
+            if (!cp) {                                   // schema order: calcPr comes before oleSize … extLst
+              cp = d.createElementNS(NS, "calcPr");
+              var after = ["oleSize", "customWorkbookViews", "pivotCaches", "smartTagPr", "smartTagTypes", "webPublishing", "fileRecoveryPr", "webPublishObjects", "extLst"], nx = null;
+              Array.prototype.some.call(d.documentElement.childNodes, function (n) { if (n.nodeType === 1 && after.indexOf(n.localName) >= 0) { nx = n; return true; } });
+              d.documentElement.insertBefore(cp, nx);
+            }
             cp.setAttribute("fullCalcOnLoad", "1");
             zip.file("xl/workbook.xml", new XMLSerializer().serializeToString(d), { createFolders: false });
             return zip.generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
