@@ -208,7 +208,7 @@ tr[data-drill]{cursor:pointer}tr[data-drill]:hover td{background:var(--tint2)!im
   <section class="tab" id="t-scurve"></section>
   <section class="tab" id="t-risks"></section>
 </main>
-<footer><div class="wrap">Prepared from the SAR Scope of Work (Jan 2022), Armada study ARM-142-SAR-PSC-01 (Jun 2022), the draft Contract with ETECHS price table (Revised-02) and Annex 3. The schedule and cost curves are a planning baseline built on stated assumptions, not an approved programme. Amounts in SAR excluding 15% VAT unless stated.</div></footer>
+<footer><div class="wrap">Source: the draft Contract between SAR and ETECHS (file with ETECHS comments, 22 Jan 2024) and its Annexes: Annex 1 particulars, Annex 2 SAR Scope of Work, Annex 3 price table (Revised-02), Annex 4 compliance table and Annex 5 clarifications. The schedule and cost curves are a planning baseline built on stated assumptions, not an approved programme. Amounts in SAR excluding 15% VAT unless stated.</div></footer>
 <div class="tip" id="tip"></div>
 <div class="dov" id="dov"></div>
 <aside class="drawer" id="drawer" aria-label="Details" aria-hidden="true"><div class="dh"><button id="dBack" type="button" title="Back">‹</button><div style="flex:1;min-width:0"><h3 id="dT"></h3><div class="sub" id="dS"></div></div><button id="dX" type="button" aria-label="Close">✕</button></div><div id="dB"></div></aside>
@@ -270,7 +270,7 @@ const S = [ // id,name,line,riyadh,lon,lat,hw,cams,start week
    cams:{fixed:20,face:2,tandem:2,pano:2,c360:0,c90:3,lim:1,dir:1,anpr:1}},
  {id:'HHR-JED',name:'Jeddah',line:'HHR',lon:39.2,lat:21.52,start:14,hw:{cctv:1391206,vms:652091,ac:44085,ups:102666,net:2840354,civil:521718},
    cams:{fixed:365,face:33,tandem:11,pano:5,c360:8,c90:41,lim:2,dir:10,anpr:0}},
- {id:'HHR-KAE',name:'KAEC (Rabigh)',line:'HHR',lon:39.1,lat:22.4,start:40,hw:{cctv:962039,vms:406364,ac:44085,ups:82168,net:1552977,civil:187054},
+ {id:'HHR-KAE',name:'KAEC',line:'HHR',lon:39.1,lat:22.4,start:40,hw:{cctv:962039,vms:406364,ac:44085,ups:82168,net:1552977,civil:187054},
    cams:{fixed:232,face:25,tandem:11,pano:5,c360:0,c90:27,lim:2,dir:8,anpr:4}},
  {id:'HHR-MAK',name:'Makkah',line:'HHR',lon:39.84,lat:21.42,start:30,hw:{cctv:1650175,vms:552237,ac:44085,ups:110563,net:2715976,civil:571639},
    cams:{fixed:525,face:28,tandem:8,pano:3,c360:0,c90:26,lim:2,dir:2,anpr:2}},
@@ -278,21 +278,20 @@ const S = [ // id,name,line,riyadh,lon,lat,hw,cams,start week
    cams:{fixed:300,face:14,tandem:4,pano:3,c360:0,c90:13,lim:2,dir:2,anpr:2}}
 ];
 const CAMTYPES=[['fixed','Fixed monitoring (internal / external)',C.blue],['face','Face recognition',C.yellow],['tandem','180° tandem + PTZ',C.black],['pano','180° panoramic',C.slate],['c360','360° dome',C.sky],['c90','90° (incl. queue analysis)',C.mid],['lim','Limited-space internal',C.gray],['dir','Direction detection',C.red],['anpr','ANPR',C.blue+'88']];
-const ROM = {'NSR-RYD':3338874,'NSR-MAJ':3338874,'NSR-QAS':3338874,'NSR-HAI':3338874,'NSR-JOU':3338874,'NSR-QUR':3338874,'EWR-RYD':2537469,'EWR-DAM':2537469,'EWR-HUF':1916377,'EWR-ABQ':943723,'HHR-JED':11417692,'HHR-KAE':7562791,'HHR-MAK':13995679,'HHR-MAD':7000000};
 S.forEach(s=>{s.cam=Object.values(s.cams).reduce((a,b)=>a+b,0); s.hwTotal=HW.reduce((a,k)=>a+s.hw[k],0); s.sum=s.hwTotal;});
-const BURN={mode:'scope',w:13,label:'Burn-out period, 3 months (Scope 4.4.2)'};
+const BURN={mode:'contract',w:6,label:'Trial operation, max 45 days (contract)'};
 const PHASE={design:{n:'Design & approvals',c:C.sky},proc:{n:'Procurement & delivery',c:C.slate},cons:{n:'Installation & commissioning',c:C.blue},accept:{n:'Trial operation & acceptance',c:C.yellow},close:{n:'Closeout & warranty',c:C.gray},mob:{n:'Mobilization & baseline',c:C.black}};
 const TOTAL_PRICE = 62000000, WEEKS = 156, WPM = 52/12, LAG = 9; // 60 days payment term ~ 9 weeks
 
 /* ===== SCHEDULE ENGINE ===== */
 function buildActs(s){
-  const big = s.line==='HHR', d={survey:big?4:2,eng:big?10:6,appr:5,proc:s.ryd?14:(big?20:16),ship:big?8:6,sat:big?5:3,trial:BURN.w,final:big?3:2};
+  const big = s.line==='HHR', d={survey:big?4:2,eng:big?10:6,appr:3,proc:s.ryd?14:(big?20:16),ship:big?8:6,sat:big?5:3,trial:BURN.w,final:big?3:2};
   d.civil=Math.round(6+s.hw.civil/70000); d.inst=Math.round(4+s.cam/(big?35:30));
   const a={}, put=(k,name,ph,st,en)=>{a[k]={k,name,ph,st,en,dur:en-st}};
   let t=s.start;
   put('survey','Site survey & as-found verification','design',t,t+=d.survey);
   put('eng','Detailed engineering & submittals','design',t,t+=d.eng);
-  put('appr','SAR / HCIS review & approval (5 wk)','design',t,t+=d.appr);
+  put('appr','SAR review & approval (max 21 days)','design',t,t+=d.appr);
   put('proc','Procurement, manufacture & FAT','proc',t,t+=d.proc);
   put('ship','Shipping, customs & delivery to site','proc',t,t+=d.ship);
   put('civil','Civil works: trenches, duct banks, poles','cons',a.appr.en,a.appr.en+d.civil);
@@ -453,38 +452,42 @@ function renderDashboard(){
 
 /* ===== SCOPE & DOCUMENTS ===== */
 const DOCS=[
- {id:'sow',t:'SAR Scope of Work',file:'SOW-SAR_security_Solutions.pdf',meta:['Owner: SAR Engineering Support Services','Date: 20 Jan 2022','24 pages · approved Jan 2023'],
-  sum:'The employer-side rulebook. It states the purpose (replace ageing CCTV in the passenger stations), points to the Armada study for technical scope, and sets how the contractor must plan, document, test and hand over.',
-  pts:['Scope of work itself is delegated to the Armada document (clause 2).','Contractor must deliver detailed design, BOQ with unit rates, QA/QC and test reports, as-builts, data sheets and O&M manuals.','Mobilization submittals include contract schedule, key personnel, insurance, QC programme and ITP, security programme, procurement and shipping plan, two project boards per site.','Planning (clause 12.1): milestone list tied to progress claims, Primavera / MS Project baseline, Level 3/4 schedule per unit consolidated into a Level 2 schedule, and separate physical-progress S-curves for design, procurement and construction.','Work in zones and phases so station operations are never impacted; SAR approves the zone plan.','Quality: ISO 9001:2015 equipment, HCIS directives, UL / NEMA / NFPA / SBC 2019 / SASO / SEC codes, WARA risk assessment template.','Handover: Taking-Over Certificate, 1-year defects liability, spare parts list for five years with 15-year supplier commitment.'],
-  use:'Defines the Level 1–4 schedule structure and the three S-curves built in this site.'},
- {id:'arm',t:'Armada Study & Technical Scope',file:'SOW-ARMADA_security_Solutions.pdf',meta:['Ref: ARM-142-SAR-PSC-01 v0.1','Date: 15 Jun 2022','72 pages'],
-  sum:'Site-survey study by Armada Technology across 14 passenger stations. It found cameras older than ten years, uncovered passenger areas and no smart analytics, and recommends a full replacement with AI-capable CCTV plus a Security Control Centre per station.',
-  pts:['Concerned stations: HHR Jeddah, Rabigh (KAEC), Makkah, Madinah · EWR Riyadh, Abqaiq, Hufuf, Dammam · NSR Riyadh, Al Majma’ah, Qassim, Hail, Al Jouf, Qurayyat.','Scope is limited to the inner station areas, from station doors to platforms. Staff areas, parking, mosques, delivery areas and the outer perimeter are excluded.','ROM budget with 10% contingency: NSR SAR 20.03M, EWR 7.94M, HHR 39.98M, total SAR 67.94M. Madinah is estimated at 50% of Makkah because drawings were missing.','Sub-systems: smart CCTV (face recognition, line crossing, intrusion, queue analytics, ALPR), storage with 90 days at full resolution, integration platform / VMS with video wall, Security Control Centre, power supply, security management system and all civil, electrical and mechanical works.','Testing: FAT and SAT with nine test classes; a 3-month burn-out after functional testing to meet HCIS SEC-05, then a 2-year warranty.','Maintenance: corrective response within 48 hours, 24x7x365 for major failures with on-site response in 24 hours; spares package for ten years; operator, maintenance and administrator training.','Camera types and datasheets 1–9 are given for reference or approved equivalent.'],
-  use:'Source of the station list, scope boundary, test regime and the ROM used to compare against contract prices.'},
- {id:'con',t:'Draft Contract (ETECHS comments)',file:'Contract_English_draft_ETECHS-comments_231220…docx',meta:['SAR and ETECHS (Industrial Safety & Security Sector)','Draft with comments to 22 Jan 2024','117 tracked comments'],
-  sum:'The commercial and legal frame. SAR buys the integrated security solution for 14 stations at a lump-sum SAR 62.0M ex-VAT, with a 36-month term from Notice to Proceed and deliverables timed by an approved baseline schedule.',
-  pts:['Contract price SAR 62,000,000 ex-VAT: EWR 11,113,215 · NSR 20,499,295 · HHR 30,387,490 (SAR 71.3M with 15% VAT).','Term: 36 months from Notice to Proceed. Baseline programme (Primavera) within 10 days of the effective date for mobilization and survey, detailed baseline 21 days after survey; SAR review at most 21 days.','Payments: 20% mobilization · 10% engineering submittal + 10% on SAR approval · 20% material delivery · 20% installation · 10% SAT · 10% final acceptance and handover, prorated per station; paid within 60 days of invoice.','Delay damages 0.2% of the deliverable price per day, capped at 10%. Performance security 5% of the price. Liability capped at the contract price.','Variation: up to +10% or −20% of the price. Trial operation is limited to 45 days. Defects liability 1 year from each Taking-Over Certificate.','ETECHS offer excludes fibre links between stations, IP telephony, cyber-security hardening and a maintenance programme, and needs SAR to supply gate passes and a laydown area.','Optional items not in the price: centralized control-room servers (SAR 0.48M EWR, 0.49M NSR, 0.49M HHR) and PSIM licences.'],
-  use:'Drives total value, per-line and per-station prices, payment-milestone invoicing curve and the 36-month frame.'}
+ {id:'con',t:'Contract body & Annex 1',file:'Contract_English_draft_ETECHS-comments_…_22_Jan_2024.docx',meta:['SAR and ETECHS (Industrial Safety & Security Sector)','Draft with 117 comments, last dated 22 Jan 2024','Clauses 1 to 26'],
+  sum:'The commercial and legal frame. SAR buys an integrated security solution for 14 passenger stations at a lump-sum SAR 62.0M ex-VAT, with a 36-month term from Notice to Proceed and each deliverable timed by an approved baseline schedule.',
+  pts:['Price SAR 62,000,000 ex-VAT: EWR 11,113,215 · NSR 20,499,295 · HHR 30,387,490 (SAR 71.3M with 15% VAT). Variation up to +10% or −20%.','Term: 36 months from Notice to Proceed (issued once SAR approves the baseline programme). Baseline in Primavera within 10 days for mobilization and survey, detailed baseline 21 days after survey; SAR review at most 21 days.','Payments: 20% mobilization · 10% engineering submittal + 10% on SAR approval · 20% material delivery · 20% installation · 10% SAT · 10% final acceptance and handover, prorated per station; invoices paid within 60 days.','Delay damages 0.2% of the deliverable price per day, capped at 10%. Performance security 5% of the price. Liability capped at the contract price.','Trial Operation is limited to 45 days. The Taking-Over Certificate is issued within 30 days of application; minor items are closed within 45 days. Defects liability is 1 year from each Taking-Over Certificate; the Performance Certificate follows within 28 days of the last expiry.','Deliverables: Jeddah, KAEC, Makkah, Madinah (HHR) · Riyadh Malaz, Abqaiq, Hufuf, Dammam (EWR) · Riyadh Thumamah, Al Majma’ah, Qassim, Hail, Al Jouf, Qurayyat (NSR).'],
+  use:'Drives total value, line and station prices, the 36-month frame, the payment-milestone invoicing curve and the 45-day trial operation.'},
+ {id:'sow',t:'Annex 2: SAR Scope of Work',file:'Annex 2 (SAR Scope of Work dated 20 Jan 2022, 24 pages)',meta:['Owner: SAR Engineering Support Services','Approved Jan 2023','Attached inside the contract'],
+  sum:'SAR\'s planning, documentation and handover rules for the contractor. It states the purpose (enhance the CCTV cameras and system in the passenger stations) and refers to the Armada document for the technical scope itself.',
+  pts:['Contractor must deliver preliminary and detailed design, BOQ with unit rates, QA/QC and test reports, as-built drawings, data sheets and O&M manuals.','Mobilization submittals: contract schedule, key personnel, insurance, QC programme and ITP, security programme, sanitation plan, procurement and shipping programme, two project boards per site.','Planning (clause 12.1): measurable milestones tied to progress claims, a Primavera / MS Project baseline, Level 3/4 schedule per unit consolidated into a Level 2 schedule, and separate physical-progress S-curves for design, procurement and construction.','Work is phased in zones so station operations are never impacted. SAR approves the zone plan.','Quality: ISO 9001:2015 equipment, HCIS directives, UL, NEMA, NFPA 70-2017, SBC 2019, SASO, SEC; WARA risk-assessment template.','Spare parts list for five years with a 15-year supplier commitment. Defects liability one year after the Taking-Over Certificate.'],
+  use:'Sets the Level 1–4 schedule structure and the three physical S-curves built in this site.'},
+ {id:'p3',t:'Annex 3: Price table (ETECHS)',file:'Annex 3, Revised-02 (SAR 62,000,000)',meta:['Quotation ISS-QU230511HB-D914 (R2)','EWR, NSR and HHR packages','Terms & conditions per package'],
+  sum:'Station-by-station priced bill of quantities: CCTV, video management, access control, UPS, poles and network, civil works, then shared project management and cloud storage per railway.',
+  pts:['Each station has six sections: CCTV system, video management (and video wall), access control & intercom, UPS, poles / field cabinets / network, civil works.','Each railway also carries design & engineering, project management, factory acceptance test, commissioning spares, training and a Huawei cloud storage subscription for 12 months.','Optional items outside the price: a centralized control-room server per railway and PSIM licences (Nanodems).','Offer terms: delivery 23–24 calendar months from PO acknowledgment and kick-off; warranty 12 months from delivery or SAT; validity 15 days.','Excluded: network (fibre) connectivity between stations, IP telephony, cyber-security hardening and a maintenance programme. SAR provides IDs, gate passes, permits, storage and a laydown area.','Madinah is priced at 50% of the Makkah BOQ.'],
+  use:'The source of every price, quantity and camera count in the BOQ, dashboard and S-curve.'},
+ {id:'p45',t:'Annexes 4 and 5: Compliance & clarifications',file:'Annexes 4 and 5',meta:['Compliance table signed 31 May 2023','Clarifications 1 to 3 with SAR responses','ETECHS clarifications 1 to 31'],
+  sum:'Agreed answers to site-visit questions and ETECHS commitments. They fix several scope boundaries and conditions.',
+  pts:['Scope is limited to the inner areas of the passenger stations, from station doors to platforms. Staff areas, parking, mosques, delivery areas and the outer perimeter are excluded.','Cameras are installed at heights set by the contractor\'s field-of-view study; ALPR on 1.2 m poles and platform cameras on 5 m poles are the basis of pricing.','Existing cables, conduits, racks and video walls may be re-used only if the contractor confirms they meet requirements. A dedicated network and a dedicated power supply are required.','The project is fast-track: no HCIS Stage 1 or Stage 2 documents, the detailed design follows the SOW and is reviewed as a standalone project. Jeddah: video wall of at least 10 screens (55") for HHR.','Integrating third-party systems needs an open API, ONVIF cameras and vendor SDKs, with extra cost quoted separately. Network connectivity between stations and control rooms is by the client.','FAT is at vendor premises (planned in China, in Dubai if quarantine rules apply). Spares: 1% of field devices and hard-disk drives for Dahua. Warranty: 5 years standard manufacturer warranty on Dahua, 1 year on Cisco with renewals priced on request, 1 year defects liability.','Training: 12 persons management training, operational and maintenance training per station.'],
+  use:'Defines scope boundaries, exclusions, assumptions and risks in the Risks tab.'}
 ];
 function renderScope(){
   const tot=S.reduce((a,s)=>a+s.cam,0);
-  $('#t-scope').innerHTML=head('Scope of work & documents','What is being built, and what each document says','A replacement of passenger-area CCTV at 14 stations with a smart, integrated security platform, delivered by ETECHS for SAR under HCIS directives.')+`
+  $('#t-scope').innerHTML=head('Scope of work & documents','What is being built, and what each document says','Integrated CCTV, video management and access control for the passenger areas of 14 stations, delivered by ETECHS for SAR under HCIS directives, as set out in the contract and its annexes.')+`
   <div class="grid g4">${kpi('14','Stations','NSR 6 · EWR 4 · HHR 4')}${kpi(tot.toLocaleString(),'Cameras supplied','Per Annex 3 price table',C.yellow)}${kpi('36 mo','Contract term','From Notice to Proceed',C.slate)}${kpi('SAR 62.0M','Contract price','Ex-VAT, lump sum',C.black)}</div>
   <div class="sp"></div>
   <div class="panel"><h3>Delivery pipeline per station</h3><p class="sub">Every station repeats these stages. They become the Level 4 activities in the schedule.</p>
-   <div class="pipe">${[['Survey','As-found check, reuse of existing cabling'],['Design','Engineering, BOM, HCIS compliance'],['Approval','SAR / HCIS review, 5 weeks'],['Procure & FAT','Long-lead cameras and servers, FAT'],['Ship & deliver','Customs and site delivery'],['Civil & install','Trenches, duct banks, poles, cabling'],['SAT','Nine test classes, commissioning'],['Training','Operators, maintenance, admins'],['Burn-out','Trial operation to meet SEC-05'],['Acceptance','Taking-over, handover, warranty']].map(p=>`<div class="st"><b>${p[0]}</b><span>${p[1]}</span></div>`).join('')}</div></div>
+   <div class="pipe">${[['Survey','As-found check, reuse of existing cabling'],['Design','Engineering, BOQ, HCIS compliance'],['Approval','SAR review, max 21 days'],['Procure & FAT','Long-lead cameras and servers, FAT'],['Ship & deliver','Customs and site delivery'],['Civil & install','Trenches, duct banks, poles, cabling'],['SAT','Site acceptance test, commissioning'],['Training','Operators, maintenance, admins'],['Trial operation','Up to 45 days, then taking-over'],['Acceptance','Taking-over, handover, warranty']].map(p=>`<div class="st"><b>${p[0]}</b><span>${p[1]}</span></div>`).join('')}</div></div>
   <div class="sp"></div>
   <h3 style="margin-bottom:10px">Sub-systems in the contract</h3>
   <div class="cards">
-   <div class="card k"><h4>CCTV system</h4><ul><li>Fixed, 90°, 180° panoramic and tandem PTZ, 360°, face recognition, ALPR</li><li>Dahua 8 MP WizMind analytics: line crossing, intrusion, queue, direction</li></ul></div>
-   <div class="card k"><h4>Video management & control centre</h4><ul><li>Servers, 24-bay storage (8 MP, 15 days, RAID 5), 55" video wall, workstations</li><li>Integration platform with alarm, map and access modules</li></ul></div>
+   <div class="card k"><h4>CCTV system</h4><ul><li>Fixed, 90°, 180° panoramic and tandem PTZ, 360°, face recognition, ALPR</li><li>Dahua 8 MP WizMind: line crossing, direction detection, queue analysis, face recognition</li></ul></div>
+   <div class="card k"><h4>Video management & control centre</h4><ul><li>Servers, 24-bay storage (8 MP, 15 days, RAID 5), 55" video wall, workstations</li><li>Open API / ONVIF integration of third-party systems</li></ul></div>
    <div class="card k"><h4>Access control & intercom</h4><ul><li>Readers, controllers, magnetic locks, ID station, IP door station</li></ul></div>
-   <div class="card k"><h4>Power & network</h4><ul><li>UPS with 2 hours battery, Cisco core and PoE switches, KBC industrial switches, 42U racks</li></ul></div>
+   <div class="card k"><h4>Power & network</h4><ul><li>UPS with 2 hours battery, Cisco core and PoE switches, KBC industrial switches, 42U racks, field cabinets</li></ul></div>
    <div class="card k"><h4>Civil & site works</h4><ul><li>Platform trenches, duct banks, camera and ALPR poles</li></ul></div>
    <div class="card k"><h4>Services</h4><ul><li>Design, project management, FAT (Dubai), commissioning spares, training, Huawei cloud storage for 12 months</li></ul></div>
   </div>
   <div class="sp"></div>
-  <div class="panel"><h3>Camera and station scope by line</h3><p class="sub">Counts from the Annex 3 price table. Madinah is priced at 50% of Makkah.</p>
+  <div class="panel"><h3>Camera and station scope by line</h3><p class="sub">Counts from the Annex 3 price table. Madinah is priced at 50% of the Makkah BOQ.</p>
    <div class="scroll"><table class="tbl"><thead><tr><th>Line</th><th>Station</th><th class="r">Cameras</th><th class="r">Face recog.</th><th class="r">ANPR</th><th class="r">All-in SAR</th><th>Priority</th></tr></thead><tbody>
    ${S.map(s=>`<tr><td><span class="tag" style="background:${LINES[s.line].color}">${s.line}</span></td><td>${s.name}</td><td class="r">${s.cam}</td><td class="r">${s.cams.face}</td><td class="r">${s.cams.anpr}</td><td class="r">${fmtN(s.all)}</td><td>${s.ryd?'<span class="tag pri">Riyadh</span>':''}</td></tr>`).join('')}
    </tbody></table></div></div>
@@ -494,10 +497,10 @@ function renderScope(){
   <div class="docpane" id="docPane"></div>
   <div class="sp"></div>
   <div class="panel"><h3>Contract terms at a glance</h3><div class="scroll"><table class="tbl"><tbody>
-   ${[['Price','SAR 62,000,000 ex-VAT · SAR 71,300,000 with 15% VAT · ±10% / −20% variation'],['Term','36 months from Notice to Proceed'],['Programme','Initial baseline in 10 days · detailed baseline 21 days after survey · SAR review max 21 days'],['Payment','20 / 10 / 10 / 20 / 20 / 10 / 10 % by milestone, per station · 60 days from invoice'],['Delay damages','0.2% of deliverable price per day, max 10%'],['Security','5% performance bond · liability capped at contract price'],['Acceptance','Trial operation up to 45 days · Taking-Over Certificate within 30 days of application · 45 days for minor punch items'],['Warranty','Defects liability 1 year · ETECHS offer: 12 months manufacturer warranty from SAT · Armada: 2 years from final SAT']].map(r=>`<tr><td style="width:160px"><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}
+   ${[['Price','SAR 62,000,000 ex-VAT · SAR 71,300,000 with 15% VAT · ±10% / −20% variation'],['Term','36 months from Notice to Proceed'],['Programme','Initial baseline in 10 days · detailed baseline 21 days after survey · SAR review max 21 days · SAR response to an extension claim within 84 days'],['Payment','20 / 10 / 10 / 20 / 20 / 10 / 10 % by milestone, per station · 60 days from invoice'],['Delay damages','0.2% of deliverable price per day, max 10%'],['Security','5% performance bond · liability capped at contract price'],['Acceptance','Trial operation up to 45 days · Taking-Over Certificate within 30 days of application · 45 days for minor punch items'],['Warranty','Defects liability 1 year · ETECHS offer: 12 months warranty from delivery or SAT · Dahua 5 years standard manufacturer warranty (Annex 5)']].map(r=>`<tr><td style="width:160px"><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}
    </tbody></table></div></div>`;
   const pane=id=>{const d=DOCS.find(x=>x.id===id);$('#docPane').innerHTML=`<h3>${d.t}</h3><div class="meta">${d.meta.map(m=>`<span>${m}</span>`).join('')}</div><p style="margin:0 0 10px;font-size:15px">${d.sum}</p><ul>${d.pts.map(p=>`<li>${p}</li>`).join('')}</ul><div class="callout ${d.warn?'warn':''}"><b>How it is used here:</b> ${d.use}</div><div class="note">File: ${d.file}</div>`;$$('#docTabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.d===id));};
-  $$('#docTabs button').forEach(b=>b.onclick=()=>pane(b.dataset.d)); pane('sow');
+  $$('#docTabs button').forEach(b=>b.onclick=()=>pane(b.dataset.d)); pane('con');
 }
 
 /* ===== BOQ ===== */
@@ -527,16 +530,13 @@ function renderBoq(){
   <div class="grid g2">
    <div class="panel"><h3>Where the money goes</h3><p class="sub">Share by sub-system in view, all-in.</p><div class="chartbox"><canvas id="c-do"></canvas></div></div>
    <div class="panel"><h3>Camera mix by station</h3><p class="sub">Number of cameras by type. HHR stations are dominated by fixed monitoring cameras.</p><div class="chartbox tall"><canvas id="c-cam"></canvas></div></div>
-  </div><div class="sp"></div>
-  <div class="panel"><h3>Armada ROM against contract price</h3><p class="sub">The 2022 study estimated SAR 67.94M with 10% contingency. Contract station hardware plus its pro rata shared packages is SAR 62.0M, 8.7% lower.</p><div class="chartbox tall"><canvas id="c-rom"></canvas></div></div>`;
+  </div>`;
   $$('#boqL button').forEach(b=>b.onclick=()=>{boqLevel=+b.dataset.l;boqOpen.clear();rows.forEach(r=>{if(r.lv<boqLevel)boqOpen.add(r.id)});renderBoq();});
   $$('#t-boq [data-t]').forEach(b=>b.onclick=()=>{const id=b.dataset.t;boqOpen.has(id)?boqOpen.delete(id):boqOpen.add(id);boqLevel=4;renderBoq();});
   mk('c-do',{type:'doughnut',data:{labels:GRP.map(g=>g[0]),datasets:[{data:GRP.map(([g])=>st.reduce((a,s)=>a+CATS.filter(k=>catsOn(k[0])&&grpCat(k[0])===g).reduce((x,k)=>x+s.cost[k[0]],0),0)/1e6),backgroundColor:GRP.map(g=>g[1]),borderColor:'#fff',borderWidth:2}]},
     options:{maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'right',labels:{boxWidth:11}},tooltip:{callbacks:{label:c=>`${c.label}: SAR ${c.parsed.toFixed(2)}M`}}}}});
   mk('c-cam',{type:'bar',data:{labels:st.map(s=>s.name),datasets:CAMTYPES.map(([k,l,c])=>({label:l,backgroundColor:c,borderColor:'#fff',borderWidth:1,data:st.map(s=>s.cams[k])}))},
     options:{indexAxis:'y',maintainAspectRatio:false,scales:{x:ax({stacked:true,title:{display:true,text:'Cameras'}}),y:ax({stacked:true,grid:{display:false}})},plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}}}});
-  mk('c-rom',{type:'bar',data:{labels:S.map(s=>s.name),datasets:[{label:'Armada ROM (incl. 10% contingency)',backgroundColor:C.gray,data:S.map(s=>ROM[s.id]/1e6)},{label:'Contract all-in price',backgroundColor:C.blue,data:S.map(s=>s.all/1e6)}]},
-    options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxRotation:60,minRotation:40}}),y:ax({title:{display:true,text:'SAR M'}})},plugins:{legend:{position:'bottom',labels:{boxWidth:11}}}}});
 }
 
 /* ===== SCHEDULE (GANTT) ===== */
@@ -595,7 +595,6 @@ function renderSchedule(){
   $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the other stations are spread so that the last one reaches final acceptance in month ${(ENDW/WPM).toFixed(0)}, at the end of the 36-month term.`)+`
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
-   <div class="fgroup"><span class="flabel">Burn-out</span><span class="seg" id="gB"><button data-b="scope" aria-pressed="${BURN.mode==='scope'}">3 months (Scope)</button><button data-b="contract" aria-pressed="${BURN.mode==='contract'}">45 days (Contract)</button></span></div>
    <div class="fgroup"><span class="flabel">Structure</span><span class="seg" id="gM"><button data-m="rail" aria-pressed="${ganttMode==='rail'}">By railway & station</button><button data-m="epc" aria-pressed="${ganttMode==='epc'}">EPC</button></span></div>
    <div class="fgroup" ${ganttMode==='epc'?'hidden':''}><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
    <div class="legend" style="margin:0">${Object.values(PHASE).map(p=>`<span><i style="background:${p.c}"></i>${p.n}</span>`).join('')}<span><i style="background:${C.black};transform:rotate(45deg) scale(.85)"></i>Milestone</span><span><i style="background:${C.red};transform:rotate(45deg) scale(.85)"></i>Final acceptance</span></div></div>
@@ -607,11 +606,10 @@ function renderSchedule(){
    ${sel().sort((a,b)=>a.en-b.en).map(s=>`<tr><td>${s.name} <span class="tag" style="background:${LINES[s.line].color}">${s.line}</span>${s.ryd?' <span class="tag pri">★</span>':''}</td>${['appr','ship','sat','final'].map(k=>`<td>M${(s.acts[k].en/WPM).toFixed(1)}<br><span class="note">${fmtD(wDate(s.acts[k].en))}</span></td>`).join('')}</tr>`).join('')}
    </tbody></table></div></div>
    <div class="panel"><h3>Stations active at the same time</h3><p class="sub">Count of stations in site activity per month, to check crew loading.</p><div class="chartbox"><canvas id="c-act"></canvas></div>
-   <div class="callout"><b>Assumptions:</b> with no contractual dates, non-Riyadh station starts are spread so cost and work cover the full 36 months (Riyadh starts at weeks 6 and 8); engineering 6 weeks (HHR 10), SAR/HCIS approval 5 weeks, procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, burn-out period set with the toggle above: ${BURN.mode==='scope'?'3 months after functional testing, as the Armada scope requires (clause 4.4.2, HCIS SEC-05)':'trial operation capped at 45 days by the draft contract (modelled as 6 weeks)'}. The two documents disagree; the scope is the stricter.</div></div>
+   <div class="callout"><b>Assumptions:</b> with no contractual dates, non-Riyadh station starts are spread so cost and work cover the full 36 months (Riyadh starts at weeks 6 and 8); engineering 6 weeks (HHR 10), procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, trial operation is the contract maximum of 45 days (modelled as 6 weeks), and SAR review and approval uses the contract maximum of 21 days (3 weeks).</div></div>
   </div>`;
   $$('#t-schedule [data-g]').forEach(b=>b.onclick=()=>{const id=b.dataset.g;open.has(id)?open.delete(id):open.add(id);const y=$('.gwrap').scrollTop,x=$('.gwrap').scrollLeft;renderSchedule();$('.gwrap').scrollTop=y;$('.gwrap').scrollLeft=x;});
   $$('#gL button').forEach(b=>b.onclick=()=>{ganttLevel=+b.dataset.l;open.clear();setLvl(ganttLevel);renderSchedule();});
-  $$('#gB button').forEach(b=>b.onclick=()=>{setBurn(b.dataset.b);renderSchedule();});
   $$('#gM button').forEach(b=>b.onclick=()=>{ganttMode=b.dataset.m;open.clear();window.__g=0;renderSchedule();});
   $$('#gR button').forEach(b=>b.onclick=()=>{rydFirst=b.dataset.r==='1';open.clear();window.__g=0;renderSchedule();});
   const cnt=moLabels.map((_,m)=>{const w=m*WPM+1;return sel().filter(s=>w>=s.acts.civil.st&&w<s.acts.final.st+0.01&&w<=s.acts.sat.en).length;});
@@ -652,26 +650,27 @@ function renderScurve(){
 
 /* ===== RISKS ===== */
 const RISKS=[
- ['hi','Duration conflict','ETECHS offer states 23–24 months delivery; contract term is 36 months from NTP. The baseline here is spread over the full 36 months with the last final acceptance at month 36, so it has no float. Confirm which date governs delay damages.','Contract cl. 3 / Annex 1; ETECHS terms'],
- ['hi','Trial operation length','Draft contract limits trial operation to 45 days; the Armada scope requires a 3-month burn-out for HCIS SEC-05, which is the stricter and is used by default. The schedule tab has a toggle: 3 months per the scope (default) or 45 days per the contract; the scope option adds about 7 weeks per station.','Contract definitions; Armada 4.4.2'],
- ['hi','Madinah priced on an assumption','Madinah is 50% of Makkah because drawings were not provided; any re-measure moves HHR (SAR 30.4M) and the programme.','Armada 2.3.4; ETECHS HHR terms'],
- ['hi','Long-lead and customs','Equipment is sourced from China and FAT is planned in Dubai because of quarantine limits. Procurement of 16–20 weeks and 6–8 weeks of shipping drive the critical path, hardest at HHR.','ETECHS price table; SAR SOW 13.2'],
- ['med','Payment profile','20% is invoiced on mobilization, but the last 10% waits for final acceptance and is only invoiced in the final month of the term. The invoicing curve is shown in the S-curve tab.','Contract cl. 15'],
- ['med','Delay damages','0.2% per day per deliverable, capped at 10% of price. Riyadh and Jeddah are the earliest deliverables and carry the most exposure.','Contract cl. 7'],
- ['med','Suspension and extension of time','SAR rejected a cap on suspension entitlement and wants 84 days to answer an extension claim. Both slow schedule recovery.','Contract comments cl. 17, 25'],
- ['med','Excluded from ETECHS scope','Fibre links between stations, IP telephony, cyber-security hardening and a maintenance programme are excluded; SAR must supply passes, IDs and a laydown area.','ETECHS terms'],
- ['lo','Warranty definitions differ','Armada: 2-year warranty after final SAT. Contract: 1-year defects liability. ETECHS: 12 months manufacturer warranty from SAT. The 36-month window does not cover all three.','Armada 4.4.2; Contract; ETECHS'],
+ ['hi','Duration conflict','ETECHS offer states 23–24 calendar months delivery; the contract term is 36 months from NTP. The baseline here is spread over the full 36 months with the last final acceptance at month 36, so it has no float. Confirm which date governs delay damages.','Contract Annex 1; Annex 3 terms'],
+ ['hi','Technical scope not attached','Annex 2 says "Attach the Armada Scope of Work document here" and the SOW says "Refer to ARMADA document", but the technical scope is not in the contract file. The quantities in Annex 3 are the only technical basis.','Contract Annex 2; SOW clause 2'],
+ ['hi','Madinah priced on an assumption','Madinah is priced at 50% of the Makkah BOQ because no drawings were provided. Any re-measure moves HHR (SAR 30.4M) and the programme.','Annex 3 HHR terms'],
+ ['hi','Long-lead and customs','Equipment is sourced abroad and FAT is planned in China, shifting to Dubai under quarantine limits. Procurement of 14–20 weeks and 6–8 weeks of shipping drive the critical path, hardest at HHR.','Annex 3; Annex 5 item 15'],
+ ['med','No as-built drawings','ETECHS priced without as-built drawings and without HCIS Stage 1 or 2 documents (fast-track). Existing cables, conduits and racks can only be re-used if proven fit.','Annex 5 items 2, 13, 25'],
+ ['med','Delay damages','0.2% per day per deliverable, capped at 10% of price. Riyadh and Jeddah are the earliest deliverables and carry the most exposure.','Contract delay clause'],
+ ['med','Suspension and extension of time','SAR rejected a cap on suspension entitlement and wants 84 days to answer an extension claim. Both slow schedule recovery.','Contract comments, clauses 17 and 25'],
+ ['med','Excluded from ETECHS scope','Fibre links between stations, IP telephony, cyber-security hardening and a maintenance programme are excluded. SAR provides passes, IDs, storage and a laydown area, and the network between stations and control rooms.','Annex 3 terms; Annex 5 items 8, 20'],
+ ['med','Third-party integration at extra cost','Integrating other vendors needs an open API, ONVIF cameras and vendor SDKs. Extra cost is quoted separately per integration.','Annex 5 items 9–11, 21–23'],
+ ['lo','Payment profile','20% is invoiced on mobilization, but the last 10% waits for final acceptance and is only invoiced in the final month of the term.','Contract clause 15'],
+ ['lo','Warranty definitions differ','Contract: 1-year defects liability. ETECHS: 12 months warranty from delivery or SAT. Annex 5: Dahua 5 years, Cisco 1 year with renewals priced on request. The 36-month window does not cover them all.','Contract; Annex 3; Annex 5'],
  ['lo','Optional items outside the price','Centralized control-room servers (SAR 0.48M EWR, 0.49M NSR, 0.49M HHR) and PSIM licences are listed but not in the SAR 62.0M.','Annex 3, section F'],
- ['lo','Operations access','Work must be phased in zones so train operations are not disturbed. Site access windows could stretch installation durations.','SAR SOW 12.6']
+ ['lo','Operations access','Work must be phased in zones so station operations are not disturbed, which can stretch installation durations.','SOW clause 12.6']
 ];
 function renderRisks(){
-  $('#t-risks').innerHTML=head('Risks & open points','What could move the dates or the money','Drawn from the contract mark-up, the ETECHS offer terms and gaps between the three documents. Severity reflects effect on schedule or cost.')+`
+  $('#t-risks').innerHTML=head('Risks & open points','What could move the dates or the money','Drawn only from the contract file: its clauses, comments and Annexes 1 to 5. Severity reflects effect on schedule or cost.')+`
   <div class="scroll"><table class="tbl"><thead><tr><th>Severity</th><th>Item</th><th>What it means</th><th>Source</th></tr></thead><tbody>${RISKS.map(r=>`<tr><td><span class="tag ${r[0]}">${{hi:'High',med:'Medium',lo:'Low'}[r[0]]}</span></td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="note">${r[3]}</td></tr>`).join('')}</tbody></table></div>
   <div class="sp"></div>
   <div class="callout warn"><b>Model assumptions.</b> NTP date defaults to 1 Nov 2026 and can be changed in the filter bar. Station durations, wave order and cost-loading rules are planning assumptions made for this baseline; they are not taken from an approved SAR programme. Replace them with the Primavera baseline once issued.</div>`;
 }
 
-function setBurn(m){BURN.mode=m;BURN.w=m==='scope'?13:6;BURN.label=m==='scope'?'Burn-out period, 3 months (Scope 4.4.2)':'Trial operation, max 45 days (Contract)';rebuild();}
 /* ===== DRILL-DOWN DRAWER ===== */
 const DSTACK=[];
 function openDrawer(title,sub,html,after){ $('#dT').textContent=title; $('#dS').innerHTML=sub||''; $('#dB').innerHTML=html; $('#drawer').classList.add('on'); $('#drawer').setAttribute('aria-hidden','false'); $('#dov').classList.add('on'); $('#dB').scrollTop=0; $('#dBack').style.visibility=DSTACK.length>1?'visible':'hidden'; if(after)setTimeout(after,40); }
@@ -686,19 +685,19 @@ const tbl=(heads,rows)=>`<div class="scroll"><table class="tbl"><thead><tr>${hea
 const bar=(v,max,c)=>`<span class="bar" style="width:${Math.max(2,max?v/max*90:0)}px;background:${c||C.blue}"></span>`;
 function stTable(list,extra){return tbl(['Station','Cost SAR','Start','Final acceptance','Cameras'],list.map(s=>row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtN(extra?extra(s):selCost(s)),fmtD(wDate(s.st)),fmtD(wDate(s.en)),s.cam],'station:'+s.id)));}
 const goFilter=(ids)=>`<div class="btnrow"><button class="btn" data-act="only" data-ids="${ids.join(',')}">Filter the site to ${ids.length>1?'these stations':'this station'}</button></div>`;
-const ACT_INFO={survey:['Site visit, as-found verification of existing CCTV, cabling, power and levels; identifies what can be re-used under HCIS 2017.','SAR SOW clause 3 (II) and Armada section 4.'],
- eng:['Detailed design, bill of materials, compliance statements to HCIS directives, test plan, shop drawings and submittals.','Armada section 4; payment: 10% on engineering submittal.'],
- appr:['SAR and HCIS review and approval of the design package. Armada allows a five-week period in the schedule; the contract caps SAR review at 21 days.','Armada section 4; contract programme clause; payment: 10% on SAR approval.'],
- proc:['Order and manufacture of cameras, servers, storage, network and UPS, ending with the factory acceptance test (FAT).','SAR SOW 13.1-13.3; ETECHS offer: FAT held in Dubai.'],
+const ACT_INFO={survey:['Site visit, as-found verification of existing conditions, cabling and levels, and identification of underground services.','SOW clause 3 (II) in Annex 2.'],
+ eng:['Detailed design and engineering, BOQ with unit rates, method statements, shop and fabrication drawings, and submittals for SAR approval.','SOW clauses 5, 13; payment: 10% on engineering submittal.'],
+ appr:['SAR review and approval of the design package. The contract limits SAR review to 21 days.','Contract programme clause; payment: 10% on SAR approval.'],
+ proc:['Order and manufacture of cameras, servers, storage, network and UPS, ending with the factory acceptance test at the vendor premises (China, or Dubai under quarantine limits).','SOW clauses 13.1 to 13.3; Annex 5 item 14 and 15.'],
  ship:['Shipping, customs clearance and delivery to the station. Material is accepted on delivery.','Payment: 20% on material delivery, prorated per station.'],
- civil:['Trenches in platforms, duct banks, camera and ALPR poles. Runs in parallel with procurement once the design is approved.','Annex 3 civil works line per station.'],
+ civil:['Trenches in platforms, duct banks, camera poles and ALPR poles. Runs in parallel with procurement once the design is approved.','Annex 3 civil works line per station; SAR provides a laydown area (Annex 5).'],
  inst:['Mounting, cabling, termination and integration of all devices into the video management system and control room.','Payment: 20% on installation, prorated per station.'],
- sat:['Site acceptance test across nine test classes, pre-commissioning and commissioning.','Armada 4.4.2; payment: 10% on testing and commissioning (SAT).'],
- train:['Operator, maintenance and administrator training with manuals in English.','Armada 4.7.'],
- trial:['Burn-out or trial operation with live monitoring of detection, false-alarm and nuisance-alarm rates.','Armada 4.4.2 (3 months) against contract definition (max 45 days).'],
- final:['Application for the Taking-Over Certificate, punch items closed within 45 days, project handover and start of defects liability.','Contract acceptance clause; payment: 10% on final acceptance and handover.']};
+ sat:['Testing, commissioning and site acceptance test of the installed systems.','SOW clause 10.2; payment: 10% on testing and commissioning (SAT).'],
+ train:['On-site training of facility operators and security personnel on the new systems.','Annex 3 training line; Annex 4 training commitments.'],
+ trial:['Trial operation: successful operation of the systems in line with SAR requirements, limited to a maximum of 45 days.','Contract definition of Trial Operation.'],
+ final:['Application for the Taking-Over Certificate (SAR responds within 30 days), minor items closed within 45 days, project handover and start of the 1-year defects liability.','Contract acceptance clause; payment: 10% on final acceptance and handover.']};
 function dStation(id){
-  const s=S.find(x=>x.id===id), L=LINES[s.line], inv=invoices(s), rom=ROM[s.id];
+  const s=S.find(x=>x.id===id), L=LINES[s.line], inv=invoices(s);
   const catRows=CATS.map(c=>[c[1],s.cost[c[0]],HW.includes(c[0])?'Priced':'Allocated',c[0]]);
   const html=`<div class="dk">
    ${kpi('SAR '+fmtM(s.all),'All-in value',pct(s.all/TOTAL_PRICE)+' of contract',L.color)}
@@ -712,17 +711,16 @@ function dStation(id){
   <h4>Cameras by type</h4>${tbl(['Type','Qty'],CAMTYPES.filter(c=>s.cams[c[0]]).map(c=>row([c[1],s.cams[c[0]]])))}
   <h4>Schedule (Level 4)</h4>${tbl(['Activity','Start','Finish','Weeks'],s.list.map(a=>row([`<span data-drill="act:${s.id}:${a.k}" style="cursor:pointer;color:#00778B">${a.name}</span>`,fmtD(wDate(a.st)),fmtD(wDate(a.en)),a.dur])))}
   <h4>Payment milestones</h4>${tbl(['Milestone','SAR','Invoice date'],inv.map(i=>row([i.name,fmtN(i.amt),fmtD(wDate(i.week))])))}
-  <h4>Against the Armada estimate</h4><p style="margin:0">Armada ROM (with 10% contingency): <b>SAR ${fmtN(rom)}</b>. Contract all-in: <b>SAR ${fmtN(s.all)}</b>, ${s.all<rom?'':'+'}${((s.all/rom-1)*100).toFixed(1)}%.${s.id==='HHR-MAD'?' Madinah is priced at 50% of Makkah because drawings were not provided.':''}${s.ryd?' This station is on the Riyadh priority path.':''}</p>`;
+  ${s.id==='HHR-MAD'?'<h4>Pricing basis</h4><p style="margin:0">Madinah is priced at 50% of the Makkah BOQ because drawings were not available (Annex 3 terms).</p>':''}${s.ryd?'<h4>Priority</h4><p style="margin:0">This station is on the Riyadh priority path.</p>':''}`;
   openDrawer(s.name,`${lt(s.line)} ${L.name}${pri(s)}`,html,()=>{mk('d-c1',{type:'bar',data:{labels:moLabels,datasets:[{label:'SAR M',data:monthSeries(stationMonthly(s)),backgroundColor:L.color}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax()},plugins:{legend:{display:false}}}});});
 }
 function dLine(l){
-  const L=LINES[l], ss=S.filter(s=>s.line===l), tot=ss.reduce((a,s)=>a+s.all,0), romL=ss.reduce((a,s)=>a+ROM[s.id],0);
+  const L=LINES[l], ss=S.filter(s=>s.line===l), tot=ss.reduce((a,s)=>a+s.all,0);
   const html=`<div class="dk">${kpi('SAR '+fmtM(tot),'Line value',pct(tot/TOTAL_PRICE)+' of contract',L.color)}${kpi(ss.length,'Stations',ss.filter(s=>s.ryd).length?'Includes Riyadh priority':'',C.slate)}${kpi(ss.reduce((a,s)=>a+s.cam,0),'Cameras','',C.yellow)}${kpi('M'+(Math.max(...ss.map(s=>s.en))/WPM).toFixed(1),'Last acceptance','',C.red)}</div>
   ${goFilter(ss.map(s=>s.id))}
   <h4>Monthly cost, SAR M</h4><div class="chartbox"><canvas id="d-c1"></canvas></div>
   <h4>Stations</h4>${stTable(ss,s=>s.all)}
-  <h4>Shared packages priced at line level</h4>${tbl(['Package','SAR'],SV.map(k=>row([`<span data-drill="cat:${k}" style="cursor:pointer;color:#00778B">${CAT[k].label}</span>`,fmtN(L.shared[k])])))}
-  <h4>Against the Armada estimate</h4><p style="margin:0">Armada ROM for ${l}: <b>SAR ${fmtN(romL)}</b>. Contract: <b>SAR ${fmtN(tot)}</b> (${((tot/romL-1)*100).toFixed(1)}%).</p>`;
+  <h4>Shared packages priced at line level</h4>${tbl(['Package','SAR'],SV.map(k=>row([`<span data-drill="cat:${k}" style="cursor:pointer;color:#00778B">${CAT[k].label}</span>`,fmtN(L.shared[k])])))}`;
   openDrawer(L.name,lt(l),html,()=>{mk('d-c1',{type:'bar',data:{labels:moLabels,datasets:[{label:'SAR M',data:monthSeries(weekly(ss)),backgroundColor:L.color}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax()},plugins:{legend:{display:false}}}});});
 }
 function dMonth(m){
@@ -800,11 +798,11 @@ function dKpi(k){
   else if(k==='inv24'||k==='inv36'){const lim=MS(k==='inv36'?36:24),rows=st.flatMap(s=>invoices(s).map(i=>({s,i})));const by=rows.filter(r=>r.i.week<=lim),later=rows.filter(r=>r.i.week>lim);
     openDrawer(k==='inv36'?'Invoiced by month 36':'Invoiced by month 24','Invoices raised on the contract payment milestones',`<div class="dk">${kpi('SAR '+fmtM(by.reduce((a,r)=>a+r.i.amt,0)),'Invoiced by then',by.length+' invoices',C.blue)}${kpi('SAR '+fmtM(later.reduce((a,r)=>a+r.i.amt,0)),'Invoiced later',later.length+' invoices',C.red)}</div><h4>Invoices raised later</h4>${later.length?tbl(['Station','Milestone','SAR','Date'],later.sort((x,y)=>x.i.week-y.i.week).map(r=>row([r.s.name,r.i.name,fmtN(r.i.amt),fmtD(wDate(r.i.week))],'station:'+r.s.id))):'<p class="note">Nothing is invoiced after this date.</p>'}`);}
   else if(k==='cams'){openDrawer('Cameras supplied','By type and railway',tbl(['Type','NSR','EWR','HHR','Total'],CAMTYPES.map(c=>{const v=l=>S.filter(s=>s.line===l).reduce((a,s)=>a+s.cams[c[0]],0);return row([c[1],v('NSR'),v('EWR'),v('HHR'),v('NSR')+v('EWR')+v('HHR')]);}))+'<h4>By station</h4>'+tbl(['Station','Cameras'],S.map(s=>row([s.name+' '+lt(s.line),s.cam],'station:'+s.id))));}
-  else if(k==='term'){openDrawer('Contract term','36 months from Notice to Proceed',tbl(['Item','Value'],[['Notice to Proceed','After SAR approves the baseline programme'],['Initial baseline','10 days from effective date'],['Detailed baseline','21 days after survey'],['SAR review time','Maximum 21 days'],['Trial operation','Maximum 45 days (contract)'],['Defects liability','1 year from Taking-Over Certificate'],['Delay damages','0.2% per day, capped at 10%']].map(r=>row(r))));}
+  else if(k==='term'){openDrawer('Contract term','36 months from Notice to Proceed',tbl(['Item','Value'],[['Notice to Proceed','After SAR approves the baseline programme'],['Initial baseline','10 days from effective date'],['Detailed baseline','21 days after survey'],['SAR review time','Maximum 21 days'],['Trial operation','Maximum 45 days'],['Defects liability','1 year from Taking-Over Certificate'],['Delay damages','0.2% per day, capped at 10%']].map(r=>row(r))));}
   else if(k==='price'){openDrawer('Contract price','Annex 3, Revised-02',tbl(['Railway','SAR ex-VAT','With VAT'],Object.keys(LINES).map(l=>{const v=S.filter(s=>s.line===l).reduce((a,s)=>a+s.all,0);return row([lt(l)+' '+LINES[l].name,fmtN(v),fmtN(v*1.15)],'line:'+l);}).concat([row(['<b>Total</b>','<b>62,000,000</b>','<b>71,300,000</b>'])])));}
 }
 function dMile(i){const m=MILE[i],st=sel();openDrawer(m[0],'Payment milestone, per station',tbl(['Station','SAR','Invoice date'],st.map(s=>invoices(s)[i]).sort((a,b)=>a.week-b.week).map(x=>row([x.station.name+' '+lt(x.station.line),fmtN(x.amt*(selCost(x.station)/x.station.all)),fmtD(wDate(x.week))],'station:'+x.station.id))));}
-const RISK_ST={2:['HHR-MAD','HHR-MAK'],5:['NSR-RYD','EWR-RYD','HHR-JED'],3:['HHR-JED','HHR-MAK','HHR-KAE','HHR-MAD']};
+const RISK_ST={2:['HHR-MAD','HHR-MAK'],3:['HHR-JED','HHR-MAK','HHR-KAE','HHR-MAD'],5:['NSR-RYD','EWR-RYD','HHR-JED']};
 function dRisk(i){const r=RISKS[i],ids=RISK_ST[i]||S.map(s=>s.id);openDrawer(r[1],`<span class="tag ${r[0]}">${{hi:'High',med:'Medium',lo:'Low'}[r[0]]}</span> ${r[3]}`,`<p style="font-size:14.5px">${r[2]}</p><h4>Stations most affected</h4>${ids.length===14?'<p class="note">All 14 stations.</p>':tbl(['Station','Final acceptance'],ids.map(id=>S.find(s=>s.id===id)).map(s=>row([s.name+' '+lt(s.line),fmtD(wDate(s.en))],'station:'+s.id)))}`);}
 function drill(key,noPush){
   const [t,a,b]=key.split(':'); if(!noPush)DSTACK.push(key);
@@ -819,7 +817,7 @@ $('#dX').onclick=closeDrawer; $('#dov').onclick=closeDrawer; $('#dBack').onclick
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
 /* click handlers for charts */
 CLICK['c-st']=i=>drill('station:'+LAST.byS[i].id); CLICK['c-ry']=i=>i&&drill('month:'+i); CLICK['c-mon']=i=>i&&drill('month:'+i);
-CLICK['c-do']=i=>drill('grp:'+GRP[i][0]); CLICK['c-cam']=i=>drill('station:'+sel()[i].id); CLICK['c-rom']=i=>drill('station:'+S[i].id);
+CLICK['c-do']=i=>drill('grp:'+GRP[i][0]); CLICK['c-cam']=i=>drill('station:'+sel()[i].id);
 ['c-s1','c-s2','c-s3','c-act'].forEach(id=>CLICK[id]=i=>i&&drill('month:'+i));
 /* decorate cards and tables after each render */
 const DR={dashboard:['kpi:value','kpi:stations','kpi:finish','kpi:peak','kpi:m12'],scope:['kpi:stations','kpi:cams','kpi:term','kpi:price'],scurve:['kpi:m50','kpi:m12','kpi:inv24','kpi:inv36']};
