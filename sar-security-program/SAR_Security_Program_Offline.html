@@ -339,7 +339,7 @@ const catsOn=k=>F.cats.has(k);
 function selCost(s){return Object.keys(s.cost).reduce((a,k)=>a+(catsOn(k)?s.cost[k]:0),0);}
 function weekly(stations,fn){const o=new Float64Array(T); stations.forEach(s=>CATS.forEach(c=>{ if(!catsOn(c[0]))return; const a=s.wk[c[0]]; if(fn&&!fn(c[0]))return; for(let w=0;w<T;w++)o[w]+=a[w];})); return o;}
 function monthlyCum(arr,months=36){const out=[0]; let acc=0,w=0; for(let m=1;m<=months;m++){const e=Math.round(m*WPM); for(;w<e&&w<T;w++)acc+=arr[w]; out.push(acc);} return out;}
-function cashWeekly(stations,mode){const o=new Float64Array(T); stations.forEach(s=>invoices(s).forEach(i=>{ const frac=catsOn('pm')&&F.cats.size===CATS.length?1:selCost(s)/s.all; const w=Math.min(T-1,i.week+(mode==='cash'?LAG:0)); o[w]+=i.amt*frac;})); return o;}
+function invWeekly(stations,mode){const o=new Float64Array(T); stations.forEach(s=>invoices(s).forEach(i=>{ const frac=catsOn('pm')&&F.cats.size===CATS.length?1:selCost(s)/s.all; const w=Math.min(T-1,i.week+0); o[w]+=i.amt*frac;})); return o;}
 const fmtM=v=>(v/1e6).toFixed(2)+'M', fmtN=v=>Math.round(v).toLocaleString('en-US'), pct=v=>(v*100).toFixed(1)+'%';
 const ntpDate=()=>new Date(F.ntp+'T00:00:00');
 const wDate=w=>{const d=ntpDate(); d.setDate(d.getDate()+Math.round(w*7)); return d;};
@@ -464,7 +464,7 @@ const DOCS=[
  {id:'con',t:'Draft Contract (ETECHS comments)',file:'Contract_English_draft_ETECHS-comments_231220…docx',meta:['SAR and ETECHS (Industrial Safety & Security Sector)','Draft with comments to 22 Jan 2024','117 tracked comments'],
   sum:'The commercial and legal frame. SAR buys the integrated security solution for 14 stations at a lump-sum SAR 62.0M ex-VAT, with a 36-month term from Notice to Proceed and deliverables timed by an approved baseline schedule.',
   pts:['Contract price SAR 62,000,000 ex-VAT: EWR 11,113,215 · NSR 20,499,295 · HHR 30,387,490 (SAR 71.3M with 15% VAT).','Term: 36 months from Notice to Proceed. Baseline programme (Primavera) within 10 days of the effective date for mobilization and survey, detailed baseline 21 days after survey; SAR review at most 21 days.','Payments: 20% mobilization · 10% engineering submittal + 10% on SAR approval · 20% material delivery · 20% installation · 10% SAT · 10% final acceptance and handover, prorated per station; paid within 60 days of invoice.','Delay damages 0.2% of the deliverable price per day, capped at 10%. Performance security 5% of the price. Liability capped at the contract price.','Variation: up to +10% or −20% of the price. Trial operation is limited to 45 days. Defects liability 1 year from each Taking-Over Certificate.','ETECHS offer excludes fibre links between stations, IP telephony, cyber-security hardening and a maintenance programme, and needs SAR to supply gate passes and a laydown area.','Optional items not in the price: centralized control-room servers (SAR 0.48M EWR, 0.49M NSR, 0.49M HHR) and PSIM licences.'],
-  use:'Drives total value, per-line and per-station prices, payment-milestone cash curve and the 36-month frame.'},
+  use:'Drives total value, per-line and per-station prices, payment-milestone invoicing curve and the 36-month frame.'},
  {id:'ws',t:'Passenger Workshop Riyadh (RFQ 721778)',file:'Commercial_Proposal.pdf · Revised_Quotation3_-_RFQ_721778.pdf',meta:['Gulf Development Co. for Contracting','Financial proposal dated 21 Oct 2025','Separate SAR tender'],
   sum:'A different SAR tender: expansion of the Passenger Workshop in Riyadh, with a building BOQ, site and trackworks. The revised quotation totals SAR 24.67M ex-VAT (28.37M with VAT); the earlier BOQ shows SAR 25.44M ex-VAT.',
   pts:['Building works: fixed price 0.475M · Passenger Workshop 7.92M (earlier BOQ 8.68M) · Generator Room 1.37M.','Site and trackworks SAR 14.91M: ballasted track, a 1:9 turnout, 2,002 m of rail, roads, utilities and landscaping.','Includes a lump-sum Depot Protection System of SAR 3.0M and a BMS of SAR 0.35M, the only security-related items.'],
@@ -626,14 +626,14 @@ function renderSchedule(){
 let unit='pct';
 function renderScurve(){
   const st=sel(), tot=st.reduce((a,s)=>a+selCost(s),0)||1, k=unit==='pct'?100/tot:1/1e6, suf=unit==='pct'?'% of value in view':'SAR M cumulative';
-  const cost=monthlyCum(weekly(st)), inv=monthlyCum(cashWeekly(st,'inv')), cash=monthlyCum(cashWeekly(st,'cash'));
+  const cost=monthlyCum(weekly(st)), inv=monthlyCum(invWeekly(st,'inv'));
   const grp=g=>{const a=monthlyCum(weekly(st,c=>CATGROUP[c]===g)),t=a[a.length-1]||1;return a.map(v=>v/t*100);};
   const phys=cost.map((v,i)=>v/tot*100);
   const m50=cost.findIndex(v=>v>=tot*.5);
-  $('#t-scurve').innerHTML=head('Cost S-curve from the BOQ','When the SAR 62.0M is earned and paid',`The BOQ is cost-loaded onto the schedule: hardware over procurement and delivery, civil over its own activity, design over engineering, project management evenly across each station, then invoiced on the contract payment milestones. View: ${summary()}.`)+`
-  <div class="grid g4">${kpi('M'+m50,'50% of cost earned','Planned, cost-loaded')}${kpi(pct(cost[12]/tot),'By month 12','Cost-loaded',C.mid)}${kpi('SAR '+fmtM(cash[36]),'Cash received by M36','Invoices + 60-day payment lag',C.yellow)}${kpi('SAR '+fmtM(cash[24]),'Cash received by M24',pct(cash[24]/tot)+' of value in view',C.red)}</div><div class="sp"></div>
+  $('#t-scurve').innerHTML=head('Cost S-curve from the BOQ','When the SAR 62.0M is earned and invoiced',`The BOQ is cost-loaded onto the schedule: hardware over procurement and delivery, civil over its own activity, design over engineering, project management evenly across each station, then invoiced on the contract payment milestones. View: ${summary()}.`)+`
+  <div class="grid g4">${kpi('M'+m50,'50% of cost earned','Planned, cost-loaded')}${kpi(pct(cost[12]/tot),'By month 12','Cost-loaded',C.mid)}${kpi('SAR '+fmtM(inv[24]),'Invoiced by M24',pct(inv[24]/tot)+' of value in view',C.yellow)}${kpi('SAR '+fmtM(inv[36]),'Invoiced by M36',pct(inv[36]/tot)+' of value in view',C.red)}</div><div class="sp"></div>
   <div class="panel"><div class="fgroup" style="margin-bottom:8px"><span class="flabel">Y axis</span><span class="seg" id="uni"><button data-u="pct" aria-pressed="${unit==='pct'}">Percent</button><button data-u="sar" aria-pressed="${unit==='sar'}">SAR M</button></span></div>
-   <h3>Cumulative cost, invoicing and cash-in</h3><p class="sub">Cost-loaded curve follows the work; invoicing follows contract milestones; cash-in adds the 60-day payment term.</p><div class="chartbox tall"><canvas id="c-s1"></canvas></div></div>
+   <h3>Cumulative cost and invoicing</h3><p class="sub">The cost-loaded curve follows the work; the invoiced curve follows the contract payment milestones.</p><div class="chartbox tall"><canvas id="c-s1"></canvas></div></div>
   <div class="sp"></div>
   <div class="grid g2">
    <div class="panel"><h3>Physical progress by discipline</h3><p class="sub">Separate S-curves for design, procurement and construction, as clause 12.1 of the SAR Scope of Work requires.</p><div class="chartbox"><canvas id="c-s2"></canvas></div></div>
@@ -644,7 +644,7 @@ function renderScurve(){
    </tbody></table></div></div>`;
   const ln=(l,a,c,d)=>({label:l,data:a.map(v=>v*k),borderColor:c,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.25,borderDash:d||[],fill:false});
   const yt={title:{display:true,text:suf}};
-  mk('c-s1',{type:'line',data:{labels:moLabels,datasets:[ln('Cost-loaded (earned)',cost,C.blue),ln('Invoiced (milestones)',inv,C.yellow),ln('Cash received (+60 days)',cash,C.black,[6,4])]},
+  mk('c-s1',{type:'line',data:{labels:moLabels,datasets:[ln('Cost-loaded (earned)',cost,C.blue),ln('Invoiced (milestones)',inv,C.yellow)]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax(Object.assign({},yt,unit==='pct'?{max:100}:{}))},plugins:{legend:{position:'bottom',labels:{boxWidth:11}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${unit==='pct'?c.parsed.y.toFixed(1)+'%':c.parsed.y.toFixed(2)+'M'}`}}}}});
   mk('c-s2',{type:'line',data:{labels:moLabels,datasets:[{label:'Design & engineering',d:'design',c:C.sky},{label:'Procurement & delivery',d:'proc',c:C.slate},{label:'Construction & commissioning',d:'cons',c:C.blue}].map(x=>({label:x.label,data:grp(x.d),borderColor:x.c,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.25})).concat([{label:'Overall',data:phys,borderColor:C.black,borderWidth:2.5,borderDash:[6,4],pointRadius:0,tension:.25}])},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax({max:100,title:{display:true,text:'% complete'}})},plugins:{legend:{position:'bottom',labels:{boxWidth:11}}}}});
@@ -660,7 +660,7 @@ const RISKS=[
  ['hi','Trial operation length','Draft contract limits trial operation to 45 days; the Armada scope requires a 3-month burn-out for HCIS SEC-05, which is the stricter and is used by default. The schedule tab has a toggle: 3 months per the scope (default) or 45 days per the contract; the scope option adds about 7 weeks per station.','Contract definitions; Armada 4.4.2'],
  ['hi','Madinah priced on an assumption','Madinah is 50% of Makkah because drawings were not provided; any re-measure moves HHR (SAR 30.4M) and the programme.','Armada 2.3.4; ETECHS HHR terms'],
  ['hi','Long-lead and customs','Equipment is sourced from China and FAT is planned in Dubai because of quarantine limits. Procurement of 16–20 weeks and 6–8 weeks of shipping drive the critical path, hardest at HHR.','ETECHS price table; SAR SOW 13.2'],
- ['med','Payment and cash-flow','20% on mobilization helps, but the 60-day payment term and 10% held to final acceptance bring the last cash in around month 33. Cash curve is shown in the S-curve tab.','Contract cl. 15'],
+ ['med','Payment profile','20% is invoiced on mobilization, but the last 10% waits for final acceptance and is only invoiced in the final month of the term. The invoicing curve is shown in the S-curve tab.','Contract cl. 15'],
  ['med','Delay damages','0.2% per day per deliverable, capped at 10% of price. Riyadh and Jeddah are the earliest deliverables and carry the most exposure.','Contract cl. 7'],
  ['med','Suspension and extension of time','SAR rejected a cap on suspension entitlement and wants 84 days to answer an extension claim. Both slow schedule recovery.','Contract comments cl. 17, 25'],
  ['med','Excluded from ETECHS scope','Fibre links between stations, IP telephony, cyber-security hardening and a maintenance programme are excluded; SAR must supply passes, IDs and a laydown area.','ETECHS terms'],
@@ -715,7 +715,7 @@ function dStation(id){
   <p class="note">Allocated items are the line's shared packages (design, PM, FAT, spares, training, cloud) shared pro rata to station hardware value (${pct(s.share)} of ${s.line}).</p>
   <h4>Cameras by type</h4>${tbl(['Type','Qty'],CAMTYPES.filter(c=>s.cams[c[0]]).map(c=>row([c[1],s.cams[c[0]]])))}
   <h4>Schedule (Level 4)</h4>${tbl(['Activity','Start','Finish','Weeks'],s.list.map(a=>row([`<span data-drill="act:${s.id}:${a.k}" style="cursor:pointer;color:#00778B">${a.name}</span>`,fmtD(wDate(a.st)),fmtD(wDate(a.en)),a.dur])))}
-  <h4>Payment milestones</h4>${tbl(['Milestone','SAR','Invoice','Cash (+60 d)'],inv.map(i=>row([i.name,fmtN(i.amt),fmtD(wDate(i.week)),fmtD(wDate(i.week+LAG))])))}
+  <h4>Payment milestones</h4>${tbl(['Milestone','SAR','Invoice date'],inv.map(i=>row([i.name,fmtN(i.amt),fmtD(wDate(i.week))])))}
   <h4>Against the Armada estimate</h4><p style="margin:0">Armada ROM (with 10% contingency): <b>SAR ${fmtN(rom)}</b>. Contract all-in: <b>SAR ${fmtN(s.all)}</b>, ${s.all<rom?'':'+'}${((s.all/rom-1)*100).toFixed(1)}%.${s.id==='HHR-MAD'?' Madinah is priced at 50% of Makkah because drawings were not provided.':''}${s.ryd?' This station is on the Riyadh priority path.':''}</p>`;
   openDrawer(s.name,`${lt(s.line)} ${L.name}${pri(s)}`,html,()=>{mk('d-c1',{type:'bar',data:{labels:moLabels,datasets:[{label:'SAR M',data:monthSeries(stationMonthly(s)),backgroundColor:L.color}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax()},plugins:{legend:{display:false}}}});});
 }
@@ -734,8 +734,8 @@ function dMonth(m){
   const per=st.map(s=>{const arr=stationMonthly(s);let v=0;for(let w=a;w<b;w++)v+=arr[w];return {s,v,acts:s.list.filter(x=>x.st<b&&x.en>a)};}).filter(x=>x.v>1||x.acts.length).sort((x,y)=>y.v-x.v);
   const tot=per.reduce((x,y)=>x+y.v,0), cum=monthlyCum(weekly(st)), all=st.reduce((x,s)=>x+selCost(s),0)||1;
   const grp=GRP.map(([g])=>[g,st.reduce((x,s)=>x+CATS.filter(k=>catsOn(k[0])&&grpCat(k[0])===g).reduce((q,k)=>{let v=0;for(let w=a;w<b;w++)v+=s.wk[k[0]][w];return q+v;},0),0)]).filter(r=>r[1]>1);
-  const invs=st.flatMap(s=>invoices(s).filter(i=>i.week>=a&&i.week<b).map(i=>[s,i])), cash=st.flatMap(s=>invoices(s).filter(i=>i.week+LAG>=a&&i.week+LAG<b).map(i=>[s,i]));
-  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),'Planned cost in month','Weeks '+a+' to '+b,C.blue)}${kpi(pct(cum[m]/all),'Cumulative cost','SAR '+fmtM(cum[m]),C.mid)}${kpi('SAR '+fmtM(invs.reduce((x,y)=>x+y[1].amt,0)),'Invoiced in month',invs.length+' invoices',C.yellow)}${kpi('SAR '+fmtM(cash.reduce((x,y)=>x+y[1].amt,0)),'Cash expected in month',cash.length+' payments',C.red)}</div>
+  const invs=st.flatMap(s=>invoices(s).filter(i=>i.week>=a&&i.week<b).map(i=>[s,i]));
+  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),'Planned cost in month','Weeks '+a+' to '+b,C.blue)}${kpi(pct(cum[m]/all),'Cumulative cost','SAR '+fmtM(cum[m]),C.mid)}${kpi('SAR '+fmtM(invs.reduce((x,y)=>x+y[1].amt,0)),'Invoiced in month',invs.length+' invoices',C.yellow)}${kpi(per.length,'Stations active','Cost or invoices this month',C.red)}</div>
   <h4>Cost by station</h4>${tbl(['Station','SAR','Active activities'],per.map(x=>`<tr data-drill="station:${x.s.id}"><td>${x.s.name} ${lt(x.s.line)}</td><td class="r">${fmtN(x.v)}</td><td class="r" style="white-space:normal;text-align:left">${x.acts.map(y=>y.name.split(',')[0].split(' (')[0]).join('; ')}</td></tr>`))}
   <h4>Cost by sub-system</h4>${tbl(['Sub-system','SAR','Share'],grp.map(r=>row([`<span data-drill="grp:${r[0]}" style="cursor:pointer;color:#00778B">${r[0]}</span>`,fmtN(r[1]),pct(r[1]/(tot||1))])))}
   <h4>Invoices raised</h4>${invs.length?tbl(['Station','Milestone','SAR'],invs.map(([s,i])=>row([s.name,i.name,fmtN(i.amt)],'station:'+s.id))):'<p class="note">No invoices fall in this month.</p>'}`;
@@ -762,7 +762,7 @@ function dAct(sid,k){
   const mile={eng:'Engineering submittal (10%)',appr:'SAR approval of engineering (10%)',ship:'Material delivery (20%)',inst:'Installation (20%)',sat:'Testing & commissioning / SAT (10%)',final:'Final acceptance & handover (10%)'}[k];
   const html=`<div class="dk">${kpi(a.dur+' wk','Duration',PHASE[a.ph].n,PHASE[a.ph].c)}${kpi('SAR '+fmtM(v),'Cost loaded in this activity','Selected cost scope',C.blue)}${kpi(fmtD(wDate(a.st)),'Start','M'+(a.st/WPM).toFixed(1),C.slate)}${kpi(fmtD(wDate(a.en)),'Finish','M'+(a.en/WPM).toFixed(1),C.red)}</div>
   <h4>What it covers</h4><p style="margin:0">${info[0]}</p><h4>Basis</h4><p style="margin:0">${info[1]}</p>
-  ${mile?`<h4>Payment milestone</h4><p style="margin:0">${mile}: SAR ${fmtN(s.all*MILE.find(m=>m[0]===mile)[1])} invoiced when this activity finishes, cash 60 days later (${fmtD(wDate(a.en+LAG))}).</p>`:''}
+  ${mile?`<h4>Payment milestone</h4><p style="margin:0">${mile}: SAR ${fmtN(s.all*MILE.find(m=>m[0]===mile)[1])} invoiced when this activity finishes (${fmtD(wDate(a.en))}).</p>`:''}
   <h4>Sequence</h4><p style="margin:0">${prev?'After: '+prev.name+'. ':''}${next?'Before: '+next.name+'.':''}</p>
   <div class="btnrow"><button class="btn ghost" data-drill="station:${s.id}">Open ${s.name}</button></div>`;
   openDrawer(a.name,`${s.name} · ${lt(s.line)}`,html);
@@ -801,13 +801,13 @@ function dKpi(k){
   else if(k==='peak'){const mon=cum.map((v,i)=>i?v-cum[i-1]:0);dMonth(mon.indexOf(Math.max(...mon)));}
   else if(k==='m12'){const w=MS(12);openDrawer('Cost-loaded by month 12','Share of each station\'s planned cost earned by month 12',tbl(['Station','Earned by M12','SAR','Complete'],st.map(s=>{const arr=stationMonthly(s);let v=0;for(let i=0;i<w;i++)v+=arr[i];const t=selCost(s)||1;return [s,v,t];}).sort((x,y)=>y[1]/y[2]-x[1]/x[2]).map(([s,v,t])=>row([`${s.name} ${lt(s.line)}${pri(s)}`,pct(v/t),fmtN(v),bar(v,t,s.ryd?C.red:C.blue)],'station:'+s.id))));}
   else if(k==='m50'){const m=cum.findIndex(v=>v>=all*.5);dMonth(m);}
-  else if(k==='cash36'||k==='cash24'){const lim=MS(k==='cash36'?36:24),rows=st.flatMap(s=>invoices(s).map(i=>({s,i,cw:i.week+LAG})));const paid=rows.filter(r=>r.cw<lim),late=rows.filter(r=>r.cw>=lim);
-    openDrawer(k==='cash36'?'Cash received by month 36':'Cash received by month 24','Invoice value plus the 60-day payment term',`<div class="dk">${kpi('SAR '+fmtM(paid.reduce((a,r)=>a+r.i.amt,0)),'Received','',C.blue)}${kpi('SAR '+fmtM(late.reduce((a,r)=>a+r.i.amt,0)),'Still to receive',late.length+' invoices',C.red)}</div><h4>Invoices not yet paid at this date</h4>${tbl(['Station','Milestone','SAR','Cash date'],late.sort((x,y)=>x.cw-y.cw).map(r=>row([r.s.name,r.i.name,fmtN(r.i.amt),fmtD(wDate(r.cw))],'station:'+r.s.id)))}`);}
+  else if(k==='inv24'||k==='inv36'){const lim=MS(k==='inv36'?36:24),rows=st.flatMap(s=>invoices(s).map(i=>({s,i})));const by=rows.filter(r=>r.i.week<=lim),later=rows.filter(r=>r.i.week>lim);
+    openDrawer(k==='inv36'?'Invoiced by month 36':'Invoiced by month 24','Invoices raised on the contract payment milestones',`<div class="dk">${kpi('SAR '+fmtM(by.reduce((a,r)=>a+r.i.amt,0)),'Invoiced by then',by.length+' invoices',C.blue)}${kpi('SAR '+fmtM(later.reduce((a,r)=>a+r.i.amt,0)),'Invoiced later',later.length+' invoices',C.red)}</div><h4>Invoices raised later</h4>${later.length?tbl(['Station','Milestone','SAR','Date'],later.sort((x,y)=>x.i.week-y.i.week).map(r=>row([r.s.name,r.i.name,fmtN(r.i.amt),fmtD(wDate(r.i.week))],'station:'+r.s.id))):'<p class="note">Nothing is invoiced after this date.</p>'}`);}
   else if(k==='cams'){openDrawer('Cameras supplied','By type and railway',tbl(['Type','NSR','EWR','HHR','Total'],CAMTYPES.map(c=>{const v=l=>S.filter(s=>s.line===l).reduce((a,s)=>a+s.cams[c[0]],0);return row([c[1],v('NSR'),v('EWR'),v('HHR'),v('NSR')+v('EWR')+v('HHR')]);}))+'<h4>By station</h4>'+tbl(['Station','Cameras'],S.map(s=>row([s.name+' '+lt(s.line),s.cam],'station:'+s.id))));}
   else if(k==='term'){openDrawer('Contract term','36 months from Notice to Proceed',tbl(['Item','Value'],[['Notice to Proceed','After SAR approves the baseline programme'],['Initial baseline','10 days from effective date'],['Detailed baseline','21 days after survey'],['SAR review time','Maximum 21 days'],['Trial operation','Maximum 45 days (contract)'],['Defects liability','1 year from Taking-Over Certificate'],['Delay damages','0.2% per day, capped at 10%']].map(r=>row(r))));}
   else if(k==='price'){openDrawer('Contract price','Annex 3, Revised-02',tbl(['Railway','SAR ex-VAT','With VAT'],Object.keys(LINES).map(l=>{const v=S.filter(s=>s.line===l).reduce((a,s)=>a+s.all,0);return row([lt(l)+' '+LINES[l].name,fmtN(v),fmtN(v*1.15)],'line:'+l);}).concat([row(['<b>Total</b>','<b>62,000,000</b>','<b>71,300,000</b>'])])));}
 }
-function dMile(i){const m=MILE[i],st=sel();openDrawer(m[0],'Payment milestone, per station',tbl(['Station','SAR','Invoice','Cash'],st.map(s=>invoices(s)[i]).sort((a,b)=>a.week-b.week).map(x=>row([x.station.name+' '+lt(x.station.line),fmtN(x.amt*(selCost(x.station)/x.station.all)),fmtD(wDate(x.week)),fmtD(wDate(x.week+LAG))],'station:'+x.station.id))));}
+function dMile(i){const m=MILE[i],st=sel();openDrawer(m[0],'Payment milestone, per station',tbl(['Station','SAR','Invoice date'],st.map(s=>invoices(s)[i]).sort((a,b)=>a.week-b.week).map(x=>row([x.station.name+' '+lt(x.station.line),fmtN(x.amt*(selCost(x.station)/x.station.all)),fmtD(wDate(x.week))],'station:'+x.station.id))));}
 const RISK_ST={2:['HHR-MAD','HHR-MAK'],5:['NSR-RYD','EWR-RYD','HHR-JED'],3:['HHR-JED','HHR-MAK','HHR-KAE','HHR-MAD']};
 function dRisk(i){const r=RISKS[i],ids=RISK_ST[i]||S.map(s=>s.id);openDrawer(r[1],`<span class="tag ${r[0]}">${{hi:'High',med:'Medium',lo:'Low'}[r[0]]}</span> ${r[3]}`,`<p style="font-size:14.5px">${r[2]}</p><h4>Stations most affected</h4>${ids.length===14?'<p class="note">All 14 stations.</p>':tbl(['Station','Final acceptance'],ids.map(id=>S.find(s=>s.id===id)).map(s=>row([s.name+' '+lt(s.line),fmtD(wDate(s.en))],'station:'+s.id)))}`);}
 function drill(key,noPush){
@@ -826,7 +826,7 @@ CLICK['c-st']=i=>drill('station:'+LAST.byS[i].id); CLICK['c-ry']=i=>i&&drill('mo
 CLICK['c-do']=i=>drill('grp:'+GRP[i][0]); CLICK['c-cam']=i=>drill('station:'+sel()[i].id); CLICK['c-rom']=i=>drill('station:'+S[i].id);
 ['c-s1','c-s2','c-s3','c-act'].forEach(id=>CLICK[id]=i=>i&&drill('month:'+i));
 /* decorate cards and tables after each render */
-const DR={dashboard:['kpi:value','kpi:stations','kpi:finish','kpi:peak','kpi:m12'],scope:['kpi:stations','kpi:cams','kpi:term','kpi:price'],scurve:['kpi:m50','kpi:m12','kpi:cash36','kpi:cash24']};
+const DR={dashboard:['kpi:value','kpi:stations','kpi:finish','kpi:peak','kpi:m12'],scope:['kpi:stations','kpi:cams','kpi:term','kpi:price'],scurve:['kpi:m50','kpi:m12','kpi:inv24','kpi:inv36']};
 function decorate(){
   (DR[TAB]||[]).forEach((k,i)=>{const el=$$('#t-'+TAB+' .kpi')[i];if(el)el.dataset.drill=k;});
   if(TAB==='dashboard'){const ry=S.filter(s=>s.ryd);$$('#t-dashboard .ms').forEach((e,i)=>e.dataset.drill='station:'+ry[i].id);}
