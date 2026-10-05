@@ -349,7 +349,7 @@ const moLabels=Array.from({length:37},(_,i)=>'M'+i);
 const grpCat=k=>({cctv:'CCTV',vms:'Video mgmt & wall',ac:'Access & intercom',ups:'UPS',net:'Network & field',civil:'Civil works'}[k]||'Services & PM');
 const GRP=[['CCTV',C.blue],['Video mgmt & wall',C.mid],['Access & intercom',C.sky],['UPS',C.gray],['Network & field',C.slate],['Civil works',C.yellow],['Services & PM',C.black]];
 const summary=()=>{const s=sel();return `${s.length} of 14 stations · SAR ${fmtM(s.reduce((a,x)=>a+selCost(x),0))}`;};
-let TAB='dashboard', ganttLevel=3, rydFirst=true;
+let TAB='dashboard', ganttLevel=3, rydFirst=true, ganttMode='rail';
 const NAV=[['dashboard','Dashboard'],['scope','Scope & documents'],['boq','BOQ'],['schedule','Schedule L1–L4'],['scurve','Cost S-curve'],['risks','Risks & open points']];
 
 /* ===== FILTER BAR ===== */
@@ -551,6 +551,18 @@ function ganttTree(){
     {lv:3,id:'C2',label:'Contract closeout pack & handover',st:wEnd-4,en:WEEKS,col:C.slate,kids:[],ms:[[WEEKS,'Contract term ends (M36)']]},
     {lv:3,id:'C3',label:'Defects liability 1 yr per station from taking-over (continues beyond M36)',st:first,en:WEEKS,col:C.gray,kids:[]}]};
   const groups=[mob];
+  if(ganttMode==='epc'){
+    const EPC=[['E','Engineering',['survey','eng','appr'],C.sky],['P','Procurement',['proc','ship'],C.slate],['C','Construction',['civil','inst'],C.blue],['X','Commissioning, trial & handover',['sat','train','trial','final'],C.yellow]];
+    const ordered=[...st].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st); groups.push(mob);groups.length=0;groups.push(mob);
+    EPC.forEach(([k,label,keys,col])=>{
+      const kids=ordered.map(s=>{const acts=keys.map(x=>s.acts[x]).filter(a=>F.phases.has(a.ph)); if(!acts.length)return null;
+        return {lv:3,id:k+'~'+s.id,label:s.name,st:Math.min(...acts.map(a=>a.st)),en:Math.max(...acts.map(a=>a.en)),col:LINES[s.line].color,ryd:s.ryd,tip:`${s.name} · ${label}\n${wTxt(Math.min(...acts.map(a=>a.st)))} → ${wTxt(Math.max(...acts.map(a=>a.en)))}`,
+          kids:acts.map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}))};}).filter(Boolean);
+      if(kids.length)groups.push({lv:2,id:'EPC_'+k,label:`${label} (${kids.length} stations)`,st:Math.min(...kids.map(n=>n.st)),en:Math.max(...kids.map(n=>n.en)),col,tip:label,kids});
+    });
+    groups.push(cl);
+    return {lv:1,id:'PRJ',label:'SAR Passengers\' Security Checking · 36 months',st:0,en:WEEKS,col:C.blue,tip:'Level 1 – whole project',kids:groups};
+  }
   let rest=st; if(rydFirst){const r=st.filter(s=>s.ryd); const g=grp('RYD','Riyadh priority stations (NSR + EWR)',r,C.red,true); if(g)groups.push(g); rest=st.filter(s=>!s.ryd);}
   Object.keys(LINES).forEach(l=>{const g=grp(l,`${LINES[l].name} (${l})`,rest.filter(s=>s.line===l).sort((a,b)=>a.st-b.st),LINES[l].color); if(g)groups.push(g);});
   groups.push(cl);
@@ -574,7 +586,8 @@ function renderSchedule(){
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
    <div class="fgroup"><span class="flabel">Burn-out</span><span class="seg" id="gB"><button data-b="scope" aria-pressed="${BURN.mode==='scope'}">3 months (Scope)</button><button data-b="contract" aria-pressed="${BURN.mode==='contract'}">45 days (Contract)</button></span></div>
-   <div class="fgroup"><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
+   <div class="fgroup"><span class="flabel">Structure</span><span class="seg" id="gM"><button data-m="rail" aria-pressed="${ganttMode==='rail'}">By railway & station</button><button data-m="epc" aria-pressed="${ganttMode==='epc'}">EPC</button></span></div>
+   <div class="fgroup" ${ganttMode==='epc'?'hidden':''}><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
    <div class="legend" style="margin:0">${Object.values(PHASE).map(p=>`<span><i style="background:${p.c}"></i>${p.n}</span>`).join('')}<span><i style="background:${C.black};transform:rotate(45deg) scale(.85)"></i>Milestone</span><span><i style="background:${C.red};transform:rotate(45deg) scale(.85)"></i>Final acceptance</span></div></div>
    <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.</p>
    <div class="gwrap"><div class="gh"><div class="glab">Activity</div><div class="gtrack" style="width:${W}px;position:relative">${qs}${mon}</div></div>${rows.map(rowHtml).join('')}</div></div>
@@ -589,6 +602,7 @@ function renderSchedule(){
   $$('#t-schedule [data-g]').forEach(b=>b.onclick=()=>{const id=b.dataset.g;open.has(id)?open.delete(id):open.add(id);const y=$('.gwrap').scrollTop,x=$('.gwrap').scrollLeft;renderSchedule();$('.gwrap').scrollTop=y;$('.gwrap').scrollLeft=x;});
   $$('#gL button').forEach(b=>b.onclick=()=>{ganttLevel=+b.dataset.l;open.clear();setLvl(ganttLevel);renderSchedule();});
   $$('#gB button').forEach(b=>b.onclick=()=>{setBurn(b.dataset.b);renderSchedule();});
+  $$('#gM button').forEach(b=>b.onclick=()=>{ganttMode=b.dataset.m;open.clear();window.__g=0;renderSchedule();});
   $$('#gR button').forEach(b=>b.onclick=()=>{rydFirst=b.dataset.r==='1';open.clear();window.__g=0;renderSchedule();});
   const cnt=moLabels.map((_,m)=>{const w=m*WPM+1;return sel().filter(s=>w>=s.acts.civil.st&&w<s.acts.final.st+0.01&&w<=s.acts.sat.en).length;});
   mk('c-act',{type:'bar',data:{labels:moLabels,datasets:[{label:'Stations in site works',data:cnt,backgroundColor:C.blue}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax({ticks:{stepSize:1},title:{display:true,text:'Stations'}})},plugins:{legend:{display:false}}}});
@@ -745,6 +759,10 @@ const NODE_INFO={MOB:['Mobilization & baseline programme','Weeks 0 to 9. Initial
  M4:['Survey of Riyadh stations, then others','Pre-construction survey of existing conditions; the two Riyadh stations are surveyed first.'],M5:['Detailed baseline programme','Due 21 days after completion of mobilization and survey, covering the whole scope with start and completion of each deliverable by SAR priority.'],
  CLO:['Closeout, warranty & support','Rolling closeout per station, contract closeout at the end of the 36-month term, and defects liability that continues beyond it.'],C1:['As-builts, O&M manuals, spares lists','Handed over station by station with the taking-over application.'],C2:['Contract closeout pack & handover','Final documentation package and handover at the end of the term.'],C3:['Defects liability','One year from each Taking-Over Certificate. The Performance Certificate follows the end of the last period, after month 36.']};
 function dNode(id){
+  if(id.includes('~')){const [k,sid]=id.split('~');return dStation(sid);}
+  if(id.startsWith('EPC_')){const m={E:['Engineering',['survey','eng','appr']],P:['Procurement',['proc','ship']],C:['Construction',['civil','inst']],X:['Commissioning, trial & handover',['sat','train','trial','final']]}[id.slice(4)];
+    const ss=[...sel()].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st);
+    return openDrawer(m[0],'EPC group, stations in view',tbl(['Station','Start','Finish','Weeks'],ss.map(s=>{const a=m[1].map(x=>s.acts[x]);const st0=Math.min(...a.map(x=>x.st)),en0=Math.max(...a.map(x=>x.en));return row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtD(wDate(st0)),fmtD(wDate(en0)),Math.round(en0-st0)],'station:'+s.id);})));}
   if(id==='PRJ')return drill('kpi:value',true); if(id==='RYD')return openStations(S.filter(s=>s.ryd),'Riyadh priority stations','Both start first and are accepted first.');
   if(LINES[id])return dLine(id); const stn=S.find(x=>x.id===id); if(stn)return dStation(id);
   for(const s of S){ if(id.startsWith(s.id)&&s.acts[id.slice(s.id.length)])return dAct(s.id,id.slice(s.id.length)); }
