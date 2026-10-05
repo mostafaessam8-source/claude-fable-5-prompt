@@ -212,7 +212,7 @@ tr[data-drill]{cursor:pointer}tr[data-drill]:hover td{background:var(--tint2)!im
 <div class="tip" id="tip"></div>
 <div class="dov" id="dov"></div>
 <aside class="drawer" id="drawer" aria-label="Details" aria-hidden="true"><div class="dh"><button id="dBack" type="button" title="Back">‹</button><div style="flex:1;min-width:0"><h3 id="dT"></h3><div class="sub" id="dS"></div></div><button id="dX" type="button" aria-label="Close">✕</button></div><div id="dB"></div></aside>
-<div class="modal" id="pubModal" role="dialog" aria-modal="true" aria-labelledby="pubT"><div class="box"><h3 id="pubT">Publish & share with the team</h3><p style="margin:0">Anyone with this link can open the dashboard in a browser. No installation needed.</p><div class="url"><input id="pubUrl" readonly aria-label="Site link"><button class="pub" id="pubCopy" type="button">Copy link</button></div><p class="note" id="pubMsg" style="min-height:18px"></p><div id="pubHost"></div><div style="text-align:right;margin-top:12px"><button class="x" id="pubClose" type="button">Close</button></div></div></div>
+<div class="modal" id="pubModal" role="dialog" aria-modal="true" aria-labelledby="pubT"><div class="box"><h3 id="pubT">Publish an offline copy</h3><p style="margin:0">Saves the whole dashboard as one file. It opens in any browser without internet, so you can send it by email or WhatsApp to anyone.</p><div class="btnrow"><button class="pub" id="pubSave" type="button">Save offline file (.html)</button></div><p class="note" id="pubMsg" style="min-height:18px"></p><ul class="note" style="margin:0 0 6px;padding-left:18px"><li id="pubSize">File: SAR_Security_Program_Offline.html</li><li>Includes all tabs, charts, filters and drill-down details.</li><li>Opens with a double click; no installation needed.</li></ul><details class="ac" id="pubLinkBox"><summary>Share a web link instead</summary><div class="in"><div class="url"><input id="pubUrl" readonly aria-label="Site link"><button class="btn" id="pubCopy" type="button">Copy link</button></div><div id="pubHost"></div></div></details><div style="text-align:right;margin-top:12px"><button class="x" id="pubClose" type="button">Close</button></div></div></div>
 <script>
 /*!
  * Chart.js v4.4.1
@@ -231,6 +231,8 @@ tr[data-drill]{cursor:pointer}tr[data-drill]:hover td{background:var(--tint2)!im
 
 </script>
 <script>
+/* self-capture before any rendering */
+const SELF_SRC='<!doctype html>\n'+document.documentElement.outerHTML;
 /* ===== DATA (from contract Annex 3 price table, Revised-02) ===== */
 const C = {blue:'#00778B',black:'#3D3935',slate:'#768692',sky:'#59CBE8',mid:'#71B2C9',gray:'#C8C9C7',red:'#CB2C30',yellow:'#F1B434'};
 const LINES = {
@@ -353,7 +355,7 @@ function mk(id,cfg){ if(CH[id])CH[id].destroy(); const cv=document.getElementByI
   if(cfg.data&&cfg.data.labels===moLabels&&o.scales&&o.scales.x){o.scales.x.min=F.win[0];o.scales.x.max=F.win[1];}
   if(CLICK[id]){o.onClick=(e,els)=>{if(els.length)CLICK[id](els[0].index,els[0].datasetIndex);};o.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default';};o.interaction=o.interaction||{mode:'nearest',intersect:true};}
   CH[id]=new Chart(cv,cfg); }
-Chart.defaults.font.family="'Diodrum Arabic','Segoe UI',system-ui,sans-serif"; Chart.defaults.font.size=12; Chart.defaults.color=C.black;
+Chart.defaults.font.family="'Diodrum Arabic','Figtree',system-ui,sans-serif"; Chart.defaults.font.size=12; Chart.defaults.color=C.black;
 const ax=(o={})=>Object.assign({grid:{color:'#E6F1F4'},border:{color:C.gray},ticks:{color:'#5f6d77'}},o);
 const legendHtml=items=>`<div class="legend">${items.map(i=>`<span><i style="background:${i[1]}"></i>${i[0]}</span>`).join('')}</div>`;
 const kpi=(v,l,n,c)=>`<div class="kpi" style="--c:${c||C.blue}"><div class="v">${v}</div><div class="l">${l}</div><div class="n">${n||''}</div></div>`;
@@ -868,18 +870,28 @@ function renderActive(){
   $$('[data-ac]',el).forEach(b=>b.onclick=()=>{chips[+b.dataset.ac][1]();update();});
 }
 
-/* ===== PUBLISH / SHARE ===== */
-const PAGES_URL='https://mostafaessam8-source.github.io/claude-fable-5-prompt/';
+/* ===== PUBLISH / SAVE OFFLINE COPY ===== */
+const PAGES_URL='https://mostafaessam8-source.github.io/claude-fable-5-prompt/', OFFLINE_NAME='SAR_Security_Program_Offline.html';
+function offlineBlob(){
+  let html=SELF_SRC;
+  if(typeof OFFLINE_B64==='string'&&OFFLINE_B64){const bin=atob(OFFLINE_B64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return new Blob([u8],{type:'text/html'});}
+  return new Blob([html],{type:'text/html'});
+}
 (function(){
-  const m=$('#pubModal'),u=$('#pubUrl'),msg=$('#pubMsg'),live=/github\.io$/.test(location.hostname);
-  const link=live?location.href.split('#')[0]:PAGES_URL;
-  $('#pubBtn').onclick=()=>{u.value=link;msg.textContent='';
-    $('#pubHost').innerHTML=live?`<p class="note">An offline single-file copy is available: <a href="SAR_Security_Program_Offline.html">SAR_Security_Program_Offline.html</a>.</p>`:`<div class="callout warn"><b>One-time setup on GitHub</b><ol><li>Open the repository Settings, then Pages.</li><li>Set Source to <b>Deploy from a branch</b>, pick the branch with this site and the <b>/ (root)</b> folder, then Save.</li><li>After a minute the link above works (public Pages need a public repository or a paid plan).</li></ol></div>`;
-    m.classList.add('on');u.focus();u.select();};
+  const m=$('#pubModal'),u=$('#pubUrl'),msg=$('#pubMsg'),live=/github\.io$/.test(location.hostname),link=live?location.href.split('#')[0]:PAGES_URL;
+  $('#pubBtn').onclick=()=>{const bl=offlineBlob();$('#pubSize').textContent=`File: ${OFFLINE_NAME} (${(bl.size/1048576).toFixed(2)} MB)`;u.value=link;msg.textContent='';
+    $('#pubHost').innerHTML=live?'':'<p class="note">The link works after GitHub Pages is switched on for the repository (Settings, then Pages).</p>';m.classList.add('on');$('#pubSave').focus();};
   const close=()=>m.classList.remove('on');
-  $('#pubClose').onclick=close;m.onclick=e=>{if(e.target===m)close();};document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
-  $('#pubCopy').onclick=()=>{const ok=()=>msg.textContent='Link copied.',no=()=>{u.select();msg.textContent='Press Ctrl+C to copy the selected link.';};
-    try{navigator.clipboard.writeText(u.value).then(ok,no);}catch(e){no();}};
+  $('#pubClose').onclick=close;m.onclick=e=>{if(e.target===m)close();};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contains('on'))close();});
+  $('#pubSave').onclick=async()=>{
+    const bl=offlineBlob();
+    try{ const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
+      if(dl){await dl.save({filename:OFFLINE_NAME,data:bl});msg.textContent='Saved. Send the file to anyone; they just open it in a browser.';return;}
+    }catch(e){ if(e&&e.code==='declined'){msg.textContent='Save cancelled.';return;} }
+    try{const url=URL.createObjectURL(bl),a=document.createElement('a');a.href=url;a.download=OFFLINE_NAME;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);msg.textContent='Download started. Check your Downloads folder, then send the file to anyone.';}
+    catch(e){msg.textContent='This view cannot save files. Open the site in a normal browser tab and press Publish again.';}
+  };
+  $('#pubCopy').onclick=()=>{const ok=()=>msg.textContent='Link copied.',no=()=>{u.select();msg.textContent='Press Ctrl+C to copy the selected link.';};try{navigator.clipboard.writeText(u.value).then(ok,no);}catch(e){no();}};
 })();
 /* ===== ROUTER ===== */
 const R={dashboard:renderDashboard,scope:renderScope,boq:renderBoq,schedule:renderSchedule,scurve:renderScurve,risks:renderRisks};
