@@ -42,6 +42,55 @@
   }
   function isPctFmt(id, code) { return id === 9 || id === 10 || /%/.test(code || ""); }
   function canon(v) { return v == null ? "" : String(v).trim(); }
+  /* rich text (Word-like formatting in a text cell): stored as "\u0002RT" + JSON runs [{ t, b, i, u, s, c: "RRGGBB", sz: pt }]
+     and written to the card as an Excel rich-text cell (inline string runs) */
+  var RT = "\u0002RT";
+  function isRich(v) { return typeof v === "string" && v.indexOf(RT) === 0; }
+  function richRuns(v) { try { return JSON.parse(v.slice(RT.length)); } catch (e) { return [{ t: String(v) }]; } }
+  function plainOf(v) { return isRich(v) ? richRuns(v).map(function (r) { return r.t; }).join("") : v == null ? "" : String(v); }
+  function richMake(runs) {
+    var out = [];
+    runs.forEach(function (r) { if (!r.t) return; var l = out[out.length - 1];
+      if (l && l.b === r.b && l.i === r.i && l.u === r.u && l.s === r.s && l.c === r.c && l.sz === r.sz) l.t += r.t; else out.push(r); });
+    while (out.length && /^\n+$/.test(out[out.length - 1].t)) out.pop();
+    if (out.length) out[out.length - 1].t = out[out.length - 1].t.replace(/\n+$/, "");
+    var fmt = out.some(function (r) { return r.b || r.i || r.u || r.s || r.c || r.sz; });
+    var plain = out.map(function (r) { return r.t; }).join("");
+    if (!fmt) return plain;
+    out.forEach(function (r) { Object.keys(r).forEach(function (k) { if (!r[k]) delete r[k]; }); });
+    return RT + JSON.stringify(out);
+  }
+  function runsHtml(runs) {
+    return runs.map(function (r) {
+      var st = (r.b ? "font-weight:700;" : "") + (r.i ? "font-style:italic;" : "") + (r.u || r.s ? "text-decoration:" + (r.u ? "underline " : "") + (r.s ? "line-through" : "") + ";" : "") +
+        (r.c ? "color:#" + r.c + ";" : "") + (r.sz ? "font-size:" + (r.sz * 4 / 3).toFixed(1) + "px;" : "");
+      var t = esc(r.t).replace(/\n/g, "<br>");
+      return st ? '<span style="' + st + '">' + t + "</span>" : t;
+    }).join("");
+  }
+  function rgbHex(c) { var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ""); if (m) return [m[1], m[2], m[3]].map(function (x) { return ("0" + (+x).toString(16)).slice(-2); }).join("").toUpperCase(); m = /^#?([0-9a-f]{6})$/i.exec(c || ""); return m ? m[1].toUpperCase() : null; }
+  var FSIZE = { 1: 8, 2: 10, 3: 11, 4: 14, 5: 18, 6: 24, 7: 36 };
+  function domRuns(root) {                       // the editor's HTML → runs (b / i / u / s, <font color size>, span styles, line breaks)
+    var out = [];
+    (function walk(n, p) {
+      if (n.nodeType === 3) { if (n.nodeValue) out.push(Object.assign({ t: n.nodeValue.replace(/ /g, " ") }, p)); return; }
+      if (n.nodeType !== 1) return;
+      var tag = n.tagName, q = Object.assign({}, p), stl = n.style || {};
+      if (tag === "BR") { out.push(Object.assign({ t: "\n" }, p)); return; }
+      if (/^(DIV|P|LI)$/.test(tag) && out.length && !/\n$/.test(out[out.length - 1].t)) out.push({ t: "\n" });
+      if (tag === "LI") out.push(Object.assign({ t: "• " }, p));
+      if (/^(B|STRONG)$/.test(tag) || +stl.fontWeight >= 600 || stl.fontWeight === "bold") q.b = 1;
+      if (/^(I|EM)$/.test(tag) || stl.fontStyle === "italic") q.i = 1;
+      var td = (stl.textDecoration || "") + " " + (stl.textDecorationLine || "");
+      if (tag === "U" || /underline/.test(td)) q.u = 1;
+      if (/^(S|STRIKE|DEL)$/.test(tag) || /line-through/.test(td)) q.s = 1;
+      if (tag === "FONT") { if (n.getAttribute("color")) q.c = rgbHex(n.getAttribute("color")); if (n.getAttribute("size")) q.sz = FSIZE[n.getAttribute("size")] || null; }
+      if (stl.color) q.c = rgbHex(stl.color);
+      if (stl.fontSize && /px$/.test(stl.fontSize)) q.sz = Math.round(parseFloat(stl.fontSize) * 0.75);
+      Array.prototype.forEach.call(n.childNodes, function (k) { walk(k, q); });
+    })(root, {});
+    return out;
+  }
 
   /* ------------------------------------------------------------------ workbook reading (shared by extract / apply) */
   var INDEXED = ["000000","FFFFFF","FF0000","00FF00","0000FF","FFFF00","FF00FF","00FFFF","000000","FFFFFF","FF0000","00FF00","0000FF","FFFF00","FF00FF","00FFFF",
@@ -603,6 +652,7 @@
     var engines = {};
     function typed(k, v) {
       if (v == null || v === "") return null;
+      if (isRich(v)) return plainOf(v);
       if (k === "date") { var t = Date.parse(v + "T00:00:00Z"); return isNaN(t) ? v : t / 864e5 + 25569; }
       if (k === "num" || k === "pct" || k === "auto" || k === "list") { var n = +String(v).replace(/,/g, ""); return isNaN(n) || String(v).trim() === "" ? v : n; }
       return v;
@@ -693,10 +743,10 @@
           else if (!it) it = info[ref] = { c: anyField(g, ref, x), g: 1 };   // any other unlocked cell of the card
           if (it) {
             var v = ref in e ? e[ref] : it.c.v, ch = ref in e && canon(e[ref]) !== canon(it.c.v), ufx = ref in e && isFx(e[ref]);
-            var shown = ufx ? (calc && ref in calc ? showVal(x ? x[1] : "", calc[ref]) : "#NAME?") : shownOf(it.c, x && x[1], v);
+            var shown = ufx ? (calc && ref in calc ? showVal(x ? x[1] : "", calc[ref]) : "#NAME?") : shownOf(it.c, x && x[1], isRich(v) ? plainOf(v) : v);
             var tip = ch ? (ufx ? "Formula: " + e[ref] + " · was: " : "Was: ") + (shownOf(it.c, x && x[1], it.c.v) || "(empty)") : "";
             h.push('<td class="' + cls + " cu-ed" + (it.c.p ? " cu-pg" : "") + (ch ? " cu-chg" : "") + (ufx ? " cu-ufx" : "") + '"' + at + ' data-ref="' + ref + '" data-xf="' + (x ? x[1] : "") + '"' + (tip ? ' title="' + esc(tip) + '"' : "") + ">" +
-              '<div class="cu-val">' + esc(shown) + "</div></td>");
+              '<div class="cu-val">' + (isRich(v) && !ufx ? runsHtml(richRuns(v)) : esc(shown)) + "</div></td>");
           } else {
             var txt = x && x[2] != null ? x[2] : "";
             if (ovr !== undefined) txt = showVal(x ? x[1] : "", ovr);   // recalculated from the team's changes
@@ -756,6 +806,7 @@
       var o = openEd; openEd = null;
       if (commit) {
         var c = o.it.c, raw = o.ctl.value.trim(), v = raw;
+        if (o.ctl._rich && !isFx(raw)) v = o.ctl._result();
         if (isFx(raw)) {                               // a formula typed by the user (e.g. =K106+30, =EDATE(J107,3))
           var why = XLCalc.check(raw);
           if (why) { alert("This formula cannot be used: " + raw + "\n" + why + "\n\nAvailable: " + XLCalc.functions().join(", ")); o.td.classList.remove("cu-open"); if (o.ctl.parentNode) o.ctl.parentNode.removeChild(o.ctl); return; }
@@ -793,11 +844,11 @@
       else if (c.k === "date") { ctl = document.createElement("input"); ctl.type = "date"; ctl.value = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
         toFormulaOnEq(ctl); }
       else if (c.k === "num" || c.k === "pct") { ctl = document.createElement("input"); ctl.type = "text"; ctl.inputMode = "decimal"; ctl.value = c.k === "pct" && v !== "" && !isNaN(+v) ? String(Math.round(+v * 1e6) / 1e4) : v; ctl.placeholder = c.k === "pct" ? "%" : ""; }
-      else { ctl = document.createElement("textarea"); ctl.value = v; }
-      ctl.className = "cu-ctl";
+      else ctl = richBox(v, td);
+      if (!ctl._rich) ctl.className = "cu-ctl";
       td.classList.add("cu-open"); td.appendChild(ctl);
       openEd = { td: td, ref: ref, it: it, ctl: ctl, xf: xf };
-      ctl.focus(); if (ctl.select && ctl.tagName !== "SELECT") try { ctl.select(); } catch (er) { /* date input */ }
+      if (ctl._rich) ctl._focus(); else { ctl.focus(); if (ctl.select && ctl.tagName !== "SELECT") try { ctl.select(); } catch (er) { /* date input */ } }
       wire(ctl);
       if (ctl.tagName === "SELECT") ctl.addEventListener("change", function () { closeEd(true); });
     }
@@ -821,10 +872,54 @@
         ctl.parentNode.replaceChild(t, ctl); openEd.ctl = t; wire(t); t.focus(); t.setSelectionRange(1, 1);
       });
     }
+    /* Word-like editor for text cells: toolbar (bold, italic, underline, strike, size, colour, bullets, clear), Enter = new
+       line, OK / Cancel under the box; typing "=" first turns it into a formula box */
+    function richBox(v, td) {
+      var box = document.createElement("div"); box.className = "cu-ctl cu-rich"; box._rich = true;
+      box.innerHTML = '<div class="cu-rtb">' +
+        '<button type="button" data-c="bold" title="Bold (Ctrl+B)"><b>B</b></button><button type="button" data-c="italic" title="Italic (Ctrl+I)"><i>I</i></button>' +
+        '<button type="button" data-c="underline" title="Underline (Ctrl+U)"><u>U</u></button><button type="button" data-c="strikeThrough" title="Strikethrough"><s>S</s></button>' +
+        '<select data-c="fontSize" title="Font size"><option value="">Size</option><option value="1">8</option><option value="2">10</option><option value="3">11</option><option value="4">14</option><option value="5">18</option><option value="6">24</option></select>' +
+        '<label class="cu-rcol" title="Font colour">A<input type="color" data-c="foreColor" value="#C00000"></label>' +
+        '<button type="button" data-c="bullet" title="Bullet at the start of the line">• List</button>' +
+        '<button type="button" data-c="removeFormat" title="Clear formatting">⌫ Format</button></div>' +
+        '<div class="cu-red" contenteditable="true" spellcheck="true"></div>' +
+        '<div class="cu-rbtns"><span class="cu-rhint">Enter = new line · Ctrl+Enter = OK · Esc = Cancel</span><button type="button" class="cu-btn ghost" data-k="cancel">Cancel</button><button type="button" class="cu-btn" data-k="ok">OK</button></div>';
+      var ed = box.querySelector(".cu-red");
+      ed.innerHTML = isRich(v) ? runsHtml(richRuns(v)) : esc(v == null ? "" : v).replace(/\n/g, "<br>");
+      Object.defineProperty(box, "value", { get: function () { return domRuns(ed).map(function (r) { return r.t; }).join(""); }, set: function (x) { ed.textContent = x; } });
+      box._result = function () { return richMake(domRuns(ed)); };
+      box._focus = function () { ed.focus(); var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); };
+      document.execCommand("styleWithCSS", false, false);
+      box.querySelector(".cu-rtb").addEventListener("mousedown", function (ev) { if (ev.target.tagName !== "SELECT" && ev.target.tagName !== "INPUT") ev.preventDefault(); });   // keep the text selection
+      box.querySelectorAll(".cu-rtb button").forEach(function (b) { b.addEventListener("click", function () {
+        var cmd = b.getAttribute("data-c"); ed.focus();
+        if (cmd === "bullet") { document.execCommand("insertText", false, "• "); return; }
+        document.execCommand(cmd, false, null);
+      }); });
+      var keep = null;
+      box.querySelectorAll(".cu-rtb select, .cu-rtb input").forEach(function (x) {
+        x.addEventListener("mousedown", function () { var sel = getSelection(); keep = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null; });
+        x.addEventListener(x.tagName === "SELECT" ? "change" : "input", function () {
+          ed.focus(); if (keep) { var sel = getSelection(); sel.removeAllRanges(); sel.addRange(keep); }
+          if (x.value) document.execCommand(x.getAttribute("data-c"), false, x.value);
+          if (x.tagName === "SELECT") x.value = "";
+        });
+      });
+      box.querySelector('[data-k="ok"]').addEventListener("click", function () { closeEd(true); });
+      box.querySelector('[data-k="cancel"]').addEventListener("click", function () { closeEd(false); });
+      ed.addEventListener("input", function () {          // "=" typed first: switch to the formula box (point mode)
+        var t = box.value; if (!/^=/.test(t) || ed.querySelector("b,i,u,s,font,span")) return;
+        var inp = document.createElement("input"); inp.type = "text"; inp.className = "cu-ctl cu-fxbox"; inp.value = t;
+        box.parentNode.replaceChild(inp, box); openEd.ctl = inp; wire(inp); inp.focus(); inp.setSelectionRange(t.length, t.length);
+      });
+      return box;
+    }
     function wire(ctl) {
       ctl.addEventListener("input", function () { ctl.classList.toggle("cu-fxbox", /^\s*=/.test(ctl.value)); if (lastIns && ctl.selectionStart !== lastIns.end) lastIns = null; });
       ctl.addEventListener("keydown", function (ev) {
         if (ev.key === "Escape") { ev.preventDefault(); closeEd(false); }
+        else if (ev.key === "Enter" && ctl._rich) { if (ev.ctrlKey || ev.metaKey) { ev.preventDefault(); closeEd(true); } else { ev.preventDefault(); document.execCommand("insertLineBreak"); } }   // Enter = new line, Ctrl+Enter = OK
         else if (ev.key === "Enter" && (ctl.tagName !== "TEXTAREA" || !ev.shiftKey && !ev.altKey)) { ev.preventDefault(); closeEd(true); }
         else if (ev.key === "Tab") { ev.preventDefault(); var td0 = openEd && openEd.td, all = Array.prototype.slice.call(sheet.querySelectorAll("td.cu-ed")), i = all.indexOf(td0); closeEd(true); var nx = all[i + (ev.shiftKey ? -1 : 1)]; if (nx) openAt(nx); }
       });
@@ -1008,7 +1103,7 @@
                   if (!gx || gx.locked) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
                   if (gx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                   rep.now = gx ? display(gx) : "";
-                  writeCell(doc, ref, c.k, c.to, gx);
+                  writeCell(doc, ref, c.k, c.to, gx, gx && book.xfs[gx.s] ? book.xfs[gx.s].font : null);
                   rep.ref = ref; rep.status = "applied"; changed++; report.push(rep); return;
                 }
                 if (!(t && t.l === c.l && t.h === c.h)) {      // the row moved / changed: find the same section · row · column
@@ -1022,7 +1117,7 @@
                 if (tx && tx.locked && !t.c.p) { rep.status = "skipped"; rep.why = "cell is locked in this file"; report.push(rep); return; }
                 if (tx && tx.sharedMaster) { rep.status = "skipped"; rep.why = "cell starts a shared formula — update by hand"; report.push(rep); return; }
                 rep.now = t.c.v;
-                writeCell(doc, ref, c.k, c.to, S.cells[ref]);
+                writeCell(doc, ref, c.k, c.to, S.cells[ref], S.cells[ref] && book.xfs[S.cells[ref].s] ? book.xfs[S.cells[ref].s].font : null);
                 rep.ref = ref; rep.status = "applied"; changed++; report.push(rep);
               });
               if (changed) zip.file(sh.path, new XMLSerializer().serializeToString(doc), { createFolders: false });
@@ -1042,7 +1137,7 @@
       });
     });
   }
-  function writeCell(doc, ref, k, v, old) {
+  function writeCell(doc, ref, k, v, old, font) {
     var p = splitRef(ref), sd = doc.getElementsByTagNameNS(NS, "sheetData")[0];
     var row = kids(sd, "row").filter(function (r) { return +r.getAttribute("r") === p.r; })[0];
     if (!row) {
@@ -1069,7 +1164,23 @@
     if (num == null && k !== "text" && /^-?\d+(\.\d+)?$/.test(v) && (k === "auto" || k === "list" || old && typeof old.val === "number")) num = +v;   /* numeric list choices are numbers */
     if (num != null) { var ve = doc.createElementNS(NS, "v"); ve.textContent = String(num); c.appendChild(ve); return; }
     c.setAttribute("t", "inlineStr");
-    var is = doc.createElementNS(NS, "is"), t = doc.createElementNS(NS, "t"); t.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve"); t.textContent = v; is.appendChild(t); c.appendChild(is);
+    var is = doc.createElementNS(NS, "is"), XS = "http://www.w3.org/XML/1998/namespace";
+    if (isRich(v)) {                               // Excel rich text: one <r> per run; each run repeats the cell's font so unformatted parts keep it
+      var f0 = (font || {});
+      richRuns(v).forEach(function (r) {
+        var re = doc.createElementNS(NS, "r"), pr = doc.createElementNS(NS, "rPr");
+        function add(n, attrs) { var e2 = doc.createElementNS(NS, n); Object.keys(attrs || {}).forEach(function (k) { e2.setAttribute(k, attrs[k]); }); pr.appendChild(e2); }
+        add("rFont", { val: f0.name || "Calibri" });
+        if (r.b || f0.b) add("b"); if (r.i || f0.i) add("i"); if (r.s) add("strike");
+        add("color", { rgb: "FF" + (r.c || f0.color || "000000") });
+        add("sz", { val: String(r.sz || f0.sz || 11) });
+        if (r.u || f0.u) add("u");
+        re.appendChild(pr);
+        var tt = doc.createElementNS(NS, "t"); tt.setAttributeNS(XS, "xml:space", "preserve"); tt.textContent = r.t; re.appendChild(tt); is.appendChild(re);
+      });
+      c.appendChild(is); return;
+    }
+    var t = doc.createElementNS(NS, "t"); t.setAttributeNS(XS, "xml:space", "preserve"); t.textContent = v; is.appendChild(t); c.appendChild(is);
   }
 
   /* ------------------------------------------------------------------ the team page (.html) */
@@ -1087,5 +1198,5 @@
       "<script>SARCardForm.editor(document.getElementById('cu'), window.SAR_CARD_MODEL);</script></body></html>";
   }
 
-  window.SARCardForm = { fmtNum: fmtNum, isDateFmt: isDateFmt, extract: extract, editor: editor, apply: apply, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
+  window.SARCardForm = { plainOf: plainOf, fmtNum: fmtNum, isDateFmt: isDateFmt, extract: extract, editor: editor, apply: apply, teamPage: teamPage, updatesOf: updatesOf, loadDraft: loadDraft, saveFile: saveFile };
 })();

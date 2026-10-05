@@ -134,7 +134,7 @@
         '<table class="cu-tbl"><thead><tr><th>Project</th><th>Section · row</th><th>Column</th><th>Cell</th><th>In the new file</th><th>Team value</th><th>By</th><th>Result</th></tr></thead><tbody>' +
         sk.concat(ok).map(function (r) {
           return "<tr" + (r.status !== "applied" ? ' class="cu-skip"' : "") + "><td>" + esc(r.code) + "</td><td>" + esc((r.s || "") + " · " + (r.l || "")) + "</td><td>" + esc(r.h || "") + "</td><td>" + esc(r.moved || r.ref) +
-            "</td><td>" + esc(r.now != null ? r.now : r.from || "") + "</td><td><b>" + esc(r.to) + "</b></td><td>" + esc(r.by || "") + (r.over ? '<div class="muted">replaces ' + esc(r.over) + "</div>" : "") +
+            "</td><td>" + esc(r.now != null ? r.now : r.from || "") + "</td><td><b>" + esc(SARCardForm.plainOf(r.to)) + "</b></td><td>" + esc(r.by || "") + (r.over ? '<div class="muted">replaces ' + esc(r.over) + "</div>" : "") +
             "</td><td>" + (r.status === "applied" ? '<span class="pos">applied</span>' : '<span class="neg">' + esc(r.why) + "</span>") + "</td></tr>";
         }).join("") + "</tbody></table>";
       out.querySelector('[data-a="xlsx"]').addEventListener("click", function () {

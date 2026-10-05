@@ -97,6 +97,16 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
   get the `_xlfn.` prefix), which Excel calculates on opening. References are written as typed (not shifted if rows moved).
 - NETWORKDAYS / WORKDAY use Excel's default Saturday–Sunday weekend so the page agrees with Excel.
 
+## Text cells — Word-like box
+
+- A text cell opens a box with a toolbar (Bold, Italic, Underline, Strikethrough, font size, font colour, "• List",
+  clear formatting), the text area, and **OK / Cancel** under it. Enter = new line (not commit); Ctrl+Enter = OK;
+  Esc = Cancel. Typing "=" first (no formatting yet) switches to the formula box (point mode).
+- Formatted text is stored as `"\u0002RT" + JSON runs [{t,b,i,u,s,c,sz}]` (plain text when nothing is formatted);
+  `plainOf()` gives the text for reports / comparisons. The cell shows the formatting.
+- Written to the new month's card as Excel rich text (inline string runs with `<rPr>`), each run inheriting the cell's
+  own font (name, size, colour) unless the team changed it. Line breaks stay as line breaks.
+
 ## Reading ruler
 
 Clicking any cell (locked too) marks its row across the whole sheet (blue tint, line above and below) and highlights
