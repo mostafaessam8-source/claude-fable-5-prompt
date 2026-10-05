@@ -150,7 +150,8 @@ The history lives in the open page only (drafts themselves are kept in the brows
   same section · row · header is used (reported as moved); otherwise **not applied** (row not found / appears twice).
 - Project missing from the new file → not applied. New projects → nothing to apply. Formula cell → not applied.
 - Only the sheet XML of changed cards (cell value only, style kept) and `calcPr fullCalcOnLoad` change; every other part
-  of the workbook stays byte-identical (protection elements included). A missing `calcPr` is inserted in schema order. Dates → Excel serial, numbers → `<v>`, text → inline string.
+  of the workbook stays byte-identical (protection elements included). A missing `calcPr` is inserted in schema order. `xl/calcChain.xml` (with its relationship and content type) is removed — it no longer matches once
+  cells change and Excel would "repair" the file; Excel rebuilds it. A `.xlsm` input is downloaded as `.xlsm`. Dates → Excel serial, numbers → `<v>`, text → inline string.
 - The uploaded new month file itself is never modified; the user downloads "<name> - team updates.xlsx" + CSV report.
 
 ## Privacy

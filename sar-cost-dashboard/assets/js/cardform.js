@@ -1073,6 +1073,17 @@
 
   /* ------------------------------------------------------------------ apply: updates → new month workbook */
   /* updates: [{ kind:"sar-card-updates", by, savedAt, projects:{ code:{ cells:[{ref,s,l,h,k,from,to}] } } }] (latest savedAt wins per cell) */
+  /* xl/calcChain.xml lists the formula cells; once cells change between value and formula it no longer matches and
+     Excel "repairs" the file on opening. Excel rebuilds the chain itself, so it is removed (with its relationship and
+     content type) — the usual way to edit a workbook outside Excel. Nothing else (protection included) is touched. */
+  function dropCalcChain(zip) {
+    if (!zip.file("xl/calcChain.xml")) return Promise.resolve();
+    zip.remove("xl/calcChain.xml");
+    return Promise.all([zip.file("xl/_rels/workbook.xml.rels").async("string"), zip.file("[Content_Types].xml").async("string")]).then(function (x) {
+      zip.file("xl/_rels/workbook.xml.rels", x[0].replace(/<Relationship\b[^>]*Target="[^"]*calcChain\.xml"[^>]*\/>/g, ""), { createFolders: false });
+      zip.file("[Content_Types].xml", x[1].replace(/<Override\b[^>]*PartName="\/xl\/calcChain\.xml"[^>]*\/>/g, ""), { createFolders: false });
+    });
+  }
   function apply(buffer, updates, fileName) {
     var report = [], sig = new Uint8Array(buffer.slice ? buffer.slice(0, 4) : buffer, 0, 4);
     if (sig[0] === 0xD0 && sig[1] === 0xCF && sig[2] === 0x11 && sig[3] === 0xE0)   // password to OPEN (encrypted package)
@@ -1154,6 +1165,8 @@
             }
             cp.setAttribute("fullCalcOnLoad", "1");
             zip.file("xl/workbook.xml", new XMLSerializer().serializeToString(d), { createFolders: false });
+            return dropCalcChain(zip);
+          }).then(function () {
             return zip.generateAsync({ type: "blob", compression: "DEFLATE", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
           });
         }).then(function (blob) { return { blob: blob, report: report, name: fileName }; });

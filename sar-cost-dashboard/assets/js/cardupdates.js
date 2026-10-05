@@ -126,7 +126,7 @@
     p3.appendChild(out);
     function showResult(fname, res) {
       var ok = res.report.filter(function (r) { return r.status === "applied"; }), sk = res.report.filter(function (r) { return r.status !== "applied"; });
-      var newName = fname.replace(/(\.xls[xm])$/i, "") + " - team updates.xlsx";
+      var ext = (/\.xlsm$/i.test(fname) ? ".xlsm" : ".xlsx"), newName = fname.replace(/(\.xls[xm])$/i, "") + " - team updates" + ext;   // a macro workbook keeps .xlsm
       out.innerHTML = '<div class="cu-sum"><div><b>' + ok.length + " cells updated</b> in " + esc(fname) + (sk.length ? ' · <span class="neg">' + sk.length + " not applied</span>" : "") +
         '</div><div class="cu-sum-acts"><button type="button" class="icon-btn" data-a="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download updated workbook</span></button>' +
         '<button type="button" class="icon-btn ghost" data-a="csv">Download change report (.csv)</button></div></div>' +
