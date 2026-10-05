@@ -212,6 +212,8 @@
       view.appendChild(U.el('<div class="note-box warn"><b>This page could not be drawn from the current data.</b><br>' + esc(e.message) +
         '<br>Check that the Excel tables keep their original names and column headers, then re-import.</div>'));
     }
+    U.hbars(view);                                   // scroll bar above every wide table (also tables drawn later on this page)
+    if (window.MutationObserver && !view._hbObs) { var hbT = 0; view._hbObs = new MutationObserver(function () { if (!hbT) hbT = requestAnimationFrame(function () { hbT = 0; U.hbars(view); }); }); view._hbObs.observe(view, { childList: true, subtree: true }); }
     view.appendChild(U.el('<div class="footer-note"><span><b>SAR.COM.SA</b> &nbsp; Saudi Arabia Railways — Projects Department</span><span>Source: ' +
       esc(Object.keys(dataset.sources).map(function (k) { return dataset.sources[k].fileName; }).filter(Boolean).join(" · ") || "—") + "</span></div>"));
   }

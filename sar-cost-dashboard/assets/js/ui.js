@@ -637,7 +637,31 @@
     return out("none", "N/A", "N/A");
   }
 
+  /* Horizontal scroll bar ("ruler") above every wide table / chart box: it mirrors the box's own bottom bar, so a wide
+     table can be moved left / right without scrolling down to its end. Shown only while the content is wider than the box. */
+  var HBAR_SEL = ".table-wrap, .gantt, .sm-wrap, .cl-wrap, .cu-list, .cu-out";
+  function hbar(box) {
+    if (!box || box._hbar || !box.parentNode) return;
+    var bar = el('<div class="hbar" aria-hidden="true"><div></div></div>'), lock = false, raf = 0;
+    box._hbar = bar; box.parentNode.insertBefore(bar, box);
+    function upd() {
+      raf = 0; if (!bar.isConnected) return;
+      var wide = box.scrollWidth > box.clientWidth + 2;
+      bar.style.display = wide ? "" : "none";
+      if (wide) { bar.firstChild.style.width = box.scrollWidth + "px"; bar.style.width = box.clientWidth + "px"; if (bar.scrollLeft !== box.scrollLeft) bar.scrollLeft = box.scrollLeft; }
+    }
+    function later() { if (!raf) raf = requestAnimationFrame(upd); }
+    bar.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; box.scrollLeft = bar.scrollLeft; });
+    box.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; bar.scrollLeft = box.scrollLeft; });
+    if (window.ResizeObserver) { var ro = new ResizeObserver(later); ro.observe(box); if (box.firstElementChild) ro.observe(box.firstElementChild); }
+    if (window.MutationObserver) new MutationObserver(function () { later(); if (window.ResizeObserver && box.firstElementChild) try { ro.observe(box.firstElementChild); } catch (e) { /* */ } }).observe(box, { childList: true, subtree: true });
+    window.addEventListener("resize", later);
+    later(); setTimeout(upd, 300);
+  }
+  function hbars(root) { Array.prototype.forEach.call((root || document).querySelectorAll(HBAR_SEL), hbar); }
+
   window.UI = {
+    hbar: hbar, hbars: hbars,
     C: C, SERIES: SERIES, fmt: fmt, esc: esc, el: el, uniq: uniq, sum: sum, toNum: toNum, isoWeek: isoWeek,
     badge: badge, statusClass: statusClass, tile: tile, info: info, panel: panel, meter: meter,
     table: table, multiSelect: multiSelect, select: select,
