@@ -10,6 +10,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;margin:0;padding-inline:0}
 h1,h2,h3,h4{margin:0;font-weight:700;text-wrap:balance}
@@ -150,6 +151,33 @@ footer{border-top:3px solid var(--blue);padding-block:18px;font-size:12px;color:
 .modal input{flex:1;min-width:0;border:1.5px solid var(--gray);padding:8px 10px;font:inherit;font-size:13px}
 .modal ol{padding-left:20px;margin:8px 0}
 .modal .x{background:none;border:1.5px solid var(--gray);padding:7px 14px;cursor:pointer;font-weight:600}
+.kpi[data-drill],.card[data-drill],[data-drill].ms{cursor:pointer;position:relative;transition:box-shadow .15s,transform .15s}
+.kpi[data-drill]:hover,.card[data-drill]:hover{box-shadow:0 4px 14px rgba(0,119,139,.25);transform:translateY(-1px)}
+.kpi[data-drill]::after{content:'Details ›';position:absolute;right:10px;bottom:8px;font-size:10.5px;font-weight:700;color:var(--blue);letter-spacing:.4px;text-transform:uppercase}
+tr[data-drill]{cursor:pointer}tr[data-drill]:hover td{background:var(--tint2)!important}
+.gr[data-n] .glab span.nm,.gb{cursor:pointer}.gr[data-n]:hover .glab{color:var(--blue)}
+.dov{position:fixed;inset:0;background:rgba(61,57,53,.45);z-index:150;opacity:0;pointer-events:none;transition:opacity .2s}
+.dov.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:#fff;z-index:160;transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column;border-left:5px solid var(--blue);padding-top:env(safe-area-inset-top,0px)}
+.drawer.on{transform:none}
+.dh{display:flex;gap:10px;align-items:flex-start;padding:16px 18px 10px;border-bottom:1px solid var(--line)}
+.dh h3{font-size:20px;color:var(--black);flex:1;min-width:0}
+.dh .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.dh button{border:1.5px solid var(--gray);background:#fff;padding:5px 11px;cursor:pointer;font-weight:700}
+#dB{overflow:auto;padding:14px 18px 40px;flex:1}
+#dB h4{font-size:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--blue);margin:20px 0 8px}
+.dk{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
+.drawer .kpi{cursor:default}.drawer .kpi::after{display:none}.drawer .kpi .v{font-size:21px}
+.drawer .chartbox{height:210px}
+.drawer .tbl{font-size:12.5px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.btn{background:var(--blue);color:#fff;border:0;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.srch{border:1.5px solid var(--gray);padding:4px 9px;font:inherit;font-size:12.5px;width:150px;background:#fff}
+.mini{border:1.5px solid var(--gray);padding:3px 6px;font:inherit;font-size:12.5px;background:#fff}
+#active .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-block:8px;font-size:12.5px;color:var(--muted)}
+.ac2{background:var(--tint2);color:var(--black);border:0;padding:3px 9px;font-weight:600;cursor:pointer;font-size:12px}
+.ac2:hover{background:var(--gray)}
 @media (max-width:760px){
   .top .row{gap:8px} nav.tabs{margin-left:0;width:100%;overflow-x:auto;flex-wrap:nowrap}
   nav.tabs button{white-space:nowrap}
@@ -171,6 +199,7 @@ footer{border-top:3px solid var(--blue);padding-block:18px;font-size:12px;color:
 <div class="filters"><div class="wrap"><div class="row" id="filters"></div></div></div>
 </header>
 
+<div id="active"><div class="wrap"><div class="row" id="activeRow"></div></div></div>
 <main class="wrap">
   <section class="tab" id="t-dashboard"></section>
   <section class="tab" id="t-scope"></section>
@@ -181,6 +210,8 @@ footer{border-top:3px solid var(--blue);padding-block:18px;font-size:12px;color:
 </main>
 <footer><div class="wrap">Prepared from the SAR Scope of Work (Jan 2022), Armada study ARM-142-SAR-PSC-01 (Jun 2022), the draft Contract with ETECHS price table (Revised-02) and Annex 3. The schedule and cost curves are a planning baseline built on stated assumptions, not an approved programme. Amounts in SAR excluding 15% VAT unless stated.</div></footer>
 <div class="tip" id="tip"></div>
+<div class="dov" id="dov"></div>
+<aside class="drawer" id="drawer" aria-label="Details" aria-hidden="true"><div class="dh"><button id="dBack" type="button" title="Back">‹</button><div style="flex:1;min-width:0"><h3 id="dT"></h3><div class="sub" id="dS"></div></div><button id="dX" type="button" aria-label="Close">✕</button></div><div id="dB"></div></aside>
 <div class="modal" id="pubModal" role="dialog" aria-modal="true" aria-labelledby="pubT"><div class="box"><h3 id="pubT">Publish & share with the team</h3><p style="margin:0">Anyone with this link can open the dashboard in a browser. No installation needed.</p><div class="url"><input id="pubUrl" readonly aria-label="Site link"><button class="pub" id="pubCopy" type="button">Copy link</button></div><p class="note" id="pubMsg" style="min-height:18px"></p><div id="pubHost"></div><div style="text-align:right;margin-top:12px"><button class="x" id="pubClose" type="button">Close</button></div></div></div>
 <script>
 /*!
@@ -302,8 +333,8 @@ const GROUP={design:'design',proc:'proc',cons:'cons'};
 const CATGROUP={design:'design',cctv:'proc',vms:'proc',ac:'proc',ups:'proc',net:'proc',fat:'proc',spares:'proc',civil:'cons',training:'cons',cloud:'cons',pm:'cons'};
 
 /* ===== FILTER STATE ===== */
-const F={lines:new Set(['NSR','EWR','HHR']),scope:'all',stations:new Set(S.map(s=>s.id)),cats:new Set(CATS.map(c=>c[0])),ntp:'2026-11-01'};
-const sel=()=>S.filter(s=>F.lines.has(s.line)&&F.stations.has(s.id)&&(F.scope==='all'||(F.scope==='ryd'?s.ryd:!s.ryd)));
+const F={lines:new Set(['NSR','EWR','HHR']),scope:'all',stations:new Set(S.map(s=>s.id)),cats:new Set(CATS.map(c=>c[0])),ntp:'2026-11-01',win:[0,36],phases:new Set(['design','proc','cons','accept']),q:''};
+const sel=()=>S.filter(s=>F.lines.has(s.line)&&F.stations.has(s.id)&&(F.scope==='all'||(F.scope==='ryd'?s.ryd:!s.ryd))&&(!F.q||(s.name+' '+s.line+' '+s.id).toLowerCase().includes(F.q.toLowerCase())));
 const catsOn=k=>F.cats.has(k);
 function selCost(s){return Object.keys(s.cost).reduce((a,k)=>a+(catsOn(k)?s.cost[k]:0),0);}
 function weekly(stations,fn){const o=new Float64Array(T); stations.forEach(s=>CATS.forEach(c=>{ if(!catsOn(c[0]))return; const a=s.wk[c[0]]; if(fn&&!fn(c[0]))return; for(let w=0;w<T;w++)o[w]+=a[w];})); return o;}
@@ -315,8 +346,14 @@ const wDate=w=>{const d=ntpDate(); d.setDate(d.getDate()+Math.round(w*7)); retur
 const fmtD=d=>d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const wTxt=w=>`${fmtD(wDate(w))} (M${(w/WPM).toFixed(1)})`;
 /* ===== UI HELPERS ===== */
+const LAST={};
 const $=(q,r=document)=>r.querySelector(q), $$=(q,r=document)=>[...r.querySelectorAll(q)];
-const CH={}; function mk(id,cfg){ if(CH[id])CH[id].destroy(); const cv=document.getElementById(id); if(!cv)return; CH[id]=new Chart(cv,cfg); }
+const CH={}; const CLICK={};
+function mk(id,cfg){ if(CH[id])CH[id].destroy(); const cv=document.getElementById(id); if(!cv)return;
+  const o=cfg.options=cfg.options||{};
+  if(cfg.data&&cfg.data.labels===moLabels&&o.scales&&o.scales.x){o.scales.x.min=F.win[0];o.scales.x.max=F.win[1];}
+  if(CLICK[id]){o.onClick=(e,els)=>{if(els.length)CLICK[id](els[0].index,els[0].datasetIndex);};o.onHover=(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default';};o.interaction=o.interaction||{mode:'nearest',intersect:true};}
+  CH[id]=new Chart(cv,cfg); }
 Chart.defaults.font.family="'Diodrum Arabic','Segoe UI',system-ui,sans-serif"; Chart.defaults.font.size=12; Chart.defaults.color=C.black;
 const ax=(o={})=>Object.assign({grid:{color:'#E6F1F4'},border:{color:C.gray},ticks:{color:'#5f6d77'}},o);
 const legendHtml=items=>`<div class="legend">${items.map(i=>`<span><i style="background:${i[1]}"></i>${i[0]}</span>`).join('')}</div>`;
@@ -362,6 +399,7 @@ function syncFilters(){
   $$('[data-ct]').forEach(b=>b.checked=F.cats.has(b.dataset.ct));
   $('#ddSt summary').textContent=`Stations (${sel().length}/14) ▾`;
   $('#ddCt summary').textContent=`Cost scope (${F.cats.size}/12) ▾`;
+  if($('#q')){if($('#q')!==document.activeElement)$('#q').value=F.q;$('#w0').value=F.win[0];$('#w1').value=F.win[1];$$('[data-ph]').forEach(b=>b.setAttribute('aria-pressed',F.phases.has(b.dataset.ph)));$('#phG').hidden=TAB!=='schedule';renderActive();}
 }
 
 /* ===== DASHBOARD ===== */
@@ -374,7 +412,7 @@ function mapSvg(){
   const lines=Object.entries(L).map(([k,ids])=>`<path d="${path(ids)}" fill="none" stroke="${LINES[k].color}" stroke-width="3" stroke-dasharray="${F.lines.has(k)?'0':'4 5'}" opacity="${F.lines.has(k)?1:.35}"/>`).join('');
   const LB={'NSR-RYD':['end',-16,-10],'EWR-RYD':['start',16,18],'NSR-MAJ':['middle',0,26],'NSR-QAS':['middle',0,-18],'HHR-MAK':['start',22,5],'HHR-JED':['end',-22,5],'HHR-KAE':['end',-18,4],'HHR-MAD':['end',-18,4],'EWR-HUF':['start',18,5],'EWR-ABQ':['start',18,5],'EWR-DAM':['start',18,5]};
   const dots=S.map(s=>{const r=7+Math.sqrt(s.all)/160,o=on.has(s.id)?1:.18,b=LB[s.id]||['middle',0,-r-7];
-    return `<g opacity="${o}"><circle cx="${x(s.lon)}" cy="${y(s.lat)}" r="${r}" fill="${LINES[s.line].color}" stroke="${s.ryd?C.red:'#fff'}" stroke-width="${s.ryd?3.5:2}"><title>${s.name} · SAR ${fmtM(s.all)} · ${s.cam} cameras</title></circle><text x="${x(s.lon)+b[1]}" y="${y(s.lat)+b[2]}" font-size="11.5" font-weight="600" fill="#3D3935" text-anchor="${b[0]}">${s.name}${s.ryd?' ★':''}</text></g>`}).join('');
+    return `<g opacity="${o}"><circle data-drill="station:${s.id}" style="cursor:pointer" cx="${x(s.lon)}" cy="${y(s.lat)}" r="${r}" fill="${LINES[s.line].color}" stroke="${s.ryd?C.red:'#fff'}" stroke-width="${s.ryd?3.5:2}"><title>${s.name} · SAR ${fmtM(s.all)} · ${s.cam} cameras</title></circle><text x="${x(s.lon)+b[1]}" y="${y(s.lat)+b[2]}" font-size="11.5" font-weight="600" fill="#3D3935" text-anchor="${b[0]}">${s.name}${s.ryd?' ★':''}</text></g>`}).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Schematic map of the 14 stations">${g}${lines}${dots}</svg>`;
 }
 function renderDashboard(){
@@ -387,7 +425,7 @@ function renderDashboard(){
    ${kpi(st.length,'Stations in view',st.filter(s=>s.ryd).length+' Riyadh priority · '+cams.toLocaleString()+' cameras',C.red)}
    ${kpi(st.length?'M'+(fin/WPM).toFixed(1):'–','Last final acceptance',st.length?fmtD(wDate(fin)):'', C.slate)}
    ${kpi('SAR '+fmtM(pk),'Peak monthly cost','Month '+(mon.indexOf(pk))+' of 36',C.yellow)}
-   ${kpi(pct(tot?cum[12]/tot:0),'Cost-loaded by M12','M24: '+pct(tot?cum[24]/tot:0)+' · M36: '+pct(tot?cum[36]/tot:0),C.mid)}
+   ${(F.win[0]||F.win[1]!==36)?kpi(pct(tot?(cum[F.win[1]]-cum[F.win[0]])/tot:0),`Cost in M${F.win[0]}–M${F.win[1]}`,'SAR '+fmtM(cum[F.win[1]]-cum[F.win[0]]),C.mid):kpi(pct(tot?cum[12]/tot:0),'Cost-loaded by M12','M24: '+pct(tot?cum[24]/tot:0)+' · M36: '+pct(tot?cum[36]/tot:0),C.mid)}
   </div><div class="sp"></div>
   <div class="panel"><div class="eyebrow">Riyadh priority package</div><h3>Both Riyadh stations are scheduled first</h3>
    <p class="sub">NSR Thumamah starts in week 6 and EWR Malaz in week 8 with expedited long-lead procurement (14 weeks). Both finish SAT in month ${(Math.max(...ryd.map(s=>s.acts.sat.en))/WPM).toFixed(1)}, about ${((Math.min(...S.filter(s=>!s.ryd).map(s=>s.acts.sat.en))-Math.max(...ryd.map(s=>s.acts.sat.en)))/WPM).toFixed(1)} months before the next station.</p>
@@ -402,7 +440,7 @@ function renderDashboard(){
    <div class="panel"><h3>Riyadh first: cumulative cost in view</h3><p class="sub">Cumulative planned cost (SAR M) of Riyadh stations against the other stations.</p><div class="chartbox"><canvas id="c-ry"></canvas></div></div>
    <div class="panel"><h3>Monthly planned cost by railway</h3><p class="sub">SAR M per month in view, stacked.</p><div class="chartbox"><canvas id="c-mon"></canvas></div></div>
   </div>`;
-  const byS=[...st].sort((a,b)=>selCost(b)-selCost(a));
+  const byS=[...st].sort((a,b)=>selCost(b)-selCost(a)); LAST.byS=byS;
   mk('c-st',{type:'bar',data:{labels:byS.map(s=>s.name),datasets:GRP.map(([g,c])=>({label:g,backgroundColor:c,borderColor:'#fff',borderWidth:1.5,data:byS.map(s=>CATS.filter(k=>catsOn(k[0])&&grpCat(k[0])===g).reduce((a,k)=>a+s.cost[k[0]],0)/1e6)}))},
     options:{indexAxis:'y',maintainAspectRatio:false,scales:{x:ax({stacked:true,title:{display:true,text:'SAR M'}}),y:ax({stacked:true,grid:{display:false}})},plugins:{legend:{position:'bottom',labels:{boxWidth:11}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.x.toFixed(2)}M`}}}}});
   const line=(lab,arr,col,dash)=>({label:lab,data:arr.map(v=>v/1e6),borderColor:col,backgroundColor:col+'22',borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.25,borderDash:dash||[],fill:false});
@@ -487,7 +525,7 @@ function renderBoq(){
   $('#t-boq').innerHTML=head('Bill of quantities','Contract price table, Level 1 to 4',`Project, railway, station and sub-system, reconciling to SAR 62,000,000. Showing ${summary()}. Station rows show priced hardware; shared packages are priced per railway.`)+`
   <div class="panel"><div class="fgroup" style="margin-bottom:10px"><span class="flabel">Depth</span><span class="seg" id="boqL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===boqLevel}">Level ${i}</button>`).join('')}</span><span class="note">Click ▸ to expand a row.</span></div>
    <div class="scroll"><table class="tbl"><thead><tr><th>Description</th><th>Note</th><th class="r">SAR ex-VAT</th><th class="r">Share</th><th style="width:120px"></th></tr></thead><tbody>
-   ${rows.filter(r=>vis(r)&&r.lv<=Math.max(boqLevel,1)).map(r=>{const kids=rows.some(x=>x.parent===r.id);return `<tr class="lv${r.lv}"><td>${kids?`<span class="tg" data-t="${r.id}">${boqOpen.has(r.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${r.label}</td><td>${r.extra||''}</td><td class="r">${fmtN(r.val)}</td><td class="r">${grand?pct(r.val/grand):'–'}</td><td><span class="bar" style="width:${grand?Math.max(2,r.val/grand*110):0}px;background:${r.lv===2?LINES[r.id]?.color:C.blue}"></span></td></tr>`;}).join('')}
+   ${rows.filter(r=>vis(r)&&r.lv<=Math.max(boqLevel,1)).map(r=>{const kids=rows.some(x=>x.parent===r.id);return `<tr class="lv${r.lv}" data-drill="boq:${r.id}"><td>${kids?`<span class="tg" data-t="${r.id}">${boqOpen.has(r.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${r.label}</td><td>${r.extra||''}</td><td class="r">${fmtN(r.val)}</td><td class="r">${grand?pct(r.val/grand):'–'}</td><td><span class="bar" style="width:${grand?Math.max(2,r.val/grand*110):0}px;background:${r.lv===2?LINES[r.id]?.color:C.blue}"></span></td></tr>`;}).join('')}
    </tbody></table></div></div>
   <div class="sp"></div>
   <div class="grid g2">
@@ -508,7 +546,7 @@ function renderBoq(){
 /* ===== SCHEDULE (GANTT) ===== */
 const PX=7, open=new Set();
 function ganttTree(){
-  const st=sel(), mk4=s=>s.list.map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}));
+  const st=sel(), mk4=s=>s.list.filter(a=>F.phases.has(a.ph)).map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}));
   const stNode=s=>({lv:3,id:s.id,label:s.name,st:s.st,en:s.en,col:LINES[s.line].color,ryd:s.ryd,tip:`${s.name}\n${wTxt(s.st)} → ${wTxt(s.en)}\nSAR ${fmtM(s.all)}`,kids:mk4(s),ms:[[s.acts.sat.en,'SAT'],[s.en,'Final acceptance']]});
   const grp=(id,label,ss,col,ryd)=>ss.length?({lv:2,id,label,st:Math.min(...ss.map(s=>s.st)),en:Math.max(...ss.map(s=>s.en)),col,ryd,tip:`${label}\nSAR ${fmtM(ss.reduce((a,s)=>a+s.all,0))}`,kids:ss.map(stNode)}):null;
   const mob={lv:2,id:'MOB',label:'Mobilization & baseline programme',st:0,en:9,col:C.black,tip:'Weeks 0–9',kids:[
@@ -545,7 +583,7 @@ function renderSchedule(){
   const qs=Array.from({length:12},(_,q)=>`<div class="gq" style="left:${q*3*WPM*PX}px;width:${3*WPM*PX}px">Q${q+1} · ${(wDate(q*3*WPM)).toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`).join('');
   const bg=`background-size:${13*PX}px 100%;`;
   const rowHtml=n=>{const kids=(n.kids||[]).length, ms=(n.ms||[]).map(m=>`<div class="gm ${m[1]==='Final acceptance'?'red':''}" style="left:${m[0]*PX}px" title="${m[1]} · ${wTxt(m[0])}"></div>`).join('');
-    return `<div class="gr l${n.lv} ${n.ryd?'pri':''}"><div class="glab" title="${n.label}">${kids?`<span class="tg" data-g="${n.id}">${open.has(n.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${n.label}${n.ryd&&n.lv===3?' <span class="tag pri">★</span>':''}</div><div class="gtrack" style="width:${W}px;${bg}"><div class="gb" style="left:${n.st*PX}px;width:${Math.max(3,(n.en-n.st)*PX)}px;--c:${n.col}" title="${(n.tip||n.label+'\n'+wTxt(n.st)+' → '+wTxt(n.en)).replace(/"/g,'&quot;')}"></div>${ms}</div></div>`;};
+    return `<div class="gr l${n.lv} ${n.ryd?'pri':''}" data-n="${n.id}"><div class="glab" title="${n.label}">${kids?`<span class="tg" data-g="${n.id}">${open.has(n.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${n.label}${n.ryd&&n.lv===3?' <span class="tag pri">★</span>':''}</div><div class="gtrack" style="width:${W}px;${bg}"><div class="gb" style="left:${n.st*PX}px;width:${Math.max(3,(n.en-n.st)*PX)}px;--c:${n.col}" title="${(n.tip||n.label+'\n'+wTxt(n.st)+' → '+wTxt(n.en)).replace(/"/g,'&quot;')}"></div>${ms}</div></div>`;};
   $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the other stations are spread so that the last one reaches final acceptance in month ${(ENDW/WPM).toFixed(0)}, at the end of the 36-month term.`)+`
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
@@ -624,6 +662,200 @@ function renderRisks(){
 }
 
 function setBurn(m){BURN.mode=m;BURN.w=m==='scope'?13:6;BURN.label=m==='scope'?'Burn-out period, 3 months (Scope 4.4.2)':'Trial operation, max 45 days (Contract)';rebuild();}
+/* ===== DRILL-DOWN DRAWER ===== */
+const DSTACK=[];
+function openDrawer(title,sub,html,after){ $('#dT').textContent=title; $('#dS').innerHTML=sub||''; $('#dB').innerHTML=html; $('#drawer').classList.add('on'); $('#drawer').setAttribute('aria-hidden','false'); $('#dov').classList.add('on'); $('#dB').scrollTop=0; $('#dBack').style.visibility=DSTACK.length>1?'visible':'hidden'; if(after)setTimeout(after,40); }
+function closeDrawer(){ DSTACK.length=0; $('#drawer').classList.remove('on'); $('#drawer').setAttribute('aria-hidden','true'); $('#dov').classList.remove('on'); Object.keys(CH).filter(k=>k.startsWith('d-')).forEach(k=>{CH[k].destroy();delete CH[k];}); }
+const MS=w=>Math.max(0,Math.round(w*WPM));
+function stationMonthly(s){const a=new Float64Array(T);CATS.forEach(c=>{if(!catsOn(c[0]))return;const x=s.wk[c[0]];for(let w=0;w<T;w++)a[w]+=x[w];});return a;}
+const monthSeries=arr=>{const c=monthlyCum(arr);return c.map((v,i)=>i?(v-c[i-1])/1e6:0);};
+const lt=l=>`<span class="tag" style="background:${LINES[l].color}">${l}</span>`;
+const pri=s=>s.ryd?' <span class="tag pri">Priority</span>':'';
+const row=(cells,drill)=>`<tr${drill?` data-drill="${drill}"`:''}>${cells.map((c,i)=>`<td${i?' class="r"':''}>${c}</td>`).join('')}</tr>`;
+const tbl=(heads,rows)=>`<div class="scroll"><table class="tbl"><thead><tr>${heads.map((h,i)=>`<th${i?' class="r"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+const bar=(v,max,c)=>`<span class="bar" style="width:${Math.max(2,max?v/max*90:0)}px;background:${c||C.blue}"></span>`;
+function stTable(list,extra){return tbl(['Station','Cost SAR','Start','Final acceptance','Cameras'],list.map(s=>row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtN(extra?extra(s):selCost(s)),fmtD(wDate(s.st)),fmtD(wDate(s.en)),s.cam],'station:'+s.id)));}
+const goFilter=(ids)=>`<div class="btnrow"><button class="btn" data-act="only" data-ids="${ids.join(',')}">Filter the site to ${ids.length>1?'these stations':'this station'}</button></div>`;
+const ACT_INFO={survey:['Site visit, as-found verification of existing CCTV, cabling, power and levels; identifies what can be re-used under HCIS 2017.','SAR SOW clause 3 (II) and Armada section 4.'],
+ eng:['Detailed design, bill of materials, compliance statements to HCIS directives, test plan, shop drawings and submittals.','Armada section 4; payment: 10% on engineering submittal.'],
+ appr:['SAR and HCIS review and approval of the design package. Armada allows a five-week period in the schedule; the contract caps SAR review at 21 days.','Armada section 4; contract programme clause; payment: 10% on SAR approval.'],
+ proc:['Order and manufacture of cameras, servers, storage, network and UPS, ending with the factory acceptance test (FAT).','SAR SOW 13.1-13.3; ETECHS offer: FAT held in Dubai.'],
+ ship:['Shipping, customs clearance and delivery to the station. Material is accepted on delivery.','Payment: 20% on material delivery, prorated per station.'],
+ civil:['Trenches in platforms, duct banks, camera and ALPR poles. Runs in parallel with procurement once the design is approved.','Annex 3 civil works line per station.'],
+ inst:['Mounting, cabling, termination and integration of all devices into the video management system and control room.','Payment: 20% on installation, prorated per station.'],
+ sat:['Site acceptance test across nine test classes, pre-commissioning and commissioning.','Armada 4.4.2; payment: 10% on testing and commissioning (SAT).'],
+ train:['Operator, maintenance and administrator training with manuals in English.','Armada 4.7.'],
+ trial:['Burn-out or trial operation with live monitoring of detection, false-alarm and nuisance-alarm rates.','Armada 4.4.2 (3 months) against contract definition (max 45 days).'],
+ final:['Application for the Taking-Over Certificate, punch items closed within 45 days, project handover and start of defects liability.','Contract acceptance clause; payment: 10% on final acceptance and handover.']};
+function dStation(id){
+  const s=S.find(x=>x.id===id), L=LINES[s.line], inv=invoices(s), rom=ROM[s.id];
+  const catRows=CATS.map(c=>[c[1],s.cost[c[0]],HW.includes(c[0])?'Priced':'Allocated',c[0]]);
+  const html=`<div class="dk">
+   ${kpi('SAR '+fmtM(s.all),'All-in value',pct(s.all/TOTAL_PRICE)+' of contract',L.color)}
+   ${kpi('SAR '+fmtM(s.hwTotal),'Priced hardware & civil','Annex 3 price table',C.mid)}
+   ${kpi(s.cam,'Cameras',s.cams.face+' face recognition · '+s.cams.anpr+' ANPR',C.yellow)}
+   ${kpi('M'+(s.en/WPM).toFixed(1),'Final acceptance',fmtD(wDate(s.en)),C.red)}</div>
+  ${goFilter([s.id])}
+  <h4>Monthly cost, SAR M</h4><div class="chartbox"><canvas id="d-c1"></canvas></div>
+  <h4>Cost breakdown</h4>${tbl(['Item','SAR','Basis','Share'],catRows.map(r=>row([`<span data-drill="cat:${r[3]}:${s.id}" style="cursor:pointer;color:#00778B">${r[0]}</span>`,fmtN(r[1]),r[2],pct(r[1]/s.all)])))}
+  <p class="note">Allocated items are the line's shared packages (design, PM, FAT, spares, training, cloud) shared pro rata to station hardware value (${pct(s.share)} of ${s.line}).</p>
+  <h4>Cameras by type</h4>${tbl(['Type','Qty'],CAMTYPES.filter(c=>s.cams[c[0]]).map(c=>row([c[1],s.cams[c[0]]])))}
+  <h4>Schedule (Level 4)</h4>${tbl(['Activity','Start','Finish','Weeks'],s.list.map(a=>row([`<span data-drill="act:${s.id}:${a.k}" style="cursor:pointer;color:#00778B">${a.name}</span>`,fmtD(wDate(a.st)),fmtD(wDate(a.en)),a.dur])))}
+  <h4>Payment milestones</h4>${tbl(['Milestone','SAR','Invoice','Cash (+60 d)'],inv.map(i=>row([i.name,fmtN(i.amt),fmtD(wDate(i.week)),fmtD(wDate(i.week+LAG))])))}
+  <h4>Against the Armada estimate</h4><p style="margin:0">Armada ROM (with 10% contingency): <b>SAR ${fmtN(rom)}</b>. Contract all-in: <b>SAR ${fmtN(s.all)}</b>, ${s.all<rom?'':'+'}${((s.all/rom-1)*100).toFixed(1)}%.${s.id==='HHR-MAD'?' Madinah is priced at 50% of Makkah because drawings were not provided.':''}${s.ryd?' This station is on the Riyadh priority path.':''}</p>`;
+  openDrawer(s.name,`${lt(s.line)} ${L.name}${pri(s)}`,html,()=>{mk('d-c1',{type:'bar',data:{labels:moLabels,datasets:[{label:'SAR M',data:monthSeries(stationMonthly(s)),backgroundColor:L.color}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax()},plugins:{legend:{display:false}}}});});
+}
+function dLine(l){
+  const L=LINES[l], ss=S.filter(s=>s.line===l), tot=ss.reduce((a,s)=>a+s.all,0), romL=ss.reduce((a,s)=>a+ROM[s.id],0);
+  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),'Line value',pct(tot/TOTAL_PRICE)+' of contract',L.color)}${kpi(ss.length,'Stations',ss.filter(s=>s.ryd).length?'Includes Riyadh priority':'',C.slate)}${kpi(ss.reduce((a,s)=>a+s.cam,0),'Cameras','',C.yellow)}${kpi('M'+(Math.max(...ss.map(s=>s.en))/WPM).toFixed(1),'Last acceptance','',C.red)}</div>
+  ${goFilter(ss.map(s=>s.id))}
+  <h4>Monthly cost, SAR M</h4><div class="chartbox"><canvas id="d-c1"></canvas></div>
+  <h4>Stations</h4>${stTable(ss,s=>s.all)}
+  <h4>Shared packages priced at line level</h4>${tbl(['Package','SAR'],SV.map(k=>row([`<span data-drill="cat:${k}" style="cursor:pointer;color:#00778B">${CAT[k].label}</span>`,fmtN(L.shared[k])])))}
+  <h4>Against the Armada estimate</h4><p style="margin:0">Armada ROM for ${l}: <b>SAR ${fmtN(romL)}</b>. Contract: <b>SAR ${fmtN(tot)}</b> (${((tot/romL-1)*100).toFixed(1)}%).</p>`;
+  openDrawer(L.name,lt(l),html,()=>{mk('d-c1',{type:'bar',data:{labels:moLabels,datasets:[{label:'SAR M',data:monthSeries(weekly(ss)),backgroundColor:L.color}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax()},plugins:{legend:{display:false}}}});});
+}
+function dMonth(m){
+  m=Math.max(1,Math.min(36,m)); const a=MS(m-1), b=MS(m), st=sel();
+  const per=st.map(s=>{const arr=stationMonthly(s);let v=0;for(let w=a;w<b;w++)v+=arr[w];return {s,v,acts:s.list.filter(x=>x.st<b&&x.en>a)};}).filter(x=>x.v>1||x.acts.length).sort((x,y)=>y.v-x.v);
+  const tot=per.reduce((x,y)=>x+y.v,0), cum=monthlyCum(weekly(st)), all=st.reduce((x,s)=>x+selCost(s),0)||1;
+  const grp=GRP.map(([g])=>[g,st.reduce((x,s)=>x+CATS.filter(k=>catsOn(k[0])&&grpCat(k[0])===g).reduce((q,k)=>{let v=0;for(let w=a;w<b;w++)v+=s.wk[k[0]][w];return q+v;},0),0)]).filter(r=>r[1]>1);
+  const invs=st.flatMap(s=>invoices(s).filter(i=>i.week>=a&&i.week<b).map(i=>[s,i])), cash=st.flatMap(s=>invoices(s).filter(i=>i.week+LAG>=a&&i.week+LAG<b).map(i=>[s,i]));
+  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),'Planned cost in month','Weeks '+a+' to '+b,C.blue)}${kpi(pct(cum[m]/all),'Cumulative cost','SAR '+fmtM(cum[m]),C.mid)}${kpi('SAR '+fmtM(invs.reduce((x,y)=>x+y[1].amt,0)),'Invoiced in month',invs.length+' invoices',C.yellow)}${kpi('SAR '+fmtM(cash.reduce((x,y)=>x+y[1].amt,0)),'Cash expected in month',cash.length+' payments',C.red)}</div>
+  <h4>Cost by station</h4>${tbl(['Station','SAR','Active activities'],per.map(x=>`<tr data-drill="station:${x.s.id}"><td>${x.s.name} ${lt(x.s.line)}</td><td class="r">${fmtN(x.v)}</td><td class="r" style="white-space:normal;text-align:left">${x.acts.map(y=>y.name.split(',')[0].split(' (')[0]).join('; ')}</td></tr>`))}
+  <h4>Cost by sub-system</h4>${tbl(['Sub-system','SAR','Share'],grp.map(r=>row([`<span data-drill="grp:${r[0]}" style="cursor:pointer;color:#00778B">${r[0]}</span>`,fmtN(r[1]),pct(r[1]/(tot||1))])))}
+  <h4>Invoices raised</h4>${invs.length?tbl(['Station','Milestone','SAR'],invs.map(([s,i])=>row([s.name,i.name,fmtN(i.amt)],'station:'+s.id))):'<p class="note">No invoices fall in this month.</p>'}`;
+  openDrawer(`Month ${m}`,fmtD(wDate(a))+' to '+fmtD(wDate(b)),html);
+}
+function dGroup(g){
+  const st=sel(), ks=CATS.filter(k=>grpCat(k[0])===g).map(k=>k[0]);
+  const rows=st.map(s=>[s,ks.reduce((x,k)=>x+(catsOn(k)?s.cost[k]:0),0)]).sort((x,y)=>y[1]-x[1]), tot=rows.reduce((x,y)=>x+y[1],0), mx=rows[0]?rows[0][1]:1;
+  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),g,pct(tot/TOTAL_PRICE)+' of contract',(GRP.find(x=>x[0]===g)||[0,C.blue])[1])}${kpi(st.length,'Stations in view','')}</div>
+  <h4>Items</h4>${tbl(['Item','SAR in view'],ks.map(k=>row([`<span data-drill="cat:${k}" style="cursor:pointer;color:#00778B">${CAT[k].label}</span>`,fmtN(st.reduce((x,s)=>x+(catsOn(k)?s.cost[k]:0),0))])))}
+  <h4>By station</h4>${tbl(['Station','SAR','Share',''],rows.map(([s,v])=>row([`${s.name} ${lt(s.line)}`,fmtN(v),pct(v/(tot||1)),bar(v,mx)],'station:'+s.id)))}`;
+  openDrawer(g,'Sub-system detail for the stations in view',html);
+}
+function dCat(k,sid){
+  const st=sel(), rows=st.map(s=>[s,s.cost[k]]).sort((x,y)=>y[1]-x[1]), tot=rows.reduce((x,y)=>x+y[1],0), mx=rows[0]?rows[0][1]:1;
+  const html=`<div class="dk">${kpi('SAR '+fmtM(tot),CAT[k].label,CAT[k].group+(SV.includes(k)?' · allocated pro rata to stations':' · priced per station'),CAT[k].color)}${kpi(st.length,'Stations in view','')}</div>
+  <h4>By station</h4>${tbl(['Station','SAR','Share',''],rows.map(([s,v])=>row([`${s.id===sid?'<b>':''}${s.name}${s.id===sid?'</b>':''} ${lt(s.line)}`,fmtN(v),pct(v/(tot||1)),bar(v,mx)],'station:'+s.id)))}`;
+  openDrawer(CAT[k].label,CAT[k].group,html);
+}
+function dAct(sid,k){
+  const s=S.find(x=>x.id===sid), a=s.acts[k], info=ACT_INFO[k]||['',''];
+  let v=0;CATS.forEach(c=>{if(!catsOn(c[0]))return;for(let w=Math.floor(a.st);w<Math.ceil(a.en);w++)v+=s.wk[c[0]][w];});
+  const idx=s.list.findIndex(x=>x.k===k), prev=s.list[idx-1], next=s.list[idx+1];
+  const mile={eng:'Engineering submittal (10%)',appr:'SAR approval of engineering (10%)',ship:'Material delivery (20%)',inst:'Installation (20%)',sat:'Testing & commissioning / SAT (10%)',final:'Final acceptance & handover (10%)'}[k];
+  const html=`<div class="dk">${kpi(a.dur+' wk','Duration',PHASE[a.ph].n,PHASE[a.ph].c)}${kpi('SAR '+fmtM(v),'Cost loaded in this activity','Selected cost scope',C.blue)}${kpi(fmtD(wDate(a.st)),'Start','M'+(a.st/WPM).toFixed(1),C.slate)}${kpi(fmtD(wDate(a.en)),'Finish','M'+(a.en/WPM).toFixed(1),C.red)}</div>
+  <h4>What it covers</h4><p style="margin:0">${info[0]}</p><h4>Basis</h4><p style="margin:0">${info[1]}</p>
+  ${mile?`<h4>Payment milestone</h4><p style="margin:0">${mile}: SAR ${fmtN(s.all*MILE.find(m=>m[0]===mile)[1])} invoiced when this activity finishes, cash 60 days later (${fmtD(wDate(a.en+LAG))}).</p>`:''}
+  <h4>Sequence</h4><p style="margin:0">${prev?'After: '+prev.name+'. ':''}${next?'Before: '+next.name+'.':''}</p>
+  <div class="btnrow"><button class="btn ghost" data-drill="station:${s.id}">Open ${s.name}</button></div>`;
+  openDrawer(a.name,`${s.name} · ${lt(s.line)}`,html);
+}
+const NODE_INFO={MOB:['Mobilization & baseline programme','Weeks 0 to 9. Initial baseline within 10 days of the effective date, mobilization submittals (insurance, 5% performance bond, key personnel, QC programme and ITP, HSE, security programme, procurement and shipping plan), survey of Riyadh first, then the detailed baseline 21 days after survey. Source: contract programme clause and SAR SOW clause 6.'],
+ M1:['Contract signature & Notice to Proceed','Starts the 36-month term. NTP is issued once SAR approves the baseline programme.'],M2:['Initial baseline programme','Due within 10 days of the effective date, in Primavera, covering mobilization and survey.'],
+ M3:['Mobilization & submittals','Portable offices, personnel, insurance, performance security, QC programme, ITP, HSE plan, security programme, procurement and shipping plan.'],M3a:['Insurance, performance bond, key personnel','Performance security of 5% of the contract price must be in place before the effective date.'],M3b:['QC programme, ITP, HSE, security programme','Required submittals under SAR SOW clause 6 and the WARA risk-assessment template.'],M3c:['Procurement & long-lead list','Long-lead items and shipping schedule are identified early so procurement is not delayed.'],
+ M4:['Survey of Riyadh stations, then others','Pre-construction survey of existing conditions; the two Riyadh stations are surveyed first.'],M5:['Detailed baseline programme','Due 21 days after completion of mobilization and survey, covering the whole scope with start and completion of each deliverable by SAR priority.'],
+ CLO:['Closeout, warranty & support','Rolling closeout per station, contract closeout at the end of the 36-month term, and defects liability that continues beyond it.'],C1:['As-builts, O&M manuals, spares lists','Handed over station by station with the taking-over application.'],C2:['Contract closeout pack & handover','Final documentation package and handover at the end of the term.'],C3:['Defects liability','One year from each Taking-Over Certificate. The Performance Certificate follows the end of the last period, after month 36.']};
+function dNode(id){
+  if(id==='PRJ')return drill('kpi:value',true); if(id==='RYD')return openStations(S.filter(s=>s.ryd),'Riyadh priority stations','Both start first and are accepted first.');
+  if(LINES[id])return dLine(id); const stn=S.find(x=>x.id===id); if(stn)return dStation(id);
+  for(const s of S){ if(id.startsWith(s.id)&&s.acts[id.slice(s.id.length)])return dAct(s.id,id.slice(s.id.length)); }
+  const n=NODE_INFO[id]; if(n)openDrawer(n[0],'Schedule item',`<p style="font-size:14px">${n[1]}</p>`);
+}
+function openStations(list,title,sub){openDrawer(title,sub,stTable(list)+goFilter(list.map(s=>s.id)));}
+function dBoq(id){
+  if(id==='P')return drill('kpi:value',true); if(LINES[id])return dLine(id); if(S.find(x=>x.id===id))return dStation(id);
+  if(id.endsWith('sh')&&LINES[id.slice(0,-2)])return dLine(id.slice(0,-2));
+  for(const s of S){ if(id.startsWith(s.id)&&CAT[id.slice(s.id.length)])return dCat(id.slice(s.id.length),s.id); }
+  for(const l of Object.keys(LINES)){ if(id.startsWith(l)&&CAT[id.slice(l.length)])return dCat(id.slice(l.length)); }
+}
+function dKpi(k){
+  const st=sel(), all=st.reduce((a,s)=>a+selCost(s),0)||1, cum=monthlyCum(weekly(st));
+  if(k==='value'){const lines=Object.keys(LINES).map(l=>[l,st.filter(s=>s.line===l).reduce((a,s)=>a+selCost(s),0)]).filter(r=>r[1]);
+    openDrawer('Value in view',summary(),`<div class="dk">${kpi('SAR '+fmtM(all),'Value in view',pct(all/TOTAL_PRICE)+' of SAR 62.0M')}${kpi('SAR '+fmtM(all*1.15),'With 15% VAT','',C.yellow)}</div>${goFilter(st.map(s=>s.id))}
+    <h4>By railway</h4>${tbl(['Railway','SAR','Share'],lines.map(r=>row([`${lt(r[0])} ${LINES[r[0]].name}`,fmtN(r[1]),pct(r[1]/all)],'line:'+r[0])))}
+    <h4>By sub-system</h4>${tbl(['Sub-system','SAR','Share'],GRP.map(([g])=>[g,st.reduce((x,s)=>x+CATS.filter(c=>catsOn(c[0])&&grpCat(c[0])===g).reduce((q,c)=>q+s.cost[c[0]],0),0)]).map(r=>row([r[0],fmtN(r[1]),pct(r[1]/all)],'grp:'+r[0])))}
+    <h4>By station</h4>${stTable([...st].sort((a,b)=>selCost(b)-selCost(a)))}`);}
+  else if(k==='stations')openStations(st,'Stations in view',summary());
+  else if(k==='finish'){const l=[...st].sort((a,b)=>b.en-a.en);openDrawer('Last final acceptance','Stations ordered by final acceptance, latest first. The first one sets the programme end.',stTable(l));}
+  else if(k==='peak'){const mon=cum.map((v,i)=>i?v-cum[i-1]:0);dMonth(mon.indexOf(Math.max(...mon)));}
+  else if(k==='m12'){const w=MS(12);openDrawer('Cost-loaded by month 12','Share of each station\'s planned cost earned by month 12',tbl(['Station','Earned by M12','SAR','Complete'],st.map(s=>{const arr=stationMonthly(s);let v=0;for(let i=0;i<w;i++)v+=arr[i];const t=selCost(s)||1;return [s,v,t];}).sort((x,y)=>y[1]/y[2]-x[1]/x[2]).map(([s,v,t])=>row([`${s.name} ${lt(s.line)}${pri(s)}`,pct(v/t),fmtN(v),bar(v,t,s.ryd?C.red:C.blue)],'station:'+s.id))));}
+  else if(k==='m50'){const m=cum.findIndex(v=>v>=all*.5);dMonth(m);}
+  else if(k==='cash36'||k==='cash24'){const lim=MS(k==='cash36'?36:24),rows=st.flatMap(s=>invoices(s).map(i=>({s,i,cw:i.week+LAG})));const paid=rows.filter(r=>r.cw<lim),late=rows.filter(r=>r.cw>=lim);
+    openDrawer(k==='cash36'?'Cash received by month 36':'Cash received by month 24','Invoice value plus the 60-day payment term',`<div class="dk">${kpi('SAR '+fmtM(paid.reduce((a,r)=>a+r.i.amt,0)),'Received','',C.blue)}${kpi('SAR '+fmtM(late.reduce((a,r)=>a+r.i.amt,0)),'Still to receive',late.length+' invoices',C.red)}</div><h4>Invoices not yet paid at this date</h4>${tbl(['Station','Milestone','SAR','Cash date'],late.sort((x,y)=>x.cw-y.cw).map(r=>row([r.s.name,r.i.name,fmtN(r.i.amt),fmtD(wDate(r.cw))],'station:'+r.s.id)))}`);}
+  else if(k==='cams'){openDrawer('Cameras supplied','By type and railway',tbl(['Type','NSR','EWR','HHR','Total'],CAMTYPES.map(c=>{const v=l=>S.filter(s=>s.line===l).reduce((a,s)=>a+s.cams[c[0]],0);return row([c[1],v('NSR'),v('EWR'),v('HHR'),v('NSR')+v('EWR')+v('HHR')]);}))+'<h4>By station</h4>'+tbl(['Station','Cameras'],S.map(s=>row([s.name+' '+lt(s.line),s.cam],'station:'+s.id))));}
+  else if(k==='term'){openDrawer('Contract term','36 months from Notice to Proceed',tbl(['Item','Value'],[['Notice to Proceed','After SAR approves the baseline programme'],['Initial baseline','10 days from effective date'],['Detailed baseline','21 days after survey'],['SAR review time','Maximum 21 days'],['Trial operation','Maximum 45 days (contract)'],['Defects liability','1 year from Taking-Over Certificate'],['Delay damages','0.2% per day, capped at 10%']].map(r=>row(r))));}
+  else if(k==='price'){openDrawer('Contract price','Annex 3, Revised-02',tbl(['Railway','SAR ex-VAT','With VAT'],Object.keys(LINES).map(l=>{const v=S.filter(s=>s.line===l).reduce((a,s)=>a+s.all,0);return row([lt(l)+' '+LINES[l].name,fmtN(v),fmtN(v*1.15)],'line:'+l);}).concat([row(['<b>Total</b>','<b>62,000,000</b>','<b>71,300,000</b>'])])));}
+}
+function dMile(i){const m=MILE[i],st=sel();openDrawer(m[0],'Payment milestone, per station',tbl(['Station','SAR','Invoice','Cash'],st.map(s=>invoices(s)[i]).sort((a,b)=>a.week-b.week).map(x=>row([x.station.name+' '+lt(x.station.line),fmtN(x.amt*(selCost(x.station)/x.station.all)),fmtD(wDate(x.week)),fmtD(wDate(x.week+LAG))],'station:'+x.station.id))));}
+const RISK_ST={2:['HHR-MAD','HHR-MAK'],5:['NSR-RYD','EWR-RYD','HHR-JED'],3:['HHR-JED','HHR-MAK','HHR-KAE','HHR-MAD']};
+function dRisk(i){const r=RISKS[i],ids=RISK_ST[i]||S.map(s=>s.id);openDrawer(r[1],`<span class="tag ${r[0]}">${{hi:'High',med:'Medium',lo:'Low'}[r[0]]}</span> ${r[3]}`,`<p style="font-size:14.5px">${r[2]}</p><h4>Stations most affected</h4>${ids.length===14?'<p class="note">All 14 stations.</p>':tbl(['Station','Final acceptance'],ids.map(id=>S.find(s=>s.id===id)).map(s=>row([s.name+' '+lt(s.line),fmtD(wDate(s.en))],'station:'+s.id)))}`);}
+function drill(key,noPush){
+  const [t,a,b]=key.split(':'); if(!noPush)DSTACK.push(key);
+  ({station:()=>dStation(a),line:()=>dLine(a),month:()=>dMonth(+a),grp:()=>dGroup(a),cat:()=>dCat(a,b),act:()=>dAct(a,b),node:()=>dNode(a),boq:()=>dBoq(a),kpi:()=>dKpi(a),mile:()=>dMile(+a),risk:()=>dRisk(+a)}[t]||(()=>{}))();
+}
+document.addEventListener('click',e=>{
+  const act=e.target.closest('[data-act]'); if(act&&act.dataset.act==='only'){F.stations=new Set(act.dataset.ids.split(','));F.scope='all';F.lines=new Set(['NSR','EWR','HHR']);closeDrawer();update();return;}
+  const g=e.target.closest('.gr[data-n]'); if(g&&!e.target.closest('[data-g]')){drill('node:'+g.dataset.n);return;}
+  const d=e.target.closest('[data-drill]'); if(d){drill(d.dataset.drill);}
+});
+$('#dX').onclick=closeDrawer; $('#dov').onclick=closeDrawer; $('#dBack').onclick=()=>{DSTACK.pop();const k=DSTACK[DSTACK.length-1];if(k)drill(k,true);else closeDrawer();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+/* click handlers for charts */
+CLICK['c-st']=i=>drill('station:'+LAST.byS[i].id); CLICK['c-ry']=i=>i&&drill('month:'+i); CLICK['c-mon']=i=>i&&drill('month:'+i);
+CLICK['c-do']=i=>drill('grp:'+GRP[i][0]); CLICK['c-cam']=i=>drill('station:'+sel()[i].id); CLICK['c-rom']=i=>drill('station:'+S[i].id);
+['c-s1','c-s2','c-s3','c-act'].forEach(id=>CLICK[id]=i=>i&&drill('month:'+i));
+/* decorate cards and tables after each render */
+const DR={dashboard:['kpi:value','kpi:stations','kpi:finish','kpi:peak','kpi:m12'],scope:['kpi:stations','kpi:cams','kpi:term','kpi:price'],scurve:['kpi:m50','kpi:m12','kpi:cash36','kpi:cash24']};
+function decorate(){
+  (DR[TAB]||[]).forEach((k,i)=>{const el=$$('#t-'+TAB+' .kpi')[i];if(el)el.dataset.drill=k;});
+  if(TAB==='dashboard'){const ry=S.filter(s=>s.ryd);$$('#t-dashboard .ms').forEach((e,i)=>e.dataset.drill='station:'+ry[i].id);}
+  if(TAB==='scope'){['CCTV','Video mgmt & wall','Access & intercom','Network & field','Civil works','Services & PM'].forEach((g,i)=>{const el=$$('#t-scope .card.k')[i];if(el)el.dataset.drill='grp:'+g;});
+    const rows=$$('#t-scope .tbl')[0].querySelectorAll('tbody tr');rows.forEach((r,i)=>r.dataset.drill='station:'+S[i].id);}
+  if(TAB==='schedule'){const l=sel().sort((a,b)=>a.en-b.en);$$('#t-schedule .g2 .tbl tbody tr').forEach((r,i)=>{if(l[i])r.dataset.drill='station:'+l[i].id;});}
+  if(TAB==='scurve')$$('#t-scurve .panel:last-child .tbl tbody tr').forEach((r,i)=>r.dataset.drill='mile:'+i);
+  if(TAB==='risks')$$('#t-risks tbody tr').forEach((r,i)=>r.dataset.drill='risk:'+i);
+}
+
+/* ===== EXTRA FILTERS, VIEWS AND ACTIVE-FILTER BAR ===== */
+const VIEWS=[['all','All stations, full term'],['ryd','Riyadh priority only'],['hhr','HHR only'],['nsrewr','NSR and EWR only'],['hw','Hardware and civil only'],['sv','Services only'],['y1','First 12 months'],['y2','Months 13 to 24'],['y3','Months 25 to 36']];
+function resetAll(){F.lines=new Set(['NSR','EWR','HHR']);F.scope='all';F.stations=new Set(S.map(s=>s.id));F.cats=new Set(CATS.map(c=>c[0]));F.win=[0,36];F.q='';F.phases=new Set(['design','proc','cons','accept']);}
+function applyView(v){resetAll();
+  if(v==='ryd')F.scope='ryd'; else if(v==='hhr')F.lines=new Set(['HHR']); else if(v==='nsrewr')F.lines=new Set(['NSR','EWR']);
+  else if(v==='hw')F.cats=new Set(CATS.filter(c=>c[2]!=='Services').map(c=>c[0])); else if(v==='sv')F.cats=new Set(CATS.filter(c=>c[2]==='Services').map(c=>c[0]));
+  else if(v==='y1')F.win=[0,12]; else if(v==='y2')F.win=[12,24]; else if(v==='y3')F.win=[24,36];
+  update();}
+function extraFilters(){
+  const f=$('#filters'),rst=$('#reset'),mo=n=>Array.from({length:37},(_,i)=>`<option value="${i}">M${i}</option>`).join('');
+  const g=document.createElement('div');g.className='fgroup';
+  g.innerHTML=`<span class="flabel">Search</span><input class="srch" id="q" type="search" placeholder="Station name" aria-label="Search stations"><span class="flabel">Window</span><select class="mini" id="w0" aria-label="From month">${mo()}</select><span class="flabel">to</span><select class="mini" id="w1" aria-label="To month">${mo()}</select>
+  <details class="dd" id="ddV"><summary>Views ▾</summary><div class="pop">${VIEWS.map(v=>`<label style="cursor:pointer"><a href="#" data-v="${v[0]}">${v[1]}</a></label>`).join('')}</div></details>`;
+  f.insertBefore(g,rst);
+  const ph=document.createElement('div');ph.className='fgroup';ph.id='phG';ph.innerHTML=`<span class="flabel">Phase</span>${Object.entries(PHASE).filter(p=>['design','proc','cons','accept'].includes(p[0])).map(p=>`<button class="chip" data-ph="${p[0]}" style="--c:${p[1].c}"><span class="sw"></span>${p[1].n}</button>`).join('')}`;
+  f.insertBefore(ph,rst);
+  $('#q').oninput=e=>{F.q=e.target.value.trim();update();};
+  $('#w0').onchange=e=>{F.win[0]=+e.target.value;if(F.win[0]>=F.win[1])F.win[1]=Math.min(36,F.win[0]+1);update();};
+  $('#w1').onchange=e=>{F.win[1]=+e.target.value;if(F.win[1]<=F.win[0])F.win[0]=Math.max(0,F.win[1]-1);update();};
+  $$('#ddV [data-v]').forEach(a=>a.onclick=ev=>{ev.preventDefault();applyView(a.dataset.v);$('#ddV').open=false;});
+  $$('[data-ph]').forEach(b=>b.onclick=()=>{const p=b.dataset.ph;F.phases.has(p)?F.phases.delete(p):F.phases.add(p);if(!F.phases.size)F.phases.add(p);update();});
+  rst.onclick=()=>{resetAll();update();};
+}
+function renderActive(){
+  const chips=[],add=(t,fn)=>chips.push([t,fn]),st=sel();
+  if(F.lines.size<3)add('Line: '+[...F.lines].join(', '),()=>F.lines=new Set(['NSR','EWR','HHR']));
+  if(F.scope!=='all')add(F.scope==='ryd'?'Riyadh first':'Excluding Riyadh',()=>F.scope='all');
+  if(F.stations.size<14)add(F.stations.size+' stations selected',()=>F.stations=new Set(S.map(s=>s.id)));
+  if(F.cats.size<12)add('Cost scope: '+F.cats.size+' of 12',()=>F.cats=new Set(CATS.map(c=>c[0])));
+  if(F.win[0]!==0||F.win[1]!==36)add(`Window M${F.win[0]}–M${F.win[1]}`,()=>F.win=[0,36]);
+  if(F.q)add('Search: '+F.q,()=>{F.q='';});
+  if(F.phases.size<4)add('Phases: '+F.phases.size+' of 4',()=>F.phases=new Set(['design','proc','cons','accept']));
+  const el=$('#activeRow');
+  el.innerHTML=`<b style="color:#3D3935">${st.length} of 14 stations · SAR ${fmtM(st.reduce((a,s)=>a+selCost(s),0))}</b>${chips.length?'<span>Filters:</span>':'<span>No filters applied. Click any card, bar, row or chart point for details.</span>'}${chips.map((c,i)=>`<button class="ac2" data-ac="${i}" type="button">${c[0]} ✕</button>`).join('')}`;
+  $$('[data-ac]',el).forEach(b=>b.onclick=()=>{chips[+b.dataset.ac][1]();update();});
+}
+
 /* ===== PUBLISH / SHARE ===== */
 const PAGES_URL='https://mostafaessam8-source.github.io/claude-fable-5-prompt/';
 (function(){
@@ -639,11 +871,11 @@ const PAGES_URL='https://mostafaessam8-source.github.io/claude-fable-5-prompt/';
 })();
 /* ===== ROUTER ===== */
 const R={dashboard:renderDashboard,scope:renderScope,boq:renderBoq,schedule:renderSchedule,scurve:renderScurve,risks:renderRisks};
-function update(){syncFilters();R[TAB]();}
+function update(){syncFilters();R[TAB]();decorate();}
 function go(t){TAB=R[t]?t:'dashboard';$$('section.tab').forEach(s=>s.classList.toggle('on',s.id==='t-'+TAB));$$('#nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===TAB));try{history.replaceState(null,'','#'+TAB);}catch(e){}update();window.scrollTo({top:0});}
 $('#nav').innerHTML=NAV.map(n=>`<button role="tab" data-t="${n[0]}">${n[1]}</button>`).join('');
 $$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
-buildFilters(); go((location.hash||'').replace('#','')||'dashboard');
+buildFilters(); extraFilters(); go((location.hash||'').replace('#','')||'dashboard');
 
 </script>
 
