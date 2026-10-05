@@ -208,9 +208,25 @@
     var rows = M.closing, keys = rows.length ? Object.keys(rows[0]) : [], a = keys.indexOf("Final Contract Value"), b = keys.indexOf("Current Status");
     return a >= 0 && b > a ? keys.slice(a + 1, b) : [];
   }
+  /* "31-Oct-2026" / "15 Oct 26" / "2026-10-31" → ISO date, else "" */
+  function dayIso(t) {
+    t = String(t || "").trim(); if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+    var m = /^(\d{1,2})[\s-]+([A-Za-z]{3})[a-z]*[\s-]+(\d{2}|\d{4})$/.exec(t); if (!m) return "";
+    var mo = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(m[2].toLowerCase()); if (mo < 0) return "";
+    var y = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+    return y + "-" + ("0" + (mo + 1)).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+  }
   function stepState(r, k) {
     var x = r[k], s = x == null ? "" : String(x).trim();
     if (!s) return { status: "Not Started", date: "" };
+    /* "Status – date" written by the team (as on the slides): "Pending – 31-Oct-2026", "Not Started – TBD",
+       "Completed – 15-Aug-2026" → that status, and that date shown as it is (forecast, or actual when completed) */
+    var sd = /^(completed?|done|signed|pending|not started|in process|in progress|under process)\s*(?:[–—-]\s*(.*))?$/i.exec(s);
+    if (sd) {
+      var kw = sd[1].toLowerCase(), dt = (sd[2] || "").trim(), iso = dayIso(dt);
+      if (/^(complet|done|signed)/.test(kw)) return { status: "Completed", date: iso ? dShort(iso) : dt };
+      return { status: /^not started/.test(kw) ? "Not Started" : "Pending", date: "", fdate: iso ? dShort(iso) + " (F)" : dt };
+    }
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { status: "Completed", date: dShort(s) };
     if (/^(n\/?a)$/i.test(s)) return { status: "NA", date: "" };
     if (/^(completed?|done|signed|yes|available)$/i.test(s)) return { status: "Completed", date: "" };   // done, date not recorded
@@ -350,7 +366,7 @@
         }
         E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
-        E.cellText(c[6], st.date ? st.date : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "≈" + dShort(fc.doneAt[k]), color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
+        E.cellText(c[6], st.date ? st.date : st.fdate ? { text: st.fdate, color: "C55A11" } : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "≈" + dShort(fc.doneAt[k]), color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
         // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
         E.all(tr, NS.a, "p").forEach(function (pp) {
           if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;

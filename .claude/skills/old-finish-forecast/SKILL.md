@@ -23,6 +23,10 @@ earlier files), and never add or invent rows when filling the user's Excel — a
   A date in a step = Completed (shown as actual date); "Completed" / "Done" / "Signed" / "Yes" / "Available" = Completed
   with no date (shown as an estimated past date, see rule 9); "N/A" = not applicable; empty = Not Started; other text =
   in process.
+  **"Status – date" written by the team (as on the slides) wins over every rule below**: "Pending – 31-Oct-2026",
+  "Not Started – TBD", "Completed – 15-Aug-2026" → that status, and the date shown exactly as given (a date gets
+  "(F)" when not completed; TBD / TBC shown as text). Code: `stepState` / `dayIso` in pptx-weekly.js. The site's
+  closing page (`clStep` in pages.js) already reads these texts (Completed… = done, Pending / Not Started… = open).
   Current Status may start "Not signed: AMP-B, AMP-D, AMP-E2." (from the AMP availability table) — read like any text.
 - The project's own weekly report (exact project code only, never the base code of a suffixed code):
   `End Date (Forecast/Actual)`.
