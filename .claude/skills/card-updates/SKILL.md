@@ -97,6 +97,12 @@ a formula's "" is kept — Excel treats it as text, an empty cell is 0).
   get the `_xlfn.` prefix), which Excel calculates on opening. References are written as typed (not shifted if rows moved).
 - NETWORKDAYS / WORKDAY use Excel's default Saturday–Sunday weekend so the page agrees with Excel.
 
+## Reading ruler
+
+Clicking any cell (locked too) marks its row across the whole sheet (blue tint, line above and below) and highlights
+its row number and column letter, as in Excel; the mark stays until another cell is clicked and survives redraws.
+Hovering a row gives it a light band. (Site tables: hover band; click a row to pin it, click again to clear.)
+
 ## Undo / Redo
 
 ↶ Undo and ↷ Redo buttons (and Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z outside an open cell) step one change at a time — an

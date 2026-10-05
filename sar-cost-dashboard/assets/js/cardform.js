@@ -710,7 +710,7 @@
       var hh = 22;
       (g.img || []).forEach(function (im) { if (m.media[im[0]]) h.push('<img class="cu-pic" alt="" src="' + m.media[im[0]] + '" style="left:' + (im[1] + 42) + "px;top:" + (im[2] + hh) + "px;width:" + im[3] + "px;height:" + im[4] + 'px">'); });
       sheet.innerHTML = h.join("");
-      placeHandle();
+      placeHandle(); ruler();
       sheet.style.zoom = state.zoom;
       syncBar(); setTimeout(syncBar, 60);
       go.innerHTML = '<option value="">Section…</option>' + p.sections.map(function (s) { return '<option value="' + esc(s.rows[0].c[0] ? s.rows[0].c[0].ref : "") + '" data-r="' + s.rows[0].r + '">' + esc(s.t) + "</option>"; }).join("");
@@ -832,6 +832,7 @@
     sheet.addEventListener("click", function (ev) {
       if (ev.target.classList.contains("cu-fill")) return;
       if (openEd && inFormula()) return;              // pointing at cells while writing a formula
+      var anyTd = ev.target.closest && ev.target.closest("td[data-ref]"); if (anyTd) ruler(anyTd.getAttribute("data-ref"));   // any cell (locked too) moves the ruler
       var td = ev.target.closest && ev.target.closest("td.cu-ed"); if (td && !ev.target.classList.contains("cu-ctl")) { state.active = td.getAttribute("data-ref"); placeHandle(); openAt(td); }
     });
     /* ---- fill handle (as in Excel): drag the small square of the active cell down / across, or double-click it to fill
@@ -842,6 +843,14 @@
       var td = state.active && sheet.querySelector('td.cu-ed[data-ref="' + state.active + '"]'); if (!td) return;
       var hd = document.createElement("div"); hd.className = "cu-fill"; hd.title = "Drag to copy down / across (double-click: fill down)"; td.appendChild(hd);
       td.classList.add("cu-act"); Array.prototype.forEach.call(sheet.querySelectorAll("td.cu-act"), function (x) { if (x !== td) x.classList.remove("cu-act"); });
+    }
+    /* reading ruler: a band across the row being worked on, its row number and column letter highlighted (as in Excel) */
+    function ruler(ref) {
+      if (ref) state.ruler = ref;
+      Array.prototype.forEach.call(sheet.querySelectorAll(".cu-rowsel, .cu-colsel"), function (x) { x.classList.remove("cu-rowsel"); x.classList.remove("cu-colsel"); });
+      var pr = state.ruler && splitRef(state.ruler); if (!pr) return;
+      var tr = sheet.querySelector('tr[data-r="' + pr.r + '"]'); if (tr) tr.classList.add("cu-rowsel");
+      var L = colStr(pr.c); Array.prototype.forEach.call(sheet.querySelectorAll("thead th"), function (th) { if (th.textContent === L) th.classList.add("cu-colsel"); });
     }
     function srcFormula(p, ref, e) {               // the formula of the source cell: typed by the team, else the card's own
       if (ref in e) return isFx(e[ref]) ? e[ref].trim().slice(1) : null;

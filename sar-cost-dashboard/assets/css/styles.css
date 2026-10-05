@@ -258,7 +258,8 @@ table.dt td.num { text-align: right; white-space: nowrap; font-variant-numeric: 
 table.dt td.nowrap { white-space: nowrap; }
 table.dt td.wrap { min-width: 260px; max-width: 520px; }
 table.dt tbody tr:nth-child(even) td { background: var(--tint-5); }
-table.dt tbody tr:hover td { background: var(--tint-10); }
+table.dt tbody tr:hover td { background: #DCEFF3; }
+table.dt tbody tr.dt-pin td { background: #FFF4CC !important; box-shadow: inset 0 2px 0 var(--sar-blue), inset 0 -2px 0 var(--sar-blue); }
 table.dt tbody tr.clickable { cursor: pointer; }
 table.dt tfoot td {
   position: sticky; bottom: 0; background: var(--sar-black); color: var(--white); font-weight: 700;
@@ -961,3 +962,9 @@ textarea.cu-ctl { min-width: max(100%, 280px); min-height: max(100%, 110px); res
 .hbar::-webkit-scrollbar-track { background: var(--tint-5); }
 body.printing .hbar { display: none !important; }
 @media print { .hbar { display: none !important; } }
+
+/* team sheet reading ruler */
+.cu-grid tbody tr:hover > td { background-image: linear-gradient(rgba(0, 119, 139, .07), rgba(0, 119, 139, .07)); }
+.cu-grid tbody tr.cu-rowsel > td { background-image: linear-gradient(rgba(0, 119, 139, .16), rgba(0, 119, 139, .16)); box-shadow: inset 0 2px 0 var(--sar-blue), inset 0 -2px 0 var(--sar-blue); }
+.cu-grid tbody tr.cu-rowsel > td.cu-act { box-shadow: inset 0 0 0 2px #107C41, inset 0 3px 0 var(--sar-blue), inset 0 -3px 0 var(--sar-blue); }
+.cu-grid tbody tr.cu-rowsel > th, .cu-grid thead th.cu-colsel { background: var(--sar-blue); color: #fff; font-weight: 700; }

@@ -158,6 +158,12 @@
     if (opts.maxHeight) box.style.maxHeight = opts.maxHeight + "px";
     wrap.appendChild(box);
     host.appendChild(wrap);
+    box.addEventListener("click", function (ev) {        // reading ruler: click a row to keep it marked (click again to clear)
+      var tr = ev.target.closest && ev.target.closest("tbody tr"); if (!tr || !box.contains(tr)) return;
+      var pin = !tr.classList.contains("dt-pin");
+      Array.prototype.forEach.call(box.querySelectorAll("tr.dt-pin"), function (x) { x.classList.remove("dt-pin"); });
+      if (pin) tr.classList.add("dt-pin");
+    });
 
     function val(c, r) { return c.get ? c.get(r) : r[c.key]; }
     function cmp(c, a, b, dir) {
