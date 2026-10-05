@@ -259,8 +259,12 @@ function buildActs(s){
   put('final','Taking-over & final acceptance','accept',Math.max(a.trial.en,a.train.en),Math.max(a.trial.en,a.train.en)+d.final);
   s.acts=a; s.list=Object.values(a); s.st=s.start; s.en=a.final.en;
 }
-let ENDW=0;
-function rebuild(){S.forEach(buildActs);ENDW=Math.max(...S.map(s=>s.en));S.forEach(s=>{ const L=LINES[s.line], lineHw=S.filter(x=>x.line===s.line).reduce((a,x)=>a+x.hwTotal,0), f=s.hwTotal/lineHw; s.share=f;
+let ENDW=0, STRETCH=1;
+S.forEach(s=>s.start0=s.start);
+function layout(f){S.forEach(s=>{s.start=s.ryd?s.start0:Math.round(8+(s.start0-8)*f);buildActs(s);});return Math.max(...S.map(s=>s.en));}
+function rebuild(){ // spread non-Riyadh starts so the last final acceptance lands at month 36; Riyadh keeps weeks 6 and 8
+  let f=1; for(let t=1;t<=3;t+=0.01){ if(layout(t)<=WEEKS) f=t; else break; }
+  STRETCH=f; ENDW=layout(f);S.forEach(s=>{ const L=LINES[s.line], lineHw=S.filter(x=>x.line===s.line).reduce((a,x)=>a+x.hwTotal,0), f=s.hwTotal/lineHw; s.share=f;
   s.cost={}; HW.forEach(k=>s.cost[k]=s.hw[k]); SV.forEach(k=>s.cost[k]=L.shared[k]*f); s.all=Object.values(s.cost).reduce((a,b)=>a+b,0); });S.forEach(s=>s.wk=costArrays(s));}
 const T=WEEKS+LAG+14;
 function spread(arr,a,b,amt){const n=b-a; if(n<=0){arr[Math.min(a,T-1)]+=amt;return;} for(let w=a;w<b;w++) arr[w]+=amt/n;}
@@ -503,10 +507,11 @@ function ganttTree(){
     {lv:3,id:'M4',label:'Survey of Riyadh stations, then others',st:2,en:7,col:C.black,kids:[]},
     {lv:3,id:'M5',label:'Detailed baseline programme (21 days after survey)',st:6,en:9,col:C.black,kids:[]}]};
   const wEnd=Math.max(ENDW,0);
-  const cl={lv:2,id:'CLO',label:'Closeout, warranty & support',st:wEnd-6,en:WEEKS,col:C.slate,tip:'Final documents, performance certificate, warranty support',kids:[
-    {lv:3,id:'C1',label:'As-built drawings, O&M manuals, spares lists',st:wEnd-6,en:wEnd+6,col:C.slate,kids:[]},
-    {lv:3,id:'C2',label:'Performance certificate & contract closeout',st:wEnd+6,en:wEnd+10,col:C.slate,kids:[],ms:[[wEnd+10,'Closeout']]},
-    {lv:3,id:'C3',label:'Warranty & 24x7 support (continues beyond M36)',st:wEnd,en:WEEKS,col:C.gray,kids:[]}]};
+  const first=Math.min(...S.map(s=>s.en));
+  const cl={lv:2,id:'CLO',label:'Closeout, warranty & support',st:first,en:WEEKS,col:C.slate,tip:'Rolling closeout per station, defects liability, warranty support',kids:[
+    {lv:3,id:'C1',label:'As-builts, O&M manuals, spares lists (rolling per station)',st:first-4,en:WEEKS,col:C.slate,kids:[]},
+    {lv:3,id:'C2',label:'Contract closeout pack & handover',st:wEnd-4,en:WEEKS,col:C.slate,kids:[],ms:[[WEEKS,'Contract term ends (M36)']]},
+    {lv:3,id:'C3',label:'Defects liability 1 yr per station from taking-over (continues beyond M36)',st:first,en:WEEKS,col:C.gray,kids:[]}]};
   const groups=[mob];
   let rest=st; if(rydFirst){const r=st.filter(s=>s.ryd); const g=grp('RYD','Riyadh priority stations (NSR + EWR)',r,C.red,true); if(g)groups.push(g); rest=st.filter(s=>!s.ryd);}
   Object.keys(LINES).forEach(l=>{const g=grp(l,`${LINES[l].name} (${l})`,rest.filter(s=>s.line===l).sort((a,b)=>a.st-b.st),LINES[l].color); if(g)groups.push(g);});
@@ -527,7 +532,7 @@ function renderSchedule(){
   const bg=`background-size:${13*PX}px 100%;`;
   const rowHtml=n=>{const kids=(n.kids||[]).length, ms=(n.ms||[]).map(m=>`<div class="gm ${m[1]==='Final acceptance'?'red':''}" style="left:${m[0]*PX}px" title="${m[1]} · ${wTxt(m[0])}"></div>`).join('');
     return `<div class="gr l${n.lv} ${n.ryd?'pri':''}"><div class="glab" title="${n.label}">${kids?`<span class="tg" data-g="${n.id}">${open.has(n.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${n.label}${n.ryd&&n.lv===3?' <span class="tag pri">★</span>':''}</div><div class="gtrack" style="width:${W}px;${bg}"><div class="gb" style="left:${n.st*PX}px;width:${Math.max(3,(n.en-n.st)*PX)}px;--c:${n.col}" title="${(n.tip||n.label+'\n'+wTxt(n.st)+' → '+wTxt(n.en)).replace(/"/g,'&quot;')}"></div>${ms}</div></div>`;};
-  $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the last station is accepted in month ${(ENDW/WPM).toFixed(0)}, leaving about ${(36-ENDW/WPM).toFixed(0)} months for closeout, float and warranty start.`)+`
+  $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the other stations are spread so that the last one reaches final acceptance in month ${(ENDW/WPM).toFixed(0)}, at the end of the 36-month term.`)+`
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
    <div class="fgroup"><span class="flabel">Burn-out</span><span class="seg" id="gB"><button data-b="scope" aria-pressed="${BURN.mode==='scope'}">3 months (Scope)</button><button data-b="contract" aria-pressed="${BURN.mode==='contract'}">45 days (Contract)</button></span></div>
@@ -541,7 +546,7 @@ function renderSchedule(){
    ${sel().sort((a,b)=>a.en-b.en).map(s=>`<tr><td>${s.name} <span class="tag" style="background:${LINES[s.line].color}">${s.line}</span>${s.ryd?' <span class="tag pri">★</span>':''}</td>${['appr','ship','sat','final'].map(k=>`<td>M${(s.acts[k].en/WPM).toFixed(1)}<br><span class="note">${fmtD(wDate(s.acts[k].en))}</span></td>`).join('')}</tr>`).join('')}
    </tbody></table></div></div>
    <div class="panel"><h3>Stations active at the same time</h3><p class="sub">Count of stations in site activity per month, to check crew loading.</p><div class="chartbox"><canvas id="c-act"></canvas></div>
-   <div class="callout"><b>Assumptions:</b> engineering 6 weeks (HHR 10), SAR/HCIS approval 5 weeks, procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, burn-out period set with the toggle above: ${BURN.mode==='scope'?'3 months after functional testing, as the Armada scope requires (clause 4.4.2, HCIS SEC-05)':'trial operation capped at 45 days by the draft contract (modelled as 6 weeks)'}. The two documents disagree; the scope is the stricter.</div></div>
+   <div class="callout"><b>Assumptions:</b> with no contractual dates, non-Riyadh station starts are spread so cost and work cover the full 36 months (Riyadh starts at weeks 6 and 8); engineering 6 weeks (HHR 10), SAR/HCIS approval 5 weeks, procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, burn-out period set with the toggle above: ${BURN.mode==='scope'?'3 months after functional testing, as the Armada scope requires (clause 4.4.2, HCIS SEC-05)':'trial operation capped at 45 days by the draft contract (modelled as 6 weeks)'}. The two documents disagree; the scope is the stricter.</div></div>
   </div>`;
   $$('#t-schedule [data-g]').forEach(b=>b.onclick=()=>{const id=b.dataset.g;open.has(id)?open.delete(id):open.add(id);const y=$('.gwrap').scrollTop,x=$('.gwrap').scrollLeft;renderSchedule();$('.gwrap').scrollTop=y;$('.gwrap').scrollLeft=x;});
   $$('#gL button').forEach(b=>b.onclick=()=>{ganttLevel=+b.dataset.l;open.clear();setLvl(ganttLevel);renderSchedule();});
@@ -585,7 +590,7 @@ function renderScurve(){
 
 /* ===== RISKS ===== */
 const RISKS=[
- ['hi','Duration conflict','ETECHS offer states 23–24 months delivery; contract term is 36 months from NTP. The baseline here uses about 28 months to the last final acceptance and keeps the rest as float and closeout. Confirm which date governs delay damages.','Contract cl. 3 / Annex 1; ETECHS terms'],
+ ['hi','Duration conflict','ETECHS offer states 23–24 months delivery; contract term is 36 months from NTP. The baseline here is spread over the full 36 months with the last final acceptance at month 36, so it has no float. Confirm which date governs delay damages.','Contract cl. 3 / Annex 1; ETECHS terms'],
  ['hi','Trial operation length','Draft contract limits trial operation to 45 days; the Armada scope requires a 3-month burn-out for HCIS SEC-05, which is the stricter and is used by default. The schedule tab has a toggle: 3 months per the scope (default) or 45 days per the contract; the scope option adds about 7 weeks per station.','Contract definitions; Armada 4.4.2'],
  ['hi','Madinah priced on an assumption','Madinah is 50% of Makkah because drawings were not provided; any re-measure moves HHR (SAR 30.4M) and the programme.','Armada 2.3.4; ETECHS HHR terms'],
  ['hi','Long-lead and customs','Equipment is sourced from China and FAT is planned in Dubai because of quarantine limits. Procurement of 16–20 weeks and 6–8 weeks of shipping drive the critical path, hardest at HHR.','ETECHS price table; SAR SOW 13.2'],
