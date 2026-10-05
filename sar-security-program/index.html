@@ -223,12 +223,13 @@ const S = [ // id,name,line,riyadh,lon,lat,hw,cams,start week
 const CAMTYPES=[['fixed','Fixed monitoring (internal / external)',C.blue],['face','Face recognition',C.yellow],['tandem','180° tandem + PTZ',C.black],['pano','180° panoramic',C.slate],['c360','360° dome',C.sky],['c90','90° (incl. queue analysis)',C.mid],['lim','Limited-space internal',C.gray],['dir','Direction detection',C.red],['anpr','ANPR',C.blue+'88']];
 const ROM = {'NSR-RYD':3338874,'NSR-MAJ':3338874,'NSR-QAS':3338874,'NSR-HAI':3338874,'NSR-JOU':3338874,'NSR-QUR':3338874,'EWR-RYD':2537469,'EWR-DAM':2537469,'EWR-HUF':1916377,'EWR-ABQ':943723,'HHR-JED':11417692,'HHR-KAE':7562791,'HHR-MAK':13995679,'HHR-MAD':7000000};
 S.forEach(s=>{s.cam=Object.values(s.cams).reduce((a,b)=>a+b,0); s.hwTotal=HW.reduce((a,k)=>a+s.hw[k],0); s.sum=s.hwTotal;});
+const BURN={mode:'scope',w:13,label:'Burn-out period, 3 months (Scope 4.4.2)'};
 const PHASE={design:{n:'Design & approvals',c:C.sky},proc:{n:'Procurement & delivery',c:C.slate},cons:{n:'Installation & commissioning',c:C.blue},accept:{n:'Trial operation & acceptance',c:C.yellow},close:{n:'Closeout & warranty',c:C.gray},mob:{n:'Mobilization & baseline',c:C.black}};
 const TOTAL_PRICE = 62000000, WEEKS = 156, WPM = 52/12, LAG = 9; // 60 days payment term ~ 9 weeks
 
 /* ===== SCHEDULE ENGINE ===== */
 function buildActs(s){
-  const big = s.line==='HHR', d={survey:big?4:2,eng:big?10:6,appr:5,proc:s.ryd?14:(big?20:16),ship:big?8:6,sat:big?5:3,trial:13,final:big?3:2};
+  const big = s.line==='HHR', d={survey:big?4:2,eng:big?10:6,appr:5,proc:s.ryd?14:(big?20:16),ship:big?8:6,sat:big?5:3,trial:BURN.w,final:big?3:2};
   d.civil=Math.round(6+s.hw.civil/70000); d.inst=Math.round(4+s.cam/(big?35:30));
   const a={}, put=(k,name,ph,st,en)=>{a[k]={k,name,ph,st,en,dur:en-st}};
   let t=s.start;
@@ -242,16 +243,13 @@ function buildActs(s){
   put('inst','Installation & cabling','cons',is,Math.max(is+d.inst,a.civil.en));
   put('sat','Testing, commissioning & SAT','cons',a.inst.en,a.inst.en+d.sat);
   put('train','Operator & maintenance training','cons',a.sat.en,a.sat.en+2);
-  put('trial','Trial operation / burn-out','accept',a.sat.en,a.sat.en+d.trial);
+  put('trial',BURN.label,'accept',a.sat.en,a.sat.en+d.trial);
   put('final','Taking-over & final acceptance','accept',Math.max(a.trial.en,a.train.en),Math.max(a.trial.en,a.train.en)+d.final);
   s.acts=a; s.list=Object.values(a); s.st=s.start; s.en=a.final.en;
 }
-S.forEach(buildActs);
-const ENDW = Math.max(...S.map(s=>s.en));
-S.forEach(s=>{ const L=LINES[s.line], lineHw=S.filter(x=>x.line===s.line).reduce((a,x)=>a+x.hwTotal,0), f=s.hwTotal/lineHw; s.share=f;
-  s.cost={}; HW.forEach(k=>s.cost[k]=s.hw[k]); SV.forEach(k=>s.cost[k]=L.shared[k]*f); s.all=Object.values(s.cost).reduce((a,b)=>a+b,0); });
-(function(){const t=S.reduce((a,s)=>a+s.all,0); if(Math.abs(t-TOTAL_PRICE)>5) console.warn('Total mismatch',t);})();
-
+let ENDW=0;
+function rebuild(){S.forEach(buildActs);ENDW=Math.max(...S.map(s=>s.en));S.forEach(s=>{ const L=LINES[s.line], lineHw=S.filter(x=>x.line===s.line).reduce((a,x)=>a+x.hwTotal,0), f=s.hwTotal/lineHw; s.share=f;
+  s.cost={}; HW.forEach(k=>s.cost[k]=s.hw[k]); SV.forEach(k=>s.cost[k]=L.shared[k]*f); s.all=Object.values(s.cost).reduce((a,b)=>a+b,0); });S.forEach(s=>s.wk=costArrays(s));}
 const T=WEEKS+LAG+14;
 function spread(arr,a,b,amt){const n=b-a; if(n<=0){arr[Math.min(a,T-1)]+=amt;return;} for(let w=a;w<b;w++) arr[w]+=amt/n;}
 function costArrays(s){ // weekly planned cost per category
@@ -266,7 +264,7 @@ function costArrays(s){ // weekly planned cost per category
   spread(out.pm,s.st,s.en,s.cost.pm);
   return out;
 }
-S.forEach(s=>s.wk=costArrays(s));
+rebuild();
 const MOB_WEEK=6; // mobilization invoice
 const MILE=[['Mobilization (20%)',.20,null],['Engineering submittal (10%)',.10,'eng'],['SAR approval of engineering (10%)',.10,'appr'],['Material delivery (20%)',.20,'ship'],['Installation (20%)',.20,'inst'],['Testing & commissioning / SAT (10%)',.10,'sat'],['Final acceptance & handover (10%)',.10,'final']];
 function invoices(s){return MILE.map(([n,p,k])=>({name:n,pct:p,amt:s.all*p,week:k?s.acts[k].en:MOB_WEEK,station:s}));}
@@ -520,6 +518,7 @@ function renderSchedule(){
   $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the last station is accepted in month ${(ENDW/WPM).toFixed(0)}, leaving about ${(36-ENDW/WPM).toFixed(0)} months for closeout, float and warranty start.`)+`
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
+   <div class="fgroup"><span class="flabel">Burn-out</span><span class="seg" id="gB"><button data-b="scope" aria-pressed="${BURN.mode==='scope'}">3 months (Scope)</button><button data-b="contract" aria-pressed="${BURN.mode==='contract'}">45 days (Contract)</button></span></div>
    <div class="fgroup"><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
    <div class="legend" style="margin:0">${Object.values(PHASE).map(p=>`<span><i style="background:${p.c}"></i>${p.n}</span>`).join('')}<span><i style="background:${C.black};transform:rotate(45deg) scale(.85)"></i>Milestone</span><span><i style="background:${C.red};transform:rotate(45deg) scale(.85)"></i>Final acceptance</span></div></div>
    <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.</p>
@@ -530,10 +529,11 @@ function renderSchedule(){
    ${sel().sort((a,b)=>a.en-b.en).map(s=>`<tr><td>${s.name} <span class="tag" style="background:${LINES[s.line].color}">${s.line}</span>${s.ryd?' <span class="tag pri">★</span>':''}</td>${['appr','ship','sat','final'].map(k=>`<td>M${(s.acts[k].en/WPM).toFixed(1)}<br><span class="note">${fmtD(wDate(s.acts[k].en))}</span></td>`).join('')}</tr>`).join('')}
    </tbody></table></div></div>
    <div class="panel"><h3>Stations active at the same time</h3><p class="sub">Count of stations in site activity per month, to check crew loading.</p><div class="chartbox"><canvas id="c-act"></canvas></div>
-   <div class="callout"><b>Assumptions:</b> engineering 6 weeks (HHR 10), SAR/HCIS approval 5 weeks, procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, trial operation 13 weeks to meet the 3-month burn-out in the Armada scope (the draft contract caps trial operation at 45 days).</div></div>
+   <div class="callout"><b>Assumptions:</b> engineering 6 weeks (HHR 10), SAR/HCIS approval 5 weeks, procurement 16 weeks (HHR 20, Riyadh expedited 14), shipping 6–8 weeks, burn-out period set with the toggle above: ${BURN.mode==='scope'?'3 months after functional testing, as the Armada scope requires (clause 4.4.2, HCIS SEC-05)':'trial operation capped at 45 days by the draft contract (modelled as 6 weeks)'}. The two documents disagree; the scope is the stricter.</div></div>
   </div>`;
   $$('#t-schedule [data-g]').forEach(b=>b.onclick=()=>{const id=b.dataset.g;open.has(id)?open.delete(id):open.add(id);const y=$('.gwrap').scrollTop,x=$('.gwrap').scrollLeft;renderSchedule();$('.gwrap').scrollTop=y;$('.gwrap').scrollLeft=x;});
   $$('#gL button').forEach(b=>b.onclick=()=>{ganttLevel=+b.dataset.l;open.clear();setLvl(ganttLevel);renderSchedule();});
+  $$('#gB button').forEach(b=>b.onclick=()=>{setBurn(b.dataset.b);renderSchedule();});
   $$('#gR button').forEach(b=>b.onclick=()=>{rydFirst=b.dataset.r==='1';open.clear();window.__g=0;renderSchedule();});
   const cnt=moLabels.map((_,m)=>{const w=m*WPM+1;return sel().filter(s=>w>=s.acts.civil.st&&w<s.acts.final.st+0.01&&w<=s.acts.sat.en).length;});
   mk('c-act',{type:'bar',data:{labels:moLabels,datasets:[{label:'Stations in site works',data:cnt,backgroundColor:C.blue}]},options:{maintainAspectRatio:false,scales:{x:ax({grid:{display:false},ticks:{maxTicksLimit:13}}),y:ax({ticks:{stepSize:1},title:{display:true,text:'Stations'}})},plugins:{legend:{display:false}}}});
@@ -574,7 +574,7 @@ function renderScurve(){
 /* ===== RISKS ===== */
 const RISKS=[
  ['hi','Duration conflict','ETECHS offer states 23–24 months delivery; contract term is 36 months from NTP. The baseline here uses about 28 months to the last final acceptance and keeps the rest as float and closeout. Confirm which date governs delay damages.','Contract cl. 3 / Annex 1; ETECHS terms'],
- ['hi','Trial operation length','Draft contract limits trial operation to 45 days; the Armada scope requires a 3-month burn-out for HCIS SEC-05. A 3-month burn-out per station adds about 6 weeks to every station.','Contract definitions; Armada 4.4.2'],
+ ['hi','Trial operation length','Draft contract limits trial operation to 45 days; the Armada scope requires a 3-month burn-out for HCIS SEC-05, which is the stricter and is used by default. The schedule tab has a toggle: 3 months per the scope (default) or 45 days per the contract; the scope option adds about 7 weeks per station.','Contract definitions; Armada 4.4.2'],
  ['hi','Madinah priced on an assumption','Madinah is 50% of Makkah because drawings were not provided; any re-measure moves HHR (SAR 30.4M) and the programme.','Armada 2.3.4; ETECHS HHR terms'],
  ['hi','Long-lead and customs','Equipment is sourced from China and FAT is planned in Dubai because of quarantine limits. Procurement of 16–20 weeks and 6–8 weeks of shipping drive the critical path, hardest at HHR.','ETECHS price table; SAR SOW 13.2'],
  ['med','Payment and cash-flow','20% on mobilization helps, but the 60-day payment term and 10% held to final acceptance bring the last cash in around month 33. Cash curve is shown in the S-curve tab.','Contract cl. 15'],
@@ -592,6 +592,7 @@ function renderRisks(){
   <div class="callout warn"><b>Model assumptions.</b> NTP date defaults to 1 Nov 2026 and can be changed in the filter bar. Station durations, wave order and cost-loading rules are planning assumptions made for this baseline; they are not taken from an approved SAR programme. Replace them with the Primavera baseline once issued.</div>`;
 }
 
+function setBurn(m){BURN.mode=m;BURN.w=m==='scope'?13:6;BURN.label=m==='scope'?'Burn-out period, 3 months (Scope 4.4.2)':'Trial operation, max 45 days (Contract)';rebuild();}
 /* ===== ROUTER ===== */
 const R={dashboard:renderDashboard,scope:renderScope,boq:renderBoq,schedule:renderSchedule,scurve:renderScurve,risks:renderRisks};
 function update(){syncFilters();R[TAB]();}
