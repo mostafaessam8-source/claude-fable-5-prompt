@@ -709,6 +709,12 @@ table.cl td.ck.done { color: var(--sar-blue); background: rgba(0,119,139,.08); }
 table.cl td.ck.wip { color: #9A6B00; background: rgba(241,180,52,.18); }
 table.cl td.ck.open { color: var(--slate); }
 table.cl td.ck.na { color: var(--cool-gray); }
+table.cl td.ck small { display: block; font-size: 10px; font-weight: 600; color: var(--slate); margin-top: 2px; white-space: nowrap; }
+table.cl td.ck.done small { color: var(--sar-blue); }
+table.cl td.ck.wip small { color: #9A6B00; }
+table.cl td.ck.late { background: rgba(203,44,48,.10); }
+table.cl td.ck.late small { color: var(--red); }
+table.cl td.nx { min-width: 130px; font-size: 11.5px; }
 body.printing .cl-wrap { max-height: none; overflow: visible; }
 body.printing table.cl thead th { position: static; }
 table.cl td.pn { min-width: 220px; }

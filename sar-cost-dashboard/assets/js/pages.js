@@ -1877,10 +1877,25 @@
   var CL_ORDER = ["In closing", "Closed", "Terminated"];
   var CL_COLOR = { "In closing": C.yellow, "Closed": C.blue, "Terminated": C.red };
   function clStatus(r) { var s = String(r["Current Status"] || "").trim(); return /^closed\b/i.test(s) ? "Closed" : /terminat/i.test(s) ? "Terminated" : "In closing"; }
-  function clStep(r, k) {                                  // → { st: "done" | "na" | "wip" | "open", txt }
+  var CL_OWNER = [[/^amp/i, "Asset Team + PM"], [/^hand/i, "PM"], [/^clos/i, "PM + Program Controls"], [/^(retention|ap guarantee|final payment)/i, "Finance"], [/^performance/i, "Finance + Supply Chain"]];
+  function clOwner(k) { k = String(k).trim(); for (var i = 0; i < CL_OWNER.length; i++) if (CL_OWNER[i][0].test(k)) return CL_OWNER[i][1]; return ""; }
+  function clDay(t) {                                       // "31-Oct-2026" / "15 Oct 26" / ISO → ISO, else ""
+    t = String(t || "").trim(); if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+    var m = /^(\d{1,2})[\s-]+([A-Za-z]{3})[a-z]*[\s-]+(\d{2}|\d{4})$/.exec(t); if (!m) return "";
+    var mo = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(m[2].toLowerCase()); if (mo < 0) return "";
+    return (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + ("0" + (mo + 1)).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+  }
+  function clStep(r, k) {                                  // → { st: "done" | "na" | "wip" | "open", txt, label, date (ISO), dtxt (TBD …) }
     var x = r[k], s = x == null ? "" : String(x).trim();
+    /* "Status – date" as written on the weekly slides: Pending – 31-Oct-2026 · Not Started – TBD · Completed – 15-Aug-2026 */
+    var sd = /^(completed?|done|signed|pending|not started|in process|in progress|under process)\s*(?:[–—-]\s*(.*))?$/i.exec(s);
+    if (sd) {
+      var kw = sd[1].toLowerCase(), dt = (sd[2] || "").trim(), iso = clDay(dt);
+      var st = /^(complet|done|signed)/.test(kw) ? "done" : /^not started/.test(kw) ? "open" : "wip";
+      return { st: st, txt: s, label: st === "done" ? "Completed" : st === "open" ? "Not Started" : "Pending", date: iso, dtxt: iso ? "" : dt };
+    }
     if (s === "") return clStatus(r) === "Closed" ? { st: "done", txt: "Closed" } : clStatus(r) === "Terminated" ? { st: "na", txt: "Terminated" } : { st: "open", txt: "Pending" };
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { st: "done", txt: fmt.date(s) };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { st: "done", txt: fmt.date(s), label: "Completed", date: s };
     if (x === true || x === 1 || /^(yes|y|done|complete|completed|issued|signed|released|approved|received|paid|submitted|ok|✓|✔)\b/i.test(s)) return { st: "done", txt: s };
     if (/^(n\/?a|not applicable|-)$/i.test(s)) return { st: "na", txt: "N/A" };
     if (x === false || x === 0 || /^(no|pending|not started)\b/i.test(s)) return { st: "open", txt: s || "Pending" };
@@ -2365,6 +2380,9 @@
       r._steps = s; r._done = app.filter(function (x) { return x.st === "done"; }).length; r._app = app.length;
       r._pct = app.length ? r._done / app.length : null;
       r._pending = steps.filter(function (k, i) { return s[i].st === "open" || s[i].st === "wip"; });
+      s.forEach(function (x) { if (!x.label) x.label = { done: "Completed", na: "N/A", open: "Not Started", wip: "In progress" }[x.st]; x.late = !!(x.date && x.st !== "done" && x.st !== "na" && x.date < today); });
+      var ni = -1; s.forEach(function (x, i) { if (ni < 0 && x.st !== "done" && x.st !== "na") ni = i; });   // the step the close-out waits on
+      r._next = ni >= 0 ? { step: steps[ni], owner: clOwner(steps[ni]), x: s[ni] } : null;
       r._age = r["Contract Finish"] ? days(r["Contract Finish"], today) : null;               // days since contract finish
       r._year = r["Contract Finish"] ? String(r["Contract Finish"]).slice(0, 4) : "—";
     });
@@ -2421,19 +2439,39 @@
         scales: { x: { grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false }, ticks: { callback: U.shortLabel(24) } } } } },
       function (i, e) { pick(ctx, "proj", ag[i]["Project Name"], e); }));
 
+    // every open close-out step with its due date, as written on the weekly slides (Status – date)
+    var acts = [];
+    rows.forEach(function (r) { if (r._st !== "In closing") return; r._steps.forEach(function (x, i) {
+      if (x.st === "done" || x.st === "na") return;
+      acts.push({ Code: r.Code, Project: r["Project Name"], Step: steps[i], Owner: i === steps.indexOf(r._next && r._next.step) ? (r["Project Manager"] || clOwner(steps[i])) : clOwner(steps[i]),
+        Status: x.label, Due: x.date || null, DueText: x.date ? "" : (x.dtxt || "—"), Flag: x.late ? "Overdue" : x.date ? (days(today, x.date) <= 30 ? "Due ≤ 30 days" : "Planned") : (x.dtxt ? x.dtxt : "No date"),
+        _now: r._next && r._next.step === steps[i], _r: r });
+    }); });
+    acts.sort(function (a, b) { return (a.Due ? 0 : 1) - (b.Due ? 0 : 1) || String(a.Due || "").localeCompare(String(b.Due || "")) || String(a.Code).localeCompare(String(b.Code)); });
+    var withDate = acts.filter(function (a) { return a.Due; }), late = acts.filter(function (a) { return a.Flag === "Overdue"; }), tbd = acts.filter(function (a) { return !a.Due; });
+    var ap = panelIn(v, "Close-out actions & due dates", acts.length + " open steps · " + withDate.length + " with a date" + (late.length ? " · " + late.length + " overdue" : "") + " · " + tbd.length + " TBD / no date · ► = the step each project is waiting on · click a row for the full record");
+    if (!acts.length) add(ap, '<div class="empty">No open close-out steps.</div>');
+    else tableIn(ap, { rows: acts, search: true, maxHeight: 460, exportName: "Closeout_Actions",
+      onRow: function (a) { U.recordModal((a.Code || "") + " — " + (a.Project || ""), clRecord(a._r)); },
+      columns: [{ key: "Code", label: "Code", nowrap: true }, { key: "Project", label: "Project", wrap: true },
+        { key: "Step", label: "Remaining action", get: function (a) { return (a._now ? "► " : "") + a.Step; } }, { key: "Owner", label: "Action by", wrap: true },
+        { key: "Status", label: "Status", type: "badge" }, { key: "Due", label: "Forecast date", get: function (a) { return a.Due || "9999 " + a.DueText; }, render: function (v, a) { return a.Due ? '<b class="' + (a.Flag === "Overdue" ? "neg" : "") + '">' + esc(fmt.date(a.Due)) + "</b>" : '<span class="muted">' + esc(a.DueText) + "</span>"; } },
+        { key: "Flag", label: "Due", type: "badge" }] });
+
     // close-out checklist matrix (projects still in closing first)
     var mx = rows.slice().sort(function (x, y) { return CL_ORDER.indexOf(x._st) - CL_ORDER.indexOf(y._st) || (y._age || 0) - (x._age || 0); });
     var icon = { done: "✓", wip: "◐", open: "○", na: "–" };
-    var mp = panelIn(v, "Close-out checklist", "✓ done (date or Yes/Done) · ◐ in progress (other text) · ○ pending · – not applicable · hover a cell for its value · click a row for the full record");
+    var mp = panelIn(v, "Close-out checklist", "✓ completed · ◐ pending (in process) · ○ not started · – not applicable · the date under each mark is the actual / forecast date (red = overdue) · click a row for the full record");
     if (!steps.length) add(mp, '<div class="empty">No checklist columns in the sheet.</div>');
     else {
       var h = '<div class="table-wrap cl-wrap"><table class="cl"><thead><tr><th>Code</th><th>Project</th><th>Status</th>' + steps.map(function (k) { return "<th>" + esc(k) + "</th>"; }).join("") +
-        '<th>Progress</th><th>Current status</th><th>Action plan</th></tr></thead><tbody>';
+        '<th>Progress</th><th>Waiting on</th><th>Current status</th><th>Action plan</th></tr></thead><tbody>';
       mx.forEach(function (r, i) {
         h += '<tr data-i="' + i + '" class="' + (r._st === "In closing" ? "open" : "") + '"><td class="nw"><b>' + esc(r.Code || "") + '</b></td><td class="pn">' + esc(r["Project Name"] || "") +
           '<small>' + esc(r["Project Manager"] || "") + "</small></td><td>" + U.badge(r._st) + "</td>" +
-          r._steps.map(function (x) { return '<td class="ck ' + x.st + '" title="' + esc(x.txt) + '">' + icon[x.st] + "</td>"; }).join("") +
-          "<td>" + (r._pct == null ? "" : U.meter(r._pct)) + '</td><td class="txt">' + esc(r["Current Status"] || "") + '</td><td class="txt">' + esc(r["Action Plan"] || "") + "</td></tr>";
+          r._steps.map(function (x) { var dd = x.date ? fmt.date(x.date) : x.dtxt || ""; return '<td class="ck ' + x.st + (x.late ? " late" : "") + '" title="' + esc(x.label + (dd ? " – " + dd : "") + (x.late ? " (overdue)" : "")) + '">' + icon[x.st] + (dd ? "<small>" + esc(dd) + "</small>" : "") + "</td>"; }).join("") +
+          "<td>" + (r._pct == null ? "" : U.meter(r._pct)) + '</td><td class="nx">' + (r._next ? "<b>" + esc(r._next.step) + "</b><small>" + esc(r._next.x.label + (r._next.x.date ? " · " + fmt.date(r._next.x.date) : r._next.x.dtxt ? " · " + r._next.x.dtxt : "")) + "</small>" : '<span class="muted">—</span>') +
+          '</td><td class="txt">' + esc(r["Current Status"] || "") + '</td><td class="txt">' + esc(r["Action Plan"] || "") + "</td></tr>";
       });
       h += "</tbody></table></div>";
       var node = add(mp, "<div>" + h + "</div>");
