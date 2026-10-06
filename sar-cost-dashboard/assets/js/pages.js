@@ -1898,6 +1898,7 @@
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { st: "done", txt: fmt.date(s), label: "Completed", date: s };
     if (x === true || x === 1 || /^(yes|y|done|complete|completed|issued|signed|released|approved|received|paid|submitted|ok|✓|✔)\b/i.test(s)) return { st: "done", txt: s };
     if (/^(n\/?a|not applicable|-)$/i.test(s)) return { st: "na", txt: "N/A" };
+    if (/^(tbd|tbc)$/i.test(s)) return { st: "open", txt: s.toUpperCase(), label: s.toUpperCase() };   // not decided yet
     if (x === false || x === 0 || /^(no|pending|not started)\b/i.test(s)) return { st: "open", txt: s || "Pending" };
     return { st: "wip", txt: s };
   }

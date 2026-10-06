@@ -229,6 +229,7 @@
     }
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { status: "Completed", date: dShort(s) };
     if (/^(n\/?a)$/i.test(s)) return { status: "NA", date: "" };
+    if (/^(tbd|tbc)$/i.test(s)) return { status: s.toUpperCase(), date: "", nodate: true };   // status not decided yet: shown as written, no date
     if (/^(completed?|done|signed|yes|available)$/i.test(s)) return { status: "Completed", date: "" };   // done, date not recorded
     return { status: s, date: "" };
   }
@@ -366,7 +367,7 @@
         }
         E.cellText(c[5], st.status === "Completed" ? { text: "Completed", color: GREEN } : now ? { text: st.status === "Not Started" ? "Pending" : st.status, color: "C55A11", bold: true }
           : st.status === "Not Started" ? { text: "Not Started", color: RED } : st.status);
-        E.cellText(c[6], st.date ? st.date : st.fdate ? { text: st.fdate, color: "C55A11" } : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "≈" + dShort(fc.doneAt[k]), color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
+        E.cellText(c[6], st.nodate ? "" : st.date ? st.date : st.fdate ? { text: st.fdate, color: "C55A11" } : st.status === "NA" ? "N/A" : st.status === "Completed" ? { text: "≈" + dShort(fc.doneAt[k]), color: GREEN } : { text: dShort(fc.dates[k]) + " (F)", color: "C55A11" });   // (F) = forecast
         // empty paragraphs of the merged-away cells carry no size and default to 18 pt, which makes every row tall
         E.all(tr, NS.a, "p").forEach(function (pp) {
           if (E.all(pp, NS.a, "rPr").some(function (x) { return x.getAttribute("sz"); }) || E.all(pp, NS.a, "endParaRPr").some(function (x) { return x.getAttribute("sz"); })) return;

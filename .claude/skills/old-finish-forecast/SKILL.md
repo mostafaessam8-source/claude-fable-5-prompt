@@ -25,7 +25,8 @@ earlier files), and never add or invent rows when filling the user's Excel — a
   in process.
   **"Status – date" written by the team (as on the slides) wins over every rule below**: "Pending – 31-Oct-2026",
   "Not Started – TBD", "Completed – 15-Aug-2026" → that status, and the date shown exactly as given (a date gets
-  "(F)" when not completed; TBD / TBC shown as text). Code: `stepState` / `dayIso` in pptx-weekly.js. The site's
+  "(F)" when not completed; TBD / TBC shown as text). A step cell holding only "TBD" / "TBC" = that status, no
+  date (never a computed forecast). Code: `stepState` / `dayIso` in pptx-weekly.js. The site's
   closing page (`clStep` in pages.js) reads them too: Completed… = done, Pending… = in process, Not Started… = not started;
   it shows the date under each checklist mark (red when past the report date), a "Waiting on" column (first open step)
   and the "Close-out actions & due dates" table (every open step, owner, status, date; TBD last).
