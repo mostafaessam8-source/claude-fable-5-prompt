@@ -34,6 +34,7 @@
     { id: "blockades-register", group: "2027 Delivery Plan", title: "Blockades Register", icon: "table", sub: "Every 2027 work package — location, shutdown / blockage / possession hours, hours per day × days, status and readiness · export the Planning submission" },
     { id: "issues", group: "Risks & Issues", title: "Issue Register", icon: "issue", sub: "NSR projects issue log" },
     { id: "abbreviations", group: "Reference", title: "Abbreviations", icon: "book", sub: "Project and report abbreviations" },
+    { id: "data-checks", group: "Data", title: "Data Checks", icon: "issue", sub: "Values that are not logical, out of date or that disagree between the source files — with the project, the file and what to fix" },
     { id: "import", group: "Data", title: "Data Import", icon: "upload", sub: "Update the dashboard from the Excel source files" }
   ];
 
@@ -41,7 +42,7 @@
   var PUB = window.SAR_PUBLISHED || null;
   if (PUB && PUB.pages) PUB.pages = PUB.pages.map(function (id) { return /^kpi-(cost|outlook)$/.test(id) ? "cost" : /^(spi-outlook|weekly|project|master-plan|timeline)$/.test(id) ? "progress" : id; })
     .filter(function (id, i, a) { return a.indexOf(id) === i; });   // reports published before the cost pages merged
-  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && p.id !== "card-updates" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
+  if (PUB) PAGES = PAGES.filter(function (p) { return p.id !== "import" && p.id !== "card-updates" && p.id !== "data-checks" && (!PUB.pages || PUB.pages.indexOf(p.id) >= 0); });   // a report may hold selected pages only
 
   /* ----------------------------- dataset -------------------------------- */
   var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -129,6 +130,7 @@
 
   /* ----------------------------- header & nav --------------------------- */
   function renderHeader() {
+    if (window.SARChecks && !PUB) { SARChecks.refresh(); SARChecks.chip(); }
     var rd = D.reportDate;
     document.getElementById("reportChip").innerHTML = rd
       ? "Report Date <strong>" + esc(fmt.date(rd)) + "</strong> · WK" + U.isoWeek(rd)
@@ -192,7 +194,7 @@
       rerender: function () { var y = window.scrollY; render(page); window.scrollTo(0, y); }
     };
     ctx.actions.appendChild(SARPrint.button());
-    if (!PUB && page.id !== "import" && page.id !== "card-updates" && window.SARPublish) {   // publish just this page (or pick others in the dialog)
+    if (!PUB && page.id !== "import" && page.id !== "card-updates" && page.id !== "data-checks" && window.SARPublish) {   // publish just this page (or pick others in the dialog)
       var pb = U.el('<button type="button" class="icon-btn ghost js-editor" title="Publish a report with this page only — you can add other pages in the dialog">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 15v6h16v-6"/></svg><span>Publish this page</span></button>');
       pb.addEventListener("click", function () { SARPublish.open({ pages: [page.id] }); });
@@ -206,6 +208,7 @@
       if (page.id === "import") renderImport(ctx);
       else if (page.id === "card-updates") window.SARPages[page.id](ctx);   // works from its own files, with or without imported data
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
+      else if (page.id === "data-checks") SARChecks.page(ctx);
       else window.SARPages[page.id](ctx);
     } catch (e) {
       console.error(e);
@@ -346,6 +349,12 @@
       "(projects can be added or removed freely). File names may change, but <b>table names, column headers and the Issue Log layout must stay as they are</b>. " +
       "Only the tables of the files you import are replaced; everything else keeps its current data. Imported data is saved in this browser.</div>"));
 
+    if (window.SARChecks && Object.keys(dataset.tables).length) {   // what the data checks found in the data now loaded
+      var dq = SARChecks.get(D), dn = dq.counts.error + dq.counts.warn;
+      view.appendChild(U.el('<div class="note-box dq-import' + (dq.counts.error ? " bad" : dn ? " warn" : " ok") + '" style="margin-bottom:16px"><b>Data checks:</b> ' +
+        (dq.counts.error || dq.counts.warn || dq.counts.info ? dq.counts.error + " not logical · " + dq.counts.warn + " need update · " + dq.counts.info + " to check — " +
+          '<a href="#/data-checks">open Data Checks</a> to see each one and where to fix it.' : "everything checked looks logical and up to date.") + "</div>"));
+    }
     var cloudIx = (window.SARCloud && SARCloud._last) || { sources: {}, template: null };
     if (window.SARCloud && !PUB) view.appendChild(cloudPanel(ctx, function (files) { handleFiles(files, { fromCloud: true }); }));
 
