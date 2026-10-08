@@ -991,3 +991,25 @@ body.printing .hbar { display: none !important; }
 .cu-mon { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .cu-mon input { padding: 5px 8px; border: 1px solid #C8C9C7; border-radius: 6px; font: inherit; }
 .cu-sc .icon-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Progress Slide dialog (progress-slide.js) */
+.ps-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 6px 0 12px; }
+.ps-top label { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.ps-top select { min-width: 260px; max-width: 100%; padding: 6px 8px; }
+.ps-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--sar-dark, #3D3935); }
+.ps-form input, .ps-form textarea { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--tint-10, #C8C9C7); width: 100%; box-sizing: border-box; }
+.ps-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.ps-grid .ps-wide { grid-column: 1 / -1; }
+.ps-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-top: 12px; }
+.ps-sub { margin: 14px 0 6px; color: var(--sar-blue, #00778B); font-weight: 700; font-size: 13px; }
+.ps-stages { display: flex; flex-direction: column; gap: 6px; }
+.ps-st { display: grid; grid-template-columns: minmax(0, 1fr) 80px auto; gap: 8px; align-items: center; }
+.ps-photos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ps-photos img { width: 110px; height: 74px; object-fit: cover; cursor: pointer; border: 3px solid transparent; }
+.ps-photos img.on, .ps-nophoto.on { border-color: var(--sar-blue, #00778B); }
+.ps-nophoto { height: 74px; padding: 0 12px; border: 3px solid var(--tint-10, #C8C9C7); background: #fff; cursor: pointer; }
+.ps-cap { margin-top: 8px; }
+.ps-acts { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+@media (max-width: 640px) { .ps-grid, .ps-grid2 { grid-template-columns: 1fr; } }
+/* Header: with four action buttons the ghost ones go icon-only (tooltip keeps the name) so the title stays readable */
+@media (max-width: 1700px) { body:not(.printing) .header-meta .icon-btn.ghost span { display: none; } body:not(.printing) .header-meta .icon-btn.ghost { padding-left: 9px; padding-right: 9px; } }
