@@ -217,18 +217,18 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     byNo.set(a.no, r)
   }
 
-  // Pass 2 — carried slip (§4.5) and statuses.
-  out.forEach((r, k) => {
-    if (k === 0) {
-      r.carried = r.ownVariance
-    } else if (r.started) {
+  // Pass 2 — carried slip (§4.5) and statuses. Like the workbook, the row above is the
+  // physically previous activity number; a switched-off row above contributes nothing.
+  out.forEach((r) => {
+    if (r.no === 1 || r.started) {
       r.carried = r.ownVariance
     } else {
-      const prev = out[k - 1]
-      const gap = Math.max(0, r.plannedStartH - prev.plannedFinishH)
+      const prev = byNo.get(r.no - 1)
+      const prevCarried = prev?.carried ?? 0
+      const gap = prev ? Math.max(0, r.plannedStartH - prev.plannedFinishH) : 0
       // A gain is not absorbed. A gap can cancel a slip but never turn it into a gain
       // (the brief's §4.5 formula would give -1 for a 1 h slip over a 2 h gap; §9 wants 0).
-      const absorbed = prev.carried > 0 ? Math.max(0, prev.carried - gap) : prev.carried
+      const absorbed = prevCarried > 0 ? Math.max(0, prevCarried - gap) : prevCarried
       r.carried = round3(r.ownVariance > 0 ? Math.max(r.ownVariance, absorbed) : absorbed)
     }
     r.carriedForecastFinishH = r.plannedFinishH + r.carried
@@ -255,7 +255,8 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
   const variance = out.length ? out[out.length - 1].carried : 0
   const plannedFinishH = out.length ? Math.max(...out.map((r) => r.plannedFinishH)) : 0
   const forecastFinishH = plannedFinishH + variance
-  const bufferToHandback = round3(endH - forecastFinishH)
+  // Rounded to 0.1 h like the workbook's buffer cell, so TIGHT/AT RISK agree with Excel.
+  const bufferToHandback = round1(endH - forecastFinishH)
 
   return {
     name: loc.name,
@@ -270,7 +271,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     forecastFinishH,
     forecastFinish: fromHours(forecastFinishH, origin),
     bufferToHandback,
-    status: computeLocationStatus(out, variance, bufferToHandback),
+    status: computeLocationStatus(out, round1(variance), bufferToHandback),
   }
 }
 

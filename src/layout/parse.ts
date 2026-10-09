@@ -32,3 +32,37 @@ export function parseLayout(name: string, scope: string): SiteLayout {
   }
   return { code, chainage, cells, lines, otmp, station }
 }
+
+/** "C263  –  KM 209+025" */
+export const composeName = (l: SiteLayout) => [l.code, l.chainage].filter(Boolean).join('  –  ')
+
+/** "1 cell  │  Main Line 1 & Main Line 3  │  TSO OTMP from Station 29" */
+export function composeScope(l: SiteLayout): string {
+  const parts: string[] = []
+  if (l.cells != null) parts.push(`${l.cells} cell${l.cells === 1 ? '' : 's'}`)
+  if (l.lines) parts.push(l.lines)
+  if (l.otmp) parts.push(`${l.otmp} OTMP${l.station ? ` from ${l.station}` : ''}`)
+  return parts.join('  │  ')
+}
+
+const sameLayout = (a: SiteLayout, b: SiteLayout) =>
+  a.code === b.code && a.chainage === b.chainage && a.cells === b.cells && a.lines === b.lines &&
+  a.otmp === b.otmp && a.station === b.station
+
+/**
+ * The name/scope strings to write for a location. Untouched layouts keep the imported text
+ * verbatim; edited ones are re-composed so that re-importing parses back to the same facts.
+ */
+export function locationStrings(name: string, scope: string, layout: SiteLayout | undefined) {
+  if (!layout || sameLayout(layout, parseLayout(name, scope))) return { name, scope }
+  return { name: composeName(layout) || name, scope: composeScope(layout) }
+}
+
+/** "PROJECT  -  CULVERT C263  -  KM 209+025  -  1 CELL  -  TSO OTMP / Station 29" */
+export function pageTitle(project: string, l: SiteLayout | undefined, fallback: string, sep = ' - '): string {
+  const bits = [project, `CULVERT ${l?.code || fallback}`]
+  if (l?.chainage) bits.push(l.chainage)
+  if (l?.cells) bits.push(`${l.cells} CELL${l.cells === 1 ? '' : 'S'}`)
+  if (l?.otmp) bits.push(`${l.otmp} OTMP${l.station ? ' / ' + l.station : ''}`)
+  return bits.join(sep)
+}

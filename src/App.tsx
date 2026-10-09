@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { computeProject } from './engine/schedule'
+import { exportXlsx } from './export'
+import { cardsPng } from './export/raster'
 import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
 import { parseLayout, type SiteLayout } from './layout/parse'
@@ -32,6 +34,24 @@ export function App() {
     }
   }
 
+  async function onExport() {
+    if (!project) return
+    setError(null)
+    try {
+      // The picture is a nicety: if the browser cannot rasterise it, export the workbook without it.
+      const cards = await cardsPng(layouts).catch(() => undefined)
+      const bytes = await exportXlsx(project, layouts, { cards })
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Possession'}_Progress_Tracker.xlsx`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (e) {
+      setError(`Export failed: ${(e as Error).message}`)
+    }
+  }
+
   const result = useMemo(() => (project ? computeProject(project) : null), [project])
   const total = project?.locations.reduce((n, l) => n + l.activities.length, 0) ?? 0
   const tabBtn = (t: Tab, label: string) => (
@@ -44,6 +64,7 @@ export function App() {
         <h1 className="mr-4 text-base font-bold">SAR Possession Tracker</h1>
         <input type="file" accept=".xlsx" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />
         <span className="flex-1" />
+        {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport}>Export to Excel</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
         {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); setProject(null); setLayouts([]); setTab('import') }}>Clear</button>}
       </header>

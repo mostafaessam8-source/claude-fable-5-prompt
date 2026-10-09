@@ -51,14 +51,15 @@ function date(v: unknown): Date | null {
   return null
 }
 
-/** A time-of-day cell → hours since midnight. Accepts Date, fraction of a day, "HH:MM". */
+/** A time-of-day cell → hours since midnight, to the nearest second (so it survives an Excel round trip). */
 function timeOfDay(v: unknown): number | null {
   if (isBlank(v)) return null
-  if (v instanceof Date) return v.getUTCHours() + v.getUTCMinutes() / 60 + v.getUTCSeconds() / 3600
-  if (typeof v === 'number') return (v % 1) * 24
+  const secs = (x: number) => Math.round(x) / 3600
+  if (v instanceof Date) return secs(((v.getTime() % DAY_MS) + DAY_MS) % DAY_MS / 1000)
+  if (typeof v === 'number') return secs((v % 1) * 86400)
   if (typeof v === 'string') {
     const m = v.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
-    if (m) return Number(m[1]) + Number(m[2]) / 60 + Number(m[3] ?? 0) / 3600
+    if (m) return (Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3] ?? 0)) / 3600
   }
   return null
 }

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
-import { fromHours, type LocationResult, type ProjectResult } from '../engine/schedule'
-import type { SiteLayout } from '../layout/parse'
+import { fromHours, type ProjectResult } from '../engine/schedule'
+import { pageTitle, type SiteLayout } from '../layout/parse'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
@@ -18,15 +18,6 @@ const varColour = { late: C.red, early: C.blue, ok: C.black }
 const cellBase: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
-}
-
-function layoutTitle(l: LocationResult, lay: SiteLayout | undefined, project: string) {
-  const code = lay?.code || l.name
-  const bits = [project, `CULVERT ${code}`]
-  if (lay?.chainage) bits.push(lay.chainage)
-  if (lay?.cells) bits.push(`${lay.cells} CELL${lay.cells === 1 ? '' : 'S'}`)
-  if (lay?.otmp) bits.push(`${lay.otmp} OTMP${lay.station ? ' / ' + lay.station : ''}`)
-  return bits.join('  -  ')
 }
 
 export function LocationPage({ result, index, layout }: { result: ProjectResult; index: number; layout?: SiteLayout }) {
@@ -62,7 +53,7 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
   return (
     <div className="report-page" style={{ fontSize: 8.5 }}>
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 15, padding: '5px 12px', letterSpacing: 0.3 }}>
-        {layoutTitle(loc, layout, s.projectName)}
+        {pageTitle(s.projectName, layout, loc.name, '  -  ')}
       </div>
       <div style={{ display: 'flex', height: 24, alignItems: 'center', fontWeight: 700, fontSize: 10 }}>
         <div style={{ width: TABLE_W + PA_W, background: C.grey, height: '100%', display: 'flex', alignItems: 'center', gap: 18, padding: '0 10px', color: C.black }}>

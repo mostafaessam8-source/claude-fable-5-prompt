@@ -96,3 +96,17 @@ describe('layout card', () => {
     expect(h).not.toContain('CELL 1')
   })
 })
+
+import { cardsSvg } from '../src/export/raster'
+describe('cards picture for Excel', () => {
+  it('lays the cards out side by side in one standalone SVG', () => {
+    const { svg, width, height } = cardsSvg([L({}), L({ code: 'C265', cells: 3 }), L({ code: 'C267', cells: 2 })])
+    expect(width).toBe(3 * 220 + 2 * 6)
+    expect(height).toBe(190)
+    expect(svg).toMatch(/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/)
+    expect(svg.match(/<svg /g)).toHaveLength(4) // outer + 3 cards
+    expect(svg).toContain('x="226"'); expect(svg).toContain('x="452"')
+    expect(svg).not.toMatch(/ style="width:100%/)
+    expect(svg).toContain('CELL 3')
+  })
+})
