@@ -22,6 +22,11 @@ You can integrate this prompt library directly into your own workflow:
 
 Want to push these prompts further? Our detailed guide breaks down how to pair them with **Advanced Task Agents** to unlock maximum performance on complex, multi-step work — read it here: [Getting the most out of the Claude Fable 5 prompt](https://www.moely.ai/resources/claude-fable-5-prompt).
 
+## 🛠 Also in this repo: SAR Possession Progress Tracker
+
+A web app (Vite + React + TypeScript) that imports a possession tracker workbook, renders the planned-vs-actual
+report in the browser and exports a live-formula Excel file. See [`docs/TRACKER.md`](docs/TRACKER.md).
+
 ## 📄 License
 
 Provided for research and reference. The original Fable 5 prompt is the property of Anthropic; the generalized adaptations are offered as-is for your own projects.

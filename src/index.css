@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root { font-family: Calibri, Inter, system-ui, sans-serif; }
+
+/* ---- report pages: A4 landscape = 1123 x 794 css px ---- */
+.report-wrap { background: #cfd6d8; padding: 4px; overflow-x: hidden; }
+.report-zoom { zoom: var(--z, 1); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.report-page {
+  width: 1123px; height: 794px; box-sizing: border-box; padding: 9px; overflow: hidden;
+  background: #fff; color: #3D3935; font-family: Calibri, Inter, system-ui, sans-serif; position: relative;
+}
+@page { size: A4 landscape; margin: 0; }
+@media print {
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .report-wrap { padding: 0; background: #fff; }
+  .report-zoom { zoom: 1 !important; display: block; }
+  .report-page { break-after: page; page-break-after: always; }
+  .report-page:last-child { break-after: auto; page-break-after: auto; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -1,0 +1,8 @@
+# Deploy:  cd worker && npx wrangler secret put ANTHROPIC_API_KEY && npx wrangler deploy
+name = "sar-tracker-claude-proxy"
+main = "index.ts"
+compatibility_date = "2026-01-01"
+
+[vars]
+# Browser origins allowed to call the proxy (comma-separated). Replace with your Pages origin.
+ALLOWED_ORIGINS = "https://mostafaessam8-source.github.io,http://localhost:5173"
