@@ -1,5 +1,6 @@
 import type { ProjectResult } from '../engine/schedule'
 import { fromHours } from '../engine/schedule'
+import { LayoutCards } from '../layout/LayoutCard'
 import type { SiteLayout } from '../layout/parse'
 import { C, locationTone } from './brand'
 import { fmtLong, fmtShort, fmtVariance, hours1, pct, varianceTone } from './format'
@@ -13,7 +14,7 @@ function Band({ children, bg = C.black, size = 11, pad = '4px 12px' }: { childre
 
 const COLS = '190px 84px 92px 92px 96px 44px 44px 76px 1fr'
 
-export function Cover({ result }: { result: ProjectResult; layouts?: SiteLayout[] }) {
+export function Cover({ result, layouts }: { result: ProjectResult; layouts: SiteLayout[] }) {
   const s = result.settings
   const origin = s.possessionStart
   const total = totalAllLocations(result.locations)
@@ -65,7 +66,7 @@ export function Cover({ result }: { result: ProjectResult; layouts?: SiteLayout[
       </div>
 
       <div style={{ marginTop: 14 }}><Band size={9} pad="4px 10px">SITE LAYOUT &nbsp;-&nbsp; SCHEMATIC OVERVIEW</Band></div>
-      <div id="layout-cards" style={{ display: 'flex', gap: 6, marginTop: 6 }} />
+      <LayoutCards layouts={layouts} />
     </>
   )
 }

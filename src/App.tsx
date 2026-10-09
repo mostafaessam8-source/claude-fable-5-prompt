@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { computeProject } from './engine/schedule'
 import { ImportError, parseWorkbook } from './import/parse'
+import { LayoutForm } from './layout/LayoutForm'
 import { parseLayout, type SiteLayout } from './layout/parse'
 import { clearProject, loadProject, saveProject } from './model/store'
 import type { Project } from './model/types'
 import { ReportView } from './report/ReportView'
 import { SettingsBar } from './SettingsBar'
 
-type Tab = 'import' | 'report'
+type Tab = 'import' | 'layout' | 'report'
 
 export function App() {
   const saved = useMemo(loadProject, [])
@@ -49,12 +50,15 @@ export function App() {
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
         <>
-          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('import', 'Imported data (JSON)')}</div>
+          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('layout', 'Site layout')}{tabBtn('import', 'Imported data (JSON)')}</div>
           {tab === 'report' && (
             <>
               <SettingsBar project={project} onChange={setProject} />
               <ReportView result={result} layouts={layouts} />
             </>
+          )}
+          {tab === 'layout' && (
+            <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
           )}
           {tab === 'import' && (
             <main className="mx-auto max-w-5xl p-6">
