@@ -31,6 +31,13 @@ jobs:
         env:
           # Repository variable (Settings > Secrets and variables > Actions > Variables).
           VITE_CLAUDE_PROXY_URL: ${{ vars.CLAUDE_PROXY_URL }}
+      # The NSR cost dashboard lives on its own branch and is published next to this app at /sar-cost-dashboard/
+      # (one GitHub Pages site per repository). That branch re-runs this workflow when the dashboard changes.
+      - name: Add the NSR cost dashboard
+        run: |
+          git fetch --depth=1 origin claude/cost-control-data-site-64obxe
+          git archive FETCH_HEAD sar-cost-dashboard | tar -x -C dist
+          test -f dist/sar-cost-dashboard/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
