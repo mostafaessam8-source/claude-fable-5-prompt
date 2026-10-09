@@ -10,7 +10,7 @@ const STATUS_RULES: [string, string, string][] = [
   ['AT RISK', '8E1B1F', '#FFFFFF'], ['BEHIND', COL.red, '#FFFFFF'], ['TIGHT', COL.amber, COL.black],
   ['AHEAD', COL.sky, COL.black], ['ON TIME', COL.blue, '#FFFFFF'],
 ]
-const columnLine = { style: 'thin' as const, color: { argb: 'FFDDE4E6' } }
+const columnLine = { style: 'thin' as const, color: { argb: 'FFC5D0D4' } }
 const VAR_FMT = '+0.0" h behind";-0.0" h ahead";"on time"'
 const DT = 'ddd dd-mmm hh:mm'
 
@@ -293,9 +293,12 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       rules: [
         { type: 'expression', priority: pri++, formulae: [`AND($C$1>=$A$1,$C$1<=$B$1,${cl}$1=ROUND((($C$1-$A$1)*24-$D$1)/$E$1,0))`], style: { border: { left: { style: 'thick', color: { argb: 'FF000000' } } } } },
         { type: 'expression', priority: pri++, formulae: [`${cl}$2=1`], style: { border: { left: { style: 'medium', color: { argb: argb(COL.blue) } } } } },
-        { type: 'expression', priority: pri++, formulae: [`MOD(${cl}$1,6)=0`], style: { border: { left: { style: 'thin', color: { argb: 'FFAEB9BD' } } } } },
+        { type: 'expression', priority: pri++, formulae: [`MOD(${cl}$1,6)=0`], style: { border: { left: { style: 'thin', color: { argb: 'FF7F8F96' } } } } },
         bar(1, COL.grey), bar(2, COL.blue), bar(3, COL.red), bar(4, COL.sky), bar(5, COL.amber),
         { type: 'expression', priority: pri++, formulae: [`AND($${colLetter(R.H_FS)}${ph}<>-999,$${colLetter(R.H_FS)}${ph}<$D$1+(${cl}$1+1)*$E$1,$${colLetter(R.H_FE)}${ph}>$D$1+${cl}$1*$E$1)`], style: { fill: cfFill(COL.pale) } },
+        // lowest priority: a light line between every column (each hour at the default span). Drawn as a
+        // conditional format, like the 6-hour lines above it that override it, so Excel always renders it.
+        { type: 'expression', priority: pri++, formulae: ['TRUE'], style: { border: { left: { style: 'thin', color: { argb: 'FFC5D0D4' } } } } },
       ],
     })
     // text colours / fills of the table columns (exact statuses; "Not Started" stays neutral)
