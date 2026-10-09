@@ -1,0 +1,17 @@
+# GitHub Pages is deployed by pages.yml on main, which also publishes sar-cost-dashboard/ from this branch.
+# A dashboard change here re-runs that deploy so the live site picks it up.
+name: Redeploy Pages (dashboard changed)
+on:
+  push:
+    branches: [claude/cost-control-data-site-64obxe]
+    paths: ['sar-cost-dashboard/**']
+  workflow_dispatch:
+permissions:
+  actions: write
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run pages.yml --ref main --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
