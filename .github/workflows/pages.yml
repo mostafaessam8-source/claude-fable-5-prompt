@@ -31,6 +31,12 @@ jobs:
         env:
           # Repository variable (Settings > Secrets and variables > Actions > Variables).
           VITE_CLAUDE_PROXY_URL: ${{ vars.CLAUDE_PROXY_URL }}
+      # The cost dashboard is a plain static site: publish it next to the tracker, under /sar-cost-dashboard/.
+      - name: Add the cost dashboard
+        run: |
+          mkdir -p dist/sar-cost-dashboard
+          cp -r sar-cost-dashboard/. dist/sar-cost-dashboard/
+          rm -rf dist/sar-cost-dashboard/node_modules dist/sar-cost-dashboard/tools dist/sar-cost-dashboard/package.json dist/sar-cost-dashboard/.gitignore
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

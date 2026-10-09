@@ -1,0 +1,2574 @@
+/* Page renderers — one per Power BI report page (plus an executive overview). */
+(function () {
+  "use strict";
+  var U = window.UI, C = U.C, S = U.SERIES, fmt = U.fmt, esc = U.esc, el = U.el;
+
+  /* Normalised column names used across pages */
+  var SP = {
+    plan: "Spend Plan as per Budgeting (Incr)",
+    fc: "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Incr)3",
+    act: "Actual Spend (Incr)4",
+    inv: "Forecast as per Contractor cashflow / updated Progress / Program (Incr)5",
+    planC: "Spend Plan as per Budgeting (Cum)",
+    fcC: "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Cum)3",
+    actC: "Actual Spend (Cum)4",
+    invC: "Forecast as per Contractor cashflow / updated Progress / Program (Cum)5",
+    rev: "Rev Spend Plan (Incr)"          // revised spend plan from Budget 2026 (joined in app.js)
+  };
+  var PAID = "Paid from CV as per ERP (Gross value)";
+  // KPIs owned by NSR (the "KPI Summary Manage by NSR" chart); every other KPI is managed by other departments.
+  var NSR_MANAGED = ["capex variance", "non- kpi spending", "compliance with project control", "five bridges",
+    "schedule performance index", "% of delivery against approved business plan", "closing of internal audit findings"];
+
+  function N(v) { return U.toNum(v); }
+  function G(r, k) { return window.SARApp.D.g(r, k); }
+  /* full-screen photo viewer inside the site: zoom (buttons, wheel, double-click, drag to move), save, previous / next, close */
+  function photoViewer(urls, at, title, code) {
+    var ic = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>"; };
+    var box = el('<div class="pv" role="dialog" aria-modal="true" aria-label="Progress photo"><div class="pv-bar"><div class="pv-title"></div><div class="pv-tools">' +
+      '<button type="button" data-a="out" title="Zoom out">' + ic('<circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-5-5"/>') + "</button>" +
+      '<span class="pv-zoom">100%</span>' +
+      '<button type="button" data-a="in" title="Zoom in">' + ic('<circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M21 21l-5-5"/>') + "</button>" +
+      '<button type="button" data-a="fit" title="Fit to screen">' + ic('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>') + "</button>" +
+      '<button type="button" data-a="save" title="Save photo">' + ic('<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/>') + "<span>Save</span></button>" +
+      '<button type="button" data-a="close" class="pv-close" title="Close (Esc)">' + ic('<path d="M6 6l12 12M18 6L6 18"/>') + "<span>Close</span></button>" +
+      '</div></div><div class="pv-stage"><img alt=""></div>' +
+      '<button type="button" class="pv-nav prev" data-a="prev" title="Previous">' + ic('<path d="M15 5l-7 7 7 7"/>') + "</button>" +
+      '<button type="button" class="pv-nav next" data-a="next" title="Next">' + ic('<path d="M9 5l7 7-7 7"/>') + "</button></div>");
+    var img = box.querySelector("img"), stage = box.querySelector(".pv-stage"), zl = box.querySelector(".pv-zoom");
+    var z = 1, x = 0, y = 0, drag = null;
+    function apply() { img.style.transform = "translate(" + x + "px," + y + "px) scale(" + z + ")"; zl.textContent = Math.round(z * 100) + "%"; stage.classList.toggle("zoomed", z > 1); }
+    function zoom(k, cx, cy) {
+      var nz = Math.max(1, Math.min(8, z * k)), r = stage.getBoundingClientRect();
+      if (cx == null) { cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+      var px = cx - r.left - r.width / 2, py = cy - r.top - r.height / 2;   // keep the point under the cursor in place
+      x = px - (px - x) * nz / z; y = py - (py - y) * nz / z; z = nz;
+      if (z === 1) { x = 0; y = 0; }
+      apply();
+    }
+    function show(i) {
+      at = (i + urls.length) % urls.length; z = 1; x = 0; y = 0; apply();
+      img.src = urls[at]; box.querySelector(".pv-title").textContent = title + " · photo " + (at + 1) + " of " + urls.length;
+      box.querySelectorAll(".pv-nav").forEach(function (b) { b.style.display = urls.length > 1 ? "" : "none"; });
+    }
+    function close() { document.removeEventListener("keydown", key); box.remove(); document.body.classList.remove("pv-open"); }
+    function save() {
+      var a = document.createElement("a"); a.href = urls[at]; a.download = (code || "project") + "_progress_photo_" + (at + 1) + ".jpg";
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    function key(e) {
+      if (e.key === "Escape") close(); else if (e.key === "ArrowRight") show(at + 1); else if (e.key === "ArrowLeft") show(at - 1);
+      else if (e.key === "+" || e.key === "=") zoom(1.25); else if (e.key === "-") zoom(0.8); else return;
+      e.preventDefault();
+    }
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-a]"), a = b && b.getAttribute("data-a");
+      if (a === "close") close(); else if (a === "in") zoom(1.25); else if (a === "out") zoom(0.8); else if (a === "fit") { z = 1; x = 0; y = 0; apply(); }
+      else if (a === "save") save(); else if (a === "prev") show(at - 1); else if (a === "next") show(at + 1);
+      else if (e.target === stage) close();   // click on the dark background
+    });
+    stage.addEventListener("wheel", function (e) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    img.addEventListener("dblclick", function (e) { if (z > 1) { z = 1; x = 0; y = 0; apply(); } else zoom(2.5, e.clientX, e.clientY); });
+    img.addEventListener("pointerdown", function (e) { if (z <= 1) return; e.preventDefault(); drag = { sx: e.clientX - x, sy: e.clientY - y }; img.setPointerCapture(e.pointerId); });
+    img.addEventListener("pointermove", function (e) { if (!drag) return; x = e.clientX - drag.sx; y = e.clientY - drag.sy; apply(); });
+    img.addEventListener("pointerup", function () { drag = null; });
+    img.addEventListener("pointercancel", function () { drag = null; });
+    img.draggable = false;
+    document.addEventListener("keydown", key);
+    document.body.appendChild(box); document.body.classList.add("pv-open");
+    show(at); box.querySelector(".pv-close").focus();
+  }
+  function add(host, html) { var n = typeof html === "string" ? el(html) : html; host.appendChild(n); return n; }
+  function grid(host, cls) { return add(host, '<div class="grid ' + cls + '"></div>'); }
+  function panelIn(host, title, sub, tools) { return add(host, U.panel(title, sub, "", tools)); }
+  function chartBox(p, cls) { return add(p, '<div class="chart-box ' + (cls || "") + '"></div>'); }
+  function tableIn(p, opts) { var h = add(p, "<div></div>"); return U.table(h, opts); }
+  function inSel(sel, v) { return !sel || !sel.length || sel.indexOf(v) >= 0; }
+  function sortNum(a, b) { return (N(a) || 0) - (N(b) || 0); }
+  function mTile(label, v, color, note) { return U.tile({ value: fmt.m(v), unit: "M SAR", label: label, color: color, note: note || fmt.money(v) + " SAR" }); }
+  function isKPI(code) { return function (r) { return code.indexOf(N(r["KPI Code"])) >= 0; }; }
+  function hasRev() { return !!window.SARApp.D.hasRev; }
+  /* SPI colour rule for the whole site (as in the weekly PPT): at or above the SPI KPI target green, below red */
+  var SPI_GREEN = "#1E8A44";
+  function spiTgt() { var k = window.SARApp.D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {}; return N(k["NSR Spend Plan 2026 as per Budgeting"]) || 0.91; }
+  function spiOk(x, t) { x = N(x); return x != null && x >= (t == null ? spiTgt() : t); }
+  function spiTile(x, t) { return N(x) == null ? "slate" : spiOk(x, t) ? "green" : "red"; }
+  function spiTxtCls(x, t) { return N(x) == null ? "" : spiOk(x, t) ? "spi-ok" : "spi-bad"; }
+  function spiBar(x, t) { return N(x) == null ? C.gray : spiOk(x, t) ? SPI_GREEN : C.red; }
+  /**
+   * Spend tiles shared by the Cost Dashboard and the KPI Year-End Outlook.
+   * o = { orig, rev, fc, yOrig, yRev, yAct, toCut, gapNote }. With a Revised Spend Plan loaded: two rows
+   * (full year: Original · Revised · Forecast · Variance vs Revised; YTD: Original · Revised · Actual · Variance vs Revised).
+   */
+  function spendTiles(host, o) {
+    function pctOf(a, b) { return b ? fmt.pct(a / b, 1) : "—"; }
+    function sg(x) { return (x >= 0 ? "+" : "") + fmt.m(x) + " M"; }
+    var grids = [];
+    if (!hasRev()) {
+      var g = grid(host, "g-6"), fv = o.fc - o.orig, yv = o.yAct - o.yOrig;
+      g.innerHTML = mTile("Spend Plan 2026", o.orig, "", "Budgeting · Jan – Dec") + mTile("Forecast Plan 2026", o.fc, "slate", "Invoicing plan · Jan – Dec") +
+        mTile("Variance 2026", fv, fv < 0 ? "red" : "mid", "Forecast − Spend Plan · " + pctOf(o.fc, o.orig) + " of plan" + (o.gapNote || "")) +
+        mTile("YTD Plan", o.yOrig, "", "Spend Plan · " + o.toCut) + mTile("YTD Actual", o.yAct, "yellow", "Actual spend · " + o.toCut) +
+        mTile("YTD Variance", yv, yv < 0 ? "red" : "mid", "Actual − Plan · " + pctOf(o.yAct, o.yOrig) + " achieved");
+      return [g];
+    }
+    var g1 = grid(host, "g-4 tiles-fy"), g2 = grid(host, "g-4 tiles-ytd");
+    var fv2 = o.fc - o.rev, yv2 = o.yAct - o.yRev;
+    g1.innerHTML = mTile("Original Spend Plan 2026", o.orig, "", "Budgeting · Jan – Dec") +
+      mTile("Rev Spend Plan 2026", o.rev, "black", "Budget 2026 (VP) · " + sg(o.rev - o.orig) + " vs original") +
+      mTile("Forecast Plan 2026", o.fc, "slate", "Invoicing plan · Jan – Dec") +
+      mTile("Variance 2026", fv2, fv2 < 0 ? "red" : "mid", "Forecast − Rev Plan · " + pctOf(o.fc, o.rev) + " of Rev plan · vs original " + sg(o.fc - o.orig) + (o.gapNote || ""));
+    g2.innerHTML = mTile("YTD Original Plan", o.yOrig, "", "Original · " + o.toCut) +
+      mTile("YTD Rev Plan", o.yRev, "black", "Revised · " + o.toCut) +
+      mTile("YTD Actual", o.yAct, "yellow", "Actual spend · " + o.toCut) +
+      mTile("YTD Variance", yv2, yv2 < 0 ? "red" : "mid", "Actual − Rev Plan · " + pctOf(o.yAct, o.yRev) + " achieved · vs original " + sg(o.yAct - o.yOrig));
+    return [g1, g2];
+  }
+
+  var P = {};
+
+  /* ======================================================================
+     Filtering & cross-filtering
+     ----------------------------------------------------------------------
+     Every page keeps its slicer selections in ctx.state.f[key] (arrays;
+     empty = All). Slicers, chart clicks and table-row clicks all write to
+     the same selections, so every visual on a page filters every other one
+     (like Power BI cross-filtering). Click = select only that value
+     (click again to clear); Ctrl/Shift+click = add/remove from selection.
+     ====================================================================== */
+  function sel(ctx, key) { var f = ctx.state.f || (ctx.state.f = {}); return f[key] || (f[key] = []); }
+  function pick(ctx, key, value, ev) {
+    if (value == null || value === "") return;
+    var s = sel(ctx, key), at = s.indexOf(value);
+    var multi = ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey);
+    if (multi) { if (at >= 0) s.splice(at, 1); else s.push(value); }
+    else if (at >= 0 && s.length === 1) s.length = 0;
+    else { s.length = 0; s.push(value); }
+    ctx.rerender();
+  }
+
+  /**
+   * Slicer bar. defs = [{ key, label, options, display?, get?(row) }].
+   * When `rows` is given the slicers cascade: each list only offers values
+   * present in rows that pass the *other* slicers, with a row count.
+   */
+  /** Keep the slicer bar in view under the header while the page scrolls; it turns compact once stuck.
+      --fbar-h (its stuck height) lets the section bars and section jumps sit below it. */
+  function stickyBar(bar, sent) {
+    var root = document.documentElement;
+    if (window.__fbarObs) window.__fbarObs.forEach(function (o) { o.disconnect(); });
+    function setH() { root.style.setProperty("--fbar-h", (bar.classList.contains("stuck") ? bar.offsetHeight : 0) + "px"); }
+    var hh = parseFloat(getComputedStyle(root).getPropertyValue("--header-h")) || 72;
+    var io = new IntersectionObserver(function (es) { bar.classList.toggle("stuck", !es[0].isIntersecting); setH(); }, { rootMargin: "-" + (hh + 1) + "px 0px 0px 0px", threshold: 0 });
+    io.observe(sent);
+    var ro = window.ResizeObserver ? new ResizeObserver(setH) : null; if (ro) ro.observe(bar);
+    window.__fbarObs = [io].concat(ro ? [ro] : []);
+  }
+  function filterBar(ctx, defs, rows) {
+    var st = ctx.state.f || (ctx.state.f = {});
+    var sent = add(ctx.view, '<div class="fbar-sent"></div>');
+    var bar = add(ctx.view, '<div class="filters fbar collapsible' + (ctx.state.fOpen ? " open" : "") + '"></div>');
+    stickyBar(bar, sent);
+    // Phones: the slicers fold away behind one button; active filters stay visible as chips.
+    var nActive = defs.reduce(function (n, d) { return n + ((st[d.key] || []).length ? 1 : 0); }, 0);
+    var tg = el('<button type="button" class="filters-toggle">⚲ Filters' + (nActive ? " <b>" + nActive + "</b>" : "") + (ctx.state.fOpen ? " ▴" : " ▾") + "</button>");
+    tg.addEventListener("click", function () { ctx.state.fOpen = !ctx.state.fOpen; bar.classList.toggle("open", ctx.state.fOpen); tg.innerHTML = tg.innerHTML.replace(/[▴▾]$/, ctx.state.fOpen ? "▴" : "▾"); });
+    bar.appendChild(tg);
+    defs.forEach(function (d) {
+      st[d.key] = st[d.key] || [];
+      var opts = d.options, counts = null;
+      if (rows && d.get) {
+        counts = {};
+        rows.filter(function (r) { return passes(r, defs, st, d.key); }).forEach(function (r) {
+          var v = d.get(r); if (v != null && v !== "") counts[v] = (counts[v] || 0) + 1;
+        });
+        opts = U.uniq((d.options || []).filter(function (v) { return counts[v] || st[d.key].indexOf(v) >= 0; }));
+      }
+      bar.appendChild(U.multiSelect({ label: d.label, options: opts, selected: st[d.key], display: d.display, counts: counts, onChange: ctx.rerender }));
+    });
+    var active = [];
+    defs.forEach(function (d) { st[d.key].forEach(function (v) { active.push({ d: d, v: v }); }); });
+    var rb = el('<button class="link-btn filter-reset" type="button"' + (active.length ? "" : " disabled") + ">↺ Reset filters</button>");
+    rb.addEventListener("click", function () { defs.forEach(function (d) { st[d.key].length = 0; }); ctx.rerender(); });
+    bar.appendChild(rb);
+    var chips = add(bar, '<div class="chips"></div>');
+    if (!active.length) chips.innerHTML = '<span class="hint">Tip: click any bar, point or table row to filter the whole page · Ctrl + click to select several</span>';
+    active.forEach(function (a) {
+      var c = el('<button type="button" class="fchip" title="Remove this filter"><b>' + esc(a.d.label) + ":</b> " + esc(a.d.display ? a.d.display(a.v) : a.v) + " <span>×</span></button>");
+      c.addEventListener("click", function () { var s = st[a.d.key]; s.splice(s.indexOf(a.v), 1); ctx.rerender(); });
+      chips.appendChild(c);
+    });
+    return st;
+  }
+  /** Does row pass every slicer in defs (optionally ignoring one key)? */
+  function passes(r, defs, st, except) {
+    return defs.every(function (d) { return d.key === except || !d.get || inSel(st[d.key], d.get(r)); });
+  }
+
+  /* Monthly aggregation of the Spending Plan */
+  function monthly(rows) {
+    var m = {};
+    rows.forEach(function (r) {
+      var k = r.Month; if (!k) return;
+      var o = m[k] || (m[k] = { month: k, plan: 0, fc: 0, act: 0, inv: 0, rev: 0, planC: 0, fcC: 0, actC: 0, invC: 0 });
+      Object.keys(SP).forEach(function (f) { o[f] += N(G(r, SP[f])) || 0; });
+    });
+    var out = Object.keys(m).sort().map(function (k) { return m[k]; });
+    var rc = 0; out.forEach(function (o) { rc += o.rev; o.revC = rc; });          // cumulative revised plan
+    // Actual cumulative stops at the last month that has booked actuals.
+    var last = -1;
+    out.forEach(function (o, i) { if (o.act) last = i; });
+    out.forEach(function (o, i) { o.actCv = i <= last ? o.actC : null; });
+    return out;
+  }
+
+  /* Forecast Plan = the contractor cash-flow forecast. It replaces "Forecast V3" everywhere. */
+  var FC_FTY = "Forecast as per Contractor cashflow / updated Progress / Program"; // KPI_Projects_Data, full year
+  var ytdCache = { sp: null };
+  /**
+   * The Excel YTD figures run to a month end (e.g. Aug for a September report). Find that month as the one
+   * whose cumulative Spend Plan best matches the KPI sheet's "YTD Spend Plan", then sum the monthly Forecast
+   * Plan up to it per project. Cached per dataset.
+   */
+  function ytdForecast(D) {
+    var sp = D.t("Spending_Plan");
+    if (ytdCache.sp === sp) return ytdCache;
+    var target = {};
+    D.t("KPI_Projects_Data").forEach(function (r) { var v = N(G(r, "YTD Spend Plan as per Budgeting (M)")); if (r.Code != null && v != null) target[String(r.Code)] = v; });
+    var months = U.uniq(sp.map(function (r) { return r.Month; })).sort(), best = null, bestErr = Infinity;
+    months.forEach(function (m) {
+      var cum = {}, err = 0;
+      sp.forEach(function (r) { if (r.Month <= m) cum[r.ID] = (cum[r.ID] || 0) + (N(G(r, SP.plan)) || 0); });
+      Object.keys(target).forEach(function (c) { err += Math.abs((cum[c] || 0) - target[c]); });
+      if (err < bestErr - 0.5) { bestErr = err; best = m; }
+    });
+    var byCode = {}, byRev = {};
+    sp.forEach(function (r) { if (best && r.Month <= best) { byCode[String(r.ID)] = (byCode[String(r.ID)] || 0) + (N(G(r, SP.inv)) || 0); byRev[String(r.ID)] = (byRev[String(r.ID)] || 0) + (N(G(r, SP.rev)) || 0); } });
+    ytdCache = { sp: sp, month: best, byCode: byCode, byRev: byRev };
+    return ytdCache;
+  }
+  function ytdFc(D, code) { return ytdForecast(D).byCode[String(code)] || 0; }
+  function ytdRev(D, code) { return ytdForecast(D).byRev[String(code)] || 0; }   // Rev Spend Plan to the KPI sheet's YTD month
+
+  /* One bar per measure ("totals" visual) */
+  function totalsChart(box, items, onPick) {
+    var cfg = {
+      type: "bar",
+      data: { labels: items.map(function (i) { return i.label; }),
+        datasets: [U.fcStyle(U.barDs("Value", items.map(function (i) { return i.value; }), items.map(function (i) { return i.color; }), { maxBarThickness: 64 }),
+          items.map(function (i) { return i.color === S.invoice; }))] },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return " " + fmt.money(c.parsed.y) + " SAR"; } } },
+          datalabels: { display: true, anchor: "end", align: "end", offset: 2, color: C.black, font: { weight: "700" }, formatter: function (v) { return fmt.m(v) + " M"; } }
+        },
+        layout: { padding: { top: 22 } },
+        scales: { x: U.catAxis(), y: U.moneyAxis() }
+      }
+    };
+    return U.chart(box, onPick ? U.clickable(cfg, onPick) : cfg);
+  }
+
+  function hbar(box, labels, datasets, onPick, valueAxis, tooltip) {
+    var cfg = { type: "bar", data: { labels: labels, datasets: datasets },
+      options: { indexAxis: "y", elements: { bar: { borderRadius: { topRight: 4, bottomRight: 4 } } },
+        plugins: { tooltip: tooltip || U.moneyTooltip(), legend: { display: datasets.length > 1 } },
+        scales: { x: valueAxis || U.moneyAxis(), y: { grid: { display: false }, ticks: { callback: U.shortLabel(34) } } } } };
+    return U.chart(box, onPick ? U.clickable(cfg, onPick) : cfg);
+  }
+  function vbar(box, labels, datasets, onPick, tooltip, yAxis) {
+    var cfg = { type: "bar", data: { labels: labels, datasets: datasets },
+      options: { plugins: { tooltip: tooltip || U.moneyTooltip(), legend: { display: datasets.length > 1 } }, scales: { x: U.catAxis(), y: yAxis || U.moneyAxis() } } };
+    return U.chart(box, onPick ? U.clickable(cfg, onPick) : cfg);
+  }
+
+  /* ======================================================================
+     Portfolio model — one record per project code, joining the cost
+     register, weekly report and issue register.
+     ====================================================================== */
+  function portfolio(D) {
+    var P0 = {}, order = [];
+    function rec(code) {
+      code = String(code);
+      if (!P0[code]) { P0[code] = { code: code }; order.push(code); }
+      return P0[code];
+    }
+    D.t("NSR_Project_Data").forEach(function (r) {
+      if (r.ID == null) return;
+      var p = rec(r.ID);
+      p.nsr = r; p.short = r["Project Name"]; p.phase = r["Project Phase"]; p.fund = r["Fund Type"]; p.prog = r.PROG;
+    });
+    D.t("Weekly_Report_Updates").forEach(function (r) {
+      if (r["Project Code"] == null) return;
+      var p = rec(r["Project Code"]);
+      p.wk = r; p.long = r["Project Name"]; p.src = r["Source.Name"];
+      p.phase = p.phase || r["Phase Classification"] || r["Current Phase"];
+      p.fund = p.fund || r["Budget Type"];
+      p.contractor = r.Contractor;
+      p.perf = r["Performance Status"];
+    });
+    D.t("Issue_register").forEach(function (r) {
+      var c = r["Poject Code"]; if (c == null || !P0[String(c)]) return;
+      var p = P0[String(c)];
+      p.issues = (p.issues || 0) + 1;
+      if (/pending|escalat/i.test(r["Issue Status"] || "")) p.open = (p.open || 0) + 1;
+    });
+    return order.map(function (c) {
+      var p = P0[c];
+      p.name = p.long || p.short || c;
+      p.label = c + " — " + (p.short && p.long && p.short !== p.long ? p.short : p.name);
+      p.perf = p.perf || "Not in weekly report";
+      p.phase = p.phase || "Not set";
+      p.fund = p.fund || "Not set";
+      p.cv = p.nsr ? N(p.nsr["Contract Value"]) : p.wk ? N(p.wk["Contract Value"]) : null;
+      return p;
+    });
+  }
+  function projectOf(D, code) { return portfolio(D).filter(function (p) { return p.code === String(code); })[0]; }
+
+  /** Quick view of one project with links to every page that details it. */
+  function quickView(D, code) {
+    var p = projectOf(D, code);
+    if (!p) { U.toast("Project " + code + " not found in the data."); return; }
+    var n = p.nsr || {}, w = p.wk || {};
+    var h = '<div class="grid g-4 qv">' +
+      U.info("Project code", esc(p.code)) + U.info("Phase", U.badge(p.phase)) + U.info("Fund type", esc(p.fund)) + U.info("Status", U.badge(p.perf)) +
+      U.info("Contractor", esc(p.contractor || "")) + U.info("Start / BL start", fmt.date(n["Start Date"] || w["Start Date Baseline"])) +
+      U.info("End / BL end", fmt.date(n["End Date"] || w["End Date Baseline"])) + U.info("Forecast finish", fmt.date(w["End Date (Forecast/Actual)"])) + "</div>";
+    h += '<div class="grid g-4 qv">' +
+      U.info("Full cost", fmt.money(n["Full Cost"])) + U.info("Contract value", fmt.money(p.cv)) +
+      U.info("Total WC", fmt.money(n["Total WC"])) + U.info("Paid (ERP)", fmt.money(n[PAID])) +
+      U.info("Remaining WC", fmt.money(n["Remaining WC"])) + U.info("Cum plan / actual", w["Planned (%) - Cumulative"] != null ? fmt.pct(w["Planned (%) - Cumulative"]) + " / " + fmt.pct(w["Actual (%) - Cumulative"]) : "") +
+      U.info("SPI", w.SPI != null ? '<span class="' + spiTxtCls(w.SPI) + '">' + N(w.SPI).toFixed(2) + "</span>" : "") + U.info("Issues (open / total)", (p.open || 0) + " / " + (p.issues || 0)) + "</div>";
+    if (n["Remarks/Concern"]) h += '<div class="note-box" style="margin-top:12px"><b>Remarks / concern:</b> ' + esc(n["Remarks/Concern"]) + "</div>";
+    if (w["Reason for Delays"]) h += '<div class="note-box warn" style="margin-top:12px"><b>Reason for delays:</b> ' + esc(w["Reason for Delays"]) + "</div>";
+    h += '<div class="qv-links">';
+    if (p.src) h += '<a class="icon-btn" data-go="progress">Progress, S-curve & timeline →</a>';
+    if (p.nsr) h += '<a class="icon-btn ghost" data-go="cost">Cost dashboard →</a>';
+    if (p.issues) h += '<a class="icon-btn ghost" data-go="issues">Issues (' + p.issues + ") →</a>";
+    h += "</div>";
+    var body = U.modal(p.label, h, true);
+    body.querySelectorAll("[data-go]").forEach(function (a) {
+      a.addEventListener("click", function () {
+        var to = a.getAttribute("data-go"); body.close();
+        if (to === "cost") window.SARApp.go(to, { f: { proj: [p.short] } });
+        else if (to === "issues") window.SARApp.go(to, { f: { code: [p.code] } });
+        else if (to === "progress") window.SARApp.go(to, { sc: p.src, jump: "p-focus", f: {} });
+        else window.SARApp.go(to, { src: p.src });
+      });
+    });
+  }
+
+  /** Modal with a sortable table — used for tile drill-downs. */
+  function tableModal(title, rows, columns, opts) {
+    var body = U.modal(title, opts && opts.intro ? '<div class="muted" style="margin:6px 0 10px">' + opts.intro + "</div>" : "", true);
+    U.table(body, Object.assign({ rows: rows, columns: columns, exportName: title.replace(/\W+/g, "_") }, opts || {}));
+    return body;
+  }
+  function clickTiles(host, handlers) {
+    host.querySelectorAll(".tile").forEach(function (t, i) {
+      if (!handlers[i]) return;
+      t.classList.add("clickable"); t.setAttribute("tabindex", "0"); t.title = "Click for details";
+      t.addEventListener("click", handlers[i]);
+      t.addEventListener("keydown", function (e) { if (e.key === "Enter") handlers[i](); });
+    });
+  }
+  var COST_COLS = [
+    { key: "ID", label: "ID" }, { key: "Project Name", label: "Project" }, { key: "Project Phase", label: "Phase", type: "badge" },
+    { key: "Full Cost", label: "Full Cost", type: "money", total: "sum" }, { key: "Contract Value", label: "Contract Value", type: "money", total: "sum" },
+    { key: "Total WC", label: "Total WC", type: "money", total: "sum" }, { key: PAID, label: "Paid", type: "money", total: "sum" },
+    { key: "Remaining WC", label: "Remaining WC", type: "money", total: "sum" },
+    { get: function (r) { var c = N(r["Contract Value"]); return c ? (N(r[PAID]) || 0) / c : null; }, label: "Paid % of CV", type: "meter" }];
+  function costModal(D, title, rows, sortKey) {
+    tableModal(title + " — by project", rows, COST_COLS, { totals: true, sort: { key: sortKey, dir: -1 }, autoHeight: true,
+      onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project" });
+  }
+
+  /* ======================================================================
+     Executive Overview — every tile, bar, point and row drills down
+     ====================================================================== */
+  P.overview = function (ctx) {
+    var D = ctx.D, v = ctx.view, all = portfolio(D);
+    var defs = [
+      { key: "proj", label: "Project", options: all.map(function (p) { return p.code; }), display: function (c) { var p = all.filter(function (x) { return x.code === c; })[0]; return p ? p.label : c; }, get: function (p) { return p.code; } },
+      { key: "phase", label: "Project Phase", options: U.uniq(all.map(function (p) { return p.phase; })).sort(), get: function (p) { return p.phase; } },
+      { key: "fund", label: "Fund Type", options: U.uniq(all.map(function (p) { return p.fund; })).sort(), get: function (p) { return p.fund; } },
+      { key: "perf", label: "Performance", options: U.uniq(all.map(function (p) { return p.perf; })).sort(), get: function (p) { return p.perf; } },
+      { key: "contr", label: "Contractor", options: U.uniq(all.map(function (p) { return p.contractor; })).sort(), get: function (p) { return p.contractor; } }];
+    var st = filterBar(ctx, defs, all);
+    var ps = all.filter(function (p) { return passes(p, defs, st); });
+    var codes = ps.map(function (p) { return p.code; });
+    var filtered = defs.some(function (d) { return st[d.key].length; });
+    // With no slicer active every row counts (including issues of projects outside the cost register).
+    function inCodes(c) { return !filtered || codes.indexOf(String(c)) >= 0; }
+    var nsr = D.t("NSR_Project_Data").filter(function (r) { return inCodes(r.ID); });
+    var wk = D.t("Weekly_Report_Updates").filter(function (r) { return inCodes(r["Project Code"]); });
+    var iss = D.t("Issue_register").filter(function (r) { return inCodes(r["Poject Code"]); });
+    var sp = D.t("Spending_Plan").filter(function (r) { return inCodes(r.ID); });
+    var kpi = D.t("KPI_Summary");
+
+    /* --- cost tiles --- */
+    var g1 = grid(v, "g-5");
+    g1.innerHTML = mTile("Full Cost", U.sum(nsr, "Full Cost")) + mTile("Contract Value", U.sum(nsr, "Contract Value"), "black") +
+      mTile("Total Work Confirmed", U.sum(nsr, "Total WC"), "mid") + mTile("Paid (ERP gross)", U.sum(nsr, PAID), "slate") +
+      mTile("Remaining WC", U.sum(nsr, "Remaining WC"), "yellow");
+    clickTiles(g1, [
+      function () { costModal(D, "Full cost", nsr, "Full Cost"); }, function () { costModal(D, "Contract value", nsr, "Contract Value"); },
+      function () { costModal(D, "Total work confirmed", nsr, "Total WC"); }, function () { costModal(D, "Paid", nsr, PAID); },
+      function () { costModal(D, "Remaining WC", nsr, "Remaining WC"); }]);
+
+    /* --- progress / issue / KPI tiles --- */
+    var ev = U.sum(wk, "Cumulative EV (SAR)"), pv = U.sum(wk, "Cumulative PV (SAR)");
+    var delayed = wk.filter(function (r) { return /delay/i.test(r["Performance Status"] || ""); });
+    var open = iss.filter(function (r) { return /pending|escalat/i.test(r["Issue Status"] || ""); });
+    var crit = open.filter(function (r) { return /critical/i.test(r["Issue Rate"] || ""); }).length;
+    var kres = U.sum(kpi, "KPI Result"), kw = U.sum(kpi, "KPI Weight (%)");
+    var g2 = grid(v, "g-5");
+    g2.innerHTML =
+      U.tile({ value: wk.length, label: "Projects reported", note: "Weekly report " + fmt.date(D.reportDate) }) +
+      U.tile({ value: pv ? (ev / pv).toFixed(2) : "—", label: "Portfolio SPI (cost)", color: pv ? spiTile(ev / pv) : "slate", note: "Σ EV ÷ Σ PV · target " + spiTgt().toFixed(2) }) +
+      U.tile({ value: delayed.length, label: "Delayed projects", color: delayed.length ? "red" : "", note: "Performance status = Delayed" }) +
+      U.tile({ value: open.length, label: "Open issues", color: open.length ? "yellow" : "", note: crit + " critical · pending or escalated" }) +
+      U.tile({ value: fmt.pct(kres), label: "KPI result", color: "black", note: "of " + fmt.pct(kw, 0) + " total weight" });
+    var progCols = [
+      { key: "Project Code", label: "Code" }, { key: "Project Name", label: "Project", wrap: true },
+      { key: "Planned (%) - Cumulative", label: "Plan % cum", type: "pct" }, { key: "Actual (%) - Cumulative", label: "Actual % cum", type: "pct" },
+      { get: spiOf, label: "SPI", type: "dec", cls: spiCls }, { key: "End Date (Forecast/Actual)", label: "Forecast finish", type: "date" },
+      { key: "Performance Status", label: "Status", type: "badge" }, { key: "Reason for Delays", label: "Reason for delays", wrap: true }];
+    var issueCols = [
+      { key: "Poject Code", label: "Code" }, { key: "Project Name", label: "Project" }, { key: "ILR ID No.", label: "ILR ID", nowrap: true },
+      { key: "Issue (Description)", label: "Issue", wrap: true }, { key: "Resolution Action Plan", label: "Action plan", wrap: true },
+      { key: "Issue Rate", label: "Rate", type: "badge" }, { key: "Issue Status", label: "Status", type: "badge" }];
+    function onWk(r) { quickView(D, r["Project Code"]); }
+    clickTiles(g2, [
+      function () { tableModal("Projects in the weekly report", wk, progCols, { onRow: onWk, rowTitle: "Open project", autoHeight: true }); },
+      function () { tableModal("SPI by project", wk, progCols, { onRow: onWk, rowTitle: "Open project", sort: { key: "SPI", dir: 1 }, autoHeight: true, intro: "SPI (cost) = cumulative EV ÷ cumulative PV. Lowest first." }); },
+      function () { tableModal("Delayed projects", delayed, progCols, { onRow: onWk, rowTitle: "Open project", autoHeight: true }); },
+      function () { tableModal("Open issues", open, issueCols, { onRow: function (r) { U.recordModal(r["ILR ID No."] || "Issue", r); }, sort: { key: "Issue Rate", dir: 1 } }); },
+      function () { window.SARApp.go("kpi-summary", {}); }]);
+
+    /* --- charts row 1 --- */
+    var g3 = grid(v, "g-2");
+    var byCV = nsr.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); });
+    var b1 = chartBox(panelIn(g3, "Contract value vs work confirmed vs paid", "Click a bar for the project details"));
+    b1.style.height = Math.max(320, byCV.length * 30 + 70) + "px";
+    hbar(b1, byCV.map(function (r) { return r.ID + " · " + r["Project Name"]; }), [
+      U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), S.plan),
+      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), S.forecast),
+      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), S.actual)], function (i) { quickView(D, byCV[i].ID); });
+
+    var wr = wk.slice().sort(function (a, b) { return sortNum(b["Planned (%) - Cumulative"], a["Planned (%) - Cumulative"]); });
+    var b2 = chartBox(panelIn(g3, "Cumulative progress by project", "Planned vs actual · click a bar for the project details"));
+    b2.style.height = b1.style.height;
+    hbar(b2, wr.map(function (r) { return r["Project Code"] + " · " + r["Project Name"]; }), [
+      U.barDs("Planned (cum)", wr.map(function (r) { return r["Planned (%) - Cumulative"]; }), S.plan),
+      U.barDs("Actual (cum)", wr.map(function (r) { return r["Actual (%) - Cumulative"]; }), S.actual)],
+      function (i) { quickView(D, wr[i]["Project Code"]); }, U.pctAxis(1), U.pctTooltip());
+
+    /* --- charts row 2 --- */
+    var g4 = grid(v, "g-3");
+    var mm = monthly(sp);
+    var pa = panelIn(g4, "Cumulative spend 2026", "Click a month for its breakdown");
+    var lc = { type: "line",
+      data: { labels: mm.map(function (o) { return fmt.month(o.month); }), datasets: [
+        U.lineDs(hasRev() ? "Original Spend Plan" : "Spend Plan", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3 })].concat(hasRev() ? [
+        U.lineDs("Rev Spend Plan", mm.map(function (o) { return o.revC; }), S.rev, { pointRadius: 3 })] : []).concat([
+        U.lineDs("Forecast Plan", mm.map(function (o) { return o.invC; }), S.invoice, { borderDash: [7, 5], pointRadius: 3 }),
+        U.lineDs("Actual Spend", mm.map(function (o) { return o.actCv; }), S.actual, { borderWidth: 3, pointRadius: 3 })]) },
+      options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() }, interaction: { mode: "index", intersect: false } } };
+    U.chart(chartBox(pa), U.clickable(lc, function (i) { monthModal(D, sp, mm[i].month); }));
+
+    var phases = U.uniq(ps.map(function (p) { return p.phase; }));
+    var pb = panelIn(g4, "Projects by phase", "Click to filter the page");
+    vbar(chartBox(pb), phases, [U.barDs("Projects", phases.map(function (ph) { return ps.filter(function (p) { return p.phase === ph; }).length; }),
+      U.hl(S.plan, phases, sel(ctx, "phase")), { maxBarThickness: 48 })],
+      function (i, e) { pick(ctx, "phase", phases[i], e); }, null, { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } });
+
+    var rates = ["Critical", "High", "Medium", "Low", "N/A"], stats = U.uniq(iss.map(function (r) { return r["Issue Status"] || "Not set"; }));
+    var ib = panelIn(g4, "Issues by status and rate", "Click a segment for the issue list");
+    var ic = { type: "bar", data: { labels: stats, datasets: rates.map(function (rt) {
+      return U.barDs(rt, stats.map(function (s) { return iss.filter(function (r) { return (r["Issue Status"] || "Not set") === s && r["Issue Rate"] === rt; }).length; }),
+        { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate, "N/A": C.gray }[rt], { borderRadius: 0, borderColor: C.white, borderWidth: { top: 2 } }); }) },
+      options: { scales: { x: Object.assign(U.catAxis(), { stacked: true }), y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } };
+    U.chart(chartBox(ib), U.clickable(ic, function (i, e, di) {
+      var s = stats[i], rt = rates[di];
+      tableModal(s + " · " + rt + " issues", iss.filter(function (r) { return (r["Issue Status"] || "Not set") === s && r["Issue Rate"] === rt; }), issueCols,
+        { onRow: function (r) { U.recordModal(r["ILR ID No."] || "Issue", r); } });
+    }));
+
+    /* --- portfolio table --- */
+    var tp = panelIn(v, "Project portfolio", ps.length + " projects · click a row for details");
+    tableIn(tp, { rows: ps, exportName: "Portfolio", totals: true, maxHeight: 560, onRow: function (p) { quickView(D, p.code); }, rowTitle: "Open project",
+      columns: [
+        { key: "code", label: "Code" }, { key: "name", label: "Project", wrap: true }, { key: "phase", label: "Phase", type: "badge" },
+        { key: "fund", label: "Fund" }, { key: "cv", label: "Contract Value", type: "money", total: "sum" },
+        { get: function (p) { return p.nsr ? p.nsr[PAID] : null; }, label: "Paid", type: "money", total: "sum" },
+        { get: function (p) { return p.wk ? p.wk["Planned (%) - Cumulative"] : null; }, label: "Plan % cum", type: "pct" },
+        { get: function (p) { return p.wk ? p.wk["Actual (%) - Cumulative"] : null; }, label: "Actual % cum", type: "pct" },
+        { get: function (p) { return p.wk ? spiOf(p.wk) : null; }, label: "SPI", type: "dec", cls: spiCls },
+        { key: "perf", label: "Status", type: "badge" }, { key: "open", label: "Open issues", type: "int", total: "sum" }] });
+  };
+
+  /** Spend for one month by project (drill-down from a cumulative/monthly chart). */
+  function monthModal(D, spRows, month) {
+    var rows = spRows.filter(function (r) { return r.Month === month; }).map(function (r) {
+      return { ID: r.ID, name: r["Project Name"], plan: G(r, SP.plan), rev: G(r, SP.rev), act: G(r, SP.act), inv: G(r, SP.inv), invAct: r["Invoice Related actvities"],
+        planC: G(r, SP.planC), actC: G(r, SP.actC),
+        revC: spRows.filter(function (x) { return x.ID === r.ID && x.Month <= month; }).reduce(function (s, x) { return s + (N(G(x, SP.rev)) || 0); }, 0) };
+    }).filter(function (o) { return o.plan || o.act || o.inv || o.rev; });
+    tableModal("Spend in " + fmt.month(month), rows, [
+      { key: "ID", label: "ID" }, { key: "name", label: "Project" },
+      { key: "plan", label: hasRev() ? "Original Plan" : "Spend Plan", type: "money", total: "sum" }].concat(hasRev() ? [{ key: "rev", label: "Rev Spend Plan", type: "money", total: "sum" }] : []).concat([
+      { key: "inv", label: "Forecast Plan", type: "money", total: "sum" },
+      { key: "act", label: "Actual Spend", type: "money", total: "sum" },
+      { key: "planC", label: hasRev() ? "Original Plan (cum)" : "Spend Plan (cum)", type: "money", total: "sum" }]).concat(hasRev() ? [{ key: "revC", label: "Rev Spend Plan (cum)", type: "money", total: "sum" }] : []).concat([
+      { key: "actC", label: "Actual (cum)", type: "money", total: "sum" },
+      { key: "invAct", label: "Invoice related activities", wrap: true }]),
+      { totals: true, sort: { key: "plan", dir: -1 }, autoHeight: true, onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project" });
+  }
+
+  /* ======================================================================
+     KPI Summary
+     ====================================================================== */
+  function isManaged(r) { var n = String(r["Objective/ KPIs"] || "").toLowerCase(); return NSR_MANAGED.some(function (k) { return n.indexOf(k) >= 0; }); }
+  function kpiModal(D, r) {
+    var h = '<div class="grid g-4 qv">' + U.info("KPI SN", esc(r["KPI SN"])) + U.info("KPI group", esc(r["KPI Filter"])) +
+      U.info("Weight", fmt.pct(r["KPI Weight (%)"])) + U.info("Managed by", isManaged(r) ? "NSR" : "Other departments") +
+      U.info("% achieved", fmt.pct(r["% Achieved"])) + U.info("KPI result", fmt.pct(r["KPI Result"], 2)) +
+      U.info("Target (plan)", r["NSR Spend Plan 2026 as per Budgeting"] > 10 ? fmt.money(r["NSR Spend Plan 2026 as per Budgeting"]) : fmt.pct(r["NSR Spend Plan 2026 as per Budgeting"])) +
+      U.info("YTD actual", r["YTD Actual"] > 10 ? fmt.money(r["YTD Actual"]) : fmt.pct(r["YTD Actual"])) +
+      (r["Criteria / Target"] ? U.info("Criteria / Target", esc(r["Criteria / Target"])) + U.info("Unit", esc(r["Target Unit"] || "—")) +
+        U.info("Data source", esc(r["Target Data Source"] || "—")) + U.info("Perspective", esc(r["Target Perspective"] || "—")) : "") + "</div>";
+    if (r["Target Formula"] && r["Target Formula"] !== "-") h += '<div class="note-box" style="margin-top:12px;white-space:pre-line"><b>Formula:</b> ' + esc(r["Target Formula"]) + "</div>";
+    if (r.Remarks) h += '<div class="note-box" style="margin-top:12px">' + esc(r.Remarks) + "</div>";
+    var body = U.modal(r["Objective/ KPIs"], h, true);
+    var projs = D.t("KPI_Projects_Data").filter(function (p) { return N(p["KPI Code"]) === N(r["KPI Code"]) && p.Code !== "-"; });
+    var del = /delivery against approved/i.test(r["Objective/ KPIs"] || "") ? D.t("Delivery_KPI") : [];
+    if (projs.length) {
+      add(body, '<h4 class="mh">Projects under this KPI</h4>');
+      U.table(add(body, "<div></div>"), { rows: projs, exportName: "KPI_projects", totals: true, autoHeight: true, columns: [
+        { key: "Code", label: "Code" }, { key: "Project Name", label: "Project" },
+        { get: function (p) { return G(p, "Spend Plan as per Budgeting (M) FTY 2026"); }, label: hasRev() ? "Original Plan 2026" : "Spend Plan 2026", type: "money", total: "sum" }].concat(hasRev() ? [
+        { get: function (p) { return N(p["Rev Spend Plan FTY 2026"]) || 0; }, label: "Rev Spend Plan 2026", type: "money", total: "sum" }] : []).concat([
+        { get: function (p) { return G(p, "YTD Spend Plan as per Budgeting (M)"); }, label: hasRev() ? "YTD Original Plan" : "YTD Plan", type: "money", total: "sum" }]).concat(hasRev() ? [
+        { get: function (p) { return ytdRev(D, p.Code); }, label: "YTD Rev Plan", type: "money", total: "sum" }] : []).concat([
+        { get: function (p) { return G(p, "YTD Actual (M)"); }, label: "YTD Actual", type: "money", total: "sum" },
+        { get: function (p) { return (N(G(p, "YTD Actual (M)")) || 0) - (N(G(p, "YTD Spend Plan as per Budgeting (M)")) || 0); },
+          label: hasRev() ? "YTD Var. (Actual − Original)" : "YTD Var. (Actual − Plan)", type: "money", signed: true, total: "sum" }]).concat(hasRev() ? [
+        { get: function (p) { return (N(G(p, "YTD Actual (M)")) || 0) - ytdRev(D, p.Code); }, label: "YTD Var. (Actual − Rev Plan)", type: "money", signed: true, total: "sum" }] : []) });
+    }
+    if (del.length) {
+      add(body, '<h4 class="mh">Delivery projects</h4>');
+      U.table(add(body, "<div></div>"), { rows: del, search: false, autoHeight: true, exportName: false, columns: [
+        { key: "Project Code", label: "Code" }, { key: "NSR Plan", label: "Project" }, { key: "Budget (SAR)", label: "Budget", type: "money" },
+        { key: "Target Completion Date", label: "Target completion", type: "date" }] });
+    }
+  }
+
+  P["kpi-summary"] = function (ctx) {
+    var D = ctx.D, v = ctx.view;
+    var all = D.t("KPI_Summary").slice().sort(function (a, b) { return sortNum(a["KPI SN"], b["KPI SN"]); });
+    var defs = [
+      { key: "grp", label: "KPI Group", options: U.uniq(all.map(function (r) { return r["KPI Filter"]; })), get: function (r) { return r["KPI Filter"]; } },
+      { key: "own", label: "Managed by", options: ["NSR", "Other departments"], get: function (r) { return isManaged(r) ? "NSR" : "Other departments"; } },
+      { key: "kpi", label: "KPI", options: all.map(function (r) { return r["Objective/ KPIs"]; }), get: function (r) { return r["Objective/ KPIs"]; } }];
+    var st = filterBar(ctx, defs, all);
+    var rows = all.filter(function (r) { return passes(r, defs, st); });
+    var kres = U.sum(rows, "KPI Result"), kw = U.sum(rows, "KPI Weight (%)");
+    var full = rows.filter(function (r) { return N(r["% Achieved"]) >= 1; });
+    var below = rows.filter(function (r) { return N(r["% Achieved"]) < 1; });
+    var g = grid(v, "g-4");
+    g.innerHTML = U.tile({ value: rows.length, label: "KPIs tracked", note: U.uniq(rows.map(function (r) { return r["KPI Filter"]; })).length + " KPI groups" }) +
+      U.tile({ value: fmt.pct(kw, 0), label: "Total weight", color: "black" }) +
+      U.tile({ value: fmt.pct(kres), label: "Weighted KPI result", color: "mid", note: kw ? fmt.pct(kres / kw) + " of attainable weight" : "" }) +
+      U.tile({ value: full.length, label: "KPIs at 100%+", color: "slate", note: below.length + " below target — click" });
+    var kcols = [{ key: "KPI SN", label: "SN", type: "int" }, { key: "Objective/ KPIs", label: "KPI", wrap: true }, { key: "KPI Weight (%)", label: "Weight", type: "pct" },
+      { key: "% Achieved", label: "% Achieved", type: "meter" }, { key: "KPI Result", label: "Result", type: "pct" }];
+    clickTiles(g, [null, null,
+      function () { tableModal("KPI result build-up", rows, kcols, { totals: true, sort: { key: "KPI Result", dir: -1 }, onRow: function (r) { kpiModal(D, r); }, autoHeight: true }); },
+      function () { tableModal("KPIs below 100%", below, kcols, { sort: { key: "% Achieved", dir: 1 }, onRow: function (r) { kpiModal(D, r); }, autoHeight: true }); }]);
+
+    var tp = panelIn(v, "KPI scorecard", "Click a row for KPI details · Shift+click headers or use ⇅ Sort for multi-level sorting");
+    tp.style.marginBottom = "16px";
+    tableIn(tp, { rows: rows, exportName: "KPI_Summary", maxHeight: 640, totals: true, onRow: function (r) { kpiModal(D, r); }, rowTitle: "Open KPI details",
+      columns: [
+        { key: "KPI SN", label: "KPI SN", type: "int" },
+        { key: "KPI Filter", label: "KPI Filter", nowrap: true },
+        { key: "Objective/ KPIs", label: "Objective / KPIs", wrap: true },
+        { key: "KPI Weight (%)", label: "KPI Weight (%)", type: "pct", total: "sum" },
+        { key: "Criteria / Target", label: "Criteria / Target", nowrap: true },
+        { key: "% Achieved", label: "% Achieved", type: "meter" },
+        { key: "KPI Result", label: "KPI Result", type: "pct", total: function (rs) { return fmt.pct(U.sum(rs, "KPI Result")); } }] });
+
+    var right = grid(v, "g-2");
+    function kpiChart(title, list) {
+      var p = panelIn(right, title, "% achieved · click a bar for details");
+      var box = chartBox(p); box.style.height = Math.max(200, list.length * 34 + 60) + "px";
+      if (!list.length) { box.innerHTML = '<div class="empty">No KPIs match the filters.</div>'; return; }
+      var cfg = { type: "bar",
+        data: { labels: list.map(function (r) { return U.wrapLabel(r["Objective/ KPIs"], 38); }),
+          datasets: [U.barDs("% Achieved", list.map(function (r) { return r["% Achieved"]; }), list.map(function (r) {
+            var a = N(r["% Achieved"]); return a >= 1 ? S.plan : a >= 0.9 ? S.actual : S.alert; }), { borderRadius: { topRight: 4, bottomRight: 4 }, maxBarThickness: 22 })] },
+        options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: U.pctTooltip(),
+          datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return fmt.pct(x); } } },
+          layout: { padding: { right: 50 } },
+          scales: { x: U.pctAxis(), y: { grid: { display: false }, ticks: { font: { size: 11 } } } } } };
+      U.chart(box, U.clickable(cfg, function (i) { kpiModal(D, list[i]); }));
+      add(p, '<div class="g-legend"><span><i style="background:' + S.plan + '"></i>≥ 100% achieved</span><span><i style="background:' + S.actual +
+        '"></i>90–99%</span><span><i style="background:' + S.alert + '"></i>&lt; 90%</span></div>');
+    }
+    kpiChart("KPIs managed by NSR", rows.filter(isManaged));
+    kpiChart("KPIs managed by other departments", rows.filter(function (r) { return !isManaged(r); }));
+
+    var wk = {}; D.t("Weekly_Report_Updates").forEach(function (r) { wk[String(r["Project Code"])] = r; });
+    var del = D.t("Delivery_KPI").map(function (r) {
+      var w = wk[String(r["Project Code"])] || {};
+      return Object.assign({}, r, { _bl: w["End Date Baseline"], _fc: w["End Date (Forecast/Actual)"], _pl: w["Planned (%) - Cumulative"], _ac: w["Actual (%) - Cumulative"] });
+    });
+    var dp = panelIn(v, "Delivery KPI details", "% of delivery against approved business plan · click a row for the project");
+    tableIn(dp, { rows: del, exportName: "Delivery_KPI", autoHeight: true, search: false, onRow: function (r) { quickView(D, r["Project Code"]); }, rowTitle: "Open project",
+      columns: [
+        { key: "Project Code", label: "Project Code" }, { key: "NSR Plan", label: "Project Name", wrap: true },
+        { key: "Target Completion Date", label: "Target Completion Date", type: "date" },
+        { key: "_bl", label: "BL Finish", type: "date" }, { key: "_fc", label: "Forecast / Actual Finish", type: "date" },
+        { key: "_pl", label: "Planned (%) - Cum", type: "meter", meterCls: "plan" }, { key: "_ac", label: "Actual (%) - Cum", type: "meter" }] });
+  };
+
+  /* ======================================================================
+     KPI Cost Summary
+     ====================================================================== */
+
+
+  /* ======================================================================
+     Cost & KPI Dashboard — one page for the cost KPIs (today and at year-end),
+     the 2026 spend outlook (Spend Plan vs Forecast Plan vs Actual), the cost
+     register (contract & payments), the invoice schedule, the detail tables and
+     the monthly spending plan. Replaces the former KPI Cost Summary, KPI
+     Year-End Outlook and Cost Dashboard pages; every figure appears once.
+     ====================================================================== */
+  function secHead(v, title, sub) { return add(v, '<div class="sec-h"><h3>' + esc(title) + "</h3>" + (sub ? "<span>" + sub + "</span>" : "") + "</div>"); }
+  P.cost = function (ctx) {
+    var D = ctx.D, v = ctx.view, spAll = D.t("Spending_Plan"), kpd = D.t("KPI_Projects_Data"), ksum = D.t("KPI_Summary").filter(isKPI([7, 8]));
+    var nsrAll = D.t("NSR_Project_Data");
+    if (!spAll.length && !nsrAll.length) { add(v, '<div class="empty">No cost data — import the Spending Plan and the NSR Project Data.</div>'); return; }
+    var RV = hasRev(), baseLbl = RV ? "Rev Spend Plan" : "Spend Plan", plans = RV ? "Original & Rev Spend Plan" : "Spend Plan", T95 = Math.round(TARGET * 100) + "%";
+    var kpiName = {}, kpiW = {}, codeKpi = {};
+    ksum.forEach(function (r) { kpiName[N(r["KPI Code"])] = r["Objective/ KPIs"]; kpiW[N(r["KPI Code"])] = N(r["KPI Weight (%)"]) || 0; });
+    kpd.filter(isKPI([7, 8])).forEach(function (r) { codeKpi[String(r.Code)] = N(r["KPI Code"]); });
+    function kpiOf(id) { var k = codeKpi[id]; return k != null ? kpiName[k] || "KPI " + k : "Not in a cost KPI"; }
+    var cut = lastActualMonth(spAll), months = U.uniq(spAll.map(function (r) { return r.Month; })).sort(), toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
+    var projAll = outlookByProject(spAll, cut, kpiOf), byId = {};
+    projAll.forEach(function (o) { byId[o.ID] = o; });
+    // one filter bar for the whole page: spend projects and cost-register rows share KPI / outlook / fund / phase / project
+    var nsrObj = nsrAll.map(function (r) { var o = byId[String(r.ID)]; return { r: r, ID: String(r.ID), name: r["Project Name"], fund: r["Fund Type"], phase: r["Project Phase"], kpi: kpiOf(String(r.ID)), status: o ? o.status : "No 2026 plan" }; });
+    var every = projAll.concat(nsrObj);
+    var defs = [
+      { key: "kpi", label: "KPI", options: U.uniq(every.map(function (o) { return o.kpi; })), get: function (o) { return o.kpi; } },
+      { key: "out", label: "Year-end outlook", options: U.uniq(projAll.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER)), get: function (o) { return o.status; } },
+      { key: "fund", label: "Fund Type", options: U.uniq(every.map(function (o) { return o.fund; })).sort(), get: function (o) { return o.fund; } },
+      { key: "phase", label: "Project Phase", options: U.uniq(every.map(function (o) { return o.phase; })).sort(), get: function (o) { return o.phase; } },
+      { key: "proj", label: "Project", options: U.uniq(every.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
+    // Month: a period slicer (no row getter, so project filters ignore it); drives the monthly visuals, period tiles,
+    // spend by project and the invoice schedule — full-year KPI / outlook figures stay full year
+    var mdef = { key: "month", label: "Month", options: months, display: fmt.month };
+    var st = filterBar(ctx, defs.concat([mdef]), projAll);
+    var selM = months.filter(function (m) { return st.month.indexOf(m) >= 0; }), hasM = selM.length > 0, vMonths = hasM ? selM : months;
+    var mLbl = hasM ? selM.map(fmt.month).join(", ") : "";
+    function inM(o) { var r = { plan: 0, rev: 0, fc: 0, act: 0 }; selM.forEach(function (m) { var c = o.months[m]; if (!c) return; r.plan += c.plan; r.rev += c.rev; r.fc += c.fc; r.act += c.act || 0; }); return r; }
+    var proj = projAll.filter(function (o) { return passes(o, defs, st); }), projX = projAll.filter(function (o) { return passes(o, defs, st, "proj"); });
+    var nsrF = nsrObj.filter(function (o) { return passes(o, defs, st); }), nsr = nsrF.map(function (o) { return o.r; });
+    var nsrX = nsrObj.filter(function (o) { return passes(o, defs, st, "proj"); }).map(function (o) { return o.r; });
+    function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
+    var T = { plan: tot(proj, "plan"), planYtd: tot(proj, "planYtd"), rev: tot(proj, "rev"), revYtd: tot(proj, "revYtd"), act: tot(proj, "act"), fcRem: tot(proj, "fcRem"), fcFY: tot(proj, "fcFY") };
+    T.base = RV ? T.rev : T.plan; T.landing = T.fcFY; T.pct = T.base ? T.landing / T.base : null; T.gap = TARGET * T.base - T.landing;
+    var rowsF = spAll.filter(function (r) { var o = byId[String(r.ID)]; return o && proj.indexOf(o) >= 0; });
+
+    // in-page navigation: one page, five sections
+    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"], ["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]];
+    var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
+    nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
+
+    /* 1 · Contract & payments (cost register) — first on the page */
+    sec("c-con", "Contract & payments", "NSR Project Data (cost register) · " + nsr.length + " projects");
+    var g = grid(v, "g-5");
+    g.innerHTML = mTile("Full Cost", U.sum(nsr, "Full Cost")) + mTile("Contract Value", U.sum(nsr, "Contract Value"), "black") +
+      mTile("Total WC", U.sum(nsr, "Total WC"), "mid") + mTile("Paid", U.sum(nsr, PAID), "slate") + mTile("Remaining WC", U.sum(nsr, "Remaining WC"), "yellow");
+    clickTiles(g, ["Full Cost", "Contract Value", "Total WC", PAID, "Remaining WC"].map(function (k, i) {
+      return function () { costModal(D, ["Full cost", "Contract value", "Total WC", "Paid", "Remaining WC"][i], nsr, k); }; }));
+    var byCV = nsrX.slice().sort(function (a, b) { return sortNum(b["Contract Value"], a["Contract Value"]); }), cn = byCV.map(function (r) { return r["Project Name"]; });
+    var g4 = grid(v, "g-2-1");
+    var b1 = chartBox(panelIn(g4, "Contract value vs WC total vs paid", "By project · click to filter")); b1.style.height = Math.max(320, cn.length * 34 + 70) + "px";
+    hbar(b1, cn, [U.barDs("Contract Value", byCV.map(function (r) { return r["Contract Value"]; }), U.hl(S.plan, cn, st.proj)),
+      U.barDs("Total WC", byCV.map(function (r) { return r["Total WC"]; }), U.hl(S.forecast, cn, st.proj)),
+      U.barDs("Paid", byCV.map(function (r) { return r[PAID]; }), U.hl(S.actual, cn, st.proj))], function (i, e) { pick(ctx, "proj", cn[i], e); });
+    var side = add(g4, '<div class="stack"></div>');
+    [["phase", "Contract value by phase"], ["fund", "Contract value by fund type"]].forEach(function (c) {
+      var base = nsrObj.filter(function (o) { return passes(o, defs, st, c[0]); }), keys = U.uniq(base.map(function (o) { return o[c[0]]; }));
+      var vals = keys.map(function (k) { return U.sum(base.filter(function (o) { return o[c[0]] === k; }).map(function (o) { return o.r; }), "Contract Value"); });
+      var box = chartBox(panelIn(side, c[1], "Click to filter"), "short"); box.style.height = Math.max(160, keys.length * 30 + 50) + "px";
+      hbar(box, keys, [U.barDs("Contract Value", vals, U.hl(S.plan, keys, st[c[0]]), { maxBarThickness: 18 })], function (i, e) { pick(ctx, c[0], keys[i], e); });
+    });
+
+
+    /* 2 · KPI position — headline tiles (once) + one KPI table (cost summary and year-end closing together) */
+    sec("c-kpi", "Cost KPI position", "Year-end = contractor Forecast Plan (invoicing plan) vs the " + baseLbl + " · CAPEX Variance target: year-end spend ≥ " + T95 + " of plan · actual to " + esc(fmt.month(cut)) + " for reference");
+    spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: toCut,
+      gapNote: T.gap > 0 ? " · " + fmt.m(T.gap) + " M short of the " + T95 + " target" : " · " + T95 + " target met" })
+      .forEach(function (g) { clickTiles(g, [0, 1, 2, 3, 4, 5].map(function () { return function () { outlookModal(proj); }; })); });
+    if (hasM) {                         // the selected months only
+      var PM = proj.map(inM).reduce(function (a, x) { a.plan += x.plan; a.rev += x.rev; a.fc += x.fc; a.act += x.act; return a; }, { plan: 0, rev: 0, fc: 0, act: 0 }), pb0 = RV ? PM.rev : PM.plan;
+      add(v, '<div class="period-h">Selected period: <b>' + esc(mLbl) + "</b></div>");
+      var gm = grid(v, "g-4");
+      gm.innerHTML = mTile(RV ? "Original Plan · period" : "Spend Plan · period", PM.plan, "", esc(mLbl)) + (RV ? mTile("Rev Spend Plan · period", PM.rev, "black", esc(mLbl)) : "") +
+        mTile("Forecast Plan · period", PM.fc, "slate", "Invoicing plan · " + esc(mLbl)) +
+        mTile("Actual · period", PM.act, "yellow", (pb0 ? fmt.pct(PM.act / pb0, 1) + " of " + (RV ? "Rev plan" : "plan") : "—") + " · months to " + esc(fmt.month(cut)));
+    }
+    var krows = ksum.map(function (r) {
+      var code = N(r["KPI Code"]), list = proj.filter(function (o) { return codeKpi[o.ID] === code; });
+      var o = { KPI: r["Objective/ KPIs"], filt: r["KPI Filter"], w: kpiW[code], plan: tot(list, "plan"), rev: tot(list, "rev"), planYtd: tot(list, "planYtd"), revYtd: tot(list, "revYtd"), act: tot(list, "act"), fcFY: tot(list, "fcFY"), n: list.length };
+      o.base = RV ? o.rev : o.plan; o.baseYtd = RV ? o.revYtd : o.planYtd;
+      o.ytdPct = o.baseYtd ? o.act / o.baseYtd : null; o.landing = o.fcFY; o.var = o.landing - o.base; o.yePct = o.base ? o.landing / o.base : null;
+      o.nowRes = o.ytdPct != null ? o.w * Math.min(1, o.ytdPct) : null; o.yeRes = o.yePct != null ? o.w * Math.min(1, o.yePct) : null; o.gap = TARGET * o.base - o.landing;
+      return o;
+    }).filter(function (o) { return o.n; });
+    tableIn(panelIn(v, "Cost KPIs — today and at year-end", "KPI result = weight × % achieved · click a KPI to filter the page"), { rows: krows, search: false, autoHeight: true, exportName: "Cost_KPIs",
+      onRow: function (o, e) { pick(ctx, "kpi", o.KPI, e); }, rowTitle: "Filter by this KPI", rowClass: function (o) { return st.kpi.indexOf(o.KPI) >= 0 ? "selected" : ""; },
+      columns: [{ key: "KPI", label: "KPI", wrap: true }, { key: "w", label: "Weight", type: "pct" },
+        { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money" }].concat(RV ? [{ key: "rev", label: "Rev Spend Plan 2026", type: "money" }] : []).concat([
+        { key: "landing", label: "Year-end Forecast Plan", type: "money" }, { key: "var", label: "Variance vs " + (RV ? "Rev plan" : "plan"), type: "money", signed: true },
+        { key: "yePct", label: "Year-end % of plan", type: "meter" }, { key: "yeRes", label: "Projected KPI result", type: "pct" },
+        { key: "gap", label: "Gap to " + T95 + " target", type: "money", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">Covered</span>'; } },
+        { key: "baseYtd", label: "YTD " + (RV ? "Rev Plan" : "Plan"), type: "money" }, { key: "act", label: "YTD Actual", type: "money" },
+        { key: "ytdPct", label: "YTD % achieved", type: "meter" }, { key: "nowRes", label: "KPI result today", type: "pct" }]) });
+
+    /* 2 · Year-end outlook */
+    sec("c-out", "Year-end outlook", plans + " vs Forecast Plan vs Actual · click a month for the project split, a bar to filter");
+    var g0 = grid(v, "g-2"), vr = T.landing - T.base;
+    waterfall(chartBox(panelIn(g0, "Full year — " + plans + " vs year-end Forecast Plan", "2026 full year · variance vs " + baseLbl + " " + (vr >= 0 ? "+" : "") + fmt.m(vr) + " M (" + fmt.pct(T.pct, 1) + ")"), "tall"),
+      [{ label: RV ? "Original Spend Plan" : "Spend Plan 2026", value: T.plan, total: true, color: S.plan }].concat(RV ? [{ label: "Rev Spend Plan", value: T.rev, total: true, color: S.rev }] : [])
+        .concat([{ label: "Year-end Forecast Plan", value: T.landing, total: true, color: S.invoice }]), TARGET * T.base);
+    var T_fcYtd = tot(proj, "fcYtd"), T_bY = RV ? T.revYtd : T.planYtd, yv = T.act - T_bY;   // year to date (to the actuals cut-off)
+    waterfall(chartBox(panelIn(g0, "Year to date — " + plans + " vs Forecast Plan vs Actual", toCut + " · actual vs " + (RV ? "YTD Rev Plan " : "YTD plan ") + (yv >= 0 ? "+" : "") + fmt.m(yv) + " M (" + fmt.pct(T_bY ? T.act / T_bY : null, 1) + ")"), "tall"),
+      [{ label: RV ? "YTD Original Plan" : "YTD Spend Plan", value: T.planYtd, total: true, color: S.plan }].concat(RV ? [{ label: "YTD Rev Plan", value: T.revYtd, total: true, color: S.rev }] : [])
+        .concat([{ label: "YTD Forecast Plan", value: T_fcYtd, total: true, color: S.invoice }, { label: "YTD Actual", value: T.act, total: true, color: S.actual }]), TARGET * T_bY);
+    var g1 = grid(v, "g-1");
+    var mm = monthly(rowsF), labels = mm.map(function (o) { return fmt.month(o.month); }), ci = mm.map(function (o) { return o.month; }).indexOf(cut);
+    var actLine = [], a2 = 0; mm.forEach(function (o, i) { a2 += o.act; actLine.push(i <= ci ? a2 : null); });
+    function mClick(i) { if (mm[i]) monthModal(D, rowsF, mm[i].month); }
+    U.chart(chartBox(panelIn(g1, "Cumulative S-curve", "Cumulative " + plans + " vs Forecast Plan · actual to " + esc(fmt.month(cut))), "tall"), U.clickable({ type: "line",
+      data: { labels: labels, datasets: [
+        U.lineDs(RV ? "Original Spend Plan (cum)" : "Spend Plan (cum)", mm.map(function (o) { return o.planC; }), S.plan, { pointRadius: 3, borderWidth: 2.5 })].concat(RV ? [
+        U.lineDs("Rev Spend Plan (cum)", mm.map(function (o) { return o.revC; }), S.rev, { pointRadius: 3, borderWidth: 2.5 })] : []).concat([
+        U.lineDs("Forecast Plan (cum)", mm.map(function (o) { return o.invC; }), S.invoice, { pointRadius: 3, borderWidth: 2.5, borderDash: [7, 5] }),
+        U.lineDs("Actual (cum)", actLine, S.actual, { pointRadius: 4, borderWidth: 3, spanGaps: false }),
+        U.lineDs(T95 + " target", mm.map(function () { return TARGET * T.base; }), C.red, { borderDash: [4, 4], borderWidth: 1, pointRadius: 0 })]) },
+      options: { plugins: { tooltip: U.moneyTooltip() }, interaction: { mode: "index", intersect: false }, scales: { x: U.catAxis(), y: U.moneyAxis() } } }, mClick));
+    var g2 = grid(v, "g-2-1");
+    var mk = mm.map(function (o) { return o.month; });
+    vbar(chartBox(panelIn(g2, "Monthly spend", "Incremental · click a month to filter by it · Ctrl+click for several")), labels, [
+      U.barDs(RV ? "Original Plan" : "Spend Plan", mm.map(function (o) { return o.plan; }), U.hl(S.plan, mk, st.month))].concat(RV ? [U.barDs("Rev Spend Plan", mm.map(function (o) { return o.rev; }), U.hl(S.rev, mk, st.month))] : []).concat([
+      U.fcBar("Forecast Plan", mm.map(function (o) { return o.inv; }), U.hl(S.invoice, mk, st.month)), U.barDs("Actual Spend", mm.map(function (o) { return o.act; }), U.hl(S.actual, mk, st.month))]),
+      function (i, e) { pick(ctx, "month", mk[i], e); });
+    var rx = projAll.filter(function (o) { return passes(o, defs, st, "out"); }), outs = U.uniq(rx.map(function (o) { return o.status; })).sort(byOrder(OUT_ORDER));
+    U.chart(chartBox(panelIn(g2, "Projects by year-end outlook", "On track ≥ 95% · at risk 85–95% · behind < 85% · click to filter")), U.clickable({ type: "bar", data: { labels: outs, datasets: [
+      U.barDs("Projects", outs.map(function (s) { return rx.filter(function (o) { return o.status === s; }).length; }), outs.map(function (s) { var c0 = OUT_COLOR[s] || C.slate; return st.out.length && st.out.indexOf(s) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 26 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } },
+        layout: { padding: { right: 24 } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
+      function (i, e) { pick(ctx, "out", outs[i], e); }));
+    var g3 = grid(v, "g-2");
+    var sv = function (o) { if (!hasM) return { plan: o.plan, rev: o.rev, fc: o.landing, act: o.act }; return inM(o); };     // full year, or the selected months
+    var byP = projX.map(function (o) { return { o: o, x: sv(o) }; }).filter(function (q) { return q.x.plan || q.x.rev || q.x.fc || q.x.act; })
+      .sort(function (a, b) { return (RV ? b.x.rev : b.x.plan) - (RV ? a.x.rev : a.x.plan); }), pn = byP.map(function (q) { return q.o.name; });
+    var pb = chartBox(panelIn(g3, hasM ? "Spend by project — " + mLbl : "2026 spend by project", plans + " vs Forecast Plan vs " + (hasM ? "actual" : "YTD actual") + " · click to filter")); pb.style.height = Math.max(320, pn.length * (RV ? 36 : 30) + 70) + "px";
+    hbar(pb, pn, [U.barDs(RV ? "Original Plan" : "Spend Plan", byP.map(function (q) { return q.x.plan; }), U.hl(S.plan, pn, st.proj))].concat(RV ? [
+      U.barDs("Rev Spend Plan", byP.map(function (q) { return q.x.rev; }), U.hl(S.rev, pn, st.proj))] : []).concat([
+      U.fcBar("Forecast Plan", byP.map(function (q) { return q.x.fc; }), U.hl(S.invoice, pn, st.proj)), U.barDs(hasM ? "Actual" : "YTD Actual", byP.map(function (q) { return q.x.act; }), U.hl(S.actual, pn, st.proj))]),
+      function (i, e) { pick(ctx, "proj", pn[i], e); });
+    var byV = projX.filter(function (o) { return o.plan || o.landing; }).sort(function (a, b) { return a.variance - b.variance; }), vn = byV.map(function (o) { return o.name; });
+    var vb = chartBox(panelIn(g3, "Year-end variance by project", "Forecast Plan − " + baseLbl + " · red = under-spend · click to filter")); vb.style.height = pb.style.height;
+    hbar(vb, vn, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
+      byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
+      function (i, e) { pick(ctx, "proj", vn[i], e); });
+
+    /* 4 · Invoice schedule */
+    sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
+    invoiceGantt(panelIn(v, "Invoice schedule", (hasM ? esc(mLbl) + " · " : "") + "Actual to " + esc(fmt.month(cut)) + " · contractor Forecast Plan after"), proj.slice().sort(function (a, b) { return b.plan - a.plan; }), vMonths, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
+
+    /* 5 · Project details (one table per view) */
+    sec("c-det", "Project details", "");
+    st.tab = st.tab || "spend";
+    var tabs = [["spend", "2026 spend & year-end outlook"], ["reg", "Cost register (contract & payments)"]];
+    var tp = add(v, U.panel(tabs.filter(function (t) { return t[0] === st.tab; })[0][1], "", ""));
+    tp.querySelector(".panel-head .tools").appendChild(seg("", tabs, st.tab, function (x) { st.tab = x; ctx.rerender(); }));
+    if (st.tab === "spend") tableIn(tp, { rows: proj, exportName: "Cost_2026_Projects", totals: true, sort: { key: "variance", dir: 1 }, maxHeight: 640,
+      onRow: function (o, e) { pick(ctx, "proj", o.name, e); }, rowTitle: "Filter by this project", rowClass: function (o) { return st.proj.indexOf(o.name) >= 0 ? "selected" : ""; },
+      columns: [{ key: "ID", label: "ID", nowrap: true }, { key: "name", label: "Project", nowrap: true }, { key: "kpi", label: "KPI", nowrap: true },
+        { key: "plan", label: RV ? "Original Plan 2026" : "Spend Plan 2026", type: "money", total: "sum" }].concat(RV ? [{ key: "rev", label: "Rev Spend Plan 2026", type: "money", total: "sum" }] : []).concat([
+        { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" }, { key: "variance", label: "Variance vs " + (RV ? "Rev plan" : "plan"), type: "money", signed: true, total: "sum" }]).concat(RV ? [
+        { key: "varOrig", label: "Variance vs original", type: "money", signed: true, total: "sum" }] : []).concat([
+        { key: "pct", label: "Forecast ÷ plan", type: "meter" }, { key: "status", label: "Outlook", type: "badge" },
+        { key: "baseYtd", label: "YTD " + (RV ? "Rev Plan" : "Plan"), type: "money", total: "sum" }, { key: "fcYtd", label: "YTD Forecast Plan", type: "money", total: "sum" },
+        { key: "act", label: "YTD Actual", type: "money", total: "sum" }, { get: function (o) { return o.act - o.baseYtd; }, label: "YTD Var. (Actual − Plan)", type: "money", signed: true, total: "sum" },
+        { key: "fcRem", label: "Forecast remaining", type: "money", total: "sum" }]) });
+    else tableIn(tp, { rows: nsr, exportName: "NSR_Project_Data", totals: true, maxHeight: 620, onRow: function (r) { quickView(D, r.ID); }, rowTitle: "Open project",
+      columns: [
+        { key: "SN", label: "SN", type: "int" }, { key: "Fund Type", label: "Fund Type" }, { key: "PROG", label: "PROG" },
+        { key: "PO Number", label: "PO Number", type: "text" }, { key: "ID", label: "ID" }, { key: "Project Name", label: "Project Name", nowrap: true },
+        { key: "Full Cost", label: "Full Cost", type: "money", total: "sum" }, { key: "Contract Value", label: "Contract Value", type: "money", total: "sum" },
+        { key: "WC 2025", label: "WC 2025", type: "money", total: "sum" }, { key: "WC 2026", label: "WC 2026", type: "money", total: "sum" },
+        { key: "Total WC", label: "Total WC", type: "money", total: "sum" }, { key: PAID, label: "Paid", type: "money", total: "sum" },
+        { key: "Remaining WC", label: "Remain WC", type: "money", total: "sum" },
+        { key: "Start Date", label: "Start Date", type: "date" }, { key: "End Date", label: "End Date", type: "date" },
+        { key: "Project Phase", label: "Project Phase", type: "badge" }, { key: "Remarks/Concern", label: "Remarks / Concern", wrap: true }] });
+
+    /* 6 · Monthly spending plan matrix (last section, meeting format) */
+    sec("c-mx", "Monthly spending plan", "");
+    spendMatrix(panelIn(v, "Monthly spending plan", plans + " vs actual · after the " + esc(fmt.month(cut)) + " cut-off the actual row shows the contractor Forecast Plan (dashed cells) · variance = Cum Actual/Forecast − Cum " + (RV ? "Rev " : "") + "Plan · click a project to filter"),
+      proj, months, cut, function (o, e) { pick(ctx, "proj", o.name, e); });
+  };
+
+
+
+  /* ======================================================================
+     KPI Year-End Outlook — how the cost KPIs will close the year.
+     Year-end = the contractor Forecast Plan (invoicing plan) for the full year,
+     against the Rev Spend Plan (Budget 2026) when it is loaded, else the original
+     Spend Plan (budgeting); both plans are shown. Actual spend is for reference.
+     No new data: Spending_Plan, KPI_Projects_Data and KPI_Summary only.
+     ====================================================================== */
+  var TARGET = 0.95;   // "CAPEX Variance (−5%)": year-end spend within 5% of the Spend Plan
+  function outlookStatus(o) {
+    if (!o.base) return o.landing ? "Unplanned spend" : "No 2026 plan";
+    var p = o.landing / o.base;
+    return p > 1.05 ? "Above plan" : p >= TARGET ? "On track" : p >= 0.85 ? "At risk" : "Behind plan";
+  }
+  var OUT_ORDER = ["Behind plan", "At risk", "On track", "Above plan", "Unplanned spend", "No 2026 plan"];
+  var OUT_COLOR = { "Behind plan": C.red, "At risk": C.yellow, "On track": C.blue, "Above plan": C.mid, "Unplanned spend": C.slate, "No 2026 plan": C.gray };
+  function lastActualMonth(sp) { return sp.filter(function (r) { return N(G(r, SP.act)) != null; }).map(function (r) { return r.Month; }).sort().pop() || null; }
+  function outlookByProject(rows, cut, kpiOf) {
+    var by = {};
+    rows.forEach(function (r) {
+      var id = String(r.ID), o = by[id] || (by[id] = { ID: id, name: r["Project Name"], fund: r["Fund Type"], phase: r["Project Phase"], kpi: kpiOf(id),
+        plan: 0, planYtd: 0, planRem: 0, rev: 0, revYtd: 0, revRem: 0, act: 0, fcRem: 0, fcFY: 0, months: {} });
+      var pl = N(G(r, SP.plan)) || 0, rv = N(G(r, SP.rev)) || 0, ac = N(G(r, SP.act)) || 0, fc = N(G(r, SP.inv)) || 0, past = cut && r.Month <= cut;
+      o.plan += pl; o.rev += rv; o.fcFY += fc;
+      if (past) { o.planYtd += pl; o.revYtd += rv; o.act += ac; } else { o.planRem += pl; o.revRem += rv; o.fcRem += fc; }
+      o.months[r.Month] = { row: r, plan: pl, rev: rv, act: past ? ac : null, fc: fc, text: r["Invoice Related actvities"], ms: r.Milestones, past: past };
+    });
+    var R = hasRev();
+    return Object.keys(by).map(function (k) {
+      var o = by[k]; o.base = R ? o.rev : o.plan; o.baseYtd = R ? o.revYtd : o.planYtd;     // plan the outlook is measured against
+      o.landing = o.fcFY; o.fcYtd = o.fcFY - o.fcRem; o.variance = o.landing - o.base; o.varOrig = o.landing - o.plan; o.pct = o.base ? o.landing / o.base : null;
+      o.ytdVar = o.fcYtd - o.baseYtd; o.remVar = o.fcRem - (R ? o.revRem : o.planRem); o.status = outlookStatus(o); return o;
+    });
+  }
+  function waterfall(box, steps, target) {
+    // steps: [{ label, value, total? }] → floating bars; totals start at zero
+    var run = 0, data = [], colors = [];
+    steps.forEach(function (s) {
+      if (s.total) { data.push([0, s.value]); run = s.value; colors.push(s.color); }
+      else { data.push([run, run + s.value]); run += s.value; colors.push(s.value < 0 ? C.red : C.blue); }
+    });
+    var ds = [U.fcStyle(U.barDs("Amount", data, colors, { maxBarThickness: 70, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" },
+      formatter: function (v, c) { var s = steps[c.dataIndex], x = s.total ? s.value : s.value; return (s.total || x < 0 ? "" : "+") + fmt.m(x) + " M"; } } }), colors.map(function (c) { return c === S.invoice; }))];
+    if (target != null) ds.push(U.lineDs("Target (" + Math.round(TARGET * 100) + "% of plan)", steps.map(function () { return target; }), C.black, { borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, datalabels: { display: false } }));
+    return U.chart(box, { type: "bar", data: { labels: steps.map(function (s) { return s.label; }), datasets: ds },
+      options: { layout: { padding: { top: 24 } }, plugins: { legend: { display: target != null, position: "bottom", labels: { filter: function (i) { return i.datasetIndex > 0; } } },
+        tooltip: { callbacks: { label: function (c) { if (c.datasetIndex) return " Target: " + fmt.money(c.parsed.y) + " SAR"; var s = steps[c.dataIndex]; return " " + s.label + ": " + fmt.money(s.value) + " SAR"; } } } },
+        scales: { x: U.catAxis(), y: Object.assign(U.moneyAxis(), { beginAtZero: true, grace: "12%" }) } } });   // headroom: bar labels clear the top
+  }
+
+  /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
+  function spendMatrix(host, list, months, cut, onProj) {
+    var ci = months.indexOf(cut);
+    function rowsOf(get) {                                   // monthly plan / actual-or-forecast for a set of projects
+      return months.map(function (m) { return list.reduce(function (s, o) { var c = o.months[m]; return s + (c ? get(c) : 0); }, 0); });
+    }
+    var RV = hasRev();
+    function block(title, sub, plan, act, idx, rev) {
+      var cp = 0, ca = 0, cr = 0, cumP = plan.map(function (x) { return cp += x; }), cumA = act.map(function (x) { return ca += x; });
+      var cumR = RV ? rev.map(function (x) { return cr += x; }) : null;
+      var vr = cumA.map(function (x, i) { return x - (RV ? cumR[i] : cumP[i]); });
+      function cells(vals, cls) {
+        return vals.map(function (x, i) { var f = ci >= 0 && i > ci;
+          return '<td data-c="' + i + '" class="num' + (i === ci ? " cut" : "") + (f && cls !== "p" ? " fcst" : "") + (cls === "v" ? (x < -0.5 ? " neg" : x > 0.5 ? " pos" : "") : "") + '">' + (x === 0 && cls !== "v" && cls !== "c" ? "–" : fmt.money(x)) + "</td>"; }).join("");
+      }
+      function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+      var lab = RV ? [["M Original Plan", plan, "p", sum(plan)], ["M Rev Plan", rev, "p", sum(rev)], ["M Actual / Forecast", act, "a", sum(act)],
+          ["Cum Original Plan", cumP, "c", null], ["Cum Rev Plan", cumR, "c", null], ["Cum Actual / Forecast", cumA, "c", null], ["Variance (vs Rev)", vr, "v", vr[vr.length - 1]]]
+        : [["M Plan", plan, "p", sum(plan)], ["M Actual / Forecast", act, "a", sum(act)], ["Cum Plan", cumP, "c", null], ["Cum Actual / Forecast", cumA, "c", null], ["Variance", vr, "v", vr[vr.length - 1]]];
+      var tot = lab.map(function (l) { return l[3]; }), last = lab.length - 1;
+      return lab.map(function (l, k) {
+        return '<tr class="' + (k === 0 ? "first" : "") + (k === last ? " var" : "") + (l[0].indexOf("Rev") >= 0 ? " rev" : "") + '">' + (k === 0 ? '<th rowspan="' + lab.length + '" class="sm-p' + (idx != null ? " clickable" : "") + '"' + (idx != null ? ' data-p="' + idx + '"' : "") + ">" + title + (sub ? "<small>" + sub + "</small>" : "") + "</th>" : "") +
+          '<th class="sm-l">' + l[0] + "</th>" + cells(l[1], l[2]) + '<td class="num tot' + (k === last ? (tot[k] < -0.5 ? " neg" : tot[k] > 0.5 ? " pos" : "") : "") + '">' + (tot[k] == null ? "" : fmt.money(tot[k])) + "</td></tr>";
+      }).join("");
+    }
+    var withData = list.filter(function (o) { return o.plan || o.rev || o.fcFY || o.act; }).sort(function (a, b) { return (b.base || b.plan) - (a.base || a.plan); });
+    var h = '<div class="table-wrap sm-wrap"><table class="sm"><thead><tr><th>Project</th><th></th>' +
+      months.map(function (m, i) { return '<th data-c="' + i + '" class="' + (i === ci ? "cut" : "") + (ci >= 0 && i > ci ? " fcst" : "") + '">' + esc(fmt.month(m)) + (ci >= 0 && i === ci + 1 ? "<small>Forecast →</small>" : i === ci ? "<small>Cut-off</small>" : "") + "</th>"; }).join("") +
+      "<th>Total 2026</th></tr></thead><tbody>";
+    function actOrFc(c) { return c.past ? (c.act || 0) : (c.fc || 0); }
+    h += block("Overall", withData.length + " projects", rowsOf(function (c) { return c.plan || 0; }), rowsOf(actOrFc), null, rowsOf(function (c) { return c.rev || 0; })).replace(/<tr class="first/, '<tr class="overall first').replace(/<tr class="/g, '<tr class="ov ');
+    withData.forEach(function (o, i) {
+      var one = [o];
+      var pl = months.map(function (m) { var c = o.months[m]; return c ? c.plan || 0 : 0; }), ac = months.map(function (m) { var c = o.months[m]; return c ? actOrFc(c) : 0; });
+      var rv = months.map(function (m) { var c = o.months[m]; return c ? c.rev || 0 : 0; });
+      h += block("<b>" + esc(o.ID) + "</b> " + esc(o.name), esc(o.kpi), pl, ac, i, rv);
+    });
+    h += "</tbody></table></div>";
+    var tools = '<div class="sm-tools"><span class="sm-hint">Reading ruler: hover a row to follow it across the months · click to pin it, ↑ ↓ to move, Esc to clear</span></div>';
+    var node = add(host, "<div>" + tools + h + "</div>");
+    node.querySelectorAll(".sm-p.clickable").forEach(function (t) { t.addEventListener("click", function (e) { onProj(withData[+t.getAttribute("data-p")], e); }); });
+
+    // reading ruler: row highlight on hover (CSS), click pins a row, the hovered month column is tinted
+    var tbl = node.querySelector("table.sm"), rows = [].slice.call(tbl.tBodies[0].rows), pinned = null;
+    function colOff() { tbl.querySelectorAll(".rl-col").forEach(function (c) { c.classList.remove("rl-col"); }); }
+    function pin(tr) {
+      if (pinned) pinned.classList.remove("rl-pin");
+      pinned = tr && tr !== pinned ? tr : null;
+      if (pinned) { pinned.classList.add("rl-pin"); pinned.scrollIntoView({ block: "nearest" }); }
+    }
+    tbl.classList.add("ruler");          // always on
+    tbl.addEventListener("mouseover", function (e) {
+      var c = e.target.closest("[data-c]"); colOff();
+      if (c) tbl.querySelectorAll('[data-c="' + c.getAttribute("data-c") + '"]').forEach(function (x) { x.classList.add("rl-col"); });
+    });
+    tbl.addEventListener("mouseleave", colOff);
+    tbl.addEventListener("click", function (e) {
+      if (e.target.closest(".sm-p.clickable")) return;
+      var tr = e.target.closest("tbody tr"); if (tr) pin(tr === pinned ? null : tr);
+    });
+    function onKey(e) {
+      if (!document.body.contains(tbl)) { document.removeEventListener("keydown", onKey); return; }
+      if (!pinned) return;
+      var i = rows.indexOf(pinned);
+      if (e.key === "ArrowDown" && i < rows.length - 1) { e.preventDefault(); pin(rows[i + 1]); }
+      else if (e.key === "ArrowUp" && i > 0) { e.preventDefault(); pin(rows[i - 1]); }
+      else if (e.key === "Escape") pin(null);
+    }
+    document.addEventListener("keydown", onKey);
+  }
+
+  function outlookModal(list) {
+    tableModal("Year-end outlook by project", list, [{ key: "ID", label: "ID" }, { key: "name", label: "Project" },
+      { key: "plan", label: hasRev() ? "Original Plan" : "Spend Plan", type: "money", total: "sum" }].concat(hasRev() ? [{ key: "rev", label: "Rev Spend Plan", type: "money", total: "sum" }] : []).concat([
+      { key: "act", label: "YTD Actual", type: "money", total: "sum" },
+      { key: "fcRem", label: "Forecast remaining", type: "money", total: "sum" }, { key: "landing", label: "Year-end Forecast Plan", type: "money", total: "sum" },
+      { key: "variance", label: "Variance", type: "money", signed: true, total: "sum" }, { key: "status", label: "Outlook", type: "badge" }]),
+      { totals: true, autoHeight: true, sort: { key: "variance", dir: 1 } });
+  }
+
+  /**
+   * Invoice Gantt: one bar per invoice-related activity, stacked under its project.
+   * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
+   * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
+   */
+  function invoiceGantt(host, list, months, cut, onProj) {
+    var items = [];
+    list.forEach(function (o) {
+      var acts = [];
+      months.forEach(function (m) {
+        var c = o.months[m]; if (!c) return;
+        if (c.text) acts.push({ kind: "inv", o: o, m: m, c: c, label: c.text, val: c.past ? c.act : c.fc, miss: c.past && !(c.act > 0) });
+      });
+      var ms = months.filter(function (m) { return o.months[m] && o.months[m].ms; }).map(function (m) { return { m: m, label: o.months[m].ms }; });
+      if (acts.length) items.push({ o: o, acts: acts, ms: ms });
+    });
+    if (!items.length) { add(host, '<div class="empty">No invoice-related activities for the current filters.</div>'); return; }
+    var n = months.length, ci = months.indexOf(cut);
+    function left(i) { return (i / n * 100).toFixed(4) + "%"; }
+    var gridL = months.map(function (m, i) { return '<span class="g-grid" style="left:' + left(i) + '"></span>'; }).join("") +
+      (ci >= 0 ? '<span class="g-today" style="left:' + left(ci + 1) + '" title="Actuals cut-off ' + esc(fmt.month(cut)) + '"></span>' : "");
+    var h = '<div class="g-legend"><span><i style="background:' + C.yellow + '"></i>Actual (invoiced)</span><span><i class="fc-sw"></i>Forecast Plan (contractor)</span>' +
+      '<span class="iv-leg-miss"><i style="background:' + C.red + '"></i>✕ Past activity not invoiced</span><span><b class="pg-dia" style="position:static;display:inline-block"></b>Milestone (on the project row)</span>' +
+      '<span><i style="background:' + C.yellow + ';width:3px"></i>Actuals cut-off ' + esc(fmt.month(cut)) + "</span></div>";
+    h += '<div class="gantt iv"><div class="gantt-inner"><div class="iv-row g-head"><div>Project / invoice activity</div><div>Month</div><div class="num">M SAR</div><div class="g-track"><div class="g-months">' +
+      months.map(function (m, i) { return '<span class="' + (m === cut ? "cut" : "") + '" style="left:' + left(i) + ";width:" + (100 / n).toFixed(4) + '%">' + esc(fmt.month(m)) + "</span>"; }).join("") + "</div></div></div>";
+    var all = [];
+    items.forEach(function (it, pi) {
+      var o = it.o, inv = it.acts;
+      var nMiss = inv.filter(function (a) { return a.miss; }).length;
+      var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
+      h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
+        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M" + (hasRev() ? " · Rev plan " + fmt.m(o.rev, 1) + " M" : "") + " · Forecast Plan " + fmt.m(o.landing, 1) + " M · YTD " + (hasRev() ? "Rev " : "") + "Plan " + fmt.m(o.baseYtd, 1) +
+          " M · YTD Actual " + '<b class="' + (o.act < o.baseYtd ? "neg" : "pos") + '">' + fmt.m(o.act, 1) + " M</b>" + (o.baseYtd ? " (" + fmt.pct(o.act / o.baseYtd, 1) + ")" : "") +
+          (nMiss ? ' · <b class="iv-miss-n">✕ ' + nMiss + " past activit" + (nMiss > 1 ? "ies" : "y") + " not invoiced</b>" : "") + '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+      it.acts.forEach(function (a) {
+        var i = months.indexOf(a.m), idx = all.push(a) - 1;
+        var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");
+        var due = a.c.fc || a.c.plan || 0;     // what was expected to be invoiced that month
+        var bar = '<span class="iv-bar ' + (a.miss ? "miss" : a.c.past ? "act" : "fc") + '" style="left:calc(' + left(i) + ' + 3px);width:calc(' + (100 / n).toFixed(4) + '% - 6px)">' +
+          (a.miss ? "✕ " + (due ? fmt.m(due, 1) : "") : fmt.m(a.val, 1)) + "</span>";
+        if (a.miss) tip = "NOT INVOICED — " + tip;
+        h += '<div class="iv-row iv-a' + (a.miss ? " miss" : "") + '" data-a="' + idx + '" title="' + esc(tip) + '"><div class="iv-lab">' + (a.miss ? '<span class="iv-tag">Not invoiced</span>' : "") + esc(a.label) + "</div><div>" + esc(fmt.month(a.m)) +
+          '</div><div class="num">' + (a.miss ? '<span class="neg">0.0</span>' + (due ? '<small class="iv-due">of ' + fmt.m(due, 1) + "</small>" : "") : fmt.m(a.val, 1)) + '</div><div class="g-track">' + gridL + bar + "</div></div>";
+      });
+    });
+    h += '</div></div><div class="pc-note">Each bar is one invoice-related activity from the Spending Plan (Invoice Related Activities column), placed in its month. Values in M SAR: actual spend up to ' +
+      esc(fmt.month(cut)) + ", contractor Forecast Plan after it. Milestones come from the Spending Plan Milestones column.</div>";
+    h = h.replace('<div class="g-legend">', '<div class="sm-tools"><span class="sm-hint">Reading ruler: hover a row to follow it across the months · ↑ ↓ move between activities, Esc clears</span></div><div class="g-legend">');
+    var node = add(host, "<div>" + h + "</div>");
+    node.querySelectorAll(".iv-p").forEach(function (p) { p.addEventListener("click", function (e) { onProj(items[+p.getAttribute("data-p")].o, e); }); });
+    // reading ruler (always on): row band on hover (CSS), month column band, keyboard line-by-line
+    var gin = node.querySelector(".gantt-inner"), head = node.querySelector(".iv-row.g-head .g-track"), band = document.createElement("div"), rowsA = [].slice.call(node.querySelectorAll(".iv-row.iv-a, .iv-row.iv-p")), cur = null;
+    band.className = "iv-colband"; gin.appendChild(band); node.querySelector(".gantt").classList.add("ruler");
+    gin.addEventListener("mousemove", function (e) {
+      var r = head.getBoundingClientRect(), gi = gin.getBoundingClientRect(), x = e.clientX - r.left;
+      if (x < 0 || x > r.width) { band.style.display = "none"; return; }
+      var k = Math.floor(x / (r.width / n));
+      band.style.display = "block"; band.style.left = (r.left - gi.left + k * r.width / n) + "px"; band.style.width = (r.width / n) + "px";
+    });
+    gin.addEventListener("mouseleave", function () { band.style.display = "none"; });
+    function mark(tr) { if (cur) cur.classList.remove("rl-pin"); cur = tr; if (cur) { cur.classList.add("rl-pin"); cur.scrollIntoView({ block: "nearest" }); } }
+    rowsA.forEach(function (r) { r.addEventListener("mouseenter", function () { if (cur && cur !== r) mark(null); }); });
+    function onKey(e) {
+      if (!document.body.contains(gin)) { document.removeEventListener("keydown", onKey); return; }
+      var hov = gin.querySelector(".iv-row.iv-a:hover, .iv-row.iv-p:hover"), at = rowsA.indexOf(cur || hov);
+      if (at < 0) return;
+      if (e.key === "ArrowDown" && at < rowsA.length - 1) { e.preventDefault(); mark(rowsA[at + 1]); }
+      else if (e.key === "ArrowUp" && at > 0) { e.preventDefault(); mark(rowsA[at - 1]); }
+      else if (e.key === "Escape") mark(null);
+    }
+    document.addEventListener("keydown", onKey);
+    node.querySelectorAll(".iv-a").forEach(function (r) { r.addEventListener("click", function () {
+      var a = all[+r.getAttribute("data-a")], x = a.c, o = a.o;
+      U.modal(o.name + " — " + fmt.month(a.m), '<div class="kv">' + [["Project", esc(o.ID + " — " + o.name)], ["Month", esc(fmt.month(a.m))], ["Invoice-related activity", esc(x.text || "—")],
+        ["Milestone", esc(x.ms || "—")], ["Spend Plan", fmt.money(x.plan) + " SAR"], ["Forecast Plan (contractor)", fmt.money(x.fc) + " SAR"],
+        ["Actual spend", x.past ? fmt.money(x.act) + " SAR" : "Not yet (after the " + esc(fmt.month(cut)) + " cut-off)"]].map(function (p) { return "<div>" + p[0] + "</div><div>" + p[1] + "</div>"; }).join("") + "</div>");
+    }); });
+  }
+
+  /* ======================================================================
+     Progress Dashboard — one page for the Progress section: SPI KPI position
+     and year-end outlook, the portfolio trend, every project (charts + one
+     table), the master plan and a project dashboard (weekly report card,
+     S-curve, milestone timeline). Replaces the former SPI & S-Curve Outlook, Weekly Progress
+     Summary, Project Progress, Projects Master Plan and Project Timeline
+     pages; every figure appears once.
+     EV = contract value × cumulative actual %, PV = contract value × cumulative
+     planned %, portfolio SPI = ΣEV ÷ ΣPV. PV at 31-Dec from each project's
+     S-curve; EV at 31-Dec continues the project's current weekly trend.
+     ====================================================================== */
+  var DAY = 864e5;
+  function isoOf(n) { return new Date(n).toISOString().slice(0, 10); }
+  P.progress = function (ctx) {
+    var D = ctx.D, v = ctx.view, st = ctx.state;
+    var wkAll = D.t("Weekly_Report_Updates").filter(function (r) { return r["Source.Name"] && r["Project Name"]; });
+    if (!wkAll.length) { add(v, '<div class="empty">No weekly report data.</div>'); return; }
+    var kpi = D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {};
+    var TGT = N(kpi["NSR Spend Plan 2026 as per Budgeting"]) || 0.9, W = N(kpi["KPI Weight (%)"]) || 0, repSpi = N(kpi["YTD Actual"]);
+    var dd = wkAll.map(function (r) { return r["Report Date"]; }).filter(Boolean).sort().pop(), ddn = dnum(dd);
+    var yEnd = dd.slice(0, 4) + "-12-31", yEndN = dnum(yEnd), y0 = dnum(dd.slice(0, 4) + "-01-01");
+    st.win = st.win || 8;
+
+    // S-curve series per project — one row per project and date; where a sheet repeats a date (old + revised
+    // baseline) keep the live row, i.e. the one carrying actual / forecast / weekly figures, else the first.
+    var ser = {}, seen = {};
+    function live(r) { return ["Cum Actual (%)", "Cum Forecast (%)", "This Week Plan (%)", "This Week Actual (%)"].filter(function (k) { return N(r[k]) != null; }).length; }
+    D.t("S_Curve").forEach(function (r) {
+      var s = r["Source.Name"], n = dnum(r["Report Date"]); if (!s || !n) return;
+      var k = s + "|" + n, rec = { n: n, plan: N(r["Cum Plan (%)"]), act: N(r["Cum Actual (%)"]), w: live(r) };
+      if (seen[k]) { if (rec.w > seen[k].w) Object.assign(seen[k], rec); return; }
+      seen[k] = rec; (ser[s] = ser[s] || []).push(rec);
+    });
+    Object.keys(ser).forEach(function (k) { ser[k].sort(function (a, b) { return a.n - b.n; }); });
+    function lastAt(list, t, key) { var x = null; for (var i = 0; i < list.length && list[i].n <= t; i++) if (list[i][key] != null) x = list[i][key]; return x; }
+
+    var projAll = wkAll.map(function (r) {
+      var s = ser[r["Source.Name"]] || [], cv = N(r["Contract Value"]) || 0;
+      var o = { r: r, src: r["Source.Name"], code: String(r["Project Code"] || ""), name: r["Project Name"], contractor: r.Contractor, status: r["Performance Status"] || "—",
+        pm: r["Project Manager"], size: r["Project Size"], cv: cv, planNow: N(r["Planned (%) - Cumulative"]) || 0, actNow: N(r["Actual (%) - Cumulative"]) || 0, s: s,
+        planWk: N(r["Planned (%) This Week"]), actWk: N(r["Actual (%) This Week"]), wc: N(r["Total WC %"]), paid: N(r["Total Paid %"]),
+        bs: r["Start Date Baseline"], be: r["End Date Baseline"], fe: r["End Date (Forecast/Actual)"] };
+      o.start = s.length ? s[0].n : null; o.var = o.actNow - o.planNow;
+      o.planAt = function (t) { if (t >= ddn - 3 * DAY && t <= ddn) return o.planNow; var p = lastAt(s, t, "plan"); return p == null ? (t >= ddn ? o.planNow : 0) : Math.max(p, t > ddn ? o.planNow : 0); };
+      o.actAt = function (t) { if (t >= ddn - 3 * DAY) return o.actNow; var a = lastAt(s, t, "act"); return a == null ? 0 : a; };
+      var past = ddn - st.win * 7 * DAY, a0 = lastAt(s, past, "act");
+      o.rate = a0 == null ? 0 : Math.max(0, (o.actNow - a0) / st.win);          // % per week over the trend window
+      o.spiNow = o.planNow ? o.actNow / o.planNow : null;
+      o.proj = function (t) { return Math.max(o.actNow, Math.min(1, o.actNow + o.rate * (t - ddn) / (7 * DAY))); };
+      o.pvNow = cv * o.planNow; o.evNow = cv * o.actNow;
+      o.planDec = o.planAt(yEndN); o.pvDec = cv * o.planDec; o.actDec = o.proj(yEndN); o.evDec = cv * o.actDec;
+      o.spiDec = o.pvDec ? o.evDec / o.pvDec : null; o.gapDec = TGT * o.pvDec - o.evDec;
+      o.outlook = !cv ? "No contract value" : o.spiDec == null ? "No plan" : o.spiDec >= TGT ? "On track" : o.spiDec >= TGT - 0.1 ? "At risk" : "Behind schedule";
+      return o;
+    });
+    var defs = [
+      { key: "status", label: "Performance Status", options: U.uniq(projAll.map(function (o) { return o.status; })).sort(), get: function (o) { return o.status; } },
+      { key: "out", label: "Dec-26 SPI outlook", options: ["Behind schedule", "At risk", "On track", "No plan", "No contract value"].filter(function (x) { return projAll.some(function (o) { return o.outlook === x; }); }), get: function (o) { return o.outlook; } },
+      { key: "size", label: "Project Size", options: U.uniq(projAll.map(function (o) { return o.size; })).sort(), get: function (o) { return o.size; } },
+      { key: "con", label: "Contractor", options: U.uniq(projAll.map(function (o) { return o.contractor; })).sort(), get: function (o) { return o.contractor; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(projAll.map(function (o) { return o.pm; })).sort(), get: function (o) { return o.pm; } },
+      { key: "proj", label: "Project", options: U.uniq(projAll.map(function (o) { return o.name; })).sort(), get: function (o) { return o.name; } }];
+    var f = filterBar(ctx, defs, projAll);
+    var proj = projAll.filter(function (o) { return passes(o, defs, f); }), projX = projAll.filter(function (o) { return passes(o, defs, f, "proj"); });
+    function tot(list, k) { return list.reduce(function (s, o) { return s + (o[k] || 0); }, 0); }
+    var T = { pv: tot(proj, "pvNow"), ev: tot(proj, "evNow"), pvD: tot(proj, "pvDec"), evD: tot(proj, "evDec") };
+    T.spi = T.pv ? T.ev / T.pv : null; T.spiD = T.pvD ? T.evD / T.pvD : null; T.gap = TGT * T.pvD - T.evD;
+    var ach = T.spiD != null ? Math.min(1, T.spiD / TGT) : null, achNow = T.spi != null ? Math.min(1, T.spi / TGT) : null;
+    function spiTxt(x) { return x == null ? "—" : x.toFixed(2); }
+    function spiCol(x) { return spiTile(x, TGT); }
+    function spiSpan(x) { return '<span class="' + spiTxtCls(x, TGT) + '">' + spiTxt(x) + "</span>"; }
+    var below = proj.filter(function (o) { return o.spiDec != null && o.spiDec < TGT; }).length, delayed = proj.filter(function (o) { return /delay/i.test(o.status); }).length;
+
+    // project in focus (section 5): a single selected project, else the one picked last, else the lowest SPI
+    var scList = projAll.slice().sort(function (a, b) { return D.projectLabel(a.src).localeCompare(D.projectLabel(b.src)); });
+    if (f.proj.length === 1) { var fp = projAll.filter(function (o) { return o.name === f.proj[0]; })[0]; if (fp) st.sc = fp.src; }
+    if (!projAll.some(function (o) { return o.src === st.sc; })) st.sc = (proj.slice().sort(function (a, b) { return (a.spiNow == null ? 9 : a.spiNow) - (b.spiNow == null ? 9 : b.spiNow); })[0] || scList[0]).src;
+    function focus(o) { st.sc = o.src; st.jump = "p-focus"; ctx.rerender(); }
+
+    var secs = [["p-spi", "SPI position"], ["p-trend", "Portfolio trend"], ["p-proj", "Projects"], ["p-plan", "Master plan"], ["p-focus", "Project dashboard"]];
+    var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
+    nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
+
+    /* 1 · SPI position */
+    sec("p-spi", "SPI position", proj.length + " projects · contract value " + fmt.m(tot(proj, "cv")) + " M SAR · data date " + esc(fmt.date(dd)) + " · " + delayed + " delayed");
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: spiTxt(T.spi), label: "SPI today", color: spiCol(T.spi), note: "ΣEV " + fmt.m(T.ev, 1) + " M ÷ ΣPV " + fmt.m(T.pv, 1) + " M" }) +
+      U.tile({ value: TGT.toFixed(2), label: "KPI target", color: "black", note: "KPI sheet: SPI " + (repSpi != null ? repSpi.toFixed(2) : "—") + " · " + fmt.pct(N(kpi["% Achieved"]), 1) + " achieved" }) +
+      U.tile({ value: spiTxt(T.spiD), label: "Projected SPI " + fmt.month(yEnd), color: spiCol(T.spiD), note: "Current trend · ΣEV " + fmt.m(T.evD, 1) + " ÷ ΣPV " + fmt.m(T.pvD, 1) + " M" }) +
+      U.tile({ value: fmt.pct(ach, 1), label: "Projected KPI achievement", color: ach >= 1 ? "" : ach >= 0.9 ? "yellow" : "red", note: "KPI result " + fmt.pct(ach != null ? ach * W : null, 1) + " of " + fmt.pct(W, 0) + " · today " + fmt.pct(achNow, 1) }) +
+      U.tile({ value: T.gap > 0 ? fmt.m(T.gap) : "0.00", unit: "M SAR", label: T.gap > 0 ? "EV gap to target" : "Target met", color: T.gap > 0 ? "red" : "mid",
+        note: T.gap > 0 ? "Extra earned value needed by 31-Dec for SPI " + TGT.toFixed(2) : "Headroom " + fmt.m(-T.gap) + " M of earned value" }) +
+      U.tile({ value: below + " / " + proj.length, label: "Projects below target", color: below ? "red" : "slate", note: "Projected SPI < " + TGT.toFixed(2) + " at 31-Dec · click to filter" });
+    clickTiles(g, [null, null, null, null, null, function () { var s = sel(ctx, "out"); s.length = 0; ["Behind schedule", "At risk"].forEach(function (x) { if (projAll.some(function (o) { return o.outlook === x; })) s.push(x); }); ctx.rerender(); }]);
+    var ctl = add(v, '<div class="filters pg-ctl"></div>');
+    ctl.appendChild(seg("Trend window", [[4, "4 weeks"], [8, "8 weeks"], [12, "12 weeks"]], st.win, function (x) { st.win = x; ctx.rerender(); }));
+    add(ctl, '<div class="seg-help"><b>EV</b> = contract value × cumulative actual %, <b>PV</b> = contract value × cumulative planned %; <b>SPI = ΣEV ÷ ΣPV</b> (larger contracts weigh more). ' +
+      "KPI % achieved = SPI ÷ " + TGT.toFixed(2) + " (max 100%), KPI result = weight × % achieved. Year-end: PV from each planned S-curve, EV continues each project's average weekly progress of the last " + st.win + " weeks (capped at 100%).</div>");
+
+    /* 2 · Portfolio trend */
+    sec("p-trend", "Portfolio trend " + dd.slice(0, 4), "Solid = actual to " + esc(fmt.date(dd)) + " · dashed = projection to 31-Dec (current trend)");
+    var pts = [];
+    for (var t = ddn; t >= y0; t -= 7 * DAY) pts.unshift(t);
+    for (t = ddn + 7 * DAY; t < yEndN; t += 7 * DAY) pts.push(t);
+    pts.push(yEndN);
+    function portAt(t) {
+      var pv = 0, ev = 0;
+      proj.forEach(function (o) { if (o.start != null && o.start > t && t < ddn) return; var p = o.planAt(t); pv += o.cv * p; ev += o.cv * (t <= ddn ? o.actAt(t) : o.proj(t)); });
+      return { pv: pv, ev: ev, spi: pv ? ev / pv : null };
+    }
+    var hist = pts.map(function (t) { return t <= ddn ? portAt(t) : null; }), fut = pts.map(function (t) { return t >= ddn ? portAt(t) : null; });
+    var labs = pts.map(function (t) { return fmt.date(isoOf(t)).slice(0, 6); });
+    var g1 = grid(v, "g-2");
+    U.chart(chartBox(panelIn(g1, "Portfolio SPI", "Weekly ΣEV ÷ ΣPV"), "tall"),
+      { type: "line", data: { labels: labs, datasets: [U.lineDs("SPI actual", hist.map(function (x) { return x && x.spi; }), S.plan, { borderWidth: 3, pointRadius: 2, spanGaps: false }),
+        U.lineDs("Projection — current trend", fut.map(function (x) { return x && x.spi; }), C.black, { borderDash: [7, 5], borderWidth: 2.5, pointRadius: 2, spanGaps: false }),
+        U.lineDs("Target " + TGT.toFixed(2), pts.map(function () { return TGT; }), C.red, { borderDash: [4, 4], borderWidth: 1.2, pointRadius: 0 })] },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: { callbacks: { label: function (c) { return c.parsed.y == null ? null : " " + c.dataset.label + ": " + c.parsed.y.toFixed(3); } } } },
+          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: { suggestedMin: 0.6, suggestedMax: 1.1, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(2); } } } } } });
+    U.chart(chartBox(panelIn(g1, "Earned value vs planned value", "Cumulative M SAR · PV from the planned S-curves"), "tall"),
+      { type: "line", data: { labels: labs, datasets: [
+        U.lineDs("Planned value (PV)", pts.map(function (t, i) { return (hist[i] || fut[i] || {}).pv; }), S.plan, { borderWidth: 2.5, pointRadius: 0 }),
+        U.lineDs("Earned value (EV)", hist.map(function (x) { return x && x.ev; }), S.actual, { borderWidth: 3, pointRadius: 0, spanGaps: false }),
+        U.lineDs("EV projection", fut.map(function (x) { return x && x.ev; }), S.actual, { borderDash: [7, 5], borderWidth: 2.5, pointRadius: 0, spanGaps: false }),
+        U.lineDs("EV needed for SPI " + TGT.toFixed(2), fut.map(function (x) { return x && x.pv * TGT; }), C.red, { borderDash: [4, 4], borderWidth: 1.2, pointRadius: 0, spanGaps: false })] },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.moneyTooltip() }, scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 14 } }), y: U.moneyAxis() } } });
+
+    /* 3 · Projects: charts + one table */
+    sec("p-proj", "Projects", "Click a bar to filter · click a table row to open the project dashboard");
+    function fd(o) { return f.proj.length && f.proj.indexOf(o.name) < 0; }
+    var g2 = grid(v, "g-2");
+    var byP = projX.slice().sort(function (a, b) { return b.planNow - a.planNow; }), pn = byP.map(function (o) { return o.name; });
+    var bp = chartBox(panelIn(g2, "Planned vs actual progress", "Cumulative % · from the weekly report")); bp.style.height = Math.max(300, pn.length * 34 + 70) + "px";
+    hbar(bp, byP.map(function (o) { return o.code + " — " + o.name; }), [U.barDs("Planned % (cum)", byP.map(function (o) { return o.planNow; }), U.hl(S.plan, pn, f.proj), { maxBarThickness: 12 }),
+      U.barDs("Actual % (cum)", byP.map(function (o) { return o.actNow; }), U.hl(S.actual, pn, f.proj), { maxBarThickness: 12 })], function (i, e) { pick(ctx, "proj", pn[i], e); }, U.pctAxis(1), U.pctTooltip());
+    var byS = projX.filter(function (o) { return o.cv; }).sort(function (a, b) { return (a.spiDec == null ? 9 : a.spiDec) - (b.spiDec == null ? 9 : b.spiDec); }), sn = byS.map(function (o) { return o.name; });
+    var bs = chartBox(panelIn(g2, "SPI — today vs " + fmt.month(yEnd), "Target " + TGT.toFixed(2) + " · red = below target · dashed = projected")); bs.style.height = bp.style.height;
+    function colS(x, faded) { var c0 = spiBar(x, TGT); return faded ? U.fade(c0) : c0; }
+    hbar(bs, sn, [U.barDs("SPI today", byS.map(function (o) { return o.spiNow; }), byS.map(function (o) { return colS(o.spiNow, fd(o)); }), { maxBarThickness: 12 }),
+      U.fcBar("SPI " + fmt.month(yEnd) + " (projected)", byS.map(function (o) { return o.spiDec; }), byS.map(function (o) { return colS(o.spiDec, fd(o)); }), { maxBarThickness: 12 })],
+      function (i, e) { pick(ctx, "proj", sn[i], e); }, { beginAtZero: true, suggestedMax: 1.2, grid: { color: "rgba(200,201,199,.5)" }, ticks: { callback: function (x) { return x.toFixed(1); } } },
+      { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + (c.parsed.x == null ? "—" : c.parsed.x.toFixed(2)); } } });
+    tableIn(panelIn(v, "Project progress & SPI outlook", proj.length + " projects · weekly report " + esc(fmt.date(dd))), { rows: proj, exportName: "Progress_Projects", totals: true, sort: { key: "spiDec", dir: 1 }, maxHeight: 640,
+      onRow: focus, rowTitle: "Open the project dashboard", rowClass: function (o) { return o.src === st.sc ? "selected" : ""; },
+      columns: [{ key: "code", label: "Code", nowrap: true }, { key: "name", label: "Project", wrap: true }, { key: "status", label: "Status", type: "badge" },
+        { key: "cv", label: "Contract value", type: "money", total: "sum" },
+        { key: "planWk", label: "Plan % week", type: "pct" }, { key: "actWk", label: "Actual % week", type: "pct" },
+        { key: "planNow", label: "Plan % cum", type: "meter", meterCls: "plan" }, { key: "actNow", label: "Actual % cum", type: "meter" }, { key: "var", label: "Variance", type: "pct", signed: true },
+        { key: "pvNow", label: "PV today", type: "money", total: "sum" }, { key: "evNow", label: "EV today", type: "money", total: "sum" },
+        { key: "spiNow", label: "SPI today", type: "dec", render: spiSpan, total: function () { return spiTxt(T.spi); } },
+        { key: "rate", label: "Trend %/wk", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "planDec", label: "Plan % 31-Dec", type: "pct" }, { key: "actDec", label: "Actual % 31-Dec", type: "pct" },
+        { key: "spiDec", label: "SPI 31-Dec", type: "dec", render: spiSpan, total: function () { return spiTxt(T.spiD); } },
+        { key: "gapDec", label: "EV gap to target", type: "money", total: "sum", render: function (x) { return x > 0 ? '<span class="neg">' + fmt.money(x) + "</span>" : '<span class="pos">' + fmt.money(x) + "</span>"; } },
+        { key: "outlook", label: "Dec-26 outlook", type: "badge" },
+        { key: "wc", label: "WC %", type: "pct" }, { key: "paid", label: "Paid %", type: "pct" },
+        { key: "bs", label: "BL start", type: "date" }, { key: "be", label: "BL finish", type: "date" }, { key: "fe", label: "Forecast finish", type: "date" }] });
+
+    /* 4 · Master plan (milestones of the filtered projects) */
+    var srcIn = {}; proj.forEach(function (o) { srcIn[o.src] = 1; });
+    var anyF = defs.some(function (d) { return f[d.key].length; });
+    st.late = st.late || "all";
+    var ms = D.t("Project_Milestones_Progress_Combine").filter(function (r) { return !anyF || srcIn[r["Source.Name"]]; })
+      .sort(function (a, b) { var s = D.projectLabel(a["Source.Name"]).localeCompare(D.projectLabel(b["Source.Name"])); return s || sortNum(a.Sort, b.Sort); });
+    function isLate(r) { var p = dnum(r["Planned Finish"]), x = dnum(r["Actual/Forecast Finish"]); return p && x && x > p; }
+    var nLate = ms.filter(isLate).length;
+    sec("p-plan", "Master plan", U.uniq(ms.map(function (r) { return r["Source.Name"]; })).length + " projects · " + ms.length + " milestones · " + nLate + " forecast later than plan · data date " + esc(fmt.date((ms[0] || {})["Data Date"])));
+    var mp = add(v, U.panel("Projects master plan", "Hover a bar for dates · click a project heading to open its project dashboard, a milestone for details", "", ""));
+    mp.querySelector(".panel-head .tools").appendChild(seg("", [["all", "All milestones"], ["late", "Forecast later than plan (" + nLate + ")"]], st.late, function (x) { st.late = x; ctx.rerender(); }));
+    gantt(mp, st.late === "late" ? ms.filter(isLate) : ms, function (r) { return D.projectLabel(r["Source.Name"]); },
+      { goLabel: "Project dashboard →", onGroup: function (r) { var o = projAll.filter(function (x) { return x.src === r["Source.Name"]; })[0]; if (o) focus(o); },
+        onRow: function (r) { U.recordModal(r.Description + " — " + D.projectLabel(r["Source.Name"]), r); } });
+
+    /* 5 · Project dashboard: one project's weekly report card, S-curve and milestone timeline */
+    var po = projAll.filter(function (o) { return o.src === st.sc; })[0], r = po.r, src = po.src, code = po.code;
+    sec("p-focus", "Project dashboard", "One project · weekly report card, S-curve and milestone timeline");
+    var bar = add(v, '<div class="filters pg-ctl"></div>');
+    var ps = U.select({ label: "Project", value: src, options: scList.map(function (o) { return { value: o.src, label: o.code + " — " + o.name }; }), onChange: function (x) { st.sc = x; st.jump = "p-focus"; ctx.rerender(); } });
+    ps.style.flex = "1"; ps.querySelector("select").style.maxWidth = "none"; bar.appendChild(ps);
+    var rb = el('<button type="button" class="icon-btn ghost">Full weekly record</button>'); rb.addEventListener("click", function () { U.recordModal(code + " — " + po.name, r, WEEKLY_GROUPS); }); bar.appendChild(rb);
+    function bySrc(tn) { return D.t(tn).filter(function (x) { return x["Source.Name"] === src; }); }
+    var gi = grid(v, "g-7"), eos = eotOfSite(D, code, r);
+    gi.innerHTML = U.info("Contractor", esc(r.Contractor || "—")) + U.info("Project manager", esc(po.pm || "—")) + U.info("BL start", fmt.date(po.bs)) + U.info("BL finish", fmt.date(po.be)) +
+      U.info("Forecast finish", fmt.date(po.fe)) + U.info("EOT", eotHtml(eos)) + U.info("Report date", fmt.date(r["Report Date"]));
+    if (window.SARChecks) SARChecks.inline(v, code);   // data checks that found something in this project's data
+    if (/required|expired|exceeds|likely|pending/.test(eos.kind))   // the full EOT reasoning under the info row
+      add(v, '<div class="note-box' + (/required|expired/.test(eos.kind) ? " warn" : "") + '" style="margin:-4px 0 16px"><b>EOT:</b> ' + esc(eos.text) +
+        (eos.cause && eos.kind !== "pending" ? "<br><b>Cause:</b> " + esc(eos.cause) : "") + "</div>");
+    var gt = grid(v, "g-5");
+    gt.innerHTML = U.tile({ value: fmt.pct(po.planNow), label: "Cum plan %", note: "This week " + fmt.pct(po.planWk) }) +
+      U.tile({ value: fmt.pct(po.actNow), label: "Cum actual %", color: "yellow", note: "This week " + fmt.pct(po.actWk) }) +
+      U.tile({ value: spiTxt(po.spiNow), label: "SPI today → " + fmt.month(yEnd), color: spiCol(po.spiNow), note: "Projected " + spiTxt(po.spiDec) + " · " + esc(po.status) }) +
+      U.tile({ value: fmt.pct(r["Paid (%) (I/E)"]), label: "Paid %", color: "slate", note: fmt.money(r["Paid Amount"]) + " SAR paid" }) +
+      mTile("Contract value", po.cv, "black");
+    // project dashboard (the weekly report card): scope · cumulative progress · reason for delays
+    var g3 = grid(v, "g-3");
+    var cd = D.t("Contract_Details").filter(function (x) { return String(x.Code) === code; })[0];
+    add(panelIn(g3, "Scope of work", cd ? esc(cd.Stage || "") : ""), '<div class="scope">' + esc(cd && cd.Scope ? cd.Scope : r["Project Description"] || "No scope recorded in Contract details.") + "</div>");
+    // key achievements (weekly report "Achievements Description", newest week first) — the cumulative plan / actual
+    // is already in the tiles above, so this column carries the week's progress in words instead of a second chart
+    var wk = D.t("Weekly_Report_Updates").filter(function (x) { return x["Source.Name"] === src; }).sort(function (a, b) { return String(b["Report Date"]).localeCompare(String(a["Report Date"])); });
+    // the "Weekly Achievements" sheet (one row per achievement) when imported, else the weekly row's single achievement
+    var wa = [];
+    bySrc("Weekly_Achievements").sort(function (a, b) { return sortNum(a["Sr. No."], b["Sr. No."]); }).forEach(function (x) {
+      var t = String(x["Work Description"] || "").replace(/\s+/g, " ").trim(); if (t && wa.indexOf(t) < 0) wa.push(t); });
+    var achs = wk.filter(function (x) { return String(x["Achievements Description"] || "").trim(); });
+    var km = String(r["KM Activitiy Description"] || "").trim();
+    var ah = wa.length ? '<ol class="ach-list la ach">' + wa.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol>"
+      : achs.length ? '<ul class="ach-list">' + achs.slice(0, 6).map(function (x, i) {
+        return '<li><span class="ach-date' + (i ? "" : " now") + '">' + (i ? esc(fmt.date(x["Report Date"])) : "This week") + "</span>" + esc(x["Achievements Description"]) + "</li>"; }).join("") + "</ul>"
+      : '<div class="empty-note">No achievement reported in the weekly report' + (wk.length ? " for " + esc(fmt.date(wk[0]["Report Date"])) : "") + ".</div>";
+    if (km) ah += '<div class="ach-km"><b>Key milestone activity:</b> ' + esc(km) + "</div>";
+    var nAch = wa.length || achs.length;
+    add(panelIn(g3, "Key achievements", nAch + (nAch === 1 ? " item" : " items") + " · " + (wa.length ? "Weekly Achievements" : "weekly report")), "<div>" + ah + "</div>");
+    add(panelIn(g3, "Reason for delays", ""), '<div class="note-box warn">' + esc(r["Reason for Delays"] || "No delay reason reported this week.") + "</div>");
+    // progress photos from the weekly report file's "Progress Photo" sheet (imported on Data Import, kept in this browser)
+    if (window.SARPhotos) {
+      var php = panelIn(v, "Progress photos", "Weekly report · Progress Photo sheet"), phb = add(php, '<div class="photo-grid"><div class="empty-note">Loading…</div></div>');
+      SARPhotos.load().then(function (pst) {
+        var list = SARPhotos.forProject(pst, src, code);
+        if (!list.length) { phb.innerHTML = '<div class="empty-note">No progress photos imported for this project — import the weekly report files (.rar / .zip) on Data Import.</div>'; return; }
+        var phs = php.querySelector(".panel-head .sub"); if (phs) phs.textContent = list.length + " photo" + (list.length === 1 ? "" : "s") + " · weekly report Progress Photo sheet";
+        phb.innerHTML = "";
+        var urls = list.map(function (ph) { return URL.createObjectURL(new Blob([ph.data], { type: ph.type || "image/jpeg" })); });
+        urls.forEach(function (url, i) {
+          var a = el('<button type="button" class="photo" title="Open photo"><img alt="Progress photo ' + (i + 1) + '" loading="lazy"></button>');
+          a.querySelector("img").src = url; phb.appendChild(a);
+          a.addEventListener("click", function () { photoViewer(urls, i, code + " — " + po.name, code); });
+        });
+      });
+    }
+    // milestones progress · deliverables
+    var g4 = grid(v, "g-2");
+    var mr = bySrc("Project_Milestones_Progress").sort(function (a, b) { return sortNum(a.Sort, b.Sort); });
+    var mpp = panelIn(g4, "Project milestones progress", mr.length + " milestones");
+    if (mr.length) {
+      var mb = chartBox(mpp); mb.style.height = Math.max(240, mr.length * 44 + 70) + "px";
+      U.chart(mb, { type: "bar", data: { labels: mr.map(function (x) { return x.Description; }), datasets: [
+          U.barDs("Planned progress", mr.map(function (x) { return x["Planned progress"]; }), S.plan), U.barDs("Actual progress", mr.map(function (x) { return x["Actual Progress"]; }), S.actual)] },
+        options: { indexAxis: "y", elements: { bar: { borderRadius: { topRight: 4, bottomRight: 4 } } }, plugins: { tooltip: U.pctTooltip() }, scales: { x: U.pctAxis(1), y: { grid: { display: false } } } } });
+    } else add(mpp, '<div class="empty">No milestones for this project.</div>');
+    tableIn(panelIn(g4, "Deliverable status", "Submittals"), { rows: bySrc("Deliverable_Status"), exportName: "Deliverable_Status", search: false, autoHeight: true, totals: true, columns: [
+      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Project Deliverables", label: "Project Deliverables" },
+      { key: "Total Subm. (PL.Cum)", label: "Total Subm. (PL.Cum)", type: "int", total: "sum" }, { key: "Total Subm. (Act. Cum)", label: "Total Subm. (Act. Cum)", type: "int", total: "sum" },
+      { key: "Approved", label: "Approved", type: "int", total: "sum" }, { key: "U/R", label: "U/R", type: "int", total: "sum" }, { key: "Rejected", label: "Rejected", type: "int", total: "sum" }] });
+    // payments · lookahead
+    var g5 = grid(v, "g-2");
+    tableIn(panelIn(g5, "Interim payment certificates", "IPC / VO cumulative"), { rows: bySrc("Interim_Payment_Certificate").filter(function (x) { return N(x["Cum Sum"]) !== 0; }), exportName: "IPC", search: false, autoHeight: true, columns: [
+      { key: "Sr.No", label: "Sr.No", type: "int" }, { key: "Description", label: "Description", wrap: true }, { key: "IPC / VO No.", label: "IPC / VO No." }, { key: "Cum Sum", label: "Cum Sum (SAR)", type: "money" }] });
+    var las = bySrc("Lookahead_Activities").filter(function (x) { return x["Lookahead Activities (7 Days) Description"]; }).sort(function (a, b) { return sortNum(a["Sr. No."], b["Sr. No."]); });
+    add(panelIn(g5, "Lookahead activities", "Next 7 days · " + las.length + " activities"), las.length
+      ? '<ol class="ach-list la">' + las.map(function (x) { return "<li>" + esc(x["Lookahead Activities (7 Days) Description"]) + "</li>"; }).join("") + "</ol>"
+      : '<div class="empty-note">No lookahead activities reported for the next 7 days.</div>');
+    var ac = bySrc("Area_of_Concern").filter(function (x) { return x["Issue /Concern Description"]; });
+    tableIn(panelIn(v, "Areas of concern", ac.length + " items"), { rows: ac, exportName: "Area_of_Concern", search: false, autoHeight: true, columns: [
+      { key: "Sr. No.", label: "SN", type: "int" }, { key: "Issue /Concern Description", label: "Issue / Concern Description", wrap: true },
+      { key: "Mitigation Action", label: "Mitigation Action", wrap: true }, { key: "Date Raised", label: "Date Raised", type: "date" },
+      { key: "Responsible", label: "Responsible" }, { key: "Target Date", label: "Target Date", type: "date" }, { key: "Status", label: "Status", type: "badge" }] });
+    // S-curve · milestone timeline
+    var raw = {};
+    D.t("S_Curve").forEach(function (x) { if (x["Source.Name"] !== src || !x["Report Date"]) return; var k = x["Report Date"], o = raw[k]; if (!o || live(x) > live(o)) raw[k] = x; });
+    var rws = Object.keys(raw).sort().map(function (k) { return raw[k]; }), ptsP = rws.map(function (x) { return dnum(x["Report Date"]); });
+    var scp = add(v, U.panel("Progress S-curve", rws.length ? "Weekly cumulative % · dashed black = projection to 31-Dec · curve to " + esc(fmt.date(rws[rws.length - 1]["Report Date"])) : "", "", ""));
+    st.sct = st.sct || "chart";
+    scp.querySelector(".panel-head .tools").appendChild(seg("", [["chart", "Chart"], ["data", "Weekly data"]], st.sct, function (x) { st.sct = x; st.jump = "p-focus"; ctx.rerender(); }));
+    if (rws.length) {
+      if (ptsP.indexOf(ddn) < 0 && ddn >= ptsP[0]) { var at0 = ptsP.filter(function (n) { return n < ddn; }).length; ptsP.splice(at0, 0, ddn); rws.splice(at0, 0, { "Report Date": dd, "Cum Plan (%)": po.planNow, "Cum Actual (%)": po.actNow }); }
+      if (st.sct === "chart") U.chart(chartBox(scp, "tall"), { type: "line", data: { labels: rws.map(function (x) { return fmt.date(x["Report Date"]); }), datasets: [
+        U.lineDs("Cum Plan (%)", rws.map(function (x) { return N(x["Cum Plan (%)"]); }), S.plan, { borderWidth: 2.5 }),
+        U.lineDs("Cum Actual (%)", rws.map(function (x, i) { return ptsP[i] <= ddn ? N(x["Cum Actual (%)"]) : null; }), S.actual, { borderWidth: 3, spanGaps: true }),
+        U.lineDs("Cum Forecast (%)", rws.map(function (x) { return N(x["Cum Forecast (%)"]); }), S.forecast, { borderDash: [6, 4], spanGaps: false }),
+        U.lineDs("Projection to 31-Dec", ptsP.map(function (n) { return n >= ddn && n <= yEndN ? po.proj(n) : null; }), C.black, { borderDash: [7, 5], borderWidth: 2, spanGaps: false })] },
+        options: { interaction: { mode: "index", intersect: false }, plugins: { tooltip: U.pctTooltip() },
+          scales: { x: Object.assign(U.catAxis(), { ticks: { autoSkip: true, maxTicksLimit: 16, maxRotation: 0 } }), y: U.pctAxis(1) } } });
+      else tableIn(scp, { rows: rws, exportName: "Progress_S_Curve", search: false, maxHeight: 420, columns: [
+        { key: "Report Date", label: "Report Date", type: "date" }, { key: "Cum Plan (%)", label: "Cum Plan (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "Cum Actual (%)", label: "Cum Actual (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "Cum Forecast (%)", label: "Cum Forecast (%)", render: function (x) { return fmt.pct(x, 2); } },
+        { key: "This Week Plan (%)", label: "This Week Plan (%)", render: function (x) { return fmt.pct(x, 2); } }, { key: "This Week Actual (%)", label: "This Week Actual (%)", render: function (x) { return fmt.pct(x, 2); } }] });
+    } else add(scp, '<div class="empty">No S-curve for this project.</div>');
+    var tlp = panelIn(v, "Milestone timeline", esc(D.projectLabel(src)) + " · baseline vs forecast / actual");
+    if (!mr.length) add(tlp, '<div class="empty">No milestones for this project.</div>');
+    else {
+      gantt(tlp, mr, function () { return D.projectLabel(src); });
+      tableIn(tlp, { rows: mr, exportName: "Project_Milestones", search: false, autoHeight: true, columns: [
+        { key: "Sr No", label: "Sr No", type: "int" }, { key: "Description", label: "Description" },
+        { key: "Project Start", label: "Project Start", type: "date" }, { key: "Planned Finish", label: "Planned Finish", type: "date" },
+        { key: "Actual/Forecast Finish", label: "Actual / Forecast Finish", type: "date" },
+        { key: "Planned progress", label: "Planned Progress", type: "meter", meterCls: "plan" }, { key: "Actual Progress", label: "Actual Progress", type: "meter" },
+        { key: "Var.Days", label: "Var. Days", type: "int", signed: true }, { key: "Var.progress", label: "Var. Progress", type: "pct", signed: true }] });
+    }
+    if (st.jump) { var jid = st.jump; delete st.jump; setTimeout(function () { var j = document.getElementById(jid); if (j) j.scrollIntoView({ block: "start" }); }, 60); }
+  };
+
+  /* ======================================================================
+     Weekly report helpers (SPI from cumulative EV / PV, weekly record groups)
+     ====================================================================== */
+  /* EOT cell: approved extension (card change log) and/or one in process (open CR / weekly delay reason) */
+  /* EOT status explained from the change log, weekly report and dates (UI.eotStatus) */
+  function eotOfSite(D, code, w) {
+    var card = D.t("Project_Cards").filter(function (c) { return c && String(c.Code) === String(code); })[0];
+    return U.eotStatus(card, w, w && w["Report Date"], fmt.date);
+  }
+  function eotHtml(e) {
+    if (e.kind === "none" || e.kind === "done") return "N/A";
+    return '<span' + (e.color ? ' style="color:#' + e.color + '"' : "") + ">" + esc(e.cell) + '</span><span class="sub">' + esc(e.brief) + "</span>";
+  }
+  function spiOf(r) { var pv = N(r["Cumulative PV (SAR)"]), ev = N(r["Cumulative EV (SAR)"]); return pv ? (ev || 0) / pv : 0; }
+  function spiCls(x) { return spiTxtCls(x); }
+  var WEEKLY_GROUPS = [
+    { title: "Project", keys: ["Report Date", "Program", "Project Code", "Project Name", "Project Description", "Project Year", "Project Size", "Project Complexity", "Project Group", "Project Type", "Project Category", "Region", "Province", "City", "Performing Organization (Business Unit)", "Performing Organization (Department)", "Project Owner (Department)", "Project Manager", "Project Sponsor (Business Unit)", "Contract Type", "Contractor", "Critical Project", "Phase Classification", "Current Phase", "Project Status"] },
+    { title: "Schedule & progress", keys: ["Start Date Baseline", "End Date Baseline", "Start Date (Forecast/Actual)", "End Date (Forecast/Actual)", "Variance", "Planned (%) This Week", "Planned (%) - Cumulative", "Actual (%) This Week", "Actual (%) - Cumulative", "Performance Status", "Reason for Delays", "Cumulative EV (SAR)", "Cumulative PV (SAR)", "SPI"] },
+    { title: "Finance", keys: ["Budget Type", "Funding Source", "Cost Code", "Full Budget", "2026 Approved Budget", "Contract Value", "Revised Contract Value", "Work Confirmation", "Submitted Amount", "Paid Amount", "Paid (%) (I/E)", "Variation Order Amount", "Delayed Payments Amount", "Total WC %", "Total Paid %"] },
+    { title: "HSE & quality", keys: ["Total Manpower (Cumulative)", "Total Manpower (This Week)", "Total Man-Hours (Cumulative)", "Total Man-Hours (This Week)", "Safe Man-Hours (Since Las LTI) - (Cumulative)", "Fatality (Cumulative)", "Lost Time Incident (Cumulative)", "Near Misses (Cumulative)", "Issued NCR", "Closed NCR", "Open NCR", "Issued SOR", "Closed SOR", "Open SOR"] },
+    { title: "Achievements, lookahead & concerns", keys: ["Achievements Description", "Activitiy Description", "Issue/Concern Description", "Mitigation Action", "Responsible", "Status", "KM Activitiy Description"] }];
+
+  /* ======================================================================
+     Gantt (Master Plan + Timeline)
+     ====================================================================== */
+  function dnum(s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; }
+  function gantt(host, rows, groupLabel, gopts) {
+    gopts = gopts || {};
+    var ds = [];
+    rows.forEach(function (r) { [r["Project Start"], r["Planned Finish"], r["Actual/Forecast Finish"], r["Data Date"]].forEach(function (x) { var n = dnum(x); if (n) ds.push(n); }); });
+    if (!ds.length) { add(host, '<div class="empty">No milestone dates to plot.</div>'); return; }
+    var min = new Date(Math.min.apply(null, ds)), max = new Date(Math.max.apply(null, ds));
+    var t0 = Date.UTC(min.getUTCFullYear(), min.getUTCMonth(), 1), t1 = Date.UTC(max.getUTCFullYear(), max.getUTCMonth() + 1, 1);
+    function x(n) { return ((n - t0) / (t1 - t0) * 100).toFixed(3) + "%"; }
+    var months = [], d = new Date(t0);
+    while (d.getTime() < t1) { months.push(d.getTime()); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); }
+    var step = months.length > 36 ? 6 : months.length > 18 ? 3 : 1;
+    var ticks = months.filter(function (m, i) { return i % step === 0; });
+    var MN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var gridLines = ticks.map(function (m) { return '<span class="g-grid" style="left:' + x(m) + '"></span>'; }).join("");
+    var dd = dnum((rows.filter(function (r) { return r["Data Date"]; })[0] || {})["Data Date"]);
+    var today = dd ? '<span class="g-today" style="left:' + x(dd) + '" title="Data date ' + fmt.date(rows[0]["Data Date"]) + '"></span>' : "";
+
+    var h = '<div class="g-legend"><span><i style="background:' + C.gray + '"></i>Baseline (start → planned finish)</span><span><i style="background:' + C.mid +
+      '"></i>Forecast / actual finish</span><span><i style="background:' + C.blue + '"></i>Actual progress</span><span><i style="background:' + C.red +
+      '"></i>Forecast later than plan</span><span><i style="background:' + C.yellow + ';width:3px"></i>Data date</span></div>';
+    h += '<div class="gantt"><div class="gantt-inner"><div class="g-row g-head"><div>Milestone</div><div class="num">Plan %</div><div class="num">Actual %</div><div class="g-track"><div class="g-months">' +
+      ticks.map(function (m) { var dt = new Date(m); return '<span style="left:' + x(m) + '">' + MN[dt.getUTCMonth()] + " " + String(dt.getUTCFullYear()).slice(2) + "</span>"; }).join("") + "</div></div></div>";
+    var lastGroup = null;
+    rows.forEach(function (r) {
+      var gname = groupLabel(r);
+      if (gname !== lastGroup) {
+        h += '<div class="g-row g-group' + (gopts.onGroup ? " clickable" : "") + '" data-i="' + rows.indexOf(r) + '"><div>' + esc(gname) + (gopts.onGroup ? ' <span class="go">' + esc(gopts.goLabel || "Open →") + '</span>' : "") + '</div><div class="g-track">' + gridLines + today + "</div></div>";
+        lastGroup = gname;
+      }
+      var s = dnum(r["Project Start"]), pf = dnum(r["Planned Finish"]), ff = dnum(r["Actual/Forecast Finish"]);
+      var late = pf && ff && ff > pf;
+      var act = Math.max(0, Math.min(1, N(r["Actual Progress"]) || 0));
+      var tip = esc(r.Description) + " | Start " + fmt.date(r["Project Start"]) + " | Planned finish " + fmt.date(r["Planned Finish"]) +
+        " | Forecast/actual finish " + fmt.date(r["Actual/Forecast Finish"]) + " | Planned " + fmt.pct(r["Planned progress"]) + " · Actual " + fmt.pct(r["Actual Progress"]) +
+        (r["Var.Days"] != null ? " | Var " + r["Var.Days"] + " days" : "");
+      h += '<div class="g-row' + (gopts.onRow ? " clickable" : "") + '" data-r="' + rows.indexOf(r) + '" title="' + tip + '"><div>' + esc(r.Description) + (r.WSB && r.WSB !== r.Description ? ' <span class="muted">&nbsp;· ' + esc(r.WSB) + "</span>" : "") +
+        '</div><div class="num">' + fmt.pct(r["Planned progress"], 0) + '</div><div class="num">' + fmt.pct(r["Actual Progress"], 0) + '</div><div class="g-track">' + gridLines + today;
+      if (s && pf) h += '<span class="g-bar base" style="left:' + x(s) + ";width:calc(" + x(pf) + " - " + x(s) + ')"></span>';
+      if (s && ff) h += '<span class="g-bar fc' + (late ? " late" : "") + '" style="left:' + x(s) + ";width:calc(" + x(ff) + " - " + x(s) + ')"><i style="width:' + (act * 100).toFixed(1) + '%"></i></span>';
+      h += "</div></div>";
+    });
+    h += "</div></div>";
+    var node = add(host, "<div>" + h + "</div>");
+    if (gopts.onGroup) node.querySelectorAll(".g-group[data-i]").forEach(function (g) { g.addEventListener("click", function () { gopts.onGroup(rows[+g.getAttribute("data-i")]); }); });
+    if (gopts.onRow) node.querySelectorAll(".g-row[data-r]").forEach(function (g) { g.addEventListener("click", function () { gopts.onRow(rows[+g.getAttribute("data-r")]); }); });
+  }
+
+  /* ======================================================================
+     Project Cards + Portfolio Master Plan
+     (monthly "EP – NSR Projects <Month>.xlsx", one Project_Cards record per card)
+     ====================================================================== */
+  var PHASE_ORDER = ["Creation", "Initiation", "Planning", "Tendering", "Execution", "Handover", "Closing (TOC)", "Closing (FCC)", "Closed", "Not set"];
+  function phaseRank(s) { s = String(s || "Not set"); for (var i = 0; i < PHASE_ORDER.length; i++) if (s.indexOf(PHASE_ORDER[i]) === 0) return i; return 50; }
+  var STATUS_ORDER = ["On Track", "Slightly Delayed", "At Risk", "Delayed", "On Hold"];
+  var STATUS_COLOR = { "On Track": C.blue, "Slightly Delayed": C.mid, "At Risk": C.yellow, "Delayed": C.red, "On Hold": C.slate };
+  var RISK_ORDER = ["Low Risk", "Needs Attention", "Medium Risk", "High Risk"];
+  function byOrder(order) { return function (a, b) { var x = order.indexOf(a), y = order.indexOf(b); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || String(a).localeCompare(String(b)); }; }
+  function cardsOf(D) { return D.t("Project_Cards").filter(function (c) { return c && c.Code; }).slice().sort(function (a, b) { return String(a.Code).localeCompare(String(b.Code)); }); }
+  function cardLabel(c) { return c.Code + " — " + c.Name; }
+  function aPhase(c) { return c.ActualPhase || "Not set"; }
+  function pf(c, k) { return (c.Perf || {})[k]; }
+  function dataDate(cards) { return cards.map(function (c) { return (c.Exec || {}).ReportingPeriod; }).filter(Boolean).sort().pop() || null; }
+  function days(a, b) { var x = dnum(a), y = dnum(b); return x != null && y != null ? Math.round((y - x) / 864e5) : null; }
+  function span(c) {  // project-level dates: the card's Total row, else the phases' extremes
+    var t = c.Total || {}, tl = (c.Timeline || []).filter(function (r) { return r.Level === 1; });
+    function ext(k, max) { var v = tl.map(function (r) { return r[k]; }).filter(Boolean).sort(); return v.length ? (max ? v[v.length - 1] : v[0]) : null; }
+    return { BS: t.BS || ext("BS"), BE: t.BE || ext("BE", 1), RS: t.RS || ext("RS"), RE: t.RE || ext("RE", 1), FS: t.FS || ext("FS"), FE: t.FE || ext("FE", 1),
+      Plan: t.Plan != null ? t.Plan : pf(c, "Planned"), Actual: t.Actual != null ? t.Actual : pf(c, "Actual") };
+  }
+  function slip(c) { var s = span(c); return days(s.RE || s.BE, s.FE); }
+  /* Milestone state: "Status" = completed (Yes/No); the date column holds the actual date, or the forecast while open. */
+  function msState(m, dd) {
+    var done = /^y/i.test(m.Completed || ""), when = m.Actual || (done ? m.Planned : null);
+    var ref = done ? when : (m.Actual || dd);
+    var delay = m.Planned && ref ? days(m.Planned, ref) : null;
+    var overdue = !done && m.Planned && dd && m.Planned < dd && !m.Actual;
+    var state = done ? "Completed" : overdue || (m.Actual && m.Planned && m.Actual > m.Planned) ? "Late / overdue" : "Open";
+    return { done: done, date: done ? when : (m.Actual || m.Planned), forecast: done ? null : m.Actual, delay: delay, state: state, overdue: overdue };
+  }
+  function openIssues(D, code) { return D.t("Issue_register").filter(function (r) { return String(r["Poject Code"]) === String(code) && !/resolved|closed/i.test(r["Issue Status"] || ""); }).length; }
+  function openRisks(c) { return (c.Risks || []).filter(function (r) { return !/closed/i.test(r["Risk Status"] || ""); }).length; }
+
+  function cardDefs(all) {
+    function o(get, order) { var v = U.uniq(all.map(get)); return order ? v.sort(order) : v.sort(); }
+    var d = [
+      { key: "aph", label: "Actual Phase", get: aPhase },
+      { key: "pph", label: "Planned Phase", get: function (c) { return c.PlannedPhase; } },
+      { key: "status", label: "Overall Status", get: function (c) { return pf(c, "Status"); }, order: byOrder(STATUS_ORDER) },
+      { key: "delay", label: "Delay Level", get: function (c) { return pf(c, "Delay"); } },
+      { key: "risk", label: "Risk Level", get: function (c) { return pf(c, "Risk"); }, order: byOrder(RISK_ORDER) },
+      { key: "pm", label: "Project Manager", get: function (c) { return (c.Stake || {}).PM; } },
+      { key: "size", label: "Project Size", get: function (c) { return c.Size; } },
+      { key: "type", label: "Project Type", get: function (c) { return c.Type; } },
+      { key: "grp", label: "Project Group", get: function (c) { return c.Group; } },
+      { key: "own", label: "Owner Dept.", get: function (c) { return (c.Stake || {}).Owner; } },
+      { key: "crit", label: "Critical Project", get: function (c) { return (c.Fund || {}).Critical; } },
+      { key: "proj", label: "Project", get: function (c) { return c.Code; }, display: null }];
+    var byCode = {}; all.forEach(function (c) { byCode[c.Code] = c; });
+    d[d.length - 1].display = function (code) { return byCode[code] ? cardLabel(byCode[code]) : code; };
+    d.forEach(function (x) { x.options = o(x.get, x.order || (x.key === "aph" || x.key === "pph" ? function (a, b) { return phaseRank(a) - phaseRank(b); } : null)); });
+    return d;
+  }
+  function noCards(v) {
+    add(v, '<div class="note-box">No project cards loaded. Import <b>EP - NSR Projects &lt;Month&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page — ' +
+      "every <b>…_Project Card</b> sheet becomes one project here.</div>");
+  }
+  function kvHtml(pairs) {
+    return '<div class="kv">' + pairs.map(function (p) { return p[0] === "h" ? "<h5>" + esc(p[1]) + "</h5>" : "<div>" + esc(p[0]) + "</div><div>" + (p[1] == null || p[1] === "" ? '<span class="muted">—</span>' : p[1]) + "</div>"; }).join("") + "</div>";
+  }
+  function seg(label, opts, value, onPick) {
+    var n = el('<div class="filter seg-wrap"><label>' + esc(label) + '</label><div class="seg"></div></div>'), s = n.querySelector(".seg");
+    opts.forEach(function (o) {
+      var b = el('<button type="button" class="' + (o[0] === value ? "on" : "") + '">' + esc(o[1]) + "</button>");
+      b.addEventListener("click", function () { onPick(o[0]); }); s.appendChild(b);
+    });
+    return n;
+  }
+
+  /* ----------------------------------------------------------------------
+     Plan Gantt: rows = [{ key, level, label, sub, BS,BE, RS,RE, FS,FE, Plan, Actual, kids, open, ms[], data }]
+     Bars: baseline (grey), revised baseline (slate), forecast/actual (blue, filled to actual %, red when later than baseline).
+     ---------------------------------------------------------------------- */
+  var MN3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function planGantt(host, rows, o) {
+    o = o || {}; var show = o.show || { base: 1, rev: 1, fc: 1, ms: 1 };
+    var ds = [];
+    rows.forEach(function (r) {
+      ["BS", "BE", "RS", "RE", "FS", "FE"].forEach(function (k) { var n = dnum(r[k]); if (n) ds.push(n); });
+      (r.ms || []).forEach(function (m) { var n = dnum(m.date); if (n) ds.push(n); });
+    });
+    if (!ds.length) { add(host, '<div class="empty">No schedule dates to plot.</div>'); return; }
+    var lo = o.range ? o.range[0] : Math.min.apply(null, ds), hi = o.range ? o.range[1] : Math.max.apply(null, ds);
+    var m0 = new Date(lo), m1 = new Date(hi);
+    var months = (m1.getUTCFullYear() - m0.getUTCFullYear()) * 12 + m1.getUTCMonth() - m0.getUTCMonth() + 1;
+    var step = months <= 26 ? 1 : months <= 66 ? 3 : 12;
+    var sm = Math.floor(m0.getUTCMonth() / step) * step;
+    var t0 = Date.UTC(m0.getUTCFullYear(), sm, 1), t1 = Date.UTC(m1.getUTCFullYear(), m1.getUTCMonth() + 1, 1);
+    var ticks = [], d = t0;
+    while (d < t1) { ticks.push(d); var dt = new Date(d); d = Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + step, 1); }
+    t1 = Math.max(t1, d);
+    function pos(n) { return (n - t0) / (t1 - t0) * 100; }
+    function x(n) { return Math.max(0, Math.min(100, pos(n))).toFixed(3) + "%"; }
+    function bar(cls, a, b, inner, tip) {
+      var s = dnum(a), e = dnum(b); if (!s || !e || e < t0 || s > t1) return "";
+      if (e < s) { var t = s; s = e; e = t; }
+      var l = Math.max(0, pos(s)), w = Math.max(0.25, Math.min(100, pos(e)) - l);
+      return '<span class="pg-bar ' + cls + '" style="left:' + l.toFixed(3) + "%;width:" + w.toFixed(3) + '%"' + (tip ? ' title="' + esc(tip) + '"' : "") + ">" + (inner || "") + "</span>";
+    }
+    function lab(n) { var q = new Date(n); return step === 12 ? String(q.getUTCFullYear()) : step === 3 ? "Q" + (q.getUTCMonth() / 3 + 1) + " " + String(q.getUTCFullYear()).slice(2) : MN3[q.getUTCMonth()] + " " + String(q.getUTCFullYear()).slice(2); }
+    var gridL = ticks.map(function (m) { return '<span class="g-grid' + (new Date(m).getUTCMonth() === 0 ? " yr" : "") + '" style="left:' + x(m) + '"></span>'; }).join("");
+    var ddn = dnum(o.dd), today = ddn && ddn >= t0 && ddn <= t1 ? '<span class="g-today" style="left:' + x(ddn) + '"></span>' : "";
+    var h = '<div class="g-legend">' +
+      (show.base ? '<span><i style="background:' + C.gray + '"></i>Baseline</span>' : "") +
+      (show.rev ? '<span><i style="background:' + C.slate + ';height:4px"></i>Revised baseline</span>' : "") +
+      (show.fc ? '<span><i style="background:' + C.mid + '"></i>Forecast / actual</span><span><i style="background:' + C.blue + '"></i>Actual progress</span><span><i style="background:rgba(203,44,48,.35)"></i>Finishing later than baseline</span>' : "") +
+      (show.ms ? '<span><b class="pg-dia done"></b>Milestone done</span><span><b class="pg-dia"></b>Milestone open</span><span><b class="pg-dia late"></b>Milestone late / overdue</span>' : "") +
+      (today ? '<span><i style="background:' + C.yellow + ';width:3px"></i>Data date ' + esc(fmt.date(o.dd)) + "</span>" : "") + "</div>";
+    h += '<div class="gantt pg"><div class="gantt-inner"><div class="pg-row g-head"><div>' + esc(o.nameHead || "Project / phase / activity") +
+      '</div><div class="num">Start</div><div class="num">Finish</div><div class="num" title="Forecast finish − (revised) baseline finish, days">Slip d</div><div class="num">Plan</div><div class="num">Actual</div><div class="g-track"><div class="g-months">' +
+      ticks.map(function (m) { return '<span style="left:' + x(m) + '">' + lab(m) + "</span>"; }).join("") + "</div></div></div>";
+    rows.forEach(function (r, i) {
+      if (r.group) { h += '<div class="pg-row pg-grp"><div>' + esc(r.label) + (r.sub ? ' <span class="muted">' + esc(r.sub) + "</span>" : "") + '</div><div class="g-track">' + gridL + today + "</div></div>"; return; }
+      var sl = days(r.RE || r.BE, r.FE), late = sl != null && sl > 0, act = Math.max(0, Math.min(1, N(r.Actual) || 0));
+      var tip = r.label + " | Baseline " + fmt.date(r.BS) + " → " + fmt.date(r.BE) + (r.RE && r.RE !== r.BE ? " | Revised → " + fmt.date(r.RE) : "") +
+        " | Forecast/actual " + fmt.date(r.FS) + " → " + fmt.date(r.FE) + " | Plan " + fmt.pct(r.Plan, 0) + " · Actual " + fmt.pct(r.Actual, 0) + (sl != null ? " | Slip " + sl + " d" : "");
+      h += '<div class="pg-row lv' + r.level + (r.kids ? " has-kids" : "") + (o.onLabel ? " clickable" : "") + '" data-i="' + i + '" title="' + esc(tip) + '"><div class="pg-name" style="padding-left:' + (8 + (r.level - 1) * 16) + 'px">' +
+        (r.kids ? '<button type="button" class="pg-tog" data-t="' + i + '" aria-label="Expand">' + (r.open ? "▾" : "▸") + "</button>" : '<span class="pg-tog-sp"></span>') +
+        '<span class="pg-lab">' + esc(r.label) + (r.sub ? ' <span class="muted">' + esc(r.sub) + "</span>" : "") + "</span></div>" +
+        '<div class="num">' + esc(fmt.date(r.FS)) + '</div><div class="num">' + esc(fmt.date(r.FE)) + '</div><div class="num ' + (late ? "neg" : sl != null && sl < 0 ? "pos" : "") + '">' + (sl == null ? "" : (sl > 0 ? "+" : "") + fmt.int(sl)) +
+        '</div><div class="num">' + fmt.pct(r.Plan, 0) + '</div><div class="num">' + fmt.pct(r.Actual, 0) + '</div><div class="g-track">' + gridL + today +
+        (show.base ? bar("base", r.BS, r.BE) : "") + (show.rev && (r.RS !== r.BS || r.RE !== r.BE) ? bar("rev", r.RS, r.RE) : "") +
+        (show.fc ? bar("fc" + (late ? " late" : ""), r.FS, r.FE, '<i style="width:' + (act * 100).toFixed(1) + '%"></i>') : "") +
+        (show.ms ? (r.ms || []).map(function (m) {
+          var n = dnum(m.date); if (!n || n < t0 || n > t1) return "";
+          return '<b class="pg-dia ' + (m.done ? "done" : m.late ? "late" : "") + '" style="left:' + x(n) + '" title="' + esc(m.label + " — " + (m.done ? "completed " : m.late ? "late · " : "planned ") + fmt.date(m.date)) + '"></b>';
+        }).join("") : "") + "</div></div>";
+    });
+    h += "</div></div>";
+    var node = add(host, "<div>" + h + "</div>");
+    node.querySelectorAll(".pg-tog").forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); if (o.onToggle) o.onToggle(rows[+b.getAttribute("data-t")]); }); });
+    if (o.onLabel) node.querySelectorAll(".pg-row[data-i]").forEach(function (rw) { rw.addEventListener("click", function () { o.onLabel(rows[+rw.getAttribute("data-i")]); }); });
+    return node;
+  }
+  function msRows(c, dd, filter) {
+    return (c.Milestones || []).map(function (m) { var s = msState(m, dd); return { label: m.Milestone, date: s.date, done: s.done, late: s.state === "Late / overdue" }; })
+      .filter(function (m) { return m.date && (!filter || filter(m)); });
+  }
+  /** Phase rows (level `base`) and, when a phase is open, its activities (level base + 1). */
+  function timelineRows(c, st, base) {
+    var out = [], open = false, cur = null, tl = c.Timeline || [];
+    tl.forEach(function (t, i) {
+      if (t.Level === 1) {
+        cur = t.Name;
+        var key = c.Code + "|" + t.Name, kids = tl.some(function (x) { return x.Level === 2 && x.Phase === t.Name; });
+        open = kids && st.isOpen(key);
+        out.push(Object.assign({}, t, { key: key, level: base, label: t.Name, kids: kids, open: open, card: c }));
+      } else if (open) out.push(Object.assign({}, t, { key: c.Code + "|" + cur + "|" + i, level: base + 1, label: t.Name, card: c }));
+    });
+    return out;
+  }
+
+  /* ----------------------------- Project Cards page ----------------------------- */
+  P["project-cards"] = function (ctx) {
+    var D = ctx.D, v = ctx.view, st = ctx.state, all = cardsOf(D);
+    if (!all.length) { noCards(v); return; }
+    var defs = cardDefs(all), f = filterBar(ctx, defs, all);
+    var rows = all.filter(function (c) { return passes(c, defs, f); });
+    var dd = dataDate(all);
+    if (st.code && !all.some(function (c) { return c.Code === st.code; })) st.code = null;
+    if (st.code) return cardDetail(ctx, all.filter(function (c) { return c.Code === st.code; })[0], rows.length ? rows : all, dd);
+
+    function open(c) { st.code = c.Code; ctx.rerender(); window.scrollTo(0, 0); }
+    var g = grid(v, "g-6");
+    var bud = U.sum(rows, function (c) { return (c.Fund || {}).Budget; }), con = U.sum(rows, function (c) { return (c.Fund || {}).CON; }), paid = U.sum(rows, function (c) { return pf(c, "Paid"); });
+    var avgP = rows.length ? U.sum(rows, function (c) { return pf(c, "Planned"); }) / rows.length : null, avgA = rows.length ? U.sum(rows, function (c) { return pf(c, "Actual"); }) / rows.length : null;
+    var bad = rows.filter(function (c) { return /delayed|on hold/i.test(pf(c, "Status") || "") && !/slightly/i.test(pf(c, "Status") || ""); }).length;
+    g.innerHTML = U.tile({ value: rows.length, label: "Projects", note: "Reporting period " + esc(fmt.month(dd)) }) +
+      mTile("Budget", bud, "black") + mTile("Contract value (CON)", con, "mid") + mTile("Approved paid", paid, "slate") +
+      U.tile({ value: fmt.pct(avgA, 0), label: "Avg actual progress", color: "yellow", note: "vs " + fmt.pct(avgP, 0) + " planned (simple average)" }) +
+      U.tile({ value: bad, label: "Delayed / on hold", color: bad ? "red" : "slate", note: "Click to filter" });
+    clickTiles(g, [function () { defs.forEach(function (d) { f[d.key].length = 0; }); ctx.rerender(); }, null, null, null, null, function () {
+      var s = sel(ctx, "status"); s.length = 0; U.uniq(all.map(function (c) { return pf(c, "Status"); })).filter(function (x) { return /^delayed|on hold/i.test(x || ""); }).forEach(function (x) { s.push(x); }); ctx.rerender(); }]);
+
+    var g2 = grid(v, "g-3");
+    function countChart(p, key, get, order, colorOf, horiz) {
+      var rx = all.filter(function (c) { return passes(c, defs, f, key); });
+      var labs = U.uniq(rx.map(get)).sort(order);
+      var box = chartBox(p, "short");
+      if (horiz) box.style.height = Math.max(200, labs.length * 30 + 40) + "px";
+      U.chart(box, U.clickable({ type: "bar", data: { labels: labs, datasets: [U.barDs("Projects", labs.map(function (l) { return rx.filter(function (c) { return get(c) === l; }).length; }),
+        labs.map(function (l) { var col = colorOf(l); return f[key].length && f[key].indexOf(l) < 0 ? U.fade(col) : col; }), { maxBarThickness: horiz ? 22 : 46 })] },
+        options: { indexAxis: horiz ? "y" : "x", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } },
+          layout: { padding: horiz ? { right: 24 } : { top: 20 } },
+          scales: horiz ? { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } }
+            : { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } },
+        function (i, e) { pick(ctx, key, labs[i], e); }));
+    }
+    countChart(panelIn(g2, "Projects by actual phase", "Click to filter"), "aph", aPhase, function (a, b) { return phaseRank(a) - phaseRank(b); }, function () { return C.blue; }, true);
+    countChart(panelIn(g2, "Overall status", "Click to filter"), "status", function (c) { return pf(c, "Status"); }, byOrder(STATUS_ORDER), function (l) { return STATUS_COLOR[l] || C.slate; }, true);
+    countChart(panelIn(g2, "Risk level", "Click to filter"), "risk", function (c) { return pf(c, "Risk"); }, byOrder(RISK_ORDER),
+      function (l) { return /high/i.test(l) ? C.red : /medium|attention/i.test(l) ? C.yellow : C.blue; }, true);
+
+    var pp = panelIn(v, "Planned vs actual progress", "Overall progress from each card (section 2) · click a project to open its card");
+    var byGap = rows.slice().sort(function (a, b) { return ((pf(b, "Planned") || 0) - (pf(b, "Actual") || 0)) - ((pf(a, "Planned") || 0) - (pf(a, "Actual") || 0)); });
+    var pb = chartBox(pp); pb.style.height = Math.max(260, byGap.length * 26 + 70) + "px";
+    U.chart(pb, U.clickable({ type: "bar", data: { labels: byGap.map(cardLabel), datasets: [
+      U.barDs("Planned", byGap.map(function (c) { return pf(c, "Planned"); }), S.plan, { maxBarThickness: 10 }),
+      U.barDs("Actual", byGap.map(function (c) { return pf(c, "Actual"); }), S.actual, { maxBarThickness: 10 })] },
+      options: { indexAxis: "y", plugins: { tooltip: U.pctTooltip() }, scales: { x: U.pctAxis(1), y: { grid: { display: false }, ticks: { callback: U.shortLabel(44) } } } } },
+      function (i) { open(byGap[i]); }));
+
+    var tp = panelIn(v, "Project cards", rows.length + " projects · sorted by the biggest progress gap · click a row to open the full card");
+    tableIn(tp, { rows: byGap, exportName: "Project_Cards", maxHeight: 700, onRow: function (c) { open(c); }, rowTitle: function () { return "Open project card"; },
+      columns: [
+        { key: "Code", label: "Code", nowrap: true }, { key: "Name", label: "Project Name", wrap: true },
+        { key: "PM", label: "Project Manager", get: function (c) { return (c.Stake || {}).PM; } },
+        { key: "ActualPhase", label: "Actual Phase", get: aPhase }, { key: "PlannedPhase", label: "Planned Phase" },
+        { key: "pl", label: "Planned %", type: "meter", meterCls: "plan", get: function (c) { return pf(c, "Planned"); } },
+        { key: "ac", label: "Actual %", type: "meter", get: function (c) { return pf(c, "Actual"); } },
+        { key: "st", label: "Overall Status", type: "badge", get: function (c) { return pf(c, "Status"); } },
+        { key: "rk", label: "Risk Level", type: "badge", get: function (c) { return pf(c, "Risk"); } },
+        { key: "bud", label: "Budget (M)", type: "m", get: function (c) { return (c.Fund || {}).Budget; } },
+        { key: "be", label: "BL Finish", type: "date", get: function (c) { var s = span(c); return s.RE || s.BE; } },
+        { key: "fe", label: "Forecast Finish", type: "date", get: function (c) { return span(c).FE; } },
+        { key: "sl", label: "Slip (days)", type: "int", signed: true, get: slip },
+        { key: "oi", label: "Open issues", type: "int", get: function (c) { return openIssues(D, c.Code); } },
+        { key: "or", label: "Open risks", type: "int", get: openRisks }] });
+  };
+
+  function cardDetail(ctx, c, list, dd) {
+    var D = ctx.D, v = ctx.view, st = ctx.state;
+    // navigation: back · project picker (current filter) · previous / next
+    if (!list.some(function (x) { return x.Code === c.Code; })) list = [c].concat(list);
+    var at = list.map(function (x) { return x.Code; }).indexOf(c.Code);
+    var nav = add(v, '<div class="filters pc-nav"></div>');
+    var back = el('<button type="button" class="icon-btn ghost">← All projects</button>');
+    back.addEventListener("click", function () { st.code = null; ctx.rerender(); });
+    nav.appendChild(back);
+    var s = U.select({ label: "Project (" + (at + 1) + " of " + list.length + ")", value: c.Code, options: list.map(function (x) { return { value: x.Code, label: cardLabel(x) }; }),
+      onChange: function (x) { st.code = x; ctx.rerender(); } });
+    s.style.flex = "1"; s.querySelector("select").style.maxWidth = "none"; nav.appendChild(s);
+    [["‹ Prev", -1], ["Next ›", 1]].forEach(function (b) {
+      var n = el('<button type="button" class="icon-btn ghost"' + (list[at + b[1]] ? "" : " disabled") + ">" + b[0] + "</button>");
+      n.addEventListener("click", function () { var t = list[at + b[1]]; if (t) { st.code = t.Code; ctx.rerender(); } });
+      nav.appendChild(n);
+    });
+    if (c.error) add(v, '<div class="note-box warn">This card could not be read completely: ' + esc(c.error) + "</div>");
+    if (window.SARChecks) SARChecks.inline(v, c.Code);
+
+    var pfm = c.Perf || {}, fu = c.Fund || {}, sk = c.Stake || {}, ex = c.Exec || {}, sp = span(c), sl = slip(c);
+    add(v, '<section class="pc-head"><div class="pc-id"><span class="pc-code">' + esc(c.Code) + "</span>" + (c.Size ? '<span class="pc-tag">' + esc(c.Size) + "</span>" : "") +
+      (c.Type ? '<span class="pc-tag">' + esc(c.Type) + "</span>" : "") + (c.Category ? '<span class="pc-tag">' + esc(c.Category) + "</span>" : "") + "</div>" +
+      "<h3>" + esc(c.Name) + "</h3>" + (c.Description ? "<p>" + esc(c.Description) + "</p>" : "") +
+      '<div class="pc-badges">' + [["Overall", pfm.Status], ["Delay", pfm.Delay], ["Risk", pfm.Risk], ["Actual phase", aPhase(c)], ["Planned phase", c.PlannedPhase]]
+        .map(function (b) { return b[1] ? '<span class="pc-b"><small>' + b[0] + "</small>" + U.badge(b[1]) + "</span>" : ""; }).join("") + "</div>" +
+      '<div class="pc-meta"><span><b>PM</b> ' + esc(sk.PM || "—") + "</span><span><b>Location</b> " + esc(c.Location || "—") + "</span><span><b>Reporting period</b> " + esc(fmt.month(ex.ReportingPeriod)) + "</span></div></section>");
+
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: fmt.pct(pfm.Planned, 1), label: "Planned progress" }) +
+      U.tile({ value: fmt.pct(pfm.Actual, 1), label: "Actual progress", color: "yellow", note: "Variance " + fmt.pct(pfm.Variance, 1) }) +
+      mTile("Budget", fu.Budget, "black", (fu.Org ? esc(fu.Org) + " · " : "") + "Year " + esc(fu.Year || "—")) +
+      mTile("Contract value (CON)", fu.CON, "mid") + mTile("Approved paid", pfm.Paid, "slate") +
+      U.tile({ value: sl == null ? "—" : (sl > 0 ? "+" : "") + fmt.int(sl), unit: "days", label: "Finish slip vs baseline", color: sl > 0 ? "red" : "slate",
+        note: "Forecast " + esc(fmt.date(sp.FE)) + " · BL " + esc(fmt.date(sp.RE || sp.BE)) });
+
+    // Phase journey
+    var phases = (c.Timeline || []).filter(function (t) { return t.Level === 1; });
+    if (phases.length) {
+      var cur = phaseRank(aPhase(c));
+      add(panelIn(v, "Project lifecycle", "Section 8 — phase progress (planned vs actual) and forecast / actual dates"), '<div class="pc-steps">' + phases.map(function (p) {
+        var r = phaseRank(p.Name), done = (p.Actual || 0) >= 0.999, now = r === cur || (cur >= 5 && r === 5 && /handover/i.test(p.Name));
+        return '<div class="pc-step' + (done ? " done" : "") + (now ? " now" : "") + '"><div class="pc-dot">' + (done ? "✓" : now ? "●" : "") + '</div><b>' + esc(p.Name.replace(/ phase$/i, "")) + "</b>" +
+          '<div class="pc-mini"><span style="width:' + Math.min(100, (p.Plan || 0) * 100).toFixed(0) + '%" class="p"></span></div><div class="pc-mini"><span style="width:' + Math.min(100, (p.Actual || 0) * 100).toFixed(0) + '%" class="a"></span></div>' +
+          '<small>Plan ' + fmt.pct(p.Plan, 0) + " · Actual " + fmt.pct(p.Actual, 0) + "</small><small>" + esc(fmt.date(p.FS)) + " → " + esc(fmt.date(p.FE)) + "</small></div>";
+      }).join("") + "</div>");
+    }
+
+    var g1 = grid(v, "g-3");
+    add(panelIn(g1, "General information", "Section 1"), kvHtml([["Project Code", esc(c.Code)], ["Project Name", esc(c.Name)], ["Project Size", esc(c.Size)], ["Complexity", esc(c.Complexity)],
+      ["Project Group", esc(c.Group)], ["Location", esc(c.Location)], ["Project Type", esc(c.Type)], ["Category", esc(c.Category)], ["Planned Phase", esc(c.PlannedPhase)], ["Actual Phase", esc(c.ActualPhase || "Not set")]]));
+    add(panelIn(g1, "Key stakeholders", "Section 3"), kvHtml([["Performing BU", esc(sk.BU)], ["Department", esc([sk.Department, sk.Program].filter(Boolean).join(" · "))],
+      ["Project Manager", esc(sk.PM)], ["Sponsor (BU)", esc([sk.Sponsor, sk.SponsorOrg].filter(Boolean).join(" · "))], ["Owner (Department)", esc(sk.Owner)], ["Maintenance Entity", esc(sk.Maintenance)]]));
+    var ctr = (c.Contracts || []).filter(function (x) { return x.Entity || x["PO No."] || x["PR No."]; });
+    add(panelIn(g1, "Funding & contracting", "Sections 4 – 5"), kvHtml([["Funding Organization", esc(fu.Org)], ["Budget (SAR)", fmt.money(fu.Budget)], ["Project Year", esc(fu.Year)],
+      ["Fund Status", esc(fu.FundStatus)], ["Critical Project", esc(fu.Critical)], ["Contract value – CON", fmt.money(fu.CON)], ["Contract value – PMC", fmt.money(fu.PMC)], ["Contract value – CSC", fmt.money(fu.CSC)]]
+      .concat(ctr.length ? [["h", "Contracts"]].concat([].concat.apply([], ctr.map(function (x) {
+        return [[x.Role, "<b>" + esc(x.Entity || "—") + "</b>"], ["PR / PO", esc("PR " + (x["PR No."] || "—") + (x["PR Date"] ? " (" + fmt.date(x["PR Date"]) + ")" : "") + " · PO " + (x["PO No."] || "—") + (x["PO Date"] ? " (" + fmt.date(x["PO Date"]) + ")" : ""))],
+          ["Effective date", esc(fmt.date(x["Contract Effective Date"]))]]; }))) : [])));
+
+    // Timeline Gantt (phases → activities)
+    st.open = st.open || {};
+    var gs = { isOpen: function (k) { return st.open[k] != null ? st.open[k] : !!st.expandAll; } };
+    var trs = timelineRows(c, gs, 1);
+    var msr = msRows(c, dd);
+    var tools = '<button type="button" class="link-btn" data-x="1">Expand all</button><button type="button" class="link-btn" data-x="0">Collapse all</button>';
+    var gp = add(v, U.panel("Project timeline", "Section 8 — baseline, revised baseline and forecast / actual per phase · ▸ shows the activities · diamonds are the critical path milestones (section 10)", "", tools));
+    gp.querySelectorAll("[data-x]").forEach(function (b) { b.addEventListener("click", function () { st.open = {}; st.expandAll = b.getAttribute("data-x") === "1"; ctx.rerender(); }); });
+    var trows = [{ key: "all", level: 1, label: "Whole project", BS: sp.BS, BE: sp.BE, RS: sp.RS, RE: sp.RE, FS: sp.FS, FE: sp.FE, Plan: sp.Plan, Actual: sp.Actual, ms: msr }]
+      .concat(trs);
+    planGantt(gp, trows, { dd: dd, nameHead: "Phase / activity", onToggle: function (r) { st.open[r.key] = !r.open; ctx.rerender(); } });
+
+    // Execution S-curve + earned value
+    var g2 = grid(v, "g-2");
+    var mo = ex.Months || [];
+    var sc = panelIn(g2, "Execution S-curve", mo.length ? "Section 7 — cumulative planned vs actual progress by month · execution start " + esc(fmt.date(ex.Start)) : "Section 7");
+    if (mo.length) {
+      var cp = 0, ca = 0, labsM = mo.map(function (m) { return fmt.month(m.Month); });
+      var plan = mo.map(function (m) { cp += m.Plan || 0; return cp; }), actl = mo.map(function (m) { if (m.Actual == null) return null; ca += m.Actual; return ca; });
+      U.chart(chartBox(sc), { type: "line", data: { labels: labsM, datasets: [
+        U.lineDs("Cum planned", plan, S.plan, { borderWidth: 2.5 }), U.lineDs("Cum actual", actl, S.actual, { borderWidth: 2.5, spanGaps: false }),
+        U.barDs("Monthly planned", mo.map(function (m) { return m.Plan; }), U.fade(S.plan), { type: "bar", yAxisID: "y", order: 5 }),
+        U.barDs("Monthly actual", mo.map(function (m) { return m.Actual; }), U.fade(S.actual), { type: "bar", yAxisID: "y", order: 6 })] },
+        options: { plugins: { tooltip: U.pctTooltip() }, scales: { x: U.catAxis(), y: U.pctAxis() } } });
+      sc.querySelector(".chart-box").insertAdjacentHTML("afterend", '<div class="pc-note">To date: planned <b>' + fmt.pct(ex.PlannedToDate) + "</b> · actual <b>" + fmt.pct(ex.ActualToDate) +
+        "</b>" + (ex.Period ? " · execution period " + fmt.int(ex.Period) + " months" : "") + (ex.TOC ? " · TOC completed: " + esc(ex.TOC) : "") + "</div>");
+    } else add(sc, '<div class="empty">No monthly execution progress on this card yet' + (aPhase(c) ? " (actual phase: " + esc(aPhase(c)) + ")" : "") + ".</div>");
+
+    var bu = (c.Budget || [])[0] || {}, kp = {};
+    (c.KPIs || []).forEach(function (k) { kp[k.KPI.toLowerCase()] = k.Value; });
+    var cpi = kp.cpi, spi = kp["spi (execution)"], ev = bu["Earned Value (SAR)"], pv = bu["Planned Value (SAR)"], ac = bu["Actual Cost"];
+    var evp = panelIn(g2, "Earned value & budget", "Section 9 — execution phase / work packages");
+    if (c.Budget && c.Budget.length) {
+      var ge = add(evp, '<div class="grid g-4 pc-ev"></div>');
+      ge.innerHTML = [["Contract value", fmt.m(bu["Contract value (SAR)"]) + " M"], ["Planned value (PV)", fmt.m(pv) + " M"], ["Earned value (EV)", fmt.m(ev) + " M"], ["Actual cost (AC)", fmt.m(ac) + " M"],
+        ["Approved paid", fmt.m(bu["Approved Paid Amount (SAR)"]) + " M"], ["EAC", fmt.m(bu.EAC) + " M"],
+        ["SPI (execution)", spi == null ? "—" : '<span class="' + spiTxtCls(spi) + '">' + spi.toFixed(2) + "</span>"],
+        ["CPI", cpi == null ? "—" : '<span class="' + (cpi < 0.9 ? "neg" : cpi >= 1 ? "pos" : "") + '">' + cpi.toFixed(2) + "</span>"]]
+        .map(function (p) { return U.info(p[0], p[1]); }).join("");
+      if (c.Budget.length > 1) tableIn(evp, { rows: c.Budget, search: false, autoHeight: true, exportName: "Budget_" + c.Code, columns: Object.keys(c.Budget[0]).map(function (k, i) { return { key: k, label: k, type: i ? "money" : null }; }) });
+      if (c.CashFlow && c.CashFlow.length) {
+        add(evp, '<h4 class="pc-sub">Cash flow</h4>');
+        tableIn(evp, { rows: c.CashFlow, search: false, autoHeight: true, exportName: "CashFlow_" + c.Code, columns: Object.keys(c.CashFlow[0]).map(function (k, i) { return { key: k, label: k, type: i ? "money" : null }; }) });
+      }
+    } else add(evp, '<div class="empty">No earned-value figures on this card yet (they start with execution).</div>');
+
+    // Baseline & feedback
+    var g3 = grid(v, "g-2");
+    var bp = panelIn(g3, "Baseline schedule", "Section 6 — revised: " + esc((c.Baseline || {}).Revised || "—") + " · current version: " + esc((c.Baseline || {}).Version || "—"));
+    tableIn(bp, { rows: (c.Baseline || {}).Versions || [], search: false, autoHeight: true, exportName: "Baseline_" + c.Code, columns: [
+      { key: "Version", label: "Version" }, { key: "Start", label: "Start", type: "date" }, { key: "Finish", label: "Finish", type: "date" }, { key: "Budget", label: "Budget (SAR)", type: "money" },
+      { key: "dur", label: "Duration (days)", type: "int", get: function (r) { return days(r.Start, r.Finish); } }] });
+    var bl = c.Baseline || {};
+    add(panelIn(g3, "Status commentary", "PM / EPMO feedback and reason for delay"), '<div class="pc-fb">' +
+      [["PM feedback", bl.PMFeedback, ""], ["EPMO feedback", bl.EPMOFeedback, ""], ["Reason for delay", bl.DelayReason, " warn"]].map(function (x) {
+        return '<div class="note-box' + x[2] + '"><b>' + x[0] + "</b><br>" + (x[1] ? esc(x[1]).replace(/\r?\n/g, "<br>") : '<span class="muted">Not provided.</span>') + "</div>"; }).join("") + "</div>");
+
+    // Milestones & deliverables
+    var g4 = grid(v, "g-2");
+    var mrows = (c.Milestones || []).map(function (m) { var s2 = msState(m, dd); return Object.assign({ State: s2.state, Delay: s2.delay, Forecast: s2.forecast, ActualDone: s2.done ? s2.date : null }, m); });
+    tableIn(panelIn(g4, "Critical path milestones", "Section 10 — delay = actual (or forecast / data date while open) − planned"), { rows: mrows, search: false, autoHeight: true, exportName: "Milestones_" + c.Code,
+      rowClass: function (r) { return r.State === "Late / overdue" ? "row-alert" : ""; },
+      columns: [{ key: "Milestone", label: "Milestone", wrap: true }, { key: "Planned", label: "Planned", type: "date" }, { key: "ActualDone", label: "Actual", type: "date" },
+        { key: "Forecast", label: "Forecast", type: "date" }, { key: "State", label: "Status", type: "badge" }, { key: "Delay", label: "Delay (d)", type: "int", signed: true }] });
+    var dls = c.Deliverables || [];
+    var dp = panelIn(g4, "Deliverables", "Section 11");
+    if (dls.length) tableIn(dp, { rows: dls, search: false, autoHeight: true, exportName: "Deliverables_" + c.Code, columns: [
+      { key: "Deliverable", label: "Deliverable", wrap: true }, { key: "Due", label: "Planned due", type: "date" }, { key: "Actual", label: "Actual", type: "date" }, { key: "Status", label: "Status", type: "badge" }] });
+    else add(dp, '<div class="empty">No deliverables recorded.</div>');
+
+    // Logs
+    var iss = D.t("Issue_register").filter(function (r) { return String(r["Poject Code"]) === String(c.Code); });
+    var ip = panelIn(v, "Issue log", "Section 12 — " + iss.length + " issues · " + openIssues(D, c.Code) + " open", '<a class="link-btn" data-go="issues">Open in Issue Register →</a>');
+    ip.querySelector("[data-go]").addEventListener("click", function () { window.SARApp.go("issues", { f: { code: [String(c.Code)] } }); });
+    if (iss.length) tableIn(ip, { rows: iss, search: false, autoHeight: true, exportName: "Issues_" + c.Code, onRow: function (r) { U.recordModal(r["ILR ID No."] + " — " + c.Name, r); },
+      columns: [{ key: "ILR ID No.", label: "ILR ID", nowrap: true }, { key: "Issue Identification (Date)", label: "Identified", type: "date" }, { key: "Issue Title", label: "Title", wrap: true },
+        { key: "Issue Category", label: "Category" }, { key: "Resolution Action Plan", label: "Action plan", wrap: true }, { key: "Issue Rate", label: "Rate", type: "badge" }, { key: "Issue Status", label: "Status", type: "badge" }] });
+    else add(ip, '<div class="empty">No issues logged.</div>');
+    var rk = c.Risks || [];
+    var rp2 = panelIn(v, "Risk log", "Section 14 — " + rk.length + " risks · " + openRisks(c) + " open");
+    if (rk.length) tableIn(rp2, { rows: rk, search: false, autoHeight: true, exportName: "Risks_" + c.Code, onRow: function (r) { U.recordModal((r["RRF ID No."] || "Risk") + " — " + c.Name, r); },
+      columns: [{ key: "RRF ID No.", label: "RRF ID", nowrap: true }, { key: "Risk Title", label: "Title", wrap: true }, { key: "Risk Category", label: "Category" },
+        { key: "Risk Owner", label: "Owner" }, { key: "Probability of Occurrence", label: "Prob.", type: "int" }, { key: "Total Impact (Rate)", label: "Impact" }, { key: "Risk Score", label: "Score", type: "int" },
+        { key: "Risk Rate", label: "Rate", type: "badge" }, { key: "Risk Status", label: "Status", type: "badge" }, { key: "Mitigation Action Plan", label: "Mitigation", wrap: true }] });
+    else add(rp2, '<div class="empty">No risks logged.</div>');
+    var g5 = grid(v, "g-2");
+    var ch = c.Changes || [], cs = c.ChangeSummary || {};
+    var cp2 = panelIn(g5, "Change log", "Section 13 — " + ch.length + " change requests" + (cs.Duration ? " · +" + fmt.int(cs.Duration) + " days" : "") + (cs.CostImpact ? " · " + fmt.money(cs.CostImpact) + " SAR" : ""));
+    if (ch.length) tableIn(cp2, { rows: ch, search: false, autoHeight: true, exportName: "Changes_" + c.Code, onRow: function (r) { U.recordModal((r["CR ID No."] || "Change") + " — " + c.Name, r); },
+      columns: [{ key: "CR ID No.", label: "CR ID", nowrap: true }, { key: "Change Request (Description)", label: "Description", wrap: true }, { key: "Cost Impact (SAR)", label: "Cost (SAR)", type: "money" },
+        { key: "Schedule Impact Duration (Calendar Days)", label: "Days", type: "int" }, { key: "Decision Date", label: "Decision", type: "date" }, { key: "CR Status", label: "Status", type: "badge" }] });
+    else add(cp2, '<div class="empty">No change requests.</div>');
+    var cl = c.Claims || [];
+    var clp = panelIn(g5, "Claims register", "Section 15 — " + cl.length + " claims");
+    if (cl.length) tableIn(clp, { rows: cl, search: false, autoHeight: true, exportName: "Claims_" + c.Code, columns: Object.keys(cl[0]).slice(0, 8).map(function (k) { return { key: k, label: k, wrap: true }; }) });
+    else add(clp, '<div class="empty">No claims.</div>');
+
+    var kpis = (c.KPIs || []).filter(function (k) { return k.Value != null; });
+    if (kpis.length) tableIn(panelIn(v, "Card KPIs", "KPI block at the end of the card"), { rows: kpis, search: false, autoHeight: true, exportName: "KPIs_" + c.Code, columns: [
+      { key: "Phase", label: "Phase" }, { key: "KPI", label: "KPI" },
+      { key: "Value", label: "Value", get: function (k) { var n = k.KPI.toLowerCase(), x = k.Value;
+        return /^(ev|pv|sv|cv)$|\(sar\)/.test(n) ? fmt.money(x) : /\(days\)|number/.test(n) ? fmt.int(x) : fmt.dec(x); } }] });   // values as calculated on the card
+  }
+
+  /* ----------------------------- Portfolio Master Plan ----------------------------- */
+  P["portfolio-plan"] = function (ctx) {
+    var D = ctx.D, v = ctx.view, st = ctx.state, all = cardsOf(D);
+    if (!all.length) { noCards(v); return; }
+    var defs = cardDefs(all), f = filterBar(ctx, defs, all);
+    var cards = all.filter(function (c) { return passes(c, defs, f); });
+    var dd = dataDate(all), ddn = dnum(dd);
+    st.level = st.level || "project"; st.win = st.win || "focus"; st.grp = st.grp || "none"; st.sort = st.sort || "finish";
+    st.show = st.show || { base: 1, rev: 1, fc: 1, ms: 1 }; st.open = st.open || {};
+
+    var bar = add(v, '<div class="filters pg-ctl"></div>');
+    bar.appendChild(seg("Detail", [["project", "Projects"], ["phase", "Phases"], ["activity", "Activities"]], st.level, function (x) { st.level = x; st.open = {}; ctx.rerender(); }));
+    bar.appendChild(seg("Time window", [["focus", "Data date −1y → +2y"], ["all", "Full span"]], st.win, function (x) { st.win = x; ctx.rerender(); }));
+    bar.appendChild(seg("Group by", [["none", "None"], ["aph", "Phase"], ["status", "Status"], ["pm", "PM"], ["grp", "Group"]], st.grp, function (x) { st.grp = x; ctx.rerender(); }));
+    bar.appendChild(seg("Sort", [["finish", "Finish"], ["slip", "Slip"], ["code", "Code"]], st.sort, function (x) { st.sort = x; ctx.rerender(); }));
+    var shw = el('<div class="filter seg-wrap"><label>Show</label><div class="seg"></div></div>');
+    [["base", "Baseline"], ["rev", "Revised BL"], ["fc", "Forecast"], ["ms", "Milestones"]].forEach(function (o) {
+      var b = el('<button type="button" class="' + (st.show[o[0]] ? "on" : "") + '">' + (st.show[o[0]] ? "✓ " : "") + o[1] + "</button>");
+      b.addEventListener("click", function () { st.show[o[0]] = st.show[o[0]] ? 0 : 1; ctx.rerender(); }); shw.querySelector(".seg").appendChild(b);
+    });
+    bar.appendChild(shw);
+
+    // headline tiles
+    var in90 = ddn ? ddn + 90 * 864e5 : null, yEnd = dd ? dd.slice(0, 4) + "-12-31" : null;
+    var allMs = [];
+    cards.forEach(function (c) { (c.Milestones || []).forEach(function (m) { var s = msState(m, dd); allMs.push(Object.assign({ card: c, Code: c.Code, Project: c.Name }, m, s)); }); });
+    var upcoming = allMs.filter(function (m) { var n = dnum(m.date); return !m.done && n && ddn && n >= ddn && n <= in90; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var overdue = allMs.filter(function (m) { return !m.done && m.state === "Late / overdue"; }).sort(function (a, b) { return (b.delay || 0) - (a.delay || 0); });
+    var slips = cards.map(slip).filter(function (x) { return x != null; }), late = slips.filter(function (x) { return x > 0; });
+    var g = grid(v, "g-5");
+    g.innerHTML = U.tile({ value: cards.length, label: "Projects on the plan", note: "Data date " + esc(fmt.date(dd)) }) +
+      U.tile({ value: cards.filter(function (c) { var fe = span(c).FE; return fe && yEnd && fe <= yEnd && fe >= dd.slice(0, 4) + "-01-01"; }).length, label: "Finishing in " + (dd ? dd.slice(0, 4) : ""), color: "mid", note: "Forecast finish this year" }) +
+      U.tile({ value: late.length, label: "Finishing later than baseline", color: late.length ? "red" : "slate", note: late.length ? "Average slip " + fmt.int(U.sum(late, function (x) { return x; }) / late.length) + " days" : "" }) +
+      U.tile({ value: upcoming.length, label: "Milestones next 90 days", color: "yellow", note: "Not yet completed" }) +
+      U.tile({ value: overdue.length, label: "Milestones late / overdue", color: "black", note: "Open and past planned date" });
+
+    // rows
+    function key(c) { return st.grp === "aph" ? aPhase(c) : st.grp === "status" ? pf(c, "Status") || "—" : st.grp === "pm" ? (c.Stake || {}).PM || "—" : st.grp === "grp" ? c.Group || "—" : ""; }
+    var sorted = cards.slice().sort(function (a, b) {
+      var ka = key(a), kb = key(b);
+      var gcmp = st.grp === "aph" ? phaseRank(ka) - phaseRank(kb) : st.grp === "status" ? byOrder(STATUS_ORDER)(ka, kb) : String(ka).localeCompare(String(kb));
+      if (gcmp) return gcmp;
+      if (st.sort === "slip") return (slip(b) || -1e9) - (slip(a) || -1e9);
+      if (st.sort === "code") return String(a.Code).localeCompare(String(b.Code));
+      return String(span(a).FE || "9999").localeCompare(String(span(b).FE || "9999"));
+    });
+    var depth = st.level === "activity" ? 3 : st.level === "phase" ? 2 : 1;
+    var rows = [], lastG = null;
+    sorted.forEach(function (c) {
+      if (st.grp !== "none" && key(c) !== lastG) { lastG = key(c); rows.push({ group: true, label: lastG, sub: sorted.filter(function (x) { return key(x) === lastG; }).length + " projects" }); }
+      var sp = span(c), pk = c.Code, open = st.open[pk] != null ? st.open[pk] : depth >= 2;
+      rows.push({ key: pk, level: 1, label: cardLabel(c), sub: aPhase(c), card: c, kids: (c.Timeline || []).length > 0, open: open,
+        BS: sp.BS, BE: sp.BE, RS: sp.RS, RE: sp.RE, FS: sp.FS, FE: sp.FE, Plan: sp.Plan, Actual: sp.Actual, ms: msRows(c, dd) });
+      if (open) {
+        var gs2 = { isOpen: function (k) { return st.open[k] != null ? st.open[k] : depth >= 3; } };
+        timelineRows(c, gs2, 2).forEach(function (r) { rows.push(r); });
+      }
+    });
+    var range = null;
+    if (st.win === "focus" && ddn) { var a = new Date(ddn); range = [Date.UTC(a.getUTCFullYear() - 1, a.getUTCMonth(), 1), Date.UTC(a.getUTCFullYear() + 2, a.getUTCMonth(), 1)]; }
+    var gp = panelIn(v, "Portfolio master plan", "From the project cards (section 8 timeline + section 10 milestones) · ▸ expands a project into phases and activities · click a project name to open its card");
+    planGantt(gp, rows, { dd: dd, range: range, show: st.show,
+      onToggle: function (r) { st.open[r.key] = !r.open; ctx.rerender(); },
+      onLabel: function (r) { if (r.level === 1 && r.card) window.SARApp.go("project-cards", { code: r.card.Code }); } });
+
+    var g2 = grid(v, "g-2");
+    function msTable(p, rowsM, name) {
+      if (!rowsM.length) { add(p, '<div class="empty">None.</div>'); return; }
+      tableIn(p, { rows: rowsM, search: false, maxHeight: 420, exportName: name, onRow: function (m) { window.SARApp.go("project-cards", { code: m.Code }); },
+        columns: [{ key: "Code", label: "Code", nowrap: true }, { key: "Project", label: "Project", wrap: true }, { key: "Milestone", label: "Milestone", wrap: true },
+          { key: "Planned", label: "Planned", type: "date" }, { key: "forecast", label: "Forecast", type: "date" }, { key: "delay", label: "Delay (d)", type: "int", signed: true }] });
+    }
+    msTable(panelIn(g2, "Milestones due in the next 90 days", esc(fmt.date(dd)) + " → " + esc(fmt.date(in90 ? new Date(in90).toISOString().slice(0, 10) : null)) + " · click to open the card"), upcoming, "Upcoming_Milestones");
+    msTable(panelIn(g2, "Late / overdue milestones", "Open milestones past their planned date · biggest delay first"), overdue, "Overdue_Milestones");
+  };
+
+  /* ======================================================================
+     Projects in Closing Phase ("Projects in Closing phase.xlsx")
+     Closure status from "Current Status" (Closed / Terminated / otherwise In closing).
+     The close-out checklist = every column between "Final Contract Value" and
+     "Current Status" (AMP-E1 … Performance guarantee release), so added steps
+     appear automatically. A step is done when it holds a date or Yes/Done/….
+     ====================================================================== */
+  var CL_ORDER = ["In closing", "Closed", "Terminated"];
+  var CL_COLOR = { "In closing": C.yellow, "Closed": C.blue, "Terminated": C.red };
+  function clStatus(r) { var s = String(r["Current Status"] || "").trim(); return /^closed\b/i.test(s) ? "Closed" : /terminat/i.test(s) ? "Terminated" : "In closing"; }
+  var CL_OWNER = [[/^amp/i, "Asset Team + PM"], [/^hand/i, "PM"], [/^clos/i, "PM + Program Controls"], [/^(retention|ap guarantee|final payment)/i, "Finance"], [/^performance/i, "Finance + Supply Chain"]];
+  function clOwner(k) { k = String(k).trim(); for (var i = 0; i < CL_OWNER.length; i++) if (CL_OWNER[i][0].test(k)) return CL_OWNER[i][1]; return ""; }
+  function clDay(t) {                                       // "31-Oct-2026" / "15 Oct 26" / ISO → ISO, else ""
+    t = String(t || "").trim(); if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+    var m = /^(\d{1,2})[\s-]+([A-Za-z]{3})[a-z]*[\s-]+(\d{2}|\d{4})$/.exec(t); if (!m) return "";
+    var mo = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(m[2].toLowerCase()); if (mo < 0) return "";
+    return (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + ("0" + (mo + 1)).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+  }
+  function clStep(r, k) {                                  // → { st: "done" | "na" | "wip" | "open", txt, label, date (ISO), dtxt (TBD …) }
+    var x = r[k], s = x == null ? "" : String(x).trim();
+    /* "Status – date" as written on the weekly slides: Pending – 31-Oct-2026 · Not Started – TBD · Completed – 15-Aug-2026 */
+    var sd = /^(completed?|done|signed|pending|not started|in process|in progress|under process)\s*(?:[–—-]\s*(.*))?$/i.exec(s);
+    if (sd) {
+      var kw = sd[1].toLowerCase(), dt = (sd[2] || "").trim(), iso = clDay(dt);
+      var st = /^(complet|done|signed)/.test(kw) ? "done" : /^not started/.test(kw) ? "open" : "wip";
+      return { st: st, txt: s, label: st === "done" ? "Completed" : st === "open" ? "Not Started" : "Pending", date: iso, dtxt: iso ? "" : dt };
+    }
+    if (s === "") return clStatus(r) === "Closed" ? { st: "done", txt: "Closed" } : clStatus(r) === "Terminated" ? { st: "na", txt: "Terminated" } : { st: "open", txt: "Pending" };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { st: "done", txt: fmt.date(s), label: "Completed", date: s };
+    if (x === true || x === 1 || /^(yes|y|done|complete|completed|issued|signed|released|approved|received|paid|submitted|ok|✓|✔)\b/i.test(s)) return { st: "done", txt: s };
+    if (/^(n\/?a|not applicable|-)$/i.test(s)) return { st: "na", txt: "N/A" };
+    if (/^(tbd|tbc)$/i.test(s)) return { st: "open", txt: s.toUpperCase(), label: s.toUpperCase() };   // not decided yet
+    if (x === false || x === 0 || /^(no|pending|not started)\b/i.test(s)) return { st: "open", txt: s || "Pending" };
+    return { st: "wip", txt: s };
+  }
+  /* ======================================================================
+     Projects in Execution — one view of every project in the execution phase:
+     weekly progress report (latest week) + project card + S-curve (SPI trend) + 2026 spend.
+     Set = weekly-report projects classified "Execution" (card phase when the report leaves it blank)
+           + cards whose actual phase is Execution but that are not in the weekly report.
+     ====================================================================== */
+  function vLine(val, color, label) {      // dashed vertical reference line on the x scale (e.g. the SPI target)
+    return { id: "vline", afterDatasetsDraw: function (ch) {
+      var x = ch.scales.x, a = ch.chartArea; if (!x) return;
+      var px = x.getPixelForValue(val), c = ch.ctx; if (px < a.left || px > a.right) return;
+      c.save(); c.strokeStyle = color; c.lineWidth = 1.5; c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(px, a.top); c.lineTo(px, a.bottom); c.stroke(); c.setLineDash([]);
+      c.fillStyle = color; c.font = "700 11px sans-serif"; c.textAlign = "left"; if (label) c.fillText(label, px + 4, a.top + 11); c.restore();
+    } };
+  }
+  function sparkSvg(vals, tgt) {           // tiny SPI trend line for table cells
+    var pts = vals.filter(function (x) { return x != null; });
+    if (pts.length < 2) return '<span class="muted">—</span>';
+    var lo = Math.min(tgt, Math.min.apply(null, pts)) - 0.05, hi = Math.max(1, Math.max.apply(null, pts)) + 0.05, W = 84, H = 24;
+    function y(x) { return (H - 2 - (x - lo) / (hi - lo) * (H - 4)).toFixed(1); }
+    var step = W / (pts.length - 1), d = pts.map(function (x, i) { return (i ? "L" : "M") + (i * step).toFixed(1) + " " + y(x); }).join(" ");
+    var last = pts[pts.length - 1], col = last >= tgt ? (last >= 1 ? C.blue : C.yellow) : C.red;
+    return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '"><line x1="0" x2="' + W + '" y1="' + y(tgt) + '" y2="' + y(tgt) + '" stroke="' + C.gray + '" stroke-dasharray="3 3"/>' +
+      '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2"/><circle cx="' + W + '" cy="' + y(last) + '" r="2.6" fill="' + col + '"/></svg>';
+  }
+
+  P.execution = function (ctx) {
+    var D = ctx.D, v = ctx.view;
+    var all0 = cardsOf(D).filter(function (c) { return /^execution/i.test(c.ActualPhase || ""); });
+    if (!all0.length) { add(v, '<div class="empty">No project card has <b>Actual Phase = Execution</b>. Import <b>EP - NSR Projects &lt;Month&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
+    var kpi = D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {};
+    var TGT = N(kpi["NSR Spend Plan 2026 as per Budgeting"]) || 0.9;
+    var dd = dataDate(all0), ddn = dnum(dd);
+    // weekly report: non-progress context only (reason for delay, manpower)
+    var wk = {};
+    D.t("Weekly_Report_Updates").forEach(function (r) { var k = String(r["Project Code"] || ""); if (k && (!wk[k] || r["Report Date"] > wk[k]["Report Date"])) wk[k] = r; });
+    // 2026 spend per project (Rev Spend Plan when Budget 2026 is loaded)
+    var RV = hasRev(), spd = {}, spRows = D.t("Spending_Plan");
+    var cut = spRows.filter(function (r) { return N(G(r, SP.act)) != null; }).map(function (r) { return r.Month; }).sort().pop() || null;
+    spRows.forEach(function (r) {
+      var k = String(r.ID), o = spd[k] || (spd[k] = { fy: 0, fyO: 0, ytdP: 0, ytdA: 0, fc: 0 });
+      var pl = N(G(r, RV ? SP.rev : SP.plan)) || 0, past = cut && r.Month <= cut;
+      o.fy += pl; o.fyO += N(G(r, SP.plan)) || 0; if (past) { o.ytdP += pl; o.ytdA += N(G(r, SP.act)) || 0; o.fc += N(G(r, SP.act)) || 0; } else o.fc += N(G(r, SP.inv)) || 0;
+    });
+    // trend months: the last 12 month-ends up to the reporting period
+    var months = U.uniq([].concat.apply([], all0.map(function (c) { return ((c.Exec || {}).Months || []).map(function (m) { return m.Month; }); })))
+      .filter(function (m) { return !dd || m <= dd; }).sort().slice(-12);
+    function yes(x) { return /^y/i.test(String(x || "")); }
+
+    var all = all0.map(function (c) {
+      var ex = c.Exec || {}, pfm = c.Perf || {}, sk = c.Stake || {}, fu = c.Fund || {}, tot = c.Total || {};
+      var ph = (c.Timeline || []).filter(function (t) { return t.Level === 1 && /^execution/i.test(t.Name); })[0] || {};
+      var r = wk[c.Code] || {};
+      var o = { code: c.Code, name: c.Name || c.Code, card: c };
+      o.label = o.code + " — " + o.name;
+      o.crit = yes(fu.Critical) ? "Critical" : "Not critical";
+      o.pm = sk.PM || "Not set";
+      o.contractor = ((c.Contracts || []).filter(function (x) { return /contractor/i.test(x.Role || "") && x.Entity; })[0] || {}).Entity || "Not set";
+      o.location = c.Location || "Not set"; o.size = c.Size || "Not set";
+      o.status = pfm.Status || "Not set"; o.risk = pfm.Risk || "Not set"; o.delay = pfm.Delay || "Not set";
+      o.cv = N(fu.CON) || 0; o.budget = N(fu.Budget) || 0; o.w = o.cv || o.budget;
+      // Section 7 — execution schedule: progress to date + monthly curve
+      o.plan = N(ex.PlannedToDate); o.act = N(ex.ActualToDate);
+      if (!o.plan && !o.act) { o.plan = N(ph.Plan); o.act = N(ph.Actual); }          // Section 8 execution row (same figures when both filled)
+      if (!o.plan && !o.act) { o.plan = null; o.act = null; }
+      o.var = o.plan != null && o.act != null ? o.act - o.plan : null;
+      o.spi = o.plan ? (o.act || 0) / o.plan : null;
+      var cp = 0, ca = 0, cum = {};
+      (ex.Months || []).forEach(function (m) { cp += m.Plan || 0; if (m.Actual != null) ca += m.Actual; cum[m.Month] = { p: cp, a: m.Actual != null || m.Month <= (ex.ReportingPeriod || dd) ? ca : null }; });
+      o.cum = function (m) { var x = null; Object.keys(cum).forEach(function (k) { if (k <= m) x = cum[k]; }); return x; };
+      o.spark = months.map(function (m) { var x = o.cum(m); return x && x.p ? x.a / x.p : null; });
+      var m3 = months.length > 3 ? o.cum(months[months.length - 4]) : null;
+      o.spi3 = m3 && m3.p ? m3.a / m3.p : null; o.dSpi = o.spi != null && o.spi3 != null ? o.spi - o.spi3 : null;
+      o.period = N(ex.Period); o.exStart = ex.Start;
+      // Section 8 — project timeline: execution phase + project total
+      o.bs = ph.BS; o.be = ph.BE; o.rs = ph.RS; o.re = ph.RE; o.fs = ph.FS; o.fe = ph.FE;
+      o.pPlan = N(tot.Plan); o.pAct = N(tot.Actual); o.pRe = tot.RE || tot.BE; o.pFe = tot.FE;
+      o.feOld = !!(o.fe && dd && o.fe < dd && (o.act == null || o.act < 0.999));
+      o.slip = o.feOld ? null : days(o.re || o.be, o.fe);
+      o.slipBL = o.feOld ? null : days(o.be, o.fe);
+      o.band = o.spi == null ? "No progress in sections 7 / 8" : o.spi >= 1 ? "SPI ≥ 1.00" : o.spi >= TGT ? "SPI " + TGT.toFixed(2) + " – 1.00" : "SPI < " + TGT.toFixed(2) + " (below target)";
+      o.paid = N(pfm.Paid); o.paidPct = o.cv && o.paid != null ? o.paid / o.cv : null;
+      var sd = spd[c.Code] || {}; o.fy = sd.fy || 0; o.fyO = sd.fyO || 0; o.ytdP = sd.ytdP || 0; o.ytdA = sd.ytdA || 0; o.fc = sd.fc || 0;
+      o.issues = openIssues(D, c.Code); o.risks = openRisks(c);
+      o.reason = r["Reason for Delays"] || (c.Baseline || {}).DelayReason || "";
+      o.mp = N(r["Total Manpower (This Week)"]);
+      return o;
+    });
+
+    var BANDS = ["SPI < " + TGT.toFixed(2) + " (below target)", "SPI " + TGT.toFixed(2) + " – 1.00", "SPI ≥ 1.00", "No progress in sections 7 / 8"];
+    function opts(get, order) { var x = U.uniq(all.map(get)); return order ? x.sort(order) : x.sort(); }
+    var defs = [
+      { key: "status", label: "Overall Status", get: function (o) { return o.status; }, options: opts(function (o) { return o.status; }, byOrder(STATUS_ORDER)) },
+      { key: "band", label: "SPI band", get: function (o) { return o.band; }, options: BANDS.filter(function (b) { return all.some(function (o) { return o.band === b; }); }) },
+      { key: "risk", label: "Risk Level", get: function (o) { return o.risk; }, options: opts(function (o) { return o.risk; }, byOrder(RISK_ORDER)) },
+      { key: "delay", label: "Delay Level", get: function (o) { return o.delay; }, options: opts(function (o) { return o.delay; }) },
+      { key: "crit", label: "Critical", get: function (o) { return o.crit; }, options: ["Critical", "Not critical"] },
+      { key: "size", label: "Project Size", get: function (o) { return o.size; }, options: opts(function (o) { return o.size; }) },
+      { key: "loc", label: "Location", get: function (o) { return o.location; }, options: opts(function (o) { return o.location; }) },
+      { key: "pm", label: "Project Manager", get: function (o) { return o.pm; }, options: opts(function (o) { return o.pm; }) },
+      { key: "con", label: "Contractor", get: function (o) { return o.contractor; }, options: opts(function (o) { return o.contractor; }) },
+      { key: "proj", label: "Project", get: function (o) { return o.code; }, options: all.map(function (o) { return o.code; }).sort(), display: function (k) { var o = all.filter(function (x) { return x.code === k; })[0]; return o ? o.label : k; } }];
+    var f = filterBar(ctx, defs, all);
+    var rows = all.filter(function (o) { return passes(o, defs, f); });
+    function rowsX(key) { return all.filter(function (o) { return passes(o, defs, f, key); }); }
+    function sumF(list, fn) { return list.reduce(function (s, o) { var x = fn(o); return s + (x || 0); }, 0); }
+    var prog = rows.filter(function (o) { return o.w && o.plan; });
+    var PV = sumF(prog, function (o) { return o.w * o.plan; }), EV = sumF(prog, function (o) { return o.w * (o.act || 0); }), W = sumF(prog, function (o) { return o.w; });
+    var SPI = PV ? EV / PV : null, CV = sumF(rows, function (o) { return o.cv; });
+    function spiAt(m, list) { var pv = 0, ev = 0; list.forEach(function (o) { var x = o.cum(m); if (o.w && x && x.p) { pv += o.w * x.p; ev += o.w * (x.a || 0); } }); return pv ? ev / pv : null; }
+    var SPI3 = months.length > 3 ? spiAt(months[months.length - 4], prog) : null;
+    var below = rows.filter(function (o) { return o.spi != null && o.spi < TGT; }), late = rows.filter(function (o) { return o.slip != null && o.slip > 0; });
+    var crit = rows.filter(function (o) { return o.crit === "Critical"; }), noProg = rows.filter(function (o) { return o.spi == null; });
+    function spiTxt(x) { return x == null ? "—" : x.toFixed(2); }
+    function spiCol(x) { return spiTile(x, TGT); }
+    function setF(key, vals) { var s = sel(ctx, key); s.length = 0; vals.forEach(function (x) { s.push(x); }); ctx.rerender(); }
+
+    add(v, '<div class="note-box">Projects whose card shows <b>Actual Phase = Execution</b> · reporting period <b>' + esc(fmt.month(dd)) + "</b>. " +
+      "Progress comes only from the project cards: <b>section 7</b> (Execution Schedule — planned / actual % to date and the monthly curve) and <b>section 8</b> (Project Timeline — execution phase baseline, revised and forecast dates, and the project total). " +
+      "SPI = actual ÷ planned execution progress; the portfolio SPI is weighted by contract value (CON, else budget). KPI target " + TGT.toFixed(2) + ".</div>");
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: rows.length, label: "Projects in execution", note: crit.length + " critical" + (noProg.length ? " · " + noProg.length + " without progress in section 7" : "") }) +
+      mTile("Contract value (CON)", CV, "black") +
+      U.tile({ value: spiTxt(SPI), label: "Portfolio SPI", color: spiCol(SPI), note: "Target " + TGT.toFixed(2) + (SPI3 != null && SPI != null ? " · 3 months ago " + SPI3.toFixed(2) + " (" + (SPI - SPI3 >= 0 ? "+" : "") + (SPI - SPI3).toFixed(2) + ")" : "") }) +
+      U.tile({ value: fmt.pct(W ? EV / W : null, 1), label: "Execution progress", color: "yellow", note: "Actual vs " + fmt.pct(W ? PV / W : null, 1) + " planned · section 7, weighted" }) +
+      U.tile({ value: below.length, label: "Below SPI target", color: below.length ? "red" : "slate", note: "SPI < " + TGT.toFixed(2) + " · click to filter" }) +
+      U.tile({ value: late.length, label: "Finish after revised baseline", color: late.length ? "red" : "slate", note: late.length ? "Execution phase · average " + fmt.int(sumF(late, function (o) { return o.slip; }) / late.length) + " days · click to filter" : "Section 8 · none" });
+    clickTiles(g, [function () { defs.forEach(function (d) { f[d.key].length = 0; }); ctx.rerender(); }, null, null, null,
+      function () { setF("band", [BANDS[0]]); }, function () { setF("proj", late.map(function (o) { return o.code; })); }]);
+    var g2 = grid(v, "g-4"), paid = sumF(rows, function (o) { return o.paid; });
+    var yP = sumF(rows, function (o) { return o.ytdP; }), yA = sumF(rows, function (o) { return o.ytdA; }), fy = sumF(rows, function (o) { return o.fy; }), fc = sumF(rows, function (o) { return o.fc; });
+    g2.innerHTML = mTile("Approved paid", paid, "slate", fmt.pct(CV ? paid / CV : null, 1) + " of contract value") +
+      mTile("2026 YTD actual spend", yA, "yellow", "vs " + fmt.m(yP, 1) + " M " + (RV ? "Rev " : "") + "plan" + (cut ? " to " + esc(fmt.month(cut)) : "") + " · " + fmt.pct(yP ? yA / yP : null, 0)) +
+      mTile("2026 year-end forecast", fc, "mid", "Actual + Forecast Plan · vs " + fmt.m(fy, 1) + " M " + (RV ? "Rev Spend Plan" : "Spend Plan") + " (" + fmt.pct(fy ? fc / fy : null, 0) + ")") +
+      U.tile({ value: sumF(rows, function (o) { return o.issues; }), label: "Open issues", color: "slate", note: sumF(rows, function (o) { return o.risks; }) + " open risks on the cards" });
+
+    // SPI by project · planned vs actual
+    var gA = grid(v, "g-2"), selP = f.proj;
+    var bySpi = rowsX("proj").filter(function (o) { return o.spi != null; }).sort(function (a, b) { return a.spi - b.spi; });
+    var p1 = panelIn(gA, "SPI by project", "Section 7 · dashed line = KPI target " + TGT.toFixed(2) + " · click a bar to filter"), b1 = chartBox(p1);
+    b1.style.height = Math.max(260, bySpi.length * 28 + 60) + "px";
+    U.chart(b1, U.clickable({ type: "bar", plugins: [vLine(TGT, C.red, "Target " + TGT.toFixed(2)), vLine(1, C.slate, "")],
+      data: { labels: bySpi.map(function (o) { return o.code + " · " + o.name; }), datasets: [U.barDs("SPI", bySpi.map(function (o) { return o.spi; }),
+        bySpi.map(function (o) { var col = spiBar(o.spi, TGT); return selP.length && selP.indexOf(o.code) < 0 ? U.fade(col) : col; }), { maxBarThickness: 16 })] },
+      options: { indexAxis: "y", layout: { padding: { right: 30 } }, plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return x.toFixed(2); } },
+        tooltip: { callbacks: { label: function (t) { var o = bySpi[t.dataIndex]; return ["SPI " + o.spi.toFixed(2), "Actual " + fmt.pct(o.act, 1) + " / planned " + fmt.pct(o.plan, 1)]; } } } },
+        scales: { x: { beginAtZero: true, suggestedMax: 1.1, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false }, ticks: { callback: U.shortLabel(30) } } } } },
+      function (i, e) { pick(ctx, "proj", bySpi[i].code, e); }));
+    var byGap = rowsX("proj").filter(function (o) { return o.plan != null; }).sort(function (a, b) { return (a.var || 0) - (b.var || 0); });
+    var p2 = panelIn(gA, "Execution progress — planned vs actual", "Section 7 · % to date · largest shortfall first · click to filter"), b2 = chartBox(p2);
+    b2.style.height = Math.max(260, byGap.length * 28 + 60) + "px";
+    U.chart(b2, U.clickable({ type: "bar", data: { labels: byGap.map(function (o) { return o.code + " · " + o.name; }), datasets: [
+      U.barDs("Planned", byGap.map(function (o) { return o.plan; }), U.hl(S.plan, byGap.map(function (o) { return o.code; }), selP), { maxBarThickness: 10 }),
+      U.barDs("Actual", byGap.map(function (o) { return o.act; }), U.hl(S.actual, byGap.map(function (o) { return o.code; }), selP), { maxBarThickness: 10 })] },
+      options: { indexAxis: "y", plugins: { tooltip: U.pctTooltip() }, scales: { x: U.pctAxis(1), y: { grid: { display: false }, ticks: { callback: U.shortLabel(30) } } } } },
+      function (i, e) { pick(ctx, "proj", byGap[i].code, e); }));
+
+    // status · SPI trend · finish slip
+    var gB = grid(v, "g-3");
+    var rs = rowsX("status"), labs = U.uniq(rs.map(function (o) { return o.status; })).sort(byOrder(STATUS_ORDER));
+    U.chart(chartBox(panelIn(gB, "Overall status", "Project card section 2 · click to filter"), "short"), U.clickable({ type: "bar",
+      data: { labels: labs, datasets: [U.barDs("Projects", labs.map(function (l) { return rs.filter(function (o) { return o.status === l; }).length; }),
+        labs.map(function (l) { var col = STATUS_COLOR[l] || C.slate; return f.status.length && f.status.indexOf(l) < 0 ? U.fade(col) : col; }), { maxBarThickness: 46 })] },
+      options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } }, layout: { padding: { top: 20 } },
+        scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } },
+      function (i, e) { pick(ctx, "status", labs[i], e); }));
+    var trend = months.map(function (m) { return spiAt(m, prog); }), tv = trend.filter(function (x) { return x != null; });
+    U.chart(chartBox(panelIn(gB, "Portfolio SPI trend", "Section 7 monthly curves · last 12 months · weighted"), "short"), { type: "line",
+      data: { labels: months.map(function (m) { return fmt.month(m); }), datasets: [
+        U.lineDs("Portfolio SPI", trend, C.blue, { pointRadius: 3, borderWidth: 2.5 }),
+        U.lineDs("Target " + TGT.toFixed(2), months.map(function () { return TGT; }), C.red, { borderDash: [6, 4], borderWidth: 1.5 })] },
+      options: { plugins: { tooltip: { callbacks: { label: function (t) { return t.dataset.label + ": " + (t.raw == null ? "—" : t.raw.toFixed(2)); } } } },
+        scales: { x: U.catAxis(), y: { suggestedMin: Math.max(0, Math.min.apply(null, tv.concat([TGT])) - 0.05), suggestedMax: Math.max(1.05, Math.max.apply(null, tv.concat([1])) + 0.05), grid: { color: "rgba(200,201,199,.5)" } } } } });
+    var bySlip = rowsX("proj").filter(function (o) { return o.slip != null; }).sort(function (a, b) { return b.slip - a.slip; });
+    var p3 = panelIn(gB, "Execution finish slip (days)", "Section 8 · forecast − revised baseline finish · click to filter"), b3 = chartBox(p3, "short");
+    if (bySlip.length > 8) b3.style.height = bySlip.length * 22 + 50 + "px";
+    U.chart(b3, U.clickable({ type: "bar", data: { labels: bySlip.map(function (o) { return o.code; }), datasets: [U.barDs("Slip (days)", bySlip.map(function (o) { return o.slip; }),
+        bySlip.map(function (o) { var col = o.slip > 90 ? C.red : o.slip > 0 ? C.yellow : C.blue; return selP.length && selP.indexOf(o.code) < 0 ? U.fade(col) : col; }), { maxBarThickness: 14 })] },
+      options: { indexAxis: "y", layout: { padding: { right: 34 } }, plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" }, formatter: function (x) { return (x > 0 ? "+" : "") + fmt.int(x); } },
+        tooltip: { callbacks: { title: function (t) { return bySlip[t[0].dataIndex].label; }, label: function (t) { var o = bySlip[t.dataIndex]; return ["Revised baseline " + fmt.date(o.re || o.be) + " → forecast " + fmt.date(o.fe), "Slip " + fmt.int(o.slip) + " days"]; } } } },
+        scales: { x: { grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } },
+      function (i, e) { pick(ctx, "proj", bySlip[i].code, e); }));
+
+    // Section 8: execution phase schedule (baseline vs revised vs forecast)
+    var sch = rowsX("proj").filter(function (o) { return o.be || o.re || o.fe; }).sort(function (a, b) { return String(a.fe || a.re || a.be).localeCompare(String(b.fe || b.re || b.be)); });
+    if (sch.length) {
+      var p5 = panelIn(v, "Execution phase schedule", "Section 8 · baseline vs revised baseline vs forecast (dashed) · red line = reporting period · click to filter"), b5 = chartBox(p5);
+      b5.style.height = Math.max(260, sch.length * 34 + 70) + "px";
+      function rng(o, a, b) { return o[a] && o[b] ? [dnum(o[a]), dnum(o[b])] : null; }
+      var ds5 = []; sch.forEach(function (o) { ["bs", "be", "rs", "re", "fs", "fe"].forEach(function (k) { if (o[k]) ds5.push(dnum(o[k])); }); }); ds5.push(ddn);
+      var lo5 = Math.min.apply(null, ds5), hi5 = Math.max.apply(null, ds5);
+      var labs5 = sch.map(function (o) { return o.code + " · " + o.name; }), codes5 = sch.map(function (o) { return o.code; });
+      U.chart(b5, U.clickable({ type: "bar", plugins: [vLine(ddn, C.red, fmt.month(dd))],
+        data: { labels: labs5, datasets: [
+          U.barDs("Baseline", sch.map(function (o) { return rng(o, "bs", "be"); }), U.hl(C.gray, codes5, selP), { maxBarThickness: 8, borderSkipped: false }),
+          U.barDs("Revised baseline", sch.map(function (o) { return rng(o, "rs", "re"); }), U.hl(S.plan, codes5, selP), { maxBarThickness: 8, borderSkipped: false }),
+          U.fcBar("Forecast", sch.map(function (o) { return rng(o, "fs", "fe"); }), U.hl(S.actual, codes5, selP), { maxBarThickness: 8, borderSkipped: false })] },
+        options: { indexAxis: "y", plugins: { datalabels: { display: false }, tooltip: { callbacks: { label: function (t) { var r = t.raw; return r ? t.dataset.label + ": " + fmt.date(new Date(r[0]).toISOString().slice(0, 10)) + " → " + fmt.date(new Date(r[1]).toISOString().slice(0, 10)) : ""; } } } },
+          scales: { x: { type: "linear", min: lo5 - 30 * DAY, max: hi5 + 30 * DAY, grid: { color: "rgba(200,201,199,.5)" }, ticks: { maxTicksLimit: 10, callback: function (x) { return fmt.month(new Date(x).toISOString().slice(0, 10)); } } },
+            y: { grid: { display: false }, ticks: { callback: U.shortLabel(34) } } } } },
+        function (i, e) { pick(ctx, "proj", sch[i].code, e); }));
+    }
+
+    // 2026 spend by project
+    var spendL = rowsX("proj").filter(function (o) { return o.fy || o.ytdA || o.fc; }).sort(function (a, b) { return b.fy - a.fy; });
+    if (spendL.length) {
+      var p4 = panelIn(v, "2026 spend by project", (RV ? "Original & Rev Spend Plan" : "Spend Plan") + " (full year) · YTD plan to " + esc(fmt.month(cut)) + " vs actual vs year-end forecast (actual + Forecast Plan, dashed) · click to filter");
+      var c4 = spendL.map(function (o) { return o.code; });
+      U.chart(chartBox(p4), U.clickable({ type: "bar", data: { labels: c4, datasets: [
+        U.barDs((RV ? "Original Plan" : "Spend Plan") + " 2026", spendL.map(function (o) { return RV ? o.fyO : o.fy; }), U.hl(S.plan, c4, selP))].concat(RV ? [
+        U.barDs("Rev Spend Plan 2026", spendL.map(function (o) { return o.fy; }), U.hl(S.rev, c4, selP))] : []).concat([
+        U.barDs(RV ? "YTD Rev plan" : "YTD plan", spendL.map(function (o) { return o.ytdP; }), U.hl(C.mid, c4, selP)),
+        U.barDs("YTD actual", spendL.map(function (o) { return o.ytdA; }), U.hl(S.actual, c4, selP)),
+        U.fcBar("Year-end forecast", spendL.map(function (o) { return o.fc; }), U.hl(S.invoice, c4, selP))]) },
+        options: { plugins: { tooltip: U.moneyTooltip() }, scales: { x: U.catAxis(), y: U.moneyAxis() } } },
+        function (i, e) { pick(ctx, "proj", spendL[i].code, e); }));
+    }
+
+    // watch list: below the SPI target
+    if (below.length) {
+      var wl = panelIn(v, "Watch list — below the SPI target", below.length + " project" + (below.length > 1 ? "s" : "") + " with SPI < " + TGT.toFixed(2) + " · click a card to filter");
+      add(wl, '<div class="ex-watch">' + below.slice().sort(function (a, b) { return a.spi - b.spi; }).map(function (o) {
+        return '<div class="ex-w" data-code="' + esc(o.code) + '"><div class="ex-w-h"><b>' + esc(o.code) + "</b> " + esc(o.name) + (o.crit === "Critical" ? ' <span class="ex-crit">Critical</span>' : "") + "</div>" +
+          '<div class="ex-w-k"><span class="ex-spi neg">SPI ' + o.spi.toFixed(2) + "</span>" + (o.dSpi != null ? "<span>" + (o.dSpi >= 0 ? "▲ +" : "▼ ") + o.dSpi.toFixed(2) + " in 3 months</span>" : "") +
+          "<span>Actual " + fmt.pct(o.act, 1) + " / plan " + fmt.pct(o.plan, 1) + "</span>" + (o.slip != null ? "<span>" + (o.slip > 0 ? "+" : "") + fmt.int(o.slip) + " days</span>" : (o.feOld ? '<span class="neg">forecast date outdated</span>' : "")) + "</div>" +
+          "<p>" + (o.reason ? esc(String(o.reason).replace(/\s+/g, " ").slice(0, 260)) + (String(o.reason).length > 260 ? "…" : "") : '<span class="muted">No reason for delay reported.</span>') + "</p></div>";
+      }).join("") + "</div>");
+      wl.querySelectorAll(".ex-w").forEach(function (n) { n.addEventListener("click", function (e) { pick(ctx, "proj", n.getAttribute("data-code"), e); }); });
+    }
+
+    // register
+    var tp = panelIn(v, "Execution register", rows.length + " projects · progress from card sections 7 & 8 · click a row to open the project card");
+    tableIn(tp, { rows: rows.slice().sort(function (a, b) { return (a.spi == null) - (b.spi == null) || (a.spi || 0) - (b.spi || 0); }), exportName: "Projects_in_Execution", maxHeight: 720, totals: true,
+      rowClass: function (o) { return o.crit === "Critical" ? "ex-critrow" : ""; },
+      onRow: function (o) { window.SARApp.go("project-cards", { code: o.code }); }, rowTitle: "Open the project card",
+      columns: [
+        { key: "code", label: "Code", nowrap: true },
+        { key: "name", label: "Project", wrap: true, render: function (x, o) { return esc(x) + (o.crit === "Critical" ? ' <span class="ex-crit">Critical</span>' : ""); } },
+        { key: "pm", label: "Project Manager", wrap: true }, { key: "contractor", label: "Contractor", wrap: true },
+        { key: "cv", label: "Contract (M)", type: "m", total: "sum" },
+        { key: "plan", label: "Exec. planned %", type: "meter", meterCls: "plan", total: function () { return fmt.pct(W ? PV / W : null, 1); } },
+        { key: "act", label: "Exec. actual %", type: "meter", total: function () { return fmt.pct(W ? EV / W : null, 1); } },
+        { key: "var", label: "Variance", type: "pct", signed: true },
+        { key: "spi", label: "SPI", type: "dec", render: function (x) { return x == null ? "—" : '<b class="' + spiTxtCls(x, TGT) + '">' + x.toFixed(2) + "</b>"; }, total: function () { return spiTxt(SPI); } },
+        { key: "dSpi", label: "Δ SPI 3 mo", type: "dec", render: function (x) { return x == null ? "—" : '<span class="' + (x < -0.005 ? "neg" : "") + '">' + (x >= 0 ? "+" : "") + x.toFixed(2) + "</span>"; } },
+        { key: "spark", label: "SPI trend (12 mo)", render: function (x) { return sparkSvg(x, TGT); } },
+        { key: "pPlan", label: "Project planned %", type: "pct" }, { key: "pAct", label: "Project actual %", type: "pct" },
+        { key: "status", label: "Overall status", type: "badge" }, { key: "risk", label: "Risk", type: "badge" },
+        { key: "exStart", label: "Exec. start", type: "date" }, { key: "period", label: "Period (months)", type: "int" },
+        { key: "be", label: "BL finish", type: "date" }, { key: "re", label: "Revised finish", type: "date" },
+        { key: "fe", label: "Forecast finish", type: "date", render: function (x, o) { return esc(fmt.date(x)) + (o.feOld ? '<br><small class="neg" title="Forecast finish is before the reporting period on an unfinished execution phase">outdated</small>' : ""); } },
+        { key: "slip", label: "Slip vs revised (days)", type: "int", render: function (x) { return x == null ? "—" : '<span class="' + (x > 0 ? "neg" : "") + '">' + (x > 0 ? "+" : "") + fmt.int(x) + "</span>"; } },
+        { key: "slipBL", label: "Slip vs BL (days)", type: "int", render: function (x) { return x == null ? "—" : '<span class="' + (x > 0 ? "neg" : "") + '">' + (x > 0 ? "+" : "") + fmt.int(x) + "</span>"; } },
+        { key: "pFe", label: "Project forecast finish", type: "date" },
+        { key: "paidPct", label: "Paid %", type: "pct" },
+        { key: "fyO", label: (RV ? "Original Plan" : "Plan") + " 2026 (M)", type: "m", total: "sum" }].concat(RV ? [{ key: "fy", label: "Rev Plan 2026 (M)", type: "m", total: "sum" }] : []).concat([
+        { key: "ytdP", label: (RV ? "YTD Rev plan" : "YTD plan") + " (M)", type: "m", total: "sum" }, { key: "ytdA", label: "YTD actual (M)", type: "m", total: "sum" },
+        { key: "fc", label: "YE forecast (M)", type: "m", total: "sum" },
+        { key: "issues", label: "Open issues", type: "int", total: "sum" }, { key: "risks", label: "Open risks", type: "int", total: "sum" },
+        { key: "reason", label: "Reason for delay", wrap: true, render: function (x) { x = String(x || "").replace(/\s+/g, " "); return x ? '<span title="' + esc(x) + '">' + esc(x.length > 120 ? x.slice(0, 119) + "…" : x) + "</span>" : ""; } }]) });
+  };
+
+  /* ======================================================================
+     2027 Engineering Blockades — inputs to the 2027 Delivery Plan / shutdown plan
+     (EPBU 2027 Engineering blockades -R<nn>.xlsx). Answers Planning's requests:
+     code · works · location · dates & durations (hours per day × number of days) · affected line ·
+     passenger / freight service stoppage · confirmed for 2027.
+     ====================================================================== */
+  var BQ = ["Q1", "Q2", "Q3", "Q4"], BK_ACCESS = ["Shutdown", "Blockage", "Possession"];
+  function bkDur(v) {                     // "48" (continuous hours) · "10 Hr during the day" · "4 Hrs … (expected duration 30 days)" · "N/A"
+    if (v == null || v === "") return null;
+    if (typeof v === "number") return { text: v + " h", hours: v, perDay: Math.min(24, v), days: Math.ceil(v / 24), cont: true };
+    var t = String(v).replace(/\s+/g, " ").trim();
+    if (/^n\/?a$/i.test(t) || /^-+$/.test(t)) return null;
+    var h = /(\d+(?:\.\d+)?)\s*h(?:rs?|ours?)?\b/i.exec(t), d = /(\d+)\s*days?/i.exec(t), n = /^\d+(?:\.\d+)?$/.test(t) ? +t : null;
+    if (n != null) return { text: n + " h", hours: n, perDay: Math.min(24, n), days: Math.ceil(n / 24), cont: true };
+    return { text: t, perDay: h ? +h[1] : null, days: d ? +d[1] : null, hours: h && d ? +h[1] * +d[1] : null, cont: false, needed: /when needed/i.test(t) };
+  }
+  function bkQuarters(s) {
+    s = String(s || "").toLowerCase(); var q = [];
+    [["1st", "first", "q1"], ["2nd", "second", "q2"], ["3rd", "third", "q3"], ["4th", "fourth", "q4"]].forEach(function (w, i) {
+      if (w.some(function (x) { return s.indexOf(x) >= 0; })) q.push(BQ[i]);
+    });
+    return q;
+  }
+  function bkModel(D) {
+    var raw = D.t("Blockades_2027"), have = raw.length ? Object.keys(raw[0]) : [];
+    function col(re) { return have.filter(function (k) { return re.test(k); })[0]; }
+    var C = { sd: col(/^shutdown/i), bl: col(/^blockage/i), po: col(/^pos+es+ion/i), tot: col(/^total hrs/i), ex: col(/^expected execution/i),
+      km: col(/^track kilomet/i), cul: col(/^culvert/i), works: col(/^actual works/i), freq: col(/^frequenc/i), net: col(/^network$/i), line: col(/^line$/i),
+      from: col(/^(from|start)/i), to: col(/^(to|end|finish)\b/i), pax: col(/passenger/i), frt: col(/freight/i), note: col(/^note$/i) };
+    var pkgNo = {};
+    return raw.map(function (r) {
+      var name = String(r.Project || ""), code = String(r.Code || "");
+      var o = { code: code, name: name.replace(/\s*\((?:un)?confirmed\)\s*/ig, " ").replace(/\s+/g, " ").trim(), raw: r };
+      o.confirmed = /\bconfirmed\b/i.test(name) && !/unconfirmed/i.test(name) ? "Confirmed" : "Not confirmed";
+      o.network = r[C.net] || "—"; o.line = r[C.line] || "—";
+      pkgNo[code] = (pkgNo[code] || 0) + 1; o.pkg = pkgNo[code];
+      o.qs = bkQuarters(r[C.ex]); o.qText = r[C.ex] || "";
+      o.km = String(r[C.km] || "").split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      o.culverts = String(r[C.cul] || "").split(/\n/).map(function (x) { return x.trim(); }).filter(function (x) { return x && !/^na$/i.test(x); });
+      o.works = r[C.works] || ""; o.freq = r[C.freq] || "";
+      o.acc = {}; o.access = [];
+      [["Shutdown", C.sd], ["Blockage", C.bl], ["Possession", C.po]].forEach(function (a) { var d = a[1] ? bkDur(r[a[1]]) : null; o.acc[a[0]] = d; if (d) o.access.push(a[0]); });
+      var ds = o.access.map(function (k) { return o.acc[k]; });
+      o.perDay = ds.map(function (d) { return d.perDay; }).filter(function (x) { return x != null; }).sort(function (a, b) { return b - a; })[0];
+      o.days = ds.map(function (d) { return d.days; }).filter(function (x) { return x != null; }).sort(function (a, b) { return b - a; })[0];
+      var tot = N(r[C.tot]);
+      o.hoursSrc = tot != null ? "sheet" : null;
+      o.hours = tot != null ? tot : (function () { var h = ds.map(function (d) { return d.hours; }).filter(function (x) { return x != null; }); return h.length ? Math.max.apply(null, h) : null; })();
+      if (o.hours != null && !o.hoursSrc) o.hoursSrc = "estimated";
+      if (o.days == null && o.perDay && tot != null) { o.days = Math.round(tot / o.perDay); o.daysDerived = true; }   // total hours ÷ hours per day
+      o.from = C.from ? r[C.from] : null; o.to = C.to ? r[C.to] : null;
+      o.pax = C.pax ? r[C.pax] : null; o.frt = C.frt ? r[C.frt] : null;
+      var isKm = o.km.length && o.km.every(function (x) { return /\d+\s*\+\s*\d+/.test(x); });
+      o.where = !o.km.length ? "—" : isKm ? (o.km.length > 1 ? o.km[0] + " … " + o.km[o.km.length - 1] + " (" + o.km.length + " locations)" : o.km[0]) : o.km[0].replace(/^\d+\.\s*/, "").slice(0, 60);
+      // Planning's checklist (2027 Delivery Plan e-mails of 17-Aug and 27-Sep-2026)
+      o.chk = {
+        code: !!code, works: !!o.works, location: o.km.length > 0, line: o.line !== "—",
+        dates: !!(o.from && o.to), perDay: o.perDay != null, days: o.days != null, total: o.hours != null && o.hoursSrc === "sheet",
+        service: !!(o.pax && o.frt), confirmed: o.confirmed === "Confirmed" };
+      var ks = Object.keys(o.chk); o.score = ks.filter(function (k) { return o.chk[k]; }).length / ks.length;
+      o.gaps = ks.filter(function (k) { return !o.chk[k]; });
+      o.ready = o.gaps.length ? "Gaps to close" : "Ready";
+      o.label = o.code + " · " + o.name;
+      return o;
+    });
+  }
+  var BK_CHECKS = [["code", "Project code"], ["works", "Works to be delivered"], ["location", "Location (track km)"], ["line", "Affected line"],
+    ["dates", "Dates From – To"], ["perDay", "Hours per day"], ["days", "Number of days"], ["total", "Total hours"], ["service", "Passenger / freight stoppage level"], ["confirmed", "Confirmed for 2027"]];
+
+  P.blockades = function (ctx) { bkPage(ctx, false); };
+  P["blockades-register"] = function (ctx) { bkPage(ctx, true); };
+  function bkPage(ctx, regOnly) {
+    var D = ctx.D, v = ctx.view, st = ctx.state, all = bkModel(D);
+    if (!all.length) { add(v, '<div class="empty">No 2027 blockade inputs loaded. Import <b>EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
+    var f = ctx.state.f || (ctx.state.f = {});
+    function multi(key, list) { return function (o) { var s = f[key] || [], l = list(o); var hit = l.filter(function (x) { return s.indexOf(x) >= 0; })[0]; return hit || l[0] || "None"; }; }
+    function opts(get) { return U.uniq(all.map(get)).filter(Boolean).sort(); }
+    var defs = [
+      { key: "net", label: "Network", get: function (o) { return o.network; }, options: opts(function (o) { return o.network; }) },
+      { key: "line", label: "Line", get: function (o) { return o.line; }, options: opts(function (o) { return o.line; }) },
+      { key: "q", label: "Quarter 2027", get: multi("q", function (o) { return o.qs; }), options: BQ },
+      { key: "acc", label: "Access type", get: multi("acc", function (o) { return o.access; }), options: BK_ACCESS },
+      { key: "conf", label: "Status", get: function (o) { return o.confirmed; }, options: ["Confirmed", "Not confirmed"] },
+      { key: "ready", label: "Submission readiness", get: function (o) { return o.ready; }, options: ["Ready", "Gaps to close"] },
+      { key: "proj", label: "Project", get: function (o) { return o.code; }, options: U.uniq(all.map(function (o) { return o.code; })), display: function (k) { var o = all.filter(function (x) { return x.code === k; })[0]; return o ? o.label : k; } }];
+    filterBar(ctx, defs, all);
+    var rows = all.filter(function (o) { return passes(o, defs, f); });
+    function rowsX(key) { return all.filter(function (o) { return passes(o, defs, f, key); }); }
+    function sumF(list, fn) { return list.reduce(function (s, o) { return s + (fn(o) || 0); }, 0); }
+    var projs = U.uniq(rows.map(function (o) { return o.code; }));
+    var hrs = sumF(rows, function (o) { return o.hours; }), est = rows.filter(function (o) { return o.hoursSrc === "estimated"; }).length;
+    var gapItems = sumF(rows, function (o) { return o.gaps.length; }), ready = rows.filter(function (o) { return o.ready === "Ready"; }).length;
+    var conf = U.uniq(rows.filter(function (o) { return o.confirmed === "Confirmed"; }).map(function (o) { return o.code; }));
+    if (regOnly) return bkRegister(v, rows);
+
+    add(v, '<div class="note-box"><b>2027 Delivery Plan — engineering access requirements.</b> Planning (Master Planning &amp; Railway Interoperability) asked each programme for the works that need ' +
+      "a <b>shutdown, line blockage or possession</b> in 2027, with: project code · works · location (track km) · <b>dates From – To</b> · <b>hours per day and number of days</b> (not only the total) · " +
+      "affected line · <b>passenger / freight service stoppage</b> (Full / Partial / None) · and only <b>confirmed</b> projects (unconfirmed ones are left out of the initial draft). " +
+      "This page shows what the sheet already answers and what is still open before the October review.</div>");
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: projs.length, label: "Projects", note: conf.length + " confirmed for 2027" }) +
+      U.tile({ value: rows.length, label: "Work packages", note: sumF(rows, function (o) { return o.km.length || 1; }) + " track locations" }) +
+      U.tile({ value: fmt.int(hrs), unit: "h", label: "Requested access", color: "black", note: est ? est + " package(s) estimated from hours × days" : "From the sheet's Total Hrs" }) +
+      U.tile({ value: U.uniq(rows.map(function (o) { return o.line; })).length, label: "Lines affected", note: U.uniq(rows.map(function (o) { return o.network + " " + o.line; })).join(" · ") }) +
+      U.tile({ value: ready + " / " + rows.length, label: "Ready for submission", color: ready === rows.length ? "" : "yellow", note: "All 10 Planning items answered" }) +
+      U.tile({ value: gapItems, label: "Open items", color: gapItems ? "red" : "slate", note: "Missing answers across the packages · see the checklist" });
+
+    // charts
+    var g2 = grid(v, "g-3");
+    var pcs = U.uniq(rowsX("proj").map(function (o) { return o.code; })), pal = [C.blue, C.yellow, C.mid, C.slate, C.sky, C.red, C.black];
+    U.chart(chartBox(panelIn(g2, "Hours by quarter", "Spread over each package's expected quarters · by project"), "short"), { type: "bar",
+      data: { labels: BQ, datasets: pcs.map(function (c, i) { var l = rowsX("proj").filter(function (o) { return o.code === c; });
+        return U.barDs(c + " " + (l[0] || {}).name, BQ.map(function (q) { return sumF(l, function (o) { return o.qs.indexOf(q) >= 0 ? (o.hours || 0) / o.qs.length : 0; }); }), f.proj && f.proj.length && f.proj.indexOf(c) < 0 ? U.fade(pal[i % pal.length]) : pal[i % pal.length], { stack: "s" }); }) },
+      options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: { callbacks: { label: function (t) { return t.dataset.label + ": " + fmt.int(t.raw) + " h"; } } } },
+        scales: { x: Object.assign(U.catAxis(), { stacked: true }), y: { stacked: true, beginAtZero: true, ticks: { callback: function (x) { return fmt.int(x) + " h"; } } } } } });
+    var lr = rowsX("line"), lines = U.uniq(lr.map(function (o) { return o.network + " · " + o.line; }));
+    U.chart(chartBox(panelIn(g2, "Hours by network / line", "Click to filter"), "short"), U.clickable({ type: "bar",
+      data: { labels: lines, datasets: [U.barDs("Hours", lines.map(function (l) { return sumF(lr.filter(function (o) { return o.network + " · " + o.line === l; }), function (o) { return o.hours; }); }), U.hl(C.blue, lines.map(function (l) { return l.split(" · ")[1]; }), f.line), { maxBarThickness: 40 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", formatter: function (x) { return fmt.int(x) + " h"; } } }, layout: { padding: { right: 40 } },
+        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } } } }, function (i, e) { pick(ctx, "line", lines[i].split(" · ")[1], e); }));
+    var ar = rowsX("acc");
+    U.chart(chartBox(panelIn(g2, "Type of access", "Packages needing each type · click to filter"), "short"), U.clickable({ type: "bar",
+      data: { labels: BK_ACCESS, datasets: [U.barDs("Packages", BK_ACCESS.map(function (a) { return ar.filter(function (o) { return o.access.indexOf(a) >= 0; }).length; }), U.hl(C.mid, BK_ACCESS, f.acc), { maxBarThickness: 46 })] },
+      options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end" } }, layout: { padding: { top: 18 } }, scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 } } } } },
+      function (i, e) { pick(ctx, "acc", BK_ACCESS[i], e); }));
+
+    // 2027 plan: projects → packages × quarters
+    var plan = panelIn(v, "2027 access plan", "One line per work package · cells show the hours requested in each quarter · click a project to filter, a package for its details");
+    var byP = {}; rows.forEach(function (o) { (byP[o.code] = byP[o.code] || []).push(o); });
+    var h = '<div class="table-wrap"><table class="bk-plan"><thead><tr><th>Project / work package</th><th>Line</th><th>Access</th><th>Hours / day × days</th>' + BQ.map(function (q) { return "<th class='q'>" + q + " 2027</th>"; }).join("") + "<th>Total h</th></tr></thead><tbody>";
+    var maxH = Math.max.apply(null, rows.map(function (o) { return (o.hours || 0) / Math.max(1, o.qs.length); }).concat([1]));
+    Object.keys(byP).forEach(function (code) {
+      var l = byP[code], o0 = l[0];
+      h += '<tr class="bk-p" data-code="' + esc(code) + '"><td colspan="4"><b>' + esc(code) + "</b> " + esc(o0.name) + ' <span class="badge ' + (o0.confirmed === "Confirmed" ? "ok" : "warn") + '">' + esc(o0.confirmed) + "</span></td>" +
+        BQ.map(function (q) { var x = sumF(l, function (o) { return o.qs.indexOf(q) >= 0 ? (o.hours || 0) / o.qs.length : 0; }); return "<td class='q num'><b>" + (x ? fmt.int(x) : "") + "</b></td>"; }).join("") + "<td class='num'><b>" + fmt.int(sumF(l, function (o) { return o.hours; })) + "</b></td></tr>";
+      l.forEach(function (o, i) {
+        h += '<tr class="bk-a" data-i="' + rows.indexOf(o) + '"><td class="bk-l">Package ' + o.pkg + " · " + esc(o.where) + (o.culverts.length ? ' <span class="muted">(' + esc(o.culverts.join(", ")) + ")</span>" : "") + "</td><td>" + esc(o.network + " " + o.line) + "</td><td>" + esc(o.access.join(" + ") || "—") +
+          "</td><td>" + (o.perDay != null ? fmt.int(o.perDay) + " h" : '<span class="neg">?</span>') + " × " + (o.days != null ? (o.daysDerived ? "≈" : "") + fmt.int(o.days) + " d" : '<span class="neg">?</span>') + "</td>" +
+          BQ.map(function (q) { var on = o.qs.indexOf(q) >= 0, x = on ? (o.hours || 0) / o.qs.length : 0, a = on ? 0.18 + 0.62 * x / maxH : 0;
+            return "<td class='q num" + (on ? " on" : "") + "' style='" + (on ? "background:rgba(0,119,139," + a.toFixed(2) + ");color:" + (a > 0.5 ? "#fff" : "inherit") : "") + "'>" + (on ? (x ? fmt.int(x) + " h" : "✓") : "") + "</td>"; }).join("") +
+          "<td class='num'>" + (o.hours != null ? fmt.int(o.hours) + (o.hoursSrc === "estimated" ? "<sup title='Estimated: hours per day × days, or continuous hours'>est</sup>" : "") : "—") + "</td></tr>";
+      });
+    });
+    h += "</tbody></table></div>";
+    add(plan, h);
+    plan.querySelectorAll(".bk-p").forEach(function (r) { r.addEventListener("click", function (e) { pick(ctx, "proj", r.getAttribute("data-code"), e); }); });
+    plan.querySelectorAll(".bk-a").forEach(function (r) { r.addEventListener("click", function () { bkModal(rows[+r.getAttribute("data-i")]); }); });
+
+    // Planning's checklist
+    var ck = panelIn(v, "Planning checklist — what the submission still needs", "Items requested in the 2027 Delivery Plan e-mails (17-Aug and 27-Sep-2026) · ✓ answered in every package · n/N in some packages · ✗ missing · days marked ≈ are total hours ÷ hours per day");
+    var hc = '<div class="table-wrap"><table class="bk-ck"><thead><tr><th>Project</th>' + BK_CHECKS.map(function (c) { return "<th>" + esc(c[1]) + "</th>"; }).join("") + "<th>Readiness</th></tr></thead><tbody>";
+    Object.keys(byP).forEach(function (code) {
+      var l = byP[code], sc = sumF(l, function (o) { return o.score; }) / l.length;
+      hc += "<tr><td><b>" + esc(code) + "</b> " + esc(l[0].name) + "</td>" + BK_CHECKS.map(function (c) {
+        var n = l.filter(function (o) { return o.chk[c[0]]; }).length, cls = n === l.length ? "y" : n ? "p" : "n";
+        return "<td class='ck " + cls + "' title='" + n + " of " + l.length + " packages'>" + (cls === "y" ? "✓" : cls === "p" ? "<small>" + n + "/" + l.length + "</small>" : "✗") + "</td>"; }).join("") +
+        "<td>" + U.meter(sc) + "</td></tr>";
+    });
+    hc += "</tbody></table></div><div class='pc-note'>Dates From – To and the service-stoppage level (Full / Partial / None for passenger and freight) have no column in the sheet yet — add them (e.g. <i>From</i>, <i>To</i>, <i>Passenger stoppage</i>, <i>Freight stoppage</i>) and re-import; they are picked up automatically.</div>";
+    add(ck, hc);
+
+    add(v, '<div class="note-box">The full <b>work package register</b> (every location, access hours and works description) and the <b>Planning submission export</b> are on the ' +
+      '<a href="#/blockades-register">Blockades Register</a> tab.</div>');
+  }
+  function bkRegister(v, rows) {
+    function sumF(list, fn) { return list.reduce(function (s, o) { return s + (fn(o) || 0); }, 0); }
+    var g = grid(v, "g-4");
+    g.innerHTML = U.tile({ value: rows.length, label: "Work packages", note: U.uniq(rows.map(function (o) { return o.code; })).length + " projects" }) +
+      U.tile({ value: sumF(rows, function (o) { return o.km.length || 1; }), label: "Track locations" }) +
+      U.tile({ value: fmt.int(sumF(rows, function (o) { return o.hours; })), unit: "h", label: "Total access hours", color: "black" }) +
+      U.tile({ value: rows.filter(function (o) { return o.ready === "Ready"; }).length + " / " + rows.length, label: "Ready for submission", color: "yellow" });
+    var tp = panelIn(v, "Work package register", rows.length + " packages · click a row for the full works description",
+      '<button type="button" class="icon-btn ghost bk-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Export Planning submission (.xlsx)</span></button>');
+    tp.querySelector(".bk-x").addEventListener("click", function () { bkExport(rows); });
+    tableIn(tp, { rows: rows, exportName: "Blockades_2027", maxHeight: 640, onRow: function (o) { bkModal(o); },
+      columns: [{ key: "code", label: "Code", nowrap: true }, { key: "name", label: "Project", wrap: true }, { key: "pkg", label: "Pkg", type: "int" },
+        { key: "network", label: "Network" }, { key: "line", label: "Line" }, { key: "where", label: "Location (track km)", wrap: true },
+        { key: "qText", label: "Expected execution" }, { key: "accText", label: "Shutdown / Blockage / Possession", wrap: true, get: function (o) { return o.access.map(function (a) { return a + ": " + o.acc[a].text; }).join(" · ") || "—"; } },
+        { key: "perDay", label: "Hours / day", type: "int" }, { key: "days", label: "Days", type: "int" }, { key: "hours", label: "Total hours", type: "int", total: "sum" },
+        { key: "confirmed", label: "Status", type: "badge" }, { key: "ready", label: "Readiness", type: "badge", get: function (o) { return o.ready === "Ready" ? "Ready" : o.gaps.length + " open"; } }],
+      totals: true });
+  }
+  function bkModal(o) {
+    U.modal(o.code + " · " + o.name + " — package " + o.pkg, '<div class="kv">' + [["Network / line", esc(o.network + " · " + o.line)], ["Expected execution", esc(o.qText || "—")],
+      ["Track km", esc(o.km.join(", ") || "—")], ["Culverts", esc(o.culverts.join(", ") || "—")]].concat(BK_ACCESS.map(function (a) { return [a, esc(o.acc[a] ? o.acc[a].text : "Not required")]; }))
+      .concat([["Hours per day × days", (o.perDay != null ? o.perDay + " h" : "?") + " × " + (o.days != null ? o.days + " days" : "?")], ["Total hours", o.hours != null ? fmt.int(o.hours) + (o.hoursSrc === "estimated" ? " (estimated)" : "") : "—"],
+        ["Access needed for", esc(o.freq || "—").replace(/\n/g, "<br>")], ["Works", esc(o.works || "—").replace(/\n/g, "<br>")],
+        ["Open items", o.gaps.length ? esc(o.gaps.map(function (g) { return BK_CHECKS.filter(function (c) { return c[0] === g; })[0][1]; }).join(", ")) : "None"]])
+      .map(function (p) { return "<div>" + p[0] + "</div><div>" + p[1] + "</div>"; }).join("") + "</div>", true);
+  }
+  function bkExport(rows) {
+    var aoa = [["Program", "Project Code", "Project Name", "Work package", "Works to be delivered", "Network", "Affected line(s)", "Location – track km", "Culverts",
+      "Date From", "Date To", "Expected quarter(s) 2027", "Shutdown", "Blockage", "Possession", "Hours per day", "Number of days", "Total duration (hrs)",
+      "Passenger service stoppage (Full/Partial/None)", "Freight service stoppage (Full/Partial/None)", "Confirmed for 2027", "Open items"]];
+    rows.forEach(function (o) {
+      aoa.push(["NSR", o.code, o.name, o.pkg, o.works, o.network, o.line, o.km.join(", "), o.culverts.join(", "), o.from || "", o.to || "", o.qs.join(", "),
+        o.acc.Shutdown ? o.acc.Shutdown.text : "N/A", o.acc.Blockage ? o.acc.Blockage.text : "N/A", o.acc.Possession ? o.acc.Possession.text : "N/A",
+        o.perDay != null ? o.perDay : "", o.days != null ? o.days : "", o.hours != null ? o.hours : "", o.pax || "", o.frt || "", o.confirmed === "Confirmed" ? "Yes" : "No",
+        o.gaps.map(function (g) { return BK_CHECKS.filter(function (c) { return c[0] === g; })[0][1]; }).join("; ")]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = aoa[0].map(function (hd, i) { return { wch: [6, 10, 34, 8, 50, 8, 8, 30, 20, 11, 11, 14, 14, 18, 22, 10, 10, 12, 16, 16, 10, 40][i] }; });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "NSR 2027 access");
+    XLSX.writeFile(wb, "NSR 2027 Delivery Plan - Engineering access requirements.xlsx");
+  }
+
+  P.closing = function (ctx) {
+    var D = ctx.D, v = ctx.view, all = D.t("Closing_Projects").filter(function (r) { return r.Code || r["Project Name"]; });
+    if (!all.length) { add(v, '<div class="note-box">No closing-phase data. Import <b>Projects in Closing phase.xlsx</b> on the <a href="#/import">Data Import</a> page.</div>'); return; }
+    var keys = Object.keys(all[0]), a = keys.indexOf("Final Contract Value"), b = keys.indexOf("Current Status");
+    var steps = a >= 0 && b > a ? keys.slice(a + 1, b) : [];
+    var today = D.reportDate || new Date().toISOString().slice(0, 10);
+    all.forEach(function (r) {
+      r._st = clStatus(r);
+      var s = steps.map(function (k) { return clStep(r, k); }), app = s.filter(function (x) { return x.st !== "na"; });
+      r._steps = s; r._done = app.filter(function (x) { return x.st === "done"; }).length; r._app = app.length;
+      r._pct = app.length ? r._done / app.length : null;
+      r._pending = steps.filter(function (k, i) { return s[i].st === "open" || s[i].st === "wip"; });
+      s.forEach(function (x) { if (!x.label) x.label = { done: "Completed", na: "N/A", open: "Not Started", wip: "In progress" }[x.st]; x.late = !!(x.date && x.st !== "done" && x.st !== "na" && x.date < today); });
+      var ni = -1; s.forEach(function (x, i) { if (ni < 0 && x.st !== "done" && x.st !== "na") ni = i; });   // the step the close-out waits on
+      r._next = ni >= 0 ? { step: steps[ni], owner: clOwner(steps[ni]), x: s[ni] } : null;
+      r._age = r["Contract Finish"] ? days(r["Contract Finish"], today) : null;               // days since contract finish
+      r._year = r["Contract Finish"] ? String(r["Contract Finish"]).slice(0, 4) : "—";
+    });
+    var defs = [
+      { key: "st", label: "Closure Status", options: CL_ORDER.filter(function (x) { return all.some(function (r) { return r._st === x; }); }), get: function (r) { return r._st; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(all.map(function (r) { return r["Project Manager"]; })).sort(), get: function (r) { return r["Project Manager"]; } },
+      { key: "con", label: "Contractor", options: U.uniq(all.map(function (r) { return r.Contractor; })).sort(), get: function (r) { return r.Contractor; } },
+      { key: "yr", label: "Contract Finish Year", options: U.uniq(all.map(function (r) { return r._year; })).sort().reverse(), get: function (r) { return r._year; } },
+      { key: "proj", label: "Project", options: U.uniq(all.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } }];
+    if (steps.length) defs.splice(3, 0, { key: "pend", label: "Pending step", options: steps.slice(), get: null });
+    var f = filterBar(ctx, defs, all);
+    function ok(r, except) { return passes(r, defs, f, except) && (except === "pend" || !f.pend || !f.pend.length || f.pend.some(function (k) { return r._pending.indexOf(k) >= 0; })); }
+    var rows = all.filter(function (r) { return ok(r); });
+    var open = rows.filter(function (r) { return r._st === "In closing"; });
+    function cnt(s) { return rows.filter(function (r) { return r._st === s; }).length; }
+    function setSt(s) { return function () { var x = sel(ctx, "st"); x.length = 0; if (s) x.push(s); ctx.rerender(); }; }
+    var avgAge = open.filter(function (r) { return r._age != null && r._age > 0; });
+    var stepsDone = U.sum(open, "_done") || 0, stepsApp = U.sum(open, "_app") || 0;
+
+    var g = grid(v, "g-6");
+    g.innerHTML = U.tile({ value: rows.length, label: "Projects", note: "Closing-phase register" }) +
+      U.tile({ value: open.length, label: "In closing", color: "yellow", note: "Close-out still open · click" }) +
+      U.tile({ value: cnt("Closed"), label: "Closed", note: "Click to filter" }) +
+      U.tile({ value: cnt("Terminated"), label: "Terminated", color: "red", note: "Click to filter" }) +
+      mTile("Value in closing", U.sum(open, "Final Contract Value"), "black", "Final contract value of open close-outs") +
+      U.tile({ value: stepsApp ? fmt.pct(stepsDone / stepsApp, 0) : "—", label: "Close-out checklist", color: "slate",
+        note: stepsDone + " of " + stepsApp + " steps done" + (avgAge.length ? " · avg " + Math.round(U.sum(avgAge, "_age") / avgAge.length / 30.4) + " months since contract finish" : "") });
+    clickTiles(g, [setSt(null), setSt("In closing"), setSt("Closed"), setSt("Terminated"), setSt("In closing"), setSt("In closing")]);
+
+    var g1 = grid(v, "g-3");
+    var rs = all.filter(function (r) { return ok(r, "st"); }), sts = CL_ORDER.filter(function (s) { return rs.some(function (r) { return r._st === s; }); });
+    var sb = chartBox(panelIn(g1, "Projects by closure status", "Count and final contract value · click to filter"), "short");
+    U.chart(sb, U.clickable({ type: "bar", data: { labels: sts, datasets: [U.barDs("Projects", sts.map(function (s) { return rs.filter(function (r) { return r._st === s; }).length; }),
+      sts.map(function (s) { return f.st.length && f.st.indexOf(s) < 0 ? U.fade(CL_COLOR[s]) : CL_COLOR[s]; }), { maxBarThickness: 26 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: function (c) { return " Value: " + fmt.m(U.sum(rs.filter(function (r) { return r._st === sts[c.dataIndex]; }), "Final Contract Value")) + " M SAR"; } } },
+        datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } }, layout: { padding: { right: 24 } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false } } } } }, function (i, e) { pick(ctx, "st", sts[i], e); }));
+    var stP = panelIn(g1, "Close-out checklist by step", open.length + " projects in closing · done vs pending per step");
+    if (steps.length) {
+      var sbox = chartBox(stP, "short"); sbox.style.height = Math.max(220, steps.length * 28 + 60) + "px";
+      U.chart(sbox, U.clickable({ type: "bar", data: { labels: steps, datasets: [
+        U.barDs("Done", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "done"; }).length; }), C.blue, { maxBarThickness: 18 }),
+        U.barDs("In progress", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "wip"; }).length; }), C.yellow, { maxBarThickness: 18 }),
+        U.barDs("Pending", steps.map(function (k, i) { return open.filter(function (r) { return r._steps[i].st === "open"; }).length; }), C.gray, { maxBarThickness: 18 })] },
+        options: { indexAxis: "y", plugins: { legend: { display: true } }, scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { stacked: true, grid: { display: false } } } } },
+        function (i, e) { pick(ctx, "pend", steps[i], e); }));
+    } else add(stP, '<div class="empty">No checklist columns found between "Final Contract Value" and "Current Status".</div>');
+    var ag = open.filter(function (r) { return r._age != null; }).sort(function (x, y) { return y._age - x._age; }), an = ag.map(function (r) { return r["Project Name"]; });
+    var abox = chartBox(panelIn(g1, "Time since contract finish", "Projects in closing · months (negative = contract still running) · click a project"), "short");
+    abox.style.height = Math.max(220, ag.length * 26 + 60) + "px";
+    U.chart(abox, U.clickable({ type: "bar", data: { labels: an, datasets: [U.barDs("Months since contract finish", ag.map(function (r) { return Math.round(r._age / 30.4 * 10) / 10; }),
+      ag.map(function (r) { var m = r._age / 30.4, c0 = m > 12 ? C.red : m > 6 ? C.yellow : m > 0 ? C.mid : C.gray; return f.proj.length && f.proj.indexOf(r["Project Name"]) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 16 })] },
+      options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return " " + c.parsed.x + " months · contract finish " + fmt.date(ag[c.dataIndex]["Contract Finish"]); } } } },
+        scales: { x: { grid: { color: "rgba(200,201,199,.5)" } }, y: { grid: { display: false }, ticks: { callback: U.shortLabel(24) } } } } },
+      function (i, e) { pick(ctx, "proj", ag[i]["Project Name"], e); }));
+
+    // every open close-out step with its due date, as written on the weekly slides (Status – date)
+    var acts = [];
+    rows.forEach(function (r) { if (r._st !== "In closing") return; r._steps.forEach(function (x, i) {
+      if (x.st === "done" || x.st === "na") return;
+      acts.push({ Code: r.Code, Project: r["Project Name"], Step: steps[i], Owner: i === steps.indexOf(r._next && r._next.step) ? (r["Project Manager"] || clOwner(steps[i])) : clOwner(steps[i]),
+        Status: x.label, Due: x.date || null, DueText: x.date ? "" : (x.dtxt || "—"), Flag: x.late ? "Overdue" : x.date ? (days(today, x.date) <= 30 ? "Due ≤ 30 days" : "Planned") : (x.dtxt ? x.dtxt : "No date"),
+        _now: r._next && r._next.step === steps[i], _r: r });
+    }); });
+    acts.sort(function (a, b) { return (a.Due ? 0 : 1) - (b.Due ? 0 : 1) || String(a.Due || "").localeCompare(String(b.Due || "")) || String(a.Code).localeCompare(String(b.Code)); });
+    var withDate = acts.filter(function (a) { return a.Due; }), late = acts.filter(function (a) { return a.Flag === "Overdue"; }), tbd = acts.filter(function (a) { return !a.Due; });
+    var ap = panelIn(v, "Close-out actions & due dates", acts.length + " open steps · " + withDate.length + " with a date" + (late.length ? " · " + late.length + " overdue" : "") + " · " + tbd.length + " TBD / no date · ► = the step each project is waiting on · click a row for the full record");
+    if (!acts.length) add(ap, '<div class="empty">No open close-out steps.</div>');
+    else tableIn(ap, { rows: acts, search: true, maxHeight: 460, exportName: "Closeout_Actions",
+      onRow: function (a) { U.recordModal((a.Code || "") + " — " + (a.Project || ""), clRecord(a._r)); },
+      columns: [{ key: "Code", label: "Code", nowrap: true }, { key: "Project", label: "Project", wrap: true },
+        { key: "Step", label: "Remaining action", get: function (a) { return (a._now ? "► " : "") + a.Step; } }, { key: "Owner", label: "Action by", wrap: true },
+        { key: "Status", label: "Status", type: "badge" }, { key: "Due", label: "Forecast date", get: function (a) { return a.Due || "9999 " + a.DueText; }, render: function (v, a) { return a.Due ? '<b class="' + (a.Flag === "Overdue" ? "neg" : "") + '">' + esc(fmt.date(a.Due)) + "</b>" : '<span class="muted">' + esc(a.DueText) + "</span>"; } },
+        { key: "Flag", label: "Due", type: "badge" }] });
+
+    // close-out checklist matrix (projects still in closing first)
+    var mx = rows.slice().sort(function (x, y) { return CL_ORDER.indexOf(x._st) - CL_ORDER.indexOf(y._st) || (y._age || 0) - (x._age || 0); });
+    var icon = { done: "✓", wip: "◐", open: "○", na: "–" };
+    var mp = panelIn(v, "Close-out checklist", "✓ completed · ◐ pending (in process) · ○ not started · – not applicable · the date under each mark is the actual / forecast date (red = overdue) · click a row for the full record");
+    if (!steps.length) add(mp, '<div class="empty">No checklist columns in the sheet.</div>');
+    else {
+      var h = '<div class="table-wrap cl-wrap"><table class="cl"><thead><tr><th>Code</th><th>Project</th><th>Status</th>' + steps.map(function (k) { return "<th>" + esc(k) + "</th>"; }).join("") +
+        '<th>Progress</th><th>Waiting on</th><th>Current status</th><th>Action plan</th></tr></thead><tbody>';
+      mx.forEach(function (r, i) {
+        h += '<tr data-i="' + i + '" class="' + (r._st === "In closing" ? "open" : "") + '"><td class="nw"><b>' + esc(r.Code || "") + '</b></td><td class="pn">' + esc(r["Project Name"] || "") +
+          '<small>' + esc(r["Project Manager"] || "") + "</small></td><td>" + U.badge(r._st) + "</td>" +
+          r._steps.map(function (x) { var dd = x.date ? fmt.date(x.date) : x.dtxt || ""; return '<td class="ck ' + x.st + (x.late ? " late" : "") + '" title="' + esc(x.label + (dd ? " – " + dd : "") + (x.late ? " (overdue)" : "")) + '">' + icon[x.st] + (dd ? "<small>" + esc(dd) + "</small>" : "") + "</td>"; }).join("") +
+          "<td>" + (r._pct == null ? "" : U.meter(r._pct)) + '</td><td class="nx">' + (r._next ? "<b>" + esc(r._next.step) + "</b><small>" + esc(r._next.x.label + (r._next.x.date ? " · " + fmt.date(r._next.x.date) : r._next.x.dtxt ? " · " + r._next.x.dtxt : "")) + "</small>" : '<span class="muted">—</span>') +
+          '</td><td class="txt">' + esc(r["Current Status"] || "") + '</td><td class="txt">' + esc(r["Action Plan"] || "") + "</td></tr>";
+      });
+      h += "</tbody></table></div>";
+      var node = add(mp, "<div>" + h + "</div>");
+      node.querySelectorAll("tr[data-i]").forEach(function (tr) { tr.addEventListener("click", function () { var r = mx[+tr.getAttribute("data-i")]; U.recordModal((r.Code || "") + " — " + (r["Project Name"] || ""), clRecord(r)); }); });
+    }
+
+    var tp = panelIn(v, "Closing-phase register", rows.length + " projects · all columns of the sheet");
+    var cols = keys.map(function (k) {
+      var c = { key: k, label: k };
+      if (/value/i.test(k)) { c.type = "money"; c.total = "sum"; }
+      else if (/progress/i.test(k)) c.type = "meter";
+      else if (/^(start|contract finish)$/i.test(k)) c.type = "date";
+      else if (/status|action|project name/i.test(k)) c.wrap = true;
+      return c;
+    });
+    cols.splice(3, 0, { key: "_st", label: "Closure Status", type: "badge" });
+    tableIn(tp, { rows: rows, exportName: "Projects_in_Closing", totals: true, maxHeight: 640, columns: cols,
+      onRow: function (r) { U.recordModal((r.Code || "") + " — " + (r["Project Name"] || ""), clRecord(r)); } });
+  };
+  function clRecord(r) { var o = {}; Object.keys(r).forEach(function (k) { if (k.charAt(0) !== "_") o[k] = r[k]; }); o["Closure Status"] = r._st; return o; }
+
+  /* ======================================================================
+     Issue Register
+     ====================================================================== */
+  var RATE_ORDER = ["Critical", "High", "Medium", "Low", "N/A"];
+  var RATE_COLOR = { Critical: C.red, High: C.yellow, Medium: C.mid, Low: C.slate, "N/A": C.gray };
+  P.issues = function (ctx) {
+    var D = ctx.D, v = ctx.view, all = D.t("Issue_register").filter(function (r) { return r["ILR ID No."] || r["Issue (Description)"]; });
+    var defs = [
+      { key: "status", label: "Issue Status", options: U.uniq(all.map(function (r) { return r["Issue Status"]; })).sort(), get: function (r) { return r["Issue Status"]; } },
+      { key: "rate", label: "Issue Rate", options: U.uniq(all.map(function (r) { return r["Issue Rate"]; })).sort(function (a, b) { return RATE_ORDER.indexOf(a) - RATE_ORDER.indexOf(b); }), get: function (r) { return r["Issue Rate"]; } },
+      { key: "code", label: "Project Code", options: U.uniq(all.map(function (r) { return r["Poject Code"]; })).sort(), get: function (r) { return r["Poject Code"]; } },
+      { key: "name", label: "Project Name", options: U.uniq(all.map(function (r) { return r["Project Name"]; })).sort(), get: function (r) { return r["Project Name"]; } },
+      { key: "cat", label: "Issue Category", options: U.uniq(all.map(function (r) { return r["Issue Category"]; })).sort(), get: function (r) { return r["Issue Category"]; } },
+      { key: "pm", label: "Project Manager", options: U.uniq(all.map(function (r) { return r["Project Manager"]; })).sort(), get: function (r) { return r["Project Manager"]; } }];
+    var st = filterBar(ctx, defs, all);
+    var rp = all.map(function (r) { return r["Reporting Period"]; }).filter(Boolean).sort().pop();
+    var rows = all.filter(function (r) { return passes(r, defs, st); });
+    function cnt(re, field) { return rows.filter(function (r) { return re.test(r[field] || ""); }).length; }
+    function setStatus(re) { return function () {
+      var s = sel(ctx, "status"); s.length = 0;
+      U.uniq(all.map(function (r) { return r["Issue Status"]; })).filter(function (x) { return re.test(x || ""); }).forEach(function (x) { s.push(x); });
+      ctx.rerender(); }; }
+    var g = grid(v, "g-5");
+    g.innerHTML = U.tile({ value: rows.length, label: "Issues", note: U.uniq(rows.map(function (r) { return r["Poject Code"]; })).length + " projects" }) +
+      U.tile({ value: cnt(/pending/i, "Issue Status"), label: "Pending", color: "yellow", note: "Click to filter" }) +
+      U.tile({ value: cnt(/escalat/i, "Issue Status"), label: "Escalated", color: "red", note: "Click to filter" }) +
+      U.tile({ value: cnt(/resolved|closed/i, "Issue Status"), label: "Resolved", color: "slate", note: "Click to filter" }) +
+      U.tile({ value: rows.filter(function (r) { return /critical/i.test(r["Issue Rate"] || "") && !/resolved|closed/i.test(r["Issue Status"] || ""); }).length, label: "Open critical", color: "black", note: "Critical and not resolved — click" });
+    clickTiles(g, [function () { defs.forEach(function (d) { st[d.key].length = 0; }); ctx.rerender(); }, setStatus(/pending/i), setStatus(/escalat/i), setStatus(/resolved|closed/i),
+      function () { var r = sel(ctx, "rate"); r.length = 0; r.push("Critical"); setStatus(/pending|escalat/i)(); }]);
+
+    var g2 = grid(v, "g-2-1");
+    var rowsX = all.filter(function (r) { return passes(r, defs, st, "name"); });
+    var projs = U.uniq(rowsX.map(function (r) { return r["Project Name"]; }));
+    projs.sort(function (a, b) { return rowsX.filter(function (r) { return r["Project Name"] === b; }).length - rowsX.filter(function (r) { return r["Project Name"] === a; }).length; });
+    var pb = chartBox(panelIn(g2, "Issues by project and rate", "Click a project to filter · Ctrl+click for several")); pb.style.height = Math.max(280, projs.length * 30 + 70) + "px";
+    U.chart(pb, U.clickable({ type: "bar",
+      data: { labels: projs, datasets: RATE_ORDER.map(function (rt) {
+        return U.barDs(rt, projs.map(function (p) { return rowsX.filter(function (r) { return r["Project Name"] === p && r["Issue Rate"] === rt; }).length; }),
+          U.hl(RATE_COLOR[rt], projs, st.name), { borderColor: C.white, borderWidth: { right: 2 }, borderRadius: 0, maxBarThickness: 22 }); }) },
+      options: { indexAxis: "y", scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { stacked: true, grid: { display: false }, ticks: { callback: U.shortLabel(46) } } } } },
+      function (i, e) { pick(ctx, "name", projs[i], e); }));
+    var rowsS = all.filter(function (r) { return passes(r, defs, st, "status"); });
+    var statuses = U.uniq(rowsS.map(function (r) { return r["Issue Status"]; }));
+    var sb = chartBox(panelIn(g2, "Issues by status", "Click to filter"));
+    U.chart(sb, U.clickable({ type: "bar",
+      data: { labels: statuses, datasets: [U.barDs("Issues", statuses.map(function (s) { return rowsS.filter(function (r) { return r["Issue Status"] === s; }).length; }),
+        statuses.map(function (s) { var c = U.statusClass(s), col = c === "bad" ? C.red : c === "warn" ? C.yellow : c === "done" ? C.slate : C.blue;
+          return st.status.length && st.status.indexOf(s) < 0 ? U.fade(col) : col; }), { maxBarThickness: 56 })] },
+      options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } } },
+        layout: { padding: { top: 20 } }, scales: { x: U.catAxis(), y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } } } } },
+      function (i, e) { pick(ctx, "status", statuses[i], e); }));
+
+    var p = panelIn(v, "NSR projects issue register", (rp ? "Project cards · reporting period " + esc(fmt.month(rp)) + " · " : "") + "Click a row for the full issue record");
+    tableIn(p, { rows: rows, exportName: "Issue_Register", maxHeight: 640,
+      onRow: function (r) { U.recordModal((r["ILR ID No."] || "Issue") + " — " + (r["Project Name"] || ""), r); },
+      columns: [
+        { key: "Poject Code", label: "Project Code" }, { key: "Project Name", label: "Project Name" },
+        { key: "ILR ID No.", label: "ILR ID No.", nowrap: true }, { key: "Issue Identification (Date)", label: "Identified", type: "date" },
+        { key: "Issue Title", label: "Issue Title", wrap: true }, { key: "Issue (Description)", label: "Issue (Description)", wrap: true }, { key: "Resolution Action Plan", label: "Resolution Action Plan", wrap: true },
+        { key: "Issue Rate", label: "Issue Rate", type: "badge" }, { key: "Issue Status", label: "Issue Status", type: "badge" }] });
+  };
+
+  /* ======================================================================
+     Abbreviations
+     ====================================================================== */
+  P.abbreviations = function (ctx) {
+    var D = ctx.D, g = grid(ctx.view, "g-2");
+    [["ABBREVIATIONS", "Project abbreviations"], ["ABBREVIATIONS_2", "Report abbreviations"]].forEach(function (t) {
+      tableIn(panelIn(g, t[1], D.t(t[0]).length + " terms"), { rows: D.t(t[0]), exportName: t[0], autoHeight: true, columns: [
+        { key: "ABBREVIATIONS", label: "Abbreviation", nowrap: true }, { key: "MEANING", label: "Meaning", wrap: true }] });
+    });
+  };
+
+  window.SARPages = P;
+})();
