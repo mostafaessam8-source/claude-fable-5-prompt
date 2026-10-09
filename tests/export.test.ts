@@ -158,6 +158,11 @@ describe('Data Input sheet', () => {
     expect(rows.page(0).header).toBe(37)
     expect(rows.page(1).header).toBe(96)
     expect(ws.pageSetup.printArea).toBe(`A1:BF${rows.last}`)
+    // a light line between every Gantt column, on both the P and the A row of an activity
+    const first = reportRows(5, 26).page(0).first
+    for (const r of [first, first + 1]) for (const c of [11, 12, 30, 58]) {
+      expect(ws.getCell(r, c).border?.left?.style, `Gantt line at ${r},${c}`).toBe('thin')
+    }
     expect([...xml.matchAll(/<brk\b/g)]).toHaveLength(5) // after the cover + between the 5 location pages
     expect(xml).toMatch(/<pageSetup\b[^>]*orientation="landscape"/)
   })

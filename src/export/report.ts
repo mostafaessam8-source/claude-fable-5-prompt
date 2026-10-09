@@ -10,6 +10,7 @@ const STATUS_RULES: [string, string, string][] = [
   ['AT RISK', '8E1B1F', '#FFFFFF'], ['BEHIND', COL.red, '#FFFFFF'], ['TIGHT', COL.amber, COL.black],
   ['AHEAD', COL.sky, COL.black], ['ON TIME', COL.blue, '#FFFFFF'],
 ]
+const columnLine = { style: 'thin' as const, color: { argb: 'FFDDE4E6' } }
 const VAR_FMT = '+0.0" h behind";-0.0" h ahead";"on time"'
 const DT = 'ddd dd-mmm hh:mm'
 
@@ -225,7 +226,9 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       for (let c = R.G0; c <= R.G1; c++) for (const rr of [a, a + 1]) {
         const cell = ws.getCell(rr, c)
         cell.fill = solid(bg)
-        cell.border = rr === a + 1 ? bottomOnly : {}
+        // a light line between every Gantt column (one hour each at the default 48 h span);
+        // the 6-column, midnight and cut-off lines are drawn heavier on top by conditional formats
+        cell.border = { left: columnLine, ...(c === R.G1 ? { right: columnLine } : {}), ...(rr === a + 1 ? bottomOnly : {}) }
       }
 
       // helper columns
