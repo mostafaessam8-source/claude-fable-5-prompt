@@ -61,7 +61,8 @@ export function App() {
   return (
     <div>
       <header className="no-print flex items-center gap-3 bg-[#3D3935] px-4 py-2 text-white">
-        <h1 className="mr-4 text-base font-bold">SAR Possession Tracker</h1>
+        <h1 className="text-base font-bold">SAR Possession Tracker</h1>
+        <span className="mr-4 text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
         <input type="file" accept=".xlsx" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />
         <span className="flex-1" />
         {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport}>Export to Excel</button>}
