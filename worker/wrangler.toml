@@ -5,4 +5,4 @@ compatibility_date = "2026-01-01"
 
 [vars]
 # Browser origins allowed to call the proxy (comma-separated). Replace with your Pages origin.
-ALLOWED_ORIGINS = "https://YOUR-USER.github.io,http://localhost:5173"
+ALLOWED_ORIGINS = "https://mostafaessam8-source.github.io,http://localhost:5173"
