@@ -163,6 +163,8 @@ describe('Data Input sheet', () => {
     for (const r of [first, first + 1]) for (const c of [11, 12, 30, 58]) {
       expect(ws.getCell(r, c).border?.left?.style, `Gantt line at ${r},${c}`).toBe('thin')
     }
+    // ...and the same light line as the lowest-priority conditional format (the way the 6-hour lines are drawn)
+    expect([...xml.matchAll(/<formula>TRUE<\/formula>/g)].length).toBeGreaterThanOrEqual(5)
     expect([...xml.matchAll(/<brk\b/g)]).toHaveLength(5) // after the cover + between the 5 location pages
     expect(xml).toMatch(/<pageSetup\b[^>]*orientation="landscape"/)
   })
