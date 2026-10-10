@@ -73,3 +73,19 @@ describe('date and time inputs', () => {
     expect(inputToTime('')).toBeNull()
   })
 })
+
+import { actualProblems, splitDateTime } from '../src/links/edit'
+describe('actual date helpers', () => {
+  it('splits a wall-clock time into the model date + hours', () => {
+    expect(splitDateTime(new Date(Date.UTC(2026, 9, 16, 14, 30)))).toEqual({ date: new Date(Date.UTC(2026, 9, 16)), time: 14.5 })
+    expect(splitDateTime(new Date(Date.UTC(2026, 9, 17, 0, 0)))).toEqual({ date: new Date(Date.UTC(2026, 9, 17)), time: 0 })
+  })
+  it('says in words what is wrong with the actual dates', () => {
+    const ps = new Date(Date.UTC(2026, 9, 16))
+    const d = (h: number) => new Date(ps.getTime() + h * 3_600_000)
+    expect(actualProblems({ actualStartDate: ps, actualFinishDate: null }, d(2), null, ps)).toEqual([])
+    expect(actualProblems({ actualStartDate: ps, actualFinishDate: null }, d(-3), null, ps)).toEqual(['The actual start is before the possession start.'])
+    expect(actualProblems({ actualStartDate: ps, actualFinishDate: ps }, d(5), d(3), ps)).toEqual(['The actual finish is before the actual start.'])
+    expect(actualProblems({ actualStartDate: null, actualFinishDate: ps }, null, d(3), ps)).toEqual(['There is an actual finish but no actual start.'])
+  })
+})

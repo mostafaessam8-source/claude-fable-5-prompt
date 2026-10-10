@@ -27,7 +27,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   result: ProjectResult; index: number; layout?: SiteLayout
   /** Activity number selected on this page (its panel is open); the ruler stays on it. */
   selectedNo?: number | null
-  onSelect?: (no: number) => void
+  /** `lane` is 'actual' when the click was on the actual (A) bar, so the panel opens on its Actual tab. */
+  onSelect?: (no: number, lane?: 'baseline' | 'actual') => void
   /** The project being edited: the planned bars can be dragged, resized and linked. */
   project?: Project
   onChange?: (p: Project) => void
@@ -161,7 +162,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   })
 
   const barEl = (b: Bar, row: number, key: string, k: number) => (
-    <div key={key} data-row={k} style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
+    <div key={key} data-row={k} data-lane="actual" style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
   )
   /** The planned bar: drag it to move, drag its ends to resize, drag a dot onto another bar to link. */
   const plannedBar = (b: Bar, row: number, k: number) => (
@@ -203,7 +204,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
       <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
         onMouseOver={(e) => setHover(rowAt(e))} onMouseLeave={() => setHover(null)}
-        onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no) }}>
+        onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
         {active != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
