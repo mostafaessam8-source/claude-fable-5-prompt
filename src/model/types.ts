@@ -13,6 +13,8 @@ export interface Settings {
   /** Data date. Falls back to possessionStart when M5 has no usable value. */
   cutoff: Date
   cutoffDefaulted: boolean
+  /** true: the data date is "now" (Excel's NOW()), refreshed while the app is open; false/absent: the stored `cutoff` date. */
+  cutoffNow?: boolean
   possessionStart: Date
   duration: number
   unit: HoursOrDays

@@ -86,7 +86,7 @@ export async function writeDataInput(wb: ExcelJS.Workbook, project: Project, lay
   label('G5:H5', 'PREPARED BY'); input('I5:J5', s.preparedBy)
   label('K5:L5', 'REPORT CUT-OFF')
   // A defaulted cut-off means the source held =NOW(): keep it live for the site engineers.
-  input('M5:P5', s.cutoffDefaulted ? ({ formula: 'NOW()' } as ExcelJS.CellValue) : s.cutoff, 'dd-mmm-yyyy hh:mm')
+  input('M5:P5', s.cutoffNow || s.cutoffDefaulted ? ({ formula: 'NOW()' } as ExcelJS.CellValue) : s.cutoff, 'dd-mmm-yyyy hh:mm')
 
   band('A7:P7', '   POSSESSION WINDOW', COL.black)
   label('A8:B8', 'WINDOW STARTS'); input('C8:D8', s.possessionStart, 'dd-mmm-yyyy hh:mm')
