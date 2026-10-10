@@ -44,5 +44,5 @@ export function parseUpdateFile(text: string): { project: Project; layouts: Site
   let j: { format?: string; project?: Project; layouts?: SiteLayout[] }
   try { j = JSON.parse(text, reviver) } catch { throw new Error('That file is not a SAR update file.') }
   if (j?.format !== UPDATE_FORMAT || !j.project || !Array.isArray(j.project.locations)) throw new Error('That file is not a SAR update file.')
-  return { project: j.project, layouts: Array.isArray(j.layouts) ? j.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell' })) : null }
+  return { project: j.project, layouts: Array.isArray(j.layouts) ? j.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell', length: l.length ?? '' })) : null }
 }

@@ -1,8 +1,8 @@
 import type { Proposal } from './claude'
 import type { SiteLayout } from './parse'
 
-export type LayoutField = 'chainage' | 'cells' | 'kind' | 'lines' | 'otmp' | 'station'
-export const FIELDS: LayoutField[] = ['chainage', 'cells', 'kind', 'lines', 'otmp', 'station']
+export type LayoutField = 'chainage' | 'cells' | 'kind' | 'length' | 'lines' | 'otmp' | 'station'
+export const FIELDS: LayoutField[] = ['chainage', 'cells', 'kind', 'length', 'lines', 'otmp', 'station']
 
 export interface FieldChange { field: LayoutField; from: string | number | null; to: string | number }
 export interface RowDiff { index: number; code: string; changes: FieldChange[] }

@@ -11,6 +11,7 @@ export interface Proposal {
   chainage: string | null
   cells: number | null
   kind: 'cell' | 'pipe' | null
+  length: string | null
   lines: string | null
   otmp: string | null
   station: string | null
@@ -39,11 +40,12 @@ export const TOOL = {
             chainage: { ...nullableString, description: 'e.g. KM 209+025' },
             cells: { type: ['integer', 'null'], description: 'How many cells or pipes the culvert has' },
             kind: { type: ['string', 'null'], enum: ['cell', 'pipe', null], description: 'Whether the openings are box "cell"s or round "pipe"s' },
+            length: { ...nullableString, description: 'Culvert length with its unit, e.g. 24 m' },
             lines: { ...nullableString, description: 'e.g. Main Line 1 & Main Line 3' },
             otmp: { ...nullableString, description: 'OTMP contractor, e.g. TSO' },
             station: { ...nullableString, description: 'Base station, e.g. Station 29' },
           },
-          required: ['code', 'chainage', 'cells', 'kind', 'lines', 'otmp', 'station'],
+          required: ['code', 'chainage', 'cells', 'kind', 'length', 'lines', 'otmp', 'station'],
           additionalProperties: false,
         },
       },
@@ -88,7 +90,7 @@ export function normalizeProposals(input: unknown): Proposal[] {
     if (!code) throw new ClaudeError(`Entry ${i + 1} from Claude has no location code.`)
     const cells = typeof o.cells === 'number' && Number.isInteger(o.cells) && o.cells >= 0 ? o.cells : null
     const kind = o.kind === 'cell' || o.kind === 'pipe' ? o.kind : null
-    return { code, chainage: str(o.chainage), cells, kind, lines: str(o.lines), otmp: str(o.otmp), station: str(o.station) }
+    return { code, chainage: str(o.chainage), cells, kind, length: str(o.length), lines: str(o.lines), otmp: str(o.otmp), station: str(o.station) }
   })
 }
 

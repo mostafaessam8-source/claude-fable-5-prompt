@@ -18,9 +18,9 @@ export interface FieldChange { field: FieldKey; from: string; to: string; patch:
 export interface ActivityUpdate { loc: number; no: number; name: string; changes: FieldChange[] }
 /** Site-layout facts the contractor corrected (cells / pipes, lines, chainage…). */
 export interface LayoutUpdate { loc: number; name: string; changes: { field: keyof SiteLayout; from: string; to: string }[]; patch: Partial<SiteLayout> }
-const LAYOUT_FIELDS: (keyof SiteLayout)[] = ['code', 'chainage', 'kind', 'cells', 'lines', 'otmp', 'station']
+const LAYOUT_FIELDS: (keyof SiteLayout)[] = ['code', 'chainage', 'kind', 'cells', 'length', 'lines', 'otmp', 'station']
 export const LAYOUT_LABEL: Record<keyof SiteLayout, string> = {
-  code: 'Code', chainage: 'Chainage', kind: 'Type', cells: 'Count', lines: 'Lines', otmp: 'OTMP', station: 'Base station',
+  code: 'Code', chainage: 'Chainage', kind: 'Type', cells: 'Count', length: 'Length', lines: 'Lines', otmp: 'OTMP', station: 'Base station',
 }
 
 export interface UpdateDiff {

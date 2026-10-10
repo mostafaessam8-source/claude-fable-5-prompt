@@ -20,6 +20,7 @@ export function NewProject({ hasProject, onCreate, onClose }: { hasProject: bool
   const [chain, setChain] = useState('')
   const [kind, setKind] = useState<CulvertKind>('cell')
   const [count, setCount] = useState('')
+  const [len, setLen] = useState('')
 
   const d = Number(dur)
   const st = inputToHours(today, start) != null ? new Date(today.getTime() + (inputToHours(today, start) as number) * 3_600_000) : null
@@ -28,7 +29,7 @@ export function NewProject({ hasProject, onCreate, onClose }: { hasProject: bool
     if (!ok || !st) return
     const input: NewProjectInput = {
       projectName: name, reportTitle: title, preparedBy: by, possessionStart: st, duration: d, unit,
-      code, chainage: chain, kind, count: count === '' ? null : Math.max(0, Math.floor(Number(count))),
+      code, chainage: chain, kind, count: count === '' ? null : Math.max(0, Math.floor(Number(count))), length: len,
     }
     onCreate(createProject(input))
   }
@@ -53,11 +54,12 @@ export function NewProject({ hasProject, onCreate, onClose }: { hasProject: bool
             <label className={l}>Unit<select className={f} value={unit} onChange={(e) => setUnit(e.target.value as HoursOrDays)}><option value="hours">hours</option><option value="days">days</option></select></label>
           </div>
           <h3 className="bg-[#768692] px-2 py-1 text-xs font-bold text-white">FIRST LOCATION (more can be added later)</h3>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-5 gap-3">
             <label className={l}>Code<input className={f} value={code} onChange={(e) => setCode(e.target.value)} placeholder="C263" /></label>
             <label className={l}>Chainage<input className={f} value={chain} onChange={(e) => setChain(e.target.value)} placeholder="KM 209+025" /></label>
             <label className={l}>Type<select className={f} value={kind} onChange={(e) => setKind(e.target.value as CulvertKind)}><option value="cell">Cells</option><option value="pipe">Pipes</option></select></label>
             <label className={l}>Count<input className={f} type="number" min={0} value={count} onChange={(e) => setCount(e.target.value)} /></label>
+            <label className={l}>Length<input className={f} value={len} onChange={(e) => setLen(e.target.value)} placeholder="24 m" /></label>
           </div>
           <div className="flex justify-end gap-2">
             <button className="rounded border border-slate-400 px-3 py-1" onClick={onClose}>Cancel</button>
