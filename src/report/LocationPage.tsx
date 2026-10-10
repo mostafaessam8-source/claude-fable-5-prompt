@@ -20,10 +20,14 @@ const cellBase: CSSProperties = {
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
 }
 
-export function LocationPage({ result, index, layout }: { result: ProjectResult; index: number; layout?: SiteLayout }) {
-  // Row ruler: hover shows an activity's row across the table AND the Gantt; a click pins it.
+export function LocationPage({ result, index, layout, selectedNo, onSelect }: {
+  result: ProjectResult; index: number; layout?: SiteLayout
+  /** Activity number selected on this page (its panel is open); the ruler stays on it. */
+  selectedNo?: number | null
+  onSelect?: (no: number) => void
+}) {
+  // Row ruler: hover shows an activity's row across the table AND the Gantt; a click selects it (opens the panel).
   const [hover, setHover] = useState<number | null>(null)
-  const [pinned, setPinned] = useState<number | null>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
@@ -46,7 +50,8 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
   })
   const cutoffX = (g.cutoffH - g.viewStartH) / g.hoursPerColumn * GC
   const bodyH = 2 * n * rh
-  const active = pinned ?? hover
+  const selectedIdx = selectedNo == null ? -1 : loc.activities.findIndex((a) => a.no === selectedNo)
+  const active = selectedIdx >= 0 ? selectedIdx : hover
   const rowAt = (e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest('[data-row]')
     return el ? Number(el.getAttribute('data-row')) : null
@@ -79,11 +84,11 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
 
       <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
         onMouseOver={(e) => setHover(rowAt(e))} onMouseLeave={() => setHover(null)}
-        onClick={(e) => { const k = rowAt(e); if (k != null) setPinned((p) => (p === k ? null : k)) }}>
+        onClick={(e) => { const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no) }}>
         {active != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
-            boxShadow: `inset 4px 0 0 ${pinned != null ? C.black : C.amber}` }} />
+            boxShadow: `inset 4px 0 0 ${selectedIdx >= 0 ? C.black : C.amber}` }} />
         )}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',

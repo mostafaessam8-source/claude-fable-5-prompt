@@ -86,7 +86,7 @@ export function App() {
                 </div>
               )}
               <SettingsBar project={project} onChange={setProject} />
-              <ReportView result={result} layouts={layouts} />
+              <ReportView result={result} layouts={layouts} project={project} onChange={setProject} />
             </>
           )}
           {tab === 'layout' && (
