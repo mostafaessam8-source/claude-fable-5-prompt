@@ -120,7 +120,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const allOn = acts.length > 0 && picked.length === acts.length
 
   return (
-    <main className="mx-auto max-w-[1450px] p-4">
+    <main className="mx-auto max-w-[1700px] p-4">
       <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[#00778B]">LOCATION</span>
@@ -156,14 +156,14 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
       <table className="w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
         <colgroup>
           <col style={{ width: 26 }} /><col style={{ width: 28 }} /><col style={{ width: 34 }} /><col />
-          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 92 }} />
+          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 92 }} /><col style={{ width: 240 }} />
         </colgroup>
         <thead>
           <tr className="bg-[#3D3935] text-left text-white">
             <th className={cell} /><th className={cell}><input type="checkbox" checked={allOn} aria-label="Select all"
               onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /></th>
             <th className={cell}>#</th><th className={cell}>Activity</th><th className={cell}>Duration (h)</th><th className={cell}>Follows</th>
-            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Status</th>
+            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Status</th><th className={cell}>Remarks</th>
           </tr>
         </thead>
         <tbody>
@@ -224,10 +224,11 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                     onChange={(e) => { const h = inputToHours(origin, e.target.value); const q = h == null ? null : setPlannedFinish(project, li, a.no, r.plannedStartH, h, a.rel, predTimes(a.pred)); if (q) onChange(q) }} />
                 </td>
                 <td className={cell}><span className="rounded px-1 font-bold" style={{ background: tone.bg, color: tone.fg }}>{r.status}</span></td>
+                <td className={cell}><NameInput value={a.remarks} blankOk placeholder="note / contractor remark" onCommit={(remarks) => edit({ remarks })} /></td>
               </tr>
             )
           })}
-          {acts.length > 0 && drop === null && <tr><td colSpan={11} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
+          {acts.length > 0 && drop === null && <tr><td colSpan={12} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
         </tbody>
       </table>
       {acts.length === 0 && <p className="p-6 text-center text-slate-500">No activities here yet — use “+ Add activity”.</p>}

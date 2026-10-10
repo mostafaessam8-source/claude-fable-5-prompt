@@ -27,6 +27,8 @@ export type LocationStatus = 'CHECK INPUT' | 'AT RISK' | 'BEHIND' | 'TIGHT' | 'A
 export interface ActivityResult {
   no: number
   name: string
+  /** Free-text note from the contractor or the planner; changes no calculation. */
+  remarks: string
   durationH: number
   /** Hours since possession start. */
   plannedStartH: number
@@ -193,6 +195,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     const r: ActivityResult = {
       no: a.no,
       name: a.name,
+      remarks: a.remarks.trim(),
       durationH: dur,
       plannedStartH: start,
       plannedFinishH: finish,

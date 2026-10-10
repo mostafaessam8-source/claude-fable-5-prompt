@@ -156,7 +156,7 @@ describe('Data Input sheet', () => {
     expect(ws.pageSetup.fitToWidth).toBe(1)
     const rows = reportRows(5, 26)
     expect(rows.page(0).header).toBe(37)
-    expect(rows.page(1).header).toBe(96)
+    expect(rows.page(1).header).toBe(97)
     expect(ws.pageSetup.printArea).toBe(`A1:BF${rows.last}`)
     // a light line between every Gantt column, on both the P and the A row of an activity
     const first = reportRows(5, 26).page(0).first
@@ -255,6 +255,17 @@ describe.skipIf(!hasSoffice)('Excel formulas agree with the engine (recalculated
     const p = await parseWorkbook(SCENARIO)
     const { val } = await recalc(await exportXlsx(p, layoutsOf(p)))
     compare(p, computeProject(p), val, 'scenario')
+  }, 240_000)
+
+  it('remarks reach the Report sheet (a contractor note on any activity is read by everyone)', async () => {
+    let p = await parseWorkbook(SCENARIO)
+    p = { ...p, locations: p.locations.map((l, i) => i !== 1 ? l : { ...l, activities: l.activities.map((a) => a.no === 2 ? { ...a, remarks: 'Waiting for crane' } : a.no === 4 ? { ...a, remarks: 'Rain delay' } : a) }) }
+    const { val } = await recalc(await exportXlsx(p, layoutsOf(p)))
+    const line = String(val('Report', `A${reportRows(p.locationCount, p.activityRowsPerLocation).page(1).remarks}`))
+    expect(line).toContain('REMARKS')
+    expect(line).toContain('#2 Waiting for crane')
+    expect(line).toContain('#4 Rain delay')
+    expect(String(val('Report', `A${reportRows(p.locationCount, p.activityRowsPerLocation).page(0).remarks}`))).toContain('none')
   }, 240_000)
 
   it.each([[15, 'mid-possession'], [5, 'early, so the 2 h gap absorbs the 1 h slip']])('stress project, cut-off %s h (%s)', async (cutoff) => {

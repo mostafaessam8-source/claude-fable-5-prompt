@@ -279,6 +279,18 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       merge(`${colLetter(c0 + 1)}${lr}:${colLetter(c0 + 5)}${lr}`, text, { font: font(COL.black, 8), alignment: { horizontal: 'left', vertical: 'middle' } })
     })
 
+    // remarks: one line per location, built live from Data Input's REMARKS column so a contractor's note shows up on the Report
+    const rr = pg.remarks
+    const parts: string[] = []
+    for (let k = b.first; k <= b.last; k++) {
+      parts.push(`IF(AND(${D}B${k}<>"",TRIM(${D}P${k})<>""),"#"&${D}A${k}&" "&TRIM(${D}P${k})&"     |     ","")`)
+    }
+    ws.getRow(rr).height = 34
+    const helper = `${colLetter(R.H_HOURS)}${rr}` // hidden helper column: the joined notes, so the visible formula does not repeat them
+    set(helper, F(parts.join('&')))
+    merge(`A${rr}:${colLetter(R.G1)}${rr}`, F(`"REMARKS     "&IF(${helper}="","none",${helper})`),
+      { font: font(COL.black, 8), alignment: { horizontal: 'left', vertical: 'top', wrapText: true } })
+
     // conditional formats: lines, then bars, then colours
     const gR = `${G0}${pg.first}:${G1}${pg.total - 1}`
     const cl = gc(0)
@@ -322,7 +334,7 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
 
     // one location per printed page
     if (i === 0) ws.getRow(pg.header - 1).addPageBreak()
-    if (i < n - 1) ws.getRow(pg.legend + 1).addPageBreak()
+    if (i < n - 1) ws.getRow(pg.remarks + 1).addPageBreak()
   })
   return ws
 }
