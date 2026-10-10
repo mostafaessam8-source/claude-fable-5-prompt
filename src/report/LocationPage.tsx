@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { fromHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, type SiteLayout } from '../layout/parse'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -21,6 +21,9 @@ const cellBase: CSSProperties = {
 }
 
 export function LocationPage({ result, index, layout }: { result: ProjectResult; index: number; layout?: SiteLayout }) {
+  // Row ruler: hover shows an activity's row across the table AND the Gantt; a click pins it.
+  const [hover, setHover] = useState<number | null>(null)
+  const [pinned, setPinned] = useState<number | null>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
@@ -43,11 +46,16 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
   })
   const cutoffX = (g.cutoffH - g.viewStartH) / g.hoursPerColumn * GC
   const bodyH = 2 * n * rh
+  const active = pinned ?? hover
+  const rowAt = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest('[data-row]')
+    return el ? Number(el.getAttribute('data-row')) : null
+  }
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
 
-  const barEl = (b: Bar, row: number, key: string) => (
-    <div key={key} style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
+  const barEl = (b: Bar, row: number, key: string, k: number) => (
+    <div key={key} data-row={k} style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
   )
 
   return (
@@ -69,7 +77,14 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
         </div>
       </div>
 
-      <div style={{ display: 'flex', marginTop: 2 }}>
+      <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
+        onMouseOver={(e) => setHover(rowAt(e))} onMouseLeave={() => setHover(null)}
+        onClick={(e) => { const k = rowAt(e); if (k != null) setPinned((p) => (p === k ? null : k)) }}>
+        {active != null && (
+          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
+            background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
+            boxShadow: `inset 4px 0 0 ${pinned != null ? C.black : C.amber}` }} />
+        )}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: TABLE_COLS.map((w) => `${w}px`).join(' '),
@@ -82,7 +97,7 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
             const at = activityTone(a.status)
             const bg = k % 2 ? C.tint1 : '#fff'
             const span = (c: number, extra: CSSProperties, content: React.ReactNode) => (
-              <div key={`${k}-${c}`} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }}>{content}</div>
+              <div key={`${k}-${c}`} data-row={k} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }}>{content}</div>
             )
             return [
               span(1, { color: C.slate }, a.no),
@@ -137,9 +152,9 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
             {rows.map((_, k) => {
               const r = 3 + 2 * k
               return [
-                <div key={`bg${k}`} style={{ gridRow: `${r} / span 2`, gridColumn: '1 / -1', background: k % 2 ? C.tint1 : '#fff', borderBottom: '1px solid #DDE3E5' }} />,
-                <div key={`p${k}`} style={{ gridRow: r, gridColumn: 1, fontSize: 5.5, color: C.slate, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>P</div>,
-                <div key={`a${k}`} style={{ gridRow: r + 1, gridColumn: 1, fontSize: 5.5, color: C.slate, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>A</div>,
+                <div key={`bg${k}`} data-row={k} style={{ gridRow: `${r} / span 2`, gridColumn: '1 / -1', background: k % 2 ? C.tint1 : '#fff', borderBottom: '1px solid #DDE3E5' }} />,
+                <div key={`p${k}`} data-row={k} style={{ gridRow: r, gridColumn: 1, fontSize: 5.5, color: C.slate, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>P</div>,
+                <div key={`a${k}`} data-row={k} style={{ gridRow: r + 1, gridColumn: 1, fontSize: 5.5, color: C.slate, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>A</div>,
               ]
             })}
 
@@ -147,9 +162,9 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
             {rows.map(({ bars }, k) => {
               const r = 3 + 2 * k
               return [
-                bars.planned && barEl(bars.planned, r, `pl${k}`),
-                bars.forecast && barEl(bars.forecast, r + 1, `fc${k}`),
-                bars.actual && barEl(bars.actual, r + 1, `ac${k}`),
+                bars.planned && barEl(bars.planned, r, `pl${k}`, k),
+                bars.forecast && barEl(bars.forecast, r + 1, `fc${k}`, k),
+                bars.actual && barEl(bars.actual, r + 1, `ac${k}`, k),
               ]
             })}
           </div>
