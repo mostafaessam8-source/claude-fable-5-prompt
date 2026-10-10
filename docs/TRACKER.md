@@ -54,6 +54,10 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
 - **Type the planned dates** (panel Baseline tab, and the Planned start / finish columns of the Activities tab): the predecessor and relationship stay and the **lag is
   recomputed** so the link gives exactly the date you typed. A new finish also sets the duration (the start does not move); with no predecessor the lag is the start.
+- **Copy table (formulas)** puts *live Excel formulas* on the clipboard: paste it with its top-left cell at the chosen cell (A1 by default, in an empty sheet) and the planned dates follow
+  the same rules as the app (predecessor, FS/SS/FF/SF, lag, duration). Change a duration, lag, predecessor or relationship in Excel and **every date after it moves** — no manual date work.
+  Helper columns M–O (start/finish in hours, predecessor row) and the possession start (Q1) sit to the right; leave them. The formulas use OFFSET/MATCH/TEXT (no circular references); verified
+  against the app with LibreOffice. *Copy values* gives plain text instead. When you copy the edited table back, the dates Excel computed are recognised as consequences, not as typed dates.
 - **Edit in Excel, paste back** (Activities tab → *Copy table* / *Paste table…*, in the contractor copy too). *Copy table* puts the location's table on the clipboard (tab-separated, header row first:
   #, Activity, Duration, Follows, Rel, Lag, Planned start/finish, Actual start/finish, % complete, Remarks). Paste it into any Excel sheet, edit freely (rename, add or delete rows, reorder, change
   links / lag / actuals / remarks, type planned dates), select the whole table **with its header row**, copy, and *Paste table…*: a live preview lists every change; Apply is one Undo step.

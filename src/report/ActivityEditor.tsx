@@ -7,7 +7,7 @@ import {
 import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { Project, Rel } from '../model/types'
-import { toTable } from '../links/table'
+import { parseAnchor, toTable } from '../links/table'
 import { TablePaste } from './TablePaste'
 import { activityTone } from './brand'
 
@@ -73,14 +73,17 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
     while (names.has(n)) n = `${base} ${i++}`
     return n
   }
-  const copyTable = async () => {
-    const text = toTable(project, result, li)
+  const [cellAt, setCellAt] = useState('A1')
+  const copyTable = async (formulas: boolean) => {
+    const text = toTable(project, result, li, { formulas, anchor: cellAt })
     try { await navigator.clipboard.writeText(text) } catch {
       const ta = document.createElement('textarea') // older browsers / no clipboard permission
       ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove()
     }
-    setCopied(`Copied ${acts.length} rows — paste into Excel (Ctrl+V).`)
-    setTimeout(() => setCopied(null), 4000)
+    setCopied(formulas
+      ? `Copied ${acts.length} rows with live formulas — in Excel select cell ${cellAt.toUpperCase()} (an empty sheet) and press Ctrl+V.`
+      : `Copied ${acts.length} rows (values only) — paste into Excel with Ctrl+V.`)
+    setTimeout(() => setCopied(null), 9000)
   }
   const picked = acts.filter((a) => sel.has(a.no)).map((a) => a.no)
 
@@ -154,7 +157,11 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
           onChange={(e) => pickLoc(Number(e.target.value))}>
           {project.locations.map((l, i) => <option key={i} value={i}>{l.name} ({l.activities.length})</option>)}
         </select>
-        <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={copyTable} title="Copy this location's table to the clipboard, to edit in Excel">Copy table</button>
+        <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={() => copyTable(true)} disabled={!parseAnchor(cellAt)}
+          title="Copy this location's table with live Excel formulas: change a duration, lag, predecessor or relationship in Excel and every planned date after it moves, like here">Copy table (formulas)</button>
+        <button className={btn} onClick={() => copyTable(false)} title="Copy the table as plain values">Copy values</button>
+        <label className="flex items-center gap-1 text-xs text-slate-500" title="The cell of your Excel sheet where the table's top-left corner (#) will be pasted; the formulas are written for it">paste at
+          <input className="w-14 rounded border border-slate-300 px-1 py-0.5 text-xs uppercase" value={cellAt} onChange={(e) => setCellAt(e.target.value)} aria-label="Excel cell to paste at" /></label>
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={() => setPasting(true)} title="Paste the whole table back from Excel">Paste table…</button>
         {copied && <span className="text-xs font-semibold text-[#00778B]">{copied}</span>}
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={insertBelow}>{picked.length ? '+ Insert below selection' : '+ Add activity'}</button>
