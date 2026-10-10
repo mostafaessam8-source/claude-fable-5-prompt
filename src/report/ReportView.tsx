@@ -6,7 +6,7 @@ import type { Project } from '../model/types'
 import { useNarrow } from '../model/useNarrow'
 import { OFFLINE } from '../offline/offline'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
-import { LocationPage } from './LocationPage'
+import { LocationPage, pageWidth } from './LocationPage'
 
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
 export const PAGE_H = 794
@@ -20,17 +20,18 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
   const close = useCallback(() => setSelected(null), [])
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow()
+  const pageW = pageWidth(project.settings.tableCols) // the widest page: widened columns make the pages wider
   const [zoom, setZoom] = useState(1)
   useLayoutEffect(() => {
     const el = box.current
     if (!el) return
     // on a phone the page is shown at least half size and scrolls sideways, instead of shrinking to a postage stamp
-    const fit = () => setZoom(Math.min(1, Math.max(narrow ? 0.5 : 0, (el.clientWidth - 8) / PAGE_W)))
+    const fit = () => setZoom(Math.min(1, Math.max(narrow ? 0.5 : 0, (el.clientWidth - 8) / pageW)))
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [narrow])
+  }, [narrow, pageW])
 
   return (
     <>

@@ -6,6 +6,8 @@ import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedF
 import { fmtCell, parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
 import { textWidth } from './measure'
+import { COL_NAMES, DEFAULT_COLS, MAX_COL, MIN_COL, PAGE_INNER, pageWidth } from './columns'
+export { COL_NAMES, DEFAULT_COLS, pageWidth }
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
@@ -13,11 +15,6 @@ import { actualDragPatch, dragPatch, linkFromHandles, MIN_DUR, type DragMode } f
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
 /** Default widths (px) of the table columns; each can be dragged wider or narrower (like an Excel column) and is saved with the project. */
-export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 40, 106]
-export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back', 'Remarks']
-const PAGE_INNER = 1110 // px inside the A4 page: the table and the Gantt share it, so a wider table leaves a narrower Gantt
-const MIN_COL = 18
-const MIN_GC = 4
 const PA_W = 12
 const LONG_REMARK = 52 // characters that fit the Remarks column in two lines
 const HEAD_H = 20
@@ -78,7 +75,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const g = ganttGeometry(s)
   const cols = s.tableCols && s.tableCols.length === DEFAULT_COLS.length ? s.tableCols : DEFAULT_COLS
   const TABLE_W = cols.reduce((a, b) => a + b, 0)
-  const GC = Math.max(MIN_GC, (PAGE_INNER - TABLE_W - PA_W) / GANTT_COLS) // px per Gantt column
+  const PAGE_X = pageWidth(s.tableCols)
+  const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
   // short remarks fit in the Remarks column; longer ones are also written out in full under the table, which takes its share of the page
   const remarkItems = loc.activities.filter((a) => a.remarks.length > LONG_REMARK)
@@ -289,8 +287,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const onColMove = (e: React.PointerEvent) => {
     const d = colDrag.current
     if (!d) return
-    const maxW = PAGE_INNER - PA_W - GANTT_COLS * MIN_GC - d.others // the Gantt keeps at least MIN_GC px per column
-    const w = Math.round(Math.min(maxW, Math.max(MIN_COL, d.w0 + (e.clientX - d.x0) / zoom)))
+    const w = Math.round(Math.min(MAX_COL, Math.max(MIN_COL, d.w0 + (e.clientX - d.x0) / zoom)))
     if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x)))
   }
   /** Excel's "autofit": the narrowest width that shows the whole text of the column on one line (the headers' longest word counts too). */
@@ -302,8 +299,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), '', a.remarks][c])
     }
     const w = Math.max(...texts.map((t) => textWidth(t, font))) + 12
-    const maxW = PAGE_INNER - PA_W - GANTT_COLS * MIN_GC - (TABLE_W - cols[c])
-    return Math.round(Math.min(maxW, Math.max(MIN_COL, w)))
+    return Math.round(Math.min(MAX_COL, Math.max(MIN_COL, w)))
   }
   const onColEnd = (e: React.PointerEvent) => {
     colDrag.current = null
@@ -339,7 +335,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   }
 
   return (
-    <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5 }}>
+    <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5, width: PAGE_X, ['--ps' as string]: 1123 / PAGE_X }}>
       {/* the SAR logo heads every page, on white */}
       <div style={{ background: '#fff', padding: '4px 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 26, width: 26 * SAR_LOGO_RATIO, display: 'block' }} />
