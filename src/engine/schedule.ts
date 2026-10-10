@@ -29,6 +29,10 @@ export interface ActivityResult {
   name: string
   /** Free-text note from the contractor or the planner; changes no calculation. */
   remarks: string
+  /** The link as entered: predecessor number (0 = the possession start), relationship and lag in hours. */
+  pred: number
+  rel: Rel
+  lagH: number
   durationH: number
   /** Hours since possession start. */
   plannedStartH: number
@@ -196,6 +200,9 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
       no: a.no,
       name: a.name,
       remarks: a.remarks.trim(),
+      pred: a.pred,
+      rel: a.rel,
+      lagH: a.lagH,
       durationH: dur,
       plannedStartH: start,
       plannedFinishH: finish,

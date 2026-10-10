@@ -224,8 +224,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   }
 
   // dependency arrows: from the predecessor's end to the successor's end the relationship joins
-  const arrows = !showLinks || !project ? [] : project.locations[index].activities.flatMap((pa, k) => {
-    const r = loc.activities[k]
+  const arrows = !showLinks ? [] : loc.activities.flatMap((r, k) => {
+    const pa = r // pred / rel come with the result, so a view-only page (no project) draws them too
     const j = pa.pred > 0 && !r.linkBad ? loc.activities.findIndex((x) => x.no === pa.pred) : -1
     if (j < 0) return []
     const p = loc.activities[j]
@@ -532,8 +532,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             })}
           </div>
 
-          {/* dependency arrows and the link being drawn (screen only) */}
-          <svg className="no-print" style={{ position: 'absolute', left: 0, top: 0, width: PA_W + GANTT_COLS * GC, height: 2 * HEAD_H + bodyH, pointerEvents: 'none', zIndex: 5 }}>
+          {/* dependency arrows (they print too) and the link being drawn (screen only) */}
+          <svg style={{ position: 'absolute', left: 0, top: 0, width: PA_W + GANTT_COLS * GC, height: 2 * HEAD_H + bodyH, pointerEvents: 'none', zIndex: 5 }}>
             <defs>
               <marker id={`arr${index}`} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill={C.slate} /></marker>
             </defs>
