@@ -5,7 +5,6 @@ import { computeProject } from '../src/engine/schedule'
 import { exportXlsx } from '../src/export'
 import { ImportError, parseWorkbook } from '../src/import/parse'
 import { parseHeaderDate, parseLocationLabel, reconstructLinks } from '../src/import/crp2'
-import { stripUnreadableParts } from '../src/import/sanitize'
 import { parseLayout } from '../src/layout/parse'
 
 const FILE = readFileSync('tests/fixtures/crp2/CRP2_EWR_Shutdown03_Progress_Sheet.xlsx')
@@ -66,7 +65,9 @@ describe('CRP2 progress sheet import', () => {
     expect(w).toMatch(/No Work Hours.*rest period/)
     expect(w).toMatch(/C267.*row 86.*duration is blank in the source/)
     expect(w).toMatch(/C267.*row 111.*duration is blank in the source/)
-    expect(w).toMatch(/earlier than the row above.*\+24 h/)
+    expect(w).toMatch(/typed start of 8\.0 h that shows only a time of day, so 32\.0 h \(\+24 h\) was used/)
+    expect(w).toMatch(/row 176.*links to row 175, which has no times/)
+    expect(w).toMatch(/recomputed from those links/)
     expect(w).toMatch(/span is -1\.00 h but No\. Hours is 2\.00 h/)
     expect(w).toMatch(/Cells, OTMP and base station are not in a CRP2 sheet/)
   })
@@ -80,23 +81,33 @@ describe('CRP2 progress sheet import', () => {
     expect(r.locations[2].status).toBe('CHECK INPUT')
   })
 
-  it("the engine reproduces the sheet's own planned start of every row (hours, to the minute)", async () => {
+  it('every location ends its last activity at 12 AM, the end of the possession (hour 48)', async () => {
+    const r = computeProject(await parseWorkbook(FILE))
+    for (const l of r.locations) {
+      const last = l.activities[l.activities.length - 1]
+      expect(last.name, l.name).toMatch(/^Finishing/)
+      expect(last.plannedFinishH, l.name).toBe(48)
+      expect(last.plannedFinish.toISOString(), l.name).toBe('2026-10-18T00:00:00.000Z')
+      expect(l.plannedFinishH, l.name).toBe(48) // nothing finishes later
+    }
+  })
+
+  it('typed times that lost their +24 h are repaired, and what follows them with them', async () => {
     const p = await parseWorkbook(FILE)
     const r = computeProject(p)
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load((await stripUnreadableParts(FILE)) as unknown as ExcelJS.Buffer)
-    const ws = wb.getWorksheet('Shutdown02 Progress')!
-    const epoch = Date.UTC(1899, 11, 30)
-    let checked = 0
-    p.locations.forEach((l, i) => l.activities.forEach((a, k) => {
-      const v = ws.getCell(`K${a.sourceRow}`).value as { result?: Date } | Date
-      const d = v instanceof Date ? v : (v as { result?: Date }).result
-      if (!(d instanceof Date)) return
-      const expected = Math.round(((d.getTime() - epoch) / 3_600_000) * 60) / 60
-      expect(r.locations[i].activities[k].plannedStartH, `${l.name} row ${a.sourceRow}`).toBeCloseTo(expected, 6)
-      checked++
-    }))
-    expect(checked).toBeGreaterThan(120)
+    const startOf = (loc: number, row: number) => {
+      const k = p.locations[loc].activities.findIndex((a) => a.sourceRow === row)
+      return r.locations[loc].activities[k].plannedStartH
+    }
+    expect(startOf(1, 68)).toBe(26)  // C265: typed 2:00 AM → day 2
+    expect(startOf(1, 69)).toBe(27)  // …and the row linked after it
+    expect(startOf(1, 77)).toBe(28)  // …and the destressing linked to that (the sheet showed 4 h)
+    expect(startOf(2, 103)).toBe(32) // C267: OTMP moves line 1→3 typed 8:00 AM
+    expect(startOf(2, 105)).toBe(33)
+    expect(startOf(2, 110)).toBe(41)
+    expect(startOf(2, 112)).toBe(47)
+    expect(startOf(4, 176)).toBe(36) // C289: linked to a rest row → starts with the OTMP return
+    expect(startOf(0, 44)).toBe(39)  // C263 needed no repair: same start as the OTMP return
   })
 
   it('exports and re-imports to the same model', async () => {
