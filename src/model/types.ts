@@ -15,6 +15,8 @@ export interface Settings {
   cutoffDefaulted: boolean
   /** true: the data date is "now" (Excel's NOW()), refreshed while the app is open; false/absent: the stored `cutoff` date. */
   cutoffNow?: boolean
+  /** Widths (px) of the report table's columns, when the user has dragged them. */
+  tableCols?: number[]
   possessionStart: Date
   duration: number
   unit: HoursOrDays

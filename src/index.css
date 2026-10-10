@@ -34,3 +34,6 @@
 .gbar:hover .gdot, .linking .gbar .gdot { opacity: 1; }
 .linking, .linking * { cursor: crosshair !important; }
 @media print { .gbar .gh, .gbar .gdot { display: none; } }
+.col-rz { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 4; touch-action: none; }
+.col-rz:hover { background: rgba(255, 255, 255, 0.55); }
+@media print { .col-rz { display: none; } }

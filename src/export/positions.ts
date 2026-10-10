@@ -15,23 +15,25 @@ export function colLetter(n: number): string {
   return s
 }
 
-/** Report sheet: A..I table, J = remarks, K = P/A letters, L..BG = 48 Gantt columns, BH..BQ hidden helpers. */
+/** Report sheet: A..I table, J = Dur BL, K = Dur Actual, L = remarks, M = P/A letters, N..BI = 48 Gantt columns, BJ..BS hidden helpers. */
 export const R = {
   TABLE_COLS: 9,
-  REMARKS: 10, // J
-  SPACER: 11, // K
-  G0: 12, // L — first Gantt column
-  G1: 59, // BG — last Gantt column
-  H_HOURS: 60, // BH: total hours (cover rows) / carried variance (P rows)
-  H_START: 61, // BI
-  H_END: 62, // BJ
-  H_FLAG: 63, // BK
-  H_AS: 64, // BL actual start
-  H_AF: 65, // BM actual finish
-  H_PCT: 66, // BN
-  H_CAR: 67, // BO
-  H_FS: 68, // BP forecast start
-  H_FE: 69, // BQ forecast end
+  DUR_BL: 10, // J
+  DUR_ACT: 11, // K
+  REMARKS: 12, // L
+  SPACER: 13, // M
+  G0: 14, // N — first Gantt column
+  G1: 61, // BI — last Gantt column
+  H_HOURS: 62, // BJ: total hours (cover rows) / carried variance (P rows)
+  H_START: 63, // BK
+  H_END: 64, // BL
+  H_FLAG: 65, // BM
+  H_AS: 66, // BN actual start
+  H_AF: 67, // BO actual finish
+  H_PCT: 68, // BP
+  H_CAR: 69, // BQ
+  H_FS: 70, // BR forecast start
+  H_FE: 71, // BS forecast end
 }
 
 export function reportRows(n: number, m: number) {
@@ -41,10 +43,10 @@ export function reportRows(n: number, m: number) {
   const picFirst = siteBand + 1
   const picRows = 16
   const page0 = siteBand + 1 + picRows
-  const stride = 2 * m + 8 // + the remarks row under each page's legend
+  const stride = 2 * m + 9 // + the logo row above each page's header and the remarks row under its legend
   const page = (i: number) => {
     const p = page0 + i * stride
-    return { header: p, strip: p + 1, h1: p + 2, h2: p + 3, first: p + 4, total: p + 4 + 2 * m, legend: p + 5 + 2 * m, remarks: p + 6 + 2 * m }
+    return { logo: p, header: p + 1, strip: p + 2, h1: p + 3, h2: p + 4, first: p + 5, total: p + 5 + 2 * m, legend: p + 6 + 2 * m, remarks: p + 7 + 2 * m }
   }
   return { sumFirst, sumTotal, siteBand, picFirst, picRows, page0, stride, page, last: page(n - 1).remarks }
 }

@@ -10,6 +10,8 @@ export interface SettingsPatch {
   preparedBy?: string
   reportTitle?: string
   subtitle?: string
+  /** Column widths of the report table; null = back to the defaults. */
+  tableCols?: number[] | null
 }
 
 /** The one place the possession window and data date are changed. Keeps derived fields in step. */
@@ -34,6 +36,7 @@ export function applySettings(project: Project, patch: SettingsPatch): Project {
     settings: {
       ...old, possessionStart, duration, unit, cutoff, cutoffDefaulted, cutoffNow,
       preparedBy: patch.preparedBy ?? old.preparedBy, reportTitle: patch.reportTitle ?? old.reportTitle, subtitle: patch.subtitle ?? old.subtitle,
+      tableCols: patch.tableCols === undefined ? old.tableCols : (patch.tableCols ?? undefined),
       possessionEnd: addUnits(possessionStart, duration, unit),
       ganttStart: followGantt ? possessionStart : old.ganttStart,
     },

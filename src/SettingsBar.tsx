@@ -44,6 +44,8 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks, effecti
       <label className="flex flex-col">Prepared by
         <input className={`${f} w-48`} value={s.preparedBy} placeholder="name" onChange={(e) => onChange(applySettings(project, { preparedBy: e.target.value }))} />
       </label>
+      <button className="rounded border border-slate-300 px-2 py-0.5 disabled:opacity-40" disabled={!s.tableCols} onClick={() => onChange(applySettings(project, { tableCols: null }))}
+        title="Drag the right edge of a column header on the report to change its width; this puts them all back">Reset column widths</button>
       <label className="flex items-center gap-1"><input type="checkbox" checked={showLinks} onChange={(e) => onShowLinks(e.target.checked)} /> Show links</label>
       <span className="text-slate-500">Rulers: the row and the column (the time on the Gantt) under the pointer are highlighted. Click an activity to edit it. On the Gantt: drag a planned bar to move it, drag its ends to change the duration, drag a dot onto another bar to link.</span>
       <span className="text-slate-600">Hand-back: <b>{s.possessionEnd.toISOString().slice(0, 16).replace('T', ' ')}</b></span>
