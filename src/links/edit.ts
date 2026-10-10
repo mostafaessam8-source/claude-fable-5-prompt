@@ -176,3 +176,35 @@ export function insertActivityAfter(project: Project, loc: number, afterNo: numb
   const r = restructure(project, loc, [...acts.slice(0, idx + 1), fresh, ...acts.slice(idx + 1)], startHOf)
   return { ...r, no: idx + 2 }
 }
+
+// ---- typing the planned dates: the link stays, the lag (and for a finish, the duration) follows ----
+const dp2 = (n: number) => String(n).padStart(2, '0')
+/** `<input type="datetime-local">` value for hour `h` since `origin` (floating wall-clock). */
+export function hoursToInput(origin: Date, h: number): string {
+  const d = new Date(origin.getTime() + Math.round(h * 60) * 60000)
+  return `${d.getUTCFullYear()}-${dp2(d.getUTCMonth() + 1)}-${dp2(d.getUTCDate())}T${dp2(d.getUTCHours())}:${dp2(d.getUTCMinutes())}`
+}
+/** Hours since `origin` for a datetime-local value, or null when it is incomplete. */
+export function inputToHours(origin: Date, s: string): number | null {
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+  if (!m) return null
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]))
+  return round((t - origin.getTime()) / 3_600_000)
+}
+
+type PredTimes = { startH: number; finishH: number } | null
+
+/** Move the whole activity to start at `startH`: duration and link stay, the lag becomes whatever makes the link give that start. */
+export function setPlannedStart(project: Project, loc: number, no: number, startH: number, rel: Rel, pred: PredTimes, durH: number): Project {
+  return patchActivity(project, loc, no, { lagH: lagToKeepStart(startH, rel, pred, durH) })
+}
+
+/**
+ * Set the finish: the start stays, so the duration becomes finish − start, and the lag is recomputed
+ * (a finish-driven link FF/SF depends on the duration) so the start does not move. Returns null when the finish is not after the start.
+ */
+export function setPlannedFinish(project: Project, loc: number, no: number, startH: number, finishH: number, rel: Rel, pred: PredTimes): Project | null {
+  const dur = round(finishH - startH)
+  if (dur < 0.25) return null
+  return patchActivity(project, loc, no, { durationH: dur, lagH: lagToKeepStart(startH, rel, pred, dur) })
+}
