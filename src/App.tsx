@@ -6,6 +6,7 @@ import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
 import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
+import { effectiveProject, floatingNow } from './model/settings'
 import { NewProject } from './report/NewProject'
 import { buildOfflineHtml } from './offline/bundle'
 import { newId, OFFLINE, parseUpdateFile, updateFileText } from './offline/offline'
@@ -158,7 +159,16 @@ export function App() {
     }
   }
 
-  const result = useMemo(() => (project ? computeProject(project) : null), [project])
+  // with the cut-off on "Now (live)" the data date is the clock, refreshed every 30 s; the stored project is never changed by it
+  const [tick, setTick] = useState(() => Date.now())
+  useEffect(() => {
+    if (!project?.settings.cutoffNow) return
+    setTick(Date.now())
+    const t = setInterval(() => setTick(Date.now()), 30_000)
+    return () => clearInterval(t)
+  }, [project?.settings.cutoffNow])
+  const view = useMemo(() => (project ? effectiveProject(project, floatingNow(new Date(tick))) : null), [project, tick])
+  const result = useMemo(() => (view ? computeProject(view) : null), [view])
   const total = project?.locations.reduce((n, l) => n + l.activities.length, 0) ?? 0
   const tabBtn = (t: Tab, label: string) => (
     <button onClick={() => setTab(t)} className={`px-4 py-1.5 text-sm font-semibold ${tab === t ? 'bg-[#00778B] text-white' : 'bg-white text-[#3D3935]'}`}>{label}</button>
@@ -229,7 +239,7 @@ export function App() {
                   <button className="shrink-0 rounded border border-amber-600 px-2 py-0.5 font-semibold" onClick={() => setTab('import')}>Show all</button>
                 </div>
               )}
-              <SettingsBar project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
+              <SettingsBar effectiveCutoff={result.settings.cutoff} project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
               <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks} />
             </>
           )}

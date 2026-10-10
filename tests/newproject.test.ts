@@ -27,3 +27,27 @@ describe('a new project from scratch', () => {
     expect(back.settings.projectName).toBe('DEMO')
   }, 60000)
 })
+
+describe('cut-off: manual or now', () => {
+  it('"now" makes the data date the clock without touching the stored project', async () => {
+    const { applySettings, effectiveProject, floatingNow } = await import('../src/model/settings')
+    const { project } = createProject({ projectName: 'P', possessionStart: new Date(Date.UTC(2026, 10, 6)), duration: 48, unit: 'hours', code: 'C1' })
+    const live = applySettings(project, { cutoff: 'now', preparedBy: 'M. Essam' })
+    expect(live.settings).toMatchObject({ cutoffNow: true, preparedBy: 'M. Essam' })
+    const t = floatingNow(new Date(2026, 10, 6, 13, 30))
+    expect(effectiveProject(live, t).settings.cutoff).toEqual(new Date(Date.UTC(2026, 10, 6, 13, 30)))
+    expect(live.settings.cutoff).toEqual(project.settings.cutoff) // stored value unchanged
+    expect(computeProject(effectiveProject(live, t)).locations[0].activities[0].status).toMatch(/LATE|Completed|Progress|Not Started/)
+    const manual = applySettings(live, { cutoff: new Date(Date.UTC(2026, 10, 7)) })
+    expect(manual.settings.cutoffNow).toBe(false)
+    expect(effectiveProject(manual, t)).toBe(manual)
+  })
+  it('exports =NOW() for a live cut-off and the date for a manual one', async () => {
+    const { applySettings } = await import('../src/model/settings')
+    const { project, layouts } = createProject({ projectName: 'P', possessionStart: new Date(Date.UTC(2026, 10, 6)), duration: 48, unit: 'hours', code: 'C1' })
+    const ExcelJS = (await import('exceljs')).default
+    const read = async (p: typeof project) => { const wb = new ExcelJS.Workbook(); await wb.xlsx.load((await exportXlsx(p, layouts)) as never); return wb.getWorksheet('Data Input')!.getCell('M5').value as { formula?: string } | Date }
+    expect((await read(applySettings(project, { cutoff: 'now' }))) as { formula: string }).toMatchObject({ formula: 'NOW()' })
+    expect(await read(applySettings(project, { cutoff: new Date(Date.UTC(2026, 10, 7)) }))).toEqual(new Date(Date.UTC(2026, 10, 7)))
+  }, 60000)
+})

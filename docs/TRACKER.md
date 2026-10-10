@@ -75,6 +75,7 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
 - **Remarks** are a column of each location's report table (long ones are also written out in full under the table; both print), in the Activities tab (editable) and the panel's Actual tab; in the exported workbook they
   are the REMARKS column of Data Input and a **Remarks column in the Report table** and a **REMARKS line under each Report page**, built live from that column.
 - **Length** of each culvert (Site layout tab → Length, e.g. `24 m`): shown on the schematic card, in the report title and header bar, the cover, in the exported workbook (Site Layouts column N, Report strip) and in the scope line (`Length 24 m`); contractor corrections of it come back in the update.
+- **Prepared by** and the **cut-off mode** are in the settings bar: the cut-off (data date) is either **Manual** (a date you type, or “= start”) or **Now (live)**, which is the clock (like Excel's `=NOW()`), refreshed every 30 s while the app is open; it is exported as `=NOW()`. The cover shows “(cut-off = now, live)”.
 - **Culvert type** (Site layout tab → Type): **Cells** (box) or **Pipes** (round). It changes the schematic card, the “N PIPES” caption, the report headers and the exported scope line
   (`2 pipes │ …`, which re-imports as pipes). Claude's fill can propose it too.
 - **Actuals in the Activities tab**: Actual start / Actual finish (date-time) and % done are editable in the table (an actual finish makes it 100 %), next to the plan and the Remarks.
