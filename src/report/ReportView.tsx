@@ -39,7 +39,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
         ))}
       </div>
     </div>
-    {selected && (
+    {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && (
       <ActivityPanel project={project} result={result} loc={selected.loc} no={selected.no} tab={selected.tab}
         onTab={(tab) => setSelected({ ...selected, tab })} onChange={onChange}
         onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={close} />

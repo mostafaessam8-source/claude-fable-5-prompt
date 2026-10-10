@@ -52,6 +52,8 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
 - **Activities tab** (next to Report): one location's activities as an editable list — rename, duration, predecessor/relationship/lag in place; tick rows
   (Shift-click = range) to **delete, duplicate or move several at once** (▲/▼); drag the ⠿ handle to **reorder** (a ticked block moves together); **+ Add /
   Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
+- **Locations** (top of the Activities tab): rename a location and its scope line, **+ New location** (one starter activity), duplicate (without actuals), move earlier/later,
+  delete. The workbook's location list holds up to 10. Renaming keeps the other site-layout facts (only code and chainage follow the name). Undo covers all of it.
 - Reordering / deleting renumbers the activities (1..n) and keeps every link that is still valid. An activity whose predecessor was removed or now comes
   later is unlinked and **keeps its planned start**, so no date moves silently (a note says which).
 - **Undo / Redo** (header buttons, Ctrl+Z / Ctrl+Shift+Z): every edit — a drag is one step, adding/deleting/reordering/renaming each their own.
