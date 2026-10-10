@@ -75,6 +75,15 @@ export function App() {
           <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('layout', 'Site layout')}{tabBtn('import', 'Imported data (JSON)')}</div>
           {tab === 'report' && (
             <>
+              {project.warnings.length > 0 && (
+                <div className="no-print flex items-center gap-3 border-l-4 border-[#F1B434] bg-amber-50 px-3 py-2 text-sm">
+                  <span>
+                    <b>{project.warnings.length} import warning{project.warnings.length === 1 ? '' : 's'}</b> — some can mean the source file itself has errors
+                    (e.g. {project.warnings.find((w) => /earlier than the row above|blank in the source|span is/.test(w)) ?? project.warnings[0]})
+                  </span>
+                  <button className="shrink-0 rounded border border-amber-600 px-2 py-0.5 font-semibold" onClick={() => setTab('import')}>Show all</button>
+                </div>
+              )}
               <SettingsBar project={project} onChange={setProject} />
               <ReportView result={result} layouts={layouts} />
             </>
@@ -87,9 +96,11 @@ export function App() {
               <p className="mb-2 font-semibold text-[#00778B]">
                 {project.locations.length} locations × {project.activityRowsPerLocation} rows — {total} active activities
               </p>
-              {project.warnings.map((w) => (
-                <p key={w} className="mb-1 border-l-4 border-[#F1B434] bg-amber-50 p-2 text-sm">{w}</p>
-              ))}
+              <div className="mb-3 max-h-72 overflow-auto">
+                {project.warnings.map((w) => (
+                  <p key={w} className="mb-1 border-l-4 border-[#F1B434] bg-amber-50 p-2 text-sm">{w}</p>
+                ))}
+              </div>
               <pre className="max-h-[70vh] overflow-auto bg-[#F2F8F9] p-3 text-xs">{JSON.stringify(project, null, 2)}</pre>
             </main>
           )}
