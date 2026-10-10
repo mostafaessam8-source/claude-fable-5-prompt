@@ -119,6 +119,12 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     const nz = Math.min(MAX_Z, Math.max(1, z * factor))
     applyZ(nz, cx - (cx - x) * (nz / z), cy - (cy - y) * (nz / z))
   }
+  /** A tap puts the rulers there (the row, the table column or the Gantt time under the finger): the same highlight the mouse gives on a computer. */
+  const ruler = (x: number, y: number) => {
+    const el = document.elementFromPoint(x, y)
+    if (!el) return
+    for (const type of ['mouseover', 'mousemove']) el.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: y }))
+  }
   const onDown = (e: React.PointerEvent) => {
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -161,7 +167,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
         lastTap.current = 0
         const c = rel(e.clientX, e.clientY)
         if (zref.current.z > 1.05) applyZ(1, 0, 0); else zoomAt(c.x, c.y, 2.5)
-      } else { lastTap.current = now; if (full) poke() }
+      } else { lastTap.current = now; ruler(e.clientX, e.clientY); if (full) poke() }
     } else if (zref.current.z <= 1.02 && Math.abs(t.dx) > 60) go(t.dx < 0 ? 1 : -1) // swipe to the next / previous page (only when not zoomed)
   }
   useEffect(() => {
@@ -177,7 +183,8 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#cfd6d8', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
       <div ref={stage} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: availH, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', overflow: 'hidden' }}
-        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+        onTouchEnd={(e) => { if (e.cancelable) e.preventDefault() /* no emulated mouse events: they would clear the rulers */ }}>
         <div style={{ width: PAGE_W * s, height: PAGE_H * s, position: 'relative', boxShadow: '0 2px 10px rgba(0,0,0,.25)', transform: `translate(${zv.x}px, ${zv.y}px) scale(${zv.z})`, transformOrigin: 'center center' }}>
           <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${s})`, transformOrigin: '0 0' }}>
             {i === 0

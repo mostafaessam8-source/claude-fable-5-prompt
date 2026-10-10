@@ -230,7 +230,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
             const line = drop === a.no ? '2px solid #00778B' : undefined
             const edit = (patch: Partial<typeof a>) => onChange(patchActivity(project, li, a.no, patch))
             return (
-              <tr key={a.no} data-no={a.no} className={on ? 'bg-[#E6F1F4]' : k % 2 ? 'bg-[#F2F8F9]' : ''}
+              <tr key={a.no} data-no={a.no} className={`hover:bg-[#FFF3D6] ${on ? 'bg-[#E6F1F4]' : k % 2 ? 'bg-[#F2F8F9]' : ''}`}
                 style={{ opacity: isDrag ? 0.4 : 1, borderTop: line }}
                 onDragOver={(e) => {
                   if (!dragging) return
