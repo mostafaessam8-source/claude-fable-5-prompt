@@ -98,16 +98,81 @@ export function addActivity(project: Project, loc: number, name = 'New activity'
 }
 
 /**
- * Remove an activity. Whatever followed it is unlinked but keeps its planned start (`startHOf` gives the current one),
- * so deleting one activity never moves another.
+ * Re-form a location's activity list from `order` (existing activities, or copies with a fresh `no`, in their new order):
+ * numbers become 1..n again and every predecessor follows its activity to the new number.
+ * An activity whose predecessor is gone, or now comes after it (the engine needs pred < no), is unlinked and keeps its
+ * planned start (`startHOf` is the current one, by old number) — so restructuring never moves a date silently.
+ * Returns the old numbers of the activities that were unlinked.
  */
-export function deleteActivity(project: Project, loc: number, no: number, startHOf: (no: number) => number): Project {
+export function restructure(
+  project: Project, loc: number, order: ActivityInput[], startHOf: (oldNo: number) => number,
+): { project: Project; unlinked: number[] } {
+  const newNo = new Map(order.map((a, i) => [a.no, i + 1]))
+  const unlinked: number[] = []
+  const activities = order.map((a, i) => {
+    const no = i + 1
+    if (a.pred > 0) {
+      const np = newNo.get(a.pred)
+      if (np != null && np < no) return { ...a, no, pred: np }
+      unlinked.push(a.no)
+      return { ...a, no, pred: 0, rel: 'FS' as Rel, lagH: round(startHOf(a.no)) }
+    }
+    return { ...a, no }
+  })
   return {
-    ...project,
-    locations: project.locations.map((l, i) => i !== loc ? l : {
-      ...l,
-      activities: l.activities.filter((a) => a.no !== no).map((a) =>
-        a.pred === no ? { ...a, pred: 0, rel: 'FS' as Rel, lagH: round(startHOf(a.no)) } : a),
-    }),
+    unlinked,
+    project: {
+      ...project,
+      activityRowsPerLocation: Math.max(project.activityRowsPerLocation, activities.length),
+      locations: project.locations.map((l, j) => (j !== loc ? l : { ...l, activities })),
+    },
   }
+}
+
+/** Remove activities. Whatever followed them is unlinked and keeps its planned start. */
+export function deleteActivities(project: Project, loc: number, nos: number[], startHOf: (no: number) => number) {
+  const gone = new Set(nos)
+  return restructure(project, loc, project.locations[loc].activities.filter((a) => !gone.has(a.no)), startHOf)
+}
+export const deleteActivity = (project: Project, loc: number, no: number, startHOf: (no: number) => number): Project =>
+  deleteActivities(project, loc, [no], startHOf).project
+
+/** Move activities (keeping their relative order) so they sit just before `beforeNo` (null = at the end). */
+export function moveActivities(
+  project: Project, loc: number, nos: number[], beforeNo: number | null, startHOf: (no: number) => number,
+) {
+  const moving = new Set(nos)
+  const acts = project.locations[loc].activities
+  const block = acts.filter((a) => moving.has(a.no))
+  const rest = acts.filter((a) => !moving.has(a.no))
+  const at = beforeNo == null ? rest.length : rest.findIndex((a) => a.no === beforeNo)
+  const i = at < 0 ? rest.length : at
+  return restructure(project, loc, [...rest.slice(0, i), ...block, ...rest.slice(i)], startHOf)
+}
+
+/** Copies of activities, each right after the last selected one: same predecessor, no actuals. */
+export function duplicateActivities(project: Project, loc: number, nos: number[], startHOf: (no: number) => number) {
+  const pick = new Set(nos)
+  const acts = project.locations[loc].activities
+  const lastIdx = acts.reduce((m, a, i) => (pick.has(a.no) ? i : m), -1)
+  let key = acts.reduce((m, a) => Math.max(m, a.no), 0)
+  const copies = acts.filter((a) => pick.has(a.no)).map((a) => ({
+    ...a, no: ++key, name: `${a.name} (copy)`, sourceRow: 0,
+    actualStartDate: null, actualStartTime: null, actualFinishDate: null, actualFinishTime: null, pct: null, remarks: '',
+  }))
+  const r = restructure(project, loc, [...acts.slice(0, lastIdx + 1), ...copies, ...acts.slice(lastIdx + 1)], startHOf)
+  return { ...r, firstNew: lastIdx + 2 }
+}
+
+/** A new activity right after `afterNo` (null = at the start); it follows that activity. Returns its new number. */
+export function insertActivityAfter(project: Project, loc: number, afterNo: number | null, startHOf: (no: number) => number) {
+  const acts = project.locations[loc].activities
+  const idx = afterNo == null ? -1 : acts.findIndex((a) => a.no === afterNo)
+  const key = acts.reduce((m, a) => Math.max(m, a.no), 0) + 1
+  const fresh: ActivityInput = {
+    no: key, sourceRow: 0, name: 'New activity', durationH: 1, pred: idx >= 0 ? acts[idx].no : 0, rel: 'FS', lagH: 0,
+    actualStartDate: null, actualStartTime: null, actualFinishDate: null, actualFinishTime: null, pct: null, remarks: '',
+  }
+  const r = restructure(project, loc, [...acts.slice(0, idx + 1), fresh, ...acts.slice(idx + 1)], startHOf)
+  return { ...r, no: idx + 2 }
 }

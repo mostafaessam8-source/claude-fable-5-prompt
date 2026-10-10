@@ -6,20 +6,42 @@ import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
 import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
+import { ActivityEditor } from './report/ActivityEditor'
+import { useHistory } from './model/history'
 import { clearProject, loadProject, saveProject } from './model/store'
 import type { Project } from './model/types'
 import { ReportView } from './report/ReportView'
 import { SettingsBar } from './SettingsBar'
 
-type Tab = 'import' | 'layout' | 'links' | 'report'
+type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
+
+/** Edits that only move dates (a drag) merge into one undo step; adding, deleting, reordering or renaming activities each get their own. */
+const sameShape = (a: Project | null, b: Project | null) =>
+  !!a && !!b && a.locations.length === b.locations.length &&
+  a.locations.every((l, i) => l.activities.length === b.locations[i].activities.length && l.activities.every((x, k) => x.name === b.locations[i].activities[k].name))
 
 export function App() {
   const saved = useMemo(loadProject, [])
-  const [project, setProject] = useState<Project | null>(saved?.project ?? null)
+  const history = useHistory<Project | null>(saved?.project ?? null, sameShape)
+  const project = history.value
+  const setProject = history.set as (p: Project) => void
   const [layouts, setLayouts] = useState<SiteLayout[]>(saved?.layouts ?? [])
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
   const [showLinks, setShowLinks] = useState(true)
+
+  // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y (not while typing in a field, which has its own undo)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.closest('input, textarea, select, [contenteditable]') || !(e.ctrlKey || e.metaKey)) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); history.undo() }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); history.redo() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [history.undo, history.redo])
 
   useEffect(() => { if (project) saveProject({ project, layouts }) }, [project, layouts])
 
@@ -28,7 +50,7 @@ export function App() {
     setError(null)
     try {
       const p = await parseWorkbook(await file.arrayBuffer())
-      setProject(p)
+      history.reset(p)
       setLayouts(p.locations.map((l) => parseLayout(l.name, l.scope)))
       setTab('report')
     } catch (e) {
@@ -67,14 +89,16 @@ export function App() {
         <span className="mr-4 text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
         <input type="file" accept=".xlsx" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />
         <span className="flex-1" />
+        {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
+        {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canRedo} onClick={history.redo} title="Redo (Ctrl+Shift+Z)">↷ Redo</button>}
         {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport}>Export to Excel</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
-        {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); setProject(null); setLayouts([]); setTab('import') }}>Clear</button>}
+        {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setLayouts([]); setTab('import') }}>Clear</button>}
       </header>
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
         <>
-          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('layout', 'Site layout')}{tabBtn('links', 'Relationships')}{tabBtn('import', 'Imported data (JSON)')}</div>
+          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('activities', 'Activities')}{tabBtn('layout', 'Site layout')}{tabBtn('links', 'Relationships')}{tabBtn('import', 'Imported data (JSON)')}</div>
           {tab === 'report' && (
             <>
               {project.warnings.length > 0 && (
@@ -89,6 +113,9 @@ export function App() {
               <SettingsBar project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
               <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks} />
             </>
+          )}
+          {tab === 'activities' && (
+            <ActivityEditor project={project} result={result} onChange={setProject} />
           )}
           {tab === 'layout' && (
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />

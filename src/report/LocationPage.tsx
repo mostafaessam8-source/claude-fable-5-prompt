@@ -1,7 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, type SiteLayout } from '../layout/parse'
-import { addActivity, lagToKeepStart, patchActivity, splitDateTime } from '../links/edit'
+import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
@@ -23,7 +23,7 @@ const cellBase: CSSProperties = {
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
 }
 
-export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, zoom = 1, showLinks = true }: {
+export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, onStructure, zoom = 1, showLinks = true }: {
   result: ProjectResult; index: number; layout?: SiteLayout
   /** Activity number selected on this page (its panel is open); the ruler stays on it. */
   selectedNo?: number | null
@@ -32,6 +32,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   /** The project being edited: the planned bars can be dragged, resized and linked. */
   project?: Project
   onChange?: (p: Project) => void
+  /** Called after the activity list was reordered (numbers change, so an open panel must close). */
+  onStructure?: () => void
   /** The CSS zoom the page is shown at (mouse movement is measured in screen pixels). */
   zoom?: number
   showLinks?: boolean
@@ -42,6 +44,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const [hoverCol, setHoverCol] = useState<number | null>(null)
   const [hoverTCol, setHoverTCol] = useState<number | null>(null)
   const ganttRef = useRef<HTMLDivElement>(null)
+  // reorder by dragging the row number; rename by double-clicking the name
+  const [dragNo, setDragNo] = useState<number | null>(null)
+  const [dropK, setDropK] = useState<number | null>(null) // drop before row k (n = at the end)
+  const [renameK, setRenameK] = useState<number | null>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
@@ -277,7 +283,28 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           } else { setHoverCol(null); setHoverTCol(null) }
         }}
         onMouseLeave={() => { setHover(null); setHoverCol(null); setHoverTCol(null) }}
+        onDragOver={(e) => {
+          if (dragNo == null) return
+          const k = rowAt(e)
+          if (k == null) return
+          e.preventDefault()
+          const box = (e.target as HTMLElement).closest('[data-row]')!.getBoundingClientRect()
+          setDropK(e.clientY < box.top + box.height / 2 ? k : k + 1)
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          const no = dragNo, k = dropK
+          setDragNo(null); setDropK(null)
+          if (no == null || k == null || !project || !onChange) return
+          const before = k >= loc.activities.length ? null : loc.activities[k].no
+          if (before === no) return
+          const r = moveActivities(project, index, [no], before, (n) => loc.activities.find((a) => a.no === n)?.plannedStartH ?? 0)
+          onChange(r.project); onStructure?.()
+        }}
         onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
+        {dropK != null && (
+          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * dropK * rh - 1, height: 3, background: C.blue, zIndex: 8, pointerEvents: 'none' }} />
+        )}
         {active != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
@@ -299,12 +326,21 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             const r = 3 + 2 * k
             const at = activityTone(a.status)
             const bg = k % 2 ? C.tint1 : '#fff'
-            const span = (c: number, extra: CSSProperties, content: React.ReactNode) => (
-              <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }}>{content}</div>
+            const span = (c: number, extra: CSSProperties, content: React.ReactNode, props: React.HTMLAttributes<HTMLDivElement> = {}) => (
+              <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }} {...props}>{content}</div>
             )
             return [
-              span(1, { color: C.slate }, a.no),
-              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: a.name.length > 52 ? 7 : undefined }, a.name),
+              span(1, { color: C.slate, ...(editable ? { cursor: 'grab' } : {}) }, a.no,
+                editable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
+              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: a.name.length > 52 ? 7 : undefined },
+                renameK === k ? (
+                  <input autoFocus defaultValue={a.name} style={{ width: '100%', font: 'inherit', padding: '0 2px' }}
+                    onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}
+                    onBlur={(e) => { const v = e.target.value.trim(); setRenameK(null); if (v && v !== a.name) onChange!(patchActivity(project!, index, a.no, { name: v })) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setRenameK(null) }} />
+                ) : a.name,
+                editable ? { title: 'Click the name of the selected row (or double-click) to rename', onDoubleClick: () => setRenameK(k),
+                  onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setRenameK(k) } } } : {}),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               span(4, {}, fmtShort(a.plannedFinish)),
               span(5, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish)),
