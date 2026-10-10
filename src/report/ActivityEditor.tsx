@@ -186,7 +186,8 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
           <span className="flex-1">{note}</span><button className="font-bold" onClick={() => setNote(null)}>✕</button>
         </p>
       )}
-      <table className="w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
+      <div className="overflow-x-auto">
+      <table className="min-w-[1500px] w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
         <colgroup>
           <col style={{ width: 26 }} /><col style={{ width: 28 }} /><col style={{ width: 34 }} /><col />
           <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 66 }} /><col style={{ width: 92 }} /><col style={{ width: 240 }} />
@@ -276,6 +277,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
           {acts.length > 0 && drop === null && <tr><td colSpan={15} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
         </tbody>
       </table>
+      </div>
       {acts.length === 0 && <p className="p-6 text-center text-slate-500">No activities here yet — use “+ Add activity”.</p>}
     </main>
   )

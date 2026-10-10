@@ -37,3 +37,11 @@
 .col-rz { position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 4; touch-action: none; }
 .col-rz:hover { background: rgba(255, 255, 255, 0.55); }
 @media print { .col-rz { display: none; } }
+
+/* top bar + tabs: compact while the page is scrolled */
+.hdr-compact header { padding-top: 2px; padding-bottom: 2px; row-gap: 2px; }
+.hdr-compact header h1 { font-size: 13px; }
+.hdr-compact .hdr-hide { display: none; }
+.hdr-compact header button, .hdr-compact header label { padding-top: 1px; padding-bottom: 1px; font-size: 11px; }
+.hdr-compact nav button { padding-top: 3px; padding-bottom: 3px; font-size: 12px; }
+@media (max-width: 799px) { .report-wrap { overflow-x: auto; } .report-zoom { align-items: flex-start; } }
