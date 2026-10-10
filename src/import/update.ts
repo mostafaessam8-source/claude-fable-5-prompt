@@ -24,6 +24,8 @@ export const LAYOUT_LABEL: Record<keyof SiteLayout, string> = {
 }
 
 export interface UpdateDiff {
+  /** Added / removed / reordered activities and locations, and changed settings: these are only taken by replacing the project. */
+  structure: string[]
   updates: ActivityUpdate[]
   layouts: LayoutUpdate[]
   /** Things in the file that could not be matched, for the reviewer to see. */
@@ -57,6 +59,7 @@ const SPECS: Spec[] = [
 
 export function diffUpdate(current: Project, incoming: Project, curLayouts?: SiteLayout[], inLayouts?: SiteLayout[] | null): UpdateDiff {
   const notes: string[] = []
+  const structure: string[] = []
   const layouts: LayoutUpdate[] = []
   const updates: ActivityUpdate[] = []
   let matched = 0
@@ -66,7 +69,7 @@ export function diffUpdate(current: Project, incoming: Project, curLayouts?: Sit
   incoming.locations.forEach((il, ii) => {
     let ci = current.locations.findIndex((l, i) => !used.has(i) && norm(l.name) === norm(il.name))
     if (ci < 0) ci = current.locations.findIndex((l, i) => !used.has(i) && codeOf(l.name, l.scope) && codeOf(l.name, l.scope) === codeOf(il.name, il.scope))
-    if (ci < 0) { notes.push(`Location “${il.name}” is not in this project — skipped.`); return }
+    if (ci < 0) { structure.push(`Location added: “${il.name}” (${il.activities.length} activities)`); return }
     used.add(ci)
     const cur = current.locations[ci]
     const cl = curLayouts?.[ci], nl = inLayouts?.[ii]
@@ -86,7 +89,12 @@ export function diffUpdate(current: Project, incoming: Project, curLayouts?: Sit
     }
     for (const ia of unpaired) {
       const hit = cur.activities.find((c) => !taken.has(c.no) && c.no === ia.no && !il.activities.some((x) => norm(x.name) === norm(c.name)))
-      if (hit) { taken.add(hit.no); pairs.push([hit, ia]) } else notes.push(`${il.name}: “${ia.name}” (#${ia.no}) is not in this project — skipped.`)
+      if (hit) { taken.add(hit.no); pairs.push([hit, ia]) } else structure.push(`${il.name}: activity added — #${ia.no} ${ia.name}`)
+    }
+    for (const c of cur.activities) if (!taken.has(c.no)) structure.push(`${il.name}: activity removed — #${c.no} ${c.name}`)
+    {
+      const seq = pairs.map(([c]) => cur.activities.findIndex((x) => x.no === c.no))
+      if (seq.some((v, i) => i && v < seq[i - 1])) structure.push(`${il.name}: the order of the activities changed`)
     }
     // link numbers only mean something when both sides number the activities alike
     const sameNumbering = pairs.every(([c, i]) => c.no === i.no)
@@ -105,7 +113,17 @@ export function diffUpdate(current: Project, incoming: Project, curLayouts?: Sit
       if (changes.length) updates.push({ loc: ci, no: c.no, name: c.name, changes })
     }
   })
-  return { updates, layouts, notes, matched }
+  current.locations.forEach((l, i) => { if (!used.has(i)) structure.push(`Location removed: “${l.name}”`) })
+  if (incoming.locations.length === current.locations.length && structure.length === 0) {
+    const order = incoming.locations.map((l) => current.locations.findIndex((c) => norm(c.name) === norm(l.name)))
+    if (order.some((v, i) => i && v < order[i - 1])) structure.push('The order of the locations changed')
+  }
+  const a = current.settings, b = incoming.settings
+  const same = (x: unknown, y: unknown) => (x instanceof Date && y instanceof Date ? x.getTime() === y.getTime() : x === y)
+  const SETTINGS: [keyof typeof a, string][] = [['possessionStart', 'Possession start'], ['duration', 'Possession duration'], ['unit', 'Duration unit'], ['cutoff', 'Report cut-off'], ['ganttStart', 'Gantt start'], ['ganttSpan', 'Gantt span'], ['ganttSpanUnit', 'Gantt span unit'], ['projectName', 'Project name'], ['reportTitle', 'Report title'], ['subtitle', 'Subtitle'], ['preparedBy', 'Prepared by']]
+  const show = (v: unknown) => (v instanceof Date ? dt(v, v.getUTCHours() + v.getUTCMinutes() / 60).replace(/ 00:00$/, '') || String(v) : String(v))
+  for (const [k, label] of SETTINGS) if (!same(a[k], b[k])) structure.push(`${label}: ${show(a[k])} → ${show(b[k])}`)
+  return { structure, updates, layouts, notes, matched }
 }
 
 /** Apply the chosen activities' changes (keys `loc:no`) as one new project. */

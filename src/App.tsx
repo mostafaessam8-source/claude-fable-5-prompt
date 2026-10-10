@@ -60,7 +60,7 @@ export function App() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  const [update, setUpdate] = useState<{ name: string; diff: UpdateDiff } | null>(null)
+  const [update, setUpdate] = useState<{ name: string; diff: UpdateDiff; incoming: { project: Project; layouts: SiteLayout[] | null } } | null>(null)
 
   // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y (not while typing in a field, which has its own undo)
   useEffect(() => {
@@ -95,7 +95,7 @@ export function App() {
     setError(null)
     try {
       const incoming = parseUpdateFile(await file.text())
-      setUpdate({ name: file.name, diff: diffUpdate(project, incoming.project, layouts, incoming.layouts) })
+      setUpdate({ name: file.name, incoming, diff: diffUpdate(project, incoming.project, layouts, incoming.layouts) })
     } catch (e) {
       setError(`Could not read that file: ${(e as Error).message}`)
     }
@@ -167,11 +167,12 @@ export function App() {
       </header>
       {update && project && (
         <UpdateReview project={project} diff={update.diff} fileName={update.name} onCancel={() => setUpdate(null)}
+          onReplace={() => { history.set({ project: update.incoming.project, layouts: update.incoming.layouts ?? layouts }); setUpdate(null) }}
           onApply={(acc) => { history.set({ project: applyUpdate(project, update.diff, acc), layouts: applyLayoutUpdate(layouts, update.diff, acc) }); setUpdate(null) }} />
       )}
       {OFFLINE && (
         <p className="no-print border-l-4 border-[#00778B] bg-[#E6F1F4] px-3 py-2 text-sm">
-          <b>Update copy.</b> Click an activity, open its <b>Actual</b> tab and enter the actual start / finish, % complete and any remark (you can also drag the lower bar); remarks can also be typed in the <b>Activities</b> tab, and the <b>Site layout</b> tab can be corrected (cells / pipes, lines, chainage…).
+          <b>Update copy.</b> Click an activity, open its <b>Actual</b> tab and enter the actual start / finish, % complete and any remark (you can also drag the lower bar); everything about the plan can be corrected too: the <b>Activities</b> tab adds, deletes, reorders and edits activities, relationships and lags, and the <b>Site layout</b> tab corrects cells / pipes, lines, chainage…
           Your work is kept in this browser. When you are done press <b>Save update for SAR</b> and send the downloaded file back.
         </p>
       )}
@@ -190,7 +191,7 @@ export function App() {
                   <button className="shrink-0 rounded border border-amber-600 px-2 py-0.5 font-semibold" onClick={() => setTab('import')}>Show all</button>
                 </div>
               )}
-              {!OFFLINE && <SettingsBar project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />}
+              <SettingsBar project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
               <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks} />
             </>
           )}

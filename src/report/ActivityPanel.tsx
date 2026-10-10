@@ -5,7 +5,6 @@ import {
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
-import { OFFLINE } from '../offline/offline'
 import { activityTone } from './brand'
 import { fmtShort, fmtVariance } from './format'
 
@@ -92,7 +91,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
       </div>
 
       {tab === 'baseline' && (
-        <fieldset disabled={!!OFFLINE} className="m-0 min-w-0 space-y-4 border-0 p-3" role="tabpanel" aria-label="Baseline">
+        <div className="space-y-4 p-3" role="tabpanel" aria-label="Baseline">
           <section>
             <h3 className="mb-1 bg-[#3D3935] px-2 py-1 text-xs font-bold text-white">THE ACTIVITY'S PLAN</h3>
             <label className={lab}>Name<input className={inp} value={a.name} onChange={(e) => edit({ name: e.target.value })} /></label>
@@ -187,7 +186,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
             )}
           </section>
 
-          {!OFFLINE && <section>
+          <section>
             <button className="rounded border border-[#CB2C30] px-2 py-1 text-xs font-semibold text-[#CB2C30]"
               onClick={() => {
                 const nf = succ.length ? ` ${succ.length} activit${succ.length === 1 ? 'y that follows' : 'ies that follow'} it will be unlinked and keep their planned start.` : ''
@@ -195,8 +194,8 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
                 onChange(deleteActivity(project, loc, no, (n) => resOf(n).plannedStartH))
                 onClose()
               }}>Delete this activity</button>
-          </section>}
-        </fieldset>
+          </section>
+        </div>
       )}
 
       {tab === 'actual' && (

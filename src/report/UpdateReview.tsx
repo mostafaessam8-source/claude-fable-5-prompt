@@ -3,9 +3,11 @@ import { FIELD_LABEL, LAYOUT_LABEL, PLAN_FIELDS, type UpdateDiff } from '../impo
 import type { Project } from '../model/types'
 
 /** Review of a returned workbook: every changed activity with what it was and what the file says; tick what to take. */
-export function UpdateReview({ project, diff, fileName, onApply, onCancel }: {
+export function UpdateReview({ project, diff, fileName, onApply, onReplace, onCancel }: {
   project: Project; diff: UpdateDiff; fileName: string
-  onApply: (accepted: ReadonlySet<string>) => void; onCancel: () => void
+  onApply: (accepted: ReadonlySet<string>) => void
+  /** Take the contractor's whole version (the only way to take added / removed / reordered activities and changed settings). */
+  onReplace: () => void; onCancel: () => void
 }) {
   const key = (u: { loc: number; no: number }) => `${u.loc}:${u.no}`
   const [on, setOn] = useState<Set<string>>(new Set([...diff.updates.map(key), ...diff.layouts.map((u) => `layout:${u.loc}`)]))
@@ -26,8 +28,15 @@ export function UpdateReview({ project, diff, fileName, onApply, onCancel }: {
             {remarks ? <> · <b>{remarks}</b> with remarks</> : null}{plan ? <> · <b className="text-[#CB2C30]">{plan}</b> change the plan (duration / link)</> : null}.
             Nothing is applied until you press Apply; Undo restores it.
           </p>
+          {diff.structure.length > 0 && (
+            <div className="border-l-4 border-[#CB2C30] bg-red-50 p-2 text-xs">
+              <b className="text-[#CB2C30]">Structure and settings changed ({diff.structure.length})</b>
+              <ul className="mt-1 list-disc pl-5">{diff.structure.map((t) => <li key={t}>{t}</li>)}</ul>
+              <p className="mt-1 text-slate-600">These come across only with “Take the contractor's version”. “Apply selected” below takes the per-activity changes and ignores them.</p>
+            </div>
+          )}
           {diff.notes.map((n) => <p key={n} className="border-l-4 border-[#F1B434] bg-amber-50 p-2 text-xs">{n}</p>)}
-          {diff.updates.length === 0 && diff.layouts.length === 0 && <p className="p-4 text-center text-slate-500">The file has no differences from this project.</p>}
+          {diff.updates.length === 0 && diff.layouts.length === 0 && diff.structure.length === 0 && <p className="p-4 text-center text-slate-500">The file has no differences from this project.</p>}
           <div className="flex gap-2 text-xs">
             <button className="rounded border border-slate-400 px-2 py-1" onClick={() => setOn(new Set([...diff.updates.map(key), ...diff.layouts.map((u) => `layout:${u.loc}`)]))}>Select all</button>
             <button className="rounded border border-slate-400 px-2 py-1" onClick={() => setOn(new Set())}>Select none</button>
@@ -75,8 +84,10 @@ export function UpdateReview({ project, diff, fileName, onApply, onCancel }: {
           </div>
           <div className="flex justify-end gap-2">
             <button className="rounded border border-slate-400 px-3 py-1" onClick={onCancel}>Cancel</button>
+            <button className="rounded border border-[#CB2C30] px-3 py-1 font-semibold text-[#CB2C30]" title="Replace this whole project (activities, links, settings, layouts) with the contractor's version; Undo restores yours"
+              onClick={() => { if (window.confirm("Replace the whole project with the contractor's version? Undo restores yours.")) onReplace() }}>Take the contractor's version</button>
             <button className="rounded bg-[#00778B] px-3 py-1 font-semibold text-white disabled:opacity-40" disabled={on.size === 0} onClick={() => onApply(on)}>
-              Apply {on.size} change{on.size === 1 ? '' : 's'}
+              Apply selected ({on.size})
             </button>
           </div>
         </div>
