@@ -16,6 +16,11 @@ browser; the only server piece is a tiny proxy that keeps the Anthropic key secr
 
 The project is kept in this browser's `localStorage` (use *Clear* to drop it).
 
+## Rulers
+Two rulers follow the pointer on each location page (screen only): a **horizontal** one highlights the activity's row across the table and
+the Gantt, and a **vertical** one highlights the Gantt column under the pointer with its time (a black label over the header), or the table column
+under the pointer. Together they form a crosshair. Both are positioned from the layout constants, so they are exact at any page zoom.
+
 ## Editing an activity and its links
 On the Report tab, **click any activity**: a panel opens with two tabs.
 - **Baseline (plan)**: name and duration; the **predecessor** (choose it from the earlier activities, set the relationship FS/SS/FF/SF and the lag, open it);

@@ -38,6 +38,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 }) {
   // Row ruler: hover shows an activity's row across the table AND the Gantt; a click selects it (opens the panel).
   const [hover, setHover] = useState<number | null>(null)
+  // Vertical ruler: the Gantt column (time) under the pointer, or the table column under the pointer.
+  const [hoverCol, setHoverCol] = useState<number | null>(null)
+  const [hoverTCol, setHoverTCol] = useState<number | null>(null)
+  const ganttRef = useRef<HTMLDivElement>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
@@ -203,26 +207,42 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       </div>
 
       <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
-        onMouseOver={(e) => setHover(rowAt(e))} onMouseLeave={() => setHover(null)}
+        onMouseOver={(e) => setHover(rowAt(e))}
+        onMouseMove={(e) => {
+          const tc = (e.target as HTMLElement).closest('[data-tcol]')
+          const gr = ganttRef.current
+          if (tc) { setHoverTCol(Number(tc.getAttribute('data-tcol'))); setHoverCol(null) }
+          else if (gr && gr.contains(e.target as Node)) {
+            // screen pixels → layout pixels (the page may be shown zoomed)
+            const c = Math.floor(((e.clientX - gr.getBoundingClientRect().left) / zoom - PA_W) / GC)
+            setHoverCol(c >= 0 && c < GANTT_COLS ? c : null); setHoverTCol(null)
+          } else { setHoverCol(null); setHoverTCol(null) }
+        }}
+        onMouseLeave={() => { setHover(null); setHoverCol(null); setHoverTCol(null) }}
         onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
         {active != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
             boxShadow: `inset 4px 0 0 ${selectedIdx >= 0 ? C.black : C.amber}` }} />
         )}
+        {hoverTCol != null && (
+          <div className="no-print" style={{ position: 'absolute', left: TABLE_COLS.slice(0, hoverTCol - 1).reduce((a, b) => a + b, 0), width: TABLE_COLS[hoverTCol - 1],
+            top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
+            background: 'rgba(0,119,139,0.10)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
+        )}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: TABLE_COLS.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
           {['No', 'Activity', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back'].map((h, c) => (
-            <div key={h} style={{ ...cellBase, gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>{h}</div>
+            <div key={h} data-tcol={c + 1} style={{ ...cellBase, gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>{h}</div>
           ))}
           {rows.map(({ a }, k) => {
             const r = 3 + 2 * k
             const at = activityTone(a.status)
             const bg = k % 2 ? C.tint1 : '#fff'
             const span = (c: number, extra: CSSProperties, content: React.ReactNode) => (
-              <div key={`${k}-${c}`} data-row={k} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }}>{content}</div>
+              <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }}>{content}</div>
             )
             return [
               span(1, { color: C.slate }, a.no),
@@ -240,7 +260,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           {(() => {
             const r = 3 + 2 * n
             const t = (c: number, extra: CSSProperties, content: React.ReactNode, span = 1) => (
-              <div key={`t${c}`} style={{ ...cellBase, gridRow: r, gridColumn: `${c} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
+              <div key={`t${c}`} data-tcol={c} style={{ ...cellBase, gridRow: r, gridColumn: `${c} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
             )
             return [
               t(1, { justifyContent: 'flex-start', textAlign: 'left', paddingLeft: 6 }, `TOTAL - ${layout?.code || loc.name}   (${loc.totalHours.toFixed(1)} activity hours)`, 2),
@@ -256,7 +276,18 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         </div>
 
         {/* ---- gantt ---- */}
-        <div style={{ position: 'relative', flex: 'none', width: PA_W + GANTT_COLS * GC }}>
+        <div ref={ganttRef} data-gantt="" style={{ position: 'relative', flex: 'none', width: PA_W + GANTT_COLS * GC }}>
+          {hoverCol != null && (
+            <>
+              <div className="no-print" style={{ position: 'absolute', left: PA_W + hoverCol * GC, width: GC, top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
+                background: 'rgba(0,119,139,0.13)', borderLeft: `1px solid ${C.blue}`, borderRight: `1px solid ${C.blue}` }} />
+              <div className="no-print" style={{ position: 'absolute', zIndex: 7, pointerEvents: 'none', top: HEAD_H, height: HEAD_H, width: 92, textAlign: 'center',
+                left: Math.min(PA_W + GANTT_COLS * GC - 92, Math.max(PA_W, PA_W + hoverCol * GC + GC / 2 - 46)),
+                background: C.black, color: '#fff', fontSize: 8, fontWeight: 700, lineHeight: `${HEAD_H}px`, borderRadius: 2 }}>
+                {fmtShort(colStart(hoverCol))}
+              </div>
+            </>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: `${PA_W}px repeat(${GANTT_COLS}, ${GC}px)`,
             gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
             <div style={{ gridRow: '1 / span 2', gridColumn: 1, background: C.slate }} />
