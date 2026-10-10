@@ -52,7 +52,14 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [showLinks, setShowLinks] = useState(true)
   // the side panel starts under the header, so the header buttons stay reachable while it is open
-  const headerRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const [compact, setCompact] = useState(false)
+  const [menu, setMenu] = useState(false)
+  useEffect(() => {
+    const on = () => setCompact((c) => (c ? window.scrollY > 24 : window.scrollY > 80))
+    window.addEventListener('scroll', on, { passive: true })
+    return () => window.removeEventListener('scroll', on)
+  }, [])
   useLayoutEffect(() => {
     const el = headerRef.current
     if (!el) return
@@ -176,9 +183,13 @@ export function App() {
 
   return (
     <div>
-      <header ref={headerRef} className="no-print sticky top-0 z-[60] flex flex-wrap items-center gap-3 bg-[#3D3935] px-4 py-2 text-white">
+      {/* the top bar and the tabs stay on screen while the page scrolls; scrolling down makes them compact */}
+      <div ref={headerRef} className={`no-print sticky top-0 z-[60] ${compact ? 'hdr-compact' : ''}`}>
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-[#3D3935] px-3 py-2 text-white md:px-4">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
-        <span className="mr-4 text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
+        <span className="hdr-hide text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
+        <button className="ml-auto rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden" aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
+        <div className={`${menu ? 'flex' : 'hidden'} w-full flex-wrap items-center gap-2 md:flex md:w-auto md:flex-1 md:gap-3`}>
         {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
         {!OFFLINE && (
           <label className="cursor-pointer rounded border border-white/40 px-3 py-1 text-sm font-semibold" title="Open a contractor update or a saved project (.json): it becomes the project right away">
@@ -208,7 +219,12 @@ export function App() {
         {project && OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onSaveUpdate} title="Download the update file and send it back to SAR">Save update for SAR</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
         {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setTab('import') }}>Clear</button>}
+        </div>
       </header>
+      {project && result && (
+        <nav className="flex overflow-x-auto whitespace-nowrap border-b border-slate-300 bg-white">{tabBtn('report', 'Report')}{tabBtn('activities', 'Activities')}{tabBtn('layout', 'Site layout')}{!OFFLINE && tabBtn('links', 'Relationships')}{!OFFLINE && tabBtn('import', 'Imported data (JSON)')}</nav>
+      )}
+      </div>
       {creating && (
         <NewProject hasProject={!!project} onClose={() => setCreating(false)}
           onCreate={(n) => { history.reset(n); setCreating(false); setTab('activities'); setError(null) }} />
@@ -227,7 +243,6 @@ export function App() {
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
         <>
-          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('activities', 'Activities')}{tabBtn('layout', 'Site layout')}{!OFFLINE && tabBtn('links', 'Relationships')}{!OFFLINE && tabBtn('import', 'Imported data (JSON)')}</div>
           {tab === 'report' && (
             <>
               {!OFFLINE && project.warnings.length > 0 && (

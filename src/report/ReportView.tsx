@@ -3,6 +3,7 @@ import type { ProjectResult } from '../engine/schedule'
 import type { SiteLayout } from '../layout/parse'
 import { Cover } from './Cover'
 import type { Project } from '../model/types'
+import { useNarrow } from '../model/useNarrow'
 import { OFFLINE } from '../offline/offline'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage } from './LocationPage'
@@ -18,20 +19,22 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
   const [selected, setSelected] = useState<{ loc: number; no: number; tab: PanelTab } | null>(null)
   const close = useCallback(() => setSelected(null), [])
   const box = useRef<HTMLDivElement>(null)
+  const narrow = useNarrow()
   const [zoom, setZoom] = useState(1)
   useLayoutEffect(() => {
     const el = box.current
     if (!el) return
-    const fit = () => setZoom(Math.min(1, (el.clientWidth - 8) / PAGE_W))
+    // on a phone the page is shown at least half size and scrolls sideways, instead of shrinking to a postage stamp
+    const fit = () => setZoom(Math.min(1, Math.max(narrow ? 0.5 : 0, (el.clientWidth - 8) / PAGE_W)))
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [narrow])
 
   return (
     <>
-    <div ref={box} className="report-wrap" style={{ marginRight: selected ? PANEL_W : 0 }}>
+    <div ref={box} className="report-wrap" style={{ marginRight: selected && !narrow ? PANEL_W : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page"><Cover result={result} layouts={layouts} /></div>
         {result.locations.map((_, i) => (

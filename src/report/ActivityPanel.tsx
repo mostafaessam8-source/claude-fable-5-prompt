@@ -5,6 +5,7 @@ import {
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
+import { useNarrow } from '../model/useNarrow'
 import { activityTone } from './brand'
 import { fmtShort, fmtVariance } from './format'
 
@@ -34,6 +35,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   onSelect: (no: number) => void
   onClose: () => void
 }) {
+  const narrow = useNarrow()
   const acts = project.locations[loc].activities
   const k = acts.findIndex((a) => a.no === no)
   const baseStart = useRef<{ key: string; startH: number } | null>(null)
@@ -76,7 +78,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   )
 
   return (
-    <aside style={{ width: PANEL_W, top: 'var(--hdr, 0px)' }} className="no-print fixed bottom-0 right-0 z-50 max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
+    <aside style={{ width: narrow ? '100%' : PANEL_W, top: 'var(--hdr, 0px)' }} className="no-print fixed bottom-0 right-0 z-50 max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
       <div className="sticky top-0 z-10">
         <div className="flex items-start gap-2 bg-[#00778B] px-3 py-2 text-white">
           <div className="flex-1">
