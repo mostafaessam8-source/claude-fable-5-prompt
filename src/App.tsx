@@ -19,6 +19,7 @@ export function App() {
   const [layouts, setLayouts] = useState<SiteLayout[]>(saved?.layouts ?? [])
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
+  const [showLinks, setShowLinks] = useState(true)
 
   useEffect(() => { if (project) saveProject({ project, layouts }) }, [project, layouts])
 
@@ -85,8 +86,8 @@ export function App() {
                   <button className="shrink-0 rounded border border-amber-600 px-2 py-0.5 font-semibold" onClick={() => setTab('import')}>Show all</button>
                 </div>
               )}
-              <SettingsBar project={project} onChange={setProject} />
-              <ReportView result={result} layouts={layouts} project={project} onChange={setProject} />
+              <SettingsBar project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
+              <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks} />
             </>
           )}
           {tab === 'layout' && (

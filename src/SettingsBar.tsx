@@ -6,7 +6,10 @@ const toInput = (d: Date) =>
   `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}T${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`
 const fromInput = (s: string) => (s ? new Date(s + ':00Z') : null)
 
-export function SettingsBar({ project, onChange }: { project: Project; onChange: (p: Project) => void }) {
+export function SettingsBar({ project, onChange, showLinks, onShowLinks }: {
+  project: Project; onChange: (p: Project) => void
+  showLinks: boolean; onShowLinks: (v: boolean) => void
+}) {
   const s = project.settings
   const f = 'rounded border border-slate-300 px-1 py-0.5 text-sm'
   return (
@@ -31,7 +34,8 @@ export function SettingsBar({ project, onChange }: { project: Project; onChange:
           <button className="rounded border border-slate-300 px-2" onClick={() => onChange(applySettings(project, { cutoff: 'default' }))}>= start</button>
         </span>
       </label>
-      <span className="text-slate-500">Hover a row to follow it across the table and the Gantt; click an activity to edit its times and links.</span>
+      <label className="flex items-center gap-1"><input type="checkbox" checked={showLinks} onChange={(e) => onShowLinks(e.target.checked)} /> Show links</label>
+      <span className="text-slate-500">Hover a row to follow it. Click an activity to edit it. On the Gantt: drag a planned bar to move it, drag its ends to change the duration, drag a dot onto another bar to link.</span>
       <span className="text-slate-600">Hand-back: <b>{s.possessionEnd.toISOString().slice(0, 16).replace('T', ' ')}</b></span>
     </div>
   )
