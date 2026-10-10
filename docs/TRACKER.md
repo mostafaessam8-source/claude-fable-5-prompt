@@ -49,6 +49,12 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
 - **Add / delete**: **+ Add activity** (grey bar of each location page) appends an activity that follows the last one and opens its panel; **Delete this activity**
   (Baseline tab) removes one — whatever followed it is unlinked and keeps its planned start. Numbers are row slots, so nothing is renumbered; adding past the
   workbook's row count lengthens every location block in the export. A very long location gets smaller rows on its page.
+- **Activities tab** (next to Report): one location's activities as an editable list — rename, duration, predecessor/relationship/lag in place; tick rows
+  (Shift-click = range) to **delete, duplicate or move several at once** (▲/▼); drag the ⠿ handle to **reorder** (a ticked block moves together); **+ Add /
+  Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
+- Reordering / deleting renumbers the activities (1..n) and keeps every link that is still valid. An activity whose predecessor was removed or now comes
+  later is unlinked and **keeps its planned start**, so no date moves silently (a note says which).
+- **Undo / Redo** (header buttons, Ctrl+Z / Ctrl+Shift+Z): every edit — a drag is one step, adding/deleting/reordering/renaming each their own.
 - The activity panel no longer covers the Gantt: while it is open the report shrinks (zoom) to the space left of it.
 Fine adjustments (exact lag/duration) are in the activity panel (click the activity).
 

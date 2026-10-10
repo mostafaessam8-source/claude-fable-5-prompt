@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeProject } from '../src/engine/schedule'
 import {
-  addActivity, candidatePredecessors, deleteActivity, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  addActivity, candidatePredecessors, deleteActivities, deleteActivity, duplicateActivities, insertActivityAfter, moveActivities, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   successorsOf, timeToInput,
 } from '../src/links/edit'
 import { project as mk } from './helpers'
@@ -103,9 +103,55 @@ describe('adding and deleting activities', () => {
     const p = base()
     const before = computeProject(p).locations[0].activities
     const q = deleteActivity(p, 0, 2, (n) => before.find((a) => a.no === n)!.plannedStartH)
-    expect(q.locations[0].activities.map((a) => a.no)).toEqual([1, 3, 4])
+    expect(q.locations[0].activities.map((a) => a.no)).toEqual([1, 2, 3])
     const after = computeProject(q).locations[0].activities
-    expect(after.map((a) => [a.no, a.plannedStartH, a.plannedFinishH])).toEqual([[1, 0, 2], [3, 2, 3], [4, 4, 6]])
-    expect(q.locations[0].activities[2].pred).toBe(0)
+    expect(after.map((a) => [a.no, a.plannedStartH, a.plannedFinishH])).toEqual([[1, 0, 2], [2, 2, 3], [3, 4, 6]])
+    expect(q.locations[0].activities[2].pred).toBe(0) // old 4 followed the deleted 2; the others are renumbered
+    expect(q.locations[0].activities[1].pred).toBe(1)
+  })
+})
+
+describe('reordering, bulk delete, duplicate, insert', () => {
+  const starts = (p: ReturnType<typeof base>) => { const r = computeProject(p).locations[0].activities; return (n: number) => r.find((a) => a.no === n)!.plannedStartH }
+  const names = (p: ReturnType<typeof base>) => p.locations[0].activities.map((a) => a.name)
+  const named = () => { const p = base(); p.locations[0].activities.forEach((a) => (a.name = `A${a.no}`)); return p }
+
+  it('moving an activity renumbers and keeps links that stay valid; the others keep their dates', () => {
+    const p = named()
+    // move 3 (follows 1) to the front: 3,1,2,4 → 1 is now after nothing, 3 is first so its predecessor 1 comes after it → unlinked at its start
+    const r = moveActivities(p, 0, [3], 1, starts(p))
+    expect(names(r.project)).toEqual(['A3', 'A1', 'A2', 'A4'])
+    expect(r.unlinked).toEqual([3])
+    expect(planned(r.project).map((x) => x[0])).toEqual([2, 0, 2, 4]) // every start unchanged (in the new order)
+  })
+  it('moving a block of several keeps their order', () => {
+    const p = named()
+    const r = moveActivities(p, 0, [1, 2], null, starts(p))
+    expect(names(r.project)).toEqual(['A3', 'A4', 'A1', 'A2'])
+    expect(r.project.locations[0].activities.map((a) => a.pred)).toEqual([0, 0, 0, 3])
+  })
+  it('a harmless reorder unlinks nothing', () => {
+    const p = named()
+    const r = moveActivities(p, 0, [3], 2, starts(p)) // 1,3,2,4
+    expect(r.unlinked).toEqual([])
+    expect(planned(r.project)).toEqual([[0, 2], [2, 3], [2, 4], [4, 6]])
+  })
+  it('bulk delete', () => {
+    const p = named()
+    const r = deleteActivities(p, 0, [2, 3], starts(p))
+    expect(names(r.project)).toEqual(['A1', 'A4'])
+    expect(r.unlinked).toEqual([4])
+    expect(planned(r.project)).toEqual([[0, 2], [4, 6]])
+  })
+  it('duplicate and insert', () => {
+    const p = named()
+    const d = duplicateActivities(p, 0, [2], starts(p))
+    expect(names(d.project)).toEqual(['A1', 'A2', 'A2 (copy)', 'A3', 'A4'])
+    expect(d.project.locations[0].activities.map((a) => a.pred)).toEqual([0, 1, 1, 1, 2]) // the copy runs parallel to the original
+    expect(d.firstNew).toBe(3)
+    const i = insertActivityAfter(p, 0, 1, starts(p))
+    expect(i.no).toBe(2)
+    expect(names(i.project)[1]).toBe('New activity')
+    expect(planned(i.project)[1]).toEqual([2, 3]) // follows activity 1
   })
 })
