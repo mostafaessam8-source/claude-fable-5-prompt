@@ -25,7 +25,9 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     const t = setInterval(() => setTick(Date.now()), 30_000)
     return () => clearInterval(t)
   }, [project.settings.cutoffNow])
-  const result = useMemo(() => computeProject(effectiveProject(project, floatingNow(new Date(tick)))), [project, tick])
+  // column widths can be changed here for the session (the handles on a tapped column); they are not saved
+  const [cols, setCols] = useState<number[] | undefined>(project.settings.tableCols)
+  const result = useMemo(() => computeProject(effectiveProject({ ...project, settings: { ...project.settings, tableCols: cols } }, floatingNow(new Date(tick)))), [project, tick, cols])
 
   const titles = ['Summary', ...result.locations.map((l) => l.name)]
   const last = titles.length - 1
@@ -94,7 +96,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     return () => window.removeEventListener('keydown', on)
   })
 
-  const PAGE_W = i === 0 ? COVER_W : pageWidth(project.settings.tableCols) // a location page grows when its columns were widened
+  const PAGE_W = i === 0 ? COVER_W : pageWidth(cols) // a location page grows when its columns were widened
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))
 
@@ -124,7 +126,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
   const ruler = (x: number, y: number) => {
     const el = document.elementFromPoint(x, y)
     if (!el) return
-    for (const type of ['mouseover', 'mousemove']) el.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: y }))
+    for (const type of ['mouseover', 'mousemove', 'click']) el.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: y }))
   }
   const onDown = (e: React.PointerEvent) => {
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -190,7 +192,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
           <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${s})`, transformOrigin: '0 0' }}>
             {i === 0
               ? <div className="report-page"><Cover result={result} layouts={layouts} /></div>
-              : <LocationPage result={result} index={i - 1} layout={layouts[i - 1]} />}
+              : <LocationPage result={result} index={i - 1} layout={layouts[i - 1]} onCols={setCols} zoom={s * zv.z} />}
           </div>
         </div>
       </div>
