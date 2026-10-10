@@ -70,6 +70,10 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
     if (!texts) return DEFAULT_ACT_COLS[c]
     return Math.round(Math.min(700, Math.max(HEADS[c].length * 7 + 12, ...texts.map((t) => textWidth(t, font) + 28))))
   }
+  // rulers: hovered row / column, and the row being edited
+  const [hr, setHr] = useState<number | null>(null)
+  const [hc, setHc] = useState<number | null>(null)
+  const [fr, setFr] = useState<number | null>(null)
   const [pasting, setPasting] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -208,6 +212,19 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         </p>
       )}
       <div className="overflow-x-auto">
+      {/* rulers: the row under the pointer (or being edited) and the column under it are highlighted */}
+      <div style={{ position: 'relative', width: tableW }}
+        onMouseOver={(e) => {
+          const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null
+          const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null
+          setHc(cellEl ? cellEl.cellIndex : null)
+          setHr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null)
+        }}
+        onMouseLeave={() => { setHc(null); setHr(null) }}
+        onFocus={(e) => { const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null; setFr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null) }}
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFr(null) }}>
+      {hc != null && <div className="no-print" style={{ position: 'absolute', top: 0, bottom: 0, left: cols.slice(0, hc).reduce((a, b) => a + b, 0), width: cols[hc], zIndex: 1, pointerEvents: 'none',
+        background: 'rgba(0,119,139,0.08)', borderLeft: '1.5px solid #00778B', borderRight: '1.5px solid #00778B' }} />}
       <table className="table-fixed border-collapse text-xs" style={{ width: tableW }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
         <colgroup>{cols.map((w, c) => <col key={c} style={{ width: w }} />)}</colgroup>
         <thead>
@@ -230,7 +247,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
             const line = drop === a.no ? '2px solid #00778B' : undefined
             const edit = (patch: Partial<typeof a>) => onChange(patchActivity(project, li, a.no, patch))
             return (
-              <tr key={a.no} data-no={a.no} className={`hover:bg-[#FFF3D6] ${on ? 'bg-[#E6F1F4]' : k % 2 ? 'bg-[#F2F8F9]' : ''}`}
+              <tr key={a.no} data-no={a.no} className={(fr ?? hr) === a.no ? 'bg-[#FFE9A8]' : on ? 'bg-[#E6F1F4]' : k % 2 ? 'bg-[#F2F8F9]' : ''}
                 style={{ opacity: isDrag ? 0.4 : 1, borderTop: line }}
                 onDragOver={(e) => {
                   if (!dragging) return
@@ -245,6 +262,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                   if (d && t !== undefined) moveBlock(d, t)
                 }}>
                 <td className={`${cell} cursor-grab select-none text-center text-slate-400`} draggable title="Drag to reorder"
+                  style={{ boxShadow: (fr ?? hr) === a.no ? 'inset 4px 0 0 #F1B434' : undefined }}
                   onDragStart={(e) => {
                     const nos = on ? picked : [a.no]
                     if (!on) setSel(new Set([a.no]))
@@ -298,6 +316,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
           {acts.length > 0 && drop === null && <tr><td colSpan={15} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
         </tbody>
       </table>
+      </div>
       </div>
       {acts.length === 0 && <p className="p-6 text-center text-slate-500">No activities here yet — use “+ Add activity”.</p>}
     </main>
