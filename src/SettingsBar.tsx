@@ -35,7 +35,7 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks }: {
         </span>
       </label>
       <label className="flex items-center gap-1"><input type="checkbox" checked={showLinks} onChange={(e) => onShowLinks(e.target.checked)} /> Show links</label>
-      <span className="text-slate-500">Hover a row to follow it. Click an activity to edit it. On the Gantt: drag a planned bar to move it, drag its ends to change the duration, drag a dot onto another bar to link.</span>
+      <span className="text-slate-500">Rulers: the row and the column (the time on the Gantt) under the pointer are highlighted. Click an activity to edit it. On the Gantt: drag a planned bar to move it, drag its ends to change the duration, drag a dot onto another bar to link.</span>
       <span className="text-slate-600">Hand-back: <b>{s.possessionEnd.toISOString().slice(0, 16).replace('T', ' ')}</b></span>
     </div>
   )
