@@ -16,6 +16,15 @@ browser; the only server piece is a tiny proxy that keeps the Anthropic key secr
 
 The project is kept in this browser's `localStorage` (use *Clear* to drop it).
 
+## Editing an activity and its links
+On the Report tab, **click any activity**: a panel opens with its duration, % complete, actual start/finish and remarks; its planned and
+forecast times; its **predecessor** (choose it from the earlier activities, set the relationship FS/SS/FF/SF and the lag, open it); and its
+**successors** (edit their relationship and lag, open or **Unlink** them, or link another activity so it follows this one). Every change
+recomputes the plan and the forecast and updates the table, the Gantt and the summary immediately; it is saved in the browser and
+exported to Excel. *Set the lag to keep the start I opened it with* re-links without moving the date; *Unlink* and *Link another
+activity* also keep the date (they set the lag for you; change it to 0 to make the activity follow). A predecessor must be an
+earlier activity (smaller number). Esc closes the panel.
+
 ## How the forecast works
 Each activity has one predecessor (`PRED`), a relationship (`FS`/`SS`/`FF`/`SF`) and a lag. A delay (or gain) is carried
 **along that link**, less any planned slack between the two joined ends, so it reaches only what depends on it; parallel
