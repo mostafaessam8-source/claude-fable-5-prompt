@@ -3,6 +3,8 @@ import type { ProjectResult } from '../engine/schedule'
 import {
   candidatePredecessors, deleteActivities, duplicateActivities, insertActivityAfter, moveActivities, patchActivity, RELS,
 } from '../links/edit'
+import type { SiteLayout } from '../layout/parse'
+import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { Project, Rel } from '../model/types'
 import { activityTone } from './brand'
 import { fmtShort } from './format'
@@ -11,12 +13,12 @@ const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
 
 /** Text input that commits on blur / Enter and reverts on Esc; a blank name is refused (a blank name switches the row off in the workbook). */
-function NameInput({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
+function NameInput({ value, onCommit, placeholder, blankOk }: { value: string; onCommit: (v: string) => void; placeholder?: string; blankOk?: boolean }) {
   const [v, setV] = useState(value)
   useEffect(() => setV(value), [value])
-  const commit = () => { const t = v.trim(); if (t && t !== value) onCommit(t); else setV(value) }
+  const commit = () => { const t = v.trim(); if ((t || blankOk) && t !== value) onCommit(t); else setV(value) }
   return (
-    <input className={field} value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} aria-label="Activity name"
+    <input className={field} value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} aria-label="Activity name"
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(value); (e.target as HTMLInputElement).blur() } }} />
   )
 }
@@ -26,7 +28,12 @@ function NameInput({ value, onCommit }: { value: string; onCommit: (v: string) =
  * Rename, change the duration or the link in place; tick rows to delete, duplicate or move several at once;
  * drag a row by its handle to reorder (a block of ticked rows moves together). Undo is in the header.
  */
-export function ActivityEditor({ project, result, onChange }: { project: Project; result: ProjectResult; onChange: (p: Project) => void }) {
+export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
+  project: Project; layouts: SiteLayout[]; result: ProjectResult
+  onChange: (p: Project) => void
+  /** Location changes touch the project and the site layouts together. */
+  onBoth: (e: { project: Project; layouts: SiteLayout[] }) => void
+}) {
   const [loc, setLoc] = useState(0)
   const [sel, setSel] = useState<Set<number>>(new Set())
   const anchor = useRef<number | null>(null)
@@ -46,6 +53,16 @@ export function ActivityEditor({ project, result, onChange }: { project: Project
       ? `${r.unlinked.length} activit${r.unlinked.length === 1 ? 'y' : 'ies'} lost ${r.unlinked.length === 1 ? 'its' : 'their'} predecessor (it was removed or now comes later) and ` +
         `kept ${r.unlinked.length === 1 ? 'its' : 'their'} planned start: ${r.unlinked.map(nameOf).join(', ')}. Undo restores everything.`
       : null)
+  }
+  const loc0 = project.locations[li]
+  const cur = { project, layouts }
+  const full = project.locations.length >= MAX_LOCATIONS
+  const pickLoc = (i: number) => { setLoc(i); setSel(new Set()); setNote(null) }
+  const uniqueName = (base: string) => {
+    const names = new Set(project.locations.map((l) => l.name))
+    let n = base, i = 2
+    while (names.has(n)) n = `${base} ${i++}`
+    return n
   }
   const picked = acts.filter((a) => sel.has(a.no)).map((a) => a.no)
 
@@ -99,9 +116,24 @@ export function ActivityEditor({ project, result, onChange }: { project: Project
 
   return (
     <main className="mx-auto max-w-[1250px] p-4">
+      <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-[#00778B]">LOCATION</span>
+          <div className="w-72"><NameInput value={loc0.name} onCommit={(name) => onBoth(renameLocation(cur, li, name))} /></div>
+          <div className="w-96"><NameInput value={loc0.scope} placeholder="Scope line (e.g. 1 cell │ Main Line 1 │ TSO OTMP from Station 29)" blankOk onCommit={(scope) => onBoth(renameLocation(cur, li, loc0.name, scope))} /></div>
+          <button className={btn} disabled={full} title={full ? `The workbook holds up to ${MAX_LOCATIONS} locations` : ''}
+            onClick={() => { const e = addLocation(cur, uniqueName('New location'), li); onBoth(e); pickLoc(li + 1) }}>+ New location</button>
+          <button className={btn} disabled={full} onClick={() => { onBoth(duplicateLocation(cur, li, uniqueName(`${loc0.name} (copy)`))); pickLoc(li + 1) }}>Duplicate</button>
+          <button className={btn} disabled={li === 0} onClick={() => { onBoth(moveLocation(cur, li, -1)); pickLoc(li - 1) }}>◀ Earlier</button>
+          <button className={btn} disabled={li >= project.locations.length - 1} onClick={() => { onBoth(moveLocation(cur, li, 1)); pickLoc(li + 1) }}>Later ▶</button>
+          <button className={`${btn} border-[#CB2C30] text-[#CB2C30]`} disabled={project.locations.length <= 1}
+            onClick={() => { if (window.confirm(`Delete the location “${loc0.name}” and its ${acts.length} activities?`)) { onBoth(deleteLocation(cur, li)); pickLoc(Math.max(0, li - 1)) } }}>Delete location</button>
+        </div>
+        <p className="text-[11px] text-slate-500">{project.locations.length} of {MAX_LOCATIONS} locations. The name is “code – chainage”; the Site layout tab edits the other facts.</p>
+      </section>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select className="rounded border border-slate-300 px-2 py-1 text-sm font-semibold" value={li}
-          onChange={(e) => { setLoc(Number(e.target.value)); setSel(new Set()); setNote(null) }}>
+          onChange={(e) => pickLoc(Number(e.target.value))}>
           {project.locations.map((l, i) => <option key={i} value={i}>{l.name} ({l.activities.length})</option>)}
         </select>
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={insertBelow}>{picked.length ? '+ Insert below selection' : '+ Add activity'}</button>

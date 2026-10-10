@@ -8,7 +8,7 @@ import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
 import { ActivityEditor } from './report/ActivityEditor'
 import { useHistory } from './model/history'
-import { clearProject, loadProject, saveProject } from './model/store'
+import { clearProject, loadProject, saveProject, type Saved } from './model/store'
 import type { Project } from './model/types'
 import { ReportView } from './report/ReportView'
 import { SettingsBar } from './SettingsBar'
@@ -16,16 +16,21 @@ import { SettingsBar } from './SettingsBar'
 type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
 
 /** Edits that only move dates (a drag) merge into one undo step; adding, deleting, reordering or renaming activities each get their own. */
-const sameShape = (a: Project | null, b: Project | null) =>
-  !!a && !!b && a.locations.length === b.locations.length &&
+const sameShape = (x: Saved | null, y: Saved | null) => {
+  const a = x?.project, b = y?.project
+  return !!a && !!b && a.locations.length === b.locations.length && a.locations.every((l, i) => l.name === b.locations[i].name) &&
   a.locations.every((l, i) => l.activities.length === b.locations[i].activities.length && l.activities.every((x, k) => x.name === b.locations[i].activities[k].name))
+}
 
 export function App() {
   const saved = useMemo(loadProject, [])
-  const history = useHistory<Project | null>(saved?.project ?? null, sameShape)
-  const project = history.value
-  const setProject = history.set as (p: Project) => void
-  const [layouts, setLayouts] = useState<SiteLayout[]>(saved?.layouts ?? [])
+  // project and site layouts share one history: adding, deleting or moving a location changes both
+  const history = useHistory<Saved | null>(saved ?? null, sameShape)
+  const project = history.value?.project ?? null
+  const layouts = history.value?.layouts ?? []
+  const setProject = (p: Project) => history.set({ project: p, layouts })
+  const setLayouts = (l: SiteLayout[]) => { if (project) history.set({ project, layouts: l }) }
+  const setBoth = (e: { project: Project; layouts: SiteLayout[] }) => history.set(e)
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
   const [showLinks, setShowLinks] = useState(true)
@@ -50,8 +55,7 @@ export function App() {
     setError(null)
     try {
       const p = await parseWorkbook(await file.arrayBuffer())
-      history.reset(p)
-      setLayouts(p.locations.map((l) => parseLayout(l.name, l.scope)))
+      history.reset({ project: p, layouts: p.locations.map((l) => parseLayout(l.name, l.scope)) })
       setTab('report')
     } catch (e) {
       setError(e instanceof ImportError ? e.message : `Unexpected error: ${(e as Error).message}`)
@@ -93,7 +97,7 @@ export function App() {
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canRedo} onClick={history.redo} title="Redo (Ctrl+Shift+Z)">↷ Redo</button>}
         {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport}>Export to Excel</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
-        {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setLayouts([]); setTab('import') }}>Clear</button>}
+        {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setTab('import') }}>Clear</button>}
       </header>
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
@@ -115,7 +119,7 @@ export function App() {
             </>
           )}
           {tab === 'activities' && (
-            <ActivityEditor project={project} result={result} onChange={setProject} />
+            <ActivityEditor project={project} layouts={layouts} result={result} onChange={setProject} onBoth={setBoth} />
           )}
           {tab === 'layout' && (
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
