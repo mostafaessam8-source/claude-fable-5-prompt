@@ -47,3 +47,25 @@ export function linkFromHandles(
   const [pred, succ] = a.k < b.k ? [a, b] : [b, a]
   return { predK: pred.k, succK: succ.k, rel: relFromEdges(pred.edge, succ.edge) }
 }
+
+/**
+ * Dragging the ACTUAL bar changes the actual start / finish (hours since the possession start):
+ *  - move : the start moves by delta, and the finish with it when there is one
+ *  - left : the start moves by delta
+ *  - right: the finish moves by delta; work still in progress has no finish, so its drawn end (`endH`) becomes one
+ * The start never goes before hour 0 and the bar never shrinks below MIN_DUR.
+ */
+export function actualDragPatch(
+  mode: DragMode, startH: number, finishH: number | null, endH: number, delta: number,
+): { startH: number; finishH: number | null } {
+  const r = (x: number) => Math.round(x * 60) / 60
+  if (mode === 'move') {
+    const s = Math.max(0, startH + delta)
+    return { startH: r(s), finishH: finishH == null ? null : r(finishH + (s - startH)) }
+  }
+  if (mode === 'left') {
+    const s = Math.min(Math.max(0, startH + delta), (finishH ?? endH) - MIN_DUR)
+    return { startH: r(s), finishH: finishH == null ? null : r(finishH) }
+  }
+  return { startH: r(startH), finishH: r(Math.max((finishH ?? endH) + delta, startH + MIN_DUR)) }
+}

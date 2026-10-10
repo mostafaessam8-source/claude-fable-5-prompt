@@ -8,7 +8,11 @@ export type BarKind = 'planned' | 'done-ontime' | 'done-late' | 'progress' | 'be
 
 /** Inclusive column range. */
 export interface Bar { kind: BarKind; c0: number; c1: number }
-export interface GanttRow { planned: Bar | null; actual: Bar | null; forecast: Bar | null }
+export interface GanttRow {
+  planned: Bar | null; actual: Bar | null; forecast: Bar | null
+  /** Where the actual bar ends, in hours since the possession start (its finish, or the cut-off-based end of work in progress). */
+  actualEndH: number | null
+}
 
 export interface GanttGeometry {
   /** Hours since possession start. */
@@ -77,5 +81,5 @@ export function ganttRow(a: ActivityResult, g: GanttGeometry): GanttRow {
     }
   }
 
-  return { planned: planned && { kind: 'planned', ...planned }, actual, forecast }
+  return { planned: planned && { kind: 'planned', ...planned }, actual, forecast, actualEndH }
 }

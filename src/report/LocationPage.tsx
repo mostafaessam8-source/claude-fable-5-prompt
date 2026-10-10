@@ -1,11 +1,11 @@
 import { useRef, useState, type CSSProperties } from 'react'
-import { fromHours, type ProjectResult } from '../engine/schedule'
+import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, type SiteLayout } from '../layout/parse'
-import { lagToKeepStart, patchActivity } from '../links/edit'
-import type { Project } from '../model/types'
+import { lagToKeepStart, patchActivity, splitDateTime } from '../links/edit'
+import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
-import { dragPatch, linkFromHandles, type DragMode } from './dragmath'
+import { actualDragPatch, dragPatch, linkFromHandles, MIN_DUR, type DragMode } from './dragmath'
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
 const TABLE_COLS = [22, 156, 92, 78, 78, 74, 34, 34, 54] // px
@@ -108,6 +108,45 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     if (d?.moved) { justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0) }
   }
 
+  // ---- drag the ACTUAL bar: move it, or move its start / finish (changes the actual dates) ----
+  const adrag = useRef<null | { mode: DragMode; no: number; x0: number; base: Project; startH: number; finishH: number | null; endH: number; moved: boolean; last: number }>(null)
+  const startActualDrag = (e: React.PointerEvent, k: number, mode: DragMode) => {
+    const ra = loc.activities[k]
+    if (!project || e.button !== 0 || !ra.actualStart) return
+    e.stopPropagation(); e.preventDefault()
+    ;(e.currentTarget as HTMLElement).closest('.gbar')!.setPointerCapture(e.pointerId)
+    const startH = toHours(ra.actualStart, origin)
+    adrag.current = {
+      mode, no: ra.no, x0: e.clientX, base: project, startH,
+      finishH: ra.actualFinish ? toHours(ra.actualFinish, origin) : null,
+      endH: rows[k].bars.actualEndH ?? startH + MIN_DUR, moved: false, last: 0,
+    }
+  }
+  const onActualMove = (e: React.PointerEvent) => {
+    const d = adrag.current
+    if (!d || !onChange) return
+    const dx = e.clientX - d.x0
+    if (!d.moved && Math.abs(dx) < 3) return
+    d.moved = true
+    const delta = Math.round(dx / zoom / GC) * g.hoursPerColumn
+    if (delta === d.last) return
+    d.last = delta
+    const p = actualDragPatch(d.mode, d.startH, d.finishH, d.endH, delta)
+    const st = splitDateTime(fromHours(p.startH, origin))
+    const patch: Partial<ActivityInput> = { actualStartDate: st.date, actualStartTime: st.time }
+    if (p.finishH != null) {
+      const f = splitDateTime(fromHours(p.finishH, origin))
+      Object.assign(patch, { actualFinishDate: f.date, actualFinishTime: f.time, pct: 1 }) // a finish means 100 %
+    }
+    onChange(patchActivity(d.base, index, d.no, patch))
+  }
+  const onActualEnd = (e: React.PointerEvent) => {
+    const d = adrag.current
+    adrag.current = null
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* already released */ }
+    if (d?.moved) { justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0) }
+  }
+
   // ---- link: drag from a dot on one bar to a dot (or the bar) of another ----
   const [line, setLine] = useState<null | { x1: number; y1: number; x2: number; y2: number }>(null)
   const link = useRef<null | { k: number; edge: 'start' | 'finish'; x0: number; y0: number; x1: number; y1: number }>(null)
@@ -167,6 +206,20 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
   const barEl = (b: Bar, row: number, key: string, k: number) => (
     <div key={key} data-row={k} data-lane="actual" style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
+  )
+  /** The actual bar: drag it to move the actual dates, its left edge for the start, its right edge for the finish. */
+  const actualBar = (b: Bar, row: number, k: number) => (
+    <div key={`ac${k}`} data-row={k} data-lane="actual" className={editable ? 'gbar' : undefined}
+      style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 2, position: 'relative', ...(editable ? { cursor: 'grab', touchAction: 'none' } : {}) }}
+      onPointerDown={editable ? (e) => startActualDrag(e, k, 'move') : undefined} onPointerMove={editable ? onActualMove : undefined}
+      onPointerUp={editable ? onActualEnd : undefined} onPointerCancel={editable ? onActualEnd : undefined}>
+      {editable && (
+        <>
+          <span className="gh gh-l" title="Drag: move the actual start" onPointerDown={(e) => startActualDrag(e, k, 'left')} />
+          <span className="gh gh-r" title="Drag: move the actual finish (work in progress: sets one)" onPointerDown={(e) => startActualDrag(e, k, 'right')} />
+        </>
+      )}
+    </div>
   )
   /** The planned bar: drag it to move, drag its ends to resize, drag a dot onto another bar to link. */
   const plannedBar = (b: Bar, row: number, k: number) => (
@@ -320,7 +373,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               return [
                 bars.planned && plannedBar(bars.planned, r, k),
                 bars.forecast && barEl(bars.forecast, r + 1, `fc${k}`, k),
-                bars.actual && barEl(bars.actual, r + 1, `ac${k}`, k),
+                bars.actual && actualBar(bars.actual, r + 1, k),
               ]
             })}
           </div>
