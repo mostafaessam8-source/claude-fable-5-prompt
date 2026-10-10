@@ -5,6 +5,7 @@ import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
 import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, splitDateTime } from '../links/edit'
 import { fmtCell, parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
+import { textWidth } from './measure'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
@@ -292,6 +293,18 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     const w = Math.round(Math.min(maxW, Math.max(MIN_COL, d.w0 + (e.clientX - d.x0) / zoom)))
     if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x)))
   }
+  /** Excel's "autofit": the narrowest width that shows the whole text of the column on one line (the headers' longest word counts too). */
+  const autoFit = (c: number): number => {
+    const font = '600 8.5px Calibri, Lato, Inter, sans-serif'
+    const texts: string[] = [COL_NAMES[c].split(' ').sort((a, b) => b.length - a.length)[0]]
+    for (const a of loc.activities) {
+      const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
+      texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), '', a.remarks][c])
+    }
+    const w = Math.max(...texts.map((t) => textWidth(t, font))) + 12
+    const maxW = PAGE_INNER - PA_W - GANTT_COLS * MIN_GC - (TABLE_W - cols[c])
+    return Math.round(Math.min(maxW, Math.max(MIN_COL, w)))
+  }
   const onColEnd = (e: React.PointerEvent) => {
     colDrag.current = null
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ }
@@ -408,9 +421,9 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             <div key={h} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
               {editable && (
-                <span className="no-print col-rz" title="Drag to change the column width (double-click: back to the default)"
+                <span className="no-print col-rz" title="Drag to change the column width; double-click: fit the content (like Excel's autofit)"
                   onPointerDown={(e) => startColResize(e, c)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
-                  onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? DEFAULT_COLS[c] : x)))} />
+                  onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? autoFit(c) : x)))} />
               )}
             </div>
           ))}
