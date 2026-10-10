@@ -74,6 +74,7 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   are the REMARKS column of Data Input and a **Remarks column in the Report table** and a **REMARKS line under each Report page**, built live from that column.
 - **Culvert type** (Site layout tab → Type): **Cells** (box) or **Pipes** (round). It changes the schematic card, the “N PIPES” caption, the report headers and the exported scope line
   (`2 pipes │ …`, which re-imports as pipes). Claude's fill can propose it too.
+- **Actuals in the Activities tab**: Actual start / Actual finish (date-time) and % done are editable in the table (an actual finish makes it 100 %), next to the plan and the Remarks.
 - **Locations** (top of the Activities tab): rename a location and its scope line, **+ New location** (one starter activity), duplicate (without actuals), move earlier/later,
   delete. The workbook's location list holds up to 10. Renaming keeps the other site-layout facts (only code and chainage follow the name). Undo covers all of it.
 - Reordering / deleting renumbers the activities (1..n) and keeps every link that is still valid. An activity whose predecessor was removed or now comes

@@ -1,15 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
-  candidatePredecessors, deleteActivities, duplicateActivities, hoursToInput, inputToHours, insertActivityAfter, moveActivities, patchActivity, RELS,
+  candidatePredecessors, dateToInput, deleteActivities, inputToDate, inputToTime, timeToInput, duplicateActivities, hoursToInput, inputToHours, insertActivityAfter, moveActivities, patchActivity, RELS,
   setPlannedFinish, setPlannedStart,
 } from '../links/edit'
 import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
-import type { Project, Rel } from '../model/types'
+import type { ActivityInput, Project, Rel } from '../model/types'
 import { parseAnchor, toTable } from '../links/table'
 import { TablePaste } from './TablePaste'
 import { activityTone } from './brand'
+
+/** <input type=datetime-local> value of an actual date + time-of-day pair. */
+const actualValue = (d: Date | null, t: number | null) => (d ? `${dateToInput(d)}T${timeToInput(t ?? 0)}` : '')
+/** The patch for typing (or clearing) an actual start / finish; a finish makes the activity 100 % complete. */
+function actualPatch(which: 'actualStart' | 'actualFinish', value: string): Partial<ActivityInput> {
+  const d = inputToDate(value.slice(0, 10)), t = inputToTime(value.slice(11, 16))
+  const dt = d ? { [`${which}Date`]: d, [`${which}Time`]: t ?? 0 } : { [`${which}Date`]: null, [`${which}Time`]: null }
+  return which === 'actualFinish' && d ? { ...dt, pct: 1 } : dt
+}
 
 const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
@@ -136,7 +145,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const allOn = acts.length > 0 && picked.length === acts.length
 
   return (
-    <main className="mx-auto max-w-[1700px] p-4">
+    <main className="mx-auto max-w-[2000px] p-4">
       <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[#00778B]">LOCATION</span>
@@ -180,14 +189,14 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
       <table className="w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
         <colgroup>
           <col style={{ width: 26 }} /><col style={{ width: 28 }} /><col style={{ width: 34 }} /><col />
-          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 92 }} /><col style={{ width: 240 }} />
+          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 66 }} /><col style={{ width: 92 }} /><col style={{ width: 240 }} />
         </colgroup>
         <thead>
           <tr className="bg-[#3D3935] text-left text-white">
             <th className={cell} /><th className={cell}><input type="checkbox" checked={allOn} aria-label="Select all"
               onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /></th>
             <th className={cell}>#</th><th className={cell}>Activity</th><th className={cell}>Duration (h)</th><th className={cell}>Follows</th>
-            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Status</th><th className={cell}>Remarks</th>
+            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Actual start</th><th className={cell}>Actual finish</th><th className={cell}>% done</th><th className={cell}>Status</th><th className={cell}>Remarks</th>
           </tr>
         </thead>
         <tbody>
@@ -247,12 +256,24 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                   <input className={field} type="datetime-local" value={hoursToInput(origin, r.plannedFinishH)} aria-label="Planned finish"
                     onChange={(e) => { const h = inputToHours(origin, e.target.value); const q = h == null ? null : setPlannedFinish(project, li, a.no, r.plannedStartH, h, a.rel, predTimes(a.pred)); if (q) onChange(q) }} />
                 </td>
+                <td className={cell}>
+                  <input className={field} type="datetime-local" value={actualValue(a.actualStartDate, a.actualStartTime)} aria-label="Actual start"
+                    onChange={(e) => edit(actualPatch('actualStart', e.target.value))} />
+                </td>
+                <td className={cell}>
+                  <input className={field} type="datetime-local" value={actualValue(a.actualFinishDate, a.actualFinishTime)} aria-label="Actual finish" title="An actual finish makes the activity 100 % complete"
+                    onChange={(e) => edit(actualPatch('actualFinish', e.target.value))} />
+                </td>
+                <td className={cell}>
+                  <input className={field} type="number" min={0} max={100} value={a.pct == null ? '' : Math.round(a.pct * 100)} aria-label="% complete"
+                    onChange={(e) => edit({ pct: e.target.value === '' ? null : Math.min(1, Math.max(0, Number(e.target.value) / 100)) })} />
+                </td>
                 <td className={cell}><span className="rounded px-1 font-bold" style={{ background: tone.bg, color: tone.fg }}>{r.status}</span></td>
                 <td className={cell}><NameInput value={a.remarks} blankOk placeholder="note / contractor remark" onCommit={(remarks) => edit({ remarks })} /></td>
               </tr>
             )
           })}
-          {acts.length > 0 && drop === null && <tr><td colSpan={12} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
+          {acts.length > 0 && drop === null && <tr><td colSpan={15} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
         </tbody>
       </table>
       {acts.length === 0 && <p className="p-6 text-center text-slate-500">No activities here yet — use “+ Add activity”.</p>}
