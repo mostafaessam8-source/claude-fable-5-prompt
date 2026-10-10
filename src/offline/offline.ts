@@ -16,6 +16,8 @@ export interface OfflinePayload {
   preparedAt: string
   project: Project
   layouts: SiteLayout[]
+  /** 'viewer': a view-only report for phones (one page per screen); absent: the contractor's editable copy. */
+  mode?: 'viewer'
 }
 
 /** The payload embedded in this page, or null in the normal app. */
@@ -26,6 +28,8 @@ function read(): OfflinePayload | null {
   } catch { return null }
 }
 export const OFFLINE = read()
+/** This page is the view-only report viewer, not the editable app. */
+export const VIEWER = OFFLINE?.mode === 'viewer'
 
 /** JSON for a <script type="application/json"> element: "<" is escaped so the data can never close the tag. */
 export const embed = (p: OfflinePayload) => JSON.stringify(p, replacer).replace(/</g, '\\u003c')

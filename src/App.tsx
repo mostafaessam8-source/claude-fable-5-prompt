@@ -142,6 +142,18 @@ export function App() {
     }
   }
 
+  /** A view-only copy of the report for phones: one page per screen, with previous / next and full screen. */
+  async function onViewerCopy() {
+    if (!project) return
+    setError(null)
+    try {
+      const html = await buildOfflineHtml({ id: newId(), preparedAt: new Date().toISOString(), project, layouts, mode: 'viewer' })
+      download(`${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Possession'}_Report_Viewer_${new Date().toISOString().slice(0, 10)}.html`, html, 'text/html')
+    } catch (e) {
+      setError(`Could not make the report viewer: ${(e as Error).message}`)
+    }
+  }
+
   /** Contractor copy: save this very site, with the updated project inside, as the file to send back. */
   async function onSaveUpdate() {
     if (!project || !OFFLINE) return
@@ -221,6 +233,7 @@ export function App() {
         )}
         {project && !OFFLINE && <button className="rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" onClick={onOfflineCopy} title="One html file with the whole app and this project inside: the contractor opens it offline, updates it and sends back a small update file. It has no Excel export.">Offline copy for contractor</button>}
         {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={onSaveProject} title="Download the whole project as a .json file (backup, or open it on another PC)">Save project (.json)</button>}
+        {project && !OFFLINE && <button className="rounded border border-[#59CBE8] px-3 py-1 text-sm font-semibold text-[#59CBE8]" onClick={onViewerCopy} title="One html file with the report only, to open on a phone: one page per screen, previous / next buttons and full screen. Nothing in it can be edited.">Report for mobile (view only)</button>}
         {project && !OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport} title="Download the tracker workbook">Export to Excel</button>}
         {project && OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onSaveUpdate} title="Save this site, with your updates inside, as one file and send it back to SAR">Save update for SAR</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
