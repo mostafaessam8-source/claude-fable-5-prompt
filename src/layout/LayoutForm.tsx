@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { askClaude, ClaudeError, type Proposal } from './claude'
 import { applyChanges, diffProposals, type RowDiff } from './diff'
-import type { SiteLayout } from './parse'
+import type { CulvertKind, SiteLayout } from './parse'
 
 const PROXY = (import.meta.env.VITE_CLAUDE_PROXY_URL as string | undefined) || undefined
 const KEY_STORE = 'sar-claude-key'
@@ -46,13 +46,15 @@ export function LayoutForm({ layouts, names, onChange }: {
         <h2 className="mb-2 bg-[#3D3935] px-3 py-1.5 text-sm font-bold text-white">SITE LAYOUT FACTS</h2>
         <table className="w-full text-sm">
           <thead className="bg-[#768692] text-white">
-            <tr>{['Code', 'Chainage', 'Cells', 'Lines', 'OTMP', 'Base station'].map((h) => <th key={h} className="px-2 py-1 text-left">{h}</th>)}</tr>
+            <tr>{['Code', 'Chainage', 'Type', 'Count', 'Lines', 'OTMP', 'Base station'].map((h) => <th key={h} className="px-2 py-1 text-left">{h}</th>)}</tr>
           </thead>
           <tbody>
             {layouts.map((l, i) => (
               <tr key={i} className={i % 2 ? 'bg-[#F2F8F9]' : ''}>
                 <td className="p-1"><input className={input} value={l.code} onChange={(e) => edit(i, { code: e.target.value })} /></td>
                 <td className="p-1"><input className={input} value={l.chainage} onChange={(e) => edit(i, { chainage: e.target.value })} /></td>
+                <td className="p-1 w-24"><select className={input} value={l.kind} aria-label="Culvert type" onChange={(e) => edit(i, { kind: e.target.value as CulvertKind })}>
+                  <option value="cell">Cells</option><option value="pipe">Pipes</option></select></td>
                 <td className="p-1 w-20"><input className={input} type="number" min={0} value={l.cells ?? ''}
                   onChange={(e) => edit(i, { cells: e.target.value === '' ? null : Math.max(0, Math.floor(Number(e.target.value))) })} /></td>
                 <td className="p-1"><input className={input} value={l.lines} onChange={(e) => edit(i, { lines: e.target.value })} /></td>

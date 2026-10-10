@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
-import { pageTitle, type SiteLayout } from '../layout/parse'
+import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -253,7 +253,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       </div>
       <div style={{ display: 'flex', height: 24, alignItems: 'center', fontWeight: 700, fontSize: 10 }}>
         <div style={{ width: TABLE_W + PA_W, background: C.grey, height: '100%', display: 'flex', alignItems: 'center', gap: 18, padding: '0 10px', color: C.black }}>
-          {layout?.cells ? <span>{layout.cells} cell{layout.cells === 1 ? '' : 's'}</span> : null}
+          {layout?.cells ? <span>{layout.cells} {unit(layout.kind, layout.cells)}</span> : null}
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>

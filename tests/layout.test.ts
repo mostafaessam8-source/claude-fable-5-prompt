@@ -6,14 +6,14 @@ import { applyChanges, diffProposals } from '../src/layout/diff'
 import { LayoutCard } from '../src/layout/LayoutCard'
 import type { SiteLayout } from '../src/layout/parse'
 
-const L = (over: Partial<SiteLayout>): SiteLayout => ({ code: 'C263', chainage: 'KM 209+025', cells: 1, lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29', ...over })
-const P = (over = {}) => ({ code: 'C263', chainage: null, cells: null, lines: null, otmp: null, station: null, ...over })
+const L = (over: Partial<SiteLayout>): SiteLayout => ({ code: 'C263', chainage: 'KM 209+025', cells: 1, kind: 'cell', lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29', ...over })
+const P = (over = {}) => ({ code: 'C263', chainage: null, cells: null, kind: null, lines: null, otmp: null, station: null, ...over })
 
 describe('request', () => {
   const req = buildRequest('C263 has 2 cells', [{ code: 'C263', name: 'C263 – KM 209+025' }])
   it('forces the tool call and tells the model not to invent', () => {
     expect(req.tool_choice).toEqual({ type: 'tool', name: FUNCTION_NAME })
-    expect(req.tools[0].input_schema.properties.locations.items.required).toEqual(['code', 'chainage', 'cells', 'lines', 'otmp', 'station'])
+    expect(req.tools[0].input_schema.properties.locations.items.required).toEqual(['code', 'chainage', 'cells', 'kind', 'lines', 'otmp', 'station'])
     expect(SYSTEM_PROMPT).toMatch(/return null/)
     expect(SYSTEM_PROMPT).toMatch(/Never invent/)
     expect(req.messages[0].content).toContain('<pasted_text>\nC263 has 2 cells')
@@ -108,5 +108,29 @@ describe('cards picture for Excel', () => {
     expect(svg).toContain('x="226"'); expect(svg).toContain('x="452"')
     expect(svg).not.toMatch(/ style="width:100%/)
     expect(svg).toContain('CELL 3')
+  })
+})
+
+describe('culvert type: cells or pipes', () => {
+  it('parses, composes and round-trips the scope line', async () => {
+    const { parseLayout, composeScope, locationStrings, pageTitle } = await import('../src/layout/parse')
+    const l = parseLayout('C300  –  KM 1', '2 pipes  │  Main Line 1  │  TSO OTMP from Station 3')
+    expect(l).toMatchObject({ cells: 2, kind: 'pipe' })
+    expect(composeScope(l)).toBe('2 pipes  │  Main Line 1  │  TSO OTMP from Station 3')
+    expect(composeScope({ ...l, cells: 1 })).toContain('1 pipe  │')
+    expect(pageTitle('P', l, 'x')).toContain('2 PIPES')
+    expect(locationStrings('C300  –  KM 1', '2 cells', { ...l, kind: 'pipe' }).scope).toContain('pipes') // an edited type is exported
+    expect(parseLayout('X', '3 CELLS').kind).toBe('cell')
+  })
+  it('Claude may propose the type; unknown values are ignored', () => {
+    expect(normalizeProposals({ locations: [{ code: 'A', kind: 'pipe', cells: 2 }, { code: 'B', kind: 'arch' }] }).map((p) => p.kind)).toEqual(['pipe', null])
+    const rows = diffProposals([L({})], [P({ kind: 'pipe' })]).rows
+    expect(rows[0].changes).toEqual([{ field: 'kind', from: 'cell', to: 'pipe' }])
+  })
+  it('the card draws pipes, not cells', () => {
+    const h = renderToStaticMarkup(createElement(LayoutCard, { layout: L({ cells: 2, kind: 'pipe' }) }))
+    expect(h).toContain('PIPE 1')
+    expect(h).toContain('2 PIPES<')
+    expect(h).not.toContain('CELL 1')
   })
 })
