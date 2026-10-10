@@ -15,22 +15,23 @@ export function colLetter(n: number): string {
   return s
 }
 
-/** Report sheet: A..I table, J = P/A letters, K..BF = 48 Gantt columns, BG..BP hidden helpers. */
+/** Report sheet: A..I table, J = remarks, K = P/A letters, L..BG = 48 Gantt columns, BH..BQ hidden helpers. */
 export const R = {
   TABLE_COLS: 9,
-  SPACER: 10, // J
-  G0: 11, // K — first Gantt column
-  G1: 58, // BF — last Gantt column
-  H_HOURS: 59, // BG: total hours (cover rows) / carried variance (P rows)
-  H_START: 60, // BH
-  H_END: 61, // BI
-  H_FLAG: 62, // BJ
-  H_AS: 63, // BK actual start
-  H_AF: 64, // BL actual finish
-  H_PCT: 65, // BM
-  H_CAR: 66, // BN
-  H_FS: 67, // BO forecast start
-  H_FE: 68, // BP forecast end
+  REMARKS: 10, // J
+  SPACER: 11, // K
+  G0: 12, // L — first Gantt column
+  G1: 59, // BG — last Gantt column
+  H_HOURS: 60, // BH: total hours (cover rows) / carried variance (P rows)
+  H_START: 61, // BI
+  H_END: 62, // BJ
+  H_FLAG: 63, // BK
+  H_AS: 64, // BL actual start
+  H_AF: 65, // BM actual finish
+  H_PCT: 66, // BN
+  H_CAR: 67, // BO
+  H_FS: 68, // BP forecast start
+  H_FE: 69, // BQ forecast end
 }
 
 export function reportRows(n: number, m: number) {

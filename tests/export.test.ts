@@ -149,18 +149,18 @@ describe('Data Input sheet', () => {
     const ws = (await loadXlsx(bytes)).getWorksheet('Report')!
     const xml = await sheetXml(bytes, 1)
     const c1 = cols(xml)
-    for (let c = 11; c <= 58; c++) expect(c1.get(c)?.width, `col ${c}`).toBe(1.65)
-    for (let c = 59; c <= 68; c++) expect(c1.get(c)?.hidden, `col ${c}`).toBe(true)
+    for (let c = 12; c <= 59; c++) expect(c1.get(c)?.width, `col ${c}`).toBe(1.65)
+    for (let c = 60; c <= 69; c++) expect(c1.get(c)?.hidden, `col ${c}`).toBe(true)
     expect(ws.pageSetup.orientation).toBe('landscape')
     expect(ws.pageSetup.paperSize).toBe(9)
     expect(ws.pageSetup.fitToWidth).toBe(1)
     const rows = reportRows(5, 26)
     expect(rows.page(0).header).toBe(37)
     expect(rows.page(1).header).toBe(97)
-    expect(ws.pageSetup.printArea).toBe(`A1:BF${rows.last}`)
+    expect(ws.pageSetup.printArea).toBe(`A1:BG${rows.last}`)
     // a light line between every Gantt column, on both the P and the A row of an activity
     const first = reportRows(5, 26).page(0).first
-    for (const r of [first, first + 1]) for (const c of [11, 12, 30, 58]) {
+    for (const r of [first, first + 1]) for (const c of [12, 13, 31, 59]) {
       expect(ws.getCell(r, c).border?.left?.style, `Gantt line at ${r},${c}`).toBe('thin')
     }
     // ...and the same light line as the lowest-priority conditional format (the way the 6-hour lines are drawn)

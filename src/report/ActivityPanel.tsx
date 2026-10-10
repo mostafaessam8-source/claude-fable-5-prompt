@@ -5,6 +5,7 @@ import {
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
+import { OFFLINE } from '../offline/offline'
 import { activityTone } from './brand'
 import { fmtShort, fmtVariance } from './format'
 
@@ -76,7 +77,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   )
 
   return (
-    <aside style={{ width: PANEL_W }} className="no-print fixed inset-y-0 right-0 z-50 max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
+    <aside style={{ width: PANEL_W, top: 'var(--hdr, 0px)' }} className="no-print fixed bottom-0 right-0 z-50 max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
       <div className="sticky top-0 z-10">
         <div className="flex items-start gap-2 bg-[#00778B] px-3 py-2 text-white">
           <div className="flex-1">
@@ -91,7 +92,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
       </div>
 
       {tab === 'baseline' && (
-        <div className="space-y-4 p-3" role="tabpanel" aria-label="Baseline">
+        <fieldset disabled={!!OFFLINE} className="m-0 min-w-0 space-y-4 border-0 p-3" role="tabpanel" aria-label="Baseline">
           <section>
             <h3 className="mb-1 bg-[#3D3935] px-2 py-1 text-xs font-bold text-white">THE ACTIVITY'S PLAN</h3>
             <label className={lab}>Name<input className={inp} value={a.name} onChange={(e) => edit({ name: e.target.value })} /></label>
@@ -186,7 +187,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
             )}
           </section>
 
-          <section>
+          {!OFFLINE && <section>
             <button className="rounded border border-[#CB2C30] px-2 py-1 text-xs font-semibold text-[#CB2C30]"
               onClick={() => {
                 const nf = succ.length ? ` ${succ.length} activit${succ.length === 1 ? 'y that follows' : 'ies that follow'} it will be unlinked and keep their planned start.` : ''
@@ -194,8 +195,8 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
                 onChange(deleteActivity(project, loc, no, (n) => resOf(n).plannedStartH))
                 onClose()
               }}>Delete this activity</button>
-          </section>
-        </div>
+          </section>}
+        </fieldset>
       )}
 
       {tab === 'actual' && (

@@ -3,6 +3,7 @@ import type { ProjectResult } from '../engine/schedule'
 import type { SiteLayout } from '../layout/parse'
 import { Cover } from './Cover'
 import type { Project } from '../model/types'
+import { OFFLINE } from '../offline/offline'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage } from './LocationPage'
 
@@ -35,7 +36,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
         <div className="report-page"><Cover result={result} layouts={layouts} /></div>
         {result.locations.map((_, i) => (
           <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} onStructure={close} zoom={zoom} showLinks={showLinks}
-            selectedNo={selected?.loc === i ? selected.no : null} onSelect={(no, lane) => setSelected((s0) => ({ loc: i, no, tab: lane === 'actual' ? 'actual' : s0 && s0.loc === i && s0.no === no ? s0.tab : 'baseline' }))} />
+            selectedNo={selected?.loc === i ? selected.no : null} onSelect={(no, lane) => setSelected((s0) => ({ loc: i, no, tab: lane === 'actual' || OFFLINE ? 'actual' : s0 && s0.loc === i && s0.no === no ? s0.tab : 'baseline' }))} />
         ))}
       </div>
     </div>
