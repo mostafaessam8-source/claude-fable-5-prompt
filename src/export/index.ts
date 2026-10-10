@@ -12,7 +12,10 @@ export interface ExportOptions {
 }
 
 /** Report, Site Layouts and Data Input — the same three sheets and layout as the tracker. */
-export async function buildWorkbook(project: Project, layouts: SiteLayout[], opts: ExportOptions = {}) {
+export async function buildWorkbook(source: Project, layouts: SiteLayout[], opts: ExportOptions = {}) {
+  // no empty slots at the end of every block: the blocks are as long as the longest location's last activity number
+  const rows = source.locations.reduce((m, l) => l.activities.reduce((n, a) => Math.max(n, a.no), m), 1)
+  const project = rows < source.activityRowsPerLocation ? { ...source, activityRowsPerLocation: rows } : source
   const wb = new ExcelJS.Workbook()
   wb.creator = project.settings.preparedBy || 'SAR Possession Tracker'
   wb.created = new Date()

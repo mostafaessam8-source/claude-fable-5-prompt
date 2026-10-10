@@ -213,7 +213,7 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       }
       const di = (c: string) => `${D}${c}${dr}`
       vm(1, F(di('A')), cellSt({ font: font(COL.slate, 8) }))
-      vm(2, F(di('B')), cellSt({ font: font(COL.black, 8, true), alignment: left }))
+      vm(2, F(`IF(${di('B')}="","",${di('B')})`), cellSt({ font: font(COL.black, 8, true), alignment: left }))
       vm(3, F(di('O')), cellSt({ font: font(COL.black, 8, true) }))
       vm(4, F(di('D')), cellSt(), DT)
       vm(5, F(`IF(${di('B')}="","",${di('D')}+${di('Y')}/24)`), cellSt({ font: font(COL.black, 8, true) }), DT)
