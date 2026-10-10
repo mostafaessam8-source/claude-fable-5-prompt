@@ -93,26 +93,92 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     window.addEventListener('keydown', on)
     return () => window.removeEventListener('keydown', on)
   })
-  const touch = useRef<{ x: number; y: number } | null>(null)
 
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))
+
+  // ---- zoom like a PDF: pinch with two fingers, drag to pan, double-tap to zoom in / back, wheel on a computer ----
+  const [zv, setZv] = useState({ z: 1, x: 0, y: 0 })
+  const zref = useRef(zv)
+  const MAX_Z = 6
+  const clampZ = (z: number, x: number, y: number) => {
+    const zz = Math.min(MAX_Z, Math.max(1, z))
+    const ox = Math.max(0, (PAGE_W * s * zz - size.w) / 2), oy = Math.max(0, (PAGE_H * s * zz - availH) / 2) // the page cannot be dragged off the screen
+    return { z: zz, x: Math.min(ox, Math.max(-ox, x)), y: Math.min(oy, Math.max(-oy, y)) }
+  }
+  const applyZ = (z: number, x: number, y: number) => { const v = clampZ(z, x, y); zref.current = v; setZv(v) }
+  useEffect(() => { applyZ(1, 0, 0) }, [i, full, size.w, size.h]) // eslint-disable-line react-hooks/exhaustive-deps
+  const stage = useRef<HTMLDivElement>(null)
+  const rel = (cx: number, cy: number) => { const r = stage.current!.getBoundingClientRect(); return { x: cx - (r.left + r.width / 2), y: cy - (r.top + r.height / 2) } } // from the stage centre
+  const pts = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<null | { d0: number; z0: number; x0: number; y0: number; cx0: number; cy0: number }>(null)
+  const tap = useRef<null | { x: number; y: number; moved: boolean; dx: number }>(null)
+  const lastTap = useRef(0)
+  const zoomAt = (cx: number, cy: number, factor: number) => {
+    const { z, x, y } = zref.current
+    const nz = Math.min(MAX_Z, Math.max(1, z * factor))
+    applyZ(nz, cx - (cx - x) * (nz / z), cy - (cy - y) * (nz / z))
+  }
+  const onDown = (e: React.PointerEvent) => {
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pts.current.size === 1) tap.current = { x: e.clientX, y: e.clientY, moved: false, dx: 0 }
+    if (pts.current.size === 2) {
+      const [a, b] = [...pts.current.values()]
+      const m = rel((a.x + b.x) / 2, (a.y + b.y) / 2)
+      pinch.current = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: zref.current.z, x0: zref.current.x, y0: zref.current.y, cx0: m.x, cy0: m.y }
+      if (tap.current) tap.current.moved = true
+    }
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const prev = pts.current.get(e.pointerId)
+    if (!prev) return
+    pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pts.current.size >= 2 && pinch.current) {
+      const [a, b] = [...pts.current.values()]
+      const g = pinch.current
+      const nz = Math.min(MAX_Z, Math.max(1, g.z0 * (Math.hypot(a.x - b.x, a.y - b.y) / g.d0)))
+      const m = rel((a.x + b.x) / 2, (a.y + b.y) / 2)
+      // the point of the page that was under the fingers stays under them, wherever they go
+      applyZ(nz, m.x - (g.cx0 - g.x0) * (nz / g.z0), m.y - (g.cy0 - g.y0) * (nz / g.z0))
+      return
+    }
+    const t = tap.current
+    if (t && Math.hypot(e.clientX - t.x, e.clientY - t.y) > 8) t.moved = true
+    if (t) t.dx = e.clientX - t.x
+    if (zref.current.z > 1.001) applyZ(zref.current.z, zref.current.x + (e.clientX - prev.x), zref.current.y + (e.clientY - prev.y))
+  }
+  const onUp = (e: React.PointerEvent) => {
+    const wasPinch = pts.current.size >= 2
+    pts.current.delete(e.pointerId)
+    if (wasPinch) { pinch.current = null; pts.current.clear(); return }
+    const t = tap.current
+    tap.current = null
+    if (!t) return
+    if (!t.moved) {
+      const now = Date.now()
+      if (now - lastTap.current < 320) { // double tap: zoom in there, or back out
+        lastTap.current = 0
+        const c = rel(e.clientX, e.clientY)
+        if (zref.current.z > 1.05) applyZ(1, 0, 0); else zoomAt(c.x, c.y, 2.5)
+      } else { lastTap.current = now; if (full) poke() }
+    } else if (zref.current.z <= 1.02 && Math.abs(t.dx) > 60) go(t.dx < 0 ? 1 : -1) // swipe to the next / previous page (only when not zoomed)
+  }
+  useEffect(() => {
+    const el = stage.current
+    if (!el) return
+    const on = (e: WheelEvent) => { e.preventDefault(); const c = rel(e.clientX, e.clientY); zoomAt(c.x, c.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025))) }
+    el.addEventListener('wheel', on, { passive: false })
+    return () => el.removeEventListener('wheel', on)
+  }) // eslint-disable-line react-hooks/exhaustive-deps
   const portrait = size.h > size.w * 1.1
 
   const btn = 'rounded bg-white/15 px-3 py-2 text-sm font-semibold text-white active:bg-white/30 disabled:opacity-30'
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#cfd6d8', overflow: 'hidden', touchAction: 'pan-y pinch-zoom' }}
-      onClick={() => full && poke()}
-      onTouchStart={(e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY } }}
-      onTouchEnd={(e) => {
-        const a = touch.current, t = e.changedTouches[0]
-        touch.current = null
-        if (!a) return
-        const dx = t.clientX - a.x, dy = t.clientY - a.y
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1)
-      }}>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: availH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: PAGE_W * s, height: PAGE_H * s, position: 'relative', boxShadow: '0 2px 10px rgba(0,0,0,.25)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: '#cfd6d8', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
+      <div ref={stage} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: availH, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', overflow: 'hidden' }}
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div style={{ width: PAGE_W * s, height: PAGE_H * s, position: 'relative', boxShadow: '0 2px 10px rgba(0,0,0,.25)', transform: `translate(${zv.x}px, ${zv.y}px) scale(${zv.z})`, transformOrigin: 'center center' }}>
           <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${s})`, transformOrigin: '0 0' }}>
             {i === 0
               ? <div className="report-page"><Cover result={result} layouts={layouts} /></div>
@@ -131,13 +197,14 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
       <div style={{
         position: 'absolute', left: 0, right: 0, bottom: 0, height: BAR_H, background: 'rgba(61,57,53,.94)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px',
         transition: 'opacity .25s, transform .25s', opacity: barVisible ? 1 : 0, transform: barVisible ? 'none' : 'translateY(100%)', pointerEvents: barVisible ? 'auto' : 'none',
-      }} onClick={(e) => e.stopPropagation()}>
+      }}>
         <button className={btn} disabled={i === 0} onClick={() => go(-1)} aria-label="Previous page">◀ Prev</button>
         <select aria-label="Page" value={i} onChange={(e) => setI(Number(e.target.value))}
           style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,.12)', color: '#fff', border: 0, borderRadius: 4, padding: '9px 6px', fontSize: 13, fontWeight: 600 }}>
           {titles.map((t, k) => <option key={k} value={k} style={{ color: '#000' }}>{k + 1} / {titles.length} · {t}</option>)}
         </select>
         <button className={btn} disabled={i === last} onClick={() => go(1)} aria-label="Next page">Next ▶</button>
+        {zv.z > 1.05 && <button className={btn} onClick={() => applyZ(1, 0, 0)} aria-label="Fit to screen">Fit</button>}
         <button className={btn} style={{ background: '#00778B' }} onClick={() => (full ? exitFull() : enterFull())} aria-label={full ? 'Exit full screen' : 'Full screen'}>{full ? '✕ Exit full screen' : '⛶ Full screen'}</button>
       </div>
 
