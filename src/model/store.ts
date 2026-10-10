@@ -21,7 +21,7 @@ export function loadProject(key = KEY): Saved | null {
     if (!raw) return null
     const s = JSON.parse(raw, reviver) as Saved
     // layouts saved before the culvert type existed have no `kind`
-    return { ...s, layouts: s.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell' })) }
+    return { ...s, layouts: s.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell', length: l.length ?? '' })) }
   } catch { return null }
 }
 export function clearProject() {

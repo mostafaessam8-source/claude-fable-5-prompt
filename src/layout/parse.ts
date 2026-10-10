@@ -11,6 +11,8 @@ export interface SiteLayout {
   cells: number | null
   /** Cell or pipe — `cells` is the count of either. */
   kind: CulvertKind
+  /** Culvert length as written, with its unit: "24 m". */
+  length: string
   lines: string
   otmp: string
   station: string
@@ -27,19 +29,22 @@ export function parseLayout(name: string, scope: string): SiteLayout {
   const parts = scope.split(/[│|]/).map(clean).filter(Boolean)
   let cells: number | null = null
   let kind: CulvertKind = 'cell'
+  let length = ''
   let lines = ''
   let otmp = ''
   let station = ''
   for (const p of parts) {
     const c = p.match(/^(\d+)\s*(cell|pipe)s?$/i)
+    const ln = p.match(/^(?:length|len\.?|l)(?:\s*[:=]\s*|\s+)(.+)$/i)
     const o = p.match(/^(.+?)\s+OTMP(?:\s+from\s+(.+))?$/i)
     if (c) { cells = Number(c[1]); kind = c[2].toLowerCase() as CulvertKind }
+    else if (ln && /\d/.test(ln[1])) length = clean(ln[1])
     else if (o) {
       otmp = clean(o[1])
       station = clean(o[2] ?? '')
     } else if (!lines) lines = p
   }
-  return { code, chainage, cells, kind, lines, otmp, station }
+  return { code, chainage, cells, kind, length, lines, otmp, station }
 }
 
 /** "C263  –  KM 209+025" */
@@ -49,13 +54,14 @@ export const composeName = (l: SiteLayout) => [l.code, l.chainage].filter(Boolea
 export function composeScope(l: SiteLayout): string {
   const parts: string[] = []
   if (l.cells != null) parts.push(`${l.cells} ${unit(l.kind, l.cells)}`)
+  if (l.length) parts.push(`Length ${l.length}`)
   if (l.lines) parts.push(l.lines)
   if (l.otmp) parts.push(`${l.otmp} OTMP${l.station ? ` from ${l.station}` : ''}`)
   return parts.join('  │  ')
 }
 
 const sameLayout = (a: SiteLayout, b: SiteLayout) =>
-  a.code === b.code && a.chainage === b.chainage && a.cells === b.cells && a.kind === b.kind && a.lines === b.lines &&
+  a.code === b.code && a.chainage === b.chainage && a.cells === b.cells && a.kind === b.kind && a.length === b.length && a.lines === b.lines &&
   a.otmp === b.otmp && a.station === b.station
 
 /**
@@ -72,6 +78,7 @@ export function pageTitle(project: string, l: SiteLayout | undefined, fallback: 
   const bits = [project, `CULVERT ${l?.code || fallback}`]
   if (l?.chainage) bits.push(l.chainage)
   if (l?.cells) bits.push(`${l.cells} ${unit(l.kind, l.cells)}`.toUpperCase())
+  if (l?.length) bits.push(`LENGTH ${l.length}`.toUpperCase())
   if (l?.otmp) bits.push(`${l.otmp} OTMP${l.station ? ' / ' + l.station : ''}`)
   return bits.join(sep)
 }

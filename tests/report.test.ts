@@ -37,13 +37,13 @@ describe('formatting', () => {
 describe('layout parsing', () => {
   it('splits name and scope', () => {
     expect(parseLayout('C263  –  KM 209+025', '1 cell  │  Main Line 1 & Main Line 3  │  TSO OTMP from Station 29')).toEqual({
-      code: 'C263', chainage: 'KM 209+025', cells: 1, kind: 'cell', lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29',
+      code: 'C263', chainage: 'KM 209+025', cells: 1, kind: 'cell', length: '', lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29',
     })
     const p = parseLayout('C288  –  KM 337+391', '3 cells  │  Main Line 1 & Main Line 3  │  SABATCO OTMP from Station 35')
     expect(p).toMatchObject({ cells: 3, otmp: 'SABATCO', station: 'Station 35' })
   })
   it('leaves what it cannot find empty', () => {
-    expect(parseLayout('X1', '')).toEqual({ code: 'X1', chainage: '', cells: null, kind: 'cell', lines: '', otmp: '', station: '' })
+    expect(parseLayout('X1', '')).toEqual({ code: 'X1', chainage: '', cells: null, kind: 'cell', length: '', lines: '', otmp: '', station: '' })
   })
 })
 

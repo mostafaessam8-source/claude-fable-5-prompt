@@ -11,6 +11,7 @@ export function LayoutCard({ layout }: { layout: SiteLayout }) {
   const title = [layout.code, layout.chainage].filter(Boolean).join('  -  ')
   const pipe = layout.kind === 'pipe'
   const left = layout.cells != null ? `${layout.cells} ${unit(layout.kind, layout.cells)}`.toUpperCase() : `${pipe ? 'PIPES' : 'CELLS'}: -`
+  const lenText = layout.length ? `  ·  L ${layout.length}`.toUpperCase() : ''
   const right = [layout.otmp, layout.station].filter(Boolean).join(' – ')
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', background: C.tint1 }} role="img"
@@ -66,7 +67,7 @@ export function LayoutCard({ layout }: { layout: SiteLayout }) {
 
       {/* caption bar */}
       <rect y={H - CAP} width={W} height={CAP} fill={C.black} />
-      <text x={8} y={H - 8} fill="#fff" fontSize={10} fontWeight={700}>{left}</text>
+      <text x={8} y={H - 8} fill="#fff" fontSize={10} fontWeight={700}>{left}{lenText}</text>
       <text x={W - 8} y={H - 8} fill="#fff" fontSize={10} fontWeight={700} textAnchor="end">{right}</text>
     </svg>
   )

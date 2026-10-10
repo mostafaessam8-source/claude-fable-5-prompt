@@ -84,7 +84,7 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
   const sumLast = rows.sumTotal - 1
   const cellsText = (i: number) => {
     const c = layouts[i]?.cells
-    return c == null ? '' : `   (${c} ${unit(layouts[i].kind, c)})`
+    return c == null ? '' : `   (${c} ${unit(layouts[i].kind, c)}${layouts[i].length ? `, ${layouts[i].length}` : ''})`
   }
   project.locations.forEach((_, i) => {
     const r = sumFirst + i
@@ -165,7 +165,7 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
 
     merge(full(pg.header), `   ${pageTitle(s.projectName, lay, loc.name, '    -    ')}`, { fill: solid(COL.blue), font: font('#FFFFFF', 15, true), alignment: { horizontal: 'left', vertical: 'middle' } })
     ws.getRow(pg.header).height = 26
-    const cellsPart = lay?.cells != null ? `${lay.cells} ${unit(lay.kind, lay.cells)}        ` : ''
+    const cellsPart = (lay?.cells != null ? `${lay.cells} ${unit(lay.kind, lay.cells)}        ` : '') + (lay?.length ? `Length ${lay.length}        ` : '')
     merge(`A${pg.strip}:I${pg.strip}`, F(`"   ${cellsPart}ACTUAL  "&TEXT(H${sr},"0%")&"        PLANNED  "&TEXT(G${sr},"0%")&"        PLAN FINISH  "&TEXT(D${sr},"ddd dd-mmm hh:mm")`), { fill: solid(COL.grey), font: font(COL.black, 10, true), alignment: { horizontal: 'left', vertical: 'middle' } })
     merge(`${G0}${pg.strip}:${G1}${pg.strip}`, F(`C${sr}&"        FORECAST  "&TEXT(E${sr},"ddd dd-mmm hh:mm")&"        "&TEXT(ABS(F${sr}),"0.0")&IF(F${sr}>0," h LATE",IF(F${sr}<0," h EARLY"," h"))`), { fill: solid(COL.slate), font: font('#FFFFFF', 11, true), alignment: center })
     ws.getRow(pg.strip).height = 22

@@ -6,14 +6,14 @@ import { applyChanges, diffProposals } from '../src/layout/diff'
 import { LayoutCard } from '../src/layout/LayoutCard'
 import type { SiteLayout } from '../src/layout/parse'
 
-const L = (over: Partial<SiteLayout>): SiteLayout => ({ code: 'C263', chainage: 'KM 209+025', cells: 1, kind: 'cell', lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29', ...over })
-const P = (over = {}) => ({ code: 'C263', chainage: null, cells: null, kind: null, lines: null, otmp: null, station: null, ...over })
+const L = (over: Partial<SiteLayout>): SiteLayout => ({ code: 'C263', chainage: 'KM 209+025', cells: 1, kind: 'cell', length: '', lines: 'Main Line 1 & Main Line 3', otmp: 'TSO', station: 'Station 29', ...over })
+const P = (over = {}) => ({ code: 'C263', chainage: null, cells: null, kind: null, length: null, lines: null, otmp: null, station: null, ...over })
 
 describe('request', () => {
   const req = buildRequest('C263 has 2 cells', [{ code: 'C263', name: 'C263 – KM 209+025' }])
   it('forces the tool call and tells the model not to invent', () => {
     expect(req.tool_choice).toEqual({ type: 'tool', name: FUNCTION_NAME })
-    expect(req.tools[0].input_schema.properties.locations.items.required).toEqual(['code', 'chainage', 'cells', 'kind', 'lines', 'otmp', 'station'])
+    expect(req.tools[0].input_schema.properties.locations.items.required).toEqual(['code', 'chainage', 'cells', 'kind', 'length', 'lines', 'otmp', 'station'])
     expect(SYSTEM_PROMPT).toMatch(/return null/)
     expect(SYSTEM_PROMPT).toMatch(/Never invent/)
     expect(req.messages[0].content).toContain('<pasted_text>\nC263 has 2 cells')
@@ -132,5 +132,20 @@ describe('culvert type: cells or pipes', () => {
     expect(h).toContain('PIPE 1')
     expect(h).toContain('2 PIPES<')
     expect(h).not.toContain('CELL 1')
+  })
+})
+
+describe('culvert length', () => {
+  it('parses, composes, shows on the card and is proposed by Claude', async () => {
+    const { parseLayout, composeScope, pageTitle } = await import('../src/layout/parse')
+    const l = parseLayout('C300  –  KM 1', '2 pipes  │  Length 24 m  │  Main Line 1  │  TSO OTMP from Station 3')
+    expect(l).toMatchObject({ length: '24 m', lines: 'Main Line 1', cells: 2 })
+    expect(composeScope(l)).toBe('2 pipes  │  Length 24 m  │  Main Line 1  │  TSO OTMP from Station 3')
+    expect(parseLayout('X', 'Main Line 1').length).toBe('')
+    expect(pageTitle('P', l, 'x')).toContain('LENGTH 24 M')
+    const h = renderToStaticMarkup(createElement(LayoutCard, { layout: { ...l, cells: 2 } }))
+    expect(h).toContain('L 24 M')
+    expect(normalizeProposals({ locations: [{ code: 'A', length: ' 12.5 m ' }] })[0].length).toBe('12.5 m')
+    expect(diffProposals([L({})], [P({ length: '30 m' })]).rows[0].changes).toEqual([{ field: 'length', from: null, to: '30 m' }])
   })
 })

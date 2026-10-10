@@ -15,12 +15,13 @@ export interface NewProjectInput {
   chainage?: string
   kind?: CulvertKind
   count?: number | null
+  length?: string
 }
 
 /** A blank project from scratch: the possession window and one location with a single starter activity. */
 export function createProject(i: NewProjectInput): { project: Project; layouts: SiteLayout[] } {
   const layout: SiteLayout = {
-    code: i.code.trim(), chainage: (i.chainage ?? '').trim(), cells: i.count ?? null, kind: i.kind ?? 'cell', lines: '', otmp: '', station: '',
+    code: i.code.trim(), chainage: (i.chainage ?? '').trim(), cells: i.count ?? null, kind: i.kind ?? 'cell', length: (i.length ?? '').trim(), lines: '', otmp: '', station: '',
   }
   const name = composeName(layout) || 'Location 1'
   const project: Project = {

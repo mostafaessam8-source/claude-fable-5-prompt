@@ -260,6 +260,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       <div style={{ display: 'flex', height: 24, alignItems: 'center', fontWeight: 700, fontSize: 10 }}>
         <div style={{ width: TABLE_W + PA_W, background: C.grey, height: '100%', display: 'flex', alignItems: 'center', gap: 18, padding: '0 10px', color: C.black }}>
           {layout?.cells ? <span>{layout.cells} {unit(layout.kind, layout.cells)}</span> : null}
+          {layout?.length ? <span>LENGTH {layout.length}</span> : null}
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>

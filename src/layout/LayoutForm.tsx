@@ -47,7 +47,7 @@ export function LayoutForm({ layouts, names, onChange }: {
         <h2 className="mb-2 bg-[#3D3935] px-3 py-1.5 text-sm font-bold text-white">SITE LAYOUT FACTS</h2>
         <table className="w-full text-sm">
           <thead className="bg-[#768692] text-white">
-            <tr>{['Code', 'Chainage', 'Type', 'Count', 'Lines', 'OTMP', 'Base station'].map((h) => <th key={h} className="px-2 py-1 text-left">{h}</th>)}</tr>
+            <tr>{['Code', 'Chainage', 'Type', 'Count', 'Length', 'Lines', 'OTMP', 'Base station'].map((h) => <th key={h} className="px-2 py-1 text-left">{h}</th>)}</tr>
           </thead>
           <tbody>
             {layouts.map((l, i) => (
@@ -58,6 +58,7 @@ export function LayoutForm({ layouts, names, onChange }: {
                   <option value="cell">Cells</option><option value="pipe">Pipes</option></select></td>
                 <td className="p-1 w-20"><input className={input} type="number" min={0} value={l.cells ?? ''}
                   onChange={(e) => edit(i, { cells: e.target.value === '' ? null : Math.max(0, Math.floor(Number(e.target.value))) })} /></td>
+                <td className="p-1 w-24"><input className={input} value={l.length ?? ''} placeholder="24 m" aria-label="Length" onChange={(e) => edit(i, { length: e.target.value })} /></td>
                 <td className="p-1"><input className={input} value={l.lines} onChange={(e) => edit(i, { lines: e.target.value })} /></td>
                 <td className="p-1 w-32"><input className={input} value={l.otmp} onChange={(e) => edit(i, { otmp: e.target.value })} /></td>
                 <td className="p-1 w-36"><input className={input} value={l.station} onChange={(e) => edit(i, { station: e.target.value })} /></td>
