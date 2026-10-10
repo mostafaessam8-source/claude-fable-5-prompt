@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { askClaude, ClaudeError, type Proposal } from './claude'
 import { applyChanges, diffProposals, type RowDiff } from './diff'
+import { OFFLINE } from '../offline/offline'
 import type { CulvertKind, SiteLayout } from './parse'
 
 const PROXY = (import.meta.env.VITE_CLAUDE_PROXY_URL as string | undefined) || undefined
@@ -67,6 +68,7 @@ export function LayoutForm({ layouts, names, onChange }: {
         <p className="mt-1 text-xs text-slate-500">Pre-filled from the location name and scope line of the imported workbook. Edit freely.</p>
       </section>
 
+      {!OFFLINE && (
       <section>
         <h2 className="mb-2 bg-[#00778B] px-3 py-1.5 text-sm font-bold text-white">ASK CLAUDE TO FILL THIS</h2>
         <textarea className={`${input} h-36 font-mono`} value={text} onChange={(e) => setText(e.target.value)}
@@ -107,6 +109,7 @@ export function LayoutForm({ layouts, names, onChange }: {
           </div>
         )}
       </section>
+      )}
     </main>
   )
 }

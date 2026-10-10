@@ -47,9 +47,20 @@ describe('offline copy plumbing', () => {
     const { updateFileText, parseUpdateFile, embed } = await import('../src/offline/offline')
     const base = await parseWorkbook(FIXTURE)
     const p = patchActivity(base, 0, 2, { actualStartDate: new Date(Date.UTC(2026, 9, 16)), actualStartTime: 1.5, remarks: 'ok </script> "quoted"' })
-    const back = parseUpdateFile(updateFileText(p, layoutsOf(p), 'abc'))
+    const file = parseUpdateFile(updateFileText(p, layoutsOf(p), 'abc'))
+    const back = file.project
     expect(back.locations[0].activities[1].actualStartDate).toEqual(new Date(Date.UTC(2026, 9, 16)))
     expect(diffUpdate(base, back).updates).toHaveLength(1)
+    // a corrected site layout travels with the update and can be applied
+    const mine = layoutsOf(base)
+    const theirs = mine.map((l, i) => (i === 1 ? { ...l, kind: 'pipe' as const, cells: 2 } : l))
+    const f2 = parseUpdateFile(updateFileText(base, theirs, 'abc'))
+    const d2 = diffUpdate(base, f2.project, mine, f2.layouts)
+    expect(d2.layouts).toHaveLength(1)
+    expect(d2.layouts[0].changes.map((c) => c.field).sort()).toEqual(['cells', 'kind'])
+    const { applyLayoutUpdate } = await import('../src/import/update')
+    expect(applyLayoutUpdate(mine, d2, new Set(['layout:1']))[1]).toMatchObject({ kind: 'pipe', cells: 2 })
+    expect(applyLayoutUpdate(mine, d2, new Set())[1].kind).toBe(mine[1].kind)
     expect(() => parseUpdateFile('{"hello":1}')).toThrow(/not a SAR update file/)
     expect(() => parseUpdateFile('nope')).toThrow(/not a SAR update file/)
     // embedded data can never close its <script> tag
