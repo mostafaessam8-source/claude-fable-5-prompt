@@ -71,6 +71,9 @@ export function parseLocationLabel(label: string) {
 interface Raw {
   row: number
   name: string
+  /** What the sheet's own start cell says: a link to another row's finish/start, or a typed time. */
+  kLink: { kind: 'FS' | 'SS'; row: number } | null
+  kRaw: number | null
   /** null = blank in the source: imported as such, so it shows ! CHECK DURATION. */
   durH: number | null
   startH: number
@@ -78,6 +81,13 @@ interface Raw {
 }
 
 const EPS = 1 / 120 // half a minute, in hours
+const PARALLEL_H = 2 // a typed start up to this far before the row above is a parallel activity, not a missing day
+
+/** "=L69" → finish-to-start with row 69; "=K69" → start-to-start; anything else → null (a typed time). */
+export function linkOfFormula(f: string | undefined): { kind: 'FS' | 'SS'; row: number } | null {
+  const m = f?.replace(/\$/g, '').trim().match(/^=?\s*([LK])(\d+)$/i)
+  return m ? { kind: m[1].toUpperCase() === 'L' ? 'FS' : 'SS', row: Number(m[2]) } : null
+}
 
 /**
  * The sheet holds start/finish times only. Rebuild a predecessor link that reproduces each start:
@@ -164,8 +174,6 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
     const label = parseLocationLabel(text(plain(ws.getCell(`A${lr}`).value)))
     const name = [label.code, label.chainage].filter(Boolean).join('  –  ')
     const raws: Raw[] = []
-    let prevFinish: number | null = null
-    let prevStart: number | null = null
 
     for (let r = lr + 1; r <= end; r++) {
       const a = text(plain(ws.getCell(`A${r}`).value))
@@ -185,26 +193,18 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
         warnings.push(`${name} row ${r} "${b}": the duration is blank in the source — imported as blank (shows ! CHECK DURATION), not invented.`)
       }
       if (durH != null && durH < 0) continue
-      let startH = hoursOf(plain(ws.getCell(`K${r}`).value))
-      if (startH == null) {
-        startH = prevFinish ?? 0
-        warnings.push(`${name} row ${r} "${b}": no planned start — placed straight after the row above.`)
-      }
+      const kRaw = hoursOf(plain(ws.getCell(`K${r}`).value))
+      const kLink = linkOfFormula(ws.getCell(`K${r}`).formula)
       const finH = hoursOf(plain(ws.getCell(`L${r}`).value))
-      if (durH != null && finH != null && Math.abs(finH - startH - durH) > 1 / 60 + 1e-9) {
+      if (durH != null && finH != null && kRaw != null && Math.abs(finH - kRaw - durH) > 1 / 60 + 1e-9) {
         warnings.push(
-          `${name} row ${r} "${b}": planned start→finish span is ${(finH - startH).toFixed(2)} h but No. Hours is ${durH.toFixed(2)} h — ` +
+          `${name} row ${r} "${b}": planned start→finish span is ${(finH - kRaw).toFixed(2)} h but No. Hours is ${durH.toFixed(2)} h — ` +
             `the duration (No. Hours) was used; check the source.`,
         )
       }
-      if (prevStart != null && startH < prevStart - 2) {
-        warnings.push(
-          `${name} row ${r} "${b}": planned start ${startH.toFixed(1)} h is ${(prevStart - startH).toFixed(1)} h earlier than the row above — ` +
-            `often a missing +24 h on a time past midnight (brief §10); check the source.`,
-        )
+      if (kRaw == null && !kLink) {
+        warnings.push(`${name} row ${r} "${b}": no planned start — placed straight after the row above.`)
       }
-      prevStart = startH
-      prevFinish = startH + (durH ?? 0)
 
       const pctRaw = num(plain(ws.getCell(`F${r}`).value))
       const pct = pctRaw == null ? null : pctRaw > 1 ? Math.min(1, pctRaw / 100) : pctRaw
@@ -220,7 +220,7 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
       const s = dateOf('I', 'N')
       const f = dateOf('J', 'O')
       raws.push({
-        row: r, name: b.replace(/\s+/g, ' '), durH, startH,
+        row: r, name: b.replace(/\s+/g, ' '), durH, kLink, kRaw, startH: 0,
         actual: {
           actualStartDate: s.d, actualStartTime: s.t, actualFinishDate: f.d, actualFinishTime: f.t,
           pct, remarks: text(plain(ws.getCell(`S${r}`).value)),
@@ -228,7 +228,47 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
       })
     }
 
+    // The sheet mixes rows linked by formula (=L69: start when row 69 finishes — the real logic) with typed
+    // times. Typed times show only a time of day, so one past midnight can lack its +24 h and every row linked
+    // after it inherits the error. So the schedule is rebuilt from the links with the No. Hours durations, and a
+    // typed time is moved forward whole days until it is not hours behind the row above.
+    const rowIdx = new Map(raws.map((x, k) => [x.row, k]))
+    const explicit: ({ pred: number; rel: Rel } | null)[] = []
+    raws.forEach((x, k) => {
+      const ref = x.kLink ? rowIdx.get(x.kLink.row) : undefined
+      let start: number
+      if (x.kLink && ref != null && ref < k) {
+        start = x.kLink.kind === 'FS' ? raws[ref].startH + (raws[ref].durH ?? 0) : raws[ref].startH
+        explicit[k] = { pred: ref + 1, rel: x.kLink.kind }
+      } else if (x.kLink && ref == null && k > 0) {
+        // The link points at a row that has no times (e.g. the "No Work Hours" rest row): start together with
+        // the row above, the way the sheet starts destressing together with the OTMP return movement.
+        start = raws[k - 1].startH
+        explicit[k] = { pred: k, rel: 'SS' }
+        warnings.push(
+          `${name} row ${x.row} "${x.name}": its start links to row ${x.kLink.row}, which has no times (a rest row), ` +
+            `so it was started together with the row above (${start.toFixed(1)} h). Check the source.`,
+        )
+      } else {
+        explicit[k] = null
+        start = x.kRaw ?? (k > 0 ? raws[k - 1].startH + (raws[k - 1].durH ?? 0) : 0)
+        if (k > 0 && x.kRaw != null) {
+          let days = 0
+          while (start + 24 * days < raws[k - 1].startH - PARALLEL_H && days < 3) days++
+          start += 24 * days
+        }
+      }
+      x.startH = Math.round(start * 60) / 60
+      // Only typed times are worth a warning: a linked row simply follows its predecessor.
+      if (!explicit[k] && x.kRaw != null && Math.abs(x.startH - x.kRaw) > 1 / 60) {
+        warnings.push(
+          `${name} row ${x.row} "${x.name}": the sheet has a typed start of ${x.kRaw.toFixed(1)} h that shows only a time of day, ` +
+            `so ${x.startH.toFixed(1)} h (+${(x.startH - x.kRaw).toFixed(0)} h) was used. Check the source.`,
+        )
+      }
+    })
     const links = reconstructLinks(raws)
+    explicit.forEach((e, k) => { if (e) links[k] = { pred: e.pred, rel: e.rel, lagH: 0 } })
     const activities: ActivityInput[] = raws.map((x, k) => ({
       no: k + 1, sourceRow: x.row, name: x.name, durationH: x.durH,
       pred: links[k].pred, rel: links[k].rel, lagH: links[k].lagH, ...x.actual,
@@ -237,6 +277,10 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
   })
 
   if (locations.length === 0) throw new ImportError('No "LOCATION: …" rows were found.')
+  warnings.push(
+    'Rows whose start is linked by formula (=L69) were recomputed from those links with the No. Hours durations. ' +
+      "Where the sheet's own typed finish times disagree with No. Hours (see the span warnings), later rows therefore start earlier than the sheet shows.",
+  )
   const perLocation = Math.max(...locations.map((l) => l.activities.length))
   const counts = new Set(locations.map((l) => l.activities.length))
   if (counts.size > 1) warnings.push(`Locations have different activity counts (${[...counts].join(', ')}); every block is sized for ${perLocation}.`)
