@@ -7,6 +7,8 @@ import {
 import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { Project, Rel } from '../model/types'
+import { toTable } from '../links/table'
+import { TablePaste } from './TablePaste'
 import { activityTone } from './brand'
 
 const cell = 'border-b border-slate-200 px-1 py-0.5'
@@ -39,6 +41,8 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const anchor = useRef<number | null>(null)
   const [dragging, setDragging] = useState<number[] | null>(null)
   const [drop, setDrop] = useState<number | null | undefined>(undefined) // undefined = no target, null = the end
+  const [pasting, setPasting] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const li = Math.min(loc, project.locations.length - 1)
   const acts = project.locations[li].activities
@@ -68,6 +72,15 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
     let n = base, i = 2
     while (names.has(n)) n = `${base} ${i++}`
     return n
+  }
+  const copyTable = async () => {
+    const text = toTable(project, result, li)
+    try { await navigator.clipboard.writeText(text) } catch {
+      const ta = document.createElement('textarea') // older browsers / no clipboard permission
+      ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove()
+    }
+    setCopied(`Copied ${acts.length} rows — paste into Excel (Ctrl+V).`)
+    setTimeout(() => setCopied(null), 4000)
   }
   const picked = acts.filter((a) => sel.has(a.no)).map((a) => a.no)
 
@@ -141,6 +154,9 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
           onChange={(e) => pickLoc(Number(e.target.value))}>
           {project.locations.map((l, i) => <option key={i} value={i}>{l.name} ({l.activities.length})</option>)}
         </select>
+        <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={copyTable} title="Copy this location's table to the clipboard, to edit in Excel">Copy table</button>
+        <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={() => setPasting(true)} title="Paste the whole table back from Excel">Paste table…</button>
+        {copied && <span className="text-xs font-semibold text-[#00778B]">{copied}</span>}
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={insertBelow}>{picked.length ? '+ Insert below selection' : '+ Add activity'}</button>
         <button className={btn} disabled={!picked.length} onClick={copy}>Duplicate</button>
         <button className={btn} disabled={!picked.length} onClick={() => shiftSel(-1)}>▲ Up</button>
@@ -148,6 +164,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         <button className={`${btn} border-[#CB2C30] text-[#CB2C30]`} disabled={!picked.length} onClick={remove}>Delete{picked.length ? ` (${picked.length})` : ''}</button>
         <span className="text-xs text-slate-500">Tick rows (Shift-click for a range), drag ⠿ to reorder. Ctrl+Z undoes.</span>
       </div>
+      {pasting && <TablePaste project={project} loc={li} onApply={(p) => { onChange(p); setSel(new Set()); setNote(null) }} onClose={() => setPasting(false)} />}
       {note && (
         <p className="mb-2 flex items-start gap-2 border-l-4 border-[#F1B434] bg-amber-50 p-2 text-xs">
           <span className="flex-1">{note}</span><button className="font-bold" onClick={() => setNote(null)}>✕</button>
