@@ -310,3 +310,19 @@ describe('an edited activity list still exports and re-imports', () => {
     expect(back.locations[1].activities.map((a) => a.no)).toEqual(p.locations[1].activities.map((a) => a.no))
   }, 60000)
 })
+
+describe('empty slots', () => {
+  it('a project with spare row slots exports without them (no "0" activity rows)', async () => {
+    const p = await parseWorkbook(FIXTURE)
+    const spare = { ...p, activityRowsPerLocation: p.activityRowsPerLocation + 3 }
+    const back = await parseWorkbook(await exportXlsx(spare, layoutsOf(spare)))
+    expect(back.activityRowsPerLocation).toBe(p.activityRowsPerLocation)
+  }, 60000)
+  it.skipIf(!hasSoffice)('a blank activity name shows as blank on the Report, not 0', async () => {
+    const p = await parseWorkbook(FIXTURE)
+    const q = { ...p, locations: p.locations.map((l, i) => (i ? l : { ...l, activities: l.activities.filter((a) => a.no !== 5) })) } // slot 5 stays blank in the block
+    const { val } = await recalc(await exportXlsx(q, layoutsOf(q)))
+    const first = reportRows(q.locationCount, q.activityRowsPerLocation).page(0).first
+    expect(String(val('Report', `B${first + 2 * 4}`) ?? '')).toBe('')
+  }, 240_000)
+})
