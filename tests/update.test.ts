@@ -92,3 +92,17 @@ describe('a contractor who restructures the plan', () => {
     expect(diffUpdate(base, base, lay, lay).structure).toEqual([])
   }, 60000)
 })
+
+describe('the saved single-file copy', () => {
+  it('is read like a .json: the project is taken out of the embedded data', async () => {
+    const { embed, parseUpdateFile } = await import('../src/offline/offline')
+    const base = await parseWorkbook(FIXTURE)
+    const p = patchActivity(base, 0, 2, { remarks: 'in the html </script> too' })
+    const html = `<!doctype html><html><head><script type="application/json" id="sar-offline-data">${embed({ id: 'x', preparedAt: '', project: p, layouts: layoutsOf(p) })}</script><script type="module">console.log(1)</script></head><body></body></html>`
+    const file = parseUpdateFile(html)
+    expect(file.project.locations[0].activities[1].remarks).toBe('in the html </script> too')
+    expect(file.layouts).toHaveLength(base.locations.length)
+    expect(diffUpdate(base, file.project, layoutsOf(base), file.layouts).updates).toHaveLength(1)
+    expect(() => parseUpdateFile('<html><body>nothing</body></html>')).toThrow(/not a SAR update file/)
+  }, 60000)
+})

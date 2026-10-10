@@ -5,6 +5,16 @@ import { embed, DATA_ID, type OfflinePayload } from './offline'
  * embedded. Only works from the built app (the dev server serves modules that cannot be inlined).
  */
 export async function buildOfflineHtml(payload: OfflinePayload): Promise<string> {
+  // Already running from a single-file copy (the contractor's): its scripts and styles are inline in this very page, so
+  // the page itself, emptied of what React drew and with the data swapped for the current project, is the new file.
+  const own = document.getElementById(DATA_ID)
+  if (own) {
+    const root = document.documentElement.cloneNode(true) as HTMLElement
+    root.querySelector('#root')?.replaceChildren()
+    root.removeAttribute('style')
+    root.querySelector(`#${DATA_ID}`)!.textContent = embed(payload)
+    return `<!doctype html>\n${root.outerHTML}`
+  }
   if (import.meta.env.DEV) throw new Error('The offline copy can only be made from the built app (the GitHub Pages site), not the dev server.')
   const base = new URL('index.html', document.baseURI)
   const res = await fetch(base, { cache: 'no-cache' })
