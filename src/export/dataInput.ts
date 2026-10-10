@@ -162,7 +162,6 @@ export async function writeDataInput(wb: ExcelJS.Workbook, project: Project, lay
     for (let k = 1; k <= m; k++) {
       const r = b.first + k - 1
       const a = act.get(k)
-      const p = r - 1
       const f = b.first
       const l = b.last
       ws.getRow(r).height = 19.5
@@ -210,12 +209,19 @@ export async function writeDataInput(wb: ExcelJS.Workbook, project: Project, lay
       eng('V', `IF(OR(AND($Q${r}<>"",$Q${r}<$C$8),AND($Q${r}<>"",$R${r}<>"",$R${r}<$Q${r}),AND($R${r}<>"",$Q${r}="")),1,0)`)
       eng('W', `IF($B${r}="","",IF($S${r}=1,IF($R${r}<>"",$R${r},$D${r}),IF($Q${r}<>"",MAX($M$5,$Q${r})+$E${r}/24*(1-$S${r}),MAX($M$5,$C${r})+$E${r}/24)))`, 'dd-mmm-yyyy hh:mm')
       eng('X', `IF($B${r}="","",ROUND(($W${r}-$D${r})*24,1))`)
-      // Carried slip. A gap above can cancel a slip but never turn it into a gain (MAX(0, ...)).
-      const absorb = k === 1 ? '0' :
-        `IF($Y${p}="",0,IF($Y${p}>0,MAX(0,$Y${p}-IF(ISNUMBER($D${p}),MAX(0,($C${r}-$D${p})*24),0)),$Y${p}))`
+      // Carried slip along the activity's own predecessor link (column F, relationship G): a delay reaches only
+      // what depends on it. The gap that can absorb a slip is the planned slack between the two joined ends.
+      // OFFSET (as in the planned-date formula) keeps Excel from seeing a circular reference through column Y.
+      const off = (col: string) => `OFFSET($${col}$${b.header},$F${r},0)`
+      const noLink = `OR($F${r}=0,$AB${r}=1)`
+      const prevY = `IF(${noLink},0,N(${off('Y')}))`
+      const gap = `IF(${noLink},0,MAX(0,IF($G${r}="SS",($C${r}-${off('C')})*24,IF($G${r}="FF",($D${r}-${off('D')})*24,` +
+        `IF($G${r}="SF",($D${r}-${off('C')})*24,($C${r}-${off('D')})*24)))))`
+      const absorb = `IF(${prevY}>0,MAX(0,${prevY}-${gap}),${prevY})`
       eng('Y', k === 1
         ? `IF($B${r}="","",$X${r})`
         : `IF($B${r}="","",IF($Q${r}<>"",$X${r},IF($X${r}>0,MAX($X${r},${absorb}),${absorb})))`)
+      eng('AA', `IF($B${r}="","",$D${r}+$Y${r}/24)`, 'dd-mmm-yyyy hh:mm') // carried forecast finish of this activity
       eng('Z', `IF(AND($B${r}<>"",$E${r}=""),1,0)`)
       eng('AB', `IF($B${r}="",0,IF($F${r}=0,0,IF(OR($F${r}>=${k},$F${r}>$O$10),1,IFERROR(IF(INDEX($B$${f}:$B$${l},$F${r})="",1,0),1))))`)
 
@@ -258,8 +264,9 @@ export async function writeDataInput(wb: ExcelJS.Workbook, project: Project, lay
     hid('S', `IF($E${t}=0,0,SUMPRODUCT($E${f}:$E${l},$S${f}:$S${l})/$E${t})`)
     hid('T', `IF($E${t}=0,0,SUMPRODUCT($E${f}:$E${l},$T${f}:$T${l})/$E${t})`)
     hid('U', `$S${t}-$T${t}`)
-    hid('W', `IF($D${t}="","",$D${t}+$X${t}/24)`, 'dd-mmm-yyyy hh:mm')
-    hid('X', `IF(COUNT($Y${f}:$Y${l})=0,0,LOOKUP(9.9E+307,$Y${f}:$Y${l}))`)
+    // The location finishes when its latest forecast activity does (not necessarily the last row).
+    hid('W', `IF(COUNT($AA${f}:$AA${l})=0,"",MAX($AA${f}:$AA${l}))`, 'dd-mmm-yyyy hh:mm')
+    hid('X', `IF($W${t}="",0,($W${t}-$D${t})*24)`)
 
     // status colours for the O column (exact strings; plain "Not Started" stays neutral)
     const rules: [string, string, string, string][] = [

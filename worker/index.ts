@@ -2,11 +2,12 @@
  * Thin Cloudflare Worker proxy for the "Ask Claude to fill this" call.
  * The Anthropic key lives only here, as a Worker secret; the browser never sees it.
  *
- * It forwards ONLY the one request shape the app sends (fixed model, the single
- * fill_site_layouts tool, capped size), and only for allowed browser origins, so a leaked
+ * It forwards ONLY the two request shapes the app sends (fixed model, ONE forced tool —
+ * fill_site_layouts or suggest_links —, capped size), and only for allowed browser origins, so a leaked
  * URL cannot be used as a general-purpose key to the Messages API.
  */
 import { FUNCTION_NAME, MODEL } from '../src/layout/claude'
+import { LINKS_FUNCTION } from '../src/links/claude'
 
 export interface Env {
   /** wrangler secret put ANTHROPIC_API_KEY */
@@ -41,9 +42,10 @@ export function validateBody(b: unknown): string | null {
   if (o.model !== MODEL) return `Only model ${MODEL} is allowed.`
   if (typeof o.max_tokens !== 'number' || o.max_tokens < 1 || o.max_tokens > MAX_TOKENS) return `max_tokens must be 1..${MAX_TOKENS}.`
   const tools = o.tools as { name?: string }[] | undefined
-  if (!Array.isArray(tools) || tools.length !== 1 || tools[0]?.name !== FUNCTION_NAME) return `Exactly one tool, ${FUNCTION_NAME}, is allowed.`
+  const allowedTools = [FUNCTION_NAME, LINKS_FUNCTION]
+  if (!Array.isArray(tools) || tools.length !== 1 || !allowedTools.includes(tools[0]?.name ?? '')) return `Exactly one tool (${allowedTools.join(' or ')}) is allowed.`
   const tc = o.tool_choice as { type?: string; name?: string } | undefined
-  if (tc?.type !== 'tool' || tc.name !== FUNCTION_NAME) return 'tool_choice must force the fill tool.'
+  if (tc?.type !== 'tool' || tc.name !== tools[0].name) return 'tool_choice must force the tool.'
   const msgs = o.messages as { role?: string; content?: unknown }[] | undefined
   if (!Array.isArray(msgs) || msgs.length !== 1 || msgs[0]?.role !== 'user' || typeof msgs[0].content !== 'string') return 'Exactly one user message with text content is allowed.'
   if (typeof o.system !== 'string') return 'system must be a string.'

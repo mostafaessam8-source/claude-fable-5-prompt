@@ -57,4 +57,6 @@ export interface Project {
   locations: LocationInput[]
   /** Non-fatal things worth showing the user (§10). */
   warnings: string[]
+  /** Which kind of workbook this came from; a CRP2 sheet has no predecessor links, so Claude reviews them. */
+  source?: 'tracker' | 'crp2'
 }

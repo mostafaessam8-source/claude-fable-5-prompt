@@ -5,6 +5,7 @@ import { computeProject } from '../src/engine/schedule'
 import { exportXlsx } from '../src/export'
 import { ImportError, parseWorkbook } from '../src/import/parse'
 import { parseHeaderDate, parseLocationLabel, reconstructLinks } from '../src/import/crp2'
+import { stripUnreadableParts } from '../src/import/sanitize'
 import { parseLayout } from '../src/layout/parse'
 
 const FILE = readFileSync('tests/fixtures/crp2/CRP2_EWR_Shutdown03_Progress_Sheet.xlsx')
@@ -63,21 +64,21 @@ describe('CRP2 progress sheet import', () => {
     expect(w).toMatch(/header says the possession finishes .*24 h.*Day 2.*48 h/)
     expect(w).toMatch(/Pre-Shutdown Arrangement.*not a duration/)
     expect(w).toMatch(/No Work Hours.*rest period/)
-    expect(w).toMatch(/C267.*row 86.*duration is blank in the source/)
-    expect(w).toMatch(/C267.*row 111.*duration is blank in the source/)
+    expect(w).toMatch(/C267.*row 86.*No\. Hours is blank; the duration \(1\.0 h\) was taken from the sheet's planned start→finish/)
+    expect(w).toMatch(/C267.*row 111.*no duration and no usable planned finish/)
     expect(w).toMatch(/typed start of 8\.0 h that shows only a time of day, so 32\.0 h \(\+24 h\) was used/)
     expect(w).toMatch(/row 176.*links to row 175, which has no times/)
-    expect(w).toMatch(/recomputed from those links/)
-    expect(w).toMatch(/span is -1\.00 h but No\. Hours is 2\.00 h/)
+    expect(w).toMatch(/differs from No\. Hours — the dates as shown in the sheet were kept/)
+    expect(w).toMatch(/row 42.*the sheet's finish \(38\.0 h\) is not after its start \(39\.0 h\) — No\. Hours \(2\.0 h\) was used/)
     expect(w).toMatch(/Cells, OTMP and base station are not in a CRP2 sheet/)
   })
 
-  it('blank durations are imported as blank, so the app flags them', async () => {
+  it('a duration that is blank everywhere is imported blank, so the app flags it (never invented)', async () => {
     const p = await parseWorkbook(FILE)
     const blanks = p.locations[2].activities.filter((a) => a.durationH == null)
-    expect(blanks.map((a) => a.sourceRow)).toEqual([86, 111])
+    expect(blanks.map((a) => a.sourceRow)).toEqual([111]) // row 86 has planned times: its span is used
     const r = computeProject(p)
-    expect(r.locations[2].activities.filter((a) => a.status === '! CHECK DURATION')).toHaveLength(2)
+    expect(r.locations[2].activities.filter((a) => a.status === '! CHECK DURATION')).toHaveLength(1)
     expect(r.locations[2].status).toBe('CHECK INPUT')
   })
 
@@ -90,6 +91,32 @@ describe('CRP2 progress sheet import', () => {
       expect(last.plannedFinish.toISOString(), l.name).toBe('2026-10-18T00:00:00.000Z')
       expect(l.plannedFinishH, l.name).toBe(48) // nothing finishes later
     }
+  })
+
+  it("keeps the dates the sheet shows: every row's start and finish equal its K / L times (mod 24 h)", async () => {
+    const p = await parseWorkbook(FILE)
+    const r = computeProject(p)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load((await stripUnreadableParts(FILE)) as unknown as ExcelJS.Buffer)
+    const ws = wb.getWorksheet('Shutdown02 Progress')!
+    const hv = (a: string) => {
+      const v = ws.getCell(a).value as { result?: unknown } | Date | null
+      const d = v instanceof Date ? v : (v as { result?: unknown } | null)?.result
+      return d instanceof Date ? (d.getTime() - Date.UTC(1899, 11, 30)) / 3_600_000 : null
+    }
+    const mod = (x: number) => ((x % 24) + 24) % 24
+    // rows whose own times are impossible in the sheet (finish before start, or a start linked to a rest row)
+    const impossible = new Set([42, 75, 108, 141, 174, 176, 177, 178])
+    let checked = 0
+    p.locations.forEach((l, i) => l.activities.forEach((a, k) => {
+      if (impossible.has(a.sourceRow)) return
+      const kr = hv(`K${a.sourceRow}`), lr = hv(`L${a.sourceRow}`)
+      const e = r.locations[i].activities[k]
+      if (kr != null) expect(mod(e.plannedStartH), `${l.name} row ${a.sourceRow} start`).toBeCloseTo(mod(kr), 1)
+      if (lr != null && a.durationH != null) expect(mod(e.plannedFinishH), `${l.name} row ${a.sourceRow} finish`).toBeCloseTo(mod(lr), 1)
+      checked++
+    }))
+    expect(checked).toBeGreaterThan(110)
   })
 
   it('typed times that lost their +24 h are repaired, and what follows them with them', async () => {
@@ -115,7 +142,7 @@ describe('CRP2 progress sheet import', () => {
     const p2 = await parseWorkbook(await exportXlsx(p1, p1.locations.map((l) => parseLayout(l.name, l.scope))))
     // import warnings describe the source file and are not stored in the workbook
     // (and sourceRow is the row in the file it came from, which differs by design)
-    const norm = (p: typeof p1) => ({ ...p, warnings: [], locations: p.locations.map((l) => ({ ...l, activities: l.activities.map((a) => ({ ...a, sourceRow: 0 })) })) })
+    const norm = (p: typeof p1) => ({ ...p, warnings: [], source: undefined, locations: p.locations.map((l) => ({ ...l, activities: l.activities.map((a) => ({ ...a, sourceRow: 0 })) })) })
     expect(norm(p2)).toEqual(norm(p1))
   })
 

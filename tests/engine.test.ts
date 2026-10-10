@@ -144,6 +144,65 @@ describe('carried slip (§4.5)', () => {
   })
 })
 
+describe('carried slip follows the predecessor LINK, not the row order', () => {
+  it('a delay reaches what depends on it and not an unrelated parallel branch', () => {
+    const l = run(
+      [
+        { durationH: 4, ...startAt(0), pct: 0.5 },      // 1 started on time; at its planned finish (4 h) it is half done: 2 h late
+        { durationH: 2, pred: 1 },                      // 2 follows 1
+        { durationH: 2, pred: 0, lagH: 6.5 },           // 3 independent branch, starts at 6.5 h
+        { durationH: 1, pred: 2 },                      // 4 follows 2
+      ],
+      { cutoff: at(4) },
+    )
+    const c = l.activities.map((a) => a.carried)
+    expect(c[0]).toBe(2)   // own position: 2 h behind
+    expect(c[1]).toBe(2)   // follows 1, no gap
+    expect(c[2]).toBe(0)   // NOT delayed by row 2 above it (a row-order carry would give 1.5)
+    expect(c[3]).toBe(2)   // follows 2
+  })
+
+  it('the location forecast is its latest forecast activity, not the last row', () => {
+    const l = run(
+      [
+        { durationH: 4, ...startAt(0), pct: 0.5 },      // 1: planned 0–4, 2 h late at the cut-off
+        { durationH: 2, pred: 1 },                      // 2: planned 4–6, forecast 8
+        { durationH: 2, pred: 0, lagH: 6.5 },           // 3: planned 6.5–8.5, unaffected → last row, ends 8.5
+        { durationH: 1, pred: 2 },                      // 4: planned 6–7, forecast 9
+      ],
+      { cutoff: at(4) },
+    )
+    expect(l.plannedFinishH).toBe(8.5)
+    expect(l.forecastFinishH).toBe(9)  // activity 4 at 7 + 2, later than the last row's 8.5
+    expect(l.variance).toBe(0.5)       // the location ends 0.5 h after its planned 8.5
+    expect(l.bufferToHandback).toBe(39)
+  })
+
+  it('a start-to-start link measures its gap start to start', () => {
+    const l = run(
+      [
+        { durationH: 4, ...startAt(2) },                          // 1 planned 0–4, actually started at 2 (2 h late)
+        { durationH: 2, pred: 1, rel: 'SS', lagH: 3 },            // 2 planned start 3: a 3 h gap start→start
+      ],
+      { cutoff: at(2) },
+    )
+    expect(l.activities[0].carried).toBe(2)
+    expect(l.activities[1].carried).toBe(0) // the 3 h start-to-start gap absorbs the 2 h slip (FS maths would not)
+  })
+
+  it('a gain flows through the link', () => {
+    const l = run(
+      [
+        { durationH: 4, ...startAt(0), ...finishAt(3) },  // finished 1 h early
+        { durationH: 2, pred: 1 },
+        { durationH: 2, pred: 0, lagH: 10 },
+      ],
+      { cutoff: at(3) },
+    )
+    expect(l.activities.map((a) => a.carried)).toEqual([-1, -1, 0])
+  })
+})
+
 describe('activity status strings (§4.7)', () => {
   const st = (acts: Parameters<typeof project>[0], cutoff: number) =>
     run(acts, { cutoff: at(cutoff) }).activities[0].status

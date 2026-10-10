@@ -16,6 +16,19 @@ browser; the only server piece is a tiny proxy that keeps the Anthropic key secr
 
 The project is kept in this browser's `localStorage` (use *Clear* to drop it).
 
+## How the forecast works
+Each activity has one predecessor (`PRED`), a relationship (`FS`/`SS`/`FF`/`SF`) and a lag. A delay (or gain) is carried
+**along that link**, less any planned slack between the two joined ends, so it reaches only what depends on it; parallel
+branches are not delayed by each other. A location's forecast finish is its **latest** forecast activity (not necessarily
+the last row), and the buffer to hand-back is measured from that. The Excel export uses the same rule in live formulas.
+
+## Opening a raw CRP2 progress sheet
+The sheet has start/finish times but no predecessors. The app keeps the dates the sheet shows (repairing a typed time that lost
+its +24 h, and reporting every repair), then opens the **Relationships** tab and asks Claude for the logical predecessor of each
+activity. A proposal is offered only if it reproduces the sheet's planned start to the minute, so accepting one can never move
+a date; you accept or reject each one. (Needs the Claude proxy or your own key, like *Ask Claude* on the Site layout tab.)
+If you already deployed the Worker, redeploy it (`cd worker && npx wrangler deploy`): it now also allows the `suggest_links` tool.
+
 ## Develop
 
 ```bash

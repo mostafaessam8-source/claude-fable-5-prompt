@@ -4,7 +4,7 @@
  * Internally everything is "hours since possession start" (h = 0 at the start of the
  * possession). Dates only appear at the edges, via `fromHours`.
  */
-import type { LocationInput, Project, Settings } from '../model/types'
+import type { LocationInput, Project, Rel, Settings } from '../model/types'
 
 const HOUR_MS = 3_600_000
 const MINUTE_H = 1 / 60
@@ -141,6 +141,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
 
   const out: ActivityResult[] = []
   const byNo = new Map<number, ActivityResult>()
+  const linkOf = new Map<ActivityResult, { pred: ActivityResult; rel: Rel }>()
 
   // Pass 1 — planned dates, flags, progress, forecast, own variance (§4.1–4.4).
   for (const a of loc.activities) {
@@ -215,17 +216,29 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     }
     out.push(r)
     byNo.set(a.no, r)
+    if (pred && !linkBad) linkOf.set(r, { pred, rel: a.rel })
   }
 
-  // Pass 2 — carried slip (§4.5) and statuses. Like the workbook, the row above is the
-  // physically previous activity number; a switched-off row above contributes nothing.
+  // Pass 2 — carried slip (§4.5) along the activity's own predecessor LINK, so a delay reaches only what
+  // depends on it: parallel branches are not delayed by each other, and a gain flows through its successors.
+  // An activity with no predecessor (pred 0) or a broken link inherits nothing.
   out.forEach((r) => {
     if (r.no === 1 || r.started) {
       r.carried = r.ownVariance
     } else {
-      const prev = byNo.get(r.no - 1)
-      const prevCarried = prev?.carried ?? 0
-      const gap = prev ? Math.max(0, r.plannedStartH - prev.plannedFinishH) : 0
+      const link = linkOf.get(r)
+      let prevCarried = 0
+      let gap = 0
+      if (link) {
+        const p = link.pred
+        prevCarried = p.carried
+        // Planned slack between the two ends the relationship joins: that is what can absorb a slip.
+        gap = Math.max(0,
+          link.rel === 'FS' ? r.plannedStartH - p.plannedFinishH
+          : link.rel === 'SS' ? r.plannedStartH - p.plannedStartH
+          : link.rel === 'FF' ? r.plannedFinishH - p.plannedFinishH
+          : r.plannedFinishH - p.plannedStartH)
+      }
       // A gain is not absorbed. A gap can cancel a slip but never turn it into a gain
       // (the brief's §4.5 formula would give -1 for a 1 h slip over a 2 h gap; §9 wants 0).
       const absorbed = prevCarried > 0 ? Math.max(0, prevCarried - gap) : prevCarried
@@ -252,9 +265,11 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
   const totalHours = out.reduce((n, r) => n + r.durationH, 0)
   const weighted = (f: (r: ActivityResult) => number) =>
     totalHours === 0 ? 0 : out.reduce((n, r) => n + r.durationH * f(r), 0) / totalHours
-  const variance = out.length ? out[out.length - 1].carried : 0
   const plannedFinishH = out.length ? Math.max(...out.map((r) => r.plannedFinishH)) : 0
-  const forecastFinishH = plannedFinishH + variance
+  // The location finishes when its LAST forecast activity does: with parallel branches that is not
+  // necessarily the last row.
+  const forecastFinishH = out.length ? Math.max(...out.map((r) => r.carriedForecastFinishH)) : 0
+  const variance = out.length ? forecastFinishH - plannedFinishH : 0
   // Rounded to 0.1 h like the workbook's buffer cell, so TIGHT/AT RISK agree with Excel.
   const bufferToHandback = round1(endH - forecastFinishH)
 
