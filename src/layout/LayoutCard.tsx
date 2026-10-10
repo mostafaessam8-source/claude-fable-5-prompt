@@ -1,5 +1,5 @@
 import { C } from '../report/brand'
-import type { SiteLayout } from './parse'
+import { unit, type SiteLayout } from './parse'
 
 /** Schematic of one location (brief §5): fence, north arrow, track, work zone, cells, flow. */
 export function LayoutCard({ layout }: { layout: SiteLayout }) {
@@ -9,7 +9,8 @@ export function LayoutCard({ layout }: { layout: SiteLayout }) {
   const gap = 4
   const cellW = n ? (zoneW - 12 - gap * (n - 1)) / n : 0
   const title = [layout.code, layout.chainage].filter(Boolean).join('  -  ')
-  const left = layout.cells != null ? `${layout.cells} CELL${layout.cells === 1 ? '' : 'S'}` : 'CELLS: -'
+  const pipe = layout.kind === 'pipe'
+  const left = layout.cells != null ? `${layout.cells} ${unit(layout.kind, layout.cells)}`.toUpperCase() : `${pipe ? 'PIPES' : 'CELLS'}: -`
   const right = [layout.otmp, layout.station].filter(Boolean).join(' – ')
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', background: C.tint1 }} role="img"
@@ -39,12 +40,19 @@ export function LayoutCard({ layout }: { layout: SiteLayout }) {
       {/* red dashed work / excavation zone */}
       <rect x={zoneX} y={zoneY} width={zoneW} height={zoneH} fill="none" stroke={C.red} strokeWidth={1.5} strokeDasharray="6 3" />
 
-      {/* one teal box per cell */}
+      {/* one teal box per cell, or one pipe (circle in plan, headwall-to-headwall) */}
       {Array.from({ length: n }, (_, i) => (
         <g key={i}>
-          <rect x={zoneX + 6 + i * (cellW + gap)} y={zoneY + 10} width={cellW} height={zoneH - 20} fill={C.blue} fillOpacity={0.88} stroke="#fff" />
+          {pipe ? (
+            <>
+              <rect x={zoneX + 6 + i * (cellW + gap) + cellW * 0.18} y={zoneY + 10} width={cellW * 0.64} height={zoneH - 20} rx={cellW * 0.32} fill={C.blue} fillOpacity={0.88} stroke="#fff" />
+              <ellipse cx={zoneX + 6 + i * (cellW + gap) + cellW / 2} cy={zoneY + 10 + (zoneH - 20) * 0.1} rx={cellW * 0.26} ry={(zoneH - 20) * 0.06} fill="#fff" fillOpacity={0.35} />
+            </>
+          ) : (
+            <rect x={zoneX + 6 + i * (cellW + gap)} y={zoneY + 10} width={cellW} height={zoneH - 20} fill={C.blue} fillOpacity={0.88} stroke="#fff" />
+          )}
           <text x={zoneX + 6 + i * (cellW + gap) + cellW / 2} y={zoneY + zoneH / 2 + 3} textAnchor="middle" fill="#fff" fontSize={n > 4 ? 6.5 : 8} fontWeight={700}>
-            CELL {i + 1}
+            {pipe ? 'PIPE' : 'CELL'} {i + 1}
           </text>
         </g>
       ))}

@@ -54,6 +54,8 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
 - **Type the planned dates** (panel Baseline tab, and the Planned start / finish columns of the Activities tab): the predecessor and relationship stay and the **lag is
   recomputed** so the link gives exactly the date you typed. A new finish also sets the duration (the start does not move); with no predecessor the lag is the start.
+- **Culvert type** (Site layout tab → Type): **Cells** (box) or **Pipes** (round). It changes the schematic card, the “N PIPES” caption, the report headers and the exported scope line
+  (`2 pipes │ …`, which re-imports as pipes). Claude's fill can propose it too.
 - **Locations** (top of the Activities tab): rename a location and its scope line, **+ New location** (one starter activity), duplicate (without actuals), move earlier/later,
   delete. The workbook's location list holds up to 10. Renaming keeps the other site-layout facts (only code and chainage follow the name). Undo covers all of it.
 - Reordering / deleting renumbers the activities (1..n) and keeps every link that is still valid. An activity whose predecessor was removed or now comes

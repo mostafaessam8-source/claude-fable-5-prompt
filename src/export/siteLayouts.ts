@@ -1,5 +1,5 @@
 import type ExcelJS from 'exceljs'
-import type { SiteLayout } from '../layout/parse'
+import { unit, type SiteLayout } from '../layout/parse'
 import type { Project } from '../model/types'
 import { center, COL, font, left, box, solid } from './styles'
 
@@ -26,7 +26,7 @@ export function writeSiteLayouts(wb: ExcelJS.Workbook, project: Project, layouts
 
   const head = { fill: solid(COL.slate), font: font('#FFFFFF', 9, true), alignment: center, border: box }
   const body = (i: number, extra: Partial<ExcelJS.Style> = {}) => ({ fill: solid(i % 2 ? COL.tint1 : '#FFFFFF'), font: font(COL.black, 10), alignment: center, border: box, ...extra })
-  const cols: [string, string][] = [['B:C', 'Code'], ['D:E', 'Chainage'], ['F:F', 'Cells'], ['G:J', 'Lines'], ['K:L', 'OTMP'], ['M:M', 'Station']]
+  const cols: [string, string][] = [['B:C', 'Code'], ['D:E', 'Chainage'], ['F:F', 'Culvert'], ['G:J', 'Lines'], ['K:L', 'OTMP'], ['M:M', 'Station']]
   const row = (r: number, vals: (string | number)[], st: (i: number) => Partial<ExcelJS.Style>) =>
     cols.forEach(([span, _], k) => {
       const [a, b] = span.split(':')
@@ -36,7 +36,7 @@ export function writeSiteLayouts(wb: ExcelJS.Workbook, project: Project, layouts
       Object.assign(c, st(k))
     })
   row(5, cols.map(([, h]) => h), () => head)
-  layouts.forEach((l, i) => row(6 + i, [l.code, l.chainage, l.cells ?? '', l.lines, l.otmp, l.station], (k) => body(i, k === 3 ? { alignment: left } : {})))
+  layouts.forEach((l, i) => row(6 + i, [l.code, l.chainage, l.cells == null ? '' : `${l.cells} ${unit(l.kind, l.cells)}`, l.lines, l.otmp, l.station], (k) => body(i, k === 3 ? { alignment: left } : {})))
 
   const imgRow = 6 + layouts.length + 1
   if (img) {

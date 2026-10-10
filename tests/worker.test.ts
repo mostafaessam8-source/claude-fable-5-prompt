@@ -87,7 +87,7 @@ describe('client ↔ worker contract', () => {
     const viaWorker = ((url: string, init: RequestInit) =>
       handle(new Request(url, { ...init, headers: { ...(init.headers as Record<string, string>), origin: ORIGIN } }), env, anthropic)) as unknown as typeof fetch
     const out = await askClaude('C263 has 2 cells', [{ code: 'C263', name: 'C263 – KM 209+025' }], { proxyUrl: 'https://proxy.example/' }, viaWorker)
-    expect(out).toEqual([{ code: 'C263', chainage: null, cells: 2, lines: null, otmp: null, station: null }])
+    expect(out).toEqual([{ code: 'C263', chainage: null, cells: 2, kind: null, lines: null, otmp: null, station: null }])
     expect(anthropic).toHaveBeenCalledOnce()
     expect(JSON.parse(anthropic.mock.calls[0][1].body).model).toBeTruthy()
   })
