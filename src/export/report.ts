@@ -1,4 +1,5 @@
 import type ExcelJS from 'exceljs'
+import { SAR_LOGO_RATIO, sarLogoBytes } from '../brand/logo'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import type { Project } from '../model/types'
 import { cfFill, center, COL, font, left, box, bottomOnly, solid, argb } from './styles'
@@ -64,6 +65,10 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
   merge(full(3), F(`${D}$C$4`), { fill: solid(COL.black), font: font('#FFFFFF', 12, true), alignment: center }); ws.getRow(3).height = 21.75
   merge(full(4), F(`${D}$K$4`), { fill: solid(COL.blue), font: font('#FFFFFF', 22, true), alignment: center }); ws.getRow(4).height = 37.5
   merge(full(5), F(`${D}$C$5`), { fill: solid(COL.tint2), font: font(COL.blue, 11, true), alignment: center }); ws.getRow(5).height = 24
+  // the SAR logo on the white row under the cover title block (row 6), clear space all round
+  ws.getRow(6).height = 46
+  const logoId = wb.addImage({ buffer: sarLogoBytes() as unknown as ExcelJS.Buffer, extension: 'png' })
+  ws.addImage(logoId, { tl: { col: 0.15, row: 5.12 }, ext: { width: 250, height: Math.round(250 / SAR_LOGO_RATIO) } })
   const info = (r: number, label: string, f: string) => {
     merge(`A${r}:C${r}`, label, { fill: solid(COL.tint1), font: font(COL.blue, 10, true), alignment: { horizontal: 'left', vertical: 'middle' } })
     merge(`D${r}:${G1}${r}`, F(f), { fill: solid(COL.tint1), font: font(COL.black, 10, true), alignment: { horizontal: 'left', vertical: 'middle' } })

@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
+import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
 import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -481,6 +482,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             <i style={{ width: 14, height: 8, background: barColour[k], display: 'inline-block' }} />{label}
           </span>
         ))}
+        <img src={SAR_LOGO_URL} alt="SAR" style={{ marginLeft: 'auto', height: 20, width: 20 * SAR_LOGO_RATIO, display: 'block' }} />
       </div>
     </div>
   )

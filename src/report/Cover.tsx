@@ -1,3 +1,4 @@
+import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
 import type { ProjectResult } from '../engine/schedule'
 import { fromHours } from '../engine/schedule'
 import { LayoutCards } from '../layout/LayoutCard'
@@ -35,13 +36,18 @@ export function Cover({ result, layouts }: { result: ProjectResult; layouts: Sit
 
   return (
     <>
+      {/* the SAR logo on white, with clear space of at least half its height on every side */}
+      <div style={{ background: '#fff', padding: '12px 14px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 40, width: 40 * SAR_LOGO_RATIO, display: 'block' }} />
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: C.slate }}>SAR.COM.SA</span>
+      </div>
       <Band size={12} pad="5px 12px"><div style={{ textAlign: 'center' }}>{s.projectName}</div></Band>
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 24, textAlign: 'center', padding: '5px 0' }}>{s.reportTitle}</div>
       <div style={{ background: C.tint2, color: C.black, fontWeight: 700, fontSize: 11, textAlign: 'center', padding: '4px 0' }}>{s.subtitle}</div>
       <div style={{ marginTop: 6 }}>
         {row('Report generated', <>{fmtLong(s.cutoff)} <span style={{ fontWeight: 400, marginLeft: 18 }}>prepared by <b>{s.preparedBy}</b></span>
           {s.cutoffNow && <span style={{ fontWeight: 400, marginLeft: 12, color: C.slate }}>(cut-off = now, live)</span>}
-          {!s.cutoffNow && s.cutoffDefaulted && <span style={{ fontWeight: 400, marginLeft: 12, color: C.slate }}>(cut-off defaulted to possession start)</span>}</>, C.tint1)}
+</>, C.tint1)}
         {row('Possession window', <>{fmtLong(origin)} <span style={{ fontWeight: 400 }}>&nbsp;to&nbsp;</span> {fmtLong(s.possessionEnd)} <span style={{ marginLeft: 12 }}>= {hours1(durH)}</span></>, C.tint2)}
         {row('Elapsed / Remaining', <>{hours1(elapsed)} elapsed <span style={{ marginLeft: 18 }}>{hours1(remaining)} remaining</span></>, C.tint1)}
       </div>
