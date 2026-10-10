@@ -89,6 +89,25 @@ export function App() {
     }
   }
 
+  /** Open a project straight from an update / project file (.json): no Excel tracker needed. */
+  async function onOpenJson(file: File | undefined) {
+    if (!file) return
+    setError(null)
+    try {
+      const { project: p, layouts: l } = parseUpdateFile(await file.text())
+      history.reset({ project: p, layouts: l ?? p.locations.map((x) => parseLayout(x.name, x.scope)) })
+      setTab('report')
+    } catch (e) {
+      setError(`Could not open that file: ${(e as Error).message}`)
+    }
+  }
+
+  /** Save the whole project as a .json file (the same format the contractor copy returns): a backup, or a way to open it on another PC. */
+  function onSaveProject() {
+    if (!project) return
+    download(`${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Possession'}_PROJECT_${new Date().toISOString().slice(0, 10)}.json`, updateFileText(project, layouts, 'project'), 'application/json')
+  }
+
   /** The update file the contractor's offline copy saved: compare it with the project and let the user review the differences. */
   async function onUpdateFile(file: File | undefined) {
     if (!file || !project) return
@@ -148,7 +167,18 @@ export function App() {
       <header ref={headerRef} className="no-print sticky top-0 z-[60] flex flex-wrap items-center gap-3 bg-[#3D3935] px-4 py-2 text-white">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
         <span className="mr-4 text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
-        {!OFFLINE && <input type="file" accept=".xlsx" onChange={(e) => onFile(e.target.files?.[0])} className="text-sm" />}
+        {!OFFLINE && (
+          <label className="cursor-pointer rounded border border-white/40 px-3 py-1 text-sm font-semibold" title="Open a contractor update or a saved project (.json): it becomes the project right away">
+            Open update / project (.json)
+            <input type="file" accept=".json" className="hidden" onChange={(e) => { onOpenJson(e.target.files?.[0]); e.target.value = '' }} />
+          </label>
+        )}
+        {!OFFLINE && (
+          <label className="cursor-pointer text-xs text-white/60 underline" title="Only needed the very first time: build a project from the Excel tracker">
+            new from Excel tracker
+            <input type="file" accept=".xlsx" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
+          </label>
+        )}
         {OFFLINE && <span className="text-sm font-semibold text-[#F1B434]">Update copy</span>}
         <span className="flex-1" />
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
@@ -160,6 +190,7 @@ export function App() {
           </label>
         )}
         {project && !OFFLINE && <button className="rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" onClick={onOfflineCopy} title="One html file with the whole app and this project inside: the contractor opens it offline, updates it and sends back a small update file. It has no Excel export.">Offline copy for contractor</button>}
+        {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={onSaveProject} title="Download the whole project as a .json file (backup, or open it on another PC)">Save project (.json)</button>}
         {project && !OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport} title="Download the tracker workbook">Export to Excel</button>}
         {project && OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onSaveUpdate} title="Download the update file and send it back to SAR">Save update for SAR</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
@@ -219,7 +250,7 @@ export function App() {
           )}
         </>
       )}
-      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Choose a possession tracker .xlsx to begin.</p>}
+      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Press <b>Open update / project (.json)</b> and choose the update file the contractor sent back (or a saved project). The Excel tracker is only needed to start a brand-new project.</p>}
     </div>
   )
 }
