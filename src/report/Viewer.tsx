@@ -4,9 +4,9 @@ import type { SiteLayout } from '../layout/parse'
 import { effectiveProject, floatingNow } from '../model/settings'
 import type { Project } from '../model/types'
 import { Cover } from './Cover'
-import { LocationPage } from './LocationPage'
+import { LocationPage, pageWidth } from './LocationPage'
 
-const PAGE_W = 1123
+const COVER_W = 1123
 const PAGE_H = 794
 const BAR_H = 52
 
@@ -94,6 +94,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     return () => window.removeEventListener('keydown', on)
   })
 
+  const PAGE_W = i === 0 ? COVER_W : pageWidth(project.settings.tableCols) // a location page grows when its columns were widened
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))
 

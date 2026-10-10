@@ -1,4 +1,5 @@
 import type ExcelJS from 'exceljs'
+import { DEFAULT_COLS } from '../report/columns'
 import { SAR_LOGO_RATIO, sarLogoBytes } from '../brand/logo'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import type { Project } from '../model/types'
@@ -29,6 +30,15 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
     },
   })
   WIDTHS.forEach((w, i) => (ws.getColumn(i + 1).width = w))
+  // the widths dragged on the site's report table carry over (as a ratio of the defaults): app column -> Excel column
+  const dragged = project.settings.tableCols
+  if (dragged && dragged.length === DEFAULT_COLS.length) {
+    const excelCol = [1, 2, 3, R.DUR_BL, R.DUR_ACT, 4, 5, 6, 7, 8, 9, R.REMARKS] // No, Activity, Status, Dur BL, Dur Actual, Planned, Forecast, Variance, Plan %, Act. %, Buffer, Remarks
+    dragged.forEach((px, i) => {
+      const w = Math.max(2.5, Math.round(WIDTHS[excelCol[i] - 1] * (px / DEFAULT_COLS[i]) * 10) / 10)
+      ws.getColumn(excelCol[i]).width = w === 9 ? 9.001 : w // Excel drops a width of exactly 9 on load
+    })
+  }
   for (let c = R.G0; c <= R.G1; c++) ws.getColumn(c).width = 1.65
   for (let c = R.H_HOURS; c <= R.H_FE; c++) { ws.getColumn(c).width = 11; ws.getColumn(c).hidden = true }
   const G0 = colLetter(R.G0), G1 = colLetter(R.G1)

@@ -326,3 +326,16 @@ describe('empty slots', () => {
     expect(String(val('Report', `B${first + 2 * 4}`) ?? '')).toBe('')
   }, 240_000)
 })
+
+describe('dragged column widths', () => {
+  it('carry over to the Report sheet as a ratio of the defaults', async () => {
+    const p = await parseWorkbook(FIXTURE)
+    const wide = { ...p, settings: { ...p.settings, tableCols: [22, 256, 62, 34, 36, 72, 72, 56, 30, 30, 40, 106] } } // Activity twice as wide
+    const bytes = await exportXlsx(wide, layoutsOf(wide))
+    const c = cols(await sheetXml(bytes, 1))
+    expect(c.get(2)?.width).toBeCloseTo(58, 0) // 29 x 2
+    expect(c.get(3)?.width).toBeCloseTo(15.5, 1) // untouched
+    const normal = cols(await sheetXml(await exportXlsx(p, layoutsOf(p)), 1))
+    expect(normal.get(2)?.width).toBeCloseTo(29, 1)
+  }, 60000)
+})

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ColumnWidths } from './report/ColumnWidths'
 import { applySettings } from './model/settings'
 import type { Project } from './model/types'
 
@@ -13,6 +15,7 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks, effecti
   showLinks: boolean; onShowLinks: (v: boolean) => void
 }) {
   const s = project.settings
+  const [widths, setWidths] = useState(false)
   const f = 'rounded border border-slate-300 px-1 py-0.5 text-sm'
   return (
     <div className="no-print flex flex-wrap items-end gap-4 bg-[#E6F1F4] p-3 text-sm">
@@ -44,6 +47,8 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks, effecti
       <label className="flex flex-col">Prepared by
         <input className={`${f} w-48`} value={s.preparedBy} placeholder="name" onChange={(e) => onChange(applySettings(project, { preparedBy: e.target.value }))} />
       </label>
+      <button className="rounded border border-slate-300 px-2 py-0.5" onClick={() => setWidths(true)} title="Type the width of each column of the report table">Column widths…</button>
+      {widths && <ColumnWidths project={project} onChange={onChange} onClose={() => setWidths(false)} />}
       <button className="rounded border border-slate-300 px-2 py-0.5 disabled:opacity-40" disabled={!s.tableCols} onClick={() => onChange(applySettings(project, { tableCols: null }))}
         title="Drag the right edge of a column header on the report to change its width; this puts them all back">Reset column widths</button>
       <label className="flex items-center gap-1"><input type="checkbox" checked={showLinks} onChange={(e) => onShowLinks(e.target.checked)} /> Show links</label>

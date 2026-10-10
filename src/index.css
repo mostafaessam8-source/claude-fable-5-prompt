@@ -15,7 +15,7 @@
   .no-print { display: none !important; }
   .report-wrap { padding: 0; background: #fff; margin-right: 0 !important; }
   .report-zoom { zoom: 1 !important; display: block; }
-  .report-page { break-after: page; page-break-after: always; }
+  .report-page { zoom: var(--ps, 1); break-after: page; page-break-after: always; }
   .report-page:last-child { break-after: auto; page-break-after: auto; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
@@ -34,7 +34,7 @@
 .gbar:hover .gdot, .linking .gbar .gdot { opacity: 1; }
 .linking, .linking * { cursor: crosshair !important; }
 @media print { .gbar .gh, .gbar .gdot { display: none; } }
-.col-rz { position: absolute; top: 0; right: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 4; touch-action: none; border-right: 2px solid rgba(255, 255, 255, 0.35); }
+.col-rz { position: absolute; top: 0; right: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 4; touch-action: none; border-right: 2px solid rgba(255, 255, 255, 0.35); }
 .col-rz:hover { background: rgba(255, 255, 255, 0.55); border-right-color: #F1B434; }
 @media print { .col-rz { display: none; } }
 
@@ -45,3 +45,5 @@
 .hdr-compact header button, .hdr-compact header label { padding-top: 1px; padding-bottom: 1px; font-size: 11px; }
 .hdr-compact nav button { padding-top: 3px; padding-bottom: 3px; font-size: 12px; }
 @media (max-width: 799px) { .report-wrap { overflow-x: auto; } .report-zoom { align-items: flex-start; } }
+
+@media (pointer: coarse) { .col-rz { width: 18px; } }
