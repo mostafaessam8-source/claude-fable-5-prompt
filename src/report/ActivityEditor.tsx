@@ -4,6 +4,7 @@ import {
   candidatePredecessors, deleteActivities, duplicateActivities, hoursToInput, inputToHours, insertActivityAfter, moveActivities, patchActivity, RELS,
   setPlannedFinish, setPlannedStart,
 } from '../links/edit'
+import { OFFLINE } from '../offline/offline'
 import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { Project, Rel } from '../model/types'
@@ -13,12 +14,12 @@ const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
 
 /** Text input that commits on blur / Enter and reverts on Esc; a blank name is refused (a blank name switches the row off in the workbook). */
-function NameInput({ value, onCommit, placeholder, blankOk }: { value: string; onCommit: (v: string) => void; placeholder?: string; blankOk?: boolean }) {
+function NameInput({ value, onCommit, placeholder, blankOk, disabled }: { value: string; onCommit: (v: string) => void; placeholder?: string; blankOk?: boolean; disabled?: boolean }) {
   const [v, setV] = useState(value)
   useEffect(() => setV(value), [value])
   const commit = () => { const t = v.trim(); if ((t || blankOk) && t !== value) onCommit(t); else setV(value) }
   return (
-    <input className={field} value={v} placeholder={placeholder} onChange={(e) => setV(e.target.value)} onBlur={commit} aria-label="Activity name"
+    <input className={field} value={v} placeholder={placeholder} disabled={disabled} onChange={(e) => setV(e.target.value)} onBlur={commit} aria-label="Activity name"
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(value); (e.target as HTMLInputElement).blur() } }} />
   )
 }
@@ -116,12 +117,14 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
     done(r, picked.map((_, i) => r.firstNew + i))
   }
 
+  // an offline contractor copy: the plan and the structure are read-only, remarks are his to write
+  const ro = !!OFFLINE
   const btn = 'rounded border border-slate-400 bg-white px-2 py-1 text-xs font-semibold disabled:opacity-40'
   const allOn = acts.length > 0 && picked.length === acts.length
 
   return (
     <main className="mx-auto max-w-[1700px] p-4">
-      <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
+      {!ro && <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[#00778B]">LOCATION</span>
           <div className="w-72"><NameInput value={loc0.name} onCommit={(name) => onBoth(renameLocation(cur, li, name))} /></div>
@@ -135,18 +138,21 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
             onClick={() => { if (window.confirm(`Delete the location “${loc0.name}” and its ${acts.length} activities?`)) { onBoth(deleteLocation(cur, li)); pickLoc(Math.max(0, li - 1)) } }}>Delete location</button>
         </div>
         <p className="text-[11px] text-slate-500">{project.locations.length} of {MAX_LOCATIONS} locations. The name is “code – chainage”; the Site layout tab edits the other facts.</p>
-      </section>
+      </section>}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select className="rounded border border-slate-300 px-2 py-1 text-sm font-semibold" value={li}
           onChange={(e) => pickLoc(Number(e.target.value))}>
           {project.locations.map((l, i) => <option key={i} value={i}>{l.name} ({l.activities.length})</option>)}
         </select>
+        {ro && <span className="text-xs text-slate-500">The plan is read-only here; type your <b>Remarks</b> for any activity in the last column.</span>}
+        {!ro && <>
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={insertBelow}>{picked.length ? '+ Insert below selection' : '+ Add activity'}</button>
         <button className={btn} disabled={!picked.length} onClick={copy}>Duplicate</button>
         <button className={btn} disabled={!picked.length} onClick={() => shiftSel(-1)}>▲ Up</button>
         <button className={btn} disabled={!picked.length} onClick={() => shiftSel(1)}>▼ Down</button>
         <button className={`${btn} border-[#CB2C30] text-[#CB2C30]`} disabled={!picked.length} onClick={remove}>Delete{picked.length ? ` (${picked.length})` : ''}</button>
         <span className="text-xs text-slate-500">Tick rows (Shift-click for a range), drag ⠿ to reorder. Ctrl+Z undoes.</span>
+        </>}
       </div>
       {note && (
         <p className="mb-2 flex items-start gap-2 border-l-4 border-[#F1B434] bg-amber-50 p-2 text-xs">
@@ -160,7 +166,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         </colgroup>
         <thead>
           <tr className="bg-[#3D3935] text-left text-white">
-            <th className={cell} /><th className={cell}><input type="checkbox" checked={allOn} aria-label="Select all"
+            <th className={cell} /><th className={cell}><input type="checkbox" disabled={ro} checked={allOn} aria-label="Select all"
               onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /></th>
             <th className={cell}>#</th><th className={cell}>Activity</th><th className={cell}>Duration (h)</th><th className={cell}>Follows</th>
             <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Status</th><th className={cell}>Remarks</th>
@@ -189,7 +195,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                   setDragging(null); setDrop(undefined)
                   if (d && t !== undefined) moveBlock(d, t)
                 }}>
-                <td className={`${cell} cursor-grab select-none text-center text-slate-400`} draggable title="Drag to reorder"
+                <td className={`${cell} cursor-grab select-none text-center text-slate-400`} draggable={!ro} title="Drag to reorder"
                   onDragStart={(e) => {
                     const nos = on ? picked : [a.no]
                     if (!on) setSel(new Set([a.no]))
@@ -200,27 +206,27 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                     if (tr) e.dataTransfer.setDragImage(tr, 10, 10)
                   }}
                   onDragEnd={() => { setDragging(null); setDrop(undefined) }}>⠿</td>
-                <td className={cell}><input type="checkbox" checked={on} onChange={(e) => toggle(a.no, e)} aria-label={`Select ${a.name}`} /></td>
+                <td className={cell}><input type="checkbox" disabled={ro} checked={on} onChange={(e) => toggle(a.no, e)} aria-label={`Select ${a.name}`} /></td>
                 <td className={`${cell} text-slate-500`}>{a.no}</td>
-                <td className={cell}><NameInput value={a.name} onCommit={(name) => edit({ name })} /></td>
+                <td className={cell}><NameInput disabled={ro} value={a.name} onCommit={(name) => edit({ name })} /></td>
                 <td className={cell}>
-                  <input className={field} type="number" min={0.25} step={0.25} value={a.durationH ?? ''} placeholder={r.durationBad ? 'missing' : ''}
+                  <input className={field} disabled={ro} type="number" min={0.25} step={0.25} value={a.durationH ?? ''} placeholder={r.durationBad ? 'missing' : ''}
                     onChange={(e) => { const v = Number(e.target.value); if (e.target.value !== '' && v > 0) edit({ durationH: v }) }} />
                 </td>
                 <td className={cell}>
-                  <select className={field} value={a.pred} onChange={(e) => edit({ pred: Number(e.target.value) })}>
+                  <select className={field} disabled={ro} value={a.pred} onChange={(e) => edit({ pred: Number(e.target.value) })}>
                     <option value={0}>— possession start —</option>
                     {candidatePredecessors(project, li, a.no).map((c) => <option key={c.no} value={c.no}>#{c.no} {c.name.slice(0, 40)}</option>)}
                   </select>
                 </td>
-                <td className={cell}><select className={field} value={a.rel} onChange={(e) => edit({ rel: e.target.value as Rel })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select></td>
-                <td className={cell}><input className={field} type="number" step={0.25} value={a.lagH} onChange={(e) => edit({ lagH: Number(e.target.value) || 0 })} /></td>
+                <td className={cell}><select className={field} disabled={ro} value={a.rel} onChange={(e) => edit({ rel: e.target.value as Rel })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select></td>
+                <td className={cell}><input className={field} disabled={ro} type="number" step={0.25} value={a.lagH} onChange={(e) => edit({ lagH: Number(e.target.value) || 0 })} /></td>
                 <td className={cell}>
-                  <input className={field} type="datetime-local" value={hoursToInput(origin, r.plannedStartH)} aria-label="Planned start"
+                  <input className={field} disabled={ro} type="datetime-local" value={hoursToInput(origin, r.plannedStartH)} aria-label="Planned start"
                     onChange={(e) => { const h = inputToHours(origin, e.target.value); if (h != null) onChange(setPlannedStart(project, li, a.no, h, a.rel, predTimes(a.pred), r.durationH)) }} />
                 </td>
                 <td className={cell}>
-                  <input className={field} type="datetime-local" value={hoursToInput(origin, r.plannedFinishH)} aria-label="Planned finish"
+                  <input className={field} disabled={ro} type="datetime-local" value={hoursToInput(origin, r.plannedFinishH)} aria-label="Planned finish"
                     onChange={(e) => { const h = inputToHours(origin, e.target.value); const q = h == null ? null : setPlannedFinish(project, li, a.no, r.plannedStartH, h, a.rel, predTimes(a.pred)); if (q) onChange(q) }} />
                 </td>
                 <td className={cell}><span className="rounded px-1 font-bold" style={{ background: tone.bg, color: tone.fg }}>{r.status}</span></td>

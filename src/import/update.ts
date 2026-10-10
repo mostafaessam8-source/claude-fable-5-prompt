@@ -2,7 +2,7 @@
  * A returned workbook (the contractor filled in actuals, remarks, maybe corrected a duration) compared with the
  * current project. Nothing is overwritten blindly: the differences come back as a reviewable list per activity.
  */
-import { parseLayout } from '../layout/parse'
+import { parseLayout, type SiteLayout } from '../layout/parse'
 import { patchActivity } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 
@@ -16,8 +16,16 @@ export const FIELD_LABEL: Record<FieldKey, string> = {
 
 export interface FieldChange { field: FieldKey; from: string; to: string; patch: Partial<ActivityInput> }
 export interface ActivityUpdate { loc: number; no: number; name: string; changes: FieldChange[] }
+/** Site-layout facts the contractor corrected (cells / pipes, lines, chainage…). */
+export interface LayoutUpdate { loc: number; name: string; changes: { field: keyof SiteLayout; from: string; to: string }[]; patch: Partial<SiteLayout> }
+const LAYOUT_FIELDS: (keyof SiteLayout)[] = ['code', 'chainage', 'kind', 'cells', 'lines', 'otmp', 'station']
+export const LAYOUT_LABEL: Record<keyof SiteLayout, string> = {
+  code: 'Code', chainage: 'Chainage', kind: 'Type', cells: 'Count', lines: 'Lines', otmp: 'OTMP', station: 'Base station',
+}
+
 export interface UpdateDiff {
   updates: ActivityUpdate[]
+  layouts: LayoutUpdate[]
   /** Things in the file that could not be matched, for the reviewer to see. */
   notes: string[]
   /** Activities compared (matched). */
@@ -47,19 +55,25 @@ const SPECS: Spec[] = [
   { field: 'remarks', show: (a) => a.remarks.trim(), take: (a) => ({ remarks: a.remarks.trim() }) },
 ]
 
-export function diffUpdate(current: Project, incoming: Project): UpdateDiff {
+export function diffUpdate(current: Project, incoming: Project, curLayouts?: SiteLayout[], inLayouts?: SiteLayout[] | null): UpdateDiff {
   const notes: string[] = []
+  const layouts: LayoutUpdate[] = []
   const updates: ActivityUpdate[] = []
   let matched = 0
   const codeOf = (n: string, s: string) => norm(parseLayout(n, s).code)
   const used = new Set<number>()
 
-  incoming.locations.forEach((il) => {
+  incoming.locations.forEach((il, ii) => {
     let ci = current.locations.findIndex((l, i) => !used.has(i) && norm(l.name) === norm(il.name))
     if (ci < 0) ci = current.locations.findIndex((l, i) => !used.has(i) && codeOf(l.name, l.scope) && codeOf(l.name, l.scope) === codeOf(il.name, il.scope))
     if (ci < 0) { notes.push(`Location “${il.name}” is not in this project — skipped.`); return }
     used.add(ci)
     const cur = current.locations[ci]
+    const cl = curLayouts?.[ci], nl = inLayouts?.[ii]
+    if (cl && nl) {
+      const changes = LAYOUT_FIELDS.filter((f) => String(cl[f] ?? '') !== String(nl[f] ?? ''))
+      if (changes.length) layouts.push({ loc: ci, name: cur.name, changes: changes.map((f) => ({ field: f, from: String(cl[f] ?? ''), to: String(nl[f] ?? '') })), patch: Object.fromEntries(changes.map((f) => [f, nl[f]])) })
+    }
 
     // pair activities: same name first (preferring the same number), then the same number for a renamed one
     const pairs: [ActivityInput, ActivityInput][] = []
@@ -91,7 +105,7 @@ export function diffUpdate(current: Project, incoming: Project): UpdateDiff {
       if (changes.length) updates.push({ loc: ci, no: c.no, name: c.name, changes })
     }
   })
-  return { updates, notes, matched }
+  return { updates, layouts, notes, matched }
 }
 
 /** Apply the chosen activities' changes (keys `loc:no`) as one new project. */
@@ -102,4 +116,11 @@ export function applyUpdate(project: Project, diff: UpdateDiff, accepted: Readon
     p = patchActivity(p, u.loc, u.no, Object.assign({}, ...u.changes.map((c) => c.patch)))
   }
   return p
+}
+
+/** Apply the accepted layout corrections (keys `layout:<loc>`). */
+export function applyLayoutUpdate(layouts: SiteLayout[], diff: UpdateDiff, accepted: ReadonlySet<string>): SiteLayout[] {
+  const out = layouts.map((l) => ({ ...l }))
+  for (const u of diff.layouts) if (accepted.has(`layout:${u.loc}`)) Object.assign(out[u.loc], u.patch)
+  return out
 }
