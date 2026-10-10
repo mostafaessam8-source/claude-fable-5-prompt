@@ -31,6 +31,7 @@ export function SettingsBar({ project, onChange }: { project: Project; onChange:
           <button className="rounded border border-slate-300 px-2" onClick={() => onChange(applySettings(project, { cutoff: 'default' }))}>= start</button>
         </span>
       </label>
+      <span className="text-slate-500">Row ruler: hover a row to follow it across the table and the Gantt; click to pin it.</span>
       <span className="text-slate-600">Hand-back: <b>{s.possessionEnd.toISOString().slice(0, 16).replace('T', ' ')}</b></span>
     </div>
   )
