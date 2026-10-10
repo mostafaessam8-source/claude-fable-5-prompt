@@ -56,7 +56,6 @@ describe('worker proxy', () => {
     expect(validateBody({ ...good(), stream: true })).toMatch(/stream/)
     expect(validateBody({ ...good(), metadata: {} })).toMatch(/metadata/)
     expect(validateBody({ ...good(), tools: [] })).toMatch(/tool/)
-    expect(validateBody({ ...good(), tool_choice: { type: 'tool', name: 'suggest_links' } })).toMatch(/tool_choice/) // must match the tool offered
     expect(validateBody({ ...good(), tools: [{ name: 'bash' }] })).toMatch(/tool/)
     expect(validateBody({ ...good(), tool_choice: { type: 'auto' } })).toMatch(/tool_choice/)
     expect(validateBody({ ...good(), messages: [...good().messages, ...good().messages] })).toMatch(/message/)

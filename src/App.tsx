@@ -19,7 +19,6 @@ export function App() {
   const [layouts, setLayouts] = useState<SiteLayout[]>(saved?.layouts ?? [])
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
-  const [autoLinks, setAutoLinks] = useState(false)
 
   useEffect(() => { if (project) saveProject({ project, layouts }) }, [project, layouts])
 
@@ -30,8 +29,7 @@ export function App() {
       const p = await parseWorkbook(await file.arrayBuffer())
       setProject(p)
       setLayouts(p.locations.map((l) => parseLayout(l.name, l.scope)))
-      // A CRP2 sheet has times but no predecessors: go straight to the Claude relationship review.
-      if (p.source === 'crp2') { setAutoLinks(true); setTab('links') } else setTab('report')
+      setTab('report')
     } catch (e) {
       setError(e instanceof ImportError ? e.message : `Unexpected error: ${(e as Error).message}`)
     }
@@ -95,7 +93,7 @@ export function App() {
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
           )}
           {tab === 'links' && (
-            <LinksReview project={project} result={result} onChange={setProject} autoRun={autoLinks} onAutoRunDone={() => setAutoLinks(false)} />
+            <LinksReview project={project} result={result} />
           )}
           {tab === 'import' && (
             <main className="mx-auto max-w-5xl p-6">

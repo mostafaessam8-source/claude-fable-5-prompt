@@ -1,7 +1,8 @@
 import type { LocationResult } from '../engine/schedule'
 import type { Project, Rel } from '../model/types'
-import type { LinkProposal } from './claude'
 
+/** A proposed link for one activity (from a review of the logic). */
+export interface LinkProposal { no: number; pred: number; rel: Rel; lagH: number; reason: string }
 export interface Link { pred: number; rel: Rel; lagH: number }
 export interface LinkChange {
   /** "<location index>:<activity no>" */
