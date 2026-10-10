@@ -89,15 +89,15 @@ export function App() {
     }
   }
 
-  /** The workbook the contractor sent back: compare it with the project and let the user review the differences. */
+  /** The update file the contractor's offline copy saved: compare it with the project and let the user review the differences. */
   async function onUpdateFile(file: File | undefined) {
     if (!file || !project) return
     setError(null)
     try {
-      const incoming = /\.json$/i.test(file.name) ? parseUpdateFile(await file.text()) : await parseWorkbook(await file.arrayBuffer())
+      const incoming = parseUpdateFile(await file.text())
       setUpdate({ name: file.name, diff: diffUpdate(project, incoming) })
     } catch (e) {
-      setError(e instanceof ImportError ? e.message : `Could not read that file: ${(e as Error).message}`)
+      setError(`Could not read that file: ${(e as Error).message}`)
     }
   }
 
@@ -154,9 +154,9 @@ export function App() {
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canRedo} onClick={history.redo} title="Redo (Ctrl+Shift+Z)">↷ Redo</button>}
         {project && !OFFLINE && (
-          <label className="cursor-pointer rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" title="Choose the file the contractor sent back (the update .json, or an Excel workbook): you review every difference before anything changes">
+          <label className="cursor-pointer rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" title="Choose the update file (.json) the contractor saved from the offline copy: you review every difference before anything changes">
             Import contractor update
-            <input type="file" accept=".json,.xlsx" className="hidden" onChange={(e) => { onUpdateFile(e.target.files?.[0]); e.target.value = '' }} />
+            <input type="file" accept=".json" className="hidden" onChange={(e) => { onUpdateFile(e.target.files?.[0]); e.target.value = '' }} />
           </label>
         )}
         {project && !OFFLINE && <button className="rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" onClick={onOfflineCopy} title="One html file with the whole app and this project inside: the contractor opens it offline, updates it and sends back a small update file. It has no Excel export.">Offline copy for contractor</button>}
