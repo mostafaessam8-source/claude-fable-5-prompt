@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
-  candidatePredecessors, deleteActivities, duplicateActivities, insertActivityAfter, moveActivities, patchActivity, RELS,
+  candidatePredecessors, deleteActivities, duplicateActivities, hoursToInput, inputToHours, insertActivityAfter, moveActivities, patchActivity, RELS,
+  setPlannedFinish, setPlannedStart,
 } from '../links/edit'
 import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { Project, Rel } from '../model/types'
 import { activityTone } from './brand'
-import { fmtShort } from './format'
 
 const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
@@ -44,6 +44,11 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const acts = project.locations[li].activities
   const res = result.locations[li].activities
   const startH = (n: number) => res.find((a) => a.no === n)?.plannedStartH ?? 0
+  const origin = result.settings.possessionStart
+  const predTimes = (pred: number) => {
+    const p = pred > 0 ? res.find((x) => x.no === pred) : undefined
+    return p ? { startH: p.plannedStartH, finishH: p.plannedFinishH } : null
+  }
   const nameOf = (n: number) => acts.find((a) => a.no === n)?.name ?? `#${n}`
 
   const done = (r: { project: Project; unlinked: number[] }, newSel: number[] = []) => {
@@ -115,7 +120,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const allOn = acts.length > 0 && picked.length === acts.length
 
   return (
-    <main className="mx-auto max-w-[1250px] p-4">
+    <main className="mx-auto max-w-[1450px] p-4">
       <section className="mb-3 border border-slate-300 bg-[#F2F8F9] p-2">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-[#00778B]">LOCATION</span>
@@ -151,14 +156,14 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
       <table className="w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
         <colgroup>
           <col style={{ width: 26 }} /><col style={{ width: 28 }} /><col style={{ width: 34 }} /><col />
-          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 215 }} /><col style={{ width: 92 }} />
+          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 92 }} />
         </colgroup>
         <thead>
           <tr className="bg-[#3D3935] text-left text-white">
             <th className={cell} /><th className={cell}><input type="checkbox" checked={allOn} aria-label="Select all"
               onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /></th>
             <th className={cell}>#</th><th className={cell}>Activity</th><th className={cell}>Duration (h)</th><th className={cell}>Follows</th>
-            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned</th><th className={cell}>Status</th>
+            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -210,12 +215,19 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                 </td>
                 <td className={cell}><select className={field} value={a.rel} onChange={(e) => edit({ rel: e.target.value as Rel })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select></td>
                 <td className={cell}><input className={field} type="number" step={0.25} value={a.lagH} onChange={(e) => edit({ lagH: Number(e.target.value) || 0 })} /></td>
-                <td className={`${cell} whitespace-nowrap`}>{fmtShort(r.plannedStart)} → {fmtShort(r.plannedFinish)}</td>
+                <td className={cell}>
+                  <input className={field} type="datetime-local" value={hoursToInput(origin, r.plannedStartH)} aria-label="Planned start"
+                    onChange={(e) => { const h = inputToHours(origin, e.target.value); if (h != null) onChange(setPlannedStart(project, li, a.no, h, a.rel, predTimes(a.pred), r.durationH)) }} />
+                </td>
+                <td className={cell}>
+                  <input className={field} type="datetime-local" value={hoursToInput(origin, r.plannedFinishH)} aria-label="Planned finish"
+                    onChange={(e) => { const h = inputToHours(origin, e.target.value); const q = h == null ? null : setPlannedFinish(project, li, a.no, r.plannedStartH, h, a.rel, predTimes(a.pred)); if (q) onChange(q) }} />
+                </td>
                 <td className={cell}><span className="rounded px-1 font-bold" style={{ background: tone.bg, color: tone.fg }}>{r.status}</span></td>
               </tr>
             )
           })}
-          {acts.length > 0 && drop === null && <tr><td colSpan={10} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
+          {acts.length > 0 && drop === null && <tr><td colSpan={11} style={{ borderTop: '2px solid #00778B', height: 0, padding: 0 }} /></tr>}
         </tbody>
       </table>
       {acts.length === 0 && <p className="p-6 text-center text-slate-500">No activities here yet — use “+ Add activity”.</p>}

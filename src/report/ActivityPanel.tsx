@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
-  actualProblems, candidatePredecessors, deleteActivity, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  actualProblems, candidatePredecessors, deleteActivity, hoursToInput, inputToHours, setPlannedFinish, setPlannedStart, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
@@ -62,6 +62,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   const tone = activityTone(r.status)
   const when = (x: { plannedStart: Date; plannedFinish: Date }) => `${fmtShort(x.plannedStart)} → ${fmtShort(x.plannedFinish)}`
   const cutoff = result.settings.cutoff
+  const origin = result.settings.possessionStart
   const hoursBetween = (x: Date, y: Date) => (x.getTime() - y.getTime()) / 3_600_000
   // patches (not edits): several changes must go out as ONE edit, or the second would overwrite the first
   const startPatch = (d: Date | null): Partial<ActivityInput> =>
@@ -97,9 +98,17 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
             <label className={`${lab} mt-2`}>Duration (h)
               <input className={inp} type="number" min={0} step={0.25} value={a.durationH ?? ''} onChange={(e) => edit({ durationH: num(e.target.value) })} />
             </label>
-            <div className="mt-2 rounded bg-[#F2F8F9] p-2 text-xs">
-              <b>Planned</b> {when(r)} <span className="text-slate-500">({h1(r.plannedStartH)} → {h1(r.plannedFinishH)})</span>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className={lab}>Planned start
+                <input className={inp} type="datetime-local" value={hoursToInput(origin, r.plannedStartH)}
+                  onChange={(e) => { const h = inputToHours(origin, e.target.value); if (h != null) onChange(setPlannedStart(project, loc, no, h, a.rel, predTimes, r.durationH)) }} />
+              </label>
+              <label className={lab}>Planned finish
+                <input className={inp} type="datetime-local" value={hoursToInput(origin, r.plannedFinishH)}
+                  onChange={(e) => { const h = inputToHours(origin, e.target.value); const q = h == null ? null : setPlannedFinish(project, loc, no, r.plannedStartH, h, a.rel, predTimes); if (q) onChange(q) }} />
+              </label>
             </div>
+            <p className="mt-1 text-xs text-slate-500">Type a date and the link is kept: the lag changes so the link gives exactly that date (a new finish also sets the duration).</p>
           </section>
 
           <section>

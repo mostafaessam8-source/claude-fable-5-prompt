@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeProject } from '../src/engine/schedule'
 import {
-  addActivity, candidatePredecessors, deleteActivities, deleteActivity, duplicateActivities, insertActivityAfter, moveActivities, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  addActivity, hoursToInput, inputToHours, setPlannedFinish, setPlannedStart, candidatePredecessors, deleteActivities, deleteActivity, duplicateActivities, insertActivityAfter, moveActivities, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   successorsOf, timeToInput,
 } from '../src/links/edit'
 import { project as mk } from './helpers'
@@ -153,5 +153,45 @@ describe('reordering, bulk delete, duplicate, insert', () => {
     expect(i.no).toBe(2)
     expect(names(i.project)[1]).toBe('New activity')
     expect(planned(i.project)[1]).toEqual([2, 3]) // follows activity 1
+  })
+})
+
+describe('typing the planned dates keeps the links', () => {
+  const t0 = new Date(Date.UTC(2026, 9, 16, 0, 0))
+  const predOf = (p: ReturnType<typeof base>, no: number) => {
+    const a = p.locations[0].activities.find((x) => x.no === no)!
+    const r = computeProject(p).locations[0].activities
+    const pr = a.pred ? r.find((x) => x.no === a.pred)! : null
+    return { a, pred: pr ? { startH: pr.plannedStartH, finishH: pr.plannedFinishH } : null, own: r.find((x) => x.no === no)! }
+  }
+  for (const rel of ['FS', 'SS', 'FF', 'SF'] as const) {
+    it(`${rel}: a typed start lands exactly there, link and duration unchanged`, () => {
+      const p = patchActivity(base(), 0, 4, { pred: 2, rel, lagH: 0 })
+      const { a, pred, own } = predOf(p, 4)
+      const q = setPlannedStart(p, 0, 4, 9, rel, pred, own.durationH)
+      const after = computeProject(q).locations[0].activities[3]
+      expect(after.plannedStartH).toBeCloseTo(9, 5)
+      expect(after.plannedFinishH).toBeCloseTo(9 + own.durationH, 5)
+      const na = q.locations[0].activities[3]
+      expect([na.pred, na.rel, na.durationH]).toEqual([a.pred, rel, a.durationH])
+    })
+    it(`${rel}: a typed finish sets the duration, the start does not move`, () => {
+      const p = patchActivity(base(), 0, 4, { pred: 2, rel, lagH: 0 })
+      const { pred, own } = predOf(p, 4)
+      const q = setPlannedFinish(p, 0, 4, own.plannedStartH, own.plannedStartH + 5, rel, pred)!
+      const after = computeProject(q).locations[0].activities[3]
+      expect(after.plannedStartH).toBeCloseTo(own.plannedStartH, 5)
+      expect(after.plannedFinishH).toBeCloseTo(own.plannedStartH + 5, 5)
+    })
+  }
+  it('no predecessor: the lag is the start; a finish before the start is refused', () => {
+    const p = base()
+    expect(computeProject(setPlannedStart(p, 0, 1, 3, 'FS', null, 2)).locations[0].activities[0].plannedStartH).toBe(3)
+    expect(setPlannedFinish(p, 0, 1, 0, 0, 'FS', null)).toBeNull()
+  })
+  it('datetime-local conversions round-trip', () => {
+    expect(hoursToInput(t0, 25.5)).toBe('2026-10-17T01:30')
+    expect(inputToHours(t0, '2026-10-17T01:30')).toBe(25.5)
+    expect(inputToHours(t0, '')).toBeNull()
   })
 })
