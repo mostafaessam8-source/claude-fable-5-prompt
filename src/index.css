@@ -19,3 +19,18 @@
   .report-page:last-child { break-after: auto; page-break-after: auto; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---- editable planned Gantt bars ---- */
+.gbar .gh { position: absolute; top: 0; bottom: 0; width: 4px; cursor: ew-resize; z-index: 3; }
+.gbar .gh-l { left: 0; }
+.gbar .gh-r { right: 0; }
+.gbar:hover .gh { background: rgba(0, 119, 139, 0.35); }
+.gbar .gdot {
+  position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: #fff; border: 1.5px solid #00778B; opacity: 0; z-index: 4; cursor: crosshair; touch-action: none;
+}
+.gbar .gdot-l { left: -10px; }  /* outside the bar, so they never cover the resize handles */
+.gbar .gdot-r { right: -10px; }
+.gbar:hover .gdot, .linking .gbar .gdot { opacity: 1; }
+.linking, .linking * { cursor: crosshair !important; }
+@media print { .gbar .gh, .gbar .gdot { display: none; } }

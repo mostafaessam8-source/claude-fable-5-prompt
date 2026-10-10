@@ -1,8 +1,11 @@
-import { useState, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, type SiteLayout } from '../layout/parse'
+import { lagToKeepStart, patchActivity } from '../links/edit'
+import type { Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
+import { dragPatch, linkFromHandles, type DragMode } from './dragmath'
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
 const TABLE_COLS = [22, 156, 92, 78, 78, 74, 34, 34, 54] // px
@@ -20,11 +23,17 @@ const cellBase: CSSProperties = {
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
 }
 
-export function LocationPage({ result, index, layout, selectedNo, onSelect }: {
+export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, zoom = 1, showLinks = true }: {
   result: ProjectResult; index: number; layout?: SiteLayout
   /** Activity number selected on this page (its panel is open); the ruler stays on it. */
   selectedNo?: number | null
   onSelect?: (no: number) => void
+  /** The project being edited: the planned bars can be dragged, resized and linked. */
+  project?: Project
+  onChange?: (p: Project) => void
+  /** The CSS zoom the page is shown at (mouse movement is measured in screen pixels). */
+  zoom?: number
+  showLinks?: boolean
 }) {
   // Row ruler: hover shows an activity's row across the table AND the Gantt; a click selects it (opens the panel).
   const [hover, setHover] = useState<number | null>(null)
@@ -58,13 +67,123 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect }: {
   }
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
+  const editable = !!project && !!onChange
+  const xOf = (h: number) => PA_W + ((h - g.viewStartH) / g.hoursPerColumn) * GC
+  const rowY = (k: number) => 2 * HEAD_H + 2 * k * rh + rh / 2 // centre of an activity's planned (P) row
+
+  // ---- drag a planned bar: move / resize its ends (changes the lag and the duration) ----
+  const pageRef = useRef<HTMLDivElement>(null)
+  const drag = useRef<null | { mode: DragMode; no: number; x0: number; base: Project; lag0: number; dur0: number; rel: Project['locations'][number]['activities'][number]['rel']; hasPred: boolean; moved: boolean; last: number }>(null)
+  const justDragged = useRef(false)
+  const startDrag = (e: React.PointerEvent, k: number, mode: DragMode) => {
+    if (!project || e.button !== 0) return
+    e.stopPropagation()
+    const bar = (e.currentTarget as HTMLElement).closest('.gbar') as HTMLElement
+    bar.setPointerCapture(e.pointerId)
+    const pa = project.locations[index].activities[k]
+    const ra = loc.activities[k]
+    drag.current = { mode, no: pa.no, x0: e.clientX, base: project, lag0: pa.lagH, dur0: pa.durationH ?? ra.durationH, rel: pa.rel, hasPred: pa.pred > 0 && !ra.linkBad, moved: false, last: 0 }
+  }
+  const onDragMove = (e: React.PointerEvent) => {
+    const d = drag.current
+    if (!d || !onChange) return
+    const dx = e.clientX - d.x0
+    if (!d.moved && Math.abs(dx) < 3) return
+    d.moved = true
+    // whole columns (one hour at the default span), measured in layout pixels
+    const delta = Math.round(dx / zoom / GC) * g.hoursPerColumn
+    if (delta === d.last) return
+    d.last = delta
+    onChange(patchActivity(d.base, index, d.no, dragPatch(d.mode, d.rel, d.hasPred, d.lag0, d.dur0, delta)))
+  }
+  const onDragEnd = (e: React.PointerEvent) => {
+    const d = drag.current
+    drag.current = null
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* already released */ }
+    if (d?.moved) { justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0) }
+  }
+
+  // ---- link: drag from a dot on one bar to a dot (or the bar) of another ----
+  const [line, setLine] = useState<null | { x1: number; y1: number; x2: number; y2: number }>(null)
+  const link = useRef<null | { k: number; edge: 'start' | 'finish'; x0: number; y0: number; x1: number; y1: number }>(null)
+  const startLink = (e: React.PointerEvent, k: number, edge: 'start' | 'finish') => {
+    if (!project || e.button !== 0) return
+    e.stopPropagation(); e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    const a = loc.activities[k]
+    const x1 = xOf(edge === 'start' ? a.plannedStartH : a.plannedFinishH)
+    link.current = { k, edge, x0: e.clientX, y0: e.clientY, x1, y1: rowY(k) }
+    setLine({ x1, y1: rowY(k), x2: x1, y2: rowY(k) })
+  }
+  const onLinkMove = (e: React.PointerEvent) => {
+    const l = link.current
+    if (l) setLine({ x1: l.x1, y1: l.y1, x2: l.x1 + (e.clientX - l.x0) / zoom, y2: l.y1 + (e.clientY - l.y0) / zoom })
+  }
+  const onLinkEnd = (e: React.PointerEvent) => {
+    const l = link.current
+    link.current = null
+    setLine(null)
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* already released */ }
+    if (!l || !project || !onChange) return
+    justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0)
+    const hit = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    if (!hit || !pageRef.current?.contains(hit)) return
+    const dot = hit.closest('[data-handle]') as HTMLElement | null
+    const bar = hit.closest('.gbar') as HTMLElement | null
+    let tk: number, te: 'start' | 'finish'
+    if (dot) { tk = Number(dot.dataset.hrow); te = dot.dataset.handle as 'start' | 'finish' }
+    else if (bar) { tk = Number(bar.dataset.row); const r = bar.getBoundingClientRect(); te = e.clientX < r.left + r.width / 2 ? 'start' : 'finish' }
+    else return
+    const made = linkFromHandles({ k: l.k, edge: l.edge }, { k: tk, edge: te })
+    if (!made) return
+    const pred = loc.activities[made.predK]
+    const succ = loc.activities[made.succK]
+    // keep the successor's planned start where it is: the lag is set to whatever reproduces it
+    const lagH = lagToKeepStart(succ.plannedStartH, made.rel, { startH: pred.plannedStartH, finishH: pred.plannedFinishH }, succ.durationH)
+    onChange(patchActivity(project, index, succ.no, { pred: pred.no, rel: made.rel, lagH }))
+  }
+
+  // dependency arrows: from the predecessor's end to the successor's end the relationship joins
+  const arrows = !showLinks || !project ? [] : project.locations[index].activities.flatMap((pa, k) => {
+    const r = loc.activities[k]
+    const j = pa.pred > 0 && !r.linkBad ? loc.activities.findIndex((x) => x.no === pa.pred) : -1
+    if (j < 0) return []
+    const p = loc.activities[j]
+    const clamp = (x: number) => Math.min(PA_W + GANTT_COLS * GC, Math.max(PA_W, x))
+    const x1 = clamp(xOf(pa.rel === 'FS' || pa.rel === 'FF' ? p.plannedFinishH : p.plannedStartH))
+    const x2 = clamp(xOf(pa.rel === 'FS' || pa.rel === 'SS' ? r.plannedStartH : r.plannedFinishH))
+    const y1 = rowY(j), y2 = rowY(k)
+    const dir = y2 > y1 ? 1 : -1
+    const d = x2 >= x1 + 8
+      ? `M${x1},${y1} H${x1 + 4} V${y2} H${x2}`
+      : `M${x1},${y1} H${x1 + 4} V${y1 + dir * rh} H${x2 - 4} V${y2} H${x2}`
+    return [{ key: k, d, no: pa.no }]
+  })
 
   const barEl = (b: Bar, row: number, key: string, k: number) => (
     <div key={key} data-row={k} style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
   )
+  /** The planned bar: drag it to move, drag its ends to resize, drag a dot onto another bar to link. */
+  const plannedBar = (b: Bar, row: number, k: number) => (
+    <div key={`pl${k}`} data-row={k} className={editable ? 'gbar' : undefined}
+      style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 2, position: 'relative', ...(editable ? { cursor: 'grab', touchAction: 'none' } : {}) }}
+      onPointerDown={editable ? (e) => startDrag(e, k, 'move') : undefined} onPointerMove={editable ? onDragMove : undefined}
+      onPointerUp={editable ? onDragEnd : undefined} onPointerCancel={editable ? onDragEnd : undefined}>
+      {editable && (
+        <>
+          <span className="gh gh-l" title="Drag: move the start, keep the finish" onPointerDown={(e) => startDrag(e, k, 'left')} />
+          <span className="gh gh-r" title="Drag: move the finish, keep the start" onPointerDown={(e) => startDrag(e, k, 'right')} />
+          <span className="gdot gdot-l" data-handle="start" data-hrow={k} title="Drag to another bar to link (from this start)"
+            onPointerDown={(e) => startLink(e, k, 'start')} onPointerMove={onLinkMove} onPointerUp={onLinkEnd} onPointerCancel={onLinkEnd} />
+          <span className="gdot gdot-r" data-handle="finish" data-hrow={k} title="Drag to another bar to link (from this finish)"
+            onPointerDown={(e) => startLink(e, k, 'finish')} onPointerMove={onLinkMove} onPointerUp={onLinkEnd} onPointerCancel={onLinkEnd} />
+        </>
+      )}
+    </div>
+  )
 
   return (
-    <div className="report-page" style={{ fontSize: 8.5 }}>
+    <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5 }}>
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 15, padding: '5px 12px', letterSpacing: 0.3 }}>
         {pageTitle(s.projectName, layout, loc.name, '  -  ')}
       </div>
@@ -84,7 +203,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect }: {
 
       <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
         onMouseOver={(e) => setHover(rowAt(e))} onMouseLeave={() => setHover(null)}
-        onClick={(e) => { const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no) }}>
+        onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no) }}>
         {active != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
@@ -167,13 +286,21 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect }: {
             {rows.map(({ bars }, k) => {
               const r = 3 + 2 * k
               return [
-                bars.planned && barEl(bars.planned, r, `pl${k}`, k),
+                bars.planned && plannedBar(bars.planned, r, k),
                 bars.forecast && barEl(bars.forecast, r + 1, `fc${k}`, k),
                 bars.actual && barEl(bars.actual, r + 1, `ac${k}`, k),
               ]
             })}
           </div>
 
+          {/* dependency arrows and the link being drawn (screen only) */}
+          <svg className="no-print" style={{ position: 'absolute', left: 0, top: 0, width: PA_W + GANTT_COLS * GC, height: 2 * HEAD_H + bodyH, pointerEvents: 'none', zIndex: 5 }}>
+            <defs>
+              <marker id={`arr${index}`} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill={C.slate} /></marker>
+            </defs>
+            {arrows.map((a) => <path key={a.key} d={a.d} fill="none" stroke={C.slate} strokeWidth={1} opacity={0.75} markerEnd={`url(#arr${index})`} />)}
+            {line && <path d={`M${line.x1},${line.y1} L${line.x2},${line.y2}`} stroke={C.blue} strokeWidth={1.5} strokeDasharray="3 2" fill="none" />}
+          </svg>
           {/* gridlines every column (light) / 6 h (stronger), midnight rule, cut-off line */}
           <div style={{ position: 'absolute', left: PA_W, top: 2 * HEAD_H, width: GANTT_COLS * GC, height: bodyH, pointerEvents: 'none',
             backgroundImage: `repeating-linear-gradient(90deg, transparent 0, transparent ${GC * 6 - 1}px, #AEB9BD ${GC * 6 - 1}px, #AEB9BD ${GC * 6}px), repeating-linear-gradient(90deg, transparent 0, transparent ${GC - 1}px, #E6ECEE ${GC - 1}px, #E6ECEE ${GC}px)` }} />

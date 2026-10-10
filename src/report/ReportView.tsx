@@ -9,9 +9,10 @@ import { LocationPage } from './LocationPage'
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
 export const PAGE_H = 794
 
-export function ReportView({ result, layouts, project, onChange }: {
+export function ReportView({ result, layouts, project, onChange, showLinks = true }: {
   result: ProjectResult; layouts: SiteLayout[]
   project: Project; onChange: (p: Project) => void
+  showLinks?: boolean
 }) {
   const [selected, setSelected] = useState<{ loc: number; no: number } | null>(null)
   const close = useCallback(() => setSelected(null), [])
@@ -33,7 +34,7 @@ export function ReportView({ result, layouts, project, onChange }: {
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page"><Cover result={result} layouts={layouts} /></div>
         {result.locations.map((_, i) => (
-          <LocationPage key={i} result={result} index={i} layout={layouts[i]}
+          <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} zoom={zoom} showLinks={showLinks}
             selectedNo={selected?.loc === i ? selected.no : null} onSelect={(no) => setSelected({ loc: i, no })} />
         ))}
       </div>

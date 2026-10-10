@@ -25,6 +25,18 @@ exported to Excel. *Set the lag to keep the start I opened it with* re-links wit
 activity* also keep the date (they set the lag for you; change it to 0 to make the activity follow). A predecessor must be an
 earlier activity (smaller number). Esc closes the panel.
 
+## Editing on the Gantt
+The **planned (P) bar** of each activity can be edited directly (screen only; the ruler follows the pointer):
+- **Move**: drag the bar left/right (in whole columns, one hour at the default span). The lag changes (with no predecessor the lag is the start), so
+  everything that follows moves with it.
+- **Duration**: drag the bar's **right edge** to move the finish (start stays) or its **left edge** to move the start (finish stays). Minimum 15 min.
+  For *finish-to-finish* / *start-to-finish* links the lag is what fixes the finish, so the handles adjust the lag and duration to keep the other end still.
+- **Link**: hover a bar to see a dot outside each end; drag from a dot to a dot (or onto the bar) of another activity. The earlier activity is always the
+  predecessor, so it works in either direction; finish→start = FS, start→start = SS, finish→finish = FF, start→finish = SF. The successor keeps its
+  planned start (the lag is set for you).
+- **Show links** (settings bar) draws an arrow for every predecessor link. Everything updates the table, forecast and summary live.
+Fine adjustments (exact lag/duration) are in the activity panel (click the activity).
+
 ## How the forecast works
 Each activity has one predecessor (`PRED`), a relationship (`FS`/`SS`/`FF`/`SF`) and a lag. A delay (or gain) is carried
 **along that link**, less any planned slack between the two joined ends, so it reaches only what depends on it; parallel
