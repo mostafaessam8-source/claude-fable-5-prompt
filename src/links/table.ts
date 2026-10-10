@@ -4,6 +4,7 @@
  */
 import { computeProject, type ProjectResult } from '../engine/schedule'
 import type { ActivityInput, Project, Rel } from '../model/types'
+import { colLetter } from '../export/positions'
 import { RELS, restructure, setPlannedFinish, setPlannedStart, splitDateTime } from './edit'
 
 export const HEADERS = ['#', 'Activity', 'Duration (h)', 'Follows (#)', 'Rel', 'Lag (h)', 'Planned start', 'Planned finish', 'Actual start', 'Actual finish', '% complete', 'Remarks']
@@ -28,15 +29,51 @@ const num = (x: number | null) => (x == null ? '' : String(Math.round(x * 1000) 
 
 const cellText = (s: string) => (/[\t\n\r"]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s)
 
-/** The table of one location, header row first. */
-export function toTable(project: Project, result: ProjectResult, loc: number): string {
-  const lines = [HEADERS.join('\t')]
-  project.locations[loc].activities.forEach((a, k) => {
+/** Where the pasted table's top-left cell (the "#" header) goes in the sheet: "A1", "C5"… */
+export function parseAnchor(s: string): { col: number; row: number } | null {
+  const m = s.trim().toUpperCase().match(/^([A-Z]{1,2})(\d{1,5})$/)
+  if (!m) return null
+  const col = [...m[1]].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0)
+  return { col, row: Number(m[2]) }
+}
+
+/**
+ * The table of one location, header row first.
+ * With `formulas` the planned dates are live Excel formulas that follow the same rules as the app (predecessor, relationship, lag,
+ * duration): change a duration, a lag, a predecessor or a relationship in Excel and every date after it moves. Paste it with its
+ * top-left cell at `anchor` (A1 by default); the formulas are written for that position.
+ */
+export function toTable(project: Project, result: ProjectResult, loc: number, opts: { formulas?: boolean; anchor?: string } = {}): string {
+  const acts = project.locations[loc].activities
+  const pct = (a: ActivityInput) => (a.pct == null ? '' : `${Math.round(a.pct * 100)}%`)
+  if (!opts.formulas) {
+    const lines = [HEADERS.join('\t')]
+    acts.forEach((a, k) => {
+      const r = result.locations[loc].activities[k]
+      lines.push([String(a.no), cellText(a.name), num(a.durationH), String(a.pred), a.rel, num(a.lagH), fmtCell(r.plannedStart), fmtCell(r.plannedFinish), fmtCell(r.actualStart), fmtCell(r.actualFinish), pct(a), cellText(a.remarks)].join('\t'))
+    })
+    return lines.join('\n')
+  }
+  const an = parseAnchor(opts.anchor ?? 'A1') ?? { col: 1, row: 1 }
+  const L = (i: number) => colLetter(an.col + i) // i: index in HEADERS, then the helper columns
+  const cNo = L(0), cDur = L(2), cPred = L(3), cRel = L(4), cLag = L(5)
+  const cStartH = L(12), cEndH = L(13), cPredRow = L(14), cOrigin = L(16)
+  const origin = `$${cOrigin}$${an.row}`
+  const header = [...HEADERS, 'Start (h)', 'Finish (h)', 'Pred row', 'Possession start', fmtCell(project.settings.possessionStart)]
+  const lines = [header.join('\t')]
+  acts.forEach((a, k) => {
+    const R = an.row + 1 + k
+    const at = (c: string) => `${c}${R}`
+    // sheet row of the predecessor (matched on the # column); 0 = starts at the possession start
+    const predRow = `=IF(${at(cPred)}=0,0,IFERROR(MATCH(${at(cPred)},$${cNo}:$${cNo},0)-1,0))`
+    const pf = `OFFSET($${cEndH}$1,${at(cPredRow)},0)`, ps = `OFFSET($${cStartH}$1,${at(cPredRow)},0)`
+    const startH = `=IF(${at(cPredRow)}=0,${at(cLag)},IF(${at(cRel)}="FS",${pf}+${at(cLag)},IF(${at(cRel)}="SS",${ps}+${at(cLag)},IF(${at(cRel)}="FF",${pf}+${at(cLag)}-${at(cDur)},${ps}+${at(cLag)}-${at(cDur)}))))`
     const r = result.locations[loc].activities[k]
+    const when = (h: string) => `=TEXT(${origin}+${h}/24,"dd-mmm-yyyy hh:mm")`
     lines.push([
       String(a.no), cellText(a.name), num(a.durationH), String(a.pred), a.rel, num(a.lagH),
-      fmtCell(r.plannedStart), fmtCell(r.plannedFinish), fmtCell(r.actualStart), fmtCell(r.actualFinish),
-      a.pct == null ? '' : `${Math.round(a.pct * 100)}%`, cellText(a.remarks),
+      when(at(cStartH)), when(at(cEndH)), fmtCell(r.actualStart), fmtCell(r.actualFinish), pct(a), cellText(a.remarks),
+      startH, `=${at(cStartH)}+${at(cDur)}`, predRow,
     ].join('\t'))
   })
   return lines.join('\n')
@@ -176,7 +213,6 @@ export function applyTable(project: Project, loc: number, text: string, opts: { 
 
   const editedKeys = new Set<number>()
   const note = (b: Row, field: string, from: string, to: string) => changes.push(`#${b.existing?.no ?? '+'} ${b.a.name || '(new)'}: ${field} ${from || '—'} → ${to || '—'}`)
-  const dateEdits: { row: Row; start: Date | null; finish: Date | null }[] = []
 
   for (const b of built) {
     const { a, existing, r, line } = b
@@ -222,21 +258,6 @@ export function applyTable(project: Project, loc: number, text: string, opts: { 
     const rem = cell(r, 'remarks')
     if (rem !== null && rem !== a.remarks) { t('remarks', a.remarks, rem); a.remarks = rem }
 
-    // planned dates: typed dates move the lag / duration, unless the link itself was edited in the same row
-    const ps = cell(r, 'pstart'), pf = cell(r, 'pfinish')
-    const linkEdited = !!existing && (a.pred !== existing.pred || a.rel !== existing.rel || a.lagH !== existing.lagH || a.durationH !== existing.durationH)
-    if (existing && (ps || pf) && !linkEdited) {
-      const old = before[acts.indexOf(existing)]
-      const s = ps ? parseDateTime(ps, dmy, origin) : null, f = pf ? parseDateTime(pf, dmy, origin) : null
-      if (s === 'bad') bad('Planned start', ps ?? ''); if (f === 'bad') bad('Planned finish', pf ?? '')
-      const sd = s && s !== 'bad' && Math.round(s.getTime() / MIN) !== Math.round(old.plannedStart.getTime() / MIN) ? s : null
-      const fd2 = f && f !== 'bad' && Math.round(f.getTime() / MIN) !== Math.round(old.plannedFinish.getTime() / MIN) ? f : null
-      if (sd || fd2) dateEdits.push({ row: b, start: sd, finish: fd2 })
-    } else if (existing && linkEdited && (ps || pf)) {
-      const old = before[acts.indexOf(existing)]
-      const s = ps ? parseDateTime(ps, dmy, origin) : null
-      if (s && s !== 'bad' && Math.round(s.getTime() / MIN) !== Math.round(old.plannedStart.getTime() / MIN)) warnings.push(`Row ${line}: the planned dates were ignored because the duration / link was edited in the same row.`)
-    }
     if (touched && existing) editedKeys.add(a.no)
     if (!existing) changes.push(`+ new activity “${a.name}”`)
   }
@@ -249,6 +270,30 @@ export function applyTable(project: Project, loc: number, text: string, opts: { 
   const rs = restructure(project, loc, order, startOld)
   let p = rs.project
   const nameOfNo = (n: number) => acts.find((a) => a.no === n)?.name ?? `#${n}`
+
+  // typed planned dates. A date that equals the old plan, or the plan the edited links now give (what an Excel formula shows), is not an edit.
+  const res0 = computeProject(p).locations[loc].activities
+  const near = (x: Date, y: Date) => Math.abs(x.getTime() - y.getTime()) <= MIN
+  const dateEdits: { row: Row; start: Date | null; finish: Date | null }[] = []
+  for (const b of valid) {
+    if (!b.existing) continue
+    const ps = cell(b.r, 'pstart'), pf = cell(b.r, 'pfinish')
+    if (!ps && !pf) continue
+    const old = before[acts.indexOf(b.existing)]
+    const now = res0.find((x) => x.no === order.findIndex((o) => o.no === b.a.no) + 1)!
+    const s0 = ps ? parseDateTime(ps, dmy, origin) : null, f0 = pf ? parseDateTime(pf, dmy, origin) : null
+    if (s0 === 'bad') warnings.push(`Row ${b.line}, Planned start: “${ps}” was not understood and was ignored.`)
+    if (f0 === 'bad') warnings.push(`Row ${b.line}, Planned finish: “${pf}” was not understood and was ignored.`)
+    const sd = s0 && s0 !== 'bad' && !near(s0, old.plannedStart) && !near(s0, now.plannedStart) ? s0 : null
+    const fd = f0 && f0 !== 'bad' && !near(f0, old.plannedFinish) && !near(f0, now.plannedFinish) ? f0 : null
+    if (!sd && !fd) continue
+    const x = b.existing
+    if (b.a.pred !== x.pred || b.a.rel !== x.rel || b.a.lagH !== x.lagH || b.a.durationH !== x.durationH) {
+      warnings.push(`Row ${b.line}: the planned dates were ignored because the duration / link was edited in the same row.`)
+      continue
+    }
+    dateEdits.push({ row: b, start: sd, finish: fd })
+  }
 
   // now the typed planned dates, one row at a time (a move changes what the rows after it follow)
   for (const e of dateEdits) {
