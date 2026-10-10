@@ -9,6 +9,8 @@ import { activityTone } from './brand'
 import { fmtShort, fmtVariance } from './format'
 
 export type PanelTab = 'baseline' | 'actual'
+/** Width of the panel in px: the report leaves this much room on the right while the panel is open. */
+export const PANEL_W = 430
 
 const inp = 'w-full rounded border border-slate-300 px-1.5 py-1 text-sm'
 const lab = 'block text-xs font-semibold text-slate-500'
@@ -73,7 +75,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   )
 
   return (
-    <aside className="no-print fixed inset-y-0 right-0 z-50 w-[430px] max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
+    <aside style={{ width: PANEL_W }} className="no-print fixed inset-y-0 right-0 z-50 max-w-full overflow-y-auto border-l border-slate-300 bg-white text-slate-800 shadow-2xl" aria-label="Activity details">
       <div className="sticky top-0 z-10">
         <div className="flex items-start gap-2 bg-[#00778B] px-3 py-2 text-white">
           <div className="flex-1">

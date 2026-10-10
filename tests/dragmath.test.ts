@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeProject } from '../src/engine/schedule'
 import { patchActivity } from '../src/links/edit'
 import type { Rel } from '../src/model/types'
-import { dragPatch, linkFromHandles, MIN_DUR, relFromEdges, type DragMode } from '../src/report/dragmath'
+import { actualDragPatch, dragPatch, linkFromHandles, MIN_DUR, relFromEdges, type DragMode } from '../src/report/dragmath'
 import { project as mk } from './helpers'
 
 /** activity 2 follows activity 1 (planned 0–4) with the given relationship; returns activity 2's planned [start, finish]. */
@@ -49,5 +49,24 @@ describe('linking by dragging between bar handles', () => {
     expect(linkFromHandles({ k: 5, edge: 'start' }, { k: 2, edge: 'finish' })).toEqual({ predK: 2, succK: 5, rel: 'FS' }) // reversed drag
     expect(linkFromHandles({ k: 5, edge: 'finish' }, { k: 2, edge: 'finish' })).toEqual({ predK: 2, succK: 5, rel: 'FF' })
     expect(linkFromHandles({ k: 3, edge: 'start' }, { k: 3, edge: 'finish' })).toBeNull() // same activity
+  })
+})
+
+describe('dragging the actual bar', () => {
+  it('finished work: move shifts start and finish together; the ends move on their own', () => {
+    expect(actualDragPatch('move', 2, 5, 5, 3)).toEqual({ startH: 5, finishH: 8 })
+    expect(actualDragPatch('left', 2, 5, 5, 1)).toEqual({ startH: 3, finishH: 5 })
+    expect(actualDragPatch('right', 2, 5, 5, 2)).toEqual({ startH: 2, finishH: 7 })
+  })
+  it('work in progress has no finish: moving only shifts the start, and the right edge sets one', () => {
+    expect(actualDragPatch('move', 2, null, 6, 1)).toEqual({ startH: 3, finishH: null })
+    expect(actualDragPatch('left', 2, null, 6, 1)).toEqual({ startH: 3, finishH: null })
+    expect(actualDragPatch('right', 2, null, 6, 2)).toEqual({ startH: 2, finishH: 8 }) // finished where the bar was dragged to
+  })
+  it('never before hour 0 and never shorter than the minimum', () => {
+    expect(actualDragPatch('move', 2, 5, 5, -9)).toEqual({ startH: 0, finishH: 3 })
+    expect(actualDragPatch('left', 2, 5, 5, 99)).toEqual({ startH: 5 - MIN_DUR, finishH: 5 })
+    expect(actualDragPatch('right', 2, 5, 5, -99)).toEqual({ startH: 2, finishH: 2 + MIN_DUR })
+    expect(actualDragPatch('left', 2, null, 6, -9)).toEqual({ startH: 0, finishH: null })
   })
 })

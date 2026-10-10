@@ -13,7 +13,7 @@
 @media print {
   html, body { background: #fff !important; }
   .no-print { display: none !important; }
-  .report-wrap { padding: 0; background: #fff; }
+  .report-wrap { padding: 0; background: #fff; margin-right: 0 !important; }
   .report-zoom { zoom: 1 !important; display: block; }
   .report-page { break-after: page; page-break-after: always; }
   .report-page:last-child { break-after: auto; page-break-after: auto; }

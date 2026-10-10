@@ -3,7 +3,7 @@ import type { ProjectResult } from '../engine/schedule'
 import type { SiteLayout } from '../layout/parse'
 import { Cover } from './Cover'
 import type { Project } from '../model/types'
-import { ActivityPanel, type PanelTab } from './ActivityPanel'
+import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage } from './LocationPage'
 
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
@@ -30,7 +30,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
 
   return (
     <>
-    <div ref={box} className="report-wrap">
+    <div ref={box} className="report-wrap" style={{ marginRight: selected ? PANEL_W : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page"><Cover result={result} layouts={layouts} /></div>
         {result.locations.map((_, i) => (

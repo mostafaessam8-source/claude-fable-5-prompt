@@ -44,6 +44,9 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   predecessor, so it works in either direction; finish→start = FS, start→start = SS, finish→finish = FF, start→finish = SF. The successor keeps its
   planned start (the lag is set for you).
 - **Show links** (settings bar) draws an arrow for every predecessor link. Everything updates the table, forecast and summary live.
+- **Actual bar** (the lower bar of a row that has an actual start): drag it to move the actual dates, its left edge for the actual start, its right edge for the
+  actual finish. Dragging the right edge of work still in progress sets a finish (100 %). Create the first actual with the Actual tab's quick actions.
+- The activity panel no longer covers the Gantt: while it is open the report shrinks (zoom) to the space left of it.
 Fine adjustments (exact lag/duration) are in the activity panel (click the activity).
 
 ## How the forecast works
