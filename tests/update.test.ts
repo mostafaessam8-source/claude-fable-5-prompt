@@ -67,3 +67,28 @@ describe('offline copy plumbing', () => {
     expect(embed({ id: 'x', preparedAt: '', project: p, layouts: layoutsOf(p) })).not.toContain('</script')
   }, 60000)
 })
+
+describe('a contractor who restructures the plan', () => {
+  it('structure and settings changes are listed, field changes still merge', async () => {
+    const { addActivity, deleteActivity, moveActivities } = await import('../src/links/edit')
+    const { addLocation } = await import('../src/model/locations')
+    const base = await parseWorkbook(FIXTURE)
+    const lay = layoutsOf(base)
+    const start = (n: number) => base.locations[0].activities.find((a) => a.no === n)!.lagH
+    let t = addActivity(base, 0, 'Extra work', 2).project
+    t = deleteActivity(t, 0, 3, start)
+    t = moveActivities(t, 1, [5], 2, start).project
+    t = { ...t, settings: { ...t.settings, duration: t.settings.duration + 24 } }
+    t = patchActivity(t, 0, 1, { remarks: 'x' })
+    const e = addLocation({ project: t, layouts: lay }, 'C999  –  KM 9')
+    const d = diffUpdate(base, e.project, lay, e.layouts)
+    const text = d.structure.join('\n')
+    expect(text).toMatch(/activity added — #\d+ Extra work/)
+    expect(text).toMatch(/activity removed/)
+    expect(text).toMatch(/order of the activities changed/)
+    expect(text).toMatch(/Location added: “C999/)
+    expect(text).toMatch(/Possession duration/)
+    expect(d.updates.some((u) => u.changes.some((c) => c.field === 'remarks'))).toBe(true)
+    expect(diffUpdate(base, base, lay, lay).structure).toEqual([])
+  }, 60000)
+})

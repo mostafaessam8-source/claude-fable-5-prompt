@@ -1,7 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
-import { OFFLINE } from '../offline/offline'
 import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -84,8 +83,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
   const editable = !!project && !!onChange
-  // an offline contractor copy edits what happened on site (actuals, remarks), not the plan
-  const planEditable = editable && !OFFLINE
+  const planEditable = editable
   const xOf = (h: number) => PA_W + ((h - g.viewStartH) / g.hoursPerColumn) * GC
   const rowY = (k: number) => 2 * HEAD_H + 2 * k * rh + rh / 2 // centre of an activity's planned (P) row
 
