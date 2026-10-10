@@ -6,19 +6,22 @@ const KEY = 'sar-possession-tracker/project/v1'
 export interface Saved { project: Project; layouts: SiteLayout[] }
 
 // Dates survive JSON as {"$date": iso}.
-const replacer = function (this: Record<string, unknown>, key: string, value: unknown) {
+export const replacer = function (this: Record<string, unknown>, key: string, value: unknown) {
   return this[key] instanceof Date ? { $date: (this[key] as Date).toISOString() } : value
 }
-const reviver = (_k: string, v: unknown) =>
+export const reviver = (_k: string, v: unknown) =>
   v && typeof v === 'object' && '$date' in v ? new Date((v as { $date: string }).$date) : v
 
-export function saveProject(s: Saved) {
-  try { localStorage.setItem(KEY, JSON.stringify(s, replacer)) } catch { /* storage unavailable */ }
+export function saveProject(s: Saved, key = KEY) {
+  try { localStorage.setItem(key, JSON.stringify(s, replacer)) } catch { /* storage unavailable */ }
 }
-export function loadProject(): Saved | null {
+export function loadProject(key = KEY): Saved | null {
   try {
-    const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw, reviver) as Saved) : null
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const s = JSON.parse(raw, reviver) as Saved
+    // layouts saved before the culvert type existed have no `kind`
+    return { ...s, layouts: s.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell' })) }
   } catch { return null }
 }
 export function clearProject() {

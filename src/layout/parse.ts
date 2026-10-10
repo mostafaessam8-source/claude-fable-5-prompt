@@ -3,7 +3,7 @@
 export type CulvertKind = 'cell' | 'pipe'
 export const KINDS: CulvertKind[] = ['cell', 'pipe']
 /** "cell" / "cells" / "pipe" / "pipes" */
-export const unit = (kind: CulvertKind, n: number) => `${kind}${n === 1 ? '' : 's'}`
+export const unit = (kind: CulvertKind | undefined, n: number) => `${kind ?? 'cell'}${n === 1 ? '' : 's'}`
 
 export interface SiteLayout {
   code: string

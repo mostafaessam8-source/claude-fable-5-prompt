@@ -41,3 +41,18 @@ describe('contractor update', () => {
     expect(d.notes.some((n) => /numbered differently/.test(n))).toBe(true)
   })
 })
+
+describe('offline copy plumbing', () => {
+  it('the update file round-trips dates, and refuses anything else', async () => {
+    const { updateFileText, parseUpdateFile, embed } = await import('../src/offline/offline')
+    const base = await parseWorkbook(FIXTURE)
+    const p = patchActivity(base, 0, 2, { actualStartDate: new Date(Date.UTC(2026, 9, 16)), actualStartTime: 1.5, remarks: 'ok </script> "quoted"' })
+    const back = parseUpdateFile(updateFileText(p, layoutsOf(p), 'abc'))
+    expect(back.locations[0].activities[1].actualStartDate).toEqual(new Date(Date.UTC(2026, 9, 16)))
+    expect(diffUpdate(base, back).updates).toHaveLength(1)
+    expect(() => parseUpdateFile('{"hello":1}')).toThrow(/not a SAR update file/)
+    expect(() => parseUpdateFile('nope')).toThrow(/not a SAR update file/)
+    // embedded data can never close its <script> tag
+    expect(embed({ id: 'x', preparedAt: '', project: p, layouts: layoutsOf(p) })).not.toContain('</script')
+  }, 60000)
+})

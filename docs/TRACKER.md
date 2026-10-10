@@ -58,8 +58,12 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   returns it → header **Import contractor update**: the file is compared with the current project and every changed activity is listed (was → now, plan changes in red);
   tick what to take, Apply (one Undo step). Activities are matched by name (then number); locations by name or code; link fields are skipped if the numbering differs.
   Other edits you made in the app are never overwritten.
+- **Offline copy for the contractor** (header button): one `.html` file with the whole app and the project inside. The contractor opens it with a double-click (no internet, nothing
+  to install), fills in actuals / % / remarks (Actual tab, or drag the lower bar), and presses **Save update for SAR**, which downloads a small `…_UPDATE.json`. The copy has **no Excel export**,
+  no import, no settings or site-layout tabs, and the plan is read-only; his work is kept in his browser per file. Send the `.json` back and use **Import contractor update** (it takes the
+  `.json` or an Excel workbook) to review and apply it. Only available from the built site (GitHub Pages), not the dev server.
 - **Remarks** are shown under each location's table on the report (and printed), in the Activities tab (editable) and the panel's Actual tab; in the exported workbook they
-  are the REMARKS column of Data Input and a **REMARKS line under each Report page**, built live from that column.
+  are the REMARKS column of Data Input and a **Remarks column in the Report table** and a **REMARKS line under each Report page**, built live from that column.
 - **Culvert type** (Site layout tab → Type): **Cells** (box) or **Pipes** (round). It changes the schematic card, the “N PIPES” caption, the report headers and the exported scope line
   (`2 pipes │ …`, which re-imports as pipes). Claude's fill can propose it too.
 - **Locations** (top of the Activities tab): rename a location and its scope line, **+ New location** (one starter activity), duplicate (without actuals), move earlier/later,

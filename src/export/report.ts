@@ -5,7 +5,7 @@ import { cfFill, center, COL, font, left, box, bottomOnly, solid, argb } from '.
 import { colLetter, diBlock, DI_FIRST_LOCATION_ROW, GANTT_COLS, R, reportRows } from './positions'
 
 const D = "'Data Input'!"
-const WIDTHS = [3.5, 29, 15.5, 14.5, 14.5, 13.5, 7, 7, 10.5, 2.3]
+const WIDTHS = [3.5, 29, 15.5, 14.5, 14.5, 13.5, 7, 7, 10.5, 30, 2.3]
 const STATUS_RULES: [string, string, string][] = [
   ['AT RISK', '8E1B1F', '#FFFFFF'], ['BEHIND', COL.red, '#FFFFFF'], ['TIGHT', COL.amber, COL.black],
   ['AHEAD', COL.sky, COL.black], ['ON TIME', COL.blue, '#FFFFFF'],
@@ -178,11 +178,11 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       })),
     })
 
-    ;['No', 'Activity', 'Status', 'Planned\nFinish', 'Forecast\nFinish', 'Time\nVariance', 'Plan\n%', 'Act.\n%', 'Buffer to\nHand-back'].forEach((h, c) => {
+    ;['No', 'Activity', 'Status', 'Planned\nFinish', 'Forecast\nFinish', 'Time\nVariance', 'Plan\n%', 'Act.\n%', 'Buffer to\nHand-back', 'Remarks'].forEach((h, c) => {
       ws.mergeCells(pg.h1, c + 1, pg.h2, c + 1)
       set(`${colLetter(c + 1)}${pg.h1}`, h, head)
     })
-    ws.mergeCells(pg.h1, R.SPACER, pg.h2, R.SPACER); set(`J${pg.h1}`, null, { fill: solid(COL.slate) })
+    ws.mergeCells(pg.h1, R.SPACER, pg.h2, R.SPACER); set(`${colLetter(R.SPACER)}${pg.h1}`, null, { fill: solid(COL.slate) })
     for (let d = 0; d < GANTT_COLS / 24; d++) {
       const c0 = R.G0 + d * 24
       merge(`${colLetter(c0)}${pg.h1}:${colLetter(c0 + 23)}${pg.h1}`,
@@ -221,8 +221,9 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       vm(7, F(di('T')), cellSt({ font: font(COL.slate, 8, true) }), '0%')
       vm(8, F(di('S')), cellSt({ font: font(COL.blue, 8, true) }), '0%')
       vm(9, null, cellSt())
-      set(`J${a}`, 'P', { font: font(COL.slate, 5), alignment: center, fill: solid(bg) })
-      set(`J${a + 1}`, 'A', { font: font(COL.slate, 5), alignment: center, fill: solid(bg) })
+      vm(10, F(`IF(OR(${di('B')}="",${di('P')}=""),"",${di('P')})`), cellSt({ font: font(COL.black, 7), alignment: { horizontal: 'left', vertical: 'middle', wrapText: true } }))
+      set(`${colLetter(R.SPACER)}${a}`, 'P', { font: font(COL.slate, 5), alignment: center, fill: solid(bg) })
+      set(`${colLetter(R.SPACER)}${a + 1}`, 'A', { font: font(COL.slate, 5), alignment: center, fill: solid(bg) })
       for (let c = R.G0; c <= R.G1; c++) for (const rr of [a, a + 1]) {
         const cell = ws.getCell(rr, c)
         cell.fill = solid(bg)
@@ -263,6 +264,7 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       const cell = set(`${c}${t}`, F(`${c}${sr}`), tt())
       if (nf) cell.numFmt = nf
     }
+    for (const c of [R.REMARKS, R.SPACER]) set(`${colLetter(c)}${t}`, null, tt())
     merge(`${G0}${t}:${G1}${t}`,
       F(`"TOTAL  "&TEXT(SUM(${D}E${b.first}:E${b.last}),"0.0")&" activity hours          Possession elapsed  "&TEXT(MEDIAN(0,($C$1-$A$1)*24,($B$1-$A$1)*24),"0.0")&"  of  "&TEXT(($B$1-$A$1)*24,"0.0")&" h          Report cut-off  "&TEXT($C$1,"ddd dd-mmm hh:mm")`),
       tt({ alignment: { horizontal: 'left', vertical: 'middle' }, font: font(COL.black, 8, true) }))

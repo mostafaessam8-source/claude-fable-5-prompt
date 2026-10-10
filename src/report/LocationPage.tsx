@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
+import { OFFLINE } from '../offline/offline'
 import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -83,6 +84,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
   const editable = !!project && !!onChange
+  // an offline contractor copy edits what happened on site (actuals, remarks), not the plan
+  const planEditable = editable && !OFFLINE
   const xOf = (h: number) => PA_W + ((h - g.viewStartH) / g.hoursPerColumn) * GC
   const rowY = (k: number) => 2 * HEAD_H + 2 * k * rh + rh / 2 // centre of an activity's planned (P) row
 
@@ -233,11 +236,11 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   )
   /** The planned bar: drag it to move, drag its ends to resize, drag a dot onto another bar to link. */
   const plannedBar = (b: Bar, row: number, k: number) => (
-    <div key={`pl${k}`} data-row={k} className={editable ? 'gbar' : undefined}
-      style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 2, position: 'relative', ...(editable ? { cursor: 'grab', touchAction: 'none' } : {}) }}
-      onPointerDown={editable ? (e) => startDrag(e, k, 'move') : undefined} onPointerMove={editable ? onDragMove : undefined}
-      onPointerUp={editable ? onDragEnd : undefined} onPointerCancel={editable ? onDragEnd : undefined}>
-      {editable && (
+    <div key={`pl${k}`} data-row={k} className={planEditable ? 'gbar' : undefined}
+      style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 2, position: 'relative', ...(planEditable ? { cursor: 'grab', touchAction: 'none' } : {}) }}
+      onPointerDown={planEditable ? (e) => startDrag(e, k, 'move') : undefined} onPointerMove={planEditable ? onDragMove : undefined}
+      onPointerUp={planEditable ? onDragEnd : undefined} onPointerCancel={planEditable ? onDragEnd : undefined}>
+      {planEditable && (
         <>
           <span className="gh gh-l" title="Drag: move the start, keep the finish" onPointerDown={(e) => startDrag(e, k, 'left')} />
           <span className="gh gh-r" title="Drag: move the finish, keep the start" onPointerDown={(e) => startDrag(e, k, 'right')} />
@@ -261,7 +264,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
-          {editable && (
+          {planEditable && (
             <button className="no-print" style={{ marginLeft: 'auto', border: `1px solid ${C.blue}`, borderRadius: 3, padding: '1px 8px', background: '#fff', color: C.blue, fontWeight: 700, fontSize: 10, cursor: 'pointer' }}
               title="Add an activity at the end of this location (it follows the last one)"
               onClick={() => { const r = addActivity(project!, index); onChange!(r.project); onSelect?.(r.no, 'baseline') }}>+ Add activity</button>
@@ -334,8 +337,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }} {...props}>{content}</div>
             )
             return [
-              span(1, { color: C.slate, ...(editable ? { cursor: 'grab' } : {}) }, a.no,
-                editable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
+              span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
+                planEditable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
               span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: a.name.length > 52 ? 7 : undefined },
                 renameK === k ? (
                   <input autoFocus defaultValue={a.name} style={{ width: '100%', font: 'inherit', padding: '0 2px' }}
@@ -343,7 +346,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
                     onBlur={(e) => { const v = e.target.value.trim(); setRenameK(null); if (v && v !== a.name) onChange!(patchActivity(project!, index, a.no, { name: v })) }}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setRenameK(null) }} />
                 ) : a.name,
-                editable ? { title: 'Click the name of the selected row (or double-click) to rename', onDoubleClick: () => setRenameK(k),
+                planEditable ? { title: 'Click the name of the selected row (or double-click) to rename', onDoubleClick: () => setRenameK(k),
                   onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setRenameK(k) } } } : {}),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               span(4, {}, fmtShort(a.plannedFinish)),
