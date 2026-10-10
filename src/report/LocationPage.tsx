@@ -19,6 +19,20 @@ const AVAIL_ROWS_H = 560
 
 const varColour = { late: C.red, early: C.blue, ok: C.black }
 
+/**
+ * The largest font size (px) at which `text` fits a cell of the given size: words wrap, so a line holds about width / (0.56 × size) characters.
+ * Used for the long names and remarks so they are never cut off by the row height.
+ */
+export function fitFont(text: string, widthPx: number, heightPx: number, max = 8.5, min = 5): number {
+  const len = Math.max(1, text.length)
+  for (let fs = max; fs >= min; fs -= 0.25) {
+    const perLine = Math.max(1, Math.floor((widthPx - 6) / (0.56 * fs)))
+    const lines = Math.ceil((len + 4) / perLine) // + a few characters: words that do not break where the maths says
+    if (lines * fs * 1.12 <= heightPx - 1) return fs
+  }
+  return min
+}
+
 const cellBase: CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
@@ -339,7 +353,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
                 planEditable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
-              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: a.name.length > 52 ? 7 : undefined },
+              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, TABLE_COLS[1], 2 * rh) },
                 renameK === k ? (
                   <input autoFocus defaultValue={a.name} style={{ width: '100%', font: 'inherit', padding: '0 2px' }}
                     onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}
@@ -355,7 +369,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(7, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               span(8, { color: C.blue, fontWeight: 700 }, pct(a.effectivePct)),
               span(9, {}, ''),
-              span(10, { justifyContent: 'flex-start', textAlign: 'left', fontSize: 6.5, lineHeight: '8px', overflow: 'hidden', padding: '0 3px', color: C.black }, a.remarks, { title: a.remarks || undefined }),
+              span(10, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, TABLE_COLS[9], 2 * rh, 7), overflow: 'hidden', padding: '0 3px', color: C.black }, a.remarks, { title: a.remarks || undefined }),
             ]
           })}
           {/* total row */}
