@@ -54,6 +54,12 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
 - **Type the planned dates** (panel Baseline tab, and the Planned start / finish columns of the Activities tab): the predecessor and relationship stay and the **lag is
   recomputed** so the link gives exactly the date you typed. A new finish also sets the duration (the start does not move); with no predecessor the lag is the start.
+- **Edit in Excel, paste back** (Activities tab → *Copy table* / *Paste table…*, in the contractor copy too). *Copy table* puts the location's table on the clipboard (tab-separated, header row first:
+  #, Activity, Duration, Follows, Rel, Lag, Planned start/finish, Actual start/finish, % complete, Remarks). Paste it into any Excel sheet, edit freely (rename, add or delete rows, reorder, change
+  links / lag / actuals / remarks, type planned dates), select the whole table **with its header row**, copy, and *Paste table…*: a live preview lists every change; Apply is one Undo step.
+  Rows are matched by **#**; row order = activity order; a row with a blank or unknown # is a new activity; “Follows” refers to the # values in your table; activities missing from the paste are
+  deleted (untick the box to keep them). Typed planned dates move the lag/duration (the link stays) unless the same row's duration/link was edited. Dates are read as Excel shows them
+  (`16-Oct-2026 01:30`, `10/16/2026 1:30 PM`, `2026-10-16 01:30`, serial numbers; day/month order is guessed from the table). Columns may be reordered or left out.
 - **Contractor round trip.** Updates come only from the offline copy (below), never from Excel: header **Import contractor update** takes its `.json`; the file is compared with the current project and every changed activity is listed (was → now, plan changes in red);
   tick what to take (activities, and corrected site layouts), Apply (one Undo step). Activities are matched by name (then number); locations by name or code; link fields are skipped if the numbering differs.
   Other edits you made in the app are never overwritten by *Apply selected*. Added / removed / reordered activities and locations and changed settings are listed under **Structure and settings changed** and are taken with **Take the contractor's version** (replaces the project; Undo restores yours).
