@@ -53,7 +53,11 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const origin = s.possessionStart
   const g = ganttGeometry(s)
   const n = loc.activities.length
-  const rh = Math.max(8, Math.min(18, Math.floor(AVAIL_ROWS_H / Math.max(1, 2 * n))))
+  // remarks are listed under the table, so they take their share of the page
+  const remarkItems = loc.activities.filter((a) => a.remarks)
+  const remarkChars = remarkItems.reduce((t, a) => t + a.no.toString().length + a.remarks.length + 6, 0)
+  const remarksH = remarkItems.length ? 14 + Math.ceil(remarkChars / 200) * 11 : 0
+  const rh = Math.max(8, Math.min(18, Math.floor((AVAIL_ROWS_H - remarksH) / Math.max(1, 2 * n))))
   const tone = locationTone(loc.status)
   const late = loc.variance > 0.1
   const early = loc.variance < -0.1
@@ -438,6 +442,15 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           )}
         </div>
       </div>
+
+      {remarkItems.length > 0 && (
+        <div style={{ fontSize: 8, color: C.black, padding: '3px 6px', borderTop: `1px solid ${C.grey}`, lineHeight: '11px' }} aria-label="Remarks">
+          <b style={{ color: C.blue }}>REMARKS&nbsp;&nbsp;</b>
+          {remarkItems.map((a, i) => (
+            <span key={a.no}>{i ? <span style={{ color: C.slate }}>&nbsp;&nbsp;│&nbsp;&nbsp;</span> : null}<b>#{a.no}</b> {a.remarks}</span>
+          ))}
+        </div>
+      )}
 
       {/* legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 8, color: C.black, padding: '5px 4px' }}>

@@ -40,10 +40,10 @@ export function reportRows(n: number, m: number) {
   const picFirst = siteBand + 1
   const picRows = 16
   const page0 = siteBand + 1 + picRows
-  const stride = 2 * m + 7
+  const stride = 2 * m + 8 // + the remarks row under each page's legend
   const page = (i: number) => {
     const p = page0 + i * stride
-    return { header: p, strip: p + 1, h1: p + 2, h2: p + 3, first: p + 4, total: p + 4 + 2 * m, legend: p + 5 + 2 * m }
+    return { header: p, strip: p + 1, h1: p + 2, h2: p + 3, first: p + 4, total: p + 4 + 2 * m, legend: p + 5 + 2 * m, remarks: p + 6 + 2 * m }
   }
-  return { sumFirst, sumTotal, siteBand, picFirst, picRows, page0, stride, page, last: page(n - 1).legend }
+  return { sumFirst, sumTotal, siteBand, picFirst, picRows, page0, stride, page, last: page(n - 1).remarks }
 }

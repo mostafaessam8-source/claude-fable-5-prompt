@@ -6,6 +6,8 @@ import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
 import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
+import { applyUpdate, diffUpdate, type UpdateDiff } from './import/update'
+import { UpdateReview } from './report/UpdateReview'
 import { ActivityEditor } from './report/ActivityEditor'
 import { useHistory } from './model/history'
 import { clearProject, loadProject, saveProject, type Saved } from './model/store'
@@ -34,6 +36,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
   const [showLinks, setShowLinks] = useState(true)
+  const [update, setUpdate] = useState<{ name: string; diff: UpdateDiff } | null>(null)
 
   // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y (not while typing in a field, which has its own undo)
   useEffect(() => {
@@ -59,6 +62,18 @@ export function App() {
       setTab('report')
     } catch (e) {
       setError(e instanceof ImportError ? e.message : `Unexpected error: ${(e as Error).message}`)
+    }
+  }
+
+  /** The workbook the contractor sent back: compare it with the project and let the user review the differences. */
+  async function onUpdateFile(file: File | undefined) {
+    if (!file || !project) return
+    setError(null)
+    try {
+      const incoming = await parseWorkbook(await file.arrayBuffer())
+      setUpdate({ name: file.name, diff: diffUpdate(project, incoming) })
+    } catch (e) {
+      setError(e instanceof ImportError ? e.message : `Could not read that file: ${(e as Error).message}`)
     }
   }
 
@@ -95,10 +110,20 @@ export function App() {
         <span className="flex-1" />
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canRedo} onClick={history.redo} title="Redo (Ctrl+Shift+Z)">↷ Redo</button>}
-        {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport}>Export to Excel</button>}
+        {project && (
+          <label className="cursor-pointer rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" title="Choose the workbook the contractor sent back: you review every difference before anything changes">
+            Import contractor update
+            <input type="file" accept=".xlsx" className="hidden" onChange={(e) => { onUpdateFile(e.target.files?.[0]); e.target.value = '' }} />
+          </label>
+        )}
+        {project && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport} title="Download the tracker workbook to send to the contractor: they fill in the yellow cells (actual dates, % complete, REMARKS) and send it back; use Import contractor update to bring it in">Export to Excel</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
         {project && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setTab('import') }}>Clear</button>}
       </header>
+      {update && project && (
+        <UpdateReview project={project} diff={update.diff} fileName={update.name} onCancel={() => setUpdate(null)}
+          onApply={(acc) => { setProject(applyUpdate(project, update.diff, acc)); setUpdate(null) }} />
+      )}
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
         <>

@@ -54,6 +54,12 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   Insert below**. On the Report, drag a row's number to reorder and click the name of the selected row (or double-click) to rename it.
 - **Type the planned dates** (panel Baseline tab, and the Planned start / finish columns of the Activities tab): the predecessor and relationship stay and the **lag is
   recomputed** so the link gives exactly the date you typed. A new finish also sets the duration (the start does not move); with no predecessor the lag is the start.
+- **Contractor round trip.** *Export to Excel* → send the workbook; the contractor fills the yellow cells (actual dates, % complete, **REMARKS**, or corrects a duration) and
+  returns it → header **Import contractor update**: the file is compared with the current project and every changed activity is listed (was → now, plan changes in red);
+  tick what to take, Apply (one Undo step). Activities are matched by name (then number); locations by name or code; link fields are skipped if the numbering differs.
+  Other edits you made in the app are never overwritten.
+- **Remarks** are shown under each location's table on the report (and printed), in the Activities tab (editable) and the panel's Actual tab; in the exported workbook they
+  are the REMARKS column of Data Input and a **REMARKS line under each Report page**, built live from that column.
 - **Culvert type** (Site layout tab → Type): **Cells** (box) or **Pipes** (round). It changes the schematic card, the “N PIPES” caption, the report headers and the exported scope line
   (`2 pipes │ …`, which re-imports as pipes). Claude's fill can propose it too.
 - **Locations** (top of the Activities tab): rename a location and its scope line, **+ New location** (one starter activity), duplicate (without actuals), move earlier/later,
