@@ -55,3 +55,21 @@ export const inputToTime = (s: string): number | null => {
   const m = s.match(/^(\d{1,2}):(\d{2})$/)
   return m ? Number(m[1]) + Number(m[2]) / 60 : null
 }
+
+/** A wall-clock Date → the model's (date at midnight, hours since midnight) pair. */
+export function splitDateTime(d: Date): { date: Date; time: number } {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  return { date, time: Math.round(((d.getTime() - date.getTime()) / 3_600_000) * 60) / 60 }
+}
+
+/** What is wrong with the actual dates, in words (the engine flags the row and forces it to 0 %). */
+export function actualProblems(
+  a: Pick<ActivityInput, 'actualStartDate' | 'actualFinishDate'>,
+  start: Date | null, finish: Date | null, possessionStart: Date,
+): string[] {
+  const out: string[] = []
+  if (start && start < possessionStart) out.push('The actual start is before the possession start.')
+  if (start && finish && finish < start) out.push('The actual finish is before the actual start.')
+  if ((a.actualFinishDate || finish) && !start) out.push('There is an actual finish but no actual start.')
+  return out
+}
