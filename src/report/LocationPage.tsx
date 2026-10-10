@@ -8,10 +8,11 @@ import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from 
 import { actualDragPatch, dragPatch, linkFromHandles, MIN_DUR, type DragMode } from './dragmath'
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
-const TABLE_COLS = [22, 156, 92, 78, 78, 74, 34, 34, 54] // px
+const TABLE_COLS = [22, 140, 70, 70, 70, 62, 32, 32, 44, 116] // px (the last column is Remarks)
 const TABLE_W = TABLE_COLS.reduce((a, b) => a + b, 0)
 const PA_W = 12
-const GC = 10 // px per Gantt column
+const LONG_REMARK = 52 // characters that fit the Remarks column in two lines
+const GC = 9 // px per Gantt column
 const HEAD_H = 20
 const TOTAL_H = 22
 const AVAIL_ROWS_H = 560
@@ -53,8 +54,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const origin = s.possessionStart
   const g = ganttGeometry(s)
   const n = loc.activities.length
-  // remarks are listed under the table, so they take their share of the page
-  const remarkItems = loc.activities.filter((a) => a.remarks)
+  // short remarks fit in the Remarks column; longer ones are also written out in full under the table, which takes its share of the page
+  const remarkItems = loc.activities.filter((a) => a.remarks.length > LONG_REMARK)
   const remarkChars = remarkItems.reduce((t, a) => t + a.no.toString().length + a.remarks.length + 6, 0)
   const remarksH = remarkItems.length ? 14 + Math.ceil(remarkChars / 200) * 11 : 0
   const rh = Math.max(8, Math.min(18, Math.floor((AVAIL_ROWS_H - remarksH) / Math.max(1, 2 * n))))
@@ -324,7 +325,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: TABLE_COLS.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
-          {['No', 'Activity', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back'].map((h, c) => (
+          {['No', 'Activity', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back', 'Remarks'].map((h, c) => (
             <div key={h} data-tcol={c + 1} style={{ ...cellBase, gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>{h}</div>
           ))}
           {rows.map(({ a }, k) => {
@@ -353,6 +354,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(7, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               span(8, { color: C.blue, fontWeight: 700 }, pct(a.effectivePct)),
               span(9, {}, ''),
+              span(10, { justifyContent: 'flex-start', textAlign: 'left', fontSize: 6.5, lineHeight: '8px', overflow: 'hidden', padding: '0 3px', color: C.black }, a.remarks, { title: a.remarks || undefined }),
             ]
           })}
           {/* total row */}
@@ -370,6 +372,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               t(7, { color: C.slate }, pct(loc.planPct)),
               t(8, { color: C.blue }, pct(loc.actualPct)),
               t(9, { color: loc.bufferToHandback < 0 ? C.red : C.black }, hours1(loc.bufferToHandback)),
+              t(10, {}, ''),
             ]
           })()}
         </div>
@@ -446,7 +449,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
       {remarkItems.length > 0 && (
         <div style={{ fontSize: 8, color: C.black, padding: '3px 6px', borderTop: `1px solid ${C.grey}`, lineHeight: '11px' }} aria-label="Remarks">
-          <b style={{ color: C.blue }}>REMARKS&nbsp;&nbsp;</b>
+          <b style={{ color: C.blue }}>REMARKS (full text)&nbsp;&nbsp;</b>
           {remarkItems.map((a, i) => (
             <span key={a.no}>{i ? <span style={{ color: C.slate }}>&nbsp;&nbsp;│&nbsp;&nbsp;</span> : null}<b>#{a.no}</b> {a.remarks}</span>
           ))}
