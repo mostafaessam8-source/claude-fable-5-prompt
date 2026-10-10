@@ -86,7 +86,7 @@ export function LocationPage({ result, index, layout }: { result: ProjectResult;
             )
             return [
               span(1, { color: C.slate }, a.no),
-              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black }, a.name),
+              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: a.name.length > 52 ? 7 : undefined }, a.name),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               span(4, {}, fmtShort(a.plannedFinish)),
               span(5, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish)),

@@ -2,76 +2,20 @@ import ExcelJS from 'exceljs'
 import type {
   ActivityInput, HoursOrDays, LocationInput, Project, Rel, Settings,
 } from '../model/types'
+import { addUnits, ImportError, date, isBlank, num, plain, text, timeOfDay } from './cells'
+import { looksLikeCrp2, parseCrp2 } from './crp2'
 import { stripUnreadableParts } from './sanitize'
 
-export class ImportError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ImportError'
-  }
-}
+export { addUnits, ImportError }
 
 const SHEET = 'Data Input'
 const BLOCK0 = 25
 const RELS: Rel[] = ['FS', 'SS', 'FF', 'SF']
-const DAY_MS = 86_400_000
-
-/** Unwrap formulas (cached result), rich text and hyperlinks to a plain value. */
-function plain(v: ExcelJS.CellValue): unknown {
-  if (v == null) return null
-  if (v instanceof Date || typeof v !== 'object') return v
-  if ('result' in v) return plain(v.result as ExcelJS.CellValue)
-  if ('formula' in v || 'sharedFormula' in v) return null // formula never calculated
-  if ('richText' in v) return v.richText.map((r) => r.text).join('')
-  if ('text' in v) return String(v.text)
-  if ('error' in v) return null
-  return null
-}
-
-const text = (v: unknown): string => (v == null ? '' : String(v).trim())
-const isBlank = (v: unknown) => v == null || (typeof v === 'string' && v.trim() === '')
-
-function num(v: unknown): number | null {
-  if (isBlank(v)) return null
-  if (typeof v === 'number') return Number.isFinite(v) ? v : null
-  if (typeof v === 'string') {
-    const s = v.trim()
-    if (s.endsWith('%')) {
-      const n = Number(s.slice(0, -1))
-      return Number.isFinite(n) ? n / 100 : null
-    }
-    const n = Number(s)
-    return Number.isFinite(n) ? n : null
-  }
-  return null
-}
-
-function date(v: unknown): Date | null {
-  if (v instanceof Date && !Number.isNaN(v.getTime())) return v
-  return null
-}
-
-/** A time-of-day cell → hours since midnight, to the nearest second (so it survives an Excel round trip). */
-function timeOfDay(v: unknown): number | null {
-  if (isBlank(v)) return null
-  const secs = (x: number) => Math.round(x) / 3600
-  if (v instanceof Date) return secs(((v.getTime() % DAY_MS) + DAY_MS) % DAY_MS / 1000)
-  if (typeof v === 'number') return secs((v % 1) * 86400)
-  if (typeof v === 'string') {
-    const m = v.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
-    if (m) return (Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3] ?? 0)) / 3600
-  }
-  return null
-}
 
 function unit(v: unknown, cell: string): HoursOrDays {
   const s = text(v).toLowerCase()
   if (s === 'hours' || s === 'days') return s
   throw new ImportError(`Data Input!${cell} must be "hours" or "days" (found "${text(v)}").`)
-}
-
-export function addUnits(d: Date, n: number, u: HoursOrDays): Date {
-  return new Date(d.getTime() + n * (u === 'days' ? DAY_MS : 3_600_000))
 }
 
 function readSettings(ws: ExcelJS.Worksheet, warnings: string[]): Settings {
@@ -155,7 +99,14 @@ export async function parseWorkbook(data: ArrayBuffer | Uint8Array): Promise<Pro
     throw new ImportError(`Could not open the file as an .xlsx workbook: ${(e as Error).message}`)
   }
   const ws = wb.getWorksheet(SHEET)
-  if (!ws) throw new ImportError(`Workbook has no "${SHEET}" sheet.`)
+  if (!ws) {
+    // Not a tracker: try the raw CRP2 progress sheet the tracker was made from.
+    if (looksLikeCrp2(wb)) return parseCrp2(wb)
+    throw new ImportError(
+      `Workbook has no "${SHEET}" sheet, and it is not a CRP2 progress sheet either ` +
+        `(no sheet with a "Work Description" column and "LOCATION: …" rows). Sheets found: ${wb.worksheets.map((w) => `"${w.name}"`).join(', ')}.`,
+    )
+  }
 
   const warnings: string[] = []
   const settings = readSettings(ws, warnings)
