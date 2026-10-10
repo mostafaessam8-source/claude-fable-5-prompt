@@ -43,7 +43,7 @@ const cellBase: CSSProperties = {
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
 }
 
-export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, onStructure, zoom = 1, showLinks = true }: {
+export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, onStructure, onCols, zoom = 1, showLinks = true }: {
   result: ProjectResult; index: number; layout?: SiteLayout
   /** Activity number selected on this page (its panel is open); the ruler stays on it. */
   selectedNo?: number | null
@@ -54,6 +54,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   onChange?: (p: Project) => void
   /** Called after the activity list was reordered (numbers change, so an open panel must close). */
   onStructure?: () => void
+  /** Lets a view-only page (no project) still change its column widths, for this session. */
+  onCols?: (cols: number[]) => void
   /** The CSS zoom the page is shown at (mouse movement is measured in screen pixels). */
   zoom?: number
   showLinks?: boolean
@@ -108,6 +110,9 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
   const editable = !!project && !!onChange
+  const canResize = editable || !!onCols
+  // the column picked by a click / tap: two round handles appear on its edges to widen or narrow it
+  const [colSel, setColSel] = useState<number | null>(null)
   const planEditable = editable
   const xOf = (h: number) => PA_W + ((h - g.viewStartH) / g.hoursPerColumn) * GC
   const rowY = (k: number) => 2 * HEAD_H + 2 * k * rh + rh / 2 // centre of an activity's planned (P) row
@@ -277,17 +282,24 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   )
 
   // ---- column widths: drag the right edge of a header cell (double-click: back to the default) ----
-  const colDrag = useRef<null | { c: number; x0: number; w0: number; others: number }>(null)
-  const setCols = (next: number[]) => { if (project && onChange) onChange(applySettings(project, { tableCols: next })) }
-  const startColResize = (e: React.PointerEvent, c: number) => {
+  const colDrag = useRef<null | { c: number; x0: number; w0: number; others: number; prevW?: number }>(null)
+  const setCols = (next: number[]) => { if (onCols) onCols(next); else if (project && onChange) onChange(applySettings(project, { tableCols: next })) }
+  /** `boundary`: the left handle of a column moves the line between it and its left neighbour (this one grows by what the neighbour gives up). */
+  const startColResize = (e: React.PointerEvent, c: number, boundary = false) => {
     e.stopPropagation(); e.preventDefault()
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    colDrag.current = { c, x0: e.clientX, w0: cols[c], others: TABLE_W - cols[c] }
+    colDrag.current = { c, x0: e.clientX, w0: cols[c], others: TABLE_W - cols[c], prevW: boundary ? cols[c - 1] : undefined }
   }
   const onColMove = (e: React.PointerEvent) => {
     const d = colDrag.current
     if (!d) return
-    const w = Math.round(Math.min(MAX_COL, Math.max(MIN_COL, d.w0 + (e.clientX - d.x0) / zoom)))
+    const dx = (e.clientX - d.x0) / zoom
+    if (d.prevW != null) { // boundary with the left neighbour: this column grows when the line goes left
+      const gain = Math.round(Math.max(MIN_COL - d.w0, Math.min(MAX_COL - d.w0, d.prevW - MIN_COL, -dx))) // limits: this stays within MIN..MAX, the neighbour keeps MIN_COL
+      if (d.w0 + gain !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? d.w0 + gain : i === d.c - 1 ? d.prevW! - gain : x)))
+      return
+    }
+    const w = Math.round(Math.min(MAX_COL, Math.max(MIN_COL, d.w0 + dx)))
     if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x)))
   }
   /** Excel's "autofit": the narrowest width that shows the whole text of the column on one line (the headers' longest word counts too). */
@@ -395,7 +407,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           const r = moveActivities(project, index, [no], before, (n) => loc.activities.find((a) => a.no === n)?.plannedStartH ?? 0)
           onChange(r.project); onStructure?.()
         }}
-        onClick={(e) => { if (justDragged.current) return; const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
+        onClick={(e) => { if (justDragged.current) return; const tc = (e.target as HTMLElement).closest('[data-tcol]'); if (canResize) setColSel(tc ? Number(tc.getAttribute('data-tcol')) : null); const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
         {dropK != null && (
           <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * dropK * rh - 1, height: 3, background: C.blue, zIndex: 8, pointerEvents: 'none' }} />
         )}
@@ -409,6 +421,25 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
             background: 'rgba(0,119,139,0.10)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
         )}
+        {canResize && colSel != null && (() => {
+          const c = colSel - 1
+          const x0 = cols.slice(0, c).reduce((a, b) => a + b, 0), x1 = x0 + cols[c]
+          const d = Math.max(14, Math.min(40, (matchMedia('(pointer: coarse)').matches ? 30 : 16) / zoom)) // about the same size on screen at any zoom
+          const y = 2 * HEAD_H + bodyH / 2
+          const dot = (key: string, x: number, boundary: boolean, label: string) => (
+            <span key={key} className="no-print" role="slider" aria-label={label} title={label}
+              onPointerDown={(e) => startColResize(e, c, boundary)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
+              style={{ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: C.blue, border: `${Math.max(1.5, d / 9)}px solid #fff`, boxShadow: '0 1px 4px rgba(0,0,0,.45)',
+                zIndex: 9, touchAction: 'none', cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1 }}>⇆</span>
+          )
+          return (
+            <>
+              <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[c], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
+              {c > 0 && dot('l', x0, true, `Drag left to widen "${COL_NAMES[c]}" (the column on its left gives up the space), right to narrow it`)}
+              {dot('r', x1, false, `Drag right to widen "${COL_NAMES[c]}", left to narrow it`)}
+            </>
+          )
+        })()}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: cols.map((w) => `${w}px`).join(' '),
@@ -416,7 +447,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           {COL_NAMES.map((h, c) => (
             <div key={h} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
-              {editable && (
+              {canResize && (
                 <span className="no-print col-rz" title="Drag to change the column width; double-click: fit the content (like Excel's autofit)"
                   onPointerDown={(e) => startColResize(e, c)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
                   onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? autoFit(c) : x)))} />
