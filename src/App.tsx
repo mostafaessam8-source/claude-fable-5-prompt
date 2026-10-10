@@ -4,13 +4,14 @@ import { exportXlsx } from './export'
 import { cardsPng } from './export/raster'
 import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
+import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
 import { clearProject, loadProject, saveProject } from './model/store'
 import type { Project } from './model/types'
 import { ReportView } from './report/ReportView'
 import { SettingsBar } from './SettingsBar'
 
-type Tab = 'import' | 'layout' | 'report'
+type Tab = 'import' | 'layout' | 'links' | 'report'
 
 export function App() {
   const saved = useMemo(loadProject, [])
@@ -18,6 +19,7 @@ export function App() {
   const [layouts, setLayouts] = useState<SiteLayout[]>(saved?.layouts ?? [])
   const [tab, setTab] = useState<Tab>(saved ? 'report' : 'import')
   const [error, setError] = useState<string | null>(null)
+  const [autoLinks, setAutoLinks] = useState(false)
 
   useEffect(() => { if (project) saveProject({ project, layouts }) }, [project, layouts])
 
@@ -28,7 +30,8 @@ export function App() {
       const p = await parseWorkbook(await file.arrayBuffer())
       setProject(p)
       setLayouts(p.locations.map((l) => parseLayout(l.name, l.scope)))
-      setTab('report')
+      // A CRP2 sheet has times but no predecessors: go straight to the Claude relationship review.
+      if (p.source === 'crp2') { setAutoLinks(true); setTab('links') } else setTab('report')
     } catch (e) {
       setError(e instanceof ImportError ? e.message : `Unexpected error: ${(e as Error).message}`)
     }
@@ -72,7 +75,7 @@ export function App() {
       {error && <p className="no-print border-l-4 border-[#CB2C30] bg-red-50 p-3 text-[#CB2C30]">{error}</p>}
       {project && result && (
         <>
-          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('layout', 'Site layout')}{tabBtn('import', 'Imported data (JSON)')}</div>
+          <div className="no-print flex border-b border-slate-300">{tabBtn('report', 'Report')}{tabBtn('layout', 'Site layout')}{tabBtn('links', 'Relationships')}{tabBtn('import', 'Imported data (JSON)')}</div>
           {tab === 'report' && (
             <>
               {project.warnings.length > 0 && (
@@ -90,6 +93,9 @@ export function App() {
           )}
           {tab === 'layout' && (
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
+          )}
+          {tab === 'links' && (
+            <LinksReview project={project} result={result} onChange={setProject} autoRun={autoLinks} onAutoRunDone={() => setAutoLinks(false)} />
           )}
           {tab === 'import' && (
             <main className="mx-auto max-w-5xl p-6">

@@ -73,10 +73,14 @@ interface Raw {
   name: string
   /** What the sheet's own start cell says: a link to another row's finish/start, or a typed time. */
   kLink: { kind: 'FS' | 'SS'; row: number } | null
+  /** Start / finish as the sheet shows them (hours; a typed time past midnight may lack its +24 h). */
   kRaw: number | null
-  /** null = blank in the source: imported as such, so it shows ! CHECK DURATION. */
-  durH: number | null
+  lRaw: number | null
+  /** "No. Hours" (column C): the weight basis in the sheet. */
+  durC: number | null
+  /** Resolved schedule: start/finish with missing days restored; duration = finish − start. */
   startH: number
+  durH: number | null
   actual: Pick<ActivityInput, 'actualStartDate' | 'actualStartTime' | 'actualFinishDate' | 'actualFinishTime' | 'pct' | 'remarks'>
 }
 
@@ -189,22 +193,10 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
         warnings.push(`${name} row ${r} "${b}": rest period with no duration — skipped.`)
         continue
       }
-      if (durH == null) {
-        warnings.push(`${name} row ${r} "${b}": the duration is blank in the source — imported as blank (shows ! CHECK DURATION), not invented.`)
-      }
       if (durH != null && durH < 0) continue
       const kRaw = hoursOf(plain(ws.getCell(`K${r}`).value))
+      const lRaw = hoursOf(plain(ws.getCell(`L${r}`).value))
       const kLink = linkOfFormula(ws.getCell(`K${r}`).formula)
-      const finH = hoursOf(plain(ws.getCell(`L${r}`).value))
-      if (durH != null && finH != null && kRaw != null && Math.abs(finH - kRaw - durH) > 1 / 60 + 1e-9) {
-        warnings.push(
-          `${name} row ${r} "${b}": planned start→finish span is ${(finH - kRaw).toFixed(2)} h but No. Hours is ${durH.toFixed(2)} h — ` +
-            `the duration (No. Hours) was used; check the source.`,
-        )
-      }
-      if (kRaw == null && !kLink) {
-        warnings.push(`${name} row ${r} "${b}": no planned start — placed straight after the row above.`)
-      }
 
       const pctRaw = num(plain(ws.getCell(`F${r}`).value))
       const pct = pctRaw == null ? null : pctRaw > 1 ? Math.min(1, pctRaw / 100) : pctRaw
@@ -220,7 +212,7 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
       const s = dateOf('I', 'N')
       const f = dateOf('J', 'O')
       raws.push({
-        row: r, name: b.replace(/\s+/g, ' '), durH, kLink, kRaw, startH: 0,
+        row: r, name: b.replace(/\s+/g, ' '), durC: durH, kLink, kRaw, lRaw, startH: 0, durH: null,
         actual: {
           actualStartDate: s.d, actualStartTime: s.t, actualFinishDate: f.d, actualFinishTime: f.t,
           pct, remarks: text(plain(ws.getCell(`S${r}`).value)),
@@ -228,44 +220,94 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
       })
     }
 
-    // The sheet mixes rows linked by formula (=L69: start when row 69 finishes — the real logic) with typed
-    // times. Typed times show only a time of day, so one past midnight can lack its +24 h and every row linked
-    // after it inherits the error. So the schedule is rebuilt from the links with the No. Hours durations, and a
-    // typed time is moved forward whole days until it is not hours behind the row above.
+    // The planned dates are the ones the sheet shows (columns K start / L finish). Two things in the sheet are
+    // wrong and are repaired, each one reported:
+    //  - a typed time shows only a time of day, so one past midnight can lack its +24 h, and every row whose
+    //    start is linked by formula (=L69) inherits the missing day. A typed start is moved forward whole days
+    //    until it is not hours behind the row above (a few hours back is a legitimate parallel start); rows
+    //    linked to a repaired row take the same shift, so the sheet's own start/finish times are kept.
+    //  - a start linked to a row that has no times (the "No Work Hours" rest row) starts with the row above.
     const rowIdx = new Map(raws.map((x, k) => [x.row, k]))
-    const explicit: ({ pred: number; rel: Rel } | null)[] = []
+    const shift: number[] = []
+    const finish: (number | null)[] = []
+    const linked: ({ kind: 'FS' | 'SS'; j: number } | null)[] = []
+    const spanDiffers: string[] = []
     raws.forEach((x, k) => {
       const ref = x.kLink ? rowIdx.get(x.kLink.row) : undefined
       let start: number
+      let off = 0
+      linked[k] = null
       if (x.kLink && ref != null && ref < k) {
-        start = x.kLink.kind === 'FS' ? raws[ref].startH + (raws[ref].durH ?? 0) : raws[ref].startH
-        explicit[k] = { pred: ref + 1, rel: x.kLink.kind }
+        off = shift[ref]
+        start = x.kRaw != null ? x.kRaw + off : x.kLink.kind === 'FS' ? (finish[ref] ?? raws[ref].startH) : raws[ref].startH
+        linked[k] = { kind: x.kLink.kind, j: ref }
       } else if (x.kLink && ref == null && k > 0) {
-        // The link points at a row that has no times (e.g. the "No Work Hours" rest row): start together with
-        // the row above, the way the sheet starts destressing together with the OTMP return movement.
         start = raws[k - 1].startH
-        explicit[k] = { pred: k, rel: 'SS' }
+        off = start - (x.kRaw ?? 0)
         warnings.push(
           `${name} row ${x.row} "${x.name}": its start links to row ${x.kLink.row}, which has no times (a rest row), ` +
             `so it was started together with the row above (${start.toFixed(1)} h). Check the source.`,
         )
       } else {
-        explicit[k] = null
-        start = x.kRaw ?? (k > 0 ? raws[k - 1].startH + (raws[k - 1].durH ?? 0) : 0)
-        if (k > 0 && x.kRaw != null) {
-          let days = 0
-          while (start + 24 * days < raws[k - 1].startH - PARALLEL_H && days < 3) days++
-          start += 24 * days
+        const base = x.kRaw ?? (k > 0 ? (finish[k - 1] ?? raws[k - 1].startH) : 0)
+        let days = 0
+        if (k > 0 && x.kRaw != null) while (base + 24 * days < raws[k - 1].startH - PARALLEL_H && days < 3) days++
+        off = 24 * days
+        start = base + off
+        if (days > 0) {
+          warnings.push(
+            `${name} row ${x.row} "${x.name}": the sheet has a typed start of ${x.kRaw!.toFixed(1)} h that shows only a time of day, ` +
+              `so ${start.toFixed(1)} h (+${24 * days} h) was used. Check the source.`,
+          )
+        }
+        if (x.kRaw == null) warnings.push(`${name} row ${x.row} "${x.name}": no planned start — placed straight after the row above.`)
+      }
+      shift[k] = off
+      x.startH = Math.round(start * 60) / 60
+
+      // finish as the sheet shows it, then duration = finish - start
+      let fin = x.lRaw != null ? x.lRaw + off : null
+      if (fin != null && fin - start < -1 / 120) {
+        // a typed finish that wrapped past midnight (e.g. 0:00 after a 23:00 start): add the day if it then fits
+        for (let n = 1; n <= 2; n++) {
+          const span = fin + 24 * n - start
+          if (span > 0 && (x.durC == null ? span <= 12 : Math.abs(span - x.durC) <= 1 / 60)) { fin += 24 * n; break }
         }
       }
-      x.startH = Math.round(start * 60) / 60
-      // Only typed times are worth a warning: a linked row simply follows its predecessor.
-      if (!explicit[k] && x.kRaw != null && Math.abs(x.startH - x.kRaw) > 1 / 60) {
-        warnings.push(
-          `${name} row ${x.row} "${x.name}": the sheet has a typed start of ${x.kRaw.toFixed(1)} h that shows only a time of day, ` +
-            `so ${x.startH.toFixed(1)} h (+${(x.startH - x.kRaw).toFixed(0)} h) was used. Check the source.`,
-        )
+      if (fin != null && fin - start <= 1 / 120) {
+        if (x.durC != null) {
+          warnings.push(
+            `${name} row ${x.row} "${x.name}": the sheet's finish (${(x.lRaw! + off).toFixed(1)} h) is not after its start (${start.toFixed(1)} h) — ` +
+              `No. Hours (${x.durC.toFixed(1)} h) was used for the finish. Check the source.`,
+          )
+        }
+        fin = null
       }
+      const span = fin != null ? fin - start : x.durC
+      if (fin == null && x.durC != null) fin = start + x.durC
+      finish[k] = fin == null ? null : Math.round(fin * 60) / 60
+      x.durH = span == null ? null : Math.round(span * 60) / 60
+      if (x.durH == null) {
+        warnings.push(`${name} row ${x.row} "${x.name}": no duration and no usable planned finish in the source — imported blank (shows ! CHECK DURATION), not invented.`)
+      } else if (x.durC == null) {
+        warnings.push(`${name} row ${x.row} "${x.name}": No. Hours is blank; the duration (${x.durH.toFixed(1)} h) was taken from the sheet's planned start→finish.`)
+      } else if (Math.abs(x.durH - x.durC) > 1 / 60 + 1e-9) {
+        spanDiffers.push(`row ${x.row} (${x.durH.toFixed(1)} h vs ${x.durC.toFixed(1)} h)`)
+      }
+    })
+    if (spanDiffers.length) {
+      warnings.push(
+        `${name}: ${spanDiffers.length} row(s) where the planned start→finish differs from No. Hours — the dates as shown in the sheet were kept, ` +
+          `so the duration is the start→finish span: ${spanDiffers.slice(0, 6).join(', ')}${spanDiffers.length > 6 ? ', …' : ''}.`,
+      )
+    }
+
+    // Relationships: the formula link when it reproduces the start exactly, otherwise rebuilt from the times.
+    const explicit = raws.map((x, k) => {
+      const l = linked[k]
+      if (!l) return null
+      const anchor = l.kind === 'FS' ? (finish[l.j] ?? raws[l.j].startH) : raws[l.j].startH
+      return Math.abs(x.startH - anchor) < EPS ? { pred: l.j + 1, rel: l.kind as Rel } : null
     })
     const links = reconstructLinks(raws)
     explicit.forEach((e, k) => { if (e) links[k] = { pred: e.pred, rel: e.rel, lagH: 0 } })
@@ -277,14 +319,10 @@ export function parseCrp2(wb: ExcelJS.Workbook): Project {
   })
 
   if (locations.length === 0) throw new ImportError('No "LOCATION: …" rows were found.')
-  warnings.push(
-    'Rows whose start is linked by formula (=L69) were recomputed from those links with the No. Hours durations. ' +
-      "Where the sheet's own typed finish times disagree with No. Hours (see the span warnings), later rows therefore start earlier than the sheet shows.",
-  )
   const perLocation = Math.max(...locations.map((l) => l.activities.length))
   const counts = new Set(locations.map((l) => l.activities.length))
   if (counts.size > 1) warnings.push(`Locations have different activity counts (${[...counts].join(', ')}); every block is sized for ${perLocation}.`)
   warnings.push('Cells, OTMP and base station are not in a CRP2 sheet: fill them in on the Site layout tab.')
 
-  return { settings, locationCount: locations.length, activityRowsPerLocation: perLocation, locations, warnings }
+  return { settings, locationCount: locations.length, activityRowsPerLocation: perLocation, locations, warnings, source: 'crp2' }
 }

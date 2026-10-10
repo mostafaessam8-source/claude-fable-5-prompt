@@ -242,6 +242,9 @@ function stressProject(cutoffH = 15): Project {
     { durationH: 4, pred: 11, ...s(14), pct: 0.25 },         // 12 in progress
     { durationH: 2, pred: 12 },                              // 13 not started, behind
     { durationH: 2, pred: 13, lagH: 20 },                    // 14 not started, far in the future
+    { durationH: 2, pred: 0, lagH: 16.5 },                   // 15 a parallel branch: nothing above delays it
+    { durationH: 3, pred: 12, rel: 'SS', lagH: 5 },          // 16 start-to-start with the in-progress row 12
+    { durationH: 2, pred: 13, rel: 'FF', lagH: 1 },          // 17 finish-to-finish with row 13
   ], { cutoff: at(cutoffH), possessionEnd: at(48) })
   p.locations[0].activities.splice(7, 1) // switch row 8 off: its number stays free
   return p

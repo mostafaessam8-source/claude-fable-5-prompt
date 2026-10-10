@@ -104,13 +104,8 @@ export interface ClaudeConfig {
   apiKey?: string
 }
 
-export async function askClaude(
-  text: string,
-  known: { code: string; name: string }[],
-  cfg: ClaudeConfig,
-  fetchImpl: typeof fetch = fetch,
-): Promise<Proposal[]> {
-  const body = JSON.stringify(buildRequest(text, known))
+/** POST a Messages request through the proxy (preferred) or straight to Anthropic with the user's own key. */
+export async function postMessages(body: string, cfg: ClaudeConfig, fetchImpl: typeof fetch = fetch): Promise<unknown> {
   let res: Response
   if (cfg.proxyUrl) {
     res = await fetchImpl(cfg.proxyUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body })
@@ -134,5 +129,14 @@ export async function askClaude(
     const msg = (json as { error?: { message?: string } })?.error?.message
     throw new ClaudeError(`Claude request failed (HTTP ${res.status})${msg ? ': ' + msg : ''}`)
   }
-  return parseResponse(json)
+  return json
+}
+
+export async function askClaude(
+  text: string,
+  known: { code: string; name: string }[],
+  cfg: ClaudeConfig,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Proposal[]> {
+  return parseResponse(await postMessages(JSON.stringify(buildRequest(text, known)), cfg, fetchImpl))
 }
