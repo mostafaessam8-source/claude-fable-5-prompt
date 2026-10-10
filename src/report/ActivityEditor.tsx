@@ -8,6 +8,8 @@ import type { SiteLayout } from '../layout/parse'
 import { addLocation, deleteLocation, duplicateLocation, MAX_LOCATIONS, moveLocation, renameLocation } from '../model/locations'
 import type { ActivityInput, Project, Rel } from '../model/types'
 import { parseAnchor, toTable } from '../links/table'
+import { applySettings } from '../model/settings'
+import { textWidth } from './measure'
 import { TablePaste } from './TablePaste'
 import { activityTone } from './brand'
 
@@ -20,6 +22,9 @@ function actualPatch(which: 'actualStart' | 'actualFinish', value: string): Part
   return which === 'actualFinish' && d ? { ...dt, pct: 1 } : dt
 }
 
+/** Default widths (px) of the table's columns and their headers; the widths can be dragged (like Excel) and are saved with the project. */
+export const DEFAULT_ACT_COLS = [26, 28, 34, 340, 70, 210, 58, 62, 168, 168, 168, 168, 66, 92, 240]
+const HEADS = ['', '', '#', 'Activity', 'Duration (h)', 'Follows', 'Rel', 'Lag (h)', 'Planned start', 'Planned finish', 'Actual start', 'Actual finish', '% done', 'Status', 'Remarks']
 const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
 
@@ -50,6 +55,21 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const anchor = useRef<number | null>(null)
   const [dragging, setDragging] = useState<number[] | null>(null)
   const [drop, setDrop] = useState<number | null | undefined>(undefined) // undefined = no target, null = the end
+  // ---- column widths ----
+  const cols = project.settings.activityCols && project.settings.activityCols.length === DEFAULT_ACT_COLS.length ? project.settings.activityCols : DEFAULT_ACT_COLS
+  const tableW = cols.reduce((a, b) => a + b, 0)
+  const setCols = (next: number[]) => onChange(applySettings(project, { activityCols: next }))
+  const rz = useRef<null | { c: number; x0: number; w0: number }>(null)
+  const startResize = (e: React.PointerEvent, c: number) => { e.stopPropagation(); e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); rz.current = { c, x0: e.clientX, w0: cols[c] } }
+  const onResize = (e: React.PointerEvent) => { const d = rz.current; if (!d) return; const w = Math.max(20, Math.round(d.w0 + e.clientX - d.x0)); if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x))) }
+  const endResize = (e: React.PointerEvent) => { rz.current = null; try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ } }
+  /** Autofit: the width that shows the longest text of the column (text columns), else the default. */
+  const fitCol = (c: number) => {
+    const font = '12px Calibri, Lato, Inter, sans-serif'
+    const texts = c === 3 ? acts.map((a) => a.name) : c === 14 ? acts.map((a) => a.remarks) : c === 5 ? acts.map((a) => `#${a.pred} ${nameOf(a.pred)}`) : null
+    if (!texts) return DEFAULT_ACT_COLS[c]
+    return Math.round(Math.min(700, Math.max(HEADS[c].length * 7 + 12, ...texts.map((t) => textWidth(t, font) + 28))))
+  }
   const [pasting, setPasting] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -168,6 +188,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         </select>
         <button className={`${btn} border-[#00778B] text-[#00778B]`} onClick={() => copyTable(true)} disabled={!parseAnchor(cellAt)}
           title="Copy this location's table with live Excel formulas: change a duration, lag, predecessor or relationship in Excel and every planned date after it moves, like here">Copy table (formulas)</button>
+        <button className={btn} disabled={!project.settings.activityCols} onClick={() => onChange(applySettings(project, { activityCols: null }))} title="Back to the default column widths">Reset widths</button>
         <button className={btn} onClick={() => copyTable(false)} title="Copy the table as plain values">Copy values</button>
         <label className="flex items-center gap-1 text-xs text-slate-500" title="The cell of your Excel sheet where the table's top-left corner (#) will be pasted; the formulas are written for it">paste at
           <input className="w-14 rounded border border-slate-300 px-1 py-0.5 text-xs uppercase" value={cellAt} onChange={(e) => setCellAt(e.target.value)} aria-label="Excel cell to paste at" /></label>
@@ -187,17 +208,17 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         </p>
       )}
       <div className="overflow-x-auto">
-      <table className="min-w-[1500px] w-full table-fixed border-collapse text-xs" onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
-        <colgroup>
-          <col style={{ width: 26 }} /><col style={{ width: 28 }} /><col style={{ width: 34 }} /><col />
-          <col style={{ width: 70 }} /><col style={{ width: 210 }} /><col style={{ width: 58 }} /><col style={{ width: 62 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 168 }} /><col style={{ width: 66 }} /><col style={{ width: 92 }} /><col style={{ width: 240 }} />
-        </colgroup>
+      <table className="table-fixed border-collapse text-xs" style={{ width: tableW }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
+        <colgroup>{cols.map((w, c) => <col key={c} style={{ width: w }} />)}</colgroup>
         <thead>
           <tr className="bg-[#3D3935] text-left text-white">
-            <th className={cell} /><th className={cell}><input type="checkbox" checked={allOn} aria-label="Select all"
-              onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /></th>
-            <th className={cell}>#</th><th className={cell}>Activity</th><th className={cell}>Duration (h)</th><th className={cell}>Follows</th>
-            <th className={cell}>Rel</th><th className={cell}>Lag (h)</th><th className={cell}>Planned start</th><th className={cell}>Planned finish</th><th className={cell}>Actual start</th><th className={cell}>Actual finish</th><th className={cell}>% done</th><th className={cell}>Status</th><th className={cell}>Remarks</th>
+            {HEADS.map((h, c) => (
+              <th key={c} className={`${cell} relative`}>
+                {c === 1 ? <input type="checkbox" checked={allOn} aria-label="Select all" onChange={() => setSel(allOn ? new Set() : new Set(acts.map((a) => a.no)))} /> : h}
+                <span className="col-rz" title="Drag to change the column width; double-click: fit the content" onPointerDown={(e) => startResize(e, c)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}
+                  onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? fitCol(c) : x)))} />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>

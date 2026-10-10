@@ -17,6 +17,8 @@ export interface Settings {
   cutoffNow?: boolean
   /** Widths (px) of the report table's columns, when the user has dragged them. */
   tableCols?: number[]
+  /** Widths (px) of the Activities tab's columns, when the user has dragged them. */
+  activityCols?: number[]
   possessionStart: Date
   duration: number
   unit: HoursOrDays
