@@ -1,7 +1,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, type SiteLayout } from '../layout/parse'
-import { lagToKeepStart, patchActivity, splitDateTime } from '../links/edit'
+import { addActivity, lagToKeepStart, patchActivity, splitDateTime } from '../links/edit'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
@@ -251,6 +251,11 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
+          {editable && (
+            <button className="no-print" style={{ marginLeft: 'auto', border: `1px solid ${C.blue}`, borderRadius: 3, padding: '1px 8px', background: '#fff', color: C.blue, fontWeight: 700, fontSize: 10, cursor: 'pointer' }}
+              title="Add an activity at the end of this location (it follows the last one)"
+              onClick={() => { const r = addActivity(project!, index); onChange!(r.project); onSelect?.(r.no, 'baseline') }}>+ Add activity</button>
+          )}
         </div>
         <div style={{ flex: 1, background: tone.bg, color: tone.fg, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22 }}>
           <span>{loc.status}</span>

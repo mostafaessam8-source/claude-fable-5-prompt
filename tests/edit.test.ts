@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeProject } from '../src/engine/schedule'
 import {
-  candidatePredecessors, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  addActivity, candidatePredecessors, deleteActivity, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   successorsOf, timeToInput,
 } from '../src/links/edit'
 import { project as mk } from './helpers'
@@ -87,5 +87,25 @@ describe('actual date helpers', () => {
     expect(actualProblems({ actualStartDate: ps, actualFinishDate: null }, d(-3), null, ps)).toEqual(['The actual start is before the possession start.'])
     expect(actualProblems({ actualStartDate: ps, actualFinishDate: ps }, d(5), d(3), ps)).toEqual(['The actual finish is before the actual start.'])
     expect(actualProblems({ actualStartDate: null, actualFinishDate: ps }, null, d(3), ps)).toEqual(['There is an actual finish but no actual start.'])
+  })
+})
+
+describe('adding and deleting activities', () => {
+  it('a new activity follows the last one and lengthens the blocks when needed', () => {
+    const p = base()
+    const { project: q, no } = addActivity(p, 0, 'Extra', 3)
+    expect(no).toBe(5)
+    expect(q.activityRowsPerLocation).toBe(5)
+    expect(planned(q)[4]).toEqual([6, 9]) // after activity 4 (finishes at 6)
+    expect(p.locations[0].activities).toHaveLength(4) // input untouched
+  })
+  it('deleting unlinks its successors without moving any date', () => {
+    const p = base()
+    const before = computeProject(p).locations[0].activities
+    const q = deleteActivity(p, 0, 2, (n) => before.find((a) => a.no === n)!.plannedStartH)
+    expect(q.locations[0].activities.map((a) => a.no)).toEqual([1, 3, 4])
+    const after = computeProject(q).locations[0].activities
+    expect(after.map((a) => [a.no, a.plannedStartH, a.plannedFinishH])).toEqual([[1, 0, 2], [3, 2, 3], [4, 4, 6]])
+    expect(q.locations[0].activities[2].pred).toBe(0)
   })
 })

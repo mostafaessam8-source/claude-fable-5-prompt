@@ -282,3 +282,20 @@ describe.skipIf(!hasSoffice)('Excel formulas agree with the engine (recalculated
     expect(bad).toEqual([])
   }, 240_000)
 })
+
+describe('an edited activity list still exports and re-imports', () => {
+  it('added and deleted activities survive a round trip', async () => {
+    const p0 = (await import('../src/import/parse')).parseWorkbook
+    const imported = await p0(FIXTURE)
+    const { addActivity, deleteActivity } = await import('../src/links/edit')
+    const res = computeProject(imported)
+    let p = addActivity(imported, 0, 'Brand new', 2).project
+    const gone = p.locations[1].activities[2].no
+    p = deleteActivity(p, 1, gone, (n) => res.locations[1].activities.find((a) => a.no === n)!.plannedStartH)
+    const bytes = await exportXlsx(p, layoutsOf(p))
+    const back = await parseWorkbook(bytes)
+    expect(back.activityRowsPerLocation).toBe(p.activityRowsPerLocation)
+    expect(back.locations[0].activities.at(-1)!.name).toBe('Brand new')
+    expect(back.locations[1].activities.map((a) => a.no)).toEqual(p.locations[1].activities.map((a) => a.no))
+  }, 60000)
+})

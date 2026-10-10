@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
-  actualProblems, candidatePredecessors, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  actualProblems, candidatePredecessors, deleteActivity, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
@@ -175,6 +175,16 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
                 </select>
               </label>
             )}
+          </section>
+
+          <section>
+            <button className="rounded border border-[#CB2C30] px-2 py-1 text-xs font-semibold text-[#CB2C30]"
+              onClick={() => {
+                const nf = succ.length ? ` ${succ.length} activit${succ.length === 1 ? 'y that follows' : 'ies that follow'} it will be unlinked and keep their planned start.` : ''
+                if (!window.confirm(`Delete #${a.no} ${a.name}?${nf}`)) return
+                onChange(deleteActivity(project, loc, no, (n) => resOf(n).plannedStartH))
+                onClose()
+              }}>Delete this activity</button>
           </section>
         </div>
       )}
