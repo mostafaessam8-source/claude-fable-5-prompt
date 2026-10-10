@@ -6,6 +6,7 @@ import { ImportError, parseWorkbook } from './import/parse'
 import { LayoutForm } from './layout/LayoutForm'
 import { LinksReview } from './links/LinksReview'
 import { parseLayout, type SiteLayout } from './layout/parse'
+import { NewProject } from './report/NewProject'
 import { buildOfflineHtml } from './offline/bundle'
 import { newId, OFFLINE, parseUpdateFile, updateFileText } from './offline/offline'
 import { applyLayoutUpdate, applyUpdate, diffUpdate, type UpdateDiff } from './import/update'
@@ -60,6 +61,7 @@ export function App() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  const [creating, setCreating] = useState(false)
   const [update, setUpdate] = useState<{ name: string; diff: UpdateDiff; incoming: { project: Project; layouts: SiteLayout[] | null } } | null>(null)
 
   // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y (not while typing in a field, which has its own undo)
@@ -167,6 +169,7 @@ export function App() {
       <header ref={headerRef} className="no-print sticky top-0 z-[60] flex flex-wrap items-center gap-3 bg-[#3D3935] px-4 py-2 text-white">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
         <span className="mr-4 text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
+        {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
         {!OFFLINE && (
           <label className="cursor-pointer rounded border border-white/40 px-3 py-1 text-sm font-semibold" title="Open a contractor update or a saved project (.json): it becomes the project right away">
             Open update / project (.json)
@@ -196,6 +199,10 @@ export function App() {
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
         {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setTab('import') }}>Clear</button>}
       </header>
+      {creating && (
+        <NewProject hasProject={!!project} onClose={() => setCreating(false)}
+          onCreate={(n) => { history.reset(n); setCreating(false); setTab('activities'); setError(null) }} />
+      )}
       {update && project && (
         <UpdateReview project={project} diff={update.diff} fileName={update.name} onCancel={() => setUpdate(null)}
           onReplace={() => { history.set({ project: update.incoming.project, layouts: update.incoming.layouts ?? layouts }); setUpdate(null) }}
@@ -250,7 +257,7 @@ export function App() {
           )}
         </>
       )}
-      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Press <b>Open update / project (.json)</b> and choose the update file the contractor sent back (or a saved project). The Excel tracker is only needed to start a brand-new project.</p>}
+      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Press <b>+ New project</b> to start from nothing, or <b>Open update / project (.json)</b> and choose the update file the contractor sent back (or a saved project). The Excel tracker is only needed to start a brand-new project.</p>}
     </div>
   )
 }
