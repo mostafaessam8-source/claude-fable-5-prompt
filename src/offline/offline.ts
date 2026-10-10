@@ -39,10 +39,21 @@ export function updateFileText(project: Project, layouts: SiteLayout[], offlineI
   return JSON.stringify({ format: UPDATE_FORMAT, version: 1, offlineId, savedAt: new Date().toISOString(), project, layouts }, replacer, 1)
 }
 
-/** Read an update file back into a project; anything that is not one is an error, not a guess. */
+/**
+ * Read an update file back into a project: the contractor's saved copy (the html file, with the project inside it) or a .json.
+ * Anything that is not one is an error, not a guess.
+ */
 export function parseUpdateFile(text: string): { project: Project; layouts: SiteLayout[] | null } {
   let j: { format?: string; project?: Project; layouts?: SiteLayout[] }
-  try { j = JSON.parse(text, reviver) } catch { throw new Error('That file is not a SAR update file.') }
-  if (j?.format !== UPDATE_FORMAT || !j.project || !Array.isArray(j.project.locations)) throw new Error('That file is not a SAR update file.')
+  const notOne = () => new Error('That file is not a SAR update file.')
+  if (/^\s*</.test(text)) {
+    // the saved single-file copy: the project sits in <script type="application/json" id="sar-offline-data">
+    const m = text.match(new RegExp(`<script[^>]*id="${DATA_ID}"[^>]*>([\\s\\S]*?)</script>`))
+    if (!m) throw notOne()
+    try { const p = JSON.parse(m[1], reviver) as OfflinePayload; j = { format: UPDATE_FORMAT, project: p.project, layouts: p.layouts } } catch { throw notOne() }
+  } else {
+    try { j = JSON.parse(text, reviver) } catch { throw notOne() }
+  }
+  if (j?.format !== UPDATE_FORMAT || !j.project || !Array.isArray(j.project.locations)) throw notOne()
   return { project: j.project, layouts: Array.isArray(j.layouts) ? j.layouts.map((l) => ({ ...l, kind: l.kind ?? 'cell', length: l.length ?? '' })) : null }
 }

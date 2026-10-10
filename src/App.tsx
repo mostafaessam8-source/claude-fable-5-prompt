@@ -142,10 +142,16 @@ export function App() {
     }
   }
 
-  /** Contractor copy: the small file to send back. */
-  function onSaveUpdate() {
+  /** Contractor copy: save this very site, with the updated project inside, as the file to send back. */
+  async function onSaveUpdate() {
     if (!project || !OFFLINE) return
-    download(`${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Possession'}_UPDATE_${new Date().toISOString().slice(0, 10)}.json`, updateFileText(project, layouts, OFFLINE.id), 'application/json')
+    setError(null)
+    try {
+      const html = await buildOfflineHtml({ id: OFFLINE.id, preparedAt: new Date().toISOString(), project, layouts })
+      download(`${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Possession'}_UPDATED_${new Date().toISOString().slice(0, 10)}.html`, html, 'text/html')
+    } catch (e) {
+      setError(`Could not save the update: ${(e as Error).message}`)
+    }
   }
 
   async function onExport() {
@@ -193,8 +199,8 @@ export function App() {
         {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
         {!OFFLINE && (
           <label className="cursor-pointer rounded border border-white/40 px-3 py-1 text-sm font-semibold" title="Open a contractor update or a saved project (.json): it becomes the project right away">
-            Open update / project (.json)
-            <input type="file" accept=".json" className="hidden" onChange={(e) => { onOpenJson(e.target.files?.[0]); e.target.value = '' }} />
+            Open update / project
+            <input type="file" accept=".html,.htm,.json" className="hidden" onChange={(e) => { onOpenJson(e.target.files?.[0]); e.target.value = '' }} />
           </label>
         )}
         {!OFFLINE && (
@@ -208,15 +214,15 @@ export function App() {
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canRedo} onClick={history.redo} title="Redo (Ctrl+Shift+Z)">↷ Redo</button>}
         {project && !OFFLINE && (
-          <label className="cursor-pointer rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" title="Choose the update file (.json) the contractor saved from the offline copy: you review every difference before anything changes">
+          <label className="cursor-pointer rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" title="Choose the file the contractor saved from the offline copy (the .html): you review every difference before anything changes">
             Import contractor update
-            <input type="file" accept=".json" className="hidden" onChange={(e) => { onUpdateFile(e.target.files?.[0]); e.target.value = '' }} />
+            <input type="file" accept=".html,.htm,.json" className="hidden" onChange={(e) => { onUpdateFile(e.target.files?.[0]); e.target.value = '' }} />
           </label>
         )}
         {project && !OFFLINE && <button className="rounded border border-[#F1B434] px-3 py-1 text-sm font-semibold text-[#F1B434]" onClick={onOfflineCopy} title="One html file with the whole app and this project inside: the contractor opens it offline, updates it and sends back a small update file. It has no Excel export.">Offline copy for contractor</button>}
         {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={onSaveProject} title="Download the whole project as a .json file (backup, or open it on another PC)">Save project (.json)</button>}
         {project && !OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onExport} title="Download the tracker workbook">Export to Excel</button>}
-        {project && OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onSaveUpdate} title="Download the update file and send it back to SAR">Save update for SAR</button>}
+        {project && OFFLINE && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-[#3D3935]" onClick={onSaveUpdate} title="Save this site, with your updates inside, as one file and send it back to SAR">Save update for SAR</button>}
         {project && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => window.print()}>Print / PDF</button>}
         {project && !OFFLINE && <button className="rounded border border-white/40 px-3 py-1 text-sm" onClick={() => { clearProject(); history.reset(null); setTab('import') }}>Clear</button>}
         </div>
@@ -282,7 +288,7 @@ export function App() {
           )}
         </>
       )}
-      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Press <b>+ New project</b> to start from nothing, or <b>Open update / project (.json)</b> and choose the update file the contractor sent back (or a saved project). The Excel tracker is only needed to start a brand-new project.</p>}
+      {!project && !OFFLINE && <p className="no-print p-6 text-slate-600">Press <b>+ New project</b> to start from nothing, or <b>Open update / project</b> and choose the file the contractor sent back (or a saved project). The Excel tracker is only needed to start a brand-new project.</p>}
     </div>
   )
 }
