@@ -2,22 +2,28 @@ import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
-import { addActivity, lagToKeepStart, moveActivities, patchActivity, splitDateTime } from '../links/edit'
+import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, splitDateTime } from '../links/edit'
+import { fmtCell, parseDateTime } from '../links/table'
+import { applySettings } from '../model/settings'
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
 import { fmtBand, fmtShort, fmtVariance, hhmm, hours1, pct, varianceTone } from './format'
 import { actualDragPatch, dragPatch, linkFromHandles, MIN_DUR, type DragMode } from './dragmath'
 import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
-const TABLE_COLS = [22, 140, 70, 70, 70, 62, 32, 32, 44, 116] // px (the last column is Remarks)
-const TABLE_W = TABLE_COLS.reduce((a, b) => a + b, 0)
+/** Default widths (px) of the table columns; each can be dragged wider or narrower (like an Excel column) and is saved with the project. */
+export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 40, 106]
+export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back', 'Remarks']
+const PAGE_INNER = 1110 // px inside the A4 page: the table and the Gantt share it, so a wider table leaves a narrower Gantt
+const MIN_COL = 18
+const MIN_GC = 4
 const PA_W = 12
 const LONG_REMARK = 52 // characters that fit the Remarks column in two lines
-const GC = 9 // px per Gantt column
 const HEAD_H = 20
 const TOTAL_H = 22
-const AVAIL_ROWS_H = 560
+const AVAIL_ROWS_H = 526 // the rows' share of the page height (the logo strip takes the rest)
 
+const fmtDur = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1))
 const varColour = { late: C.red, early: C.blue, ok: C.black }
 
 /**
@@ -63,11 +69,15 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   // reorder by dragging the row number; rename by double-clicking the name
   const [dragNo, setDragNo] = useState<number | null>(null)
   const [dropK, setDropK] = useState<number | null>(null) // drop before row k (n = at the end)
-  const [renameK, setRenameK] = useState<number | null>(null)
+  // inline cell editing: which row / column is being typed in
+  const [cellEdit, setCellEdit] = useState<{ k: number; c: number } | null>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
   const g = ganttGeometry(s)
+  const cols = s.tableCols && s.tableCols.length === DEFAULT_COLS.length ? s.tableCols : DEFAULT_COLS
+  const TABLE_W = cols.reduce((a, b) => a + b, 0)
+  const GC = Math.max(MIN_GC, (PAGE_INNER - TABLE_W - PA_W) / GANTT_COLS) // px per Gantt column
   const n = loc.activities.length
   // short remarks fit in the Remarks column; longer ones are also written out in full under the table, which takes its share of the page
   const remarkItems = loc.activities.filter((a) => a.remarks.length > LONG_REMARK)
@@ -267,8 +277,61 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     </div>
   )
 
+  // ---- column widths: drag the right edge of a header cell (double-click: back to the default) ----
+  const colDrag = useRef<null | { c: number; x0: number; w0: number; others: number }>(null)
+  const setCols = (next: number[]) => { if (project && onChange) onChange(applySettings(project, { tableCols: next })) }
+  const startColResize = (e: React.PointerEvent, c: number) => {
+    e.stopPropagation(); e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    colDrag.current = { c, x0: e.clientX, w0: cols[c], others: TABLE_W - cols[c] }
+  }
+  const onColMove = (e: React.PointerEvent) => {
+    const d = colDrag.current
+    if (!d) return
+    const maxW = PAGE_INNER - PA_W - GANTT_COLS * MIN_GC - d.others // the Gantt keeps at least MIN_GC px per column
+    const w = Math.round(Math.min(maxW, Math.max(MIN_COL, d.w0 + (e.clientX - d.x0) / zoom)))
+    if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x)))
+  }
+  const onColEnd = (e: React.PointerEvent) => {
+    colDrag.current = null
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ }
+    justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0)
+  }
+
+  // ---- typing in a cell ----
+  const commitCell = (k: number, c: number, raw: string) => {
+    setCellEdit(null)
+    if (!project || !onChange) return
+    const a = loc.activities[k]
+    const v = raw.trim()
+    const num = Number(v.replace(',', '.'))
+    const ok = v !== '' && Number.isFinite(num)
+    const patch = (p: Partial<ActivityInput>) => onChange(patchActivity(project, index, a.no, p))
+    if (c === 2) { if (v && v !== a.name) patch({ name: v }) }
+    else if (c === 4) { if (ok && num > 0) patch({ durationH: num }) }
+    else if (c === 5) {
+      // the actual duration is finish − start: typing it sets the actual finish (so it needs an actual start)
+      if (ok && num > 0 && a.actualStart) { const f = splitDateTime(new Date(a.actualStart.getTime() + Math.round(num * 60) * 60_000)); patch({ actualFinishDate: f.date, actualFinishTime: f.time, pct: 1 }) }
+    } else if (c === 6) {
+      const d = parseDateTime(v, false, origin)
+      if (d && d !== 'bad') {
+        const pa = project.locations[index].activities[k]
+        const pr = pa.pred > 0 ? loc.activities.find((x) => x.no === pa.pred) : undefined
+        const q = setPlannedFinish(project, index, a.no, a.plannedStartH, Math.round((d.getTime() - origin.getTime()) / 60_000) / 60, pa.rel, pr ? { startH: pr.plannedStartH, finishH: pr.plannedFinishH } : null)
+        if (q) onChange(q)
+      }
+    } else if (c === 10) {
+      if (v === '') patch({ pct: null }); else if (ok) patch({ pct: Math.min(1, Math.max(0, num / 100)) })
+    } else if (c === 12) { if (v !== a.remarks) patch({ remarks: v }) }
+  }
+
   return (
     <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5 }}>
+      {/* the SAR logo heads every page, on white */}
+      <div style={{ background: '#fff', padding: '4px 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 26, width: 26 * SAR_LOGO_RATIO, display: 'block' }} />
+        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: C.slate }}>SAR.COM.SA</span>
+      </div>
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 15, padding: '5px 12px', letterSpacing: 0.3 }}>
         {pageTitle(s.projectName, layout, loc.name, '  -  ')}
       </div>
@@ -333,16 +396,23 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             boxShadow: `inset 4px 0 0 ${selectedIdx >= 0 ? C.black : C.amber}` }} />
         )}
         {hoverTCol != null && (
-          <div className="no-print" style={{ position: 'absolute', left: TABLE_COLS.slice(0, hoverTCol - 1).reduce((a, b) => a + b, 0), width: TABLE_COLS[hoverTCol - 1],
+          <div className="no-print" style={{ position: 'absolute', left: cols.slice(0, hoverTCol - 1).reduce((a, b) => a + b, 0), width: cols[hoverTCol - 1],
             top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
             background: 'rgba(0,119,139,0.10)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
         )}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
-          gridTemplateColumns: TABLE_COLS.map((w) => `${w}px`).join(' '),
+          gridTemplateColumns: cols.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
-          {['No', 'Activity', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Buffer to Hand-back', 'Remarks'].map((h, c) => (
-            <div key={h} data-tcol={c + 1} style={{ ...cellBase, gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>{h}</div>
+          {COL_NAMES.map((h, c) => (
+            <div key={h} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
+              {h}
+              {editable && (
+                <span className="no-print col-rz" title="Drag to change the column width (double-click: back to the default)"
+                  onPointerDown={(e) => startColResize(e, c)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
+                  onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? DEFAULT_COLS[c] : x)))} />
+              )}
+            </div>
           ))}
           {rows.map(({ a }, k) => {
             const r = 3 + 2 * k
@@ -351,26 +421,33 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             const span = (c: number, extra: CSSProperties, content: React.ReactNode, props: React.HTMLAttributes<HTMLDivElement> = {}) => (
               <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }} {...props}>{content}</div>
             )
+            /** A cell that can be typed in: double-click it, or click it once its row is selected. */
+            const ed = (c: number, shown: string, initial: string, extra: CSSProperties, hint: string) => {
+              const editing = cellEdit?.k === k && cellEdit.c === c
+              return span(c, extra, editing ? (
+                <input autoFocus defaultValue={initial} style={{ width: '100%', font: 'inherit', padding: '0 2px', textAlign: 'inherit', color: C.black }}
+                  onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}
+                  onBlur={(e) => { if (e.target.dataset.cancel) setCellEdit(null); else commitCell(k, c, e.target.value) }}
+                  onKeyDown={(e) => { const el = e.target as HTMLInputElement; if (e.key === 'Enter') el.blur(); if (e.key === 'Escape') { el.dataset.cancel = '1'; el.blur() } }} />
+              ) : shown,
+              planEditable ? { title: hint, onDoubleClick: () => setCellEdit({ k, c }),
+                onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {})
+            }
+            const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
                 planEditable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
-              span(2, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, TABLE_COLS[1], 2 * rh) },
-                renameK === k ? (
-                  <input autoFocus defaultValue={a.name} style={{ width: '100%', font: 'inherit', padding: '0 2px' }}
-                    onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}
-                    onBlur={(e) => { const v = e.target.value.trim(); setRenameK(null); if (v && v !== a.name) onChange!(patchActivity(project!, index, a.no, { name: v })) }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setRenameK(null) }} />
-                ) : a.name,
-                planEditable ? { title: 'Click the name of the selected row (or double-click) to rename', onDoubleClick: () => setRenameK(k),
-                  onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setRenameK(k) } } } : {}),
+              ed(2, a.name, a.name, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, cols[1], 2 * rh) }, 'Double-click (or click when selected) to rename'),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
-              span(4, {}, fmtShort(a.plannedFinish)),
-              span(5, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish)),
-              span(6, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
-              span(7, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
-              span(8, { color: C.blue, fontWeight: 700 }, pct(a.effectivePct)),
-              span(9, {}, ''),
-              span(10, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, TABLE_COLS[9], 2 * rh, 7), overflow: 'hidden', padding: '0 3px', color: C.black }, a.remarks, { title: a.remarks || undefined }),
+              ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
+              ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
+              ed(6, fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes'),
+              span(7, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish)),
+              span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
+              span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
+              ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),
+              span(11, {}, ''),
+              ed(12, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[11], 2 * rh, 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
           {/* total row */}
@@ -379,16 +456,19 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             const t = (c: number, extra: CSSProperties, content: React.ReactNode, span = 1) => (
               <div key={`t${c}`} data-tcol={c} style={{ ...cellBase, gridRow: r, gridColumn: `${c} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
             )
+            const actTotal = loc.activities.reduce((sum, a) => sum + (a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : 0), 0)
             return [
-              t(1, { justifyContent: 'flex-start', textAlign: 'left', paddingLeft: 6 }, `TOTAL - ${layout?.code || loc.name}   (${loc.totalHours.toFixed(1)} activity hours)`, 2),
+              t(1, { justifyContent: 'flex-start', textAlign: 'left', paddingLeft: 6 }, `TOTAL - ${layout?.code || loc.name}`, 2),
               t(3, { background: tone.bg, color: tone.fg }, loc.status),
-              t(4, {}, fmtShort(loc.plannedFinish)),
-              t(5, {}, fmtShort(loc.forecastFinish)),
-              t(6, { color: varColour[varianceTone(loc.variance)] }, fmtVariance(loc.variance)),
-              t(7, { color: C.slate }, pct(loc.planPct)),
-              t(8, { color: C.blue }, pct(loc.actualPct)),
-              t(9, { color: loc.bufferToHandback < 0 ? C.red : C.black }, hours1(loc.bufferToHandback)),
-              t(10, {}, ''),
+              t(4, {}, fmtDur(loc.totalHours)),
+              t(5, {}, actTotal ? fmtDur(actTotal) : ''),
+              t(6, {}, fmtShort(loc.plannedFinish)),
+              t(7, {}, fmtShort(loc.forecastFinish)),
+              t(8, { color: varColour[varianceTone(loc.variance)] }, fmtVariance(loc.variance)),
+              t(9, { color: C.slate }, pct(loc.planPct)),
+              t(10, { color: C.blue }, pct(loc.actualPct)),
+              t(11, { color: loc.bufferToHandback < 0 ? C.red : C.black }, hours1(loc.bufferToHandback)),
+              t(12, {}, ''),
             ]
           })()}
         </div>
@@ -482,7 +562,6 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             <i style={{ width: 14, height: 8, background: barColour[k], display: 'inline-block' }} />{label}
           </span>
         ))}
-        <img src={SAR_LOGO_URL} alt="SAR" style={{ marginLeft: 'auto', height: 20, width: 20 * SAR_LOGO_RATIO, display: 'block' }} />
       </div>
     </div>
   )
