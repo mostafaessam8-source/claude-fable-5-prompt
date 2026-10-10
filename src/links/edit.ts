@@ -73,3 +73,41 @@ export function actualProblems(
   if ((a.actualFinishDate || finish) && !start) out.push('There is an actual finish but no actual start.')
   return out
 }
+
+// ---- adding and removing activities ----
+// An activity's `no` is its row slot in the workbook block (blank slots are switched-off rows), so deleting leaves a gap and nothing is renumbered.
+
+/** Append a new activity to a location: it follows the last one (FS, no lag). Returns the project and the new activity's number. */
+export function addActivity(project: Project, loc: number, name = 'New activity', durationH = 1): { project: Project; no: number } {
+  const acts = project.locations[loc].activities
+  const last = acts.length ? acts[acts.length - 1] : undefined
+  const no = acts.reduce((m, a) => Math.max(m, a.no), 0) + 1
+  const fresh: ActivityInput = {
+    no, sourceRow: 0, name, durationH, pred: last ? last.no : 0, rel: 'FS', lagH: 0,
+    actualStartDate: null, actualStartTime: null, actualFinishDate: null, actualFinishTime: null, pct: null, remarks: '',
+  }
+  return {
+    no,
+    project: {
+      ...project,
+      // every location block has the same number of rows in the workbook, so a longer location lengthens them all
+      activityRowsPerLocation: Math.max(project.activityRowsPerLocation, no),
+      locations: project.locations.map((l, i) => (i !== loc ? l : { ...l, activities: [...l.activities, fresh] })),
+    },
+  }
+}
+
+/**
+ * Remove an activity. Whatever followed it is unlinked but keeps its planned start (`startHOf` gives the current one),
+ * so deleting one activity never moves another.
+ */
+export function deleteActivity(project: Project, loc: number, no: number, startHOf: (no: number) => number): Project {
+  return {
+    ...project,
+    locations: project.locations.map((l, i) => i !== loc ? l : {
+      ...l,
+      activities: l.activities.filter((a) => a.no !== no).map((a) =>
+        a.pred === no ? { ...a, pred: 0, rel: 'FS' as Rel, lagH: round(startHOf(a.no)) } : a),
+    }),
+  }
+}

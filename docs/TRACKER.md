@@ -46,6 +46,9 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
 - **Show links** (settings bar) draws an arrow for every predecessor link. Everything updates the table, forecast and summary live.
 - **Actual bar** (the lower bar of a row that has an actual start): drag it to move the actual dates, its left edge for the actual start, its right edge for the
   actual finish. Dragging the right edge of work still in progress sets a finish (100 %). Create the first actual with the Actual tab's quick actions.
+- **Add / delete**: **+ Add activity** (grey bar of each location page) appends an activity that follows the last one and opens its panel; **Delete this activity**
+  (Baseline tab) removes one — whatever followed it is unlinked and keeps its planned start. Numbers are row slots, so nothing is renumbered; adding past the
+  workbook's row count lengthens every location block in the export. A very long location gets smaller rows on its page.
 - The activity panel no longer covers the Gantt: while it is open the report shrinks (zoom) to the space left of it.
 Fine adjustments (exact lag/duration) are in the activity panel (click the activity).
 
