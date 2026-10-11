@@ -15,3 +15,29 @@ export function pageWidth(tableCols: number[] | undefined): number {
   const w = (tableCols && tableCols.length === DEFAULT_COLS.length ? tableCols : DEFAULT_COLS).reduce((a, b) => a + b, 0)
   return 1123 + Math.max(0, Math.ceil(w + 12 + GANTT_COLS * GC_PREF - PAGE_INNER))
 }
+
+/** Characters that fit the Remarks column in two lines; longer remarks are also written out under the table. */
+export const LONG_REMARK = 52
+/** The rows' share of the page height (the logo strip and the header bars take the rest). */
+export const AVAIL_ROWS_H = 526
+export const MIN_ROW_H = 12
+export const MAX_ROW_H = 220
+export const PAGE_H0 = 794
+
+/**
+ * Where every activity's row sits on a location page: the automatic height fits all rows into the A4 page; a row the user
+ * dragged keeps its own height, and when the rows together outgrow the page the PAGE grows taller (like a sheet that grows).
+ */
+export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[]) {
+  const n = acts.length
+  const long = acts.filter((a) => a.remarks.length > LONG_REMARK)
+  const chars = long.reduce((t, a) => t + String(a.no ?? '').length + a.remarks.length + 6, 0)
+  const remarksH = long.length ? 14 + Math.ceil(chars / 200) * 11 : 0
+  const rh = Math.max(8, Math.min(18, Math.floor((AVAIL_ROWS_H - remarksH) / Math.max(1, 2 * n))))
+  const heights = acts.map((a) => (a.rowH ? Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, a.rowH)) : 2 * rh))
+  const tops: number[] = []
+  let y = 0
+  for (const h of heights) { tops.push(y); y += h }
+  const extra = Math.max(0, y - 2 * rh * n)
+  return { rh, heights, tops, bodyH: y, remarksH, extra, pageH: PAGE_H0 + extra, long }
+}

@@ -6,7 +6,7 @@ import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedF
 import { fmtCell, parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
 import { textWidth } from './measure'
-import { COL_NAMES, DEFAULT_COLS, MAX_COL, MIN_COL, PAGE_INNER, pageWidth } from './columns'
+import { COL_NAMES, DEFAULT_COLS, MAX_COL, MAX_ROW_H, MIN_COL, MIN_ROW_H, PAGE_H0, PAGE_INNER, pageWidth, rowLayout } from './columns'
 export { COL_NAMES, DEFAULT_COLS, pageWidth }
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -16,10 +16,8 @@ import { GANTT_COLS, ganttGeometry, ganttRow, type Bar } from './gantt'
 
 /** Default widths (px) of the table columns; each can be dragged wider or narrower (like an Excel column) and is saved with the project. */
 const PA_W = 12
-const LONG_REMARK = 52 // characters that fit the Remarks column in two lines
 const HEAD_H = 20
 const TOTAL_H = 22
-const AVAIL_ROWS_H = 526 // the rows' share of the page height (the logo strip takes the rest)
 
 const fmtDur = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1))
 const varColour = { late: C.red, early: C.blue, ok: C.black }
@@ -43,7 +41,7 @@ const cellBase: CSSProperties = {
   border: '1px solid #DDE3E5', padding: '0 3px', overflow: 'hidden', lineHeight: 1.1,
 }
 
-export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, onStructure, onCols, zoom = 1, showLinks = true }: {
+export function LocationPage({ result, index, layout, selectedNo, onSelect, project, onChange, onStructure, onCols, onRowH, zoom = 1, showLinks = true }: {
   result: ProjectResult; index: number; layout?: SiteLayout
   /** Activity number selected on this page (its panel is open); the ruler stays on it. */
   selectedNo?: number | null
@@ -56,6 +54,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   onStructure?: () => void
   /** Lets a view-only page (no project) still change its column widths, for this session. */
   onCols?: (cols: number[]) => void
+  /** Lets a view-only page change row heights, for this session: [{ no, h }] (h = undefined: automatic). */
+  onRowH?: (updates: { no: number; h: number | undefined }[]) => void
   /** The CSS zoom the page is shown at (mouse movement is measured in screen pixels). */
   zoom?: number
   showLinks?: boolean
@@ -80,11 +80,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const PAGE_X = pageWidth(s.tableCols)
   const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
-  // short remarks fit in the Remarks column; longer ones are also written out in full under the table, which takes its share of the page
-  const remarkItems = loc.activities.filter((a) => a.remarks.length > LONG_REMARK)
-  const remarkChars = remarkItems.reduce((t, a) => t + a.no.toString().length + a.remarks.length + 6, 0)
-  const remarksH = remarkItems.length ? 14 + Math.ceil(remarkChars / 200) * 11 : 0
-  const rh = Math.max(8, Math.min(18, Math.floor((AVAIL_ROWS_H - remarksH) / Math.max(1, 2 * n))))
+  // where each row sits: automatic heights that fit the A4 page, or the height a row was dragged to (the page grows when the rows outgrow it)
+  const RL = rowLayout(loc.activities)
+  const { heights: rowHs, tops: rowTops, bodyH } = RL
+  const remarkItems = RL.long
   const tone = locationTone(loc.status)
   const late = loc.variance > 0.1
   const early = loc.variance < -0.1
@@ -100,7 +99,6 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     return i > 0 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0
   })
   const cutoffX = (g.cutoffH - g.viewStartH) / g.hoursPerColumn * GC
-  const bodyH = 2 * n * rh
   const selectedIdx = selectedNo == null ? -1 : loc.activities.findIndex((a) => a.no === selectedNo)
   const active = selectedIdx >= 0 ? selectedIdx : hover
   const rowAt = (e: React.MouseEvent) => {
@@ -110,12 +108,13 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
 
   const rows = loc.activities.map((a) => ({ a, bars: ganttRow(a, g) }))
   const editable = !!project && !!onChange
-  const canResize = editable || !!onCols
-  // the column picked by a click / tap: two round handles appear on its edges to widen or narrow it
-  const [colSel, setColSel] = useState<number | null>(null)
+  const canResize = editable || !!onCols || !!onRowH
+  // the cell picked by a click / tap: round handles appear on its column's edges and its row's edges to widen / heighten them
+  const [sel, setSel] = useState<{ k: number | null; c: number | null; x: number } | null>(null)
+  const flexRef = useRef<HTMLDivElement>(null)
   const planEditable = editable
   const xOf = (h: number) => PA_W + ((h - g.viewStartH) / g.hoursPerColumn) * GC
-  const rowY = (k: number) => 2 * HEAD_H + 2 * k * rh + rh / 2 // centre of an activity's planned (P) row
+  const rowY = (k: number) => 2 * HEAD_H + rowTops[k] + rowHs[k] / 4 // centre of an activity's planned (P) row
 
   // ---- drag a planned bar: move / resize its ends (changes the lag and the duration) ----
   const pageRef = useRef<HTMLDivElement>(null)
@@ -241,7 +240,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     const dir = y2 > y1 ? 1 : -1
     const d = x2 >= x1 + 8
       ? `M${x1},${y1} H${x1 + 4} V${y2} H${x2}`
-      : `M${x1},${y1} H${x1 + 4} V${y1 + dir * rh} H${x2 - 4} V${y2} H${x2}`
+      : `M${x1},${y1} H${x1 + 4} V${y1 + dir * (rowHs[j] / 2)} H${x2 - 4} V${y2} H${x2}`
     return [{ key: k, d, no: pa.no }]
   })
 
@@ -319,6 +318,37 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0)
   }
 
+  // ---- row heights: the handles on the top and bottom edges of the picked row ----
+  const rowDrag = useRef<null | { k: number; y0: number; h0: number; prevH?: number }>(null)
+  const setRowHeights = (ups: { no: number; h: number | undefined }[]) => {
+    if (onRowH) onRowH(ups)
+    else if (project && onChange) onChange(ups.reduce((p, u) => patchActivity(p, index, u.no, { rowH: u.h }), project))
+  }
+  /** `top`: the line between this row and the one above (this row grows by what the one above gives up); otherwise the bottom edge. */
+  const startRowResize = (e: React.PointerEvent, k: number, top: boolean) => {
+    e.stopPropagation(); e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    rowDrag.current = { k, y0: e.clientY, h0: rowHs[k], prevH: top ? rowHs[k - 1] : undefined }
+  }
+  const onRowMove = (e: React.PointerEvent) => {
+    const d = rowDrag.current
+    if (!d) return
+    const dy = (e.clientY - d.y0) / zoom
+    const no = loc.activities[d.k].no
+    if (d.prevH != null) {
+      const gain = Math.round(Math.max(MIN_ROW_H - d.h0, Math.min(MAX_ROW_H - d.h0, d.prevH - MIN_ROW_H, -dy)))
+      if (d.h0 + gain !== rowHs[d.k]) setRowHeights([{ no, h: d.h0 + gain }, { no: loc.activities[d.k - 1].no, h: d.prevH - gain }])
+      return
+    }
+    const h = Math.round(Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, d.h0 + dy)))
+    if (h !== rowHs[d.k]) setRowHeights([{ no, h }])
+  }
+  const onRowEnd = (e: React.PointerEvent) => {
+    rowDrag.current = null
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ }
+    justDragged.current = true; setTimeout(() => { justDragged.current = false }, 0)
+  }
+
   // ---- typing in a cell ----
   const commitCell = (k: number, c: number, raw: string) => {
     setCellEdit(null)
@@ -347,7 +377,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   }
 
   return (
-    <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5, width: PAGE_X, ['--ps' as string]: 1123 / PAGE_X }}>
+    <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5, width: PAGE_X, height: RL.pageH, ['--ps' as string]: Math.min(1123 / PAGE_X, PAGE_H0 / RL.pageH) }}>
       {/* the SAR logo heads every page, on white */}
       <div style={{ background: '#fff', padding: '4px 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 26, width: 26 * SAR_LOGO_RATIO, display: 'block' }} />
@@ -376,7 +406,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         </div>
       </div>
 
-      <div style={{ display: 'flex', marginTop: 2, position: 'relative' }}
+      <div ref={flexRef} style={{ display: 'flex', marginTop: 2, position: 'relative' }}
         onMouseOver={(e) => setHover(rowAt(e))}
         onMouseMove={(e) => {
           const tc = (e.target as HTMLElement).closest('[data-tcol]')
@@ -407,12 +437,12 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           const r = moveActivities(project, index, [no], before, (n) => loc.activities.find((a) => a.no === n)?.plannedStartH ?? 0)
           onChange(r.project); onStructure?.()
         }}
-        onClick={(e) => { if (justDragged.current) return; const tc = (e.target as HTMLElement).closest('[data-tcol]'); if (canResize) setColSel(tc ? Number(tc.getAttribute('data-tcol')) : null); const k = rowAt(e); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
+        onClick={(e) => { if (justDragged.current) return; const tc = (e.target as HTMLElement).closest('[data-tcol]'); const k = rowAt(e); if (canResize) setSel(tc || k != null ? { k, c: tc ? Number(tc.getAttribute('data-tcol')) : null, x: (e.clientX - flexRef.current!.getBoundingClientRect().left) / zoom } : null); if (k != null) onSelect?.(loc.activities[k].no, (e.target as HTMLElement).closest('[data-lane="actual"]') ? 'actual' : 'baseline') }}>
         {dropK != null && (
-          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * dropK * rh - 1, height: 3, background: C.blue, zIndex: 8, pointerEvents: 'none' }} />
+          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + (dropK < n ? rowTops[dropK] : bodyH) - 1, height: 3, background: C.blue, zIndex: 8, pointerEvents: 'none' }} />
         )}
         {active != null && (
-          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + 2 * active * rh, height: 2 * rh, zIndex: 6, pointerEvents: 'none',
+          <div className="no-print" style={{ position: 'absolute', left: 0, right: 0, top: 2 * HEAD_H + rowTops[active], height: rowHs[active], zIndex: 6, pointerEvents: 'none',
             background: 'rgba(241,180,52,0.22)', borderTop: `1.5px solid ${C.amber}`, borderBottom: `1.5px solid ${C.amber}`,
             boxShadow: `inset 4px 0 0 ${selectedIdx >= 0 ? C.black : C.amber}` }} />
         )}
@@ -421,29 +451,48 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
             background: 'rgba(0,119,139,0.10)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
         )}
-        {canResize && colSel != null && (() => {
-          const c = colSel - 1
-          const x0 = cols.slice(0, c).reduce((a, b) => a + b, 0), x1 = x0 + cols[c]
+        {canResize && sel && (() => {
+          const { k, c } = sel
           const d = Math.max(14, Math.min(40, (matchMedia('(pointer: coarse)').matches ? 30 : 16) / zoom)) // about the same size on screen at any zoom
-          const y = 2 * HEAD_H + bodyH / 2
-          const dot = (key: string, x: number, boundary: boolean, label: string) => (
-            <span key={key} className="no-print" role="slider" aria-label={label} title={label}
-              onPointerDown={(e) => startColResize(e, c, boundary)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
-              style={{ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: C.blue, border: `${Math.max(1.5, d / 9)}px solid #fff`, boxShadow: '0 1px 4px rgba(0,0,0,.45)',
-                zIndex: 9, touchAction: 'none', cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1 }}>⇆</span>
-          )
+          const ci = c == null ? null : c - 1
+          const x0 = ci == null ? 0 : cols.slice(0, ci).reduce((a, b) => a + b, 0)
+          const x1 = ci == null ? 0 : x0 + cols[ci]
+          const yTop = k == null ? 0 : 2 * HEAD_H + rowTops[k]
+          const yBot = k == null ? 0 : yTop + rowHs[k]
+          const dotStyle = (x: number, y: number, cursor: string): React.CSSProperties => ({
+            position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: C.blue, border: `${Math.max(1.5, d / 9)}px solid #fff`,
+            boxShadow: '0 1px 4px rgba(0,0,0,.45)', zIndex: 9, touchAction: 'none', cursor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1,
+          })
+          // the handles sit around the picked cell: left / right = the column, top / bottom = the row (a header cell: the column only)
+          const yMid = k == null ? HEAD_H : (yTop + yBot) / 2
+          const xMid = ci != null ? (x0 + x1) / 2 : sel.x
           return (
             <>
-              <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[c], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
-              {c > 0 && dot('l', x0, true, `Drag left to widen "${COL_NAMES[c]}" (the column on its left gives up the space), right to narrow it`)}
-              {dot('r', x1, false, `Drag right to widen "${COL_NAMES[c]}", left to narrow it`)}
+              {ci != null && <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[ci], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />}
+              {ci != null && ci > 0 && (
+                <span className="no-print" role="slider" aria-label={`Drag left to widen "${COL_NAMES[ci]}" (the column on its left gives up the space), right to narrow it`} style={dotStyle(x0, yMid, 'col-resize')}
+                  onPointerDown={(e) => startColResize(e, ci, true)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}>⇆</span>
+              )}
+              {ci != null && (
+                <span className="no-print" role="slider" aria-label={`Drag right to widen "${COL_NAMES[ci]}", left to narrow it`} style={dotStyle(x1, yMid, 'col-resize')}
+                  onPointerDown={(e) => startColResize(e, ci, false)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}>⇆</span>
+              )}
+              {k != null && k > 0 && (
+                <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={dotStyle(xMid, yTop, 'row-resize')}
+                  onPointerDown={(e) => startRowResize(e, k, true)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}>⇅</span>
+              )}
+              {k != null && (
+                <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={dotStyle(xMid, yBot, 'row-resize')}
+                  onPointerDown={(e) => startRowResize(e, k, false)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}
+                  onDoubleClick={() => setRowHeights([{ no: loc.activities[k].no, h: undefined }])}>⇅</span>
+              )}
             </>
           )
         })()}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: cols.map((w) => `${w}px`).join(' '),
-          gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
+          gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
           {COL_NAMES.map((h, c) => (
             <div key={h} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
@@ -477,7 +526,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
                 planEditable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
-              ed(2, a.name, a.name, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, cols[1], 2 * rh) }, 'Double-click (or click when selected) to rename'),
+              ed(2, a.name, a.name, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, cols[1], rowHs[k]) }, 'Double-click (or click when selected) to rename'),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
@@ -487,7 +536,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),
               span(11, {}, ''),
-              ed(12, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[11], 2 * rh, 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
+              ed(12, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[11], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
           {/* total row */}
@@ -527,7 +576,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             </>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: `${PA_W}px repeat(${GANTT_COLS}, ${GC}px)`,
-            gridTemplateRows: `${HEAD_H}px ${HEAD_H}px repeat(${2 * n}, ${rh}px) ${TOTAL_H}px` }}>
+            gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
             <div style={{ gridRow: '1 / span 2', gridColumn: 1, background: C.slate }} />
             {bands.map((b, i) => (
               <div key={i} style={{ gridRow: 1, gridColumn: `${i * 24 + 2} / span 24`, background: b.dark ? C.black : C.blue, color: '#fff', fontWeight: 700, fontSize: 7.5,

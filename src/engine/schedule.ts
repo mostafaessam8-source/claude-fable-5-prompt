@@ -29,6 +29,8 @@ export interface ActivityResult {
   name: string
   /** Free-text note from the contractor or the planner; changes no calculation. */
   remarks: string
+  /** Row height on the report page, when the user dragged it. */
+  rowH?: number
   /** The link as entered: predecessor number (0 = the possession start), relationship and lag in hours. */
   pred: number
   rel: Rel
@@ -200,6 +202,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
       no: a.no,
       name: a.name,
       remarks: a.remarks.trim(),
+      rowH: a.rowH,
       pred: a.pred,
       rel: a.rel,
       lagH: a.lagH,

@@ -339,3 +339,14 @@ describe('dragged column widths', () => {
     expect(normal.get(2)?.width).toBeCloseTo(29, 1)
   }, 60000)
 })
+
+describe('dragged row heights', () => {
+  it('carry over to the Report sheet (a lane is half the row, in points)', async () => {
+    const p = await parseWorkbook(FIXTURE)
+    const tall = { ...p, locations: p.locations.map((l, i) => (i ? l : { ...l, activities: l.activities.map((a) => (a.no === 3 ? { ...a, rowH: 40 } : a)) })) }
+    const ws = (await loadXlsx(await exportXlsx(tall, layoutsOf(tall)))).getWorksheet('Report')!
+    const first = reportRows(tall.locationCount, tall.activityRowsPerLocation).page(0).first
+    expect(ws.getRow(first + 4).height).toBeCloseTo(15, 0) // activity 3: 40 px -> 30 pt -> 15 pt per lane
+    expect(ws.getRow(first).height).toBeCloseTo(11.5, 1)
+  }, 60000)
+})

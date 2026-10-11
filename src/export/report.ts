@@ -220,8 +220,11 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
       const a = pg.first + 2 * (k - 1)
       const dr = b.first + k - 1
       const bg = k % 2 ? '#FFFFFF' : COL.tint1
-      ws.getRow(a).height = 11.5
-      ws.getRow(a + 1).height = 11.5
+      // a row height dragged on the site (px of the activity's two lanes) carries over, as points
+      const dragged = loc.activities.find((x) => x.no === k)?.rowH
+      const laneH = dragged ? Math.round(dragged * 0.75 * 10 / 2) / 10 : 11.5
+      ws.getRow(a).height = laneH
+      ws.getRow(a + 1).height = laneH
       const cellSt = (extra: Partial<ExcelJS.Style> = {}): Partial<ExcelJS.Style> => ({ fill: solid(bg), font: font(COL.black, 8), alignment: center, border: box, ...extra })
       const vm = (col: number, v: ExcelJS.CellValue, st: Partial<ExcelJS.Style>, nf?: string) => {
         ws.mergeCells(a, col, a + 1, col)
