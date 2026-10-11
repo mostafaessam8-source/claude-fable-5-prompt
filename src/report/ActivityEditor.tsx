@@ -44,11 +44,15 @@ function NameInput({ value, onCommit, placeholder, blankOk }: { value: string; o
  * Rename, change the duration or the link in place; tick rows to delete, duplicate or move several at once;
  * drag a row by its handle to reorder (a block of ticked rows moves together). Undo is in the header.
  */
-export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
+export function ActivityEditor({ project, layouts, result, onChange, onBoth, onPick, onDetails }: {
   project: Project; layouts: SiteLayout[]; result: ProjectResult
   onChange: (p: Project) => void
   /** Location changes touch the project and the site layouts together. */
   onBoth: (e: { project: Project; layouts: SiteLayout[] }) => void
+  /** A row was clicked (location, activity): the side window follows it. */
+  onPick?: (loc: number, no: number) => void
+  /** Open the side window with the details (all the relationships) of an activity. */
+  onDetails?: (loc: number, no: number) => void
 }) {
   const [loc, setLoc] = useState(0)
   const [sel, setSel] = useState<Set<number>>(new Set())
@@ -259,7 +263,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
       <div className="overflow-x-auto">
       {/* rulers: the row under the pointer (or being edited) and the column under it are highlighted */}
       <div ref={wrapRef} style={{ position: 'relative', width: tableW }}
-        onClick={(e) => { const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null; if (!cellEl) return; const rowEl = cellEl.closest('tbody tr') as HTMLElement | null; setPick({ no: rowEl?.dataset.no ? Number(rowEl.dataset.no) : null, c: cellEl.cellIndex }) }}
+        onClick={(e) => { const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null; if (!cellEl) return; const rowEl = cellEl.closest('tbody tr') as HTMLElement | null; setPick({ no: rowEl?.dataset.no ? Number(rowEl.dataset.no) : null, c: cellEl.cellIndex }); if (rowEl?.dataset.no) onPick?.(li, Number(rowEl.dataset.no)) }}
         onMouseOver={(e) => {
           const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null
           const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null
@@ -354,6 +358,10 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
                     <option value={0}>— possession start —</option>
                     {candidatePredecessors(project, li, a.no).map((c) => <option key={c.no} value={c.no}>#{c.no} {c.name.slice(0, 40)}</option>)}
                   </select>
+                  {(a.more?.length ?? 0) > 0 && (
+                    <button className="no-print mt-0.5 rounded bg-[#F1B434] px-1.5 text-[10px] font-bold text-black" onClick={() => onDetails?.(li, a.no)}
+                      title={`Also follows ${(a.more ?? []).map((m) => `#${m.pred} (${m.rel}${m.lagH ? ` ${m.lagH > 0 ? '+' : ''}${m.lagH} h` : ''})`).join(', ')} — click to see and edit all the relationships`}>+{a.more!.length} more</button>
+                  )}
                 </td>
                 <td className={cell}><select className={field} value={a.rel} onChange={(e) => edit({ rel: e.target.value as Rel })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select></td>
                 <td className={cell}><input className={field} type="number" step={0.25} value={a.lagH} onChange={(e) => edit({ lagH: Number(e.target.value) || 0 })} /></td>

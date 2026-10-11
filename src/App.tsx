@@ -16,7 +16,10 @@ import { ActivityEditor } from './report/ActivityEditor'
 import { useHistory } from './model/history'
 import { clearProject, loadProject, saveProject, type Saved } from './model/store'
 import type { Project } from './model/types'
+import { useNarrow } from './model/useNarrow'
 import { ReportView, useManualPanel, type Selected } from './report/ReportView'
+import { ActivityPanel, PANEL_W } from './report/ActivityPanel'
+import { DATES_W, DatesPanel } from './report/DatesPanel'
 import { SettingsBar } from './SettingsBar'
 
 type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
@@ -57,6 +60,7 @@ export function App() {
   const [menu, setMenu] = useState(false)
   const [selected, setSelected] = useState<Selected | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  const narrowApp = useNarrow()
   const [datesOpen, setDatesOpen] = useState(false) // the side window with the activity's calendars
   const manualPanel = useManualPanel()
   useEffect(() => {
@@ -226,10 +230,10 @@ export function App() {
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-[#3D3935] px-3 py-2 text-white md:px-4">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
         <span className="hdr-hide text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
-        {manualPanel && tab === 'report' && project && selected && !panelOpen && (
+        {(tab === 'report' || tab === 'activities') && project && selected && !panelOpen && (
           <button className="ml-auto rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-black" onClick={() => setPanelOpen(true)} title="Open the details of the selected activity">Activity ▸ #{selected.no}</button>
         )}
-        {tab === 'report' && project && selected && !datesOpen && (
+        {(tab === 'report' || tab === 'activities') && project && selected && !datesOpen && (
           <button className={`${panelOpen ? 'ml-auto ' : ''}rounded bg-[#59CBE8] px-3 py-1 text-sm font-semibold text-black`} onClick={() => { setDatesOpen(true); setPanelOpen(false) }} title="Open the calendars of the selected activity in a side window: planned and actual start / finish, date and time">Dates ▸ #{selected.no}</button>
         )}
         <button className={`${manualPanel && tab === 'report' && selected && !panelOpen ? '' : 'ml-auto'} rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden`} aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
@@ -305,7 +309,21 @@ export function App() {
             </>
           )}
           {tab === 'activities' && (
-            <ActivityEditor project={project} layouts={layouts} result={result} onChange={setProject} onBoth={setBoth} />
+            <>
+            <div style={{ marginRight: !narrowApp && selected && (panelOpen || datesOpen) ? (panelOpen ? PANEL_W : DATES_W) : 0 }}>
+              <ActivityEditor project={project} layouts={layouts} result={result} onChange={setProject} onBoth={setBoth}
+                onPick={(l, no) => setSelected((s0) => ({ loc: l, no, tab: s0?.tab ?? 'baseline' }))}
+                onDetails={(l, no) => { setSelected((s0) => ({ loc: l, no, tab: s0?.tab ?? 'baseline' })); setPanelOpen(true); setDatesOpen(false) }} />
+            </div>
+            {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && panelOpen && (
+              <ActivityPanel project={project} result={result} loc={selected.loc} no={selected.no} tab={selected.tab}
+                onTab={(t) => setSelected({ ...selected, tab: t })} onChange={setProject}
+                onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={() => setPanelOpen(false)} />
+            )}
+            {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && datesOpen && !panelOpen && (
+              <DatesPanel project={project} result={result} loc={selected.loc} no={selected.no} onChange={setProject} onClose={() => setDatesOpen(false)} />
+            )}
+            </>
           )}
           {tab === 'layout' && (
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
