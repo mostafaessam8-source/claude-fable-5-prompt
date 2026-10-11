@@ -93,7 +93,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
   // where each row sits: automatic heights that fit the A4 page, or the height a row was dragged to (the page grows when the rows outgrow it)
-  const RL = rowLayout(loc.activities)
+  const RL = rowLayout(loc.activities, PAGE_X)
   const { heights: rowHs, tops: rowTops, bodyH } = RL
   const remarkItems = RL.long
   const tone = locationTone(loc.status)
