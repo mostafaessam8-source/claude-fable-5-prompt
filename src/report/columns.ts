@@ -2,7 +2,7 @@ import { GANTT_COLS } from './gantt'
 
 /** Default widths (px) of the report table's columns; each can be dragged wider or narrower (like an Excel column) and is saved with the project. */
 export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 106]
-export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Remarks']
+export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Remarks']
 /** px inside the A4 page (1123 wide): the table and the Gantt share it. */
 export const PAGE_INNER = 1110
 /** The Gantt never gets narrower than this per column: a wider table makes the PAGE wider instead (like a sheet that grows). */
@@ -50,7 +50,7 @@ export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[
 
 /** The cover's summary table: default widths (px) of its first 8 columns; the progress column takes the rest. */
 export const DEFAULT_SUM_COLS = [190, 84, 92, 92, 96, 44, 44, 76]
-export const SUM_COL_NAMES = ['Location', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Actual %', 'Buffer to Hand-back', 'Progress']
+export const SUM_COL_NAMES = ['Location', 'Status', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Actual %', 'Buffer to Hand-back', 'Progress']
 export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW = 200
 const SUM_PROGRESS_MIN = 160
 export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }

@@ -2,8 +2,8 @@ import { useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
-import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, splitDateTime } from '../links/edit'
-import { fmtCell, parseDateTime } from '../links/table'
+import { addActivity, hoursToInput, inputToHours, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, setPlannedStart, splitDateTime } from '../links/edit'
+import { parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
 import { textWidth } from './measure'
 import { COL_NAMES, DEFAULT_COLS, MAX_COL, MAX_ROW_H, MIN_COL, MIN_ROW_H, PAGE_H0, PAGE_INNER, pageWidth, rowLayout, tableColsOf } from './columns'
@@ -70,7 +70,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const [dragNo, setDragNo] = useState<number | null>(null)
   const [dropK, setDropK] = useState<number | null>(null) // drop before row k (n = at the end)
   // inline cell editing: which row / column is being typed in
-  const [cellEdit, setCellEdit] = useState<{ k: number; c: number } | null>(null)
+  const [cellEdit, setCellEdit] = useState<{ k: number; c: number; sub?: number } | null>(null)
   const s = result.settings
   const loc = result.locations[index]
   const origin = s.possessionStart
@@ -357,6 +357,30 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   }
 
   // ---- typing in a cell ----
+  /** A date picked in a date cell: 'pstart' / 'pfinish' = the planned dates (the link stays, the lag follows); 'astart' / 'afinish' = the actual dates (empty clears). */
+  /** Opens the browser's calendar once when a date cell turns into an input (some browsers need a user gesture: then the field is simply focused). */
+  const openPicker = (el: HTMLInputElement | null) => { if (el && !el.dataset.opened) { el.dataset.opened = '1'; try { el.showPicker?.() } catch { /* focused only */ } } }
+  const commitDate = (k: number, kind: 'pstart' | 'pfinish' | 'astart' | 'afinish', value: string) => {
+    setCellEdit(null)
+    if (!project || !onChange) return
+    const a = loc.activities[k]
+    const h = inputToHours(origin, value)
+    if (kind === 'astart' || kind === 'afinish') {
+      if (h == null) {
+        onChange(patchActivity(project, index, a.no, kind === 'astart' ? { actualStartDate: null, actualStartTime: null } : { actualFinishDate: null, actualFinishTime: null }))
+        return
+      }
+      const d = splitDateTime(new Date(origin.getTime() + Math.round(h * 60) * 60_000))
+      onChange(patchActivity(project, index, a.no, kind === 'astart' ? { actualStartDate: d.date, actualStartTime: d.time } : { actualFinishDate: d.date, actualFinishTime: d.time, pct: 1 }))
+      return
+    }
+    if (h == null) return
+    const pa = project.locations[index].activities[k]
+    const pr = pa.pred > 0 ? loc.activities.find((x) => x.no === pa.pred) : undefined
+    const predT = pr ? { startH: pr.plannedStartH, finishH: pr.plannedFinishH } : null
+    if (kind === 'pstart') onChange(setPlannedStart(project, index, a.no, h, pa.rel, predT, a.durationH))
+    else { const q = setPlannedFinish(project, index, a.no, a.plannedStartH, h, pa.rel, predT); if (q) onChange(q) }
+  }
   const commitCell = (k: number, c: number, raw: string) => {
     setCellEdit(null)
     if (!project || !onChange) return
@@ -508,7 +532,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: tracks.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
-          {COL_NAMES.map((h0, c) => { const two = subs(c) === 2; const h = two ? h0.split(' ')[0] : h0; return [
+          {COL_NAMES.map((h0, c) => { const two = subs(c) === 2; const h = two ? (c === 6 ? 'Actual / Forecast' : 'Planned') : (c === 6 ? 'Actual / Forecast Finish' : h0); return [
             <div key={h0} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: two ? 1 : '1 / span 2', gridColumn: two ? `${gs(c + 1)} / span 2` : gs(c + 1), background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
               {canResize && (
@@ -529,7 +553,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               <div key={`${k}-${c}-${off}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: gs(c) + off, background: bg, ...extra }} {...props}>{content}</div>
             )
             /** A cell that can be typed in: double-click it, or click it once its row is selected. */
-            const ed = (c: number, shown: React.ReactNode, initial: string, extra: CSSProperties, hint: string, off = 0) => {
+            const ed = (c: number, shown: React.ReactNode, initial: string, extra: CSSProperties, hint: string, off = 0, direct = false) => {
               const editing = cellEdit?.k === k && cellEdit.c === c
               return span(c, extra, editing ? (
                 <input autoFocus defaultValue={initial} style={{ width: '100%', font: 'inherit', padding: '0 2px', textAlign: 'inherit', color: C.black }}
@@ -538,7 +562,21 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
                   onKeyDown={(e) => { const el = e.target as HTMLInputElement; if (e.key === 'Enter') el.blur(); if (e.key === 'Escape') { el.dataset.cancel = '1'; el.blur() } }} />
               ) : shown,
               planEditable ? { title: hint, onDoubleClick: () => setCellEdit({ k, c }),
-                onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {}, off)
+                onClick: (e) => { if ((direct || selectedNo === a.no) && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {}, off)
+            }
+            /** A date cell: one click opens the calendar (date + time); Enter / leaving the cell applies it, Esc cancels. */
+            const dt = (c: number, off: number, kind: 'pstart' | 'pfinish' | 'astart' | 'afinish', shown: string, current: Date | null, extra: CSSProperties, hint: string) => {
+              const editing = cellEdit?.k === k && cellEdit.c === c && (cellEdit.sub ?? 0) === off
+              const canEdit = planEditable
+              return span(c, extra, editing ? (
+                <input type="datetime-local" autoFocus defaultValue={current ? hoursToInput(origin, (current.getTime() - origin.getTime()) / 3_600_000) : ''}
+                  ref={openPicker}
+                  style={{ width: '100%', font: 'inherit', fontSize: 7, padding: 0, color: C.black, background: '#fff' }}
+                  onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}
+                  onBlur={(e) => { if (e.target.dataset.cancel) setCellEdit(null); else commitDate(k, kind, e.target.value) }}
+                  onKeyDown={(e) => { const el = e.target as HTMLInputElement; if (e.key === 'Enter') el.blur(); if (e.key === 'Escape') { el.dataset.cancel = '1'; el.blur() } }} />
+              ) : shown,
+              canEdit ? { title: hint, onClick: () => { if (!justDragged.current) setCellEdit({ k, c, sub: off }) } } : {}, off)
             }
             const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
             return [
@@ -548,13 +586,13 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
-              ...(range ? [span(6, {}, fmtShort(a.plannedStart))] : []),
-              ed(6, fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes', range ? 1 : 0),
-              ...(range ? [span(7, { fontWeight: 700 }, fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)))] : []),
-              span(7, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish), {}, range ? 1 : 0),
+              ...(range ? [dt(6, 0, 'pstart', fmtShort(a.plannedStart), a.plannedStart, {}, 'Planned start: click to pick a date and time — the link stays, the lag changes')] : []),
+              dt(6, range ? 1 : 0, 'pfinish', fmtShort(a.plannedFinish), a.plannedFinish, {}, 'Planned finish: click to pick a date and time — the start stays, the duration changes'),
+              ...(range ? [dt(7, 0, 'astart', fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)), a.actualStart, { fontWeight: a.actualStart ? 700 : 400, color: a.actualStart ? C.black : C.slate }, 'Actual start: click to pick the date and time it really started (clear the field to remove it). Grey = a forecast, not yet an actual')] : []),
+              dt(7, range ? 1 : 0, 'afinish', fmtShort(a.carriedForecastFinish), a.actualFinish, { fontWeight: a.actualFinish ? 700 : 400, color: a.actualFinish ? C.black : C.slate }, 'Actual finish: click to pick the date and time it really finished (it makes the activity 100 %; clear the field to remove it). Grey = a forecast, not yet an actual'),
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
-              ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),
+              ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: click and type 0 – 100', 0, true),
               ed(11, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[10], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
