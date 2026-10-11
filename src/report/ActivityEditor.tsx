@@ -270,21 +270,21 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         onFocus={(e) => { const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null; setFr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null) }}
         onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFr(null) }}>
       {pick && box && (() => {
-        const d = matchMedia('(pointer: coarse)').matches ? 14 : 10
+        const d = matchMedia('(pointer: coarse)').matches ? 11 : 8
         const dot = (x: number, y: number, cursor: string): React.CSSProperties => ({ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: '#00778B', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.45)', zIndex: 20, touchAction: 'none', cursor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1 })
         const midY = box.t + box.h / 2, midX = box.l + box.w / 2
         return (
           <>
             <div className="no-print" style={{ position: 'absolute', left: box.l, top: box.t, width: box.w, height: box.h, zIndex: 19, pointerEvents: 'none', outline: '2px solid #00778B', outlineOffset: -1 }} />
             {pick.c > 0 && <span className="no-print" role="slider" aria-label="Drag left to widen this column (the column on its left gives up the space), right to narrow it" style={dot(box.l, midY, 'col-resize')}
-              onPointerDown={(e) => startResize(e, pick.c, true)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}>⇆</span>}
+              onPointerDown={(e) => startResize(e, pick.c, true)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}></span>}
             <span className="no-print" role="slider" aria-label="Drag right to widen this column, left to narrow it" style={dot(box.l + box.w, midY, 'col-resize')}
-              onPointerDown={(e) => startResize(e, pick.c)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}>⇆</span>
+              onPointerDown={(e) => startResize(e, pick.c)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}></span>
             {pick.no != null && acts.findIndex((a) => a.no === pick.no) > 0 && <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={dot(midX, box.t, 'row-resize')}
-              onPointerDown={(e) => startRow(e, pick.no!, true)} onPointerMove={moveRow} onPointerUp={endRow} onPointerCancel={endRow}>⇅</span>}
+              onPointerDown={(e) => startRow(e, pick.no!, true)} onPointerMove={moveRow} onPointerUp={endRow} onPointerCancel={endRow}></span>}
             {pick.no != null && <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={dot(midX, box.t + box.h, 'row-resize')}
               onPointerDown={(e) => startRow(e, pick.no!, false)} onPointerMove={moveRow} onPointerUp={endRow} onPointerCancel={endRow}
-              onDoubleClick={() => onChange(patchActivity(project, li, pick.no!, { edH: undefined }))}>⇅</span>}
+              onDoubleClick={() => onChange(patchActivity(project, li, pick.no!, { edH: undefined }))}></span>}
           </>
         )
       })()}

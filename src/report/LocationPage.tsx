@@ -453,7 +453,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         )}
         {canResize && sel && (() => {
           const { k, c } = sel
-          const dS = matchMedia('(pointer: coarse)').matches ? 13 : 9 // size on the screen, whatever the zoom
+          const dS = matchMedia('(pointer: coarse)').matches ? 11 : 8 // size on the screen, whatever the zoom
           const d = Math.max(6, Math.min(30, dS / zoom))
           const ci = c == null ? null : c - 1
           const x0 = ci == null ? 0 : cols.slice(0, ci).reduce((a, b) => a + b, 0)
@@ -476,20 +476,20 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               {ci != null && <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[ci], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />}
               {ci != null && ci > 0 && (
                 <span className="no-print" role="slider" aria-label={`Drag left to widen "${COL_NAMES[ci]}" (the column on its left gives up the space), right to narrow it`} style={dotStyle(x0, yL, 'col-resize')}
-                  onPointerDown={(e) => startColResize(e, ci, true)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}>⇆</span>
+                  onPointerDown={(e) => startColResize(e, ci, true)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}></span>
               )}
               {ci != null && (
                 <span className="no-print" role="slider" aria-label={`Drag right to widen "${COL_NAMES[ci]}", left to narrow it`} style={dotStyle(x1, yR, 'col-resize')}
-                  onPointerDown={(e) => startColResize(e, ci, false)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}>⇆</span>
+                  onPointerDown={(e) => startColResize(e, ci, false)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}></span>
               )}
               {k != null && k > 0 && (
                 <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={dotStyle(xT, yTop, 'row-resize')}
-                  onPointerDown={(e) => startRowResize(e, k, true)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}>⇅</span>
+                  onPointerDown={(e) => startRowResize(e, k, true)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}></span>
               )}
               {k != null && (
                 <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={dotStyle(xB, yBot, 'row-resize')}
                   onPointerDown={(e) => startRowResize(e, k, false)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}
-                  onDoubleClick={() => setRowHeights([{ no: loc.activities[k].no, h: undefined }])}>⇅</span>
+                  onDoubleClick={() => setRowHeights([{ no: loc.activities[k].no, h: undefined }])}></span>
               )}
             </>
           )
