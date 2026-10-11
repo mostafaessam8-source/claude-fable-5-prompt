@@ -37,7 +37,9 @@ export const PAGE_H0 = 794
  * Where every activity's row sits on a location page: the automatic height fits all rows into the A4 page; a row the user
  * dragged keeps its own height, and when the rows together outgrow the page the PAGE grows taller (like a sheet that grows).
  */
-export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[]) {
+export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[], width = 1123) {
+  // a page wider than A4 is printed scaled down to the paper's width: it is made taller by the same factor so it still fills the sheet
+  const aspect = Math.max(1, width / 1123)
   const long = acts.filter((a) => a.remarks.length > LONG_REMARK)
   const chars = long.reduce((t, a) => t + String(a.no ?? '').length + a.remarks.length + 6, 0)
   const remarksH = long.length ? 14 + Math.ceil(chars / 200) * 11 : 0
@@ -45,14 +47,14 @@ export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[
   const manual = acts.map((a) => (a.rowH ? Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, a.rowH)) : 0))
   const manualSum = manual.reduce((t, h) => t + h, 0)
   const autoCount = manual.filter((h) => !h).length
-  const room = AVAIL_ROWS_H - remarksH
-  const rh = Math.max(8, Math.min(18, Math.floor((room - manualSum) / Math.max(1, 2 * autoCount))))
+  const room = AVAIL_ROWS_H * aspect - remarksH
+  const rh = Math.max(8, Math.min(18 * aspect, Math.floor((room - manualSum) / Math.max(1, 2 * autoCount))))
   const heights = manual.map((h) => h || 2 * rh)
   const tops: number[] = []
   let y = 0
   for (const h of heights) { tops.push(y); y += h }
   const extra = Math.max(0, y - room)
-  return { rh, heights, tops, bodyH: y, remarksH, extra, pageH: PAGE_H0 + extra, long }
+  return { rh, heights, tops, bodyH: y, remarksH, extra, pageH: Math.round(PAGE_H0 * aspect) + extra, long }
 }
 
 /** The cover's summary table: default widths (px) of its first 8 columns; the progress column takes the rest. */
