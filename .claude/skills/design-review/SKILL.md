@@ -58,11 +58,10 @@ How mixed wording is read:
 ## Layout (user asked for a focused page: no repeated figure, no long repeated sentences)
 1. **Scope line + five tiles:** documents, approved %, with SAR (late, average), with the contractor (D / C / not
    submitted), longest SAR review. The last one opens the document.
-2. **Projects table** (`ds-mx`), worst first:
-   - columns: health dot, status bar (`ds-sbar`, px width; segments filter project + status), approved, with SAR
-     (late), longest, with contractor, next action
-   - next action = `short` text of the top 2 decisions, with an owner tag
-   - "Details ›" opens `projModal`
+2. **Projects table** (`ds-mx`), worst first, two columns only (user's choice):
+   - project, with its health dot and a "Details ›" link that opens `projModal`
+   - status bar (`ds-sbar`, px width up to 620; a segment filters project + status, the row filters the project)
+   - the number columns and the next action were removed; they live in Details
    - with one project selected, the rows are its packages (click → list)
 3. **Charts:** SAR-wait ageing + submissions per month.
 4. **Chase lists:** longest with SAR / returned C / D. Same project + status + submission day are grouped into one line,

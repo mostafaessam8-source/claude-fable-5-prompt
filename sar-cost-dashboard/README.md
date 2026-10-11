@@ -123,9 +123,9 @@ file used for the progress photos; the photos and the design register are read i
 What the page shows (one compact page, each figure shown once):
 - **Five numbers:** documents, % approved, with SAR (how many late, average days), with the contractor (rejected /
   to revise / not submitted), and the longest SAR review.
-- **Projects table, worst first:** health dot, a status bar of every document, approved %, with SAR (late), longest
-  review, with the contractor, and the next action (who + a short action). Details › gives the reasons, decisions,
-  packages and documents. With one project selected, the table shows its packages.
+- **Projects table, worst first:** each project with its health dot and a status bar of every document; Details ›
+  gives its figures, reasons, decisions, packages and documents. With one project selected, the table shows its
+  packages.
 - **Where the time goes:** how long documents wait for SAR, and submissions per month.
 - **Who to chase:** the documents longest with SAR and those returned C / D. Documents of one project submitted the
   same day read as one line.

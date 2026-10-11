@@ -461,22 +461,15 @@
     }
     var max = Math.max.apply(null, rows.map(function (r) { return r.n; }).concat([1]));
     var tb = add(mp, '<div class="table-wrap auto-h"><table class="ds-mx"><thead><tr>' + (byPkg ? "" : "<th></th>") + "<th>" + (byPkg ? "Package / category" : "Project") + '</th><th class="ds-mx-bar">Status of the documents</th>' +
-      '<th class="num">Approved</th><th class="num">With SAR</th><th class="num">Longest</th><th class="num">With contractor</th>' + (byPkg ? "" : '<th>Next action <span class="ds-thn">(Details for the reasons)</span></th>') + "</tr></thead><tbody></tbody></table></div>").querySelector("tbody");
+      "</tr></thead><tbody></tbody></table></div>").querySelector("tbody");
     rows.forEach(function (r) {
       var segs = ORDER.filter(function (k) { return r.c[k]; }).map(function (k) {
         return '<span class="ds-seg" data-k="' + k + '" style="flex:' + r.c[k] + ";background:" + B[k].color + (/UR|C|NR/.test(k) ? ";color:#3D3935" : "") + '" title="' + esc(B[k].short + ": " + r.c[k]) + '">' + (r.c[k] / r.n >= 0.08 ? r.c[k] : "") + "</span>";
       }).join("");
       var a0 = r.acts && r.acts[0];
       var tr = el("<tr" + (byPkg ? "" : ' class="ds-row"') + ">" + (byPkg ? "" : "<td>" + rag(r.h.lvl) + "</td>") +
-        '<td class="ds-mx-name"><b>' + esc(r.label) + "</b>" + (r.sub ? '<div class="muted">' + esc(r.sub) + "</div>" : "") + "</td>" +
-        '<td class="ds-mx-bar"><div class="ds-sbar" style="width:' + Math.max(36, Math.round(r.n / max * 260)) + 'px">' + segs + '</div><span class="ds-n">' + r.n + "</span></td>" +
-        '<td class="num">' + pct(r.app) + '<div class="muted ds-sm">' + r.appN + " / " + r.subN + "</div></td>" +
-        '<td class="num">' + r.ur + (r.late ? '<div class="neg ds-sm">' + r.late + " late</div>" : "") + "</td>" +
-        '<td class="num' + (r.oldest > M.target * 2 ? " neg" : "") + '">' + (r.oldest ? r.oldest + " d" : "—") + "</td>" +
-        '<td class="num">' + (r.con || "—") + (r.con ? '<div class="muted ds-sm">' + [r.cd ? r.cd + " C/D" : "", r.ns ? r.ns + " not sub." : ""].filter(Boolean).join(" · ") + "</div>" : "") + "</td>" +
-        (byPkg ? "" : '<td class="ds-mx-act">' + (r.acts.length ? r.acts.slice(0, 2).map(function (x) { return '<div class="ds-a ds-s' + x.sev + '"><span class="ds-who ds-w-' + x.who.toLowerCase() + '">' +
-          esc(x.who === "Both" ? "Both" : x.who === "Report" ? "Data" : x.who) + "</span> " + esc(x.short) + "</div>"; }).join("") + (r.acts.length > 2 ? '<div class="muted ds-sm">+' + (r.acts.length - 2) + " more</div>" : "")
-          : '<span class="muted">On track</span>') + ' <button type="button" class="link-btn ds-det">Details ›</button></td>') + "</tr>");
+        '<td class="ds-mx-name"><b>' + esc(r.label) + "</b>" + (r.sub ? '<div class="muted">' + esc(r.sub) + "</div>" : "") + (byPkg ? "" : '<button type="button" class="link-btn ds-det">Details ›</button>') + "</td>" +
+        '<td class="ds-mx-bar"><div class="ds-sbar" style="width:' + Math.max(36, Math.round(r.n / max * 620)) + 'px">' + segs + '</div><span class="ds-n">' + r.n + "</span></td></tr>");
       tr.addEventListener("click", function (e) {
         var sg = e.target.closest(".ds-seg");
         if (e.target.closest(".ds-det")) { projModal(r.src); return; }
