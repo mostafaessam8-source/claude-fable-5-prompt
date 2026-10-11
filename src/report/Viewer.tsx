@@ -26,12 +26,13 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
   }, [project.settings.cutoffNow])
   // column widths can be changed here for the session (the handles on a tapped column); they are not saved
   const [cols, setCols] = useState<number[] | undefined>(project.settings.tableCols)
+  const [range, setRange] = useState<boolean>(!!project.settings.dateRange) // Start + finish columns, switchable here for the session
   const [sum, setSum] = useState<{ cols?: number[]; rows?: (number | null)[] }>({}) // summary table sizes dragged here
   const [rowOv, setRowOv] = useState<Record<string, number | undefined>>({}) // row heights dragged here, by "location:activity"
   const result = useMemo(() => {
-    const withRows = { ...project, settings: { ...project.settings, tableCols: cols, ...(sum.cols ? { summaryCols: sum.cols } : {}), ...(sum.rows ? { summaryRows: sum.rows } : {}) }, locations: project.locations.map((l, li) => ({ ...l, activities: l.activities.map((a) => (`${li}:${a.no}` in rowOv ? { ...a, rowH: rowOv[`${li}:${a.no}`] } : a)) })) }
+    const withRows = { ...project, settings: { ...project.settings, tableCols: cols, dateRange: range || undefined, ...(sum.cols ? { summaryCols: sum.cols } : {}), ...(sum.rows ? { summaryRows: sum.rows } : {}) }, locations: project.locations.map((l, li) => ({ ...l, activities: l.activities.map((a) => (`${li}:${a.no}` in rowOv ? { ...a, rowH: rowOv[`${li}:${a.no}`] } : a)) })) }
     return computeProject(effectiveProject(withRows, floatingNow(new Date(tick))))
-  }, [project, tick, cols, rowOv, sum])
+  }, [project, tick, cols, rowOv, sum, range])
 
   const titles = ['Summary', ...result.locations.map((l) => l.name)]
   const last = titles.length - 1
@@ -219,6 +220,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
           {titles.map((t, k) => <option key={k} value={k} style={{ color: '#000' }}>{k + 1} / {titles.length} · {t}</option>)}
         </select>
         <button className={btn} disabled={i === last} onClick={() => go(1)} aria-label="Next page">Next ▶</button>
+        <button className={btn} style={range ? { background: '#00778B' } : undefined} onClick={() => setRange((r) => !r)} aria-pressed={range} aria-label="Start and finish columns">Start/Finish</button>
         {zv.z > 1.05 && <button className={btn} onClick={() => applyZ(1, 0, 0)} aria-label="Fit to screen">Fit</button>}
         <button className={btn} style={{ background: '#00778B' }} onClick={() => (full ? exitFull() : enterFull())} aria-label={full ? 'Exit full screen' : 'Full screen'}>{full ? '✕ Exit full screen' : '⛶ Full screen'}</button>
       </div>
