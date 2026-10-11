@@ -76,34 +76,18 @@ Don't add them back. Note the class name `ds-sbar`: `ds-bar` was once a filter-b
   adds or removes values; clicking the same thing again clears it.
 - What filters the page:
   - overview cards
-  - status doughnut
-  - who-acts bars
-  - project chart (project + status)
-  - review-ageing bars (band + project)
-  - review time by project
-  - contractor chart (project + status)
-  - month bars (month + status)
-  - health items
-  - scorecard rows
+  - projects table rows (project) and status-bar segments (project + status)
   - decisions (`decFilter`)
 - What opens details instead:
   - the oldest-in-review card
   - document lists and rows
-  - the package chart (one project)
-  - the submissions-count chart
-  - the scorecard "Details ›" button
+  - the "Details ›" link under a project name
+  - package rows (one project selected)
 - **Project codes on the y axis:** they filter by the project (`axisClicks(box, fn)`), on the project, review-time and
   contractor charts. Chart.js calls `onClick` only inside the plot area, so these clicks are listened to on the chart
   box.
 - **Bar clicks:** use `hit(e, els, c)` to get the segment under the pointer. Chart.js bar charts report every segment of
   the bar, first one first.
-
-## Charts
-- Every bar is clickable and opens `docModal`, a summary line plus the document table.
-- What a click shows:
-  - **Status by project:** opens that project.
-  - **Review ageing:** every document in that age band.
-  - **Package and month charts:** the clicked segment's documents. If the segment is empty, the whole bar.
 
 ## When changing it
 - Keep the Excel format unchanged, and keep project data out of code, comments and this file (public repository).
