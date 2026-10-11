@@ -529,7 +529,10 @@
     var m = el('<div class="modal-back" role="dialog" aria-modal="true"><div class="modal' + (wide ? " wide" : "") + '"><header><h3>' + esc(title) +
       '</h3><button type="button" aria-label="Close">×</button></header><div class="body">' + bodyHtml + "</div></div></div>");
     function close() { m.remove(); document.removeEventListener("keydown", onKey); }
-    function onKey(e) { if (e.key === "Escape") close(); }
+    function onKey(e) {   // Escape closes the top window only (windows can open on top of each other)
+      var all = document.querySelectorAll(".modal-back");
+      if (e.key === "Escape" && all[all.length - 1] === m) { e.stopImmediatePropagation(); close(); }
+    }
     m.addEventListener("click", function (e) { if (e.target === m) close(); });
     m.querySelector("header button").addEventListener("click", close);
     document.addEventListener("keydown", onKey);

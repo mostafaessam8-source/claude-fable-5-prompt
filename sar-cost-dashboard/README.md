@@ -141,6 +141,18 @@ What the page shows:
 - **Lists:** "Waiting on SAR" and "Waiting on the contractor".
 - **Full register:** exportable as CSV.
 
+Layout, filters and details:
+- **Sections:** Overview · Decisions · SAR review · Contractor · Trend · Projects · Register, with a jump bar at the top.
+- **Filter bar:** stays in view while you scroll and applies to every section. Filters: project, package / category,
+  status, who has to act (SAR / Contractor / project team / done), days since submission, submission month, project
+  health and number of submissions. The SAR review target is set in the same bar.
+- **Everything opens details:**
+  - A card, slice, bar or decision opens the list of its documents.
+  - A document opens its own window: status as written, who acts next, days against the target, and the full
+    submission history.
+  - A project opens its own window: health and why, its decisions, packages and documents, and a button to filter the
+    page to that project.
+
 How documents are counted:
 - Each document counts once, at its latest submission. Earlier submissions give its submission count.
 - Different wordings are read into one scale: A / B / approved, C / revise / CRS received, D / rejected, under review,

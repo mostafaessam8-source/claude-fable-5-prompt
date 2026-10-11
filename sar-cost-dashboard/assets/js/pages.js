@@ -2570,5 +2570,6 @@
     });
   };
 
+  P._kit = { filterBar: filterBar, passes: passes, secHead: secHead };   // shared with design.js (same slicer bar / section heads)
   window.SARPages = P;
 })();

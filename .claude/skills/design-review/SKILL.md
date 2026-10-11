@@ -55,6 +55,18 @@ How mixed wording is read:
   - more than 25% not submitted
   - submitted with no status
 
+## Layout
+- **Sections:** `sec-nav` + `secHead`, ids `ds-ov`, `ds-dec`, `ds-sar`, `ds-con`, `ds-trend`, `ds-proj`, `ds-reg`.
+- **Filter bar:** the shared sticky slicer bar from pages.js (`SARPages._kit.filterBar` / `passes`). The SAR review
+  target select is added into it.
+- **Filters:** project, package, status, who acts (`owner`), days band, submission month, project health, submissions.
+- **Figures:** computed by `agg` on the filtered documents. Health always comes from the whole project (`model`).
+- **Detail windows:**
+  - `listModal`: summary line + document table.
+  - `docModal`: one document with its submission history, including documents closed by a resubmission.
+  - `projModal`: tiles, health, decisions, packages, documents, and "Filter the page to …".
+  - Windows stack; Escape closes the top one only (ui.js `modal`).
+
 ## Charts
 - Every bar is clickable and opens `docModal`, a summary line plus the document table.
 - What a click shows:
