@@ -59,7 +59,8 @@ How mixed wording is read:
 - **Sections:** `sec-nav` + `secHead`, ids `ds-ov`, `ds-dec`, `ds-sar`, `ds-con`, `ds-trend`, `ds-proj`, `ds-reg`.
 - **Filter bar:** the shared sticky slicer bar from pages.js (`SARPages._kit.filterBar` / `passes`). The SAR review
   target select is added into it.
-- **Filters:** project, package, status, who acts (`owner`), days band, submission month, project health, submissions.
+- **Filters:** project, status, days band and submission month. The package, who-acts, health and submissions filters
+  were removed at the user's request; don't add them back.
 - **Figures:** computed by `agg` on the filtered documents. Health always comes from the whole project (`model`).
 - **Detail windows:**
   - `listModal`: summary line + document table.

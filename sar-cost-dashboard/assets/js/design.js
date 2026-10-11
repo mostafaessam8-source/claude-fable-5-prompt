@@ -358,13 +358,9 @@
     var months = U.uniq(M.active.map(function (d) { return d.sub ? d.sub.slice(0, 7) + "-01" : ""; }).filter(Boolean)).sort().reverse();
     var defs = [
       { key: "proj", label: "Project", options: M.projects.map(function (p) { return p.code; }), display: function (c) { return c + (nameOf[c] ? " — " + nameOf[c] : ""); }, get: function (d) { return d.code; } },
-      { key: "cat", label: "Package / category", options: U.uniq(M.active.map(function (d) { return d.cat || "—"; })).sort(), get: function (d) { return d.cat || "—"; } },
       { key: "status", label: "Status", options: ORDER.slice().sort(function (a, b) { return RANK[a] - RANK[b]; }).map(function (k) { return B[k].short; }), get: function (d) { return B[d.k].short; } },
-      { key: "owner", label: "With (who acts)", options: ["SAR", "Contractor", "Project team (data)", "Done"], get: owner },
       { key: "age", label: "Days since submission", options: bands.map(function (b) { return b[2]; }).concat(["Not submitted"]), get: band },
-      { key: "month", label: "Submitted (month)", options: months, display: function (m) { return fmt.month(m); }, get: function (d) { return d.sub ? d.sub.slice(0, 7) + "-01" : ""; } },
-      { key: "health", label: "Project health", options: ["red", "amber", "green"], display: function (x) { return x.charAt(0).toUpperCase() + x.slice(1); }, get: function (d) { return d.health; } },
-      { key: "cyc", label: "Submissions", options: ["0", "1", "2", "3+"], display: function (x) { return x === "0" ? "Not submitted" : x + (x === "1" ? " submission" : " submissions"); }, get: function (d) { return d.cycles >= 3 ? "3+" : String(d.cycles || 0); } }
+      { key: "month", label: "Submitted (month)", options: months, display: function (m) { return fmt.month(m); }, get: function (d) { return d.sub ? d.sub.slice(0, 7) + "-01" : ""; } }
     ];
     if (st.proj) {   // a project picked from an older link / the scorecard
       var pk = M.projects.filter(function (p) { return p.src === st.proj; })[0]; st.f = st.f || {}; st.f.proj = pk ? [pk.code] : []; delete st.proj;
