@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { ProjectResult } from '../engine/schedule'
-import { addLink, candidatePredecessors, lagToKeepStart, linksOf, patchActivity, RELS, removeLink, withLinks } from '../links/edit'
+import { addLink, candidatePredecessors, candidateSuccessors, lagToKeepStart, linksOf, patchActivity, RELS, removeLink, withLinks } from '../links/edit'
 import type { ExtraLink, Project, Rel } from '../model/types'
 import { useNarrow } from '../model/useNarrow'
 
@@ -82,18 +82,39 @@ export function LinksPanel({ project, result, loc, no, onChange, onSelect, onClo
         <h3 className="bg-[#768692] px-2 py-1 text-xs font-bold text-white">FOLLOWED BY ({followers.length})</h3>
         {followers.length === 0 && <p className="text-xs text-slate-500">No activity follows this one.</p>}
         {followers.map((f) => {
-          const idx = linksOf(f).findIndex((l) => l.pred === no)
-          const l = linksOf(f)[idx]
+          const fl = linksOf(f)
+          const idx = fl.findIndex((l) => l.pred === no)
+          const l = fl[idx]
           const fr = resOf(f.no)
+          const editF = (patch: Partial<ExtraLink>) => onChange(patchActivity(project, loc, f.no, withLinks(fl.map((x, k) => (k === idx ? { ...x, ...patch } : x)), fr.plannedStartH)))
           return (
-            <div key={f.no} className="flex items-center gap-2 rounded bg-[#F2F8F9] p-2 text-xs">
-              <div className="flex-1"><b>#{f.no} {f.name}</b><div className="text-slate-500">{l.rel}{l.lagH ? ` ${l.lagH > 0 ? '+' : ''}${l.lagH} h` : ''}</div></div>
-              <button className="rounded border border-[#00778B] px-2 py-1 font-semibold text-[#00778B]" onClick={() => onSelect(f.no)}>Open</button>
-              <button className="rounded border border-[#CB2C30] px-2 py-1 font-semibold text-[#CB2C30]" title="Delete this relationship"
-                onClick={() => onChange(removeLink(project, loc, f.no, idx, fr.plannedStartH))}>Delete</button>
+            <div key={f.no} className="rounded bg-[#F2F8F9] p-2 text-xs">
+              <div className="font-bold">#{f.no} {f.name}</div>
+              <div className="mt-1 grid grid-cols-[auto_1fr_auto_auto] items-end gap-2">
+                <label className={lab}>Type
+                  <select className={inp} value={l.rel} onChange={(e) => editF({ rel: e.target.value as Rel })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select>
+                </label>
+                <label className={lab}>Lag (h)
+                  <input className={inp} type="number" step={0.25} value={l.lagH} onChange={(e) => editF({ lagH: Number(e.target.value) || 0 })} />
+                </label>
+                <button className="rounded border border-[#00778B] px-2 py-1 font-semibold text-[#00778B]" onClick={() => onSelect(f.no)}>Open</button>
+                <button className="rounded border border-[#CB2C30] px-2 py-1 font-semibold text-[#CB2C30]" title="Delete this relationship"
+                  onClick={() => onChange(removeLink(project, loc, f.no, idx, fr.plannedStartH))}>Delete</button>
+              </div>
             </div>
           )
         })}
+        <label className={lab}>Add a successor (an activity that follows this one)
+          <select className={inp} value="" onChange={(e) => {
+            const n = Number(e.target.value)
+            if (!n) return
+            const fr = resOf(n)
+            onChange(addLink(project, loc, n, { pred: no, rel: 'FS', lagH: lagToKeepStart(fr.plannedStartH, 'FS', { startH: r.plannedStartH, finishH: r.plannedFinishH }, fr.durationH) }, fr.plannedStartH))
+          }}>
+            <option value="">— choose —</option>
+            {candidateSuccessors(project, loc, no).filter((c) => !followers.some((f) => f.no === c.no)).map((c) => <option key={c.no} value={c.no}>#{c.no} {c.name}</option>)}
+          </select>
+        </label>
         <p className="text-xs text-slate-500">On the Gantt: drag from a dot of one bar to another bar to add a relationship; click an arrow (it turns red) and press Delete to remove it.</p>
       </div>
     </aside>
