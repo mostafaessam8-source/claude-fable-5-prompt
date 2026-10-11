@@ -63,13 +63,12 @@ How mixed wording is read:
    - status bar (`ds-sbar`, px width up to 620; a segment filters project + status, the row filters the project)
    - the number columns and the next action were removed; they live in Details
    - with one project selected, the rows are its packages (click → list)
-3. **Charts:** SAR-wait ageing + submissions per month.
-4. **Chase lists:** longest with SAR / returned C / D. Same project + status + submission day are grouped into one line,
+3. **Chase lists:** longest with SAR / returned C / D. Same project + status + submission day are grouped into one line,
    named by the shared title start.
-5. **Register:** folded `<details>`, drawn on first open.
+4. **Register:** folded `<details>`, drawn on first open.
 
 Removed on purpose (they repeated other blocks): section nav, status doughnut, who-acts chart, health box, separate
-scorecard, decisions list, review-time-by-project, contractor-by-project and submissions-count charts.
+scorecard, decisions list, review-time-by-project, contractor-by-project and submissions-count charts, and (later) the SAR-wait ageing and submissions-per-month charts.
 Don't add them back. Note the class name `ds-sbar`: `ds-bar` was once a filter-bar class with gaps.
 
 ## Click = filter the page

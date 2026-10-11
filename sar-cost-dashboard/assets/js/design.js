@@ -481,32 +481,12 @@
     add(mp, '<div class="ds-legend">' + ORDER.filter(function (k) { return S.c[k]; }).map(function (k) { return '<span><i style="background:' + B[k].color + '"></i>' + esc(B[k].short) + "</span>"; }).join("") +
       (byPkg ? "" : '<span class="ds-rl">' + rag("red") + " ≥ 25% returned C / D or 3+ reviews beyond twice the target &nbsp; " + rag("amber") + " any C / D, late review or > 25% not submitted</span>") + "</div>");
 
-    /* C · where the time goes: SAR review ageing · submissions per month */
-    var g3 = add(v, '<div class="grid g-2"></div>');
-    var urs = docs.filter(function (d) { return d.k === "UR" && d.age != null; }), urP = A.projects.filter(function (p) { return p.ur; });
-    var p3 = panel(g3, "How long documents wait for SAR", urs.length + " under review · days since submission · click a bar to filter");
-    var b3 = add(p3, '<div class="chart-box short"></div>');
-    U.chart(b3, { type: "bar", data: { labels: bands.map(function (b) { return b[2]; }), datasets: urP.map(function (p, i) {
-        return U.barDs(p.code, bands.map(function (b) { return urs.filter(function (d) { return d.src === p.src && d.age >= b[0] && d.age <= b[1]; }).length; }), PAL[i % PAL.length], { stack: "a", maxBarThickness: 46 }); }) },
-      options: { plugins: { legend: { position: "right", display: urP.length > 1, labels: { boxWidth: 10, font: { size: 10 } } }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (!els.length) return; var b = bands[els[0].index], pp = urP[els[0].datasetIndex];
-          pick(urP.length > 1 ? { age: [b[2]], proj: [pp.code] } : { age: [b[2]] }, e); },
-        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
-    var ms = U.uniq(docs.map(function (d) { return d.sub ? d.sub.slice(0, 7) : ""; }).filter(Boolean)).sort().slice(-12), mk = ORDER.filter(function (k) { return k !== "NS"; });
-    var p7 = panel(g3, "Submissions per month", "Last 12 months · coloured by today's status · click a bar to filter");
-    var b7 = add(p7, '<div class="chart-box short"></div>');
-    U.chart(b7, { type: "bar", data: { labels: ms.map(function (m) { return fmt.month(m + "-01"); }), datasets: mk.map(function (k) {
-        return U.barDs(B[k].short, ms.map(function (m) { return docs.filter(function (d) { return d.k === k && d.sub && d.sub.slice(0, 7) === m; }).length; }), B[k].color, { stack: "m", maxBarThickness: 34 }); }) },
-      options: { plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ month: [ms[els[0].index] + "-01"], status: [B[mk[els[0].datasetIndex]].short] }, e); },
-        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
-
-    /* D · the documents to chase: longest with SAR · with the contractor */
+    /* C · the documents to chase: longest with SAR · with the contractor */
     var g4 = add(v, '<div class="grid g-2"></div>');
     listPanel(g4, "Chase SAR — longest in review", docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return (b.age || 0) - (a.age || 0); }), true);
     listPanel(g4, "Chase the contractor — returned C / D", docs.filter(function (d) { return d.k === "C" || d.k === "D"; }).sort(function (a, b) { return RANK[a.k] - RANK[b.k] || (b.age || 0) - (a.age || 0); }), false);
 
-    /* E · every document, on demand */
+    /* D · every document, on demand */
     var rg = add(v, '<details class="panel ds-reg"' + (st.regOpen ? " open" : "") + '><summary><b>All documents</b> <span class="muted">· ' + plural(docs.length, "document") +
       (M.superseded ? " · " + M.superseded + " superseded / resubmitted not counted" : "") + " · search, sort, export · click a row for its history</span></summary></details>");
     function reg() { if (rg._done) return; rg._done = true; var h = add(rg, "<div></div>"); docTable(h, docs, { exportName: "NSR design register " + M.rd, maxHeight: 620 });

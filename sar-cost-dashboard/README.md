@@ -126,7 +126,6 @@ What the page shows (one compact page, each figure shown once):
 - **Projects table, worst first:** each project with its health dot and a status bar of every document; Details ›
   gives its figures, reasons, decisions, packages and documents. With one project selected, the table shows its
   packages.
-- **Where the time goes:** how long documents wait for SAR, and submissions per month.
 - **Who to chase:** the documents longest with SAR and those returned C / D. Documents of one project submitted the
   same day read as one line.
 - **All documents:** folded register; open it to search, sort, export and see each document's history.
