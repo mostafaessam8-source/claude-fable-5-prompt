@@ -17,6 +17,7 @@
     card: '<path d="M3 5h18v14H3zM7 9h4v4H7zM14 9h4M14 13h4M7 16h11"/>',
     close: '<path d="M9 12l2 2 4-4M4 4h16v16H4z"/>',
     upload: '<path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V4h16v3"/>',
+    design: '<path d="M3 21l3-1 11-11-2-2L4 18zM14 6l2 2M15 3l6 6M3 3h6M3 3v6"/>',
     edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>'
   };
 
@@ -25,6 +26,7 @@
     { id: "kpi-summary", group: "KPIs", title: "KPI Summary", icon: "kpi", sub: "NSR KPI scorecard — weight, achievement and result" },
     { id: "cost", group: "Cost", title: "Cost & KPI Dashboard", icon: "cost", sub: "Cost KPIs today and at year-end · 2026 Spend Plan vs Forecast Plan vs Actual · contract & payments · invoice schedule · monthly spending plan" },
     { id: "progress", group: "Progress", title: "Progress Dashboard", icon: "curve", sub: "SPI KPI today and at 31-Dec · portfolio trend · planned vs actual progress of every project · master plan · project dashboard (weekly report card, S-curve, timeline)" },
+    { id: "design", group: "Design", title: "Design Review", icon: "design", sub: "Design submissions of every project from the weekly reports' Engineering Drawings sheet — approval status, SAR review time, returned documents and the decisions needed" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
     { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project card in the execution phase — SPI and progress from card sections 7 & 8, schedule, status, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
@@ -209,6 +211,7 @@
       else if (page.id === "card-updates") window.SARPages[page.id](ctx);   // works from its own files, with or without imported data
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
       else if (page.id === "data-checks") SARChecks.page(ctx);
+      else if (page.id === "design") SARDesign.page(ctx);
       else window.SARPages[page.id](ctx);
     } catch (e) {
       console.error(e);
@@ -461,10 +464,34 @@
       // .rar / .zip of weekly report files → progress photos; Excel files that are not a known source are tried for photos too
       var photoFiles = window.SARPhotos ? files.filter(function (f) { return SARPhotos.isArchiveName(f.name); }) : [];
       files = files.filter(function (f) { return photoFiles.indexOf(f) < 0; });
+      var nDesign = 0, pending = null;   // pending: the dataset being imported in this run (saved after the Excel files)
+      /* "Engineering Drawings" rows read from the weekly report files replace those projects' rows; other projects keep theirs */
+      function applyDesign(obj, design, names) {
+        var files = Object.keys(design || {}); if (!files.length) return 0;
+        obj.tables = obj.tables || {}; obj.sources = obj.sources || {};
+        var keep = (obj.tables.Engineering_Drawings || []).filter(function (r) { return files.indexOf(r["Source.Name"]) < 0; }), n = 0;
+        files.forEach(function (f) { n += design[f].length; keep = keep.concat(design[f]); });
+        obj.tables.Engineering_Drawings = keep;
+        obj.sources.design = { fileName: names, importedAt: new Date().toISOString(), hasFile: false,
+          report: [{ table: "Engineering_Drawings", rows: keep.length, status: "ok", missing: [] }] };
+        return n;
+      }
       function photos() {
         if (!photoFiles.length) return Promise.resolve(0);
-        write("Progress photos:");
+        write("Progress photos & design registers:");
         return SARPhotos.importFiles(photoFiles, write).then(function (r) {
+          var names = photoFiles.map(function (f) { return f.name; }).join(", ");
+          if (Object.keys(r.design || {}).length) return SARStore.load().then(function (s) {
+            s = s || { tables: {}, sources: {} };
+            nDesign = applyDesign(s, r.design, names); if (pending) applyDesign(pending, r.design, names);
+            return SARStore.save(s).then(function () {
+              mergeDataset(s); renderHeader();
+              write("  ✓ " + nDesign + " design document rows from " + Object.keys(r.design).length + " project(s) — Design Review page");
+              return r;
+            });
+          });
+          return r;
+        }).then(function (r) {
           if (r.photos) write("  ✓ " + r.photos + " photos saved for " + r.projects + " project(s) — used on the project dashboards and the weekly PowerPoint");
           if (!r.photos) return r.photos;
           // keep the imported archive itself (download it again later / cloud copy), like the Excel sources
@@ -483,8 +510,8 @@
       }
       if (!files.length) {
         photos().then(function (n) {
-          if (!n) { U.toast("No progress photos found — see the log.", true); return; }
-          U.toast(n + " progress photos imported.");
+          if (!n && !nDesign) { U.toast("No progress photos or design registers found — see the log.", true); return; }
+          U.toast([n ? n + " progress photos" : "", nDesign ? nDesign + " design document rows" : ""].filter(Boolean).join(" and ") + " imported.");
           var keep = log.textContent; ctx.rerender();
           var nl = document.querySelector(".log"); if (nl) { nl.style.display = "block"; nl.textContent = keep; }
         });
@@ -492,6 +519,7 @@
       }
       SARStore.load().then(function (stored) {
         stored = stored || { tables: {}, sources: {} };
+        pending = stored;
         var ok = 0, chain = Promise.resolve(), toCloud = [];
         files.forEach(function (f) {
           chain = chain.then(function () {
@@ -521,7 +549,7 @@
         var nPh = 0;
         chain = chain.then(photos).then(function (n) { nPh = n; });
         return chain.then(function () {
-          if (!ok && nPh) { U.toast(nPh + " progress photos imported."); var k0 = log.textContent; ctx.rerender(); var l0 = document.querySelector(".log"); if (l0) { l0.style.display = "block"; l0.textContent = k0; } return; }
+          if (!ok && (nPh || nDesign)) { U.toast([nPh ? nPh + " progress photos" : "", nDesign ? nDesign + " design document rows" : ""].filter(Boolean).join(" and ") + " imported."); var k0 = log.textContent; ctx.rerender(); var l0 = document.querySelector(".log"); if (l0) { l0.style.display = "block"; l0.textContent = k0; } return; }
           if (!ok) { U.toast("No file could be imported — see the log.", true); return; }
           var up = Promise.resolve();
           if (toCloud.length && window.SARCloud && SARCloud.connected()) {

@@ -201,7 +201,7 @@
    */
   function importFiles(files, log) {
     log = log || function () {};
-    var results = [], chain = Promise.resolve();
+    var results = [], design = {}, chain = Promise.resolve();
     files.forEach(function (f) {
       chain = chain.then(function () {
         log("Reading " + f.name + " …");
@@ -211,6 +211,11 @@
           books.forEach(function (b) {
             c = c.then(function () { return workbookPhotos(b); }).then(function (r) {
               results.push(r);
+              // the same workbook's "Engineering Drawings" sheet → design review register
+              if (window.SARDesign) try {
+                var dr = SARDesign.fromWorkbook(b.buffer, b.name, r.code || codeOf(b.name));
+                if (dr.length) { design[b.name] = dr; log("  ✓ " + b.name + ": " + dr.length + " design document rows (" + dr[0].Sheet + ")"); }
+              } catch (e) { log("  ! " + b.name + ": design sheet not read — " + e.message); }
               log("  " + (r.photos.length ? "✓ " : r.found ? "! " : "– ") + r.file + (r.code ? " → " + r.code : "") + ": " +
                 (r.photos.length ? r.photos.length + " photo" + (r.photos.length === 1 ? "" : "s") : r.found ? "no photos in “" + r.sheet + "”" : "no Progress Photo sheet"));
             }, function (e) { log("  ✗ " + b.name + ": " + e.message); });
@@ -221,13 +226,13 @@
     });
     return chain.then(function () {
       var got = results.filter(function (r) { return r.photos.length; });
-      if (!got.length) return { projects: 0, photos: 0 };
+      if (!got.length) return { projects: 0, photos: 0, design: design };
       return load().then(function (st) {
         st = st || { projects: {} };
         got.forEach(function (r) { st.projects[r.file] = { file: r.file, code: r.code, sheet: r.sheet, importedAt: new Date().toISOString(), photos: r.photos }; });
         st.updatedAt = new Date().toISOString();
         return SARStore.set(KEY, st).then(function () {
-          return { projects: got.length, photos: got.reduce(function (s, r) { return s + r.photos.length; }, 0) };
+          return { projects: got.length, photos: got.reduce(function (s, r) { return s + r.photos.length; }, 0), design: design };
         });
       });
     });

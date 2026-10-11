@@ -1045,3 +1045,31 @@ body.printing .hbar { display: none !important; }
 .dq-rt th, .dq-rt td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--tint-10); vertical-align: top; }
 .dq-rt th { background: var(--tint-10); font-size: 12px; }
 @media (max-width: 640px) { .dq-msg { min-width: 220px; } }
+
+/* Design Review (design.js) */
+.ds-bar { align-items: flex-end; flex-wrap: wrap; gap: 10px 16px; }
+.ds-b { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; color: #fff; }
+.ds-b.ds-A { background: #005A69; } .ds-b.ds-AP { background: var(--sar-blue); } .ds-b.ds-B { background: #2A8C9C; }
+.ds-b.ds-UR { background: var(--sky); color: var(--sar-black); } .ds-b.ds-NR { background: var(--cool-gray); color: var(--sar-black); }
+.ds-b.ds-C { background: var(--yellow); color: var(--sar-black); } .ds-b.ds-D { background: var(--red); }
+.ds-b.ds-NS { background: var(--slate); } .ds-b.ds-X { background: var(--tint-10); color: var(--slate); }
+.ds-rag { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; }
+.ds-rag.ds-red { background: var(--red); } .ds-rag.ds-amber { background: var(--yellow); } .ds-rag.ds-green { background: #2E9E6A; }
+.ds-dec { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; counter-reset: ds; }
+.ds-dec li { background: var(--tint-5); border-left: 5px solid var(--mid-blue); padding: 10px 14px; cursor: pointer; font-size: 13.5px; line-height: 1.5; }
+.ds-dec li:hover { background: var(--tint-10); }
+.ds-dec li.ds-s3 { border-left-color: var(--red); } .ds-dec li.ds-s2 { border-left-color: var(--yellow); }
+.ds-act { color: var(--sar-blue); font-weight: 600; margin-top: 2px; }
+.ds-who { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 1px 7px; margin-right: 4px; background: var(--white); border: 1px solid var(--cool-gray); color: var(--slate); }
+.ds-who.ds-w-sar { border-color: var(--sar-blue); color: var(--sar-blue); }
+.ds-who.ds-w-contractor { border-color: #8A5A00; color: #8A5A00; }
+.ds-more, .ds-foot { font-size: 12px; margin: 8px 0 0; line-height: 1.5; }
+.ds-foot { margin: 4px 0 16px; }
+.ds-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ds-list li { padding: 8px 0; border-bottom: 1px solid var(--tint-10); font-size: 13px; line-height: 1.45; }
+.ds-age { float: right; margin-left: 10px; color: var(--slate); font-weight: 600; white-space: nowrap; }
+.ds-age.neg { color: var(--red); }
+.ds-txt { white-space: normal; display: block; min-width: 180px; max-width: 420px; line-height: 1.4; }
+.ds-nm { font-size: 11px; white-space: normal; min-width: 160px; max-width: 260px; }
+.ds-sm { font-size: 11px; }
+.ds-why { white-space: normal; display: block; min-width: 200px; font-size: 12px; color: var(--slate); }
