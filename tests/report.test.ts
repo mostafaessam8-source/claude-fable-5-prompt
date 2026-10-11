@@ -103,6 +103,15 @@ describe('gantt geometry (§6.4)', () => {
   })
 })
 
+describe('Dur BL total', () => {
+  it('counts overlapping activities once (the sum stays the weight of the percentages)', () => {
+    // two activities that both start at 0 (no predecessor): 10 h and 6 h overlapping, then a 4 h one after the first
+    const l = computeProject(project([{ durationH: 10 }, { durationH: 6 }, { durationH: 4, pred: 1, rel: 'FS', lagH: 0 }], { cutoff: at(0) })).locations[0]
+    expect(l.totalHours).toBe(20)
+    expect(l.coveredHours).toBe(14)
+  })
+})
+
 describe('ALL LOCATIONS total', () => {
   it('weights progress by hours; worst-case variance and buffer', () => {
     const a = computeProject(project([{ durationH: 10 }], { cutoff: at(0) })).locations[0]

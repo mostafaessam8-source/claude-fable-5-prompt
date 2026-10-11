@@ -67,6 +67,8 @@ export interface LocationResult {
   scope: string
   activities: ActivityResult[]
   totalHours: number
+  /** The elapsed baseline time, first planned start to last planned finish: overlapping activities count once (the Dur BL total). `totalHours` stays the sum, the weight of the percentages. */
+  coveredHours: number
   planPct: number
   actualPct: number
   variance: number
@@ -275,6 +277,8 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
   })
 
   // Location totals (§4.6).
+  // the elapsed baseline time: first planned start to last planned finish, so overlapping activities count once
+  const coveredHours = out.length ? Math.round((Math.max(...out.map((r) => r.plannedFinishH)) - Math.min(...out.map((r) => r.plannedStartH))) * 100) / 100 : 0
   const totalHours = out.reduce((n, r) => n + r.durationH, 0)
   const weighted = (f: (r: ActivityResult) => number) =>
     totalHours === 0 ? 0 : out.reduce((n, r) => n + r.durationH * f(r), 0) / totalHours
@@ -291,6 +295,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     scope: loc.scope,
     activities: out,
     totalHours,
+    coveredHours,
     planPct: weighted((r) => r.planPct),
     actualPct: weighted((r) => r.effectivePct),
     variance,
