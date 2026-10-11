@@ -1,8 +1,8 @@
 import { GANTT_COLS } from './gantt'
 
 /** Default widths (px) of the report table's columns; each can be dragged wider or narrower (like an Excel column) and is saved with the project. */
-export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 106]
-export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Remarks']
+export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 56, 56, 106]
+export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Predecessors', 'Successors', 'Remarks']
 /** px inside the A4 page (1123 wide): the table and the Gantt share it. */
 export const PAGE_INNER = 1110
 /** The Gantt never gets narrower than this per column: a wider table makes the PAGE wider instead (like a sheet that grows). */
@@ -13,8 +13,11 @@ export const MAX_COL = 700
 /** Width (px) of a location page: A4 landscape, or wider when the columns were widened beyond what leaves the Gantt its width. */
 /** The saved column widths; widths saved while the Buffer column still existed (12) lose that column's entry. */
 export function tableColsOf(c: number[] | undefined | null): number[] {
-  if (c && c.length === DEFAULT_COLS.length + 1) return c.filter((_, i) => i !== 10)
-  return c && c.length === DEFAULT_COLS.length ? c : DEFAULT_COLS
+  if (!c) return DEFAULT_COLS
+  let w = c
+  if (w.length === 12) w = w.filter((_, i) => i !== 10) // saved while the Buffer column still existed
+  if (w.length === 11) w = [...w.slice(0, 10), DEFAULT_COLS[10], DEFAULT_COLS[11], w[10]] // saved before the Predecessors / Successors columns
+  return w.length === DEFAULT_COLS.length ? w : DEFAULT_COLS
 }
 export function pageWidth(tableCols: number[] | undefined, dateRange = false): number {
   const cs = tableColsOf(tableCols)
