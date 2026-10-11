@@ -72,6 +72,22 @@ export function App() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  // pinch-zoomed page: a sticky bar follows the layout viewport, so it is carried along with the visible area and kept at normal size
+  useEffect(() => {
+    const vv = window.visualViewport
+    const el = headerRef.current
+    if (!vv || !el) return
+    const follow = () => {
+      if (vv.scale > 1.05) {
+        el.style.width = `${vv.width * vv.scale}px`
+        el.style.transformOrigin = '0 0'
+        el.style.transform = `translate(${vv.offsetLeft}px, ${vv.offsetTop}px) scale(${1 / vv.scale})`
+      } else { el.style.width = ''; el.style.transform = ''; el.style.transformOrigin = '' }
+    }
+    follow()
+    vv.addEventListener('scroll', follow); vv.addEventListener('resize', follow)
+    return () => { vv.removeEventListener('scroll', follow); vv.removeEventListener('resize', follow) }
+  }, [])
   const [creating, setCreating] = useState(false)
   const [update, setUpdate] = useState<{ name: string; diff: UpdateDiff; incoming: { project: Project; layouts: SiteLayout[] | null } } | null>(null)
 
