@@ -36,6 +36,9 @@ export interface Settings {
 }
 
 /** Input columns of one activity row (§3.3). Calculated columns are not imported. */
+/** A further relationship of an activity (the first one is `pred` / `rel` / `lagH`): the activity starts when the LAST of them allows it. */
+export interface ExtraLink { pred: number; rel: Rel; lagH: number }
+
 export interface ActivityInput {
   /** 1-based position inside the location block; predecessors refer to this. */
   no: number
@@ -46,6 +49,8 @@ export interface ActivityInput {
   pred: number
   rel: Rel
   lagH: number
+  /** More predecessors besides the first (when an activity is linked to several). */
+  more?: ExtraLink[]
   actualStartDate: Date | null
   /** Hours since midnight, or null when blank. */
   actualStartTime: number | null

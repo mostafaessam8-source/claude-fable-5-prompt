@@ -1,8 +1,8 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
 import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
-import { addActivity, hoursToInput, inputToHours, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, setPlannedStart, splitDateTime } from '../links/edit'
+import { addActivity, addLink, removeLink, hoursToInput, inputToHours, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, setPlannedStart, splitDateTime } from '../links/edit'
 import { parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
 import { textWidth } from './measure'
@@ -231,25 +231,43 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     const succ = loc.activities[made.succK]
     // keep the successor's planned start where it is: the lag is set to whatever reproduces it
     const lagH = lagToKeepStart(succ.plannedStartH, made.rel, { startH: pred.plannedStartH, finishH: pred.plannedFinishH }, succ.durationH)
-    onChange(patchActivity(project, index, succ.no, { pred: pred.no, rel: made.rel, lagH }))
+    // an activity can have several relationships: a further one is added (the same predecessor and type is replaced)
+    onChange(addLink(project, index, succ.no, { pred: pred.no, rel: made.rel, lagH }, succ.plannedStartH))
   }
 
   // dependency arrows: from the predecessor's end to the successor's end the relationship joins
-  const arrows = !showLinks ? [] : loc.activities.flatMap((r, k) => {
-    const pa = r // pred / rel come with the result, so a view-only page (no project) draws them too
-    const j = pa.pred > 0 && !r.linkBad ? loc.activities.findIndex((x) => x.no === pa.pred) : -1
+  const arrows = !showLinks ? [] : loc.activities.flatMap((r, k) => r.links.flatMap((lk, li) => {
+    const j = !lk.bad ? loc.activities.findIndex((x) => x.no === lk.pred) : -1
     if (j < 0) return []
     const p = loc.activities[j]
     const clamp = (x: number) => Math.min(PA_W + GANTT_COLS * GC, Math.max(PA_W, x))
-    const x1 = clamp(xOf(pa.rel === 'FS' || pa.rel === 'FF' ? p.plannedFinishH : p.plannedStartH))
-    const x2 = clamp(xOf(pa.rel === 'FS' || pa.rel === 'SS' ? r.plannedStartH : r.plannedFinishH))
+    const x1 = clamp(xOf(lk.rel === 'FS' || lk.rel === 'FF' ? p.plannedFinishH : p.plannedStartH))
+    const x2 = clamp(xOf(lk.rel === 'FS' || lk.rel === 'SS' ? r.plannedStartH : r.plannedFinishH))
     const y1 = rowY(j), y2 = rowY(k)
     const dir = y2 > y1 ? 1 : -1
     const d = x2 >= x1 + 8
       ? `M${x1},${y1} H${x1 + 4} V${y2} H${x2}`
       : `M${x1},${y1} H${x1 + 4} V${y1 + dir * (rowHs[j] / 2)} H${x2 - 4} V${y2} H${x2}`
-    return [{ key: k, d, no: pa.no }]
-  })
+    return [{ key: `${k}-${li}`, d, no: r.no, li, pred: lk.pred }]
+  }))
+  // a relationship picked on the Gantt (click its arrow): Delete removes it
+  const [pickedLink, setPickedLink] = useState<{ no: number; li: number } | null>(null)
+  useEffect(() => {
+    if (!pickedLink || !project || !onChange) return
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+      if (e.key === 'Escape') { setPickedLink(null); return }
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return
+      const succ = loc.activities.find((x) => x.no === pickedLink.no)
+      if (!succ) return
+      e.preventDefault()
+      setPickedLink(null)
+      onChange(removeLink(project, index, pickedLink.no, pickedLink.li, succ.plannedStartH))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pickedLink, project, onChange, loc, index])
 
   const barEl = (b: Bar, row: number, key: string, k: number) => (
     <div key={key} data-row={k} data-lane="actual" style={{ gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: row, background: barColour[b.kind], margin: '1px 0', zIndex: 1 }} />
@@ -676,7 +694,18 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             <defs>
               <marker id={`arr${index}`} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill={C.slate} /></marker>
             </defs>
-            {arrows.map((a) => <path key={a.key} d={a.d} fill="none" stroke={C.slate} strokeWidth={1} opacity={0.75} markerEnd={`url(#arr${index})`} />)}
+            {arrows.map((a) => {
+              const picked = pickedLink?.no === a.no && pickedLink.li === a.li
+              return (
+                <g key={a.key}>
+                  <path d={a.d} fill="none" stroke={picked ? C.red : C.slate} strokeWidth={picked ? 2 : 1} opacity={picked ? 1 : 0.75} markerEnd={`url(#arr${index})`} />
+                  {planEditable && <path className="no-print" d={a.d} fill="none" stroke="transparent" strokeWidth={8} style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); setPickedLink(picked ? null : { no: a.no, li: a.li }) }}>
+                    <title>Click to pick this relationship (#{a.pred} → #{a.no}), then press Delete to remove it</title>
+                  </path>}
+                </g>
+              )
+            })}
             {line && <path d={`M${line.x1},${line.y1} L${line.x2},${line.y2}`} stroke={C.blue} strokeWidth={1.5} strokeDasharray="3 2" fill="none" />}
           </svg>
           {/* gridlines every column (light) / 6 h (stronger), midnight rule, cut-off line */}

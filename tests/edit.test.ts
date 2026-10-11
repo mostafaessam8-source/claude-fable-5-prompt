@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeProject } from '../src/engine/schedule'
 import {
   addActivity, hoursToInput, inputToHours, setPlannedFinish, setPlannedStart, candidatePredecessors, deleteActivities, deleteActivity, duplicateActivities, insertActivityAfter, moveActivities, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
-  successorsOf, timeToInput,
+  successorsOf, timeToInput, addLink, removeLink, linksOf,
 } from '../src/links/edit'
 import { project as mk } from './helpers'
 
@@ -193,5 +193,31 @@ describe('typing the planned dates keeps the links', () => {
     expect(hoursToInput(t0, 25.5)).toBe('2026-10-17T01:30')
     expect(inputToHours(t0, '2026-10-17T01:30')).toBe(25.5)
     expect(inputToHours(t0, '')).toBeNull()
+  })
+})
+
+describe('several relationships per activity', () => {
+  it('starts when the LAST relationship allows it; deleting one keeps the others', () => {
+    // 4 follows 2 (finishes at 4); add 3 (finishes at 3, +2 h lag = 5) -> 4 now starts at 5
+    let q = addLink(base(), 0, 4, { pred: 3, rel: 'FS', lagH: 2 }, 4)
+    expect(planned(q)[3]).toEqual([5, 7])
+    expect(linksOf(q.locations[0].activities[3]).map((l) => l.pred)).toEqual([2, 3])
+    // delete the driving one (3): back to following 2 only
+    q = removeLink(q, 0, 4, 1, 5)
+    expect(planned(q)[3]).toEqual([4, 6])
+    // delete the last one: the planned start stays
+    q = removeLink(q, 0, 4, 0, 4)
+    expect(q.locations[0].activities[3].pred).toBe(0)
+    expect(planned(q)[3]).toEqual([4, 6])
+  })
+  it('deleting the first relationship promotes the next; a link survives renumbering', () => {
+    let q = addLink(base(), 0, 4, { pred: 3, rel: 'FS', lagH: 0 }, 4)
+    q = removeLink(q, 0, 4, 0, 4)
+    const a = q.locations[0].activities[3]
+    expect([a.pred, a.more]).toEqual([3, undefined])
+    // an extra link follows its activity when the order changes
+    const w = addLink(base(), 0, 4, { pred: 3, rel: 'FS', lagH: 0 }, 4)
+    const r = moveActivities(w, 0, [3], 5, (n) => computeProject(w).locations[0].activities[n - 1].plannedStartH)
+    expect(r).toBeTruthy()
   })
 })
