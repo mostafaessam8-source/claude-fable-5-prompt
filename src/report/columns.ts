@@ -28,7 +28,7 @@ export function pageWidth(tableCols: number[] | undefined, dateRange = false): n
 /** Characters that fit the Remarks column in two lines; longer remarks are also written out under the table. */
 export const LONG_REMARK = 52
 /** The rows' share of the page height (the logo strip and the header bars take the rest). */
-export const AVAIL_ROWS_H = 526
+export const AVAIL_ROWS_H = 590
 export const MIN_ROW_H = 12
 export const MAX_ROW_H = 220
 export const PAGE_H0 = 794
