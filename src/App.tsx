@@ -17,9 +17,10 @@ import { useHistory } from './model/history'
 import { clearProject, loadProject, saveProject, type Saved } from './model/store'
 import type { Project } from './model/types'
 import { useNarrow } from './model/useNarrow'
-import { ReportView, useManualPanel, type Selected } from './report/ReportView'
+import { ReportView, type Selected } from './report/ReportView'
 import { ActivityPanel, PANEL_W } from './report/ActivityPanel'
 import { DATES_W, DatesPanel } from './report/DatesPanel'
+import { LINKS_W, LinksPanel } from './report/LinksPanel'
 import { SettingsBar } from './SettingsBar'
 
 type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
@@ -62,7 +63,8 @@ export function App() {
   const [panelOpen, setPanelOpen] = useState(false)
   const narrowApp = useNarrow()
   const [datesOpen, setDatesOpen] = useState(false) // the side window with the activity's calendars
-  const manualPanel = useManualPanel()
+  const [linksOpen, setLinksOpen] = useState(false) // the side window with all its relationships
+  const openSide = (k: 'activity' | 'dates' | 'links') => { setPanelOpen(k === 'activity'); setDatesOpen(k === 'dates'); setLinksOpen(k === 'links') }
   useEffect(() => {
     const on = () => setCompact((c) => (c ? window.scrollY > 24 : window.scrollY > 80))
     window.addEventListener('scroll', on, { passive: true })
@@ -230,13 +232,14 @@ export function App() {
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-[#3D3935] px-3 py-2 text-white md:px-4">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
         <span className="hdr-hide text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
-        {(tab === 'report' || tab === 'activities') && project && selected && !panelOpen && (
-          <button className="ml-auto rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-black" onClick={() => setPanelOpen(true)} title="Open the details of the selected activity">Activity ▸ #{selected.no}</button>
+        {(tab === 'report' || tab === 'activities') && project && selected && (
+          <span className="ml-auto flex flex-wrap items-center gap-2">
+            {!panelOpen && <button className="rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-black" onClick={() => openSide('activity')} title="Open the details of the selected activity">Activity ▸ #{selected.no}</button>}
+            {!datesOpen && <button className="rounded bg-[#59CBE8] px-3 py-1 text-sm font-semibold text-black" onClick={() => openSide('dates')} title="Open the calendars of the selected activity in a side window: planned and actual start / finish, date and time">Dates ▸ #{selected.no}</button>}
+            {!linksOpen && <button className="rounded bg-[#B7D96A] px-3 py-1 text-sm font-semibold text-black" onClick={() => openSide('links')} title="Open all the relationships of the selected activity in a side window: what it follows (several allowed) and what follows it">Links ▸ #{selected.no}</button>}
+          </span>
         )}
-        {(tab === 'report' || tab === 'activities') && project && selected && !datesOpen && (
-          <button className={`${panelOpen ? 'ml-auto ' : ''}rounded bg-[#59CBE8] px-3 py-1 text-sm font-semibold text-black`} onClick={() => { setDatesOpen(true); setPanelOpen(false) }} title="Open the calendars of the selected activity in a side window: planned and actual start / finish, date and time">Dates ▸ #{selected.no}</button>
-        )}
-        <button className={`${manualPanel && tab === 'report' && selected && !panelOpen ? '' : 'ml-auto'} rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden`} aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
+        <button className={`${selected && (tab === 'report' || tab === 'activities') ? '' : 'ml-auto'} rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden`} aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
         <div className={`${menu ? 'flex' : 'hidden'} w-full flex-wrap items-center gap-2 md:flex md:w-auto md:flex-1 md:gap-3`}>
         {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
         {!OFFLINE && (
@@ -305,23 +308,27 @@ export function App() {
               )}
               <SettingsBar effectiveCutoff={result.settings.cutoff} project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
               <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks}
-                selected={selected} setSelected={setSelected} panelOpen={panelOpen} setPanelOpen={(b) => { setPanelOpen(b); if (b) setDatesOpen(false) }} datesOpen={datesOpen} setDatesOpen={setDatesOpen} />
+                selected={selected} setSelected={setSelected} panelOpen={panelOpen} setPanelOpen={(b) => { setPanelOpen(b); if (b) { setDatesOpen(false); setLinksOpen(false) } }} datesOpen={datesOpen} setDatesOpen={setDatesOpen} linksOpen={linksOpen} setLinksOpen={setLinksOpen} />
             </>
           )}
           {tab === 'activities' && (
             <>
-            <div style={{ marginRight: !narrowApp && selected && (panelOpen || datesOpen) ? (panelOpen ? PANEL_W : DATES_W) : 0 }}>
+            <div style={{ marginRight: !narrowApp && selected ? (panelOpen ? PANEL_W : datesOpen ? DATES_W : linksOpen ? LINKS_W : 0) : 0 }}>
               <ActivityEditor project={project} layouts={layouts} result={result} onChange={setProject} onBoth={setBoth}
                 onPick={(l, no) => setSelected((s0) => ({ loc: l, no, tab: s0?.tab ?? 'baseline' }))}
-                onDetails={(l, no) => { setSelected((s0) => ({ loc: l, no, tab: s0?.tab ?? 'baseline' })); setPanelOpen(true); setDatesOpen(false) }} />
+                onDetails={(l, no) => { setSelected((s0) => ({ loc: l, no, tab: s0?.tab ?? 'baseline' })); openSide('links') }} />
             </div>
             {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && panelOpen && (
               <ActivityPanel project={project} result={result} loc={selected.loc} no={selected.no} tab={selected.tab}
                 onTab={(t) => setSelected({ ...selected, tab: t })} onChange={setProject}
                 onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={() => setPanelOpen(false)} />
             )}
-            {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && datesOpen && !panelOpen && (
+            {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && datesOpen && (
               <DatesPanel project={project} result={result} loc={selected.loc} no={selected.no} onChange={setProject} onClose={() => setDatesOpen(false)} />
+            )}
+            {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && linksOpen && (
+              <LinksPanel project={project} result={result} loc={selected.loc} no={selected.no} onChange={setProject}
+                onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={() => setLinksOpen(false)} />
             )}
             </>
           )}

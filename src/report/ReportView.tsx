@@ -6,6 +6,7 @@ import type { Project } from '../model/types'
 import { useNarrow } from '../model/useNarrow'
 import { OFFLINE } from '../offline/offline'
 import { DATES_W, DatesPanel } from './DatesPanel'
+import { LINKS_W, LinksPanel } from './LinksPanel'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage, pageWidth } from './LocationPage'
 import { coverHeight, coverWidth } from './columns'
@@ -21,18 +22,19 @@ export function useManualPanel() {
   return true
 }
 
-export function ReportView({ result, layouts, project, onChange, showLinks = true, selected, setSelected, panelOpen, setPanelOpen, datesOpen, setDatesOpen }: {
+export function ReportView({ result, layouts, project, onChange, showLinks = true, selected, setSelected, panelOpen, setPanelOpen, datesOpen, setDatesOpen, linksOpen, setLinksOpen }: {
   result: ProjectResult; layouts: SiteLayout[]
   project: Project; onChange: (p: Project) => void
   showLinks?: boolean
   selected: Selected | null; setSelected: (s: Selected | null | ((s: Selected | null) => Selected | null)) => void
   panelOpen: boolean; setPanelOpen: (b: boolean) => void
   datesOpen: boolean; setDatesOpen: (b: boolean) => void
+  linksOpen: boolean; setLinksOpen: (b: boolean) => void
 }) {
   const manual = useManualPanel()
   const show = !!selected && (!manual || panelOpen)
   const close = useCallback(() => { if (manual) setPanelOpen(false); else setSelected(null) }, [manual, setPanelOpen, setSelected])
-  const dropSel = useCallback(() => { setSelected(null); setPanelOpen(false); setDatesOpen(false) }, [setSelected, setPanelOpen, setDatesOpen])
+  const dropSel = useCallback(() => { setSelected(null); setPanelOpen(false); setDatesOpen(false); setLinksOpen(false) }, [setSelected, setPanelOpen, setDatesOpen, setLinksOpen])
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow()
   const pageW = Math.max(pageWidth(project.settings.tableCols, project.settings.dateRange), coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange)) // the widest page: widened columns make the pages wider
@@ -50,7 +52,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
 
   return (
     <>
-    <div ref={box} className="report-wrap" style={{ marginRight: !narrow ? (show ? PANEL_W : selected && datesOpen ? DATES_W : 0) : 0 }}>
+    <div ref={box} className="report-wrap" style={{ marginRight: !narrow ? (show ? PANEL_W : selected && datesOpen ? DATES_W : selected && linksOpen ? LINKS_W : 0) : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), height: coverHeight(project.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), 794 / coverHeight(project.settings.summaryRows)) }}>
           <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} />
@@ -68,6 +70,10 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
     )}
     {selected && datesOpen && !show && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && (
       <DatesPanel project={project} result={result} loc={selected.loc} no={selected.no} onChange={onChange} onClose={() => setDatesOpen(false)} />
+    )}
+    {selected && linksOpen && !show && !datesOpen && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && (
+      <LinksPanel project={project} result={result} loc={selected.loc} no={selected.no} onChange={onChange}
+        onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={() => setLinksOpen(false)} />
     )}
     </>
   )
