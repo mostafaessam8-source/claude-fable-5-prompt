@@ -142,11 +142,13 @@ What the page shows:
 - **Full register:** exportable as CSV.
 
 Layout, filters and details:
-- **Sections:** Overview · Decisions · SAR review · Contractor · Trend · Projects · Register, with a jump bar at the top.
+- **Sections:** Overview · Projects · Decisions · SAR review · Contractor · Trend · Register, with a jump bar at the top.
 - **Filter bar:** stays in view while you scroll and applies to every section. Filters: project, status, days since
   submission and submission month. The SAR review target is set in the same bar.
-- **Everything opens details:**
-  - A card, slice, bar or decision opens the list of its documents.
+- **Click to filter:** a card, slice, bar, project or decision filters the whole page to what was clicked (for example
+  0214 + Under review). Ctrl + click adds to the selection; clicking the same thing again clears it.
+- **Details:**
+  - The package chart, the submissions-count chart and the lists open the list of their documents.
   - A document opens its own window: status as written, who acts next, days against the target, and the full
     submission history.
   - A project opens its own window: health and why, its decisions, packages and documents, and a button to filter the

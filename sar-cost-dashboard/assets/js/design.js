@@ -193,20 +193,20 @@
     M.projects.forEach(function (p) {
       var lab = p.code, mine = M.active.filter(function (d) { return d.src === p.src; });
       var lateDocs = mine.filter(function (d) { return d.late; });
-      if (p.late) out.push({ sev: p.oldest > M.target * 3 ? 3 : 2, who: "SAR", code: lab, src: p.src,
+      if (p.late) out.push({ kind: "late", sev: p.oldest > M.target * 3 ? 3 : 2, who: "SAR", code: lab, src: p.src,
         text: p.late + " document" + (p.late === 1 ? "" : "s") + " waiting on SAR review beyond " + M.target + " days (oldest " + p.oldest + " days).",
         act: "Expedite the SAR review — assign reviewers / hold a review workshop with the designer.", docs: lateDocs });
       var dd = mine.filter(function (d) { return d.k === "D"; }), cc = mine.filter(function (d) { return d.k === "C"; });
-      if (dd.length) out.push({ sev: 3, who: "Contractor", code: lab, src: p.src, text: dd.length + " submission" + (dd.length === 1 ? "" : "s") + " rejected (Code D).",
+      if (dd.length) out.push({ kind: "D", sev: 3, who: "Contractor", code: lab, src: p.src, text: dd.length + " submission" + (dd.length === 1 ? "" : "s") + " rejected (Code D).",
         act: "Escalate design quality with the contractor; agree a corrective plan and resubmission dates.", docs: dd });
-      if (cc.length) out.push({ sev: cc.length >= 5 || p.cdPct >= 0.4 ? 3 : 2, who: "Contractor", code: lab, src: p.src,
+      if (cc.length) out.push({ kind: "C", sev: cc.length >= 5 || p.cdPct >= 0.4 ? 3 : 2, who: "Contractor", code: lab, src: p.src,
         text: cc.length + " returned for revision (Code C) and not yet resubmitted.", act: "Get resubmission dates from the contractor and track them weekly.", docs: cc });
       var many = mine.filter(function (d) { return d.cycles >= 3 && !B[d.k].done; });
-      if (many.length) out.push({ sev: 2, who: "Both", code: lab, src: p.src, text: many.length + " document" + (many.length === 1 ? "" : "s") + " on a 3rd or later submission and still not approved.",
+      if (many.length) out.push({ kind: "many", sev: 2, who: "Both", code: lab, src: p.src, text: many.length + " document" + (many.length === 1 ? "" : "s") + " on a 3rd or later submission and still not approved.",
         act: "Hold a joint SAR–contractor meeting to close the open comments in one round.", docs: many });
-      if (p.ns && p.ns / p.n > 0.25) out.push({ sev: 1, who: "Contractor", code: lab, src: p.src, text: p.ns + " of " + p.n + " planned documents not submitted yet.",
+      if (p.ns && p.ns / p.n > 0.25) out.push({ kind: "NS", sev: 1, who: "Contractor", code: lab, src: p.src, text: p.ns + " of " + p.n + " planned documents not submitted yet.",
         act: "Ask for a submission schedule for the remaining documents.", docs: mine.filter(function (d) { return d.k === "NS"; }) });
-      if (p.nr) out.push({ sev: 1, who: "Report", code: lab, src: p.src, text: p.nr + " submitted document" + (p.nr === 1 ? " has" : "s have") + " no review status in the weekly report.",
+      if (p.nr) out.push({ kind: "NR", sev: 1, who: "Report", code: lab, src: p.src, text: p.nr + " submitted document" + (p.nr === 1 ? " has" : "s have") + " no review status in the weekly report.",
         act: "Ask the project team to complete the Status column.", docs: mine.filter(function (d) { return d.k === "NR"; }) });
     });
     return out.sort(function (a, b) { return b.sev - a.sev || a.code.localeCompare(b.code); });
@@ -221,6 +221,12 @@
   function rag(l) { return '<span class="ds-rag ds-' + l + '" title="' + l + '"></span>'; }
   function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
   function hand(e, els) { var t = e && e.native && e.native.target; if (t) t.style.cursor = els.length ? "pointer" : "default"; }
+  /* the segment under the pointer (bar charts report every segment of the bar, first one first) */
+  function hit(e, els, c) {
+    if (!c || !c.getElementsAtEventForMode) return els;
+    var h = c.getElementsAtEventForMode(e.native || e, "nearest", { intersect: true }, true);
+    return h.length ? h : els.length ? [] : els;
+  }
   function clickHint() { return "Click for the details"; }
   function bandsOf(target) {
     return [[0, target, "≤ " + target + " d"], [target + 1, 30, (target + 1) + "–30 d"], [31, 60, "31–60 d"], [61, 90, "61–90 d"], [91, 1e9, "> 90 d"]].filter(function (b) { return b[0] <= b[1]; });
@@ -335,11 +341,17 @@
       t.addEventListener("click", function () { var l = lists[i]; if (l.length === 1 && /Oldest/.test(titles[i])) docModal(l[0]); else listModal((scope ? scope + " · " : "") + titles[i], l); });
     });
   }
-  function decItem(x) {
+  /* the page filter that shows a decision's documents */
+  function decFilter(x, late) {
+    var u = function (k) { return [B[k].short]; };
+    return x.kind === "late" ? { proj: [x.code], status: u("UR"), age: late } : x.kind === "D" ? { proj: [x.code], status: u("D") } : x.kind === "C" ? { proj: [x.code], status: u("C") } :
+      x.kind === "NS" ? { proj: [x.code], status: u("NS") } : x.kind === "NR" ? { proj: [x.code], status: u("NR") } : { proj: [x.code] };
+  }
+  function decItem(x, onPick) {
     var li = el('<li class="ds-s' + x.sev + '"><div class="ds-dh"><span class="ds-who ds-w-' + x.who.toLowerCase() + '">' + esc(x.who === "Both" ? "SAR + Contractor" : x.who === "Report" ? "Data" : "Action: " + x.who) +
       '</span> <b>' + esc(x.code) + "</b> · " + esc(x.text) + '</div><div class="ds-act">→ ' + esc(x.act) + "</div></li>");
-    li.title = "Click for the documents";
-    li.addEventListener("click", function () { listModal(x.code + " — " + x.text, x.docs, x.act); });
+    li.title = onPick ? "Filter the page to these documents" : "Click for the documents";
+    li.addEventListener("click", function (e) { if (onPick) onPick(e); else listModal(x.code + " — " + x.text, x.docs, x.act); });
     return li;
   }
 
@@ -371,8 +383,21 @@
       var ts = U.select({ label: "SAR review target", value: String(st.target), options: [7, 14, 21, 28, 30, 45].map(function (n) { return { value: String(n), label: n + " days" }; }),
         onChange: function (x) { st.target = +x; ctx.rerender(); } });
       ts.classList.add("ds-tgt"); fbar.insertBefore(ts, fbar.querySelector(".filter-reset"));
-      var hint = fbar.querySelector(".chips .hint"); if (hint) hint.textContent = "Tip: filter here · click any card, slice, bar, project or document for its details";
+      var hint = fbar.querySelector(".chips .hint"); if (hint) hint.textContent = "Tip: click any card, slice, bar, project or decision to filter the whole page · Ctrl + click to add · click a document for its details";
     }
+    /* a click on a card, slice, bar, project or decision filters the whole page to it; Ctrl / ⌘ + click adds to the
+       selection; clicking the same thing again clears it */
+    function pick(patch, e) {
+      var ev = e && e.native ? e.native : e, more = ev && (ev.ctrlKey || ev.metaKey);
+      Object.keys(patch).forEach(function (key) {
+        var cur = f[key] || (f[key] = []), vals = patch[key];
+        if (more) vals.forEach(function (x) { var at = cur.indexOf(x); if (at < 0) cur.push(x); else cur.splice(at, 1); });
+        else { var same = cur.length === vals.length && vals.every(function (x) { return cur.indexOf(x) >= 0; }); cur.length = 0; if (!same) vals.forEach(function (x) { cur.push(x); }); }
+      });
+      ctx.rerender();
+    }
+    function S_(ks) { return ks.map(function (k) { return B[k].short; }); }
+    var late = bands.slice(1).map(function (b) { return b[2]; });
     var docs = K ? M.active.filter(function (d) { return K.passes(d, defs, f); }) : M.active;
     var A = agg(docs, M.target), S = A.T;
     var VM = { projects: A.projects, active: docs, target: M.target };
@@ -381,14 +406,14 @@
     var nF = defs.reduce(function (n, d) { return n + ((f[d.key] || []).length ? 1 : 0); }, 0);
     var scope = nF ? plural(docs.length, "document") + " match the filters" : "All " + M.projects.length + " projects";
 
-    var secs = [["ds-ov", "Overview"], ["ds-dec", "Decisions"], ["ds-sar", "SAR review"], ["ds-con", "Contractor"], ["ds-trend", "Trend"], ["ds-proj", "Projects"], ["ds-reg", "Register"]];
+    var secs = [["ds-ov", "Overview"], ["ds-proj", "Projects"], ["ds-dec", "Decisions"], ["ds-sar", "SAR review"], ["ds-con", "Contractor"], ["ds-trend", "Trend"], ["ds-reg", "Register"]];
     var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
     nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
     function sec(id, title, sub) { var h = K ? K.secHead(v, title, sub) : add(v, "<h3>" + esc(title) + "</h3>"); h.id = id; return h; }
     if (!docs.length) { add(v, '<div class="empty">No document matches the filters — use ↺ Reset filters.</div>'); return; }
 
     /* 1 · Overview */
-    sec("ds-ov", "Overview", esc(scope) + " · report date " + fmt.date(M.rd) + " · SAR review target " + M.target + " days · click any card, slice or bar for the details");
+    sec("ds-ov", "Overview", esc(scope) + " · report date " + fmt.date(M.rd) + " · SAR review target " + M.target + " days · click any card, slice or bar to filter the page");
     var g = add(v, '<div class="grid g-7"></div>');
     var oldestDoc = docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return b.age - a.age; })[0];
     g.innerHTML = U.tile({ value: S.n, label: "Design documents", note: (one ? one.code : A.projects.length + " projects") + " · latest revision of each" }) +
@@ -398,134 +423,65 @@
       U.tile({ value: S.cd, label: "Returned C / D", color: S.cd ? "yellow" : "slate", note: (S.c.D || 0) + " rejected · " + (S.c.C || 0) + " to revise" }) +
       U.tile({ value: S.ns, label: "Not submitted yet", color: "slate", note: S.nr ? S.nr + " submitted with no status" : "Planned in the register" }) +
       U.tile({ value: S.oldest || 0, unit: " days", label: "Oldest in SAR review", color: S.oldest > M.target * 2 ? "red" : "yellow", note: oldestDoc ? esc(oldestDoc.code + " · " + (oldestDoc.desc.length > 34 ? oldestDoc.desc.slice(0, 33) + "…" : oldestDoc.desc)) : "" });
-    tileClicks(g, [docs, docs.filter(isDone), docs.filter(function (d) { return d.k === "UR"; }), docs.filter(function (d) { return d.late; }),
-      docs.filter(function (d) { return d.k === "C" || d.k === "D"; }), docs.filter(function (d) { return d.k === "NS" || d.k === "NR"; }), oldestDoc ? [oldestDoc] : null],
-      ["All documents", "Approved", "Under SAR review", "Beyond the " + M.target + "-day review target", "Returned C / D", "Not submitted / no status", "Oldest in review"]);
+    var tf = [function () { pick({ status: [], age: [], month: [] }); }, { status: S_(["A", "AP", "B"]) }, { status: S_(["UR"]) }, { status: S_(["UR"]), age: late },
+      { status: S_(["C", "D"]) }, { status: S_(["NS", "NR"]) }, null];
+    Array.prototype.forEach.call(g.children, function (t, i) {
+      t.classList.add("ds-click");
+      if (i === 6) { t.title = "Open the oldest document"; if (oldestDoc) t.addEventListener("click", function () { docModal(oldestDoc); }); return; }
+      t.title = i ? "Filter the page to these documents" : "Clear the status / days / month filters";
+      t.addEventListener("click", function (e) { if (typeof tf[i] === "function") tf[i](); else pick(tf[i], e); });
+    });
     var g1 = add(v, '<div class="grid g-2"></div>');
     // status mix (doughnut) · who has the ball (bar)
-    var p1 = panel(g1, "Status mix", "Latest status of each document · click a slice");
+    var p1 = panel(g1, "Status mix", "Latest status of each document · click a slice to filter the page");
     var b1 = add(p1, '<div class="chart-box"></div>'), ks = ORDER.filter(function (k) { return S.c[k]; });
     U.chart(b1, { type: "doughnut", data: { labels: ks.map(function (k) { return B[k].short; }), datasets: [{ data: ks.map(function (k) { return S.c[k]; }), backgroundColor: ks.map(function (k) { return B[k].color; }), borderColor: "#fff", borderWidth: 2 }] },
       options: { cutout: "58%", plugins: { legend: { position: "right" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] / S.n >= 0.04; }, color: function (c) { return /UR|C|NR/.test(ks[c.dataIndex]) ? C.black : "#fff"; }, font: { weight: "700" } },
         tooltip: { callbacks: { label: function (c) { return " " + c.label + ": " + c.parsed + " (" + Math.round(c.parsed / S.n * 100) + "%)"; }, footer: clickHint } } },
-        onHover: hand, onClick: function (e, els) { if (els.length) { var k = ks[els[0].index]; listModal(B[k].label, docs.filter(function (d) { return d.k === k; })); } } } });
+        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ status: [B[ks[els[0].index]].short] }, e); } } });
     var owners = ["SAR", "Contractor", "Project team (data)", "Done"], oc = { SAR: C.mid, Contractor: C.yellow, "Project team (data)": C.gray, Done: C.blue };
-    var p2 = panel(g1, "Who has to act", "Documents by whose court the ball is in · click a bar");
+    var p2 = panel(g1, "Who has to act", "Documents by whose court the ball is in · click a bar to filter the page");
     var b2 = add(p2, '<div class="chart-box"></div>');
     U.chart(b2, { type: "bar", data: { labels: owners, datasets: [U.barDs("Documents", owners.map(function (o) { return docs.filter(function (d) { return owner(d) === o; }).length; }), owners.map(function (o) { return oc[o]; }), { maxBarThickness: 60 })] },
       options: { plugins: { legend: { display: false }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } }, layout: { padding: { top: 20 } },
-        onHover: hand, onClick: function (e, els) { if (els.length) { var o = owners[els[0].index]; listModal("With " + o, docs.filter(function (d) { return owner(d) === o; }), o === "SAR" ? NEXT.UR : o === "Contractor" ? "Contractor to resubmit / submit." : ""); } },
+        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ status: S_({ SAR: ["UR"], Contractor: ["C", "D", "NS"], "Project team (data)": ["NR"], Done: ["A", "AP", "B"] }[owners[els[0].index]]) }, e); },
         scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } } } });
 
-    /* 2 · Decisions */
-    var dec = decisions(VM);
-    sec("ds-dec", "Decisions needed", dec.length ? plural(dec.length, "item") + " · red = act now · click an item for its documents" : "nothing to decide");
-    var dp = add(v, '<section class="panel"></section>');
-    if (!dec.length) add(dp, '<div class="note-box ok">No design item needs a management decision — everything is approved or within the review target.</div>');
-    else {
-      var ul = add(dp, '<ol class="ds-dec"></ol>'), lim = st.decAll ? dec.length : 10;
-      dec.slice(0, lim).forEach(function (x) { ul.appendChild(decItem(x)); });
-      if (dec.length > 10) { var mb = add(dp, '<button type="button" class="link-btn ds-more">' + (st.decAll ? "Show fewer ▴" : "Show all " + dec.length + " ▾") + "</button>"); mb.addEventListener("click", function () { st.decAll = !st.decAll; ctx.rerender(); }); }
-    }
-
-    /* 3 · SAR review */
-    var urs = docs.filter(function (d) { return d.k === "UR" && d.age != null; });
-    sec("ds-sar", "SAR review", plural(urs.length, "document") + " waiting on SAR · " + S.late + " beyond " + M.target + " days · average " + (S.avgUr == null ? "—" : S.avgUr + " days"));
-    var g3 = add(v, '<div class="grid g-2"></div>');
-    var p3 = panel(g3, "How long documents wait for SAR review", "Days since submission at the report date · click a bar");
-    var b3 = add(p3, '<div class="chart-box"></div>');
-    var urP = A.projects.filter(function (p) { return p.ur; });
-    U.chart(b3, { type: "bar", data: { labels: bands.map(function (b) { return b[2]; }), datasets: urP.map(function (p, i) {
-        return U.barDs(p.code, bands.map(function (b) { return urs.filter(function (d) { return d.src === p.src && d.age >= b[0] && d.age <= b[1]; }).length; }), PAL[i % PAL.length], { stack: "a", maxBarThickness: 46 }); }) },
-      options: { plugins: { legend: { position: "bottom", display: urP.length > 1 }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-        onHover: hand, onClick: function (e, els) { if (!els.length) return; var b = bands[els[0].index];
-          var l = urs.filter(function (d) { return d.age >= b[0] && d.age <= b[1]; }).sort(function (x, y) { return y.age - x.age; });
-          listModal("Under SAR review " + b[2].replace(/ d$/, " days"), l, NEXT.UR); },
-        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
-    var p4 = panel(g3, "Review time by project", "Average and oldest days in SAR review · the line is the " + M.target + "-day target · click a bar");
-    var b4 = add(p4, '<div class="chart-box"></div>'); b4.style.height = Math.max(240, urP.length * 38 + 70) + "px";
-    U.chart(b4, { type: "bar", data: { labels: urP.map(function (p) { return p.code; }), datasets: [
-        U.barDs("Average days", urP.map(function (p) { return p.avgUr; }), C.mid, { maxBarThickness: 16 }), U.barDs("Oldest days", urP.map(function (p) { return p.oldest; }), C.blue, { maxBarThickness: 16 })] },
-      options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
-        layout: { padding: { right: 30 } }, onHover: hand,
-        onClick: function (e, els) { if (els.length) { var p = urP[els[0].index]; listModal(p.code + " · under SAR review", urs.filter(function (d) { return d.src === p.src; }).sort(function (a, b) { return b.age - a.age; }), NEXT.UR); } },
-        scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: function (c) { return c.tick && c.tick.value === M.target ? C.red : "rgba(200,201,199,.5)"; }, lineWidth: function (c) { return c.tick && c.tick.value === M.target ? 2 : 1; } },
-          afterBuildTicks: function (ax) { if (!ax.ticks.some(function (t) { return t.value === M.target; })) { ax.ticks.push({ value: M.target }); ax.ticks.sort(function (a, b) { return a.value - b.value; }); } } }, y: { grid: { display: false } } } } });
-    listPanel(v, "Waiting on SAR — longest first", docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return (b.age || 0) - (a.age || 0); }), true);
-
-    /* 4 · Contractor */
-    var con = docs.filter(function (d) { return d.k === "C" || d.k === "D" || d.k === "NS"; });
-    sec("ds-con", "Contractor", plural(S.cd, "document") + " returned C / D · " + S.ns + " not submitted · " + plural(docs.filter(function (d) { return d.cycles > 1; }).length, "document") + " resubmitted");
-    var g4 = add(v, '<div class="grid g-2"></div>');
-    var cp = A.projects.filter(function (p) { return p.cd || p.ns; }), ck = ["D", "C", "NS"];
-    var p5 = panel(g4, "Returned and not submitted, by project", "Click a bar");
-    var b5 = add(p5, '<div class="chart-box"></div>'); b5.style.height = Math.max(240, cp.length * 34 + 70) + "px";
-    U.chart(b5, { type: "bar", data: { labels: cp.map(function (p) { return p.code; }), datasets: ck.map(function (k) { return U.barDs(B[k].short, cp.map(function (p) { return p.c[k] || 0; }), B[k].color, { stack: "c", maxBarThickness: 22 }); }) },
-      options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] > 0; }, color: function (c) { return c.datasetIndex === 1 ? C.black : "#fff"; }, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
-        onHover: hand, onClick: function (e, els) { if (!els.length) return; var p = cp[els[0].index], k = ck[els[0].datasetIndex];
-          var l = docs.filter(function (d) { return d.src === p.src && d.k === k; }); listModal(p.code + " · " + B[k].label, l.length ? l : docs.filter(function (d) { return d.src === p.src && ck.indexOf(d.k) >= 0; }), NEXT[k]); },
-        scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false } } } } });
-    var cyc = ["1", "2", "3", "4+"], cycOf = function (d) { return d.cycles >= 4 ? "4+" : String(d.cycles); };
-    var subd = docs.filter(function (d) { return d.cycles > 0; });
-    var p6 = panel(g4, "Submissions needed per document", "How many times each document has been submitted · coloured by today's status · click a bar");
-    var b6 = add(p6, '<div class="chart-box"></div>');
-    U.chart(b6, { type: "bar", data: { labels: cyc.map(function (c) { return c === "1" ? "1st submission" : c === "4+" ? "4 or more" : c + " submissions"; }), datasets: ORDER.filter(function (k) { return k !== "NS"; }).map(function (k) {
-        return U.barDs(B[k].short, cyc.map(function (c) { return subd.filter(function (d) { return d.k === k && cycOf(d) === c; }).length; }), B[k].color, { stack: "y", maxBarThickness: 60 }); }) },
-      options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-        onHover: hand, onClick: function (e, els) { if (!els.length) return; var c = cyc[els[0].index]; listModal("Documents on " + (c === "1" ? "their 1st submission" : c + " submissions"), subd.filter(function (d) { return cycOf(d) === c; })); },
-        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
-    listPanel(v, "Waiting on the contractor — rejected first", con.filter(function (d) { return d.k !== "NS"; }).sort(function (a, b) { return RANK[a.k] - RANK[b.k] || (b.age || 0) - (a.age || 0); }), false);
-
-    /* 5 · Trend */
-    var ms = U.uniq(docs.map(function (d) { return d.sub ? d.sub.slice(0, 7) : ""; }).filter(Boolean)).sort().slice(-18);
-    sec("ds-trend", "Trend", "Submissions per month by month of the latest submission, coloured by today's status");
-    if (ms.length) {
-      var p7 = panel(v, "Submissions per month", "Last 18 months · click a bar");
-      var b7 = add(p7, '<div class="chart-box short"></div>'), mk = ORDER.filter(function (k) { return k !== "NS"; });
-      U.chart(b7, { type: "bar", data: { labels: ms.map(function (m) { return fmt.month(m + "-01"); }), datasets: mk.map(function (k) {
-          return U.barDs(B[k].short, ms.map(function (m) { return docs.filter(function (d) { return d.k === k && d.sub && d.sub.slice(0, 7) === m; }).length; }), B[k].color, { stack: "m", maxBarThickness: 40 }); }) },
-        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-          onHover: hand, onClick: function (e, els) { if (!els.length) return; var m = ms[els[0].index], k = mk[els[0].datasetIndex];
-            var all = docs.filter(function (d) { return d.sub && d.sub.slice(0, 7) === m; }), l = all.filter(function (d) { return d.k === k; });
-            listModal("Submitted " + fmt.month(m + "-01") + (l.length ? " · " + B[k].short : ""), l.length ? l : all); },
-          scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
-    } else add(v, '<div class="empty-note">No submission dates in the filtered documents.</div>');
-
-    /* 6 · Projects */
+    /* 2 · Projects */
     sec("ds-proj", "Projects", plural(A.projects.length, "project") + " · health: red = a quarter or more of submissions returned C / D or 3+ in review beyond twice the target · amber = any C / D, review beyond target or > 25% not submitted");
     var g6 = add(v, '<div class="grid g-2-1"></div>');
     if (one) {
       var cats = Object.keys(one.cats).sort();
-      var p8 = panel(g6, "Status by package / category", one.code + " · click a bar");
+      var p8 = panel(g6, "Status by package / category", one.code + " · click a bar for its documents");
       var b8 = add(p8, '<div class="chart-box"></div>'); b8.style.height = Math.max(240, cats.length * 30 + 70) + "px";
       U.chart(b8, { type: "bar", data: { labels: cats.map(function (c) { return U.wrapLabel ? U.wrapLabel(c, 34) : c; }), datasets: ORDER.map(function (k) {
           return U.barDs(B[k].short, cats.map(function (c) { return one.cats[c].c[k] || 0; }), B[k].color, { stack: "s", maxBarThickness: 22 }); }) },
         options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
-          onHover: hand, onClick: function (e, els) { if (!els.length) return; var c = cats[els[0].index], k = ORDER[els[0].datasetIndex];
+          onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (!els.length) return; var c = cats[els[0].index], k = ORDER[els[0].datasetIndex];
             var all = docs.filter(function (d) { return (d.cat || "—") === c; }), l = all.filter(function (d) { return d.k === k; });
             listModal(one.code + " · " + c + (l.length ? " · " + B[k].short : ""), l.length ? l : all); },
           scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } } } } });
     } else {
-      var p9 = panel(g6, "Design status by project", "Latest revision of each document · click a bar for the project");
+      var p9 = panel(g6, "Design status by project", "Latest revision of each document · click a bar to filter the page to that project and status · Ctrl + click to add");
       var b9 = add(p9, '<div class="chart-box"></div>'); b9.style.height = Math.max(240, A.projects.length * 34 + 70) + "px";
       U.chart(b9, { type: "bar", data: { labels: A.projects.map(function (p) { return p.code; }), datasets: ORDER.map(function (k) {
           return U.barDs(B[k].short, A.projects.map(function (p) { return p.c[k] || 0; }), B[k].color, { stack: "s", maxBarThickness: 22 }); }) },
         options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] >= 3; }, color: function (c) { return /Under|Revise|No status/.test(c.dataset.label) ? C.black : "#fff"; }, font: { weight: "700", size: 10 } }, tooltip: { callbacks: { footer: clickHint } } },
           scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(200,201,199,.5)" } }, y: { stacked: true, grid: { display: false } } },
-          onHover: hand, onClick: function (e, els) { if (els.length) projModal(A.projects[els[0].index].src); } } });
+          onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ proj: [A.projects[els[0].index].code], status: [B[ORDER[els[0].datasetIndex]].short] }, e); } } });
     }
     // health summary next to the chart
-    var hp = panel(g6, "Design health", "Click a project");
+    var hp = panel(g6, "Design health", "Click a project to filter the page");
     var hc = { red: [], amber: [], green: [] }; M.projects.forEach(function (p) { if (A.projects.some(function (x) { return x.src === p.src; })) hc[p.health.lvl].push(p); });
     ["red", "amber", "green"].forEach(function (l) {
       if (!hc[l].length) return;
       var box = add(hp, '<div class="ds-hl"><div class="ds-hlh">' + rag(l) + " <b>" + l.charAt(0).toUpperCase() + l.slice(1) + "</b> · " + hc[l].length + "</div></div>");
       hc[l].forEach(function (p) {
         var it = add(box, '<button type="button" class="ds-hp"><b>' + esc(p.code) + "</b> " + esc(p.name || "") + '<span class="muted">' + esc(p.health.why.join("; ") || "On track") + "</span></button>");
-        it.addEventListener("click", function () { projModal(p.src); });
+        it.addEventListener("click", function (e) { pick({ proj: [p.code] }, e); });
       });
     });
-    var p10 = panel(v, "Project design scorecard", "Figures for the filtered documents · health for the whole project · click a row for the project");
+    var p10 = panel(v, "Project design scorecard", "Figures for the filtered documents · health for the whole project · click a row to filter the page · Details opens the project");
     U.table(p10, { rows: A.projects, exportName: "NSR design scorecard " + M.rd, search: false, sort: null,
       columns: [
         { label: "", get: function (p) { var h = hOf(M, p.src); return { red: 0, amber: 1, green: 2 }[h.lvl]; }, render: function (_, p) { return rag(hOf(M, p.src).lvl); } },
@@ -539,9 +495,81 @@
         { label: "C / D", key: "cd", type: "int", render: function (x) { return x ? '<b class="neg">' + x + "</b>" : "0"; } },
         { label: "Not submitted", key: "ns", type: "int" },
         { label: "Resubmitted", key: "resub", type: "int" },
-        { label: "Why", get: function (p) { return hOf(M, p.src).why.join("; "); }, render: function (x) { return '<span class="ds-why">' + esc(x || "On track") + "</span>"; } }
+        { label: "Why", get: function (p) { return hOf(M, p.src).why.join("; "); }, render: function (x) { return '<span class="ds-why">' + esc(x || "On track") + "</span>"; } },
+        { label: "", get: function () { return ""; }, render: function () { return '<button type="button" class="link-btn ds-det">Details ›</button>'; } }
       ],
-      onRow: function (p) { projModal(p.src); }, rowTitle: "Open this project's design status" });
+      onRow: function (p, e) { if (e && e.target && e.target.closest && e.target.closest(".ds-det")) { projModal(p.src); return; } pick({ proj: [p.code] }, e); },
+      rowTitle: "Filter the page to this project · “Details” opens the project" });
+
+    /* 3 · Decisions */
+    var dec = decisions(VM);
+    sec("ds-dec", "Decisions needed", dec.length ? plural(dec.length, "item") + " · red = act now · click an item to filter the page to its documents" : "nothing to decide");
+    var dp = add(v, '<section class="panel"></section>');
+    if (!dec.length) add(dp, '<div class="note-box ok">No design item needs a management decision — everything is approved or within the review target.</div>');
+    else {
+      var ul = add(dp, '<ol class="ds-dec"></ol>'), lim = st.decAll ? dec.length : 10;
+      dec.slice(0, lim).forEach(function (x) { ul.appendChild(decItem(x, function (e) { pick(decFilter(x, late), e); })); });
+      if (dec.length > 10) { var mb = add(dp, '<button type="button" class="link-btn ds-more">' + (st.decAll ? "Show fewer ▴" : "Show all " + dec.length + " ▾") + "</button>"); mb.addEventListener("click", function () { st.decAll = !st.decAll; ctx.rerender(); }); }
+    }
+
+    /* 4 · SAR review */
+    var urs = docs.filter(function (d) { return d.k === "UR" && d.age != null; });
+    sec("ds-sar", "SAR review", plural(urs.length, "document") + " waiting on SAR · " + S.late + " beyond " + M.target + " days · average " + (S.avgUr == null ? "—" : S.avgUr + " days"));
+    var g3 = add(v, '<div class="grid g-2"></div>');
+    var p3 = panel(g3, "How long documents wait for SAR review", "Days since submission at the report date · click a bar to filter the page");
+    var b3 = add(p3, '<div class="chart-box"></div>');
+    var urP = A.projects.filter(function (p) { return p.ur; });
+    U.chart(b3, { type: "bar", data: { labels: bands.map(function (b) { return b[2]; }), datasets: urP.map(function (p, i) {
+        return U.barDs(p.code, bands.map(function (b) { return urs.filter(function (d) { return d.src === p.src && d.age >= b[0] && d.age <= b[1]; }).length; }), PAL[i % PAL.length], { stack: "a", maxBarThickness: 46 }); }) },
+      options: { plugins: { legend: { position: "bottom", display: urP.length > 1 }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
+        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (!els.length) return; var b = bands[els[0].index], pp = urP[els[0].datasetIndex];
+          pick(urP.length > 1 ? { age: [b[2]], proj: [pp.code] } : { age: [b[2]] }, e); },
+        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
+    var p4 = panel(g3, "Review time by project", "Average and oldest days in SAR review · the line is the " + M.target + "-day target · click a bar to filter the page");
+    var b4 = add(p4, '<div class="chart-box"></div>'); b4.style.height = Math.max(240, urP.length * 38 + 70) + "px";
+    U.chart(b4, { type: "bar", data: { labels: urP.map(function (p) { return p.code; }), datasets: [
+        U.barDs("Average days", urP.map(function (p) { return p.avgUr; }), C.mid, { maxBarThickness: 16 }), U.barDs("Oldest days", urP.map(function (p) { return p.oldest; }), C.blue, { maxBarThickness: 16 })] },
+      options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
+        layout: { padding: { right: 30 } }, onHover: hand,
+        onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ proj: [urP[els[0].index].code], status: S_(["UR"]) }, e); },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: function (c) { return c.tick && c.tick.value === M.target ? C.red : "rgba(200,201,199,.5)"; }, lineWidth: function (c) { return c.tick && c.tick.value === M.target ? 2 : 1; } },
+          afterBuildTicks: function (ax) { if (!ax.ticks.some(function (t) { return t.value === M.target; })) { ax.ticks.push({ value: M.target }); ax.ticks.sort(function (a, b) { return a.value - b.value; }); } } }, y: { grid: { display: false } } } } });
+    listPanel(v, "Waiting on SAR — longest first", docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return (b.age || 0) - (a.age || 0); }), true);
+
+    /* 5 · Contractor */
+    var con = docs.filter(function (d) { return d.k === "C" || d.k === "D" || d.k === "NS"; });
+    sec("ds-con", "Contractor", plural(S.cd, "document") + " returned C / D · " + S.ns + " not submitted · " + plural(docs.filter(function (d) { return d.cycles > 1; }).length, "document") + " resubmitted");
+    var g4 = add(v, '<div class="grid g-2"></div>');
+    var cp = A.projects.filter(function (p) { return p.cd || p.ns; }), ck = ["D", "C", "NS"];
+    var p5 = panel(g4, "Returned and not submitted, by project", "Click a bar");
+    var b5 = add(p5, '<div class="chart-box"></div>'); b5.style.height = Math.max(240, cp.length * 34 + 70) + "px";
+    U.chart(b5, { type: "bar", data: { labels: cp.map(function (p) { return p.code; }), datasets: ck.map(function (k) { return U.barDs(B[k].short, cp.map(function (p) { return p.c[k] || 0; }), B[k].color, { stack: "c", maxBarThickness: 22 }); }) },
+      options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] > 0; }, color: function (c) { return c.datasetIndex === 1 ? C.black : "#fff"; }, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
+        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ proj: [cp[els[0].index].code], status: [B[ck[els[0].datasetIndex]].short] }, e); },
+        scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false } } } } });
+    var cyc = ["1", "2", "3", "4+"], cycOf = function (d) { return d.cycles >= 4 ? "4+" : String(d.cycles); };
+    var subd = docs.filter(function (d) { return d.cycles > 0; });
+    var p6 = panel(g4, "Submissions needed per document", "How many times each document has been submitted · coloured by today's status · click a bar for its documents");
+    var b6 = add(p6, '<div class="chart-box"></div>');
+    U.chart(b6, { type: "bar", data: { labels: cyc.map(function (c) { return c === "1" ? "1st submission" : c === "4+" ? "4 or more" : c + " submissions"; }), datasets: ORDER.filter(function (k) { return k !== "NS"; }).map(function (k) {
+        return U.barDs(B[k].short, cyc.map(function (c) { return subd.filter(function (d) { return d.k === k && cycOf(d) === c; }).length; }), B[k].color, { stack: "y", maxBarThickness: 60 }); }) },
+      options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
+        onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (!els.length) return; var c = cyc[els[0].index]; listModal("Documents on " + (c === "1" ? "their 1st submission" : c + " submissions"), subd.filter(function (d) { return cycOf(d) === c; })); },
+        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
+    listPanel(v, "Waiting on the contractor — rejected first", con.filter(function (d) { return d.k !== "NS"; }).sort(function (a, b) { return RANK[a.k] - RANK[b.k] || (b.age || 0) - (a.age || 0); }), false);
+
+    /* 6 · Trend */
+    var ms = U.uniq(docs.map(function (d) { return d.sub ? d.sub.slice(0, 7) : ""; }).filter(Boolean)).sort().slice(-18);
+    sec("ds-trend", "Trend", "Submissions per month by month of the latest submission, coloured by today's status");
+    if (ms.length) {
+      var p7 = panel(v, "Submissions per month", "Last 18 months · click a bar to filter the page");
+      var b7 = add(p7, '<div class="chart-box short"></div>'), mk = ORDER.filter(function (k) { return k !== "NS"; });
+      U.chart(b7, { type: "bar", data: { labels: ms.map(function (m) { return fmt.month(m + "-01"); }), datasets: mk.map(function (k) {
+          return U.barDs(B[k].short, ms.map(function (m) { return docs.filter(function (d) { return d.k === k && d.sub && d.sub.slice(0, 7) === m; }).length; }), B[k].color, { stack: "m", maxBarThickness: 40 }); }) },
+        options: { plugins: { legend: { position: "bottom" }, datalabels: { display: false }, tooltip: { callbacks: { footer: clickHint } } },
+          onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ month: [ms[els[0].index] + "-01"], status: [B[mk[els[0].datasetIndex]].short] }, e); },
+          scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
+    } else add(v, '<div class="empty-note">No submission dates in the filtered documents.</div>');
 
     /* 7 · Register */
     sec("ds-reg", "Document register", plural(docs.length, "document") + " · latest revision of each" + (M.superseded ? " · " + M.superseded + " superseded / cancelled / resubmitted not counted" : "") + " · click a row for the document and its history");

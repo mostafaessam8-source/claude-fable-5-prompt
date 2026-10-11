@@ -56,7 +56,7 @@ How mixed wording is read:
   - submitted with no status
 
 ## Layout
-- **Sections:** `sec-nav` + `secHead`, ids `ds-ov`, `ds-dec`, `ds-sar`, `ds-con`, `ds-trend`, `ds-proj`, `ds-reg`.
+- **Sections:** `sec-nav` + `secHead`, ids `ds-ov`, `ds-proj`, `ds-dec`, `ds-sar`, `ds-con`, `ds-trend`, `ds-reg`. Projects is the 2nd section (user's choice).
 - **Filter bar:** the shared sticky slicer bar from pages.js (`SARPages._kit.filterBar` / `passes`). The SAR review
   target select is added into it.
 - **Filters:** project, status, days band and submission month. The package, who-acts, health and submissions filters
@@ -67,6 +67,30 @@ How mixed wording is read:
   - `docModal`: one document with its submission history, including documents closed by a resubmission.
   - `projModal`: tiles, health, decisions, packages, documents, and "Filter the page to …".
   - Windows stack; Escape closes the top one only (ui.js `modal`).
+
+## Click = filter the page
+- `pick(patch, e)` sets the page filters (`f.proj` / `status` / `age` / `month`) to what was clicked. Ctrl / ⌘ + click
+  adds or removes values; clicking the same thing again clears it.
+- What filters the page:
+  - overview cards
+  - status doughnut
+  - who-acts bars
+  - project chart (project + status)
+  - review-ageing bars (band + project)
+  - review time by project
+  - contractor chart (project + status)
+  - month bars (month + status)
+  - health items
+  - scorecard rows
+  - decisions (`decFilter`)
+- What opens details instead:
+  - the oldest-in-review card
+  - document lists and rows
+  - the package chart (one project)
+  - the submissions-count chart
+  - the scorecard "Details ›" button
+- **Bar clicks:** use `hit(e, els, c)` to get the segment under the pointer. Chart.js bar charts report every segment of
+  the bar, first one first.
 
 ## Charts
 - Every bar is clickable and opens `docModal`, a summary line plus the document table.
