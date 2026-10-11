@@ -33,7 +33,7 @@ Every change recomputes the plan and the forecast and updates the table, the Gan
 exported to Excel. *Set the lag to keep the start I opened it with* re-links without moving the date; *Unlink* and *Link another
 activity* also keep the date (they set the lag for you; change it to 0 to make the activity follow). A predecessor must be an
 earlier activity (smaller number). Esc closes the panel.
-**On a phone / tablet (touch or narrow screen) the panel does not open by itself**: tapping an activity only selects it, and the amber **Activity ▸ #n** button in the top bar opens the panel (✕ / Esc close it, the selection stays).
+**On every screen the panel does not open by itself**: tapping an activity only selects it, and the amber **Activity ▸ #n** button in the top bar opens the panel (✕ / Esc close it, the selection stays).
 
 ## Editing on the Gantt
 The **planned (P) bar** of each activity can be edited directly (screen only; the ruler follows the pointer):

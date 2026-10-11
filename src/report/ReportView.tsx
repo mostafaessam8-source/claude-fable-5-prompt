@@ -15,10 +15,9 @@ export const PAGE_H = 794
 
 export type Selected = { loc: number; no: number; tab: PanelTab }
 
-/** touch / narrow screens: the details panel opens only from the button in the top bar */
+/** The details panel opens only from the button in the top bar (never by itself when a row is clicked / tapped). */
 export function useManualPanel() {
-  const narrow = useNarrow()
-  return narrow || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
+  return true
 }
 
 export function ReportView({ result, layouts, project, onChange, showLinks = true, selected, setSelected, panelOpen, setPanelOpen }: {
