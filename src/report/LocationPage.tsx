@@ -84,6 +84,11 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const cx = (c0: number) => tracks.slice(0, gs(c0 + 1) - 1).reduce((a, b) => a + b, 0) // left edge of logical column c0
   const cw = (c0: number) => cols[c0] * subs(c0)
   const TABLE_W = tracks.reduce((a, b) => a + b, 0)
+  // the Predecessors / Successors columns: "3FS+2, 5SS" (activity number, type, lag in hours)
+  const succsOf = new Map<number, { no: number; rel: string; lagH: number }[]>()
+  loc.activities.forEach((x) => x.links.forEach((l) => { if (!l.bad) succsOf.set(l.pred, [...(succsOf.get(l.pred) ?? []), { no: x.no, rel: l.rel, lagH: l.lagH }]) }))
+  const relText = (ls: { no: number; rel: string; lagH: number }[]) => ls.map((l) => `${l.no}${l.rel}${l.lagH ? `${l.lagH > 0 ? '+' : ''}${Math.round(l.lagH * 100) / 100}h` : ''}`).join(', ')
+  const relStyle: CSSProperties = { fontSize: 7, lineHeight: 1.1, overflow: 'hidden', padding: '0 2px', textAlign: 'center', color: C.black }
   const PAGE_X = pageWidth(s.tableCols, range)
   const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
@@ -332,7 +337,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     const texts: string[] = [COL_NAMES[c].split(' ').sort((a, b) => b.length - a.length)[0]]
     for (const a of loc.activities) {
       const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
-      texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), a.remarks][c])
+      texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), relText(a.links.filter((l) => !l.bad).map((l) => ({ no: l.pred, rel: l.rel, lagH: l.lagH }))), relText(succsOf.get(a.no) ?? []), a.remarks][c])
     }
     const w = Math.max(...texts.map((t) => textWidth(t, font))) + 12
     return Math.round(Math.min(MAX_COL, Math.max(MIN_COL, w)))
@@ -422,7 +427,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       }
     } else if (c === 10) {
       if (v === '') patch({ pct: null }); else if (ok) patch({ pct: Math.min(1, Math.max(0, num / 100)) })
-    } else if (c === 11) { if (v !== a.remarks) patch({ remarks: v }) }
+    } else if (c === 13) { if (v !== a.remarks) patch({ remarks: v }) }
   }
 
   return (
@@ -610,7 +615,9 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: click and type 0 – 100', 0, true),
-              ed(11, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[10], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
+              span(11, relStyle, relText(a.links.filter((l) => !l.bad).map((l) => ({ no: l.pred, rel: l.rel, lagH: l.lagH }))), { title: 'Predecessors: #activity, type, lag. Open Links ▸ in the top bar to change them' }),
+              span(12, relStyle, relText(succsOf.get(a.no) ?? []), { title: 'Successors: the activities that follow this one' }),
+              ed(13, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[12], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
           {/* total row */}
@@ -635,6 +642,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               t(9, { color: C.slate }, pct(loc.planPct)),
               t(10, { color: C.blue }, pct(loc.actualPct)),
               t(11, {}, ''),
+              t(12, {}, ''),
+              t(13, {}, ''),
             ]
           })()}
         </div>

@@ -33,8 +33,9 @@ export function writeReport(wb: ExcelJS.Workbook, project: Project, layouts: Sit
   // the widths dragged on the site's report table carry over (as a ratio of the defaults): app column -> Excel column
   const dragged = project.settings.tableCols ? tableColsOf(project.settings.tableCols) : undefined
   if (dragged) {
-    const excelCol = [1, 2, 3, R.DUR_BL, R.DUR_ACT, 4, 5, 6, 7, 8, R.REMARKS] // No, Activity, Status, Dur BL, Dur Actual, Planned, Forecast, Variance, Plan %, Act. %, Remarks
+    const excelCol = [1, 2, 3, R.DUR_BL, R.DUR_ACT, 4, 5, 6, 7, 8, 0, 0, R.REMARKS] // No, Activity, Status, Dur BL, Dur Actual, Planned, Forecast, Variance, Plan %, Act. %, (Predecessors, Successors: not in the workbook), Remarks
     dragged.forEach((px, i) => {
+      if (!excelCol[i]) return
       const w = Math.max(2.5, Math.round(WIDTHS[excelCol[i] - 1] * (px / DEFAULT_COLS[i]) * 10) / 10)
       ws.getColumn(excelCol[i]).width = w === 9 ? 9.001 : w // Excel drops a width of exactly 9 on load
     })
