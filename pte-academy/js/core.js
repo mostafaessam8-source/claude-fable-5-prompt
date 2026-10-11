@@ -312,6 +312,7 @@
         b.classList.add(ok ? "good" : "bad");
         if (!ok) { const rr = check.correctIndex !== undefined ? check.correctIndex : null; if (rr !== null) wrap.children[rr].classList.add("good"); }
         ok ? PTE.ding() : PTE.buzz();
+        if (ok && PTE.fx) { PTE.fx.spark(PTE.fx.pointer.x, PTE.fx.pointer.y, 10); PTE.fx.pop(b); }
         after && after(ok, i);
       } }, o);
       wrap.appendChild(b);
@@ -346,6 +347,7 @@
     const name = parts[0] || "home";
     const main = document.getElementById("main");
     tts.cancel();
+    PTE.fx && PTE.fx.cleanup();
     if (PTE.onLeave) { try { PTE.onLeave(); } catch (e) { /* noop */ } PTE.onLeave = null; }
     PTE.clear(main);
     const view = PTE.views[name];
@@ -360,6 +362,7 @@
     }
     window.scrollTo(0, 0);
     PTE.refreshChrome();
+    PTE.fx && PTE.fx.enhance(main);
     const nm = document.getElementById("morepanel"); if (nm) nm.classList.remove("open");
   };
 
@@ -374,12 +377,13 @@
       const n = NAV.find((x) => x[0] === m);
       bottom.appendChild(h("a", { href: m, class: "bnav", "data-nav": m }, h("span", null, n[1]), h("em", null, n[2])));
     });
-    const mp = h("div", { id: "morepanel" }, NAV.filter((n) => MOBILE.indexOf(n[0]) < 0).map((n) => h("a", { href: n[0], class: "morelink" }, h("span", null, n[1]), h("span", null, n[2], h("small", { dir: "rtl" }, n[3])))));
+    const mp = h("div", { id: "morepanel", "data-lenis-prevent": "" }, NAV.filter((n) => MOBILE.indexOf(n[0]) < 0).map((n) => h("a", { href: n[0], class: "morelink" }, h("span", null, n[1]), h("span", null, n[2], h("small", { dir: "rtl" }, n[3])))));
     document.body.appendChild(mp);
   };
 
   PTE.boot = function () {
     tts.load();
+    PTE.fx && PTE.fx.init();
     PTE.buildChrome();
     window.addEventListener("hashchange", PTE.route);
     PTE.route();

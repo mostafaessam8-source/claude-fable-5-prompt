@@ -236,6 +236,7 @@
       h("label", null, "Arabic voice " + (ar.length ? "" : "(none found on this device — Arabic is shown as text)"), vsel(ar, s.voiceAr, "voiceAr")),
       h("label", null, "Speech speed · سرعة الصوت: " + s.rate, h("input", { type: "range", min: "0.6", max: "1.3", step: "0.05", value: s.rate, oninput: (e) => { s.rate = parseFloat(e.target.value); PTE.store.save(); } })),
       h("label", { class: "row" }, h("input", { type: "checkbox", checked: s.showAr ? "" : null, onchange: (e) => { s.showAr = e.target.checked; PTE.store.save(); } }), "Open Arabic explanations by default · فتح الشروحات العربية تلقائياً"),
+      h("label", { class: "row" }, h("input", { type: "checkbox", checked: s.fx !== false ? "" : null, onchange: (e) => { if (PTE.fx) PTE.fx.setEnabled(e.target.checked); } }), "Animations & smooth scroll (GSAP / Lenis) · الحركات والتمرير الناعم"),
       h("label", null, "Theme", h("select", { onchange: (e) => { const v = e.target.value; try { localStorage.setItem("pte79.theme", v); } catch (x) { /* none */ } if (v === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", v); } },
         ["auto", "light", "dark"].map((v) => h("option", { value: v }, v)))),
       h("button", { class: "btn", onclick: () => PTE.say("Hello Captain. This is your English voice.", "en") }, "🔊 Test English"),
