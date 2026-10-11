@@ -57,6 +57,7 @@ export function App() {
   const [menu, setMenu] = useState(false)
   const [selected, setSelected] = useState<Selected | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [datesOpen, setDatesOpen] = useState(false) // the side window with the activity's calendars
   const manualPanel = useManualPanel()
   useEffect(() => {
     const on = () => setCompact((c) => (c ? window.scrollY > 24 : window.scrollY > 80))
@@ -228,6 +229,9 @@ export function App() {
         {manualPanel && tab === 'report' && project && selected && !panelOpen && (
           <button className="ml-auto rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-black" onClick={() => setPanelOpen(true)} title="Open the details of the selected activity">Activity ▸ #{selected.no}</button>
         )}
+        {tab === 'report' && project && selected && !datesOpen && (
+          <button className={`${panelOpen ? 'ml-auto ' : ''}rounded bg-[#59CBE8] px-3 py-1 text-sm font-semibold text-black`} onClick={() => { setDatesOpen(true); setPanelOpen(false) }} title="Open the calendars of the selected activity in a side window: planned and actual start / finish, date and time">Dates ▸ #{selected.no}</button>
+        )}
         <button className={`${manualPanel && tab === 'report' && selected && !panelOpen ? '' : 'ml-auto'} rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden`} aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
         <div className={`${menu ? 'flex' : 'hidden'} w-full flex-wrap items-center gap-2 md:flex md:w-auto md:flex-1 md:gap-3`}>
         {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
@@ -297,7 +301,7 @@ export function App() {
               )}
               <SettingsBar effectiveCutoff={result.settings.cutoff} project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
               <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks}
-                selected={selected} setSelected={setSelected} panelOpen={panelOpen} setPanelOpen={setPanelOpen} />
+                selected={selected} setSelected={setSelected} panelOpen={panelOpen} setPanelOpen={(b) => { setPanelOpen(b); if (b) setDatesOpen(false) }} datesOpen={datesOpen} setDatesOpen={setDatesOpen} />
             </>
           )}
           {tab === 'activities' && (
