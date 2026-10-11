@@ -1,10 +1,10 @@
 import { applySettings } from '../model/settings'
 import type { Project } from '../model/types'
-import { COL_NAMES, DEFAULT_COLS, MAX_COL, MIN_COL } from './columns'
+import { COL_NAMES, DEFAULT_COLS, MAX_COL, MIN_COL, tableColsOf } from './columns'
 
 /** "Column Width…" for the report table: type the width (px) of every column, or put them all back. */
 export function ColumnWidths({ project, onChange, onClose }: { project: Project; onChange: (p: Project) => void; onClose: () => void }) {
-  const cols = project.settings.tableCols && project.settings.tableCols.length === DEFAULT_COLS.length ? project.settings.tableCols : DEFAULT_COLS
+  const cols = tableColsOf(project.settings.tableCols)
   const set = (i: number, v: number) => onChange(applySettings(project, { tableCols: cols.map((x, k) => (k === i ? Math.min(MAX_COL, Math.max(MIN_COL, Math.round(v))) : x)) }))
   return (
     <div className="no-print fixed inset-0 z-[70] flex items-start justify-center overflow-auto bg-black/30 p-6" role="dialog" aria-label="Column widths" onClick={onClose}>

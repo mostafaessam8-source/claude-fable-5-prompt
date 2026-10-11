@@ -6,7 +6,7 @@ import { addActivity, lagToKeepStart, moveActivities, patchActivity, setPlannedF
 import { fmtCell, parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
 import { textWidth } from './measure'
-import { COL_NAMES, DEFAULT_COLS, MAX_COL, MAX_ROW_H, MIN_COL, MIN_ROW_H, PAGE_H0, PAGE_INNER, pageWidth, rowLayout } from './columns'
+import { COL_NAMES, DEFAULT_COLS, MAX_COL, MAX_ROW_H, MIN_COL, MIN_ROW_H, PAGE_H0, PAGE_INNER, pageWidth, rowLayout, tableColsOf } from './columns'
 export { COL_NAMES, DEFAULT_COLS, pageWidth }
 import type { ActivityInput, Project } from '../model/types'
 import { activityTone, barColour, C, locationTone } from './brand'
@@ -75,7 +75,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const loc = result.locations[index]
   const origin = s.possessionStart
   const g = ganttGeometry(s)
-  const cols = s.tableCols && s.tableCols.length === DEFAULT_COLS.length ? s.tableCols : DEFAULT_COLS
+  const cols = tableColsOf(s.tableCols)
   // Start + finish: Planned and Forecast are two columns each (Start | Finish), the grid gets 14 tracks for the 12 logical columns
   const range = !!s.dateRange
   const subs = (c0: number) => (range && (c0 === 5 || c0 === 6) ? 2 : 1)
@@ -314,7 +314,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
     const texts: string[] = [COL_NAMES[c].split(' ').sort((a, b) => b.length - a.length)[0]]
     for (const a of loc.activities) {
       const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
-      texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), '', a.remarks][c])
+      texts.push([String(a.no), a.name, a.status, fmtDur(a.durationH), actDur == null ? '' : fmtDur(actDur), fmtShort(a.plannedFinish), fmtShort(a.carriedForecastFinish), fmtVariance(a.carried), pct(a.planPct), pct(a.effectivePct), a.remarks][c])
     }
     const w = Math.max(...texts.map((t) => textWidth(t, font))) + 12
     return Math.round(Math.min(MAX_COL, Math.max(MIN_COL, w)))
@@ -380,7 +380,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
       }
     } else if (c === 10) {
       if (v === '') patch({ pct: null }); else if (ok) patch({ pct: Math.min(1, Math.max(0, num / 100)) })
-    } else if (c === 12) { if (v !== a.remarks) patch({ remarks: v }) }
+    } else if (c === 11) { if (v !== a.remarks) patch({ remarks: v }) }
   }
 
   return (
@@ -400,6 +400,12 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
+          {(() => { // the buffer to hand-back, as a verdict: late (negative) / on time / ahead
+            const b = loc.bufferToHandback
+            const v = b < -0.05 ? { t: 'LATE', bg: C.red, fg: '#fff' } : b > 0.05 ? { t: 'AHEAD', bg: C.blue, fg: '#fff' } : { t: 'ON TIME', bg: C.amber, fg: C.black }
+            return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>BUFFER TO HAND-BACK <b>{hours1(b)}</b>
+              <span style={{ background: v.bg, color: v.fg, fontWeight: 700, fontSize: 9, padding: '1px 7px', borderRadius: 2 }}>{v.t}</span></span>
+          })()}
           {planEditable && (
             <button className="no-print" style={{ marginLeft: 'auto', border: `1px solid ${C.blue}`, borderRadius: 3, padding: '1px 8px', background: '#fff', color: C.blue, fontWeight: 700, fontSize: 10, cursor: 'pointer' }}
               title="Add an activity at the end of this location (it follows the last one)"
@@ -549,8 +555,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),
-              span(11, {}, ''),
-              ed(12, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[11], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
+              ed(11, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[10], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
           {/* total row */}
@@ -572,8 +577,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               t(8, { color: varColour[varianceTone(loc.variance)] }, fmtVariance(loc.variance)),
               t(9, { color: C.slate }, pct(loc.planPct)),
               t(10, { color: C.blue }, pct(loc.actualPct)),
-              t(11, { color: loc.bufferToHandback < 0 ? C.red : C.black }, hours1(loc.bufferToHandback)),
-              t(12, {}, ''),
+              t(11, {}, ''),
             ]
           })()}
         </div>
