@@ -38,6 +38,9 @@ jobs:
           git fetch --depth=1 origin claude/cost-control-data-site-64obxe
           git archive FETCH_HEAD sar-cost-dashboard | tar -x -C dist
           test -f dist/sar-cost-dashboard/index.html
+      # PTE-79 Express: the personal PTE Academic study site (static, no build) is published at /pte-academy/
+      - name: Add the PTE Academy site
+        run: cp -r pte-academy dist/pte-academy
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

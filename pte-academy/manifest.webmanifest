@@ -1,0 +1,16 @@
+{
+  "name": "PTE-79 Express — أكاديمية PTE",
+  "short_name": "PTE-79",
+  "description": "26-week PTE Academic plan with drive mode / خطة ٢٦ أسبوع لـ PTE مع وضع القيادة",
+  "start_url": "./index.html#/today",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#00778B",
+  "theme_color": "#00778B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
