@@ -270,7 +270,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         onFocus={(e) => { const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null; setFr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null) }}
         onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFr(null) }}>
       {pick && box && (() => {
-        const d = matchMedia('(pointer: coarse)').matches ? 22 : 13
+        const d = matchMedia('(pointer: coarse)').matches ? 14 : 10
         const dot = (x: number, y: number, cursor: string): React.CSSProperties => ({ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: '#00778B', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.45)', zIndex: 20, touchAction: 'none', cursor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1 })
         const midY = box.t + box.h / 2, midX = box.l + box.w / 2
         return (
