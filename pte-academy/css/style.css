@@ -200,3 +200,18 @@ body.drive-on { overflow: hidden; }
 .hero .ar, .hero .ar-title { color: #fff; }
 .line-card { text-decoration: none; width: 100%; font: inherit; }
 a.line-card small, a.line-card span { text-decoration: none; }
+
+/* ---- FX (GSAP / Lenis / React-Bits-style effects) ---- */
+.fx-w { display: inline-block; will-change: transform, filter, opacity; }
+.fx-shiny { background: linear-gradient(110deg, #E6F1F4 35%, #F1B434 50%, #E6F1F4 65%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: fxshine 3.2s linear infinite; font-weight: 700; display: inline-block; }
+@keyframes fxshine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.fx-track { position: absolute; top: -10px; bottom: -10px; width: 18px; background: rgba(255,255,255,.12); transform: skewX(-22deg); pointer-events: none; }
+.hero > *:not(.fx-track) { position: relative; z-index: 1; }
+.fx-spot { position: relative; }
+.fx-spot::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; opacity: 0; transition: opacity .25s; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(89,203,232,.20), transparent 62%); }
+.fx-spot:hover::after { opacity: 1; }
+.fx-sparks { position: fixed; inset: 0; pointer-events: none; z-index: 120; }
+.fx-sparks i { position: absolute; width: 2px; height: 11px; border-radius: 2px; transform-origin: center; }
+.btn.big { position: relative; }
+html.lenis, html.lenis body { height: auto; }
+@media (prefers-reduced-motion: reduce) { .fx-shiny { animation: none; color: inherit !important; -webkit-text-fill-color: initial; background: none; } }
