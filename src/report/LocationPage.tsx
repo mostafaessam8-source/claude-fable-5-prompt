@@ -567,8 +567,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             /** A date cell: one click opens the calendar (date + time); Enter / leaving the cell applies it, Esc cancels. */
             const dt = (c: number, off: number, kind: 'pstart' | 'pfinish' | 'astart' | 'afinish', shown: string, current: Date | null, extra: CSSProperties, hint: string) => {
               const editing = cellEdit?.k === k && cellEdit.c === c && (cellEdit.sub ?? 0) === off
-              const canEdit = planEditable
-              return span(c, extra, editing ? (
+                            return span(c, extra, editing ? (
                 <input type="datetime-local" autoFocus defaultValue={current ? hoursToInput(origin, (current.getTime() - origin.getTime()) / 3_600_000) : ''}
                   ref={openPicker}
                   style={{ width: '100%', font: 'inherit', fontSize: 7, padding: 0, color: C.black, background: '#fff' }}
@@ -576,7 +575,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
                   onBlur={(e) => { if (e.target.dataset.cancel) setCellEdit(null); else commitDate(k, kind, e.target.value) }}
                   onKeyDown={(e) => { const el = e.target as HTMLInputElement; if (e.key === 'Enter') el.blur(); if (e.key === 'Escape') { el.dataset.cancel = '1'; el.blur() } }} />
               ) : shown,
-              canEdit ? { title: hint, onClick: () => { if (!justDragged.current) setCellEdit({ k, c, sub: off }) } } : {}, off)
+              { title: hint }, off)
             }
             const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
             return [
@@ -586,10 +585,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
-              ...(range ? [dt(6, 0, 'pstart', fmtShort(a.plannedStart), a.plannedStart, {}, 'Planned start: click to pick a date and time — the link stays, the lag changes')] : []),
-              dt(6, range ? 1 : 0, 'pfinish', fmtShort(a.plannedFinish), a.plannedFinish, {}, 'Planned finish: click to pick a date and time — the start stays, the duration changes'),
-              ...(range ? [dt(7, 0, 'astart', fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)), a.actualStart, { fontWeight: a.actualStart ? 700 : 400, color: a.actualStart ? C.black : C.slate }, 'Actual start: click to pick the date and time it really started (clear the field to remove it). Grey = a forecast, not yet an actual')] : []),
-              dt(7, range ? 1 : 0, 'afinish', fmtShort(a.carriedForecastFinish), a.actualFinish, { fontWeight: a.actualFinish ? 700 : 400, color: a.actualFinish ? C.black : C.slate }, 'Actual finish: click to pick the date and time it really finished (it makes the activity 100 %; clear the field to remove it). Grey = a forecast, not yet an actual'),
+              ...(range ? [dt(6, 0, 'pstart', fmtShort(a.plannedStart), a.plannedStart, {}, 'Planned start: use the Dates ▸ button in the top bar — the link stays, the lag changes')] : []),
+              dt(6, range ? 1 : 0, 'pfinish', fmtShort(a.plannedFinish), a.plannedFinish, {}, 'Planned finish: use the Dates ▸ button in the top bar — the start stays, the duration changes'),
+              ...(range ? [dt(7, 0, 'astart', fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)), a.actualStart, { fontWeight: a.actualStart ? 700 : 400, color: a.actualStart ? C.black : C.slate }, 'Actual start: use the Dates ▸ button in the top bar it really started (clear the field to remove it). Grey = a forecast, not yet an actual')] : []),
+              dt(7, range ? 1 : 0, 'afinish', fmtShort(a.carriedForecastFinish), a.actualFinish, { fontWeight: a.actualFinish ? 700 : 400, color: a.actualFinish ? C.black : C.slate }, 'Actual finish: use the Dates ▸ button in the top bar it really finished (it makes the activity 100 %; clear the field to remove it). Grey = a forecast, not yet an actual'),
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: click and type 0 – 100', 0, true),
