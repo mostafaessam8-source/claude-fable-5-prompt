@@ -495,8 +495,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: cols.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
-          {COL_NAMES.map((h, c) => (
-            <div key={h} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
+          {COL_NAMES.map((h0, c) => { const h = s.dateRange && (c === 5 || c === 6) ? h0.replace('Finish', 'Start / Finish') : h0; return (
+            <div key={h0} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
               {canResize && (
                 <span className="no-print col-rz" title="Drag to change the column width; double-click: fit the content (like Excel's autofit)"
@@ -504,7 +504,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
                   onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? autoFit(c) : x)))} />
               )}
             </div>
-          ))}
+          )})}
           {rows.map(({ a }, k) => {
             const r = 3 + 2 * k
             const at = activityTone(a.status)
@@ -513,7 +513,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }} {...props}>{content}</div>
             )
             /** A cell that can be typed in: double-click it, or click it once its row is selected. */
-            const ed = (c: number, shown: string, initial: string, extra: CSSProperties, hint: string) => {
+            const ed = (c: number, shown: React.ReactNode, initial: string, extra: CSSProperties, hint: string) => {
               const editing = cellEdit?.k === k && cellEdit.c === c
               return span(c, extra, editing ? (
                 <input autoFocus defaultValue={initial} style={{ width: '100%', font: 'inherit', padding: '0 2px', textAlign: 'inherit', color: C.black }}
@@ -524,6 +524,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               planEditable ? { title: hint, onDoubleClick: () => setCellEdit({ k, c }),
                 onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {})
             }
+            const twoLines = (a1: string, b1: string) => <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, fontSize: 7.5 }}><span>{a1}</span><span>{b1}</span></span>
             const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
@@ -532,8 +533,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
-              ed(6, fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes'),
-              span(7, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish)),
+              ed(6, s.dateRange ? twoLines(fmtShort(a.plannedStart), fmtShort(a.plannedFinish)) : fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes'),
+              span(7, { fontWeight: 700 }, s.dateRange ? twoLines(fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)), fmtShort(a.carriedForecastFinish)) : fmtShort(a.carriedForecastFinish)),
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),

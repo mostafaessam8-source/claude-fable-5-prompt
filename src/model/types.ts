@@ -20,6 +20,8 @@ export interface Settings {
   /** Widths (px) of the Activities tab's columns, when the user has dragged them. */
   activityCols?: number[]
   /** Widths (px) of the first 8 columns of the cover's summary table (the progress column takes the rest). */
+  /** true: the Planned / Forecast columns of the report show start and finish (stacked in one cell), not only the finish. */
+  dateRange?: boolean
   summaryCols?: number[]
   /** Heights (px) of the summary table's rows (header, each location, total); null = automatic. */
   summaryRows?: (number | null)[]
