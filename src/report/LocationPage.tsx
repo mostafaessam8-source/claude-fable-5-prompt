@@ -453,41 +453,38 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         )}
         {canResize && sel && (() => {
           const { k, c } = sel
-          const dS = matchMedia('(pointer: coarse)').matches ? 11 : 8 // size on the screen, whatever the zoom
-          const d = Math.max(6, Math.min(30, dS / zoom))
           const ci = c == null ? null : c - 1
           const x0 = ci == null ? 0 : cols.slice(0, ci).reduce((a, b) => a + b, 0)
           const x1 = ci == null ? 0 : x0 + cols[ci]
           const yTop = k == null ? 0 : 2 * HEAD_H + rowTops[k]
           const yBot = k == null ? 0 : yTop + rowHs[k]
-          const dotStyle = (x: number, y: number, cursor: string): React.CSSProperties => ({
-            position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: C.blue, border: `${Math.max(1.2, d / 10)}px solid #fff`,
-            boxShadow: '0 1px 3px rgba(0,0,0,.4)', zIndex: 9, touchAction: 'none', cursor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1,
-          })
+          // a handle is just a thicker stretch of the cell's edge (hit area wider than what is drawn)
+          const t = Math.max(1.5, (matchMedia('(pointer: coarse)').matches ? 4 : 3) / zoom), pad = Math.max(2, (matchMedia('(pointer: coarse)').matches ? 8 : 4) / zoom)
+          const barStyle = (x: number, y: number, cursor: string, len: number): React.CSSProperties => {
+            const vert = cursor === 'col-resize', w = vert ? t + 2 * pad : len, h = vert ? len : t + 2 * pad
+            return { position: 'absolute', left: x - w / 2, top: y - h / 2, width: w, height: h, boxSizing: 'border-box', padding: vert ? `0 ${pad}px` : `${pad}px 0`, backgroundClip: 'content-box', background: C.blue, zIndex: 9, touchAction: 'none', cursor }
+          }
           // the handles sit around the picked cell: left / right = the column, top / bottom = the row (a header cell: the column only)
           const yMid = k == null ? HEAD_H : (yTop + yBot) / 2
           const xMid = ci != null ? (x0 + x1) / 2 : sel.x
-          // a very small row / column: the two dots would sit on each other, so they stand apart along the edge
-          const tinyR = k != null && rowHs[k] < d * 1.7, tinyC = ci != null && cols[ci] < d * 1.7
-          const yL = tinyC && k != null ? yMid - d * 0.6 : yMid, yR = tinyC && k != null ? yMid + d * 0.6 : yMid
-          const xT = tinyR ? xMid - d * 0.6 : xMid, xB = tinyR ? xMid + d * 0.6 : xMid
+                    const colLen = k == null ? HEAD_H : rowHs[k], rowLen = ci != null ? cols[ci] : 80
           return (
             <>
               {ci != null && <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[ci], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />}
               {ci != null && ci > 0 && (
-                <span className="no-print" role="slider" aria-label={`Drag left to widen "${COL_NAMES[ci]}" (the column on its left gives up the space), right to narrow it`} style={dotStyle(x0, yL, 'col-resize')}
+                <span className="no-print" role="slider" aria-label={`Drag left to widen "${COL_NAMES[ci]}" (the column on its left gives up the space), right to narrow it`} style={barStyle(x0, yMid, 'col-resize', colLen)}
                   onPointerDown={(e) => startColResize(e, ci, true)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}></span>
               )}
               {ci != null && (
-                <span className="no-print" role="slider" aria-label={`Drag right to widen "${COL_NAMES[ci]}", left to narrow it`} style={dotStyle(x1, yR, 'col-resize')}
+                <span className="no-print" role="slider" aria-label={`Drag right to widen "${COL_NAMES[ci]}", left to narrow it`} style={barStyle(x1, yMid, 'col-resize', colLen)}
                   onPointerDown={(e) => startColResize(e, ci, false)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}></span>
               )}
               {k != null && k > 0 && (
-                <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={dotStyle(xT, yTop, 'row-resize')}
+                <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={barStyle(xMid, yTop, 'row-resize', rowLen)}
                   onPointerDown={(e) => startRowResize(e, k, true)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}></span>
               )}
               {k != null && (
-                <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={dotStyle(xB, yBot, 'row-resize')}
+                <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={barStyle(xMid, yBot, 'row-resize', rowLen)}
                   onPointerDown={(e) => startRowResize(e, k, false)} onPointerMove={onRowMove} onPointerUp={onRowEnd} onPointerCancel={onRowEnd}
                   onDoubleClick={() => setRowHeights([{ no: loc.activities[k].no, h: undefined }])}></span>
               )}
