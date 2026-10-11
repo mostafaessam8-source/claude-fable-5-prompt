@@ -453,30 +453,62 @@
     });
     var mp = panel(v, byPkg ? one.code + " — " + (one.name || "") + " · by package" : "Projects",
       byPkg ? "Click a coloured segment for those documents · ↺ Reset filters (or × on the project chip) to see all projects"
-        : "Worst first · the bar is the status of every document · click a project to filter the page, a coloured segment for that project and status · Ctrl + click to add");
+        : "Worst first · click a project to open its details · click a coloured segment to filter the page to that project and status (Ctrl + click to add)");
     if (byPkg) {   // the one project: health and its decisions in one line above its packages
       var oh = hOf(M, one.src), od = top[one.code] || [];
       add(mp, '<div class="ds-one">' + rag(oh.lvl) + " <b>Design health: " + oh.lvl + "</b>" + (oh.why.length ? " — " + esc(oh.why.join("; ")) : " — on track") +
         (od.length ? '<ul class="ds-acts">' + od.map(function (x) { return '<li class="ds-s' + x.sev + '"><span class="ds-who ds-w-' + x.who.toLowerCase() + '">' + esc(x.who === "Both" ? "SAR + Contractor" : x.who === "Report" ? "Data" : x.who) + "</span> " + esc(x.text) + ' <span class="ds-actx">→ ' + esc(x.act) + "</span></li>"; }).join("") + "</ul>" : "") + "</div>");
     }
     var max = Math.max.apply(null, rows.map(function (r) { return r.n; }).concat([1]));
-    var tb = add(mp, '<div class="table-wrap auto-h"><table class="ds-mx"><thead><tr>' + (byPkg ? "" : "<th></th>") + "<th>" + (byPkg ? "Package / category" : "Project") + '</th><th class="ds-mx-bar">Status of the documents</th>' +
+    var tb = add(mp, '<div class="table-wrap auto-h"><table class="ds-mx ds-cmp"><thead><tr>' + (byPkg ? "" : "<th></th>") + "<th>" + (byPkg ? "Package / category" : "Project") + '</th><th class="ds-mx-bar">Status of the documents</th>' +
       "</tr></thead><tbody></tbody></table></div>").querySelector("tbody");
-    rows.forEach(function (r) {
-      var segs = ORDER.filter(function (k) { return r.c[k]; }).map(function (k) {
-        return '<span class="ds-seg" data-k="' + k + '" style="flex:' + r.c[k] + ";background:" + B[k].color + (/UR|C|NR/.test(k) ? ";color:#3D3935" : "") + '" title="' + esc(B[k].short + ": " + r.c[k]) + '">' + (r.c[k] / r.n >= 0.08 ? r.c[k] : "") + "</span>";
+    function segsOf(c, n) {
+      return ORDER.filter(function (k) { return c[k]; }).map(function (k) {
+        return '<span class="ds-seg" data-k="' + k + '" style="flex:' + c[k] + ";background:" + B[k].color + (/UR|C|NR/.test(k) ? ";color:#3D3935" : "") + '" title="' + esc(B[k].short + ": " + c[k]) + '">' + (c[k] / n >= 0.08 ? c[k] : "") + "</span>";
       }).join("");
-      var a0 = r.acts && r.acts[0];
-      var tr = el("<tr" + (byPkg ? "" : ' class="ds-row"') + ">" + (byPkg ? "" : "<td>" + rag(r.h.lvl) + "</td>") +
-        '<td class="ds-mx-name"><b>' + esc(r.label) + "</b>" + (r.sub ? '<div class="muted">' + esc(r.sub) + "</div>" : "") + (byPkg ? "" : '<button type="button" class="link-btn ds-det">Details ›</button>') + "</td>" +
-        '<td class="ds-mx-bar"><div class="ds-sbar" style="width:' + Math.max(36, Math.round(r.n / max * 620)) + 'px">' + segs + '</div><span class="ds-n">' + r.n + "</span></td></tr>");
+    }
+    /* one project opened under its row: its figures, actions and packages */
+    function expand(r) {
+      var p = A.projects.filter(function (x) { return x.src === r.src; })[0], cats = p ? Object.keys(p.cats).sort() : [];
+      var cmax = Math.max.apply(null, cats.map(function (c) { return p.cats[c].n; }).concat([1]));
+      var h = '<div class="ds-exp">' +
+        '<div class="ds-exp-h">' + rag(r.h.lvl) + " <b>" + esc(r.label + " — " + (r.sub || "")) + "</b>" + (r.h.why.length ? '<span class="muted"> · ' + esc(r.h.why.join("; ")) + "</span>" : '<span class="muted"> · on track</span>') + "</div>" +
+        '<div class="ds-exp-k">' +
+          "<div><b>" + pct(r.app) + "</b><span>approved · " + r.appN + " of " + r.subN + "</span></div>" +
+          "<div><b>" + r.ur + "</b><span>with SAR" + (r.late ? ' · <em class="neg">' + r.late + " late</em>" : "") + "</span></div>" +
+          "<div><b>" + (r.oldest ? r.oldest + " d" : "—") + "</b><span>longest SAR review</span></div>" +
+          "<div><b>" + (r.con || 0) + "</b><span>with the contractor" + (r.con ? " · " + [r.cd ? r.cd + " C / D" : "", r.ns ? r.ns + " not submitted" : ""].filter(Boolean).join(" · ") : "") + "</span></div>" +
+        "</div>" +
+        (r.acts.length ? '<ul class="ds-acts">' + r.acts.map(function (x) { return '<li class="ds-s' + x.sev + '"><span class="ds-who ds-w-' + x.who.toLowerCase() + '">' + esc(x.who === "Both" ? "SAR + Contractor" : x.who === "Report" ? "Data" : x.who) +
+          "</span> " + esc(x.text) + ' <span class="ds-actx">→ ' + esc(x.act) + "</span></li>"; }).join("") + "</ul>" : "") +
+        (cats.length > 1 ? '<div class="ds-exp-p">' + cats.map(function (c) { var o = p.cats[c];
+          return '<div class="ds-pk" data-cat="' + esc(c) + '"><span class="ds-pkn" title="' + esc(c) + '">' + esc(c) + '</span><span class="ds-sbar" style="width:' + Math.max(24, Math.round(o.n / cmax * 300)) + 'px">' + segsOf(o.c, o.n) + '</span><span class="ds-n">' + o.n + "</span></div>"; }).join("") + "</div>" : "") +
+        '<div class="ds-exp-b"><button type="button" class="icon-btn ds-f">Filter the page to ' + esc(r.label) + '</button><button type="button" class="icon-btn ghost ds-det">All details & documents ›</button></div></div>';
+      var x = el('<tr class="ds-xrow"><td colspan="3">' + h + "</td></tr>");
+      x.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (e.target.closest(".ds-f")) { pick({ proj: [r.key] }, e); return; }
+        if (e.target.closest(".ds-det")) { projModal(r.src); return; }
+        var pk = e.target.closest(".ds-pk"); if (pk) { var c = pk.getAttribute("data-cat"), sg = e.target.closest(".ds-seg"), l = docs.filter(function (d) { return d.src === r.src && (d.cat || "—") === c; });
+          listModal(r.key + " · " + c + (sg ? " · " + B[sg.getAttribute("data-k")].short : ""), sg ? l.filter(function (d) { return d.k === sg.getAttribute("data-k"); }) : l); }
+      });
+      return x;
+    }
+    st.open = st.open || {};
+    rows.forEach(function (r) {
+      var tr = el("<tr" + (byPkg ? "" : ' class="ds-row' + (st.open[r.key] ? " open" : "") + '"') + ">" + (byPkg ? "" : "<td>" + rag(r.h.lvl) + "</td>") +
+        '<td class="ds-mx-name"><div class="ds-nmw" title="' + esc(r.label + (r.sub ? " — " + r.sub : "")) + '"><span class="ds-car">' + (byPkg ? "" : st.open[r.key] ? "▾" : "▸") + "</span><b>" + esc(r.label) + "</b>" + (r.sub ? ' <span class="muted">' + esc(r.sub) + "</span>" : "") + "</div></td>" +
+        '<td class="ds-mx-bar"><div class="ds-sbar" style="width:' + Math.max(36, Math.round(r.n / max * 620)) + 'px">' + segsOf(r.c, r.n) + '</div><span class="ds-n">' + r.n + "</span></td></tr>");
+      tb.appendChild(tr);
+      var xr = !byPkg && st.open[r.key] ? expand(r) : null; if (xr) tb.appendChild(xr);
       tr.addEventListener("click", function (e) {
         var sg = e.target.closest(".ds-seg");
-        if (e.target.closest(".ds-det")) { projModal(r.src); return; }
         if (byPkg) { listModal(one.code + " · " + r.key + (sg ? " · " + B[sg.getAttribute("data-k")].short : ""), sg ? r.docs.filter(function (d) { return d.k === sg.getAttribute("data-k"); }) : r.docs); return; }
-        pick(sg ? { proj: [r.key], status: [B[sg.getAttribute("data-k")].short] } : { proj: [r.key] }, e);
+        if (sg) { pick({ proj: [r.key], status: [B[sg.getAttribute("data-k")].short] }, e); return; }
+        // the row opens / closes its details in place
+        st.open[r.key] = !st.open[r.key]; tr.classList.toggle("open", !!st.open[r.key]); tr.querySelector(".ds-car").textContent = st.open[r.key] ? "▾" : "▸";
+        if (st.open[r.key]) { xr = expand(r); tr.parentNode.insertBefore(xr, tr.nextSibling); } else if (xr) { xr.remove(); xr = null; }
       });
-      tb.appendChild(tr);
     });
     add(mp, '<div class="ds-legend">' + ORDER.filter(function (k) { return S.c[k]; }).map(function (k) { return '<span><i style="background:' + B[k].color + '"></i>' + esc(B[k].short) + "</span>"; }).join("") +
       (byPkg ? "" : '<span class="ds-rl">' + rag("red") + " ≥ 25% returned C / D or 3+ reviews beyond twice the target &nbsp; " + rag("amber") + " any C / D, late review or > 25% not submitted</span>") + "</div>");

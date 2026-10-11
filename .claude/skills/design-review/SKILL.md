@@ -58,10 +58,12 @@ How mixed wording is read:
 ## Layout (user asked for a focused page: no repeated figure, no long repeated sentences)
 1. **Scope line + five tiles:** documents, approved %, with SAR (late, average), with the contractor (D / C / not
    submitted), longest SAR review. The last one opens the document.
-2. **Projects table** (`ds-mx`), worst first, two columns only (user's choice):
-   - project, with its health dot and a "Details ›" link that opens `projModal`
-   - status bar (`ds-sbar`, px width up to 620; a segment filters project + status, the row filters the project)
-   - the number columns and the next action were removed; they live in Details
+2. **Projects table** (`ds-mx ds-cmp`), compact, one line per project, worst first:
+   - columns: health dot, "▸ code name" (one line, ellipsis), status bar (`ds-sbar`)
+   - a click on the row opens its details in place (`expand`, open rows kept in `st.open`): health and why, approved /
+     with SAR (late) / longest / with contractor, the decisions with their actions, a mini bar per package (click →
+     documents), and the buttons "Filter the page to …" and "All details & documents ›" (`projModal`)
+   - a click on a coloured segment filters the page to project + status
    - with one project selected, the rows are its packages (click → list)
 3. **Chase lists:** longest with SAR / returned C / D. Same project + status + submission day are grouped into one line,
    named by the shared title start.
@@ -76,12 +78,12 @@ Don't add them back. Note the class name `ds-sbar`: `ds-bar` was once a filter-b
   adds or removes values; clicking the same thing again clears it.
 - What filters the page:
   - overview cards
-  - projects table rows (project) and status-bar segments (project + status)
+  - status-bar segments (project + status) and the "Filter the page to …" button in an opened row
   - decisions (`decFilter`)
 - What opens details instead:
   - the oldest-in-review card
   - document lists and rows
-  - the "Details ›" link under a project name
+  - a projects-table row (opens in place) and its "All details & documents ›" button
   - package rows (one project selected)
 - **Project codes on the y axis:** they filter by the project (`axisClicks(box, fn)`), on the project, review-time and
   contractor charts. Chart.js calls `onClick` only inside the plot area, so these clicks are listened to on the chart
