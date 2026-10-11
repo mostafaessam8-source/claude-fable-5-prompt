@@ -9,7 +9,7 @@
   width: 1123px; height: 794px; box-sizing: border-box; padding: 9px; overflow: hidden;
   background: #fff; color: #3D3935; font-family: Calibri, Inter, system-ui, sans-serif; position: relative;
 }
-@page { size: 297mm 210mm; margin: 0; } /* A4 landscape, no browser margins */
+@page { size: 297mm 210mm; margin: 5mm; } /* A4 landscape; 5 mm keeps clear of the printer's unprintable edge (HP etc. clip anything closer) */
 /* the mobile viewer prints every page from a second, print-only copy of the report */
 .print-only { display: none; }
 @media print {
@@ -17,11 +17,11 @@
   .viewer-screen { display: none !important; }
 }
 @media print {
-  html, body { background: #fff !important; margin: 0 !important; width: 297mm; }
+  html, body { background: #fff !important; margin: 0 !important; }
   .no-print { display: none !important; }
   .report-wrap { padding: 0; background: #fff; margin-right: 0 !important; }
   .report-zoom { zoom: 1 !important; display: block; }
-  .report-page { zoom: var(--ps, 1); break-after: page; page-break-after: always; break-inside: avoid; margin: 0 !important; box-shadow: none !important; }
+  .report-page { zoom: calc(var(--ps, 1) * 0.945); break-after: page; page-break-after: always; break-inside: avoid; margin: 0 !important; box-shadow: none !important; }
   .report-page:last-child { break-after: auto; page-break-after: auto; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
