@@ -453,8 +453,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         )}
         {canResize && sel && (() => {
           const { k, c } = sel
-          const dS = matchMedia('(pointer: coarse)').matches ? 20 : 12 // size on the screen, whatever the zoom
-          const d = Math.max(6, Math.min(40, dS / zoom))
+          const dS = matchMedia('(pointer: coarse)').matches ? 13 : 9 // size on the screen, whatever the zoom
+          const d = Math.max(6, Math.min(30, dS / zoom))
           const ci = c == null ? null : c - 1
           const x0 = ci == null ? 0 : cols.slice(0, ci).reduce((a, b) => a + b, 0)
           const x1 = ci == null ? 0 : x0 + cols[ci]
