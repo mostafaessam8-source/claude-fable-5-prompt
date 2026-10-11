@@ -605,7 +605,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             return [
               t(1, { justifyContent: 'flex-start', textAlign: 'left', paddingLeft: 6 }, `TOTAL - ${layout?.code || loc.name}`, 2),
               t(3, { background: tone.bg, color: tone.fg }, loc.status),
-              t(4, {}, fmtDur(loc.totalHours)),
+              t(4, {}, fmtDur(loc.coveredHours)),
               t(5, {}, actTotal ? fmtDur(actTotal) : ''),
               ...(range ? [t(6, {}, n ? fmtShort(new Date(Math.min(...loc.activities.map((x) => x.plannedStart.getTime())))) : '', 1, 0)] : []),
               t(6, {}, fmtShort(loc.plannedFinish), 1, range ? 1 : 0),
