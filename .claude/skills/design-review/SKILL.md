@@ -89,6 +89,9 @@ How mixed wording is read:
   - the package chart (one project)
   - the submissions-count chart
   - the scorecard "Details ›" button
+- **Project codes on the y axis:** they filter by the project (`axisClicks(box, fn)`), on the project, review-time and
+  contractor charts. Chart.js calls `onClick` only inside the plot area, so these clicks are listened to on the chart
+  box.
 - **Bar clicks:** use `hit(e, els, c)` to get the segment under the pointer. Chart.js bar charts report every segment of
   the bar, first one first.
 

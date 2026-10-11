@@ -221,6 +221,21 @@
   function rag(l) { return '<span class="ds-rag ds-' + l + '" title="' + l + '"></span>'; }
   function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
   function hand(e, els) { var t = e && e.native && e.native.target; if (t) t.style.cursor = els.length ? "pointer" : "default"; }
+  /* clicks on the labels of a horizontal bar chart's y axis (the project codes). Chart.js only reports clicks inside the
+     plot area, so the canvas is listened to directly. onIndex(index, event) */
+  function axisClicks(box, onIndex) {
+    function at(ev) {
+      var cv = box.querySelector("canvas"), c = cv && window.Chart && Chart.getChart(cv), sc = c && c.scales && c.scales.y; if (!sc) return -1;
+      var r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+      if (x < 0 || x > sc.right || y < sc.top || y > sc.bottom) return -1;
+      var i = Math.round(sc.getValueForPixel(y)); return i >= 0 && i < c.data.labels.length ? i : -1;
+    }
+    box.addEventListener("click", function (ev) { var i = at(ev); if (i >= 0) onIndex(i, ev); });   // the canvas is drawn later; events bubble up
+    box.addEventListener("mousemove", function (ev) {
+      var cv = box.querySelector("canvas"), c = cv && Chart.getChart(cv); if (!c) return;
+      if (at(ev) >= 0) cv.style.cursor = "pointer"; else if (ev.clientX - cv.getBoundingClientRect().left < c.chartArea.left) cv.style.cursor = "default";
+    });
+  }
   /* the segment under the pointer (bar charts report every segment of the bar, first one first) */
   function hit(e, els, c) {
     if (!c || !c.getElementsAtEventForMode) return els;
@@ -462,8 +477,9 @@
             listModal(one.code + " · " + c + (l.length ? " · " + B[k].short : ""), l.length ? l : all); },
           scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } } } } });
     } else {
-      var p9 = panel(g6, "Design status by project", "Latest revision of each document · click a bar to filter the page to that project and status · Ctrl + click to add");
+      var p9 = panel(g6, "Design status by project", "Latest revision of each document · click a project code to filter by the project, a bar for the project and status · Ctrl + click to add");
       var b9 = add(p9, '<div class="chart-box"></div>'); b9.style.height = Math.max(240, A.projects.length * 34 + 70) + "px";
+      axisClicks(b9, function (i, ev) { pick({ proj: [A.projects[i].code] }, ev); });
       U.chart(b9, { type: "bar", data: { labels: A.projects.map(function (p) { return p.code; }), datasets: ORDER.map(function (k) {
           return U.barDs(B[k].short, A.projects.map(function (p) { return p.c[k] || 0; }), B[k].color, { stack: "s", maxBarThickness: 22 }); }) },
         options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] >= 3; }, color: function (c) { return /Under|Revise|No status/.test(c.dataset.label) ? C.black : "#fff"; }, font: { weight: "700", size: 10 } }, tooltip: { callbacks: { footer: clickHint } } },
@@ -527,6 +543,7 @@
         scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
     var p4 = panel(g3, "Review time by project", "Average and oldest days in SAR review · the line is the " + M.target + "-day target · click a bar to filter the page");
     var b4 = add(p4, '<div class="chart-box"></div>'); b4.style.height = Math.max(240, urP.length * 38 + 70) + "px";
+    axisClicks(b4, function (i, ev) { pick({ proj: [urP[i].code] }, ev); });
     U.chart(b4, { type: "bar", data: { labels: urP.map(function (p) { return p.code; }), datasets: [
         U.barDs("Average days", urP.map(function (p) { return p.avgUr; }), C.mid, { maxBarThickness: 16 }), U.barDs("Oldest days", urP.map(function (p) { return p.oldest; }), C.blue, { maxBarThickness: 16 })] },
       options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: true, anchor: "end", align: "end", color: C.black, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
@@ -543,6 +560,7 @@
     var cp = A.projects.filter(function (p) { return p.cd || p.ns; }), ck = ["D", "C", "NS"];
     var p5 = panel(g4, "Returned and not submitted, by project", "Click a bar");
     var b5 = add(p5, '<div class="chart-box"></div>'); b5.style.height = Math.max(240, cp.length * 34 + 70) + "px";
+    axisClicks(b5, function (i, ev) { pick({ proj: [cp[i].code] }, ev); });
     U.chart(b5, { type: "bar", data: { labels: cp.map(function (p) { return p.code; }), datasets: ck.map(function (k) { return U.barDs(B[k].short, cp.map(function (p) { return p.c[k] || 0; }), B[k].color, { stack: "c", maxBarThickness: 22 }); }) },
       options: { indexAxis: "y", plugins: { legend: { position: "bottom" }, datalabels: { display: function (c) { return c.dataset.data[c.dataIndex] > 0; }, color: function (c) { return c.datasetIndex === 1 ? C.black : "#fff"; }, font: { size: 10, weight: "700" } }, tooltip: { callbacks: { footer: clickHint } } },
         onHover: hand, onClick: function (e, els, c) { els = hit(e, els, c); if (els.length) pick({ proj: [cp[els[0].index].code], status: [B[ck[els[0].datasetIndex]].short] }, e); },
