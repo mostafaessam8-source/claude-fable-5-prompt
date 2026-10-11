@@ -100,7 +100,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     return () => window.removeEventListener('keydown', on)
   })
 
-  const PAGE_W = i === 0 ? coverWidth(result.settings.summaryCols, cols) : pageWidth(cols) // a location page grows when its columns were widened
+  const PAGE_W = i === 0 ? coverWidth(result.settings.summaryCols, cols, result.settings.dateRange) : pageWidth(cols, result.settings.dateRange) // a location page grows when its columns were widened
   const PAGE_H = i === 0 ? coverHeight(result.settings.summaryRows) : rowLayout(result.locations[i - 1].activities).pageH // a location page grows taller when rows were made taller
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))

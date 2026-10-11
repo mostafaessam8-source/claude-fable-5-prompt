@@ -76,8 +76,15 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   const origin = s.possessionStart
   const g = ganttGeometry(s)
   const cols = s.tableCols && s.tableCols.length === DEFAULT_COLS.length ? s.tableCols : DEFAULT_COLS
-  const TABLE_W = cols.reduce((a, b) => a + b, 0)
-  const PAGE_X = pageWidth(s.tableCols)
+  // Start + finish: Planned and Forecast are two columns each (Start | Finish), the grid gets 14 tracks for the 12 logical columns
+  const range = !!s.dateRange
+  const subs = (c0: number) => (range && (c0 === 5 || c0 === 6) ? 2 : 1)
+  const tracks = cols.flatMap((w, c0) => Array<number>(subs(c0)).fill(w))
+  const gs = (k: number) => k + (range ? (k > 6 ? 1 : 0) + (k > 7 ? 1 : 0) : 0) // first grid track of logical column k (1-based)
+  const cx = (c0: number) => tracks.slice(0, gs(c0 + 1) - 1).reduce((a, b) => a + b, 0) // left edge of logical column c0
+  const cw = (c0: number) => cols[c0] * subs(c0)
+  const TABLE_W = tracks.reduce((a, b) => a + b, 0)
+  const PAGE_X = pageWidth(s.tableCols, range)
   const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
   // where each row sits: automatic heights that fit the A4 page, or the height a row was dragged to (the page grows when the rows outgrow it)
@@ -447,15 +454,15 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             boxShadow: `inset 4px 0 0 ${selectedIdx >= 0 ? C.black : C.amber}` }} />
         )}
         {hoverTCol != null && (
-          <div className="no-print" style={{ position: 'absolute', left: cols.slice(0, hoverTCol - 1).reduce((a, b) => a + b, 0), width: cols[hoverTCol - 1],
+          <div className="no-print" style={{ position: 'absolute', left: cx(hoverTCol - 1), width: cw(hoverTCol - 1),
             top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 5, pointerEvents: 'none',
             background: 'rgba(0,119,139,0.10)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />
         )}
         {canResize && sel && (() => {
           const { k, c } = sel
           const ci = c == null ? null : c - 1
-          const x0 = ci == null ? 0 : cols.slice(0, ci).reduce((a, b) => a + b, 0)
-          const x1 = ci == null ? 0 : x0 + cols[ci]
+          const x0 = ci == null ? 0 : cx(ci)
+          const x1 = ci == null ? 0 : x0 + cw(ci)
           const yTop = k == null ? 0 : 2 * HEAD_H + rowTops[k]
           const yBot = k == null ? 0 : yTop + rowHs[k]
           // a handle is just a thicker stretch of the cell's edge (hit area wider than what is drawn)
@@ -467,10 +474,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           // the handles sit around the picked cell: left / right = the column, top / bottom = the row (a header cell: the column only)
           const yMid = k == null ? HEAD_H : (yTop + yBot) / 2
           const xMid = ci != null ? (x0 + x1) / 2 : sel.x
-                    const colLen = k == null ? HEAD_H : rowHs[k], rowLen = ci != null ? cols[ci] : 80
+                    const colLen = k == null ? HEAD_H : rowHs[k], rowLen = ci != null ? cw(ci) : 80
           return (
             <>
-              {ci != null && <div className="no-print" style={{ position: 'absolute', left: x0, width: cols[ci], top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />}
+              {ci != null && <div className="no-print" style={{ position: 'absolute', left: x0, width: cw(ci), top: 2 * HEAD_H, height: bodyH + TOTAL_H, zIndex: 4, pointerEvents: 'none', background: 'rgba(0,119,139,0.08)', borderLeft: `1.5px solid ${C.blue}`, borderRight: `1.5px solid ${C.blue}` }} />}
               {ci != null && ci > 0 && (
                 <span className="no-print" role="slider" aria-label={`Drag left to widen "${COL_NAMES[ci]}" (the column on its left gives up the space), right to narrow it`} style={barStyle(x0, yMid, 'col-resize', colLen)}
                   onPointerDown={(e) => startColResize(e, ci, true)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}></span>
@@ -493,27 +500,30 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         })()}
         {/* ---- table ---- */}
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
-          gridTemplateColumns: cols.map((w) => `${w}px`).join(' '),
+          gridTemplateColumns: tracks.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
-          {COL_NAMES.map((h0, c) => { const h = s.dateRange && (c === 5 || c === 6) ? h0.replace('Finish', 'Start / Finish') : h0; return (
-            <div key={h0} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: '1 / span 2', gridColumn: c + 1, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
+          {COL_NAMES.map((h0, c) => { const two = subs(c) === 2; const h = two ? h0.split(' ')[0] : h0; return [
+            <div key={h0} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: two ? 1 : '1 / span 2', gridColumn: two ? `${gs(c + 1)} / span 2` : gs(c + 1), background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
               {canResize && (
                 <span className="no-print col-rz" title="Drag to change the column width; double-click: fit the content (like Excel's autofit)"
                   onPointerDown={(e) => startColResize(e, c)} onPointerMove={onColMove} onPointerUp={onColEnd} onPointerCancel={onColEnd}
                   onDoubleClick={() => setCols(cols.map((x, i) => (i === c ? autoFit(c) : x)))} />
               )}
-            </div>
-          )})}
+            </div>,
+            ...(two ? ['Start', 'Finish'].map((t, j) => (
+              <div key={`${h0}-${t}`} data-tcol={c + 1} style={{ ...cellBase, gridRow: 2, gridColumn: gs(c + 1) + j, background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8, borderTop: '1px solid rgba(255,255,255,.5)' }}>{t}</div>
+            )) : []),
+          ] })}
           {rows.map(({ a }, k) => {
             const r = 3 + 2 * k
             const at = activityTone(a.status)
             const bg = k % 2 ? C.tint1 : '#fff'
-            const span = (c: number, extra: CSSProperties, content: React.ReactNode, props: React.HTMLAttributes<HTMLDivElement> = {}) => (
-              <div key={`${k}-${c}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: c, background: bg, ...extra }} {...props}>{content}</div>
+            const span = (c: number, extra: CSSProperties, content: React.ReactNode, props: React.HTMLAttributes<HTMLDivElement> = {}, off = 0) => (
+              <div key={`${k}-${c}-${off}`} data-row={k} data-tcol={c} style={{ ...cellBase, gridRow: `${r} / span 2`, gridColumn: gs(c) + off, background: bg, ...extra }} {...props}>{content}</div>
             )
             /** A cell that can be typed in: double-click it, or click it once its row is selected. */
-            const ed = (c: number, shown: React.ReactNode, initial: string, extra: CSSProperties, hint: string) => {
+            const ed = (c: number, shown: React.ReactNode, initial: string, extra: CSSProperties, hint: string, off = 0) => {
               const editing = cellEdit?.k === k && cellEdit.c === c
               return span(c, extra, editing ? (
                 <input autoFocus defaultValue={initial} style={{ width: '100%', font: 'inherit', padding: '0 2px', textAlign: 'inherit', color: C.black }}
@@ -522,9 +532,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
                   onKeyDown={(e) => { const el = e.target as HTMLInputElement; if (e.key === 'Enter') el.blur(); if (e.key === 'Escape') { el.dataset.cancel = '1'; el.blur() } }} />
               ) : shown,
               planEditable ? { title: hint, onDoubleClick: () => setCellEdit({ k, c }),
-                onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {})
+                onClick: (e) => { if (selectedNo === a.no && !justDragged.current) { e.stopPropagation(); setCellEdit({ k, c }) } } } : {}, off)
             }
-            const twoLines = (a1: string, b1: string) => <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, fontSize: 7.5 }}><span>{a1}</span><span>{b1}</span></span>
             const actDur = a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : null
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
@@ -533,8 +542,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
-              ed(6, s.dateRange ? twoLines(fmtShort(a.plannedStart), fmtShort(a.plannedFinish)) : fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes'),
-              span(7, { fontWeight: 700 }, s.dateRange ? twoLines(fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)), fmtShort(a.carriedForecastFinish)) : fmtShort(a.carriedForecastFinish)),
+              ...(range ? [span(6, {}, fmtShort(a.plannedStart))] : []),
+              ed(6, fmtShort(a.plannedFinish), fmtCell(a.plannedFinish), {}, 'Planned finish: type a date (16-Oct-2026 14:30) — the start stays, the duration changes', range ? 1 : 0),
+              ...(range ? [span(7, { fontWeight: 700 }, fmtShort(a.actualStart ?? new Date(a.carriedForecastFinish.getTime() - a.durationH * 3_600_000)))] : []),
+              span(7, { fontWeight: 700 }, fmtShort(a.carriedForecastFinish), {}, range ? 1 : 0),
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: type 0 – 100'),
@@ -545,8 +556,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           {/* total row */}
           {(() => {
             const r = 3 + 2 * n
-            const t = (c: number, extra: CSSProperties, content: React.ReactNode, span = 1) => (
-              <div key={`t${c}`} data-tcol={c} style={{ ...cellBase, gridRow: r, gridColumn: `${c} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
+            const t = (c: number, extra: CSSProperties, content: React.ReactNode, span = 1, off = 0) => (
+              <div key={`t${c}-${off}`} data-tcol={c} style={{ ...cellBase, gridRow: r, gridColumn: `${gs(c) + off} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
             )
             const actTotal = loc.activities.reduce((sum, a) => sum + (a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : 0), 0)
             return [
@@ -554,8 +565,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               t(3, { background: tone.bg, color: tone.fg }, loc.status),
               t(4, {}, fmtDur(loc.totalHours)),
               t(5, {}, actTotal ? fmtDur(actTotal) : ''),
-              t(6, {}, fmtShort(loc.plannedFinish)),
-              t(7, {}, fmtShort(loc.forecastFinish)),
+              ...(range ? [t(6, {}, n ? fmtShort(new Date(Math.min(...loc.activities.map((x) => x.plannedStart.getTime())))) : '', 1, 0)] : []),
+              t(6, {}, fmtShort(loc.plannedFinish), 1, range ? 1 : 0),
+              ...(range ? [t(7, {}, n ? fmtShort(new Date(Math.min(...loc.activities.map((x) => (x.actualStart ?? new Date(x.carriedForecastFinish.getTime() - x.durationH * 3_600_000)).getTime())))) : '', 1, 0)] : []),
+              t(7, {}, fmtShort(loc.forecastFinish), 1, range ? 1 : 0),
               t(8, { color: varColour[varianceTone(loc.variance)] }, fmtVariance(loc.variance)),
               t(9, { color: C.slate }, pct(loc.planPct)),
               t(10, { color: C.blue }, pct(loc.actualPct)),

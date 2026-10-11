@@ -11,8 +11,9 @@ export const MIN_COL = 18
 export const MAX_COL = 700
 
 /** Width (px) of a location page: A4 landscape, or wider when the columns were widened beyond what leaves the Gantt its width. */
-export function pageWidth(tableCols: number[] | undefined): number {
-  const w = (tableCols && tableCols.length === DEFAULT_COLS.length ? tableCols : DEFAULT_COLS).reduce((a, b) => a + b, 0)
+export function pageWidth(tableCols: number[] | undefined, dateRange = false): number {
+  const cs = tableCols && tableCols.length === DEFAULT_COLS.length ? tableCols : DEFAULT_COLS
+  const w = cs.reduce((a, b) => a + b, 0) + (dateRange ? cs[5] + cs[6] : 0) // start + finish columns: Planned and Forecast are two columns each
   return 1123 + Math.max(0, Math.ceil(w + 12 + GANTT_COLS * GC_PREF - PAGE_INNER))
 }
 
@@ -49,8 +50,8 @@ export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW 
 const SUM_PROGRESS_MIN = 160
 export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }
 /** Width of the cover page: as wide as the location pages (so all pages line up), or wider when the summary columns were widened. */
-export function coverWidth(c: number[] | undefined, tableCols?: number[]): number {
-  return Math.max(pageWidth(tableCols), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
+export function coverWidth(c: number[] | undefined, tableCols?: number[], dateRange = false): number {
+  return Math.max(pageWidth(tableCols, dateRange), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
 }
 /** Height of the cover page: A4 landscape, or taller by what the dragged summary rows add. */
 export function coverHeight(rows: (number | null)[] | undefined): number {
