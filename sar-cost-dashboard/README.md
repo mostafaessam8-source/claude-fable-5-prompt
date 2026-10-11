@@ -135,6 +135,8 @@ What the page shows:
   - status by project (or by package when one project is selected)
   - how long documents wait for SAR review
   - submissions per month
+  - Clicking a bar opens its documents, with a summary line on top: the count, the count per project, and the oldest and
+    average days since submission.
 - **Project design scorecard:** red / amber / green health with the reason.
 - **Lists:** "Waiting on SAR" and "Waiting on the contractor".
 - **Full register:** exportable as CSV.

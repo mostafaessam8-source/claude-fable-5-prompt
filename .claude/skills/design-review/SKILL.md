@@ -55,6 +55,13 @@ How mixed wording is read:
   - more than 25% not submitted
   - submitted with no status
 
+## Charts
+- Every bar is clickable and opens `docModal`, a summary line plus the document table.
+- What a click shows:
+  - **Status by project:** opens that project.
+  - **Review ageing:** every document in that age band.
+  - **Package and month charts:** the clicked segment's documents. If the segment is empty, the whole bar.
+
 ## When changing it
 - Keep the Excel format unchanged, and keep project data out of code, comments and this file (public repository).
 - Test with the real weekly report archive: import it on Data Import (the log lists the design rows per file), then
