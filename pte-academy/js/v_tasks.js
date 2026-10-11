@@ -14,7 +14,9 @@
     S().seen[key].push(it.id); PTE.store.save();
     return it;
   };
-  const wordsOf = (t) => PTE.norm(t).split(" ").filter(Boolean);
+  /* treat UK/US spelling variants (analyse/analyze, centre/center, colour/color, travelling/traveling) as equal */
+  const canon = (w) => w.replace(/is(e|ed|es|ing|ation|ations)$/, "iz$1").replace(/yse(d|s)?$/, "yze$1").replace(/our(s|ed|ing)?$/, "or$1").replace(/tre(s)?$/, "ter$1").replace(/ll(ed|ing|er)$/, "l$1").replace(/ogue$/, "og");
+  const wordsOf = (t) => PTE.norm(t).split(" ").filter(Boolean).map(canon);
   PTE.countWords = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 
   /* LCS word diff: returns {tokens:[{w,ok}], pct} for target vs spoken text */

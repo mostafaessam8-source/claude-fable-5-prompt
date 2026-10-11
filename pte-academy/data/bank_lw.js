@@ -1825,12 +1825,12 @@ PTE_DATA.bankLW = {
   },
   {
    "id": "fibl08",
-   "transcript": "Public health campaigns can change behavior, but only when they are carefully designed. A campaign that simply warns people of danger often has little effect. Research shows that messages are more effective when they offer practical solutions and are delivered by trusted voices. For instance, programs encouraging people to stop smoking have succeeded when they combined advertising with free counselling and support groups. Over time, this approach has saved millions of lives and reduced pressure on hospitals.",
+   "transcript": "Public health campaigns can change behavior, but only when they are carefully designed. A campaign that simply warns people of danger often has little effect. Research shows that messages are more effective when they offer practical solutions and are delivered by trusted voices. For instance, programs encouraging people to stop smoking have succeeded when they combined advertising with free advice and support groups. Over time, this approach has saved millions of lives and reduced pressure on hospitals.",
    "text": "Public health campaigns can change behavior, but only when they are carefully designed. A campaign that simply warns people of danger often has little {1}. Research shows that messages are more effective when they offer practical {2} and are delivered by trusted voices. For instance, programs encouraging people to stop smoking have succeeded when they combined advertising with free {3} and support groups. Over time, this approach has saved millions of {4} and reduced pressure on {5}.",
    "answers": [
     "effect",
     "solutions",
-    "counselling",
+    "advice",
     "lives",
     "hospitals"
    ]
