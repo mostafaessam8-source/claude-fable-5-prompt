@@ -52,7 +52,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
     <>
     <div ref={box} className="report-wrap" style={{ marginRight: !narrow ? (show ? PANEL_W : selected && datesOpen ? DATES_W : 0) : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
-        <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), height: coverHeight(project.settings.summaryRows) }}>
+        <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), height: coverHeight(project.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), 794 / coverHeight(project.settings.summaryRows)) }}>
           <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} />
         </div>
         {result.locations.map((_, i) => (

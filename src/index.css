@@ -10,6 +10,12 @@
   background: #fff; color: #3D3935; font-family: Calibri, Inter, system-ui, sans-serif; position: relative;
 }
 @page { size: A4 landscape; margin: 0; }
+/* the mobile viewer prints every page from a second, print-only copy of the report */
+.print-only { display: none; }
+@media print {
+  .print-only { display: block; }
+  .viewer-screen { display: none !important; }
+}
 @media print {
   html, body { background: #fff !important; }
   .no-print { display: none !important; }
