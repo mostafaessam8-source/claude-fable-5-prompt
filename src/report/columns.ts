@@ -48,9 +48,9 @@ export const SUM_COL_NAMES = ['Location', 'Status', 'Planned Finish', 'Forecast 
 export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW = 200
 const SUM_PROGRESS_MIN = 160
 export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }
-/** Width of the cover page: A4 landscape, or wider when the summary columns were widened. */
-export function coverWidth(c: number[] | undefined): number {
-  return Math.max(1123, Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
+/** Width of the cover page: as wide as the location pages (so all pages line up), or wider when the summary columns were widened. */
+export function coverWidth(c: number[] | undefined, tableCols?: number[]): number {
+  return Math.max(pageWidth(tableCols), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
 }
 /** Height of the cover page: A4 landscape, or taller by what the dragged summary rows add. */
 export function coverHeight(rows: (number | null)[] | undefined): number {
