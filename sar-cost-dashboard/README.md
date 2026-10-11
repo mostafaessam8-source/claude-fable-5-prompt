@@ -121,6 +121,8 @@ Drawings** sheet in each project's weekly report file. Drop the weekly report **
 file used for the progress photos; the photos and the design register are read in one go.
 
 What the page shows (one compact page, each figure shown once):
+- **Section bar** at the top, which stays in view: Overview · Projects · Chase SAR · Chase the contractor · All
+  documents, each with its count. It jumps to that part, and "All documents" opens the register.
 - **Five numbers:** documents, % approved, with SAR (how many late, average days), with the contractor (rejected /
   to revise / not submitted), and the longest SAR review.
 - **Projects table, worst first:** one compact line per project, with its health dot and a status bar of every

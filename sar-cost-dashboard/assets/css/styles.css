@@ -1146,3 +1146,5 @@ details.ds-reg[open] > summary { margin-bottom: 10px; }
 .ds-nmw { width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ds-cmp .ds-mx-name .muted { white-space: nowrap; }
 @media (max-width: 640px) { .ds-nmw { width: 110px; } }
+#ds-ov, #ds-proj, #ds-csar, #ds-ccon, #ds-reg { scroll-margin-top: calc(var(--header-h) + var(--fbar-h, 0px) + 64px); }
+.ds-nav a.on { background: var(--sar-blue); color: #fff; }

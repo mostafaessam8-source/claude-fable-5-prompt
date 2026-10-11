@@ -56,6 +56,9 @@ How mixed wording is read:
   - submitted with no status
 
 ## Layout (user asked for a focused page: no repeated figure, no long repeated sentences)
+0. **Section bar** (`ds-nav`, sticky): Overview · Projects (n) · Chase SAR (n) · Chase the contractor (n) · All documents
+   (n). It jumps to ids `ds-ov`, `ds-proj`, `ds-csar`, `ds-ccon`, `ds-reg`; "All documents" also opens the register.
+   The part on screen is marked (IntersectionObserver, disconnected with the page).
 1. **Scope line + five tiles:** documents, approved %, with SAR (late, average), with the contractor (D / C / not
    submitted), longest SAR review. The last one opens the document.
 2. **Projects table** (`ds-mx ds-cmp`), compact, one line per project, worst first:
@@ -69,7 +72,7 @@ How mixed wording is read:
    named by the shared title start.
 4. **Register:** folded `<details>`, drawn on first open.
 
-Removed on purpose (they repeated other blocks): section nav, status doughnut, who-acts chart, health box, separate
+Removed on purpose (they repeated other blocks): the old 7-section nav, status doughnut, who-acts chart, health box, separate
 scorecard, decisions list, review-time-by-project, contractor-by-project and submissions-count charts, and (later) the SAR-wait ageing and submissions-per-month charts.
 Don't add them back. Note the class name `ds-sbar`: `ds-bar` was once a filter-bar class with gaps.
 

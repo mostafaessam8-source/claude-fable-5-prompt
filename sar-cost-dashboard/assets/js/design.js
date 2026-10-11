@@ -424,8 +424,27 @@
     if (!docs.length) { add(v, '<div class="empty">No document matches the filters — use ↺ Reset filters.</div>'); return; }
     add(v, '<p class="ds-scope">' + esc(scope) + " · report date " + fmt.date(M.rd) + " · SAR review target " + M.target + " days · click any number, bar or project to filter the page · click a document for its details</p>");
 
+    /* section bar: jumps to each part of the page (sticky under the filter bar; the part on screen is marked) */
+    var nUr = docs.filter(function (d) { return d.k === "UR"; }).length, nCd = docs.filter(function (d) { return d.k === "C" || d.k === "D"; }).length;
+    var secs = [["ds-ov", "Overview"], ["ds-proj", one ? one.code + " · packages" : "Projects (" + A.projects.length + ")"], ["ds-csar", "Chase SAR (" + nUr + ")"],
+      ["ds-ccon", "Chase the contractor (" + nCd + ")"], ["ds-reg", "All documents (" + docs.length + ")"]];
+    var nav = add(v, '<nav class="sec-nav ds-nav">' + secs.map(function (x) { return '<a href="#" data-s="' + x[0] + '">' + esc(x[1]) + "</a>"; }).join("") + "</nav>");
+    nav.addEventListener("click", function (e) {
+      var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault();
+      var t = document.getElementById(a.getAttribute("data-s")); if (!t) return;
+      if (t.tagName === "DETAILS" && !t.open) t.open = true;   // "All documents" opens the register
+      t.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    if (window.IntersectionObserver) setTimeout(function () {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (en) { if (!en.isIntersecting) return; nav.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-s") === en.target.id); }); });
+      }, { rootMargin: "-45% 0px -50% 0px" });
+      secs.forEach(function (x) { var t = document.getElementById(x[0]); if (t) io.observe(t); });
+      (window.__fbarObs = window.__fbarObs || []).push(io);   // disconnected with the page
+    }, 0);
+
     /* A · headline: five numbers */
-    var g = add(v, '<div class="grid g-5 ds-kpi"></div>');
+    var g = add(v, '<div class="grid g-5 ds-kpi" id="ds-ov"></div>');
     var oldestDoc = docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return b.age - a.age; })[0];
     var withCon = S.cd + S.ns;
     g.innerHTML = U.tile({ value: S.n, label: "Design documents", note: (one ? one.code : A.projects.length + " projects") + " · latest revision of each" }) +
@@ -454,6 +473,7 @@
     var mp = panel(v, byPkg ? one.code + " — " + (one.name || "") + " · by package" : "Projects",
       byPkg ? "Click a coloured segment for those documents · ↺ Reset filters (or × on the project chip) to see all projects"
         : "Worst first · click a project to open its details · click a coloured segment to filter the page to that project and status (Ctrl + click to add)");
+    mp.id = "ds-proj";
     if (byPkg) {   // the one project: health and its decisions in one line above its packages
       var oh = hOf(M, one.src), od = top[one.code] || [];
       add(mp, '<div class="ds-one">' + rag(oh.lvl) + " <b>Design health: " + oh.lvl + "</b>" + (oh.why.length ? " — " + esc(oh.why.join("; ")) : " — on track") +
@@ -515,11 +535,11 @@
 
     /* C · the documents to chase: longest with SAR · with the contractor */
     var g4 = add(v, '<div class="grid g-2"></div>');
-    listPanel(g4, "Chase SAR — longest in review", docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return (b.age || 0) - (a.age || 0); }), true);
-    listPanel(g4, "Chase the contractor — returned C / D", docs.filter(function (d) { return d.k === "C" || d.k === "D"; }).sort(function (a, b) { return RANK[a.k] - RANK[b.k] || (b.age || 0) - (a.age || 0); }), false);
+    listPanel(g4, "ds-csar", "Chase SAR — longest in review", docs.filter(function (d) { return d.k === "UR"; }).sort(function (a, b) { return (b.age || 0) - (a.age || 0); }), true);
+    listPanel(g4, "ds-ccon", "Chase the contractor — returned C / D", docs.filter(function (d) { return d.k === "C" || d.k === "D"; }).sort(function (a, b) { return RANK[a.k] - RANK[b.k] || (b.age || 0) - (a.age || 0); }), false);
 
     /* D · every document, on demand */
-    var rg = add(v, '<details class="panel ds-reg"' + (st.regOpen ? " open" : "") + '><summary><b>All documents</b> <span class="muted">· ' + plural(docs.length, "document") +
+    var rg = add(v, '<details id="ds-reg" class="panel ds-reg"' + (st.regOpen ? " open" : "") + '><summary><b>All documents</b> <span class="muted">· ' + plural(docs.length, "document") +
       (M.superseded ? " · " + M.superseded + " superseded / resubmitted not counted" : "") + " · search, sort, export · click a row for its history</span></summary></details>");
     function reg() { if (rg._done) return; rg._done = true; var h = add(rg, "<div></div>"); docTable(h, docs, { exportName: "NSR design register " + M.rd, maxHeight: 620 });
       add(rg, '<p class="muted ds-foot">Source: each project\'s weekly report file, sheet “Engineering Drawings” (6203: “Engineering Log”). A document submitted more than once counts once, at its latest submission. ' +
@@ -529,8 +549,8 @@
   }
   function hOf(M, src) { var p = M.projects.filter(function (x) { return x.src === src; })[0]; return p ? p.health : { lvl: "green", why: [] }; }
 
-  function listPanel(host, title, list, sar) {
-    var p = panel(host, title, plural(list.length, "document") + " · click one for its history");
+  function listPanel(host, id, title, list, sar) {
+    var p = panel(host, title, plural(list.length, "document") + " · click one for its history"); p.id = id;
     if (!list.length) { add(p, '<div class="empty-note">Nothing waiting.</div>'); return; }
     var ul = add(p, '<ul class="ds-list"></ul>'), groups = [], gi = {};
     list.forEach(function (d) {   // documents of one project with the same wait and the same title stem read as one line
