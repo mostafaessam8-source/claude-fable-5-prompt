@@ -14,6 +14,7 @@ export interface SettingsPatch {
   tableCols?: number[] | null
   activityCols?: number[] | null
   dateRange?: boolean
+  relCols?: boolean
   summaryCols?: number[] | null
   summaryRows?: (number | null)[] | null
 }
@@ -42,6 +43,7 @@ export function applySettings(project: Project, patch: SettingsPatch): Project {
       preparedBy: patch.preparedBy ?? old.preparedBy, reportTitle: patch.reportTitle ?? old.reportTitle, subtitle: patch.subtitle ?? old.subtitle,
       tableCols: patch.tableCols === undefined ? old.tableCols : (patch.tableCols ?? undefined),
       activityCols: patch.activityCols === undefined ? old.activityCols : (patch.activityCols ?? undefined),
+      relCols: patch.relCols === undefined ? old.relCols : (patch.relCols || undefined),
       dateRange: patch.dateRange === undefined ? old.dateRange : (patch.dateRange || undefined),
       summaryCols: patch.summaryCols === undefined ? old.summaryCols : (patch.summaryCols ?? undefined),
       summaryRows: patch.summaryRows === undefined ? old.summaryRows : (patch.summaryRows ?? undefined),

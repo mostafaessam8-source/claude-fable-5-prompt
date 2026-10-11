@@ -37,7 +37,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
   const dropSel = useCallback(() => { setSelected(null); setPanelOpen(false); setDatesOpen(false); setLinksOpen(false) }, [setSelected, setPanelOpen, setDatesOpen, setLinksOpen])
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow()
-  const pageW = Math.max(pageWidth(project.settings.tableCols, project.settings.dateRange), coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange)) // the widest page: widened columns make the pages wider
+  const pageW = Math.max(pageWidth(project.settings.tableCols, project.settings.dateRange, project.settings.relCols), coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange, project.settings.relCols)) // the widest page: widened columns make the pages wider
   const [zoom, setZoom] = useState(1)
   useLayoutEffect(() => {
     const el = box.current
@@ -54,7 +54,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
     <>
     <div ref={box} className="report-wrap" style={{ marginRight: !narrow ? (show ? PANEL_W : selected && datesOpen ? DATES_W : selected && linksOpen ? LINKS_W : 0) : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
-        <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), height: coverHeight(project.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange), 794 / coverHeight(project.settings.summaryRows)) }}>
+        <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange, project.settings.relCols), height: coverHeight(project.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange, project.settings.relCols), 794 / coverHeight(project.settings.summaryRows)) }}>
           <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} />
         </div>
         {result.locations.map((_, i) => (

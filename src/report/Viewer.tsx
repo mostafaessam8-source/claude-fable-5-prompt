@@ -101,8 +101,8 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     return () => window.removeEventListener('keydown', on)
   })
 
-  const PAGE_W = i === 0 ? coverWidth(result.settings.summaryCols, cols, result.settings.dateRange) : pageWidth(cols, result.settings.dateRange) // a location page grows when its columns were widened
-  const PAGE_H = i === 0 ? coverHeight(result.settings.summaryRows) : rowLayout(result.locations[i - 1].activities, pageWidth(cols, result.settings.dateRange)).pageH // a location page grows taller when rows were made taller
+  const PAGE_W = i === 0 ? coverWidth(result.settings.summaryCols, cols, result.settings.dateRange, result.settings.relCols) : pageWidth(cols, result.settings.dateRange, result.settings.relCols) // a location page grows when its columns were widened
+  const PAGE_H = i === 0 ? coverHeight(result.settings.summaryRows) : rowLayout(result.locations[i - 1].activities, pageWidth(cols, result.settings.dateRange, result.settings.relCols)).pageH // a location page grows taller when rows were made taller
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))
 
@@ -238,7 +238,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     {/* every page, for printing / saving as PDF (not on the screen) */}
     <div className="print-only report-wrap">
       <div className="report-zoom">
-        <div className="report-page" style={{ width: coverWidth(result.settings.summaryCols, cols, result.settings.dateRange), height: coverHeight(result.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(result.settings.summaryCols, cols, result.settings.dateRange), 794 / coverHeight(result.settings.summaryRows)) }}>
+        <div className="report-page" style={{ width: coverWidth(result.settings.summaryCols, cols, result.settings.dateRange, result.settings.relCols), height: coverHeight(result.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(result.settings.summaryCols, cols, result.settings.dateRange, result.settings.relCols), 794 / coverHeight(result.settings.summaryRows)) }}>
           <Cover result={result} layouts={layouts} />
         </div>
         {result.locations.map((_, j) => <LocationPage key={j} result={result} index={j} layout={layouts[j]} />)}

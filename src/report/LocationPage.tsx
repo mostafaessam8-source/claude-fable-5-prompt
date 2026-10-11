@@ -79,8 +79,9 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   // Start + finish: Planned and Forecast are two columns each (Start | Finish), the grid gets 14 tracks for the 12 logical columns
   const range = !!s.dateRange
   const subs = (c0: number) => (range && (c0 === 5 || c0 === 6) ? 2 : 1)
-  const tracks = cols.flatMap((w, c0) => Array<number>(subs(c0)).fill(w))
-  const gs = (k: number) => k + (range ? (k > 6 ? 1 : 0) + (k > 7 ? 1 : 0) : 0) // first grid track of logical column k (1-based)
+  const rel = !!s.relCols // the Predecessors / Successors columns (logical 11 and 12) are optional
+  const tracks = cols.flatMap((w, c0) => ((c0 === 10 || c0 === 11) && !rel ? [] : Array<number>(subs(c0)).fill(w)))
+  const gs = (k: number) => k + (range ? (k > 6 ? 1 : 0) + (k > 7 ? 1 : 0) : 0) - (rel ? 0 : (k > 11 ? 1 : 0) + (k > 12 ? 1 : 0)) // first grid track of logical column k (1-based)
   const cx = (c0: number) => tracks.slice(0, gs(c0 + 1) - 1).reduce((a, b) => a + b, 0) // left edge of logical column c0
   const cw = (c0: number) => cols[c0] * subs(c0)
   const TABLE_W = tracks.reduce((a, b) => a + b, 0)
@@ -89,7 +90,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   loc.activities.forEach((x) => x.links.forEach((l) => { if (!l.bad) succsOf.set(l.pred, [...(succsOf.get(l.pred) ?? []), { no: x.no, rel: l.rel, lagH: l.lagH }]) }))
   const relText = (ls: { no: number; rel: string; lagH: number }[]) => ls.map((l) => `${l.no}${l.rel}${l.lagH ? `${l.lagH > 0 ? '+' : ''}${Math.round(l.lagH * 100) / 100}h` : ''}`).join(', ')
   const relStyle: CSSProperties = { fontSize: 7, lineHeight: 1.1, overflow: 'hidden', padding: '0 2px', textAlign: 'center', color: C.black }
-  const PAGE_X = pageWidth(s.tableCols, range)
+  const PAGE_X = pageWidth(s.tableCols, range, rel)
   const GC = (PAGE_INNER + (PAGE_X - 1123) - TABLE_W - PA_W) / GANTT_COLS // px per Gantt column (the A4 default, or GC_PREF once the page has grown)
   const n = loc.activities.length
   // where each row sits: automatic heights that fit the A4 page, or the height a row was dragged to (the page grows when the rows outgrow it)
@@ -555,7 +556,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
         <div style={{ display: 'grid', width: TABLE_W, flex: 'none',
           gridTemplateColumns: tracks.map((w) => `${w}px`).join(' '),
           gridTemplateRows: `${HEAD_H}px ${HEAD_H}px ${rowHs.map((h) => `${h / 2}px ${h / 2}px`).join(' ')} ${TOTAL_H}px` }}>
-          {COL_NAMES.map((h0, c) => { const two = subs(c) === 2; const h = two ? (c === 6 ? 'Actual / Forecast' : 'Planned') : (c === 6 ? 'Actual / Forecast Finish' : h0); return [
+          {COL_NAMES.map((h0, c) => { if (!rel && (c === 10 || c === 11)) return null; const two = subs(c) === 2; const h = two ? (c === 6 ? 'Actual / Forecast' : 'Planned') : (c === 6 ? 'Actual / Forecast Finish' : h0); return [
             <div key={h0} data-tcol={c + 1} style={{ ...cellBase, position: 'relative', gridRow: two ? 1 : '1 / span 2', gridColumn: two ? `${gs(c + 1)} / span 2` : gs(c + 1), background: C.slate, color: '#fff', fontWeight: 700, fontSize: 8 }}>
               {h}
               {canResize && (
@@ -615,8 +616,8 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               span(8, { fontWeight: 700, color: varColour[varianceTone(a.carried)] }, fmtVariance(a.carried)),
               span(9, { color: C.slate, fontWeight: 700 }, pct(a.planPct)),
               ed(10, pct(a.effectivePct), String(Math.round(a.effectivePct * 100)), { color: C.blue, fontWeight: 700 }, '% complete: click and type 0 – 100', 0, true),
-              span(11, relStyle, relText(a.links.filter((l) => !l.bad).map((l) => ({ no: l.pred, rel: l.rel, lagH: l.lagH }))), { title: 'Predecessors: #activity, type, lag. Open Links ▸ in the top bar to change them' }),
-              span(12, relStyle, relText(succsOf.get(a.no) ?? []), { title: 'Successors: the activities that follow this one' }),
+              ...(rel ? [span(11, relStyle, relText(a.links.filter((l) => !l.bad).map((l) => ({ no: l.pred, rel: l.rel, lagH: l.lagH }))), { title: 'Predecessors: #activity, type, lag. Open Links ▸ in the top bar to change them' }),
+              span(12, relStyle, relText(succsOf.get(a.no) ?? []), { title: 'Successors: the activities that follow this one' })] : []),
               ed(13, a.remarks, a.remarks, { justifyContent: 'flex-start', textAlign: 'left', fontSize: fitFont(a.remarks, cols[12], rowHs[k], 7), overflow: 'hidden', padding: '0 3px', color: C.black }, 'Remarks: double-click to write'),
             ]
           })}
@@ -641,8 +642,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
               t(8, { color: varColour[varianceTone(loc.variance)] }, fmtVariance(loc.variance)),
               t(9, { color: C.slate }, pct(loc.planPct)),
               t(10, { color: C.blue }, pct(loc.actualPct)),
-              t(11, {}, ''),
-              t(12, {}, ''),
+              ...(rel ? [t(11, {}, ''), t(12, {}, '')] : []),
               t(13, {}, ''),
             ]
           })()}
