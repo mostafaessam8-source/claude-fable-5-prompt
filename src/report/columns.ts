@@ -19,9 +19,9 @@ export function tableColsOf(c: number[] | undefined | null): number[] {
   if (w.length === 11) w = [...w.slice(0, 10), DEFAULT_COLS[10], DEFAULT_COLS[11], w[10]] // saved before the Predecessors / Successors columns
   return w.length === DEFAULT_COLS.length ? w : DEFAULT_COLS
 }
-export function pageWidth(tableCols: number[] | undefined, dateRange = false): number {
+export function pageWidth(tableCols: number[] | undefined, dateRange = false, relCols = false): number {
   const cs = tableColsOf(tableCols)
-  const w = cs.reduce((a, b) => a + b, 0) + (dateRange ? cs[5] + cs[6] : 0) // start + finish columns: Planned and Forecast are two columns each
+  const w = cs.reduce((a, b) => a + b, 0) + (dateRange ? cs[5] + cs[6] : 0) - (relCols ? 0 : cs[10] + cs[11]) // start + finish columns: Planned and Forecast are two columns each
   return 1123 + Math.max(0, Math.ceil(w + 12 + GANTT_COLS * GC_PREF - PAGE_INNER))
 }
 
@@ -64,8 +64,8 @@ export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW 
 const SUM_PROGRESS_MIN = 160
 export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }
 /** Width of the cover page: as wide as the location pages (so all pages line up), or wider when the summary columns were widened. */
-export function coverWidth(c: number[] | undefined, tableCols?: number[], dateRange = false): number {
-  return Math.max(pageWidth(tableCols, dateRange), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
+export function coverWidth(c: number[] | undefined, tableCols?: number[], dateRange = false, relCols = false): number {
+  return Math.max(pageWidth(tableCols, dateRange, relCols), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
 }
 /** Height of the cover page: A4 landscape, or taller by what the dragged summary rows add. */
 export function coverHeight(rows: (number | null)[] | undefined): number {
