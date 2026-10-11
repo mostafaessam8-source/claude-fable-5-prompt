@@ -190,7 +190,8 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
 
   const btn = 'rounded bg-white/15 px-3 py-2 text-sm font-semibold text-white active:bg-white/30 disabled:opacity-30'
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#cfd6d8', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
+    <>
+    <div className="viewer-screen" style={{ position: 'fixed', inset: 0, background: '#cfd6d8', overflow: 'hidden', userSelect: 'none', WebkitUserSelect: 'none' }}>
       <div ref={stage} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: availH, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', overflow: 'hidden' }}
         onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
         onTouchEnd={(e) => { if (e.cancelable) e.preventDefault() /* no emulated mouse events: they would clear the rulers */ }}>
@@ -221,6 +222,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
         </select>
         <button className={btn} disabled={i === last} onClick={() => go(1)} aria-label="Next page">Next ▶</button>
         <button className={btn} style={range ? { background: '#00778B' } : undefined} onClick={() => setRange((r) => !r)} aria-pressed={range} aria-label="Start and finish columns">Start/Finish</button>
+        <button className={btn} onClick={() => window.print()} aria-label="Print the whole report">🖨 Print</button>
         {zv.z > 1.05 && <button className={btn} onClick={() => applyZ(1, 0, 0)} aria-label="Fit to screen">Fit</button>}
         <button className={btn} style={{ background: '#00778B' }} onClick={() => (full ? exitFull() : enterFull())} aria-label={full ? 'Exit full screen' : 'Full screen'}>{full ? '✕ Exit full screen' : '⛶ Full screen'}</button>
       </div>
@@ -233,5 +235,15 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
         </>
       )}
     </div>
+    {/* every page, for printing / saving as PDF (not on the screen) */}
+    <div className="print-only report-wrap">
+      <div className="report-zoom">
+        <div className="report-page" style={{ width: coverWidth(result.settings.summaryCols, cols, result.settings.dateRange), height: coverHeight(result.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(result.settings.summaryCols, cols, result.settings.dateRange), 794 / coverHeight(result.settings.summaryRows)) }}>
+          <Cover result={result} layouts={layouts} />
+        </div>
+        {result.locations.map((_, j) => <LocationPage key={j} result={result} index={j} layout={layouts[j]} />)}
+      </div>
+    </div>
+    </>
   )
 }
