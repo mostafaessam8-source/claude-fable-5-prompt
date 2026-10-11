@@ -27,6 +27,10 @@ Want to push these prompts further? Our detailed guide breaks down how to pair t
 A web app (Vite + React + TypeScript) that imports a possession tracker workbook, renders the planned-vs-actual
 report in the browser and exports a live-formula Excel file. See [`docs/TRACKER.md`](docs/TRACKER.md).
 
+## 🚆 Also in this repo: PTE-79 Express (PTE study academy)
+
+A bilingual (English/Arabic) 6-month PTE Academic study site with a daily plan, spaced-repetition vocabulary, phonetics lab, grammar, task practice, mock tests and a hands-free **Drive mode**. Static, installable, offline-capable — see [`pte-academy/README.md`](pte-academy/README.md).
+
 ## 📄 License
 
 Provided for research and reference. The original Fable 5 prompt is the property of Anthropic; the generalized adaptations are offered as-is for your own projects.
