@@ -38,16 +38,20 @@ export const PAGE_H0 = 794
  * dragged keeps its own height, and when the rows together outgrow the page the PAGE grows taller (like a sheet that grows).
  */
 export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[]) {
-  const n = acts.length
   const long = acts.filter((a) => a.remarks.length > LONG_REMARK)
   const chars = long.reduce((t, a) => t + String(a.no ?? '').length + a.remarks.length + 6, 0)
   const remarksH = long.length ? 14 + Math.ceil(chars / 200) * 11 : 0
-  const rh = Math.max(8, Math.min(18, Math.floor((AVAIL_ROWS_H - remarksH) / Math.max(1, 2 * n))))
-  const heights = acts.map((a) => (a.rowH ? Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, a.rowH)) : 2 * rh))
+  // rows the user dragged keep their height; the automatic rows share what is left, so a few dragged rows do not push the page taller
+  const manual = acts.map((a) => (a.rowH ? Math.min(MAX_ROW_H, Math.max(MIN_ROW_H, a.rowH)) : 0))
+  const manualSum = manual.reduce((t, h) => t + h, 0)
+  const autoCount = manual.filter((h) => !h).length
+  const room = AVAIL_ROWS_H - remarksH
+  const rh = Math.max(8, Math.min(18, Math.floor((room - manualSum) / Math.max(1, 2 * autoCount))))
+  const heights = manual.map((h) => h || 2 * rh)
   const tops: number[] = []
   let y = 0
   for (const h of heights) { tops.push(y); y += h }
-  const extra = Math.max(0, y - 2 * rh * n)
+  const extra = Math.max(0, y - room)
   return { rh, heights, tops, bodyH: y, remarksH, extra, pageH: PAGE_H0 + extra, long }
 }
 
