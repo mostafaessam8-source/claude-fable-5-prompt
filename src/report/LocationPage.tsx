@@ -601,7 +601,9 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             const t = (c: number, extra: CSSProperties, content: React.ReactNode, span = 1, off = 0) => (
               <div key={`t${c}-${off}`} data-tcol={c} style={{ ...cellBase, gridRow: r, gridColumn: `${gs(c) + off} / span ${span}`, background: C.tint2, fontWeight: 700, borderTop: `2px solid ${C.black}`, ...extra }}>{content}</div>
             )
-            const actTotal = loc.activities.reduce((sum, a) => sum + (a.actualStart && a.actualFinish && !a.dateBad ? (a.actualFinish.getTime() - a.actualStart.getTime()) / 3_600_000 : 0), 0)
+            // like the baseline total: the elapsed actual time, first actual start to last actual finish of the finished activities (overlaps count once)
+            const done = loc.activities.filter((x) => x.actualStart && x.actualFinish && !x.dateBad)
+            const actTotal = done.length ? (Math.max(...done.map((x) => x.actualFinish!.getTime())) - Math.min(...done.map((x) => x.actualStart!.getTime()))) / 3_600_000 : 0
             return [
               t(1, { justifyContent: 'flex-start', textAlign: 'left', paddingLeft: 6 }, `TOTAL - ${layout?.code || loc.name}`, 2),
               t(3, { background: tone.bg, color: tone.fg }, loc.status),
