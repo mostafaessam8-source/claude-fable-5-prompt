@@ -35,7 +35,7 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
   onSelect: (no: number) => void
   onClose: () => void
 }) {
-  const narrow = useNarrow()
+  const narrow = useNarrow(600)
   const acts = project.locations[loc].activities
   const k = acts.findIndex((a) => a.no === no)
   const baseStart = useRef<{ key: string; startH: number } | null>(null)
