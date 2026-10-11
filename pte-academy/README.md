@@ -23,10 +23,11 @@ On GitHub Pages it is published at `/pte-academy/` by `.github/workflows/pages.y
 | **Drive mode** | Hands‑free audio lessons (see below) |
 | **Progress** | XP, ranks, streak, badges, skill averages, mistakes log, JSON backup |
 
-## Drive mode (hands‑free)
-Audio‑only "radio lines": Word Express, Sound Lab, Repeat‑Sentence drill, Dictation drill, Quick Quiz, Grammar Radio, Lecture & Summary,
-Templates Recital, Story Time and a balanced **Commute Mix**. Giant ⏮ ⏯ ⏭ buttons, headset / steering‑wheel media keys (Media Session),
-screen wake‑lock + 🌙 black‑screen mode, optional voice commands ("next", "pause", "repeat"). Start it **while parked**.
+## Drive mode (hands‑free course)
+A named audio curriculum: **8 units, 226 numbered lessons**, each lesson with its own title (EN/AR) and a fixed script.
+Units: Exam Strategy Academy · Sound Foundations · Word Express (600 words, 10 per lesson) · Grammar Radio · Speaking Gym · Listening Lab · Templates Academy · Story Season.
+Lessons play by themselves (English → Arabic → beep → you repeat), get a ✓ when finished, and the next lesson starts automatically (switchable). "Continue" resumes where you stopped; random "Quick mixes" are still available.
+Giant ⏮ ⏯ ⏭ buttons, headset / steering‑wheel media keys (Media Session), screen wake‑lock + muted‑video fallback + 🌙 black‑screen mode, optional voice commands. Start it **while parked**.
 Speech comes from the phone's own TTS voices — install an Arabic voice (Google Text‑to‑Speech) for the Arabic parts.
 
 ## Content & honesty notes

@@ -198,3 +198,5 @@ body.drive-on { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 .hero small { color: #E6F1F4; }
 .hero .ar, .hero .ar-title { color: #fff; }
+.line-card { text-decoration: none; width: 100%; font: inherit; }
+a.line-card small, a.line-card span { text-decoration: none; }
