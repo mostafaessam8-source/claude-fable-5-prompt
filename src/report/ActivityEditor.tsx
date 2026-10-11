@@ -270,11 +270,11 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         onFocus={(e) => { const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null; setFr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null) }}
         onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFr(null) }}>
       {pick && box && (() => {
-        const coarse = matchMedia('(pointer: coarse)').matches, t = coarse ? 4 : 3, pad = coarse ? 8 : 4
+        const coarse = matchMedia('(pointer: coarse)').matches, t = 3, pad = coarse ? 8 : 4
         // a handle is just a thicker stretch of the cell's edge (hit area wider than what is drawn)
         const dot = (x: number, y: number, cursor: string): React.CSSProperties => {
           const vert = cursor === 'col-resize', w = vert ? t + 2 * pad : box.w, h = vert ? box.h : t + 2 * pad
-          return { position: 'absolute', left: x - w / 2, top: y - h / 2, width: w, height: h, boxSizing: 'border-box', padding: vert ? `0 ${pad}px` : `${pad}px 0`, backgroundClip: 'content-box', background: '#00778B', zIndex: 20, touchAction: 'none', cursor }
+          return { position: 'absolute', left: x - w / 2, top: y - h / 2, width: w, height: h, boxSizing: 'border-box', padding: vert ? `0 ${pad}px` : `${pad}px 0`, backgroundClip: 'content-box', backgroundColor: '#00778B', zIndex: 20, touchAction: 'none', cursor }
         }
         const midY = box.t + box.h / 2, midX = box.l + box.w / 2
         return (

@@ -459,10 +459,10 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           const yTop = k == null ? 0 : 2 * HEAD_H + rowTops[k]
           const yBot = k == null ? 0 : yTop + rowHs[k]
           // a handle is just a thicker stretch of the cell's edge (hit area wider than what is drawn)
-          const t = Math.max(1.5, (matchMedia('(pointer: coarse)').matches ? 4 : 3) / zoom), pad = Math.max(2, (matchMedia('(pointer: coarse)').matches ? 8 : 4) / zoom)
+          const t = Math.max(1.5, 3 / zoom), pad = Math.max(2, (matchMedia('(pointer: coarse)').matches ? 8 : 4) / zoom)
           const barStyle = (x: number, y: number, cursor: string, len: number): React.CSSProperties => {
             const vert = cursor === 'col-resize', w = vert ? t + 2 * pad : len, h = vert ? len : t + 2 * pad
-            return { position: 'absolute', left: x - w / 2, top: y - h / 2, width: w, height: h, boxSizing: 'border-box', padding: vert ? `0 ${pad}px` : `${pad}px 0`, backgroundClip: 'content-box', background: C.blue, zIndex: 9, touchAction: 'none', cursor }
+            return { position: 'absolute', left: x - w / 2, top: y - h / 2, width: w, height: h, boxSizing: 'border-box', padding: vert ? `0 ${pad}px` : `${pad}px 0`, backgroundClip: 'content-box', backgroundColor: C.blue, zIndex: 9, touchAction: 'none', cursor }
           }
           // the handles sit around the picked cell: left / right = the column, top / bottom = the row (a header cell: the column only)
           const yMid = k == null ? HEAD_H : (yTop + yBot) / 2
