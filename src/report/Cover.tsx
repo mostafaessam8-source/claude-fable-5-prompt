@@ -38,6 +38,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
   // ---- resize handles: pick a cell; thick lines on its edges drag the column (left / right) or the row (top / bottom) ----
   const grid = useRef<HTMLDivElement>(null)
   const [sel, setSel] = useState<{ r: number; c: number } | null>(null)
+  const [hov, setHov] = useState<{ r: number; c: number } | null>(null) // the rulers: the row and column under the pointer
   const drag = useRef<null | { kind: 'col' | 'row'; i: number; p0: number; v0: number; prev?: number; rows: (number | null)[] }>(null)
   const cellBox = (r: number, c: number) => {
     const el = grid.current?.querySelector<HTMLElement>(`[data-r="${r}"][data-c="${c}"]`)
@@ -70,6 +71,18 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
     }
   }
   const end = (e: React.PointerEvent) => { drag.current = null; try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ } }
+  const rulers = () => {
+    if (!hov) return null
+    const b = cellBox(hov.r, hov.c), g = grid.current
+    if (!b || !g) return null
+    const bg = 'rgba(0,119,139,0.09)', line = `1.5px solid ${C.blue}`
+    return (
+      <>
+        <div className="no-print" style={{ position: 'absolute', left: b.l, width: b.w, top: 0, height: g.offsetHeight, zIndex: 7, pointerEvents: 'none', background: bg, borderLeft: line, borderRight: line }} />
+        <div className="no-print" style={{ position: 'absolute', top: b.t, height: b.h, left: 0, width: g.offsetWidth, zIndex: 7, pointerEvents: 'none', background: bg, borderTop: line, borderBottom: line }} />
+      </>
+    )
+  }
   const handles = () => {
     if (!onSummary || !sel) return null
     const b = cellBox(sel.r, sel.c)
@@ -126,6 +139,8 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
 
       <div style={{ marginTop: 12 }}><Band>SUMMARY &nbsp;-&nbsp; ALL LOCATIONS</Band></div>
       <div ref={grid} style={{ display: 'grid', gridTemplateColumns: COLS, gridTemplateRows: ROWS, fontSize: 10, position: 'relative' }}
+        onMouseMove={(e) => { const el = (e.target as HTMLElement).closest('[data-c]') as HTMLElement | null; const r = el ? Number(el.dataset.r) : -1, c = el ? Number(el.dataset.c) : -1; setHov((h) => (el ? (h && h.r === r && h.c === c ? h : { r, c }) : null)) }}
+        onMouseLeave={() => setHov(null)}
         onClick={(e) => { if (!onSummary || (e.target as HTMLElement).closest('[role=slider]')) return; const el = (e.target as HTMLElement).closest('[data-c]') as HTMLElement | null; setSel(el ? { r: Number(el.dataset.r), c: Number(el.dataset.c) } : null) }}>
         {head.map((h, c) => (
           <div key={h} data-r={0} data-c={c} style={{ background: C.slate, color: '#fff', fontWeight: 700, fontSize: 9, textAlign: 'center', padding: '4px 2px', border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{h}</div>
@@ -143,6 +158,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
         <SummaryRow i={result.locations.length} r={result.locations.length + 1} total name="ALL LOCATIONS" status={total.status} tone={locationTone(total.status)}
           pf={fmtShort(fromHours(total.plannedFinishH, origin))} ff={fmtShort(fromHours(total.forecastFinishH, origin))}
           variance={total.variance} plan={total.planPct} actual={total.actualPct} buffer={total.bufferToHandback} frac={dataDateFrac} />
+        {rulers()}
         {handles()}
       </div>
 
