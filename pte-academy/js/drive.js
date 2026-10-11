@@ -116,6 +116,27 @@
   let overlay = null, audioKeep = null;
 
   const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA=";
+  let nosleepVideo = null;
+  function awakeStatus(txt, ok) { if (!overlay) return; const el = overlay.querySelector(".awake"); if (el) { el.textContent = txt; el.style.color = ok ? "#59CBE8" : "#F1B434"; } }
+  function requestWake() {
+    if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+    navigator.wakeLock.request("screen").then((l) => {
+      D.wake = l; awakeStatus("🔆 Screen kept awake · الشاشة لن تنطفئ", true);
+      l.addEventListener("release", () => { D.wake = null; if (D.overlayOpen) { awakeStatus("⚠ Re-locking screen…", false); setTimeout(requestWake, 300); } });
+    }).catch(() => { D.wake = null; });
+  }
+  /* "NoSleep" trick: a tiny muted looping video keeps the screen on where the Wake Lock API is missing or fails (older iPhones, home-screen apps, battery saver) */
+  function startVideoKeepAwake() {
+    try {
+      if (!nosleepVideo) {
+        const v = document.createElement("video"); v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.muted = true; v.loop = true; v.setAttribute("aria-hidden", "true");
+        v.style.cssText = "position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.02;pointer-events:none;z-index:1";
+        const m = document.createElement("source"); m.src = "icons/nosleep.mp4"; m.type = "video/mp4"; const w = document.createElement("source"); w.src = "icons/nosleep.webm"; w.type = "video/webm"; v.appendChild(m); v.appendChild(w); nosleepVideo = v;
+      }
+      (overlay || document.body).appendChild(nosleepVideo);
+      const pr = nosleepVideo.play(); if (pr && pr.then) pr.then(() => { if (!D.wake) awakeStatus("🔆 Screen kept awake (video mode) · الشاشة لن تنطفئ", true); }).catch(() => awakeStatus("⚠ Tap the screen once to keep it awake · المس الشاشة مرة", false));
+    } catch (e) { /* ignore */ }
+  }
   function keepAlive(on) {
     try {
       if (on) {
@@ -127,15 +148,24 @@
           set("play", () => toggle()); set("pause", () => toggle()); set("nexttrack", () => nextGroup()); set("previoustrack", () => prevGroup());
           set("seekforward", () => nextGroup()); set("seekbackward", () => repeatGroup());
         }
-        if ("wakeLock" in navigator) navigator.wakeLock.request("screen").then((l) => (D.wake = l)).catch(() => {});
+        requestWake(); startVideoKeepAwake();   /* both at once: belt and braces */
+        awakeStatus("⏳ Keeping screen awake…", false);
+        D.awakeTimer = setInterval(() => { if (!D.overlayOpen) return; if (!D.wake && "wakeLock" in navigator) requestWake(); if (nosleepVideo && nosleepVideo.paused) nosleepVideo.play().catch(() => {}); }, 15000);
       } else {
+        clearInterval(D.awakeTimer);
         audioKeep && audioKeep.pause();
+        if (nosleepVideo) { try { nosleepVideo.pause(); nosleepVideo.remove(); } catch (e) { /* ok */ } }
         if (D.wake) { D.wake.release().catch(() => {}); D.wake = null; }
         if ("mediaSession" in navigator) { ["play", "pause", "nexttrack", "previoustrack", "seekforward", "seekbackward"].forEach((a) => { try { navigator.mediaSession.setActionHandler(a, null); } catch (e) { /* ok */ } }); }
       }
     } catch (e) { /* ignore */ }
   }
-  document.addEventListener("visibilitychange", () => { if (D.running && document.visibilityState === "visible" && "wakeLock" in navigator && !D.wake) navigator.wakeLock.request("screen").then((l) => (D.wake = l)).catch(() => {}); });
+  /* any touch also (re)starts the keep-awake video: some browsers only allow video.play() inside a user gesture */
+  document.addEventListener("pointerdown", () => { if (D.overlayOpen && nosleepVideo && nosleepVideo.paused) nosleepVideo.play().catch(() => {}); }, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (!D.overlayOpen) return;
+    if (document.visibilityState === "visible") { requestWake(); if (nosleepVideo) nosleepVideo.play().catch(() => {}); if (D.running) runFrom(groupStart(D.i)); /* speech is often cut when the page was hidden: restart the current item */ }
+  });
 
   const sleep = (ms, tok) => new Promise((res) => { const t0 = Date.now(); (function chk() { if (tok !== D.token || Date.now() - t0 >= ms) return res(tok === D.token); setTimeout(chk, 80); })(); });
 
@@ -190,7 +220,7 @@
     document.body.classList.add("drive-on"); D.overlayOpen = true;
     const sk = (txt, fn, cls, label) => h("button", { class: cls || "", type: "button", "aria-label": label || txt, onclick: fn }, txt);
     overlay = h("div", { class: "drive", role: "dialog", "aria-label": "Drive mode" },
-      h("div", { class: "dtop" }, h("div", null, h("b", null, line.icon + " " + line.en), h("div", { style: { color: "#C8C9C7", fontSize: ".85rem" } }, "Eyes on the road · العين على الطريق")),
+      h("div", { class: "dtop" }, h("div", null, h("b", null, line.icon + " " + line.en), h("div", { style: { color: "#C8C9C7", fontSize: ".85rem" } }, "Eyes on the road · العين على الطريق"), h("div", { class: "awake", style: { fontSize: ".78rem", color: "#F1B434" } }, "")),
         h("div", { class: "row" }, h("span", { class: "cnt pill" }, "0%"), h("button", { class: "btn red mini", type: "button", onclick: closeOverlay }, "✕ Exit"))),
       h("div", { class: "dbar" }, h("i")),
       h("div", { class: "now", "aria-live": "polite" }, h("div", { class: "lbl" }, "READY"), h("div", { class: "en" }, "Press ▶ to start"), h("div", { class: "ar", dir: "rtl" }, "اضغط ▶ للبدء")),
@@ -231,6 +261,9 @@
     wrap.appendChild(h("div", { class: "card" }, h("b", null, "Length · المدة"), mins,
       h("label", { class: "row", style: { marginTop: "10px" } }, h("input", { type: "checkbox", onchange: (e) => { D.voiceCmd = e.target.checked; } }), h("span", null, "Voice commands (beta): say “next”, “pause”, “repeat”, “back”. Works best with a headset. · أوامر صوتية تجريبية"))));
     wrap.appendChild(h("div", { class: "lines" }, LINES.map((l) => h("button", { class: "line-card", type: "button", onclick: () => start(l, minutes) }, h("b", null, l.icon + " " + l.en), h("span", { class: "ar", dir: "rtl" }, l.ar), h("small", null, l.desc)))));
+    wrap.appendChild(h("div", { class: "card danger", style: { marginTop: "16px" } }, h("b", null, "📱 If your screen still turns off · لو الشاشة لسه بتقفل"),
+      h("ol", null, h("li", null, "Open the site in Chrome (Android) or Safari (iPhone) and press Start from inside the page — not from a notification."), h("li", null, "Android: Settings → Display → Screen timeout → 10 minutes or more (and turn OFF Battery saver)."), h("li", null, "iPhone: Settings → Display & Brightness → Auto-Lock → 5 minutes or Never; keep Low Power Mode OFF."), h("li", null, "Plug in the charger. Look for “🔆 Screen kept awake” at the top of the lesson screen.")),
+      PTE.ar("افتح الموقع في كروم أو سفاري واضغط ابدأ من داخل الصفحة. ارفع مهلة إطفاء الشاشة من إعدادات الهاتف إلى ١٠ دقائق أو أكثر، وأغلق وضع توفير البطارية، ووصّل الشاحن. ابحث عن عبارة «الشاشة لن تنطفئ» أعلى شاشة الدرس.")));
     wrap.appendChild(h("div", { class: "card warn", style: { marginTop: "16px" } }, h("b", null, "ℹ️ Good to know"), h("p", null, "Speech uses your phone’s own text-to-speech voices; they keep playing with the screen on or black. Some phones stop speech if you lock the screen or switch apps — keep the page open. Install the site to your home screen (Chrome menu → Add to Home screen) for best results."),
       PTE.ar("الصوت يعتمد على أصوات هاتفك. بعض الهواتف توقف الصوت عند قفل الشاشة أو تبديل التطبيق، لذلك استخدم وضع الشاشة السوداء وأبقِ الصفحة مفتوحة، وثبّت الموقع على الشاشة الرئيسية.")));
     return wrap;
