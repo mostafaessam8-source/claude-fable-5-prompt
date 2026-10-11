@@ -41,3 +41,18 @@ export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[
   const extra = Math.max(0, y - 2 * rh * n)
   return { rh, heights, tops, bodyH: y, remarksH, extra, pageH: PAGE_H0 + extra, long }
 }
+
+/** The cover's summary table: default widths (px) of its first 8 columns; the progress column takes the rest. */
+export const DEFAULT_SUM_COLS = [190, 84, 92, 92, 96, 44, 44, 76]
+export const SUM_COL_NAMES = ['Location', 'Status', 'Planned Finish', 'Forecast Finish', 'Time Variance', 'Plan %', 'Actual %', 'Buffer to Hand-back', 'Progress']
+export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW = 200
+const SUM_PROGRESS_MIN = 160
+export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }
+/** Width of the cover page: A4 landscape, or wider when the summary columns were widened. */
+export function coverWidth(c: number[] | undefined): number {
+  return Math.max(1123, Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
+}
+/** Height of the cover page: A4 landscape, or taller by what the dragged summary rows add. */
+export function coverHeight(rows: (number | null)[] | undefined): number {
+  return 794 + Math.ceil((rows ?? []).reduce<number>((a, h) => a + (h ? Math.max(0, h - 22) : 0), 0))
+}
