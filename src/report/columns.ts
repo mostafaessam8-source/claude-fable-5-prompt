@@ -4,7 +4,7 @@ import { GANTT_COLS } from './gantt'
 export const DEFAULT_COLS = [22, 128, 62, 34, 36, 72, 72, 56, 30, 30, 56, 56, 106]
 export const COL_NAMES = ['No', 'Activity', 'Status', 'Dur BL', 'Dur Actual', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Act. %', 'Predecessors', 'Successors', 'Remarks']
 /** px inside the A4 page (1123 wide): the table and the Gantt share it. */
-export const PAGE_INNER = 1110
+export const PAGE_INNER = 1103
 /** The Gantt never gets narrower than this per column: a wider table makes the PAGE wider instead (like a sheet that grows). */
 export const GC_PREF = 8.5
 export const MIN_COL = 18
