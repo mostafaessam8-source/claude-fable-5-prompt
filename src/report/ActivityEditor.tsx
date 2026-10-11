@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
   candidatePredecessors, dateToInput, deleteActivities, inputToDate, inputToTime, timeToInput, duplicateActivities, hoursToInput, inputToHours, insertActivityAfter, moveActivities, patchActivity, RELS,
@@ -59,9 +59,20 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
   const cols = project.settings.activityCols && project.settings.activityCols.length === DEFAULT_ACT_COLS.length ? project.settings.activityCols : DEFAULT_ACT_COLS
   const tableW = cols.reduce((a, b) => a + b, 0)
   const setCols = (next: number[]) => onChange(applySettings(project, { activityCols: next }))
-  const rz = useRef<null | { c: number; x0: number; w0: number }>(null)
-  const startResize = (e: React.PointerEvent, c: number) => { e.stopPropagation(); e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); rz.current = { c, x0: e.clientX, w0: cols[c] } }
-  const onResize = (e: React.PointerEvent) => { const d = rz.current; if (!d) return; const w = Math.max(20, Math.round(d.w0 + e.clientX - d.x0)); if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x))) }
+  const rz = useRef<null | { c: number; x0: number; w0: number; prevW?: number }>(null)
+  const startResize = (e: React.PointerEvent, c: number, boundary = false) => { e.stopPropagation(); e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); rz.current = { c, x0: e.clientX, w0: cols[c], prevW: boundary ? cols[c - 1] : undefined } }
+  const onResize = (e: React.PointerEvent) => {
+    const d = rz.current
+    if (!d) return
+    const dx = e.clientX - d.x0
+    if (d.prevW != null) { // the line between this column and its left neighbour: this one grows by what the neighbour gives up
+      const gain = Math.round(Math.max(20 - d.w0, Math.min(d.prevW - 20, -dx)))
+      if (d.w0 + gain !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? d.w0 + gain : i === d.c - 1 ? d.prevW! - gain : x)))
+      return
+    }
+    const w = Math.max(20, Math.round(d.w0 + dx))
+    if (w !== cols[d.c]) setCols(cols.map((x, i) => (i === d.c ? w : x)))
+  }
   const endResize = (e: React.PointerEvent) => { rz.current = null; try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ } }
   /** Autofit: the width that shows the longest text of the column (text columns), else the default. */
   const fitCol = (c: number) => {
@@ -70,6 +81,40 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
     if (!texts) return DEFAULT_ACT_COLS[c]
     return Math.round(Math.min(700, Math.max(HEADS[c].length * 7 + 12, ...texts.map((t) => textWidth(t, font) + 28))))
   }
+  // ---- the picked cell gets round handles: left / right = its column's width, top / bottom = its row's height ----
+  const [pick, setPick] = useState<{ no: number | null; c: number } | null>(null)
+  const [box, setBox] = useState<{ l: number; t: number; w: number; h: number } | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const rowDrag = useRef<null | { no: number; y0: number; h0: number; prev?: { no: number; h: number } }>(null)
+  const heightOf = (no: number) => (wrapRef.current?.querySelector(`tbody tr[data-no="${no}"]`) as HTMLElement | null)?.getBoundingClientRect().height ?? 30
+  const setRowH = (ups: { no: number; h: number }[]) => onChange(ups.reduce((p, u) => patchActivity(p, li, u.no, { edH: Math.round(u.h) }), project))
+  const startRow = (e: React.PointerEvent, no: number, top: boolean) => {
+    e.stopPropagation(); e.preventDefault(); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    const k = acts.findIndex((a) => a.no === no)
+    rowDrag.current = { no, y0: e.clientY, h0: heightOf(no), prev: top && k > 0 ? { no: acts[k - 1].no, h: heightOf(acts[k - 1].no) } : undefined }
+  }
+  const moveRow = (e: React.PointerEvent) => {
+    const d = rowDrag.current
+    if (!d) return
+    const dy = e.clientY - d.y0
+    if (d.prev) {
+      const gain = Math.max(22 - d.h0, Math.min(d.prev.h - 22, -dy))
+      setRowH([{ no: d.no, h: d.h0 + gain }, { no: d.prev.no, h: d.prev.h - gain }])
+      return
+    }
+    setRowH([{ no: d.no, h: Math.max(22, Math.min(300, d.h0 + dy)) }])
+  }
+  const endRow = (e: React.PointerEvent) => { rowDrag.current = null; try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* released */ } }
+  // where the picked cell is (measured, because row heights vary)
+  useLayoutEffect(() => {
+    const w = wrapRef.current
+    if (!pick || !w) { setBox(null); return }
+    const cellEl = (pick.no == null ? w.querySelector(`thead th:nth-child(${pick.c + 1})`) : w.querySelector(`tbody tr[data-no="${pick.no}"] > :nth-child(${pick.c + 1})`)) as HTMLElement | null
+    if (!cellEl) { setBox(null); return }
+    const a = w.getBoundingClientRect(), b = cellEl.getBoundingClientRect()
+    const next = { l: b.left - a.left, t: b.top - a.top, w: b.width, h: b.height }
+    setBox((o) => (o && o.l === next.l && o.t === next.t && o.w === next.w && o.h === next.h ? o : next))
+  })
   // rulers: hovered row / column, and the row being edited
   const [hr, setHr] = useState<number | null>(null)
   const [hc, setHc] = useState<number | null>(null)
@@ -213,7 +258,8 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
       )}
       <div className="overflow-x-auto">
       {/* rulers: the row under the pointer (or being edited) and the column under it are highlighted */}
-      <div style={{ position: 'relative', width: tableW }}
+      <div ref={wrapRef} style={{ position: 'relative', width: tableW }}
+        onClick={(e) => { const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null; if (!cellEl) return; const rowEl = cellEl.closest('tbody tr') as HTMLElement | null; setPick({ no: rowEl?.dataset.no ? Number(rowEl.dataset.no) : null, c: cellEl.cellIndex }) }}
         onMouseOver={(e) => {
           const cellEl = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null
           const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null
@@ -223,6 +269,25 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
         onMouseLeave={() => { setHc(null); setHr(null) }}
         onFocus={(e) => { const rowEl = (e.target as HTMLElement).closest('tbody tr') as HTMLElement | null; setFr(rowEl?.dataset.no ? Number(rowEl.dataset.no) : null) }}
         onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFr(null) }}>
+      {pick && box && (() => {
+        const d = matchMedia('(pointer: coarse)').matches ? 30 : 18
+        const dot = (x: number, y: number, cursor: string): React.CSSProperties => ({ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: '50%', background: '#00778B', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.45)', zIndex: 20, touchAction: 'none', cursor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: d * 0.55, lineHeight: 1 })
+        const midY = box.t + box.h / 2, midX = box.l + box.w / 2
+        return (
+          <>
+            <div className="no-print" style={{ position: 'absolute', left: box.l, top: box.t, width: box.w, height: box.h, zIndex: 19, pointerEvents: 'none', outline: '2px solid #00778B', outlineOffset: -1 }} />
+            {pick.c > 0 && <span className="no-print" role="slider" aria-label="Drag left to widen this column (the column on its left gives up the space), right to narrow it" style={dot(box.l, midY, 'col-resize')}
+              onPointerDown={(e) => startResize(e, pick.c, true)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}>⇆</span>}
+            <span className="no-print" role="slider" aria-label="Drag right to widen this column, left to narrow it" style={dot(box.l + box.w, midY, 'col-resize')}
+              onPointerDown={(e) => startResize(e, pick.c)} onPointerMove={onResize} onPointerUp={endResize} onPointerCancel={endResize}>⇆</span>
+            {pick.no != null && acts.findIndex((a) => a.no === pick.no) > 0 && <span className="no-print" role="slider" aria-label="Drag up to make this row taller (the row above gives up the space), down to make it shorter" style={dot(midX, box.t, 'row-resize')}
+              onPointerDown={(e) => startRow(e, pick.no!, true)} onPointerMove={moveRow} onPointerUp={endRow} onPointerCancel={endRow}>⇅</span>}
+            {pick.no != null && <span className="no-print" role="slider" aria-label="Drag down to make this row taller, up to make it shorter (double-click: automatic height)" style={dot(midX, box.t + box.h, 'row-resize')}
+              onPointerDown={(e) => startRow(e, pick.no!, false)} onPointerMove={moveRow} onPointerUp={endRow} onPointerCancel={endRow}
+              onDoubleClick={() => onChange(patchActivity(project, li, pick.no!, { edH: undefined }))}>⇅</span>}
+          </>
+        )
+      })()}
       {hc != null && <div className="no-print" style={{ position: 'absolute', top: 0, bottom: 0, left: cols.slice(0, hc).reduce((a, b) => a + b, 0), width: cols[hc], zIndex: 1, pointerEvents: 'none',
         background: 'rgba(0,119,139,0.08)', borderLeft: '1.5px solid #00778B', borderRight: '1.5px solid #00778B' }} />}
       <table className="table-fixed border-collapse text-xs" style={{ width: tableW }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrop(undefined) }}>
@@ -248,7 +313,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth }: {
             const edit = (patch: Partial<typeof a>) => onChange(patchActivity(project, li, a.no, patch))
             return (
               <tr key={a.no} data-no={a.no} className={(fr ?? hr) === a.no ? 'bg-[#FFE9A8]' : on ? 'bg-[#E6F1F4]' : k % 2 ? 'bg-[#F2F8F9]' : ''}
-                style={{ opacity: isDrag ? 0.4 : 1, borderTop: line }}
+                style={{ opacity: isDrag ? 0.4 : 1, borderTop: line, height: a.edH || undefined }}
                 onDragOver={(e) => {
                   if (!dragging) return
                   e.preventDefault()

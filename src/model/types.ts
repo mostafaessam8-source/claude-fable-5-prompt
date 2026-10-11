@@ -48,6 +48,10 @@ export interface ActivityInput {
   /** 0–1, or null when blank. */
   pct: number | null
   remarks: string
+  /** Height (px) of this activity's row on the report page, when dragged; absent = automatic. */
+  rowH?: number
+  /** Height (px) of this activity's row in the Activities tab, when dragged. */
+  edH?: number
 }
 
 export interface LocationInput {

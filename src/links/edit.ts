@@ -208,3 +208,12 @@ export function setPlannedFinish(project: Project, loc: number, no: number, star
   if (dur < 0.25) return null
   return patchActivity(project, loc, no, { durationH: dur, lagH: lagToKeepStart(startH, rel, pred, dur) })
 }
+
+/** Back to automatic row heights everywhere (report page rows and the Activities tab's rows). */
+export function clearRowHeights(project: Project): Project {
+  return {
+    ...project,
+    locations: project.locations.map((l) => ({ ...l, activities: l.activities.map((a) => (a.rowH || a.edH ? { ...a, rowH: undefined, edH: undefined } : a)) })),
+  }
+}
+export const hasRowHeights = (project: Project) => project.locations.some((l) => l.activities.some((a) => a.rowH || a.edH))

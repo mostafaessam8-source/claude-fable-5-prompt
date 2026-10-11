@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ColumnWidths } from './report/ColumnWidths'
+import { clearRowHeights, hasRowHeights } from './links/edit'
 import { applySettings } from './model/settings'
 import type { Project } from './model/types'
 
@@ -49,6 +50,8 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks, effecti
       </label>
       <button className="rounded border border-slate-300 px-2 py-0.5" onClick={() => setWidths(true)} title="Type the width of each column of the report table">Column widths…</button>
       {widths && <ColumnWidths project={project} onChange={onChange} onClose={() => setWidths(false)} />}
+      <button className="rounded border border-slate-300 px-2 py-0.5 disabled:opacity-40" disabled={!hasRowHeights(project)} onClick={() => onChange(clearRowHeights(project))}
+        title="Click a cell: round handles on its top and bottom edges change the row height; this puts all rows back to automatic">Reset row heights</button>
       <button className="rounded border border-slate-300 px-2 py-0.5 disabled:opacity-40" disabled={!s.tableCols} onClick={() => onChange(applySettings(project, { tableCols: null }))}
         title="Drag the right edge of a column header on the report to change its width; this puts them all back">Reset column widths</button>
       <label className="flex items-center gap-1"><input type="checkbox" checked={showLinks} onChange={(e) => onShowLinks(e.target.checked)} /> Show links</label>
