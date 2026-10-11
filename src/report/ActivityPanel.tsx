@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { ProjectResult } from '../engine/schedule'
 import {
-  actualProblems, candidatePredecessors, deleteActivity, hoursToInput, inputToHours, setPlannedFinish, setPlannedStart, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
+  actualProblems, addLink, candidatePredecessors, deleteActivity, removeLink, hoursToInput, inputToHours, setPlannedFinish, setPlannedStart, candidateSuccessors, dateToInput, inputToDate, inputToTime, lagToKeepStart, patchActivity,
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
@@ -145,6 +145,39 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
               title="Set the lag so this activity starts at the planned time it had when you opened it">
               Set the lag to keep the start I opened it with ({h1(base)})
             </button>
+          </section>
+
+          <section>
+            <h3 className="mb-1 bg-[#768692] px-2 py-1 text-xs font-bold text-white">OTHER RELATIONSHIPS (it starts when the last one allows it)</h3>
+            {(a.more ?? []).map((m, i) => {
+              const mp = acts.find((x) => x.no === m.pred)
+              return (
+                <div key={i} className="mb-2 rounded bg-[#F2F8F9] p-2 text-xs">
+                  <div className="font-bold">#{m.pred} {mp?.name ?? '(missing)'}</div>
+                  <div className="mt-1 grid grid-cols-[auto_1fr_auto] items-end gap-2">
+                    <label className={lab}>Rel
+                      <select className={inp} value={m.rel} onChange={(e) => edit({ more: (a.more ?? []).map((x, k) => (k === i ? { ...x, rel: e.target.value as Rel } : x)) })}>{RELS.map((x) => <option key={x}>{x}</option>)}</select>
+                    </label>
+                    <label className={lab}>Lag (h)
+                      <input className={inp} type="number" step={0.25} value={m.lagH} onChange={(e) => edit({ more: (a.more ?? []).map((x, k) => (k === i ? { ...x, lagH: num(e.target.value) ?? 0 } : x)) })} />
+                    </label>
+                    <button className="rounded border border-[#CB2C30] px-2 py-1 font-semibold text-[#CB2C30]" onClick={() => onChange(removeLink(project, loc, no, i + 1, r.plannedStartH))}>Delete</button>
+                  </div>
+                </div>
+              )
+            })}
+            <label className={lab}>Add another predecessor
+              <select className={inp} value="" onChange={(e) => {
+                const n = Number(e.target.value)
+                if (!n) return
+                const pr = resOf(n)
+                onChange(addLink(project, loc, no, { pred: n, rel: 'FS', lagH: lagToKeepStart(r.plannedStartH, 'FS', { startH: pr.plannedStartH, finishH: pr.plannedFinishH }, r.durationH) }, r.plannedStartH))
+              }}>
+                <option value="">— choose —</option>
+                {candidatePredecessors(project, loc, no).filter((c) => c.no !== a.pred && !(a.more ?? []).some((m) => m.pred === c.no)).map((c) => <option key={c.no} value={c.no}>#{c.no} {c.name}</option>)}
+              </select>
+            </label>
+            <p className="mt-1 text-xs text-slate-500">Or drag from a dot of one bar to another bar on the Gantt. To delete a relationship there, click its arrow and press Delete.</p>
           </section>
 
           <section>

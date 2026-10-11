@@ -1,5 +1,5 @@
 /** Pure editing helpers for the activity panel: every edit returns a NEW project (the app recomputes from it). */
-import type { ActivityInput, Project, Rel } from '../model/types'
+import type { ActivityInput, ExtraLink, Project, Rel } from '../model/types'
 import { startFromLink } from './diff'
 
 export const RELS: Rel[] = ['FS', 'SS', 'FF', 'SF']
@@ -111,13 +111,17 @@ export function restructure(
   const unlinked: number[] = []
   const activities = order.map((a, i) => {
     const no = i + 1
+    // the other relationships follow their activities to the new numbers; one that points at a gone / later activity is dropped
+    const more = (a.more ?? []).flatMap((m) => { const np = newNo.get(m.pred); return np != null && np < no ? [{ ...m, pred: np }] : [] })
+    const keepMore = more.length ? { more } : { more: undefined }
     if (a.pred > 0) {
       const np = newNo.get(a.pred)
-      if (np != null && np < no) return { ...a, no, pred: np }
+      if (np != null && np < no) return { ...a, no, pred: np, ...keepMore }
+      if (more.length) return { ...a, no, pred: more[0].pred, rel: more[0].rel, lagH: more[0].lagH, more: more.length > 1 ? more.slice(1) : undefined }
       unlinked.push(a.no)
-      return { ...a, no, pred: 0, rel: 'FS' as Rel, lagH: round(startHOf(a.no)) }
+      return { ...a, no, pred: 0, rel: 'FS' as Rel, lagH: round(startHOf(a.no)), more: undefined }
     }
-    return { ...a, no }
+    return { ...a, no, more: undefined }
   })
   return {
     unlinked,
@@ -217,3 +221,28 @@ export function clearRowHeights(project: Project): Project {
   }
 }
 export const hasRowHeights = (project: Project) => project.locations.some((l) => l.activities.some((a) => a.rowH || a.edH))
+
+// ---- several relationships per activity ----
+/** All the relationships of an activity, the first one included. */
+export const linksOf = (a: ActivityInput): ExtraLink[] => [...(a.pred > 0 ? [{ pred: a.pred, rel: a.rel, lagH: a.lagH }] : []), ...(a.more ?? [])]
+
+/** Write a list of relationships back: the first becomes `pred / rel / lagH`, the rest `more`. An empty list unlinks, keeping the planned start (`startH`). */
+export function withLinks(links: ExtraLink[], startH: number): Partial<ActivityInput> {
+  if (!links.length) return { pred: 0, rel: 'FS', lagH: round(startH), more: undefined }
+  return { pred: links[0].pred, rel: links[0].rel, lagH: links[0].lagH, more: links.length > 1 ? links.slice(1) : undefined }
+}
+
+/** Delete one relationship (by its position in `linksOf`): the others stay; with none left the activity keeps its planned start. */
+export function removeLink(project: Project, loc: number, no: number, index: number, startH: number): Project {
+  const a = project.locations[loc].activities.find((x) => x.no === no)
+  if (!a) return project
+  return patchActivity(project, loc, no, withLinks(linksOf(a).filter((_, i) => i !== index), startH))
+}
+
+/** Add a relationship; one with the same predecessor and type is replaced. The lag is the one that keeps the planned start (`lagH`). */
+export function addLink(project: Project, loc: number, no: number, link: ExtraLink, startH: number): Project {
+  const a = project.locations[loc].activities.find((x) => x.no === no)
+  if (!a) return project
+  const rest = linksOf(a).filter((l) => !(l.pred === link.pred && l.rel === link.rel))
+  return patchActivity(project, loc, no, withLinks([...rest, link], startH))
+}

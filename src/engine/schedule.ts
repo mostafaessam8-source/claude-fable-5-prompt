@@ -35,6 +35,8 @@ export interface ActivityResult {
   pred: number
   rel: Rel
   lagH: number
+  /** Every relationship of the activity (the first one included), for the arrows. `bad`: it points at a missing / later activity and is ignored. */
+  links: { pred: number; rel: Rel; lagH: number; bad: boolean }[]
   durationH: number
   /** Hours since possession start. */
   plannedStartH: number
@@ -161,14 +163,30 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     // A predecessor at or below this row, or one that does not exist / is switched off.
     const linkBad = a.pred > 0 && (a.pred >= a.no || !pred)
 
+    // the start the relationship gives, for each of the activity's links: the activity starts when the LAST of them allows it
+    const constraintStart = (lk: { pred: number; rel: Rel; lagH: number }, p: ActivityResult): number => {
+      switch (lk.rel) {
+        case 'SS': return p.plannedStartH + lk.lagH
+        case 'FF': return p.plannedFinishH + lk.lagH - dur
+        case 'SF': return p.plannedStartH + lk.lagH - dur
+        default: return p.plannedFinishH + lk.lagH // FS
+      }
+    }
+    const extra = (a.more ?? []).map((m) => {
+      const p = m.pred > 0 ? byNo.get(m.pred) : undefined
+      return { lk: m, p, bad: !p || m.pred >= a.no }
+    })
     let start: number
-    if (a.pred === 0 || !pred) start = a.lagH
+    let driving: { pred: ActivityResult; rel: Rel } | undefined
+    const firstOk = a.pred !== 0 && !!pred
+    if (!firstOk && !extra.some((x) => !x.bad)) start = a.lagH
     else {
-      switch (a.rel) {
-        case 'SS': start = pred.plannedStartH + a.lagH; break
-        case 'FF': start = pred.plannedFinishH + a.lagH - dur; break
-        case 'SF': start = pred.plannedStartH + a.lagH - dur; break
-        default: start = pred.plannedFinishH + a.lagH // FS
+      start = -Infinity
+      if (firstOk) { start = constraintStart(a, pred!); driving = { pred: pred!, rel: a.rel } }
+      for (const x of extra) {
+        if (x.bad || !x.p) continue
+        const st = constraintStart(x.lk, x.p)
+        if (st > start) { start = st; driving = { pred: x.p, rel: x.lk.rel } }
       }
     }
     const finish = start + dur
@@ -208,6 +226,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
       pred: a.pred,
       rel: a.rel,
       lagH: a.lagH,
+      links: [{ pred: a.pred, rel: a.rel, lagH: a.lagH, bad: linkBad }, ...extra.map((x) => ({ ...x.lk, bad: x.bad }))].filter((l) => l.pred > 0),
       durationH: dur,
       plannedStartH: start,
       plannedFinishH: finish,
@@ -231,7 +250,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
     }
     out.push(r)
     byNo.set(a.no, r)
-    if (pred && !linkBad) linkOf.set(r, { pred, rel: a.rel })
+    if (driving) linkOf.set(r, driving)
   }
 
   // Pass 2 — carried slip (§4.5) along the activity's own predecessor LINK, so a delay reaches only what
