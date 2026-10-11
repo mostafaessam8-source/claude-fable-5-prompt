@@ -5,9 +5,8 @@ import { effectiveProject, floatingNow } from '../model/settings'
 import type { Project } from '../model/types'
 import { Cover } from './Cover'
 import { LocationPage, pageWidth } from './LocationPage'
-import { PAGE_H0, rowLayout } from './columns'
+import { coverHeight, coverWidth, rowLayout } from './columns'
 
-const COVER_W = 1123
 const BAR_H = 52
 
 type FsDoc = Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void }
@@ -27,11 +26,12 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
   }, [project.settings.cutoffNow])
   // column widths can be changed here for the session (the handles on a tapped column); they are not saved
   const [cols, setCols] = useState<number[] | undefined>(project.settings.tableCols)
+  const [sum, setSum] = useState<{ cols?: number[]; rows?: (number | null)[] }>({}) // summary table sizes dragged here
   const [rowOv, setRowOv] = useState<Record<string, number | undefined>>({}) // row heights dragged here, by "location:activity"
   const result = useMemo(() => {
-    const withRows = { ...project, settings: { ...project.settings, tableCols: cols }, locations: project.locations.map((l, li) => ({ ...l, activities: l.activities.map((a) => (`${li}:${a.no}` in rowOv ? { ...a, rowH: rowOv[`${li}:${a.no}`] } : a)) })) }
+    const withRows = { ...project, settings: { ...project.settings, tableCols: cols, ...(sum.cols ? { summaryCols: sum.cols } : {}), ...(sum.rows ? { summaryRows: sum.rows } : {}) }, locations: project.locations.map((l, li) => ({ ...l, activities: l.activities.map((a) => (`${li}:${a.no}` in rowOv ? { ...a, rowH: rowOv[`${li}:${a.no}`] } : a)) })) }
     return computeProject(effectiveProject(withRows, floatingNow(new Date(tick))))
-  }, [project, tick, cols, rowOv])
+  }, [project, tick, cols, rowOv, sum])
 
   const titles = ['Summary', ...result.locations.map((l) => l.name)]
   const last = titles.length - 1
@@ -100,8 +100,8 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
     return () => window.removeEventListener('keydown', on)
   })
 
-  const PAGE_W = i === 0 ? COVER_W : pageWidth(cols) // a location page grows when its columns were widened
-  const PAGE_H = i === 0 ? PAGE_H0 : rowLayout(result.locations[i - 1].activities).pageH // a location page grows taller when rows were made taller
+  const PAGE_W = i === 0 ? coverWidth(result.settings.summaryCols) : pageWidth(cols) // a location page grows when its columns were widened
+  const PAGE_H = i === 0 ? coverHeight(result.settings.summaryRows) : rowLayout(result.locations[i - 1].activities).pageH // a location page grows taller when rows were made taller
   const availH = size.h - (full ? 0 : BAR_H)
   const s = Math.max(0.1, Math.min((size.w - 6) / PAGE_W, (availH - 6) / PAGE_H))
 
@@ -196,7 +196,7 @@ export function Viewer({ project, layouts }: { project: Project; layouts: SiteLa
         <div style={{ width: PAGE_W * s, height: PAGE_H * s, position: 'relative', boxShadow: '0 2px 10px rgba(0,0,0,.25)', transform: `translate(${zv.x}px, ${zv.y}px) scale(${zv.z})`, transformOrigin: 'center center' }}>
           <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${s})`, transformOrigin: '0 0' }}>
             {i === 0
-              ? <div className="report-page"><Cover result={result} layouts={layouts} /></div>
+              ? <div className="report-page" style={{ width: PAGE_W, height: PAGE_H }}><Cover result={result} layouts={layouts} zoom={s * zv.z} onSummary={(c, r) => setSum({ cols: c, rows: r })} /></div>
               : <LocationPage result={result} index={i - 1} layout={layouts[i - 1]} onCols={setCols} onRowH={(ups) => setRowOv((o) => ({ ...o, ...Object.fromEntries(ups.map((u) => [`${i - 1}:${u.no}`, u.h])) }))} zoom={s * zv.z} />}
           </div>
         </div>

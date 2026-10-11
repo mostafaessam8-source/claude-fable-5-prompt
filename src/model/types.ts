@@ -19,6 +19,10 @@ export interface Settings {
   tableCols?: number[]
   /** Widths (px) of the Activities tab's columns, when the user has dragged them. */
   activityCols?: number[]
+  /** Widths (px) of the first 8 columns of the cover's summary table (the progress column takes the rest). */
+  summaryCols?: number[]
+  /** Heights (px) of the summary table's rows (header, each location, total); null = automatic. */
+  summaryRows?: (number | null)[]
   possessionStart: Date
   duration: number
   unit: HoursOrDays

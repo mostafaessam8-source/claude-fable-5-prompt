@@ -7,6 +7,8 @@ import { useNarrow } from '../model/useNarrow'
 import { OFFLINE } from '../offline/offline'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage, pageWidth } from './LocationPage'
+import { coverHeight, coverWidth } from './columns'
+import { applySettings } from '../model/settings'
 
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
 export const PAGE_H = 794
@@ -32,7 +34,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
   const dropSel = useCallback(() => { setSelected(null); setPanelOpen(false) }, [setSelected, setPanelOpen])
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow()
-  const pageW = pageWidth(project.settings.tableCols) // the widest page: widened columns make the pages wider
+  const pageW = Math.max(pageWidth(project.settings.tableCols), coverWidth(project.settings.summaryCols)) // the widest page: widened columns make the pages wider
   const [zoom, setZoom] = useState(1)
   useLayoutEffect(() => {
     const el = box.current
@@ -49,7 +51,9 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
     <>
     <div ref={box} className="report-wrap" style={{ marginRight: show && !narrow ? PANEL_W : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
-        <div className="report-page"><Cover result={result} layouts={layouts} /></div>
+        <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols), height: coverHeight(project.settings.summaryRows) }}>
+          <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} />
+        </div>
         {result.locations.map((_, i) => (
           <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} onStructure={dropSel} zoom={zoom} showLinks={showLinks}
             selectedNo={selected?.loc === i ? selected.no : null} onSelect={(no, lane) => setSelected((s0) => ({ loc: i, no, tab: lane === 'actual' || OFFLINE ? 'actual' : s0 && s0.loc === i && s0.no === no ? s0.tab : 'baseline' }))} />
