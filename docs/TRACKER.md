@@ -95,6 +95,7 @@ The **planned (P) bar** of each activity can be edited directly (screen only; th
   later is unlinked and **keeps its planned start**, so no date moves silently (a note says which).
 - **Undo / Redo** (header buttons, Ctrl+Z / Ctrl+Shift+Z): every edit — a drag is one step, adding/deleting/reordering/renaming each their own.
 - The activity panel no longer covers the Gantt: while it is open the report shrinks (zoom) to the space left of it.
+- **The mobile report file also updates the site**: it carries the project, so "Import contractor update" (review first) or "Open update / project" (replace) accept it like a contractor file.
 - **Summary table on the cover** (Report tab and the mobile viewer): click a cell and thick lines on its edges resize the column (left / right) or the row (top / bottom, double-click the bottom one for automatic); sizes are saved with the project, widen the cover page when needed, and the two *Reset* buttons put them back. Rulers highlight the row and column under the pointer (a tap in the viewer). (Not exported to Excel; the table is computed, so no typing in it.)
 Fine adjustments (exact lag/duration) are in the activity panel (click the activity).
 

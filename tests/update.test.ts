@@ -4,6 +4,7 @@ import { exportXlsx } from '../src/export'
 import { applyUpdate, diffUpdate } from '../src/import/update'
 import { parseWorkbook } from '../src/import/parse'
 import { parseLayout } from '../src/layout/parse'
+import { embed, parseUpdateFile } from '../src/offline/offline'
 import { deleteActivity, patchActivity } from '../src/links/edit'
 
 const FIXTURE = readFileSync('tests/fixtures/EWR_Phase2_Shutdown03_Progress_Tracker.xlsx')
@@ -104,5 +105,16 @@ describe('the saved single-file copy', () => {
     expect(file.layouts).toHaveLength(base.locations.length)
     expect(diffUpdate(base, file.project, layoutsOf(base), file.layouts).updates).toHaveLength(1)
     expect(() => parseUpdateFile('<html><body>nothing</body></html>')).toThrow(/not a SAR update file/)
+  }, 60000)
+})
+
+describe('report file for mobile', () => {
+  it('carries the project, so importing it back updates the site', async () => {
+    const base = await parseWorkbook(FIXTURE)
+    const theirs = patchActivity(base, 1, 3, { remarks: 'From the report file' })
+    const html = `<!doctype html><html><body><script type="application/json" id="sar-offline-data">${embed({ id: 'x', preparedAt: '', project: theirs, layouts: layoutsOf(theirs), mode: 'viewer' })}</script></body></html>`
+    const got = parseUpdateFile(html)
+    const d = diffUpdate(base, got.project, layoutsOf(base), got.layouts)
+    expect(d.updates.map((u) => `${u.loc}:${u.no}`)).toEqual(['1:3'])
   }, 60000)
 })
