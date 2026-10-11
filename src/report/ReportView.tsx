@@ -11,13 +11,25 @@ import { LocationPage, pageWidth } from './LocationPage'
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
 export const PAGE_H = 794
 
-export function ReportView({ result, layouts, project, onChange, showLinks = true }: {
+export type Selected = { loc: number; no: number; tab: PanelTab }
+
+/** touch / narrow screens: the details panel opens only from the button in the top bar */
+export function useManualPanel() {
+  const narrow = useNarrow()
+  return narrow || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
+}
+
+export function ReportView({ result, layouts, project, onChange, showLinks = true, selected, setSelected, panelOpen, setPanelOpen }: {
   result: ProjectResult; layouts: SiteLayout[]
   project: Project; onChange: (p: Project) => void
   showLinks?: boolean
+  selected: Selected | null; setSelected: (s: Selected | null | ((s: Selected | null) => Selected | null)) => void
+  panelOpen: boolean; setPanelOpen: (b: boolean) => void
 }) {
-  const [selected, setSelected] = useState<{ loc: number; no: number; tab: PanelTab } | null>(null)
-  const close = useCallback(() => setSelected(null), [])
+  const manual = useManualPanel()
+  const show = !!selected && (!manual || panelOpen)
+  const close = useCallback(() => { if (manual) setPanelOpen(false); else setSelected(null) }, [manual, setPanelOpen, setSelected])
+  const dropSel = useCallback(() => { setSelected(null); setPanelOpen(false) }, [setSelected, setPanelOpen])
   const box = useRef<HTMLDivElement>(null)
   const narrow = useNarrow()
   const pageW = pageWidth(project.settings.tableCols) // the widest page: widened columns make the pages wider
@@ -35,16 +47,16 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
 
   return (
     <>
-    <div ref={box} className="report-wrap" style={{ marginRight: selected && !narrow ? PANEL_W : 0 }}>
+    <div ref={box} className="report-wrap" style={{ marginRight: show && !narrow ? PANEL_W : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page"><Cover result={result} layouts={layouts} /></div>
         {result.locations.map((_, i) => (
-          <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} onStructure={close} zoom={zoom} showLinks={showLinks}
+          <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} onStructure={dropSel} zoom={zoom} showLinks={showLinks}
             selectedNo={selected?.loc === i ? selected.no : null} onSelect={(no, lane) => setSelected((s0) => ({ loc: i, no, tab: lane === 'actual' || OFFLINE ? 'actual' : s0 && s0.loc === i && s0.no === no ? s0.tab : 'baseline' }))} />
         ))}
       </div>
     </div>
-    {selected && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && (
+    {selected && show && project.locations[selected.loc]?.activities.some((a) => a.no === selected.no) && (
       <ActivityPanel project={project} result={result} loc={selected.loc} no={selected.no} tab={selected.tab}
         onTab={(tab) => setSelected({ ...selected, tab })} onChange={onChange}
         onSelect={(no) => setSelected({ loc: selected.loc, no, tab: selected.tab })} onClose={close} />

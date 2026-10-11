@@ -16,7 +16,7 @@ import { ActivityEditor } from './report/ActivityEditor'
 import { useHistory } from './model/history'
 import { clearProject, loadProject, saveProject, type Saved } from './model/store'
 import type { Project } from './model/types'
-import { ReportView } from './report/ReportView'
+import { ReportView, useManualPanel, type Selected } from './report/ReportView'
 import { SettingsBar } from './SettingsBar'
 
 type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
@@ -55,6 +55,9 @@ export function App() {
   const headerRef = useRef<HTMLDivElement>(null)
   const [compact, setCompact] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [selected, setSelected] = useState<Selected | null>(null)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const manualPanel = useManualPanel()
   useEffect(() => {
     const on = () => setCompact((c) => (c ? window.scrollY > 24 : window.scrollY > 80))
     window.addEventListener('scroll', on, { passive: true })
@@ -206,7 +209,10 @@ export function App() {
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-[#3D3935] px-3 py-2 text-white md:px-4">
         <h1 className="text-base font-bold">SAR Possession Tracker</h1>
         <span className="hdr-hide text-[10px] text-white/60" title="Version of this deployed page: if it is older than your last merge, press Ctrl+F5">build {__BUILD__}</span>
-        <button className="ml-auto rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden" aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
+        {manualPanel && tab === 'report' && project && selected && !panelOpen && (
+          <button className="ml-auto rounded bg-[#F1B434] px-3 py-1 text-sm font-semibold text-black" onClick={() => setPanelOpen(true)} title="Open the details of the selected activity">Activity ▸ #{selected.no}</button>
+        )}
+        <button className={`${manualPanel && tab === 'report' && selected && !panelOpen ? '' : 'ml-auto'} rounded border border-white/40 px-3 py-1 text-lg leading-none md:hidden`} aria-label="Menu" onClick={() => setMenu((m) => !m)}>{menu ? '✕' : '☰'}</button>
         <div className={`${menu ? 'flex' : 'hidden'} w-full flex-wrap items-center gap-2 md:flex md:w-auto md:flex-1 md:gap-3`}>
         {!OFFLINE && <button className="rounded bg-[#00778B] px-3 py-1 text-sm font-semibold" onClick={() => setCreating(true)} title="Start a brand-new project from nothing">+ New project</button>}
         {!OFFLINE && (
@@ -274,7 +280,8 @@ export function App() {
                 </div>
               )}
               <SettingsBar effectiveCutoff={result.settings.cutoff} project={project} onChange={setProject} showLinks={showLinks} onShowLinks={setShowLinks} />
-              <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks} />
+              <ReportView result={result} layouts={layouts} project={project} onChange={setProject} showLinks={showLinks}
+                selected={selected} setSelected={setSelected} panelOpen={panelOpen} setPanelOpen={setPanelOpen} />
             </>
           )}
           {tab === 'activities' && (
