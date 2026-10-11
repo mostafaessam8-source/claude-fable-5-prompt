@@ -120,39 +120,19 @@ PptxGenJS (`assets/vendor/pptxgen.bundle.js`, MIT) draws it in the browser, and 
 Drawings** sheet in each project's weekly report file. Drop the weekly report **.rar / .zip** on Data Import, the same
 file used for the progress photos; the photos and the design register are read in one go.
 
-What the page shows:
-- **Headline:**
-  - number of documents
-  - % approved (Code A / B)
-  - under SAR review, and how many are beyond the review target (7 / 14 / 21 / 28 days, selectable)
-  - returned Code C / D
-  - not submitted yet
-  - oldest document in review
-- **Decisions needed:** plain-language items per project, each with who has to act. For example: SAR review beyond the
-  target → expedite the review; Code D → escalate design quality; 3+ submissions → joint meeting to close the comments.
-  Click an item to see its documents.
-- **Charts:**
-  - status by project (or by package when one project is selected)
-  - how long documents wait for SAR review
-  - submissions per month
-  - Clicking a bar opens its documents, with a summary line on top: the count, the count per project, and the oldest and
-    average days since submission.
-- **Project design scorecard:** red / amber / green health with the reason.
-- **Lists:** "Waiting on SAR" and "Waiting on the contractor".
-- **Full register:** exportable as CSV.
-
-Layout, filters and details:
-- **Sections:** Overview · Projects · Decisions · SAR review · Contractor · Trend · Register, with a jump bar at the top.
-- **Filter bar:** stays in view while you scroll and applies to every section. Filters: project, status, days since
-  submission and submission month. The SAR review target is set in the same bar.
-- **Click to filter:** a card, slice, bar, project or decision filters the whole page to what was clicked (for example
-  0214 + Under review). Ctrl + click adds to the selection; clicking the same thing again clears it.
-- **Details:**
-  - The package chart, the submissions-count chart and the lists open the list of their documents.
-  - A document opens its own window: status as written, who acts next, days against the target, and the full
-    submission history.
-  - A project opens its own window: health and why, its decisions, packages and documents, and a button to filter the
-    page to that project.
+What the page shows (one compact page, each figure shown once):
+- **Five numbers:** documents, % approved, with SAR (how many late, average days), with the contractor (rejected /
+  to revise / not submitted), and the longest SAR review.
+- **Projects table, worst first:** health dot, a status bar of every document, approved %, with SAR (late), longest
+  review, with the contractor, and the next action (who + a short action). Details › gives the reasons, decisions,
+  packages and documents. With one project selected, the table shows its packages.
+- **Where the time goes:** how long documents wait for SAR, and submissions per month.
+- **Who to chase:** the documents longest with SAR and those returned C / D. Documents of one project submitted the
+  same day read as one line.
+- **All documents:** folded register; open it to search, sort, export and see each document's history.
+- **Filter bar:** project, status, days since submission, submission month and the SAR review target.
+- **Click to filter:** a number, bar segment, project or chart bar filters the whole page; Ctrl + click adds;
+  clicking again clears.
 
 How documents are counted:
 - Each document counts once, at its latest submission. Earlier submissions give its submission count.

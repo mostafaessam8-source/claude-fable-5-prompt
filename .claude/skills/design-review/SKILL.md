@@ -55,18 +55,23 @@ How mixed wording is read:
   - more than 25% not submitted
   - submitted with no status
 
-## Layout
-- **Sections:** `sec-nav` + `secHead`, ids `ds-ov`, `ds-proj`, `ds-dec`, `ds-sar`, `ds-con`, `ds-trend`, `ds-reg`. Projects is the 2nd section (user's choice).
-- **Filter bar:** the shared sticky slicer bar from pages.js (`SARPages._kit.filterBar` / `passes`). The SAR review
-  target select is added into it.
-- **Filters:** project, status, days band and submission month. The package, who-acts, health and submissions filters
-  were removed at the user's request; don't add them back.
-- **Figures:** computed by `agg` on the filtered documents. Health always comes from the whole project (`model`).
-- **Detail windows:**
-  - `listModal`: summary line + document table.
-  - `docModal`: one document with its submission history, including documents closed by a resubmission.
-  - `projModal`: tiles, health, decisions, packages, documents, and "Filter the page to …".
-  - Windows stack; Escape closes the top one only (ui.js `modal`).
+## Layout (user asked for a focused page: no repeated figure, no long repeated sentences)
+1. **Scope line + five tiles:** documents, approved %, with SAR (late, average), with the contractor (D / C / not
+   submitted), longest SAR review. The last one opens the document.
+2. **Projects table** (`ds-mx`), worst first:
+   - columns: health dot, status bar (`ds-sbar`, px width; segments filter project + status), approved, with SAR
+     (late), longest, with contractor, next action
+   - next action = `short` text of the top 2 decisions, with an owner tag
+   - "Details ›" opens `projModal`
+   - with one project selected, the rows are its packages (click → list)
+3. **Charts:** SAR-wait ageing + submissions per month.
+4. **Chase lists:** longest with SAR / returned C / D. Same project + status + submission day are grouped into one line,
+   named by the shared title start.
+5. **Register:** folded `<details>`, drawn on first open.
+
+Removed on purpose (they repeated other blocks): section nav, status doughnut, who-acts chart, health box, separate
+scorecard, decisions list, review-time-by-project, contractor-by-project and submissions-count charts.
+Don't add them back. Note the class name `ds-sbar`: `ds-bar` was once a filter-bar class with gaps.
 
 ## Click = filter the page
 - `pick(patch, e)` sets the page filters (`f.proj` / `status` / `age` / `month`) to what was clicked. Ctrl / ⌘ + click
