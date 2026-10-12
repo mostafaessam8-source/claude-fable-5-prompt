@@ -29,7 +29,9 @@ Each finding carries `ds` / `dsKey` / `dsFile`: the Data Import source it comes 
 - closing → **Projects in Closing Phase**
 - "Data" findings → by field
 
-The page filters by it ("Data source (file)", with counts and the imported file name). The old area filter is now
+The page filters by it ("Data source (file)"). The list has every Data Import source in `SARImporter.SOURCES` order,
+plus Progress photos and the Weekly PowerPoint template, whether they have findings or not. Each entry shows its count
+("✓ no findings" when clean) and the imported file name; a clean source shows a ✓ message instead of an empty table. The old area filter is now
 "Section"; it lists only the sections of the chosen file. A new finding source must be added to `SRC_KEY`.
 
 ## How it works

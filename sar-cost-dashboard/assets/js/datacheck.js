@@ -370,7 +370,12 @@
     var D = ctx.D, v = ctx.view, st = ctx.state;
     refresh(); var r = get(D);
     st.sev = st.sev || { error: true, warn: true, info: true };
-    var dss = U.uniq(r.list.map(function (f) { return f.ds; })).sort(), srcs = U.uniq(r.list.filter(function (f) { return !st.ds || f.ds === st.ds; }).map(function (f) { return f.src; })), projs = U.uniq(r.list.map(function (f) { return baseCode(f.code); }).filter(Boolean)).sort();
+    // every Data Import source (as on the import page), with its findings count — a clean source shows ✓
+    var SS = (window.SARImporter && SARImporter.SOURCES) || {}, files = D.sources ? D.sources() : {};
+    var dss = Object.keys(SS).map(function (k) { return { k: k, label: SS[k].label }; })
+      .concat([{ k: "photos", label: "Progress photos (weekly report files)" }, { k: "__tpl", label: "Weekly PowerPoint template" }]);
+    if (st.ds && !dss.some(function (x) { return x.k === st.ds; })) st.ds = "";
+    var srcs = U.uniq(r.list.filter(function (f) { return !st.ds || f.dsKey === st.ds; }).map(function (f) { return f.src; })), projs = U.uniq(r.list.map(function (f) { return baseCode(f.code); }).filter(Boolean)).sort();
     var g = U.el('<div class="grid g-4"></div>'); v.appendChild(g);
     var nProj = Object.keys(r.byCode).filter(Boolean).length, nOk = r.list.filter(function (f) { return f.ok; }).length;
     g.innerHTML = U.tile({ value: r.counts.error, label: "Not logical", color: r.counts.error ? "red" : "slate", note: "Impossible values — fix in the source file" }) +
@@ -388,9 +393,10 @@
       b.querySelector("input").addEventListener("change", function (ev) { st.sev[k] = ev.target.checked; ctx.rerender(); });
       bar.appendChild(b);
     });
-    var cnt = function (key, v) { return r.list.filter(function (f) { return f[key] === v && st.sev[f.sev] && (st.showOk || !f.ok); }).length; };
+    var cnt = function (k) { return r.list.filter(function (f) { return f.dsKey === k && st.sev[f.sev] && (st.showOk || !f.ok); }).length; };
     var dsel = U.select({ label: "Data source (file)", value: st.ds || "", options: [{ value: "", label: "All data sources" }].concat(dss.map(function (x) {
-      var f0 = r.list.filter(function (f) { return f.ds === x; })[0]; return { value: x, label: x + " (" + cnt("ds", x) + ")" + (f0 && f0.dsFile ? " — " + f0.dsFile : "") }; })),
+      var n = cnt(x.k), fn = files[x.k] && files[x.k].fileName;
+      return { value: x.k, label: x.label + " — " + (n ? n + " finding" + (n === 1 ? "" : "s") : "✓ no findings") + (fn ? " · " + fn : "") }; })),
       onChange: function (x) { st.ds = x; st.src = ""; ctx.rerender(); } });
     dsel.classList.add("dq-ds"); bar.appendChild(dsel);
     var ss = U.select({ label: "Section", value: st.src || "", options: [{ value: "", label: "All sections" }].concat(srcs.map(function (s) { return { value: s, label: s }; })), onChange: function (x) { st.src = x; ctx.rerender(); } });
@@ -400,13 +406,13 @@
     okT.querySelector("input").addEventListener("change", function (ev) { st.showOk = ev.target.checked; ctx.rerender(); });
     bar.appendChild(okT);
 
-    var rows = r.list.filter(function (f) { return st.sev[f.sev] && (!st.ds || f.ds === st.ds) && (!st.src || f.src === st.src) && (!st.proj || baseCode(f.code) === st.proj) && (st.showOk || !f.ok); });
+    var rows = r.list.filter(function (f) { return st.sev[f.sev] && (!st.ds || f.dsKey === st.ds) && (!st.src || f.src === st.src) && (!st.proj || baseCode(f.code) === st.proj) && (st.showOk || !f.ok); });
     var p = U.el('<section class="panel"><div class="panel-head"><h3>Findings</h3><span class="sub">Click a row to open the page with that data · “Mark OK” hides a finding you have checked (it comes back if the value changes)</span></div></section>');
     v.appendChild(p);
     if (!r.list.length) p.appendChild(U.el('<div class="note-box ok"><b>No findings.</b> Everything checked looks logical and up to date.</div>'));
     U.table(p, {
       rows: rows, exportName: "NSR data checks " + (r.rd || ""), sort: null, maxHeight: 640,
-      emptyText: r.list.length ? "No findings for this filter." : "No findings.",
+      emptyText: st.ds && !r.list.some(function (f) { return f.dsKey === st.ds; }) ? "✓ No findings in this data source — nothing in it looks illogical or out of date." : r.list.length ? "No findings for this filter." : "No findings.",
       columns: [
         { label: "Type", get: function (f) { return SEV[f.sev]; }, render: function (_, f) { return sevBadge(f.sev); } },
         { label: "Project", key: "code", render: function (_, f) { return f.code ? "<b>" + esc(f.code) + "</b>" + (f.name ? '<div class="muted dq-nm">' + esc(clip(f.name, 48)) + "</div>" : "") : esc(f.name || "—"); } },
