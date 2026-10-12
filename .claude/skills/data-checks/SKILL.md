@@ -20,6 +20,17 @@ Code: `sar-cost-dashboard/assets/js/datacheck.js` (`SARChecks`).
 - **Check** (`info`): two files disagree (spend plan ↔ weekly report, card ↔ weekly report), a field that doesn't match
   its own formula (SPI, Variance days, Paid %), or no target date (TBD).
 
+## Always show the source (user rule)
+Every finding must say where the value sits.
+- `where(f)` builds `f.where` = file › table / sheet › column › row.
+- For weekly-report findings it also builds `f.from` = the project's own file › its sheet (Masterdata_Reporting,
+  S-Curve Data, …), which is where to fix it.
+- Both show:
+  - in the "Source (where to fix)" column of the Data Checks table, and in its CSV export
+  - in the per-project box
+- A new section must get an entry in the `T` map inside `where`.
+- When answering the user about a finding, also give the exact file, sheet and cell.
+
 ## Data source filter
 Each finding carries `ds` / `dsKey` / `dsFile`: the Data Import source it comes from (the `SRC_KEY` map in `run`):
 - weekly report, S-curve, milestones, concerns, deliverables → **PBI Weekly Report**

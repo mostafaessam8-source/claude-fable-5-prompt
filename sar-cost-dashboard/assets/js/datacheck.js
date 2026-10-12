@@ -321,7 +321,23 @@
       var k = SRC_KEY[f.src] || (f.src === "Data" ? (f.field === "Project cards" ? "cards" : "weekly") : "");
       f.dsKey = k; f.ds = k ? (SS[k] ? SS[k].label : k) : "Other";
       f.dsFile = k && files[k] ? files[k].fileName || "" : "";
+      where(f);
     });
+    /* where the value sits: file › table or sheet › column › row — and, for the weekly report, the project's own file it
+       came from (fix it there, then import again). Always shown with the finding. */
+    function where(f) {
+      var file = f.dsFile || f.ds, srcName = f.go && f.go[1] && f.go[1].sc, row = f.code ? "row of " + f.code : "";
+      var T = { "Weekly report": ["table Weekly_Report_Updates", "sheet Masterdata_Reporting"], "S-curve": ["table S_Curve", "sheet S-Curve Data"],
+        "Milestones": ["table Project_Milestones_Progress_Combine", "milestones sheet"], "Area of concern": ["table Area_of_Concern", "area of concern sheet"],
+        "Deliverables": ["table Deliverable_Status", "deliverables sheet"], "Spend plan": ["table Spending_Plan"], "Budget 2026": ["table Rev_Spend_Plan"],
+        "Project card": ["sheet “" + f.code + "_Project Card”"], "Issue register": ["sheet “" + f.code + "_Project Card” · 12.1 Issue Log"], "Closing": ["table Closing_Projects"],
+        "Data": [f.field === "Project cards" ? "all project card sheets" : "table Weekly_Report_Updates"] }[f.src] || [""];
+      if (f.src === "Spend plan" || f.src === "Budget 2026") row = f.code ? "rows of ID " + f.code : "";
+      if (f.src === "Data") row = "";
+      var col = f.field && !/^(Milestones|Weekly report|Project cards|Close-out steps)$/.test(f.field) ? "column “" + f.field + "”" : "";
+      f.where = [file, T[0], col, row].filter(Boolean).join(" › ");
+      f.from = srcName && T[1] ? srcName + " › " + T[1] : "";
+    }
     var seenId = {};
     out.forEach(function (f) { var n = seenId[f.id] = (seenId[f.id] || 0) + 1; if (n > 1) f.id += "|" + n; });
     out.sort(function (a, b) { return SEV_ORDER[a.sev] - SEV_ORDER[b.sev] || String(a.code).localeCompare(String(b.code)) || a.src.localeCompare(b.src); });
@@ -368,7 +384,8 @@
     var box = U.el('<details class="dq-inline' + (e ? " bad" : w ? " warn" : "") + '"' + (e ? " open" : "") + '><summary><b>Data checks for this project:</b> ' +
       [e ? e + " not logical" : "", w ? w + " need update" : "", i ? i + " to check" : ""].filter(Boolean).join(" · ") + ' <a href="#/data-checks" class="dq-all">all findings ›</a></summary><ul></ul></details>');
     var ul = box.querySelector("ul");
-    list.forEach(function (f) { ul.appendChild(U.el("<li>" + sevBadge(f.sev) + ' <span class="dq-src">' + esc(f.src) + (f.code !== code ? " · " + esc(f.code) : "") + "</span> " + esc(f.msg) + "</li>")); });
+    list.forEach(function (f) { ul.appendChild(U.el("<li>" + sevBadge(f.sev) + ' <span class="dq-src">' + esc(f.src) + (f.code !== code ? " · " + esc(f.code) : "") + "</span> " + esc(f.msg) +
+      '<div class="dq-where">Source: ' + esc(f.where) + (f.from ? " ← " + esc(f.from) : "") + "</div></li>")); });
     box.querySelector(".dq-all").addEventListener("click", function (ev) { ev.preventDefault(); window.SARApp.go("data-checks", { proj: baseCode(code) }); });
     host.appendChild(box);
     return box;
@@ -425,9 +442,9 @@
       columns: [
         { label: "Type", get: function (f) { return SEV[f.sev]; }, render: function (_, f) { return sevBadge(f.sev); } },
         { label: "Project", key: "code", render: function (_, f) { return f.code ? "<b>" + esc(f.code) + "</b>" + (f.name ? '<div class="muted dq-nm">' + esc(clip(f.name, 48)) + "</div>" : "") : esc(f.name || "—"); } },
-        { label: "Data source", key: "ds", render: function (x, f) { return esc(x) + '<div class="muted dq-sec">' + esc(f.src) + "</div>"; } },
-        { label: "Field", key: "field" },
         { label: "Finding", key: "msg", render: function (_, f) { return '<span class="dq-msg">' + esc(f.msg) + "</span>"; } },
+        { label: "Source (where to fix)", get: function (f) { return f.where + (f.from ? " ← " + f.from : ""); }, render: function (_, f) {
+          return '<div class="dq-where"><b>' + esc(f.ds) + "</b>" + '<div>' + esc(f.where) + "</div>" + (f.from ? '<div class="dq-from">← from the project file: ' + esc(f.from) + "</div>" : "") + "</div>"; } },
         { label: "", get: function () { return ""; }, render: function (_, f) { return '<button type="button" class="link-btn dq-ok" data-id="' + esc(f.id) + '">' + (f.ok ? "Undo OK" : "Mark OK") + "</button>"; } }
       ],
       onRow: function (f, ev) { if (ev && ev.target && ev.target.closest && ev.target.closest(".dq-ok")) return; goTo(f); }

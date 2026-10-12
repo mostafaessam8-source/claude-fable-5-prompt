@@ -1149,3 +1149,7 @@ details.ds-reg[open] > summary { margin-bottom: 10px; }
 #ds-ov, #ds-proj, #ds-csar, #ds-ccon, #ds-reg { scroll-margin-top: calc(var(--header-h) + var(--fbar-h, 0px) + 64px); }
 .ds-nav a.on { background: var(--sar-blue); color: #fff; }
 .dq-ds select { min-width: 280px; } .dq-sec { font-size: 11px; }
+.dq-where { font-size: 11.5px; line-height: 1.45; color: var(--slate); white-space: normal; min-width: 220px; max-width: 360px; }
+.dq-where b { color: var(--sar-black); font-size: 12px; }
+.dq-from { color: var(--sar-blue); margin-top: 2px; }
+.dq-inline .dq-where { max-width: none; margin-left: 2px; }
