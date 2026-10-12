@@ -215,3 +215,15 @@ a.line-card small, a.line-card span { text-decoration: none; }
 .btn.big { position: relative; }
 html.lenis, html.lenis body { height: auto; }
 @media (prefers-reduced-motion: reduce) { .fx-shiny { animation: none; color: inherit !important; -webkit-text-fill-color: initial; background: none; } }
+
+/* ---- selection helper sheet ---- */
+#selsheet { position: fixed; left: 50%; bottom: 82px; transform: translateX(-50%); width: min(640px, calc(100vw - 20px)); z-index: 60; background: var(--panel); color: var(--text); border: 2px solid var(--blue); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.28); padding: 10px 12px; display: none; max-height: 55vh; overflow: auto; }
+#selsheet.open { display: block; }
+#selsheet .sel-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+#selsheet .sel-head b { font-size: 1.05rem; overflow-wrap: anywhere; }
+#selsheet .sel-x { background: none; border: 0; color: var(--muted); font-size: 1.2rem; min-width: 32px; min-height: 32px; }
+#selsheet .sel-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+#selsheet .sel-row { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+#selsheet .sel-row p { margin: 4px 0; }
+@media (min-width: 900px) { #selsheet { bottom: 18px; left: calc(50% + 125px); } }
+body.drive-on #selsheet { display: none !important; }

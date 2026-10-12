@@ -30,6 +30,9 @@ Lessons play by themselves (English → Arabic → beep → you repeat), get a �
 Giant ⏮ ⏯ ⏭ buttons, headset / steering‑wheel media keys (Media Session), screen wake‑lock + muted‑video fallback + 🌙 black‑screen mode, optional voice commands. Start it **while parked**.
 Speech comes from the phone's own TTS voices — install an Arabic voice (Google Text‑to‑Speech) for the Arabic parts.
 
+## Word helper
+Select (long-press / double-click) any English or Arabic word or sentence anywhere: a bottom sheet offers 🔊 Listen / 🐢 Slow, 🌐 Translate (course words offline; other text via MyMemory, optional), 📖 Meaning (dictionaryapi.dev) and ➕ My words (joins spaced repetition). Switch off or auto-translate in Settings.
+
 ## Motion layer
 `js/fx.js` + self-hosted `vendor/` (GSAP + ScrollTrigger, Lenis): smooth scrolling, page transitions, scroll reveals, and vanilla ports of React Bits effects (BlurText titles, CountUp numbers, ShinyText, SpotlightCard hover, Magnet buttons, ClickSpark, moving track stripes). Automatically off for `prefers-reduced-motion`, switchable in Settings, and never active inside Drive mode.
 
