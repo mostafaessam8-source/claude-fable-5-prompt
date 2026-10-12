@@ -252,7 +252,7 @@
   const INTERVALS = [0, 1, 2, 4, 8, 16, 35, 70];
   PTE.srs = {
     allWords() {
-      const D = PTE.D; return (D.vocabA || []).concat(D.vocabB || []);
+      const D = PTE.D; return (D.vocabA || []).concat(D.vocabB || [], S().myWords || []);
     },
     byId(id) { return PTE.srs._map ? PTE.srs._map[id] : (PTE.srs._map = Object.fromEntries(PTE.srs.allWords().map((w) => [w.id, w])), PTE.srs._map[id]); },
     state(id) { return S().srs[id]; },

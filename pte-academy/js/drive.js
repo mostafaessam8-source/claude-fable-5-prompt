@@ -203,7 +203,7 @@
   function finishLine() {
     D.running = false; stopSpeech(); const mins = Math.max(1, Math.round((Date.now() - D.startedAt) / 60000));
     PTE.addMinutes(mins); PTE.addXP(20 + mins * 2, "Drive lesson"); PTE.completeTask("drive", 20);
-    const ref = D.lesson; if (ref) { const dd = (S().driveDone = S().driveDone || {}); dd[ref.les.id] = true; PTE.store.save(); }
+    const ref = D.lesson; if (ref) { const dd = (S().driveDone = S().driveDone || {}); const prev = typeof dd[ref.les.id] === "object" ? dd[ref.les.id] : { n: 0 }; dd[ref.les.id] = { t: Date.now(), n: (prev.n || 0) + 1, min: mins }; PTE.store.save(); }
     const nxt = ref ? nextLesson(ref.unit, ref.les) : null;
     if (overlay) { const now = overlay.querySelector(".now"); now.querySelector(".lbl").textContent = "LESSON COMPLETE · انتهى الدرس"; now.querySelector(".en").textContent = ref ? "✔ " + ref.les.en : "Lesson complete 🎉 " + mins + " min"; now.querySelector(".ar").textContent = nxt && D.auto ? "التالي: " + nxt.les.ar : "أحسنت يا كابتن"; }
     if (ref && nxt && D.auto) {
@@ -288,7 +288,7 @@
       wrap.appendChild(h("div", { class: "stack" }, u.lessons.map((l) => h("button", { class: "line-card", type: "button", style: { flexDirection: "row", alignItems: "center", gap: "12px" }, onclick: () => startLesson(u, l) },
         h("span", { class: "chip" + (dd[l.id] ? " ok" : "") }, dd[l.id] ? "✓" : String(l.no)),
         h("span", { style: { flex: 1 } }, h("b", null, l.en), h("div", { class: "ar", dir: "rtl" }, l.ar)),
-        h("small", null, "~" + PTE.driveEst(l) + " min")))));
+        h("small", { style: { textAlign: "end" } }, "~" + PTE.driveEst(l) + " min", dd[l.id] && dd[l.id].t ? h("div", null, "✓ ×" + dd[l.id].n + " · " + new Date(dd[l.id].t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })) : null)))));
       return wrap;
     }
     const noTTS = !("speechSynthesis" in window);
