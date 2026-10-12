@@ -112,7 +112,7 @@
     const list = i === 1 ? [PTE.tasks.diag, PTE.tasks.srs] : [PTE.tasks.srs];
     list.push(PTE.tasks.phon);
     role.tasks.forEach((id) => PTE.tasks[id] && list.push(PTE.tasks[id]));
-    list.push(PTE.tasks.drive);
+    list.push(Object.assign({}, PTE.tasks.drive, { route: "#/drive/u" + String(w).padStart(2, "0"), en: "Drive lessons · Unit " + w + ": " + st.en }));
     if (/CHECKPOINT/.test(st.milestone) && PTE.plan.dayInWeek(i) === 7) { const k = list.findIndex((x) => x.id === "mini"); if (k >= 0) list[k] = PTE.tasks.full; }
     if (w >= 23 && PTE.plan.dayInWeek(i) === 7) { const k = list.findIndex((x) => x.id === "mini"); if (k >= 0) list[k] = PTE.tasks.full; }
     return list;

@@ -23,12 +23,12 @@ On GitHub Pages it is published at `/pte-academy/` by `.github/workflows/pages.y
 | **Drive mode** | Hands‑free audio lessons (see below) |
 | **Progress** | XP, ranks, streak, badges, skill averages, mistakes log, JSON backup |
 
-## Drive mode (hands‑free course)
-A named audio curriculum: **8 units, 226 numbered lessons**, each lesson with its own title (EN/AR) and a fixed script.
-Units: Exam Strategy Academy · Sound Foundations · Word Express (600 words, 10 per lesson) · Grammar Radio · Speaking Gym · Listening Lab · Templates Academy · Story Season.
-Lessons play by themselves (English → Arabic → beep → you repeat), get a ✓ when finished, and the next lesson starts automatically (switchable). "Continue" resumes where you stopped; random "Quick mixes" are still available.
-Giant ⏮ ⏯ ⏭ buttons, headset / steering‑wheel media keys (Media Session), screen wake‑lock + muted‑video fallback + 🌙 black‑screen mode, optional voice commands. Start it **while parked**.
-Speech comes from the phone's own TTS voices — install an Arabic voice (Google Text‑to‑Speech) for the Arabic parts.
+## Drive mode (hands‑free journey)
+One clear path: **4 phases → 26 units (one per station) → 9 lessons per unit = 234 audio lessons (~13 h)**. Every unit has the same lessons in the same order:
+📖 Episode · 🧠 Words A · 🧠 Words B · 🔊 Sound Lab · 📘 Grammar · 🎤 Speaking Gym · 🎧 Listening Lab · 🧭 Exam Strategy · 🏁 Unit Review.
+All 600 words, 16 grammar units, the phonetics course, the task banks and the strategy guide are spread across the units. The journey page shows "You are here" and this week's unit; the unit page shows its 9 lessons with ✓ and "Lesson k of 9".
+Lessons play by themselves (English → Arabic → beep → you repeat), roll on to the next lesson and the next unit automatically (switchable), and Today's missions link to this week's unit. Quick random mixes remain under a collapsible section.
+Giant ⏮ ⏯ ⏭ buttons, headset / steering‑wheel media keys, screen wake‑lock + muted‑video fallback + 🌙 black screen, optional voice commands. Start it **while parked**. Speech uses the phone's TTS voices — install an Arabic voice (Google Text‑to‑Speech).
 
 ## Word helper
 Select (long-press / double-click) any English or Arabic word or sentence anywhere: a bottom sheet offers 🔊 Listen / 🐢 Slow, 🌐 Translate (course words offline; other text via MyMemory, optional), 📖 Meaning (dictionaryapi.dev) and ➕ My words (joins spaced repetition). Switch off or auto-translate in Settings.

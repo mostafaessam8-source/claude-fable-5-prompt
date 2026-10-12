@@ -227,3 +227,22 @@ html.lenis, html.lenis body { height: auto; }
 #selsheet .sel-row p { margin: 4px 0; }
 @media (min-width: 900px) { #selsheet { bottom: 18px; left: calc(50% + 125px); } }
 body.drive-on #selsheet { display: none !important; }
+
+/* ---- drive journey: phases / units / lessons ---- */
+.phasehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 3px solid var(--blue); }
+.phasehead b { font-size: 1.05rem; } .phasehead small { white-space: nowrap; }
+.unitgrid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.unitcard { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 6px; border: 2px solid var(--line); background: var(--panel); color: var(--text); text-decoration: none; position: relative; overflow: hidden; }
+.unitcard.p1 { border-top: 5px solid var(--blue); } .unitcard.p2 { border-top: 5px solid var(--sky); } .unitcard.p3 { border-top: 5px solid var(--yellow); } .unitcard.p4 { border-top: 5px solid var(--red); }
+.unitcard .un { width: 34px; height: 34px; border-radius: 50%; background: var(--tint2); color: var(--ink); display: grid; place-items: center; font-weight: 700; }
+.unitcard.full { background: var(--tint2); border-color: var(--blue); } .unitcard.full .un { background: var(--blue); color: #fff; }
+.unitcard.week { box-shadow: 0 0 0 3px var(--yellow); } .unitcard.here { border-color: var(--blue); }
+[data-theme=dark] .unitcard .un { background: var(--panel2); color: var(--text); } [data-theme=dark] .unitcard.full { background: #1f4a52; }
+.lessonmap { display: grid; gap: 8px; margin: 14px 0; position: relative; }
+.lrow { display: flex; gap: 12px; align-items: center; text-align: start; padding: 10px 12px; border-radius: 6px; border: 2px solid var(--line); background: var(--panel); color: var(--text); width: 100%; font: inherit; }
+.lrow .lno { width: 34px; height: 34px; border-radius: 50%; background: var(--tint2); display: grid; place-items: center; font-weight: 700; flex: none; color: var(--ink); }
+.lrow .lbody { flex: 1; display: flex; flex-direction: column; min-width: 0; } .lrow .lbody b { overflow-wrap: anywhere; }
+.lrow .lmeta { display: flex; flex-direction: column; align-items: center; font-size: 1.3rem; flex: none; }
+.lrow.done { background: var(--tint2); border-color: var(--blue); } .lrow.done .lno { background: var(--blue); color: #fff; }
+.lrow.cur { border-color: var(--yellow); box-shadow: 0 0 0 3px var(--yellow); }
+[data-theme=dark] .lrow.done { background: #1f4a52; } [data-theme=dark] .lrow .lno { background: var(--panel2); color: var(--text); }
