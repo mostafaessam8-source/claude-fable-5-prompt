@@ -12,7 +12,7 @@
   /* every rule, for the "What is checked" list (keep in step with the code below) */
   var RULES = [
     ["Weekly report", "error", "Progress % (planned / actual, cumulative / this week) below 0% or above 100%"],
-    ["Weekly report", "error", "Baseline or forecast finish before its start · contract effective date or actual start after the report date while progress is already reported"],
+    ["Weekly report", "error", "Baseline or forecast finish before its start · actual start after the report date while progress is already reported"],
     ["Weekly report", "error", "Paid more than submitted · submitted, paid or work confirmation more than the contract value · negative amounts"],
     ["Weekly report", "error", "Manpower / man-hours / HSE counts negative, or a cumulative smaller than this week · NCR / SOR open ≠ issued − closed"],
     ["Weekly report", "error", "SPI below 0 or above 3"],
@@ -86,8 +86,7 @@
       });
       if (bs && be && be < bs) e("error", "wk-dates", "End Date Baseline", "Baseline finish " + dt(be) + " is before the baseline start " + dt(bs) + ".");
       if (fs && fe && fe < fs) e("error", "wk-dates", "End Date (Forecast/Actual)", "Forecast finish " + dt(fe) + " is before the forecast/actual start " + dt(fs) + ".");
-      var eff = iso(r["(Con) Contract Effective Date"]);
-      if (eff && r_d && eff > r_d && act > 0) e("error", "wk-eff", "(Con) Contract Effective Date", "Contract effective date " + dt(eff) + " is after the report date while progress is already " + pc(act) + ".");
+      // no check on "(Con) Contract Effective Date": the weekly report carries other dates there (e.g. the finish date) — user confirmed
       if (fs && r_d && fs > r_d && act > 0) e("error", "wk-eff", "Start Date (Forecast/Actual)", "Actual start " + dt(fs) + " is after the report date while progress is already " + pc(act) + ".");
       if (fe && r_d && fe < r_d && act != null && !done)
         e("warn", "wk-fe-past", "End Date (Forecast/Actual)", "Forecast finish " + dt(fe) + " has already passed (report " + dt(r_d) + ") but progress is " + pc(act) + " — update the forecast finish.");

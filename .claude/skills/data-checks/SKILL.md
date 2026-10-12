@@ -57,6 +57,10 @@ plus Progress photos and the Weekly PowerPoint template, whether they have findi
   - A card more than 40 days older than the newest card.
 - Don't compare weekly "Submitted Amount" with the spend plan's work confirmed: they are different things.
 
+## Rules removed after review (don't add back)
+- Weekly "(Con) Contract Effective Date" after the report date: the field holds other dates in some reports (it equals
+  the finish date for 0647 / 0745). The user confirmed it is not a real problem.
+
 ## When changing it
 - No project data, codes or names in code, comments or this file (public repository).
 - Test against real data: import the cloud files in a browser and dump `SARChecks.run(SARApp.D).list`. Read every new
