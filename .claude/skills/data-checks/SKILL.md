@@ -9,7 +9,7 @@ Code: `sar-cost-dashboard/assets/js/datacheck.js` (`SARChecks`).
 - Page: id `data-checks` in the Data group. It is not in published reports and has no Publish button.
 - Header chip: `#dqChip` (class `js-editor`). Under 1700 px it shows the count only.
 - Import page note: in `renderImport` (app.js).
-- Per-project box: `SARChecks.inline(host, code)`, called from the Progress project dashboard and from `cardDetail` in pages.js.
+- Per-project box: `SARChecks.inline(host, code)`, called from the project card (`cardDetail` in pages.js) only — removed from the Progress project dashboard at the user's request.
 - Styles: `.dq-*` in styles.css.
 
 ## Types (keep these three)

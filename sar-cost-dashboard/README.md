@@ -154,7 +154,7 @@ Every time data is loaded, the site checks it and lists anything that looks wron
 Where the findings show:
 - The header chip shows how many need attention (red when something is not logical).
 - The import page shows the totals after every import.
-- Each project's dashboard and card shows its own findings in a box at the top.
+- Each project card shows its own findings in a box at the top (not the Progress project dashboard).
 
 On the page, click a row to open the page with that data. **Mark OK** hides a finding you have checked; it is kept in
 this browser and comes back if the value changes. **Export CSV** gives the list to send to the project teams. The full

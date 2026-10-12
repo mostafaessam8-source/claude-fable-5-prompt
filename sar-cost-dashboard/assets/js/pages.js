@@ -1225,7 +1225,6 @@
     var gi = grid(v, "g-7"), eos = eotOfSite(D, code, r);
     gi.innerHTML = U.info("Contractor", esc(r.Contractor || "—")) + U.info("Project manager", esc(po.pm || "—")) + U.info("BL start", fmt.date(po.bs)) + U.info("BL finish", fmt.date(po.be)) +
       U.info("Forecast finish", fmt.date(po.fe)) + U.info("EOT", eotHtml(eos)) + U.info("Report date", fmt.date(r["Report Date"]));
-    if (window.SARChecks) SARChecks.inline(v, code);   // data checks that found something in this project's data
     if (/required|expired|exceeds|likely|pending/.test(eos.kind))   // the full EOT reasoning under the info row
       add(v, '<div class="note-box' + (/required|expired/.test(eos.kind) ? " warn" : "") + '" style="margin:-4px 0 16px"><b>EOT:</b> ' + esc(eos.text) +
         (eos.cause && eos.kind !== "pending" ? "<br><b>Cause:</b> " + esc(eos.cause) : "") + "</div>");
