@@ -205,15 +205,16 @@
     PTE.addMinutes(mins); PTE.addXP(20 + mins * 2, "Drive lesson"); PTE.completeTask("drive", 20);
     const ref = D.lesson; if (ref) { const dd = (S().driveDone = S().driveDone || {}); const prev = typeof dd[ref.les.id] === "object" ? dd[ref.les.id] : { n: 0 }; dd[ref.les.id] = { t: Date.now(), n: (prev.n || 0) + 1, min: mins }; PTE.store.save(); }
     const nxt = ref ? nextLesson(ref.unit, ref.les) : null;
-    if (overlay) { const now = overlay.querySelector(".now"); now.querySelector(".lbl").textContent = "LESSON COMPLETE · انتهى الدرس"; now.querySelector(".en").textContent = ref ? "✔ " + ref.les.en : "Lesson complete 🎉 " + mins + " min"; now.querySelector(".ar").textContent = nxt && D.auto ? "التالي: " + nxt.les.ar : "أحسنت يا كابتن"; }
+    if (overlay) { const now = overlay.querySelector(".now"); now.querySelector(".lbl").textContent = "LESSON COMPLETE · انتهى الدرس"; now.querySelector(".en").textContent = ref ? "✔ " + ref.les.en : "Lesson complete 🎉 " + mins + " min"; now.querySelector(".ar").textContent = nxt && D.auto ? (nxt.newUnit ? "الوحدة التالية: " + nxt.unit.titleAr : "التالي: " + nxt.les.ar) : "أحسنت يا كابتن"; }
     if (ref && nxt && D.auto) {
-      const tok = D.token; PTE.tts.speak("Lesson complete. Next: " + nxt.les.en, { lang: "en", rate: 0.95 }).then((ok) => { if (!ok || !D.overlayOpen || tok !== D.token) return; setTimeout(() => { if (D.overlayOpen && tok === D.token) startLesson(nxt.unit, nxt.les, true); }, 2500); });
+      const tok = D.token; PTE.tts.speak(nxt.newUnit ? "Unit complete. Well done! Next: " + nxt.unit.title + ". " + nxt.les.en : "Lesson complete. Next: " + nxt.les.en, { lang: "en", rate: 0.95 }).then((ok) => { if (!ok || !D.overlayOpen || tok !== D.token) return; setTimeout(() => { if (D.overlayOpen && tok === D.token) startLesson(nxt.unit, nxt.les, true); }, 2500); });
     } else PTE.tts.speak(ref && !nxt ? "You finished this whole unit. Well done, Captain." : "Lesson complete. Well done, Captain.", { lang: "en" });
     PTE.fireworks();
   }
   function nextLesson(unit, les) {
     const us = PTE.driveUnits(); const i = unit.lessons.indexOf(les);
     if (i >= 0 && i < unit.lessons.length - 1) return { unit, les: unit.lessons[i + 1] };
+    const ui = us.indexOf(unit); if (ui >= 0 && ui < us.length - 1) return { unit: us[ui + 1], les: us[ui + 1].lessons[0], newUnit: true };
     return null;
   }
 
@@ -260,7 +261,7 @@
   }
   function startLesson(unit, les, keep) {
     const sd = S(); sd.drive = sd.drive || {}; sd.drive.last = les.id; PTE.store.save();
-    G = 0; startOverlay(unit.en + " · " + les.no + ". " + les.en, unit.icon, les.build(), { unit, les });
+    G = 0; startOverlay("Unit " + unit.n + " · Lesson " + les.no + "/" + unit.lessons.length + " — " + les.en, les.icon || unit.icon, les.build(), { unit, les });
   }
   function start(line, minutes) { G = 0; D.lineId = line.id; D.lesson = null; startOverlay(line.en, line.icon, line.build(minutes), null); }
   const doneSet = () => (S().driveDone = S().driveDone || {});
@@ -274,39 +275,59 @@
 
   /* ---------- pages ---------- */
   function safety() { return h("div", { class: "safety" }, "🛑 SAFETY FIRST · السلامة أولاً: choose the lesson and press Start while PARKED, then put the phone away. Never touch or look at the screen while the vehicle is moving. Obey traffic laws. اختر الدرس وأنت متوقف ثم ضع الهاتف جانباً."); }
+  const unitDone = (u) => u.lessons.filter((l) => doneSet()[l.id]).length;
+  const thisWeek = () => PTE.plan.weekOf(PTE.todayIndex());
 
   PTE.views.drive = function (p) {
     const wrap = h("div"); const units = PTE.driveUnits(); const dd = doneSet();
     D.auto = S().settings.driveAuto !== false;
+
+    /* ===== UNIT PAGE: the 9 lessons of one unit ===== */
     if (p[0]) {
-      const u = units.find((x) => x.id === p[0]); if (!u) return h("div", { class: "card" }, "Unit not found");
-      wrap.appendChild(PTE.back("#/drive", "Drive mode"));
-      wrap.appendChild(PTE.pageHead(u.icon + " " + u.en, u.ar, u.desc));
+      const ui = units.findIndex((x) => x.id === p[0]); if (ui < 0) return h("div", { class: "card" }, "Unit not found");
+      const u = units[ui], done = unitDone(u), cur = firstUndone(u);
+      wrap.appendChild(PTE.back("#/drive", "All units · كل الوحدات"));
+      wrap.appendChild(PTE.pageHead(u.title, u.titleAr, u.phaseEn + " · " + u.desc));
+      if (u.focusAr) wrap.appendChild(PTE.ar(u.focusAr));
       wrap.appendChild(safety());
-      const done = u.lessons.filter((l) => dd[l.id]).length;
-      wrap.appendChild(h("div", { class: "card tint" }, h("div", { class: "row between" }, h("b", null, done + " / " + u.lessons.length + " lessons completed · دروس مكتملة"), h("button", { class: "btn", onclick: () => { const l = firstUndone(u) || u.lessons[0]; startLesson(u, l); } }, "▶ " + (done ? "Continue" : "Start unit") + " · " + (done ? "كمّل" : "ابدأ الوحدة"))), PTE.bar((100 * done) / u.lessons.length)));
-      wrap.appendChild(h("div", { class: "stack" }, u.lessons.map((l) => h("button", { class: "line-card", type: "button", style: { flexDirection: "row", alignItems: "center", gap: "12px" }, onclick: () => startLesson(u, l) },
-        h("span", { class: "chip" + (dd[l.id] ? " ok" : "") }, dd[l.id] ? "✓" : String(l.no)),
-        h("span", { style: { flex: 1 } }, h("b", null, l.en), h("div", { class: "ar", dir: "rtl" }, l.ar)),
-        h("small", { style: { textAlign: "end" } }, "~" + PTE.driveEst(l) + " min", dd[l.id] && dd[l.id].t ? h("div", null, "✓ ×" + dd[l.id].n + " · " + new Date(dd[l.id].t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })) : null)))));
+      wrap.appendChild(h("div", { class: "card tint" }, h("div", { class: "row between" }, h("b", null, done + " / " + u.lessons.length + " lessons · دروس مكتملة"),
+        h("button", { class: "btn", type: "button", onclick: () => startLesson(u, cur || u.lessons[0]) }, "▶ " + (done ? (cur ? "Continue" : "Replay unit") : "Start unit") + " · " + (done ? "كمّل" : "ابدأ الوحدة"))), PTE.bar((100 * done) / u.lessons.length)));
+      wrap.appendChild(h("div", { class: "lessonmap" }, u.lessons.map((l) => {
+        const d = dd[l.id]; const isCur = cur && cur.id === l.id;
+        return h("button", { class: "lrow" + (d ? " done" : "") + (isCur ? " cur" : ""), type: "button", onclick: () => startLesson(u, l) },
+          h("span", { class: "lno" }, d ? "✓" : String(l.no)),
+          h("span", { class: "lbody" }, h("small", null, "Lesson " + l.no + " of " + u.lessons.length + " · " + l.roleEn), h("b", null, l.en.replace(/^[^:]+:\s*/, "")), h("span", { class: "ar", dir: "rtl" }, l.ar)),
+          h("span", { class: "lmeta" }, l.icon, h("small", null, "~" + PTE.driveEst(l) + " min"), d && d.t ? h("small", null, "×" + d.n) : null));
+      })));
+      wrap.appendChild(h("div", { class: "row between" }, ui > 0 ? h("a", { class: "btn ghost", href: "#/drive/" + units[ui - 1].id }, "← Unit " + units[ui - 1].n) : h("span"), ui < units.length - 1 ? h("a", { class: "btn ghost", href: "#/drive/" + units[ui + 1].id }, "Unit " + units[ui + 1].n + " →") : null));
       return wrap;
     }
+
+    /* ===== JOURNEY PAGE: phases -> units ===== */
     const noTTS = !("speechSynthesis" in window);
-    wrap.appendChild(PTE.pageHead("Drive Mode 🚆", "وضع القيادة", "Audio course in named units and lessons — no screen needed. / دورة صوتية بوحدات ودروس لها أسماء، بدون لمس الشاشة."));
+    wrap.appendChild(PTE.pageHead("Drive Mode 🚆", "وضع القيادة", "26 units · 9 lessons each · one clear path. / ٢٦ وحدة، في كل وحدة ٩ دروس بنفس الترتيب."));
     wrap.appendChild(safety());
     if (noTTS) wrap.appendChild(h("div", { class: "card danger" }, "This browser has no speech synthesis. Use Chrome on Android or Safari on iPhone."));
-    const tgt = continueTarget();
-    wrap.appendChild(h("div", { class: "hero" }, h("small", null, "Next lesson · الدرس التالي"), h("h2", null, tgt.unit.icon + " " + tgt.unit.en + " · " + tgt.les.no + ". " + tgt.les.en), PTE.ar(tgt.les.ar), h("div", { class: "row", style: { marginTop: "10px" } }, h("button", { class: "btn big", type: "button", onclick: () => startLesson(tgt.unit, tgt.les) }, "▶ Start · ابدأ"),
-      h("label", { class: "row", style: { color: "#fff" } }, h("input", { type: "checkbox", checked: D.auto ? "" : null, onchange: (e) => { S().settings.driveAuto = e.target.checked; D.auto = e.target.checked; PTE.store.save(); } }), h("span", null, "Auto-continue to the next lesson · تشغيل الدرس التالي تلقائياً")))));
-    wrap.appendChild(h("h2", null, "Units · الوحدات"));
-    wrap.appendChild(h("div", { class: "lines" }, units.map((u) => { const done = u.lessons.filter((l) => dd[l.id]).length; return h("a", { class: "line-card", href: "#/drive/" + u.id }, h("b", null, u.icon + " " + u.en), h("span", { class: "ar", dir: "rtl" }, u.ar), h("small", null, u.desc), h("small", null, done + " / " + u.lessons.length + " lessons"), PTE.bar((100 * done) / u.lessons.length)); })));
+    const tgt = continueTarget(); const wk = thisWeek(); const wu = units[Math.min(wk, units.length) - 1];
+    wrap.appendChild(h("div", { class: "hero" }, h("small", null, "You are here · أنت هنا"), h("h2", null, "Unit " + tgt.unit.n + " · " + tgt.unit.en), h("p", null, "Lesson " + tgt.les.no + " of " + tgt.unit.lessons.length + ": " + tgt.les.en), PTE.ar(tgt.les.ar),
+      h("div", { class: "row", style: { marginTop: "10px" } }, h("button", { class: "btn big", type: "button", onclick: () => startLesson(tgt.unit, tgt.les) }, "▶ Start · ابدأ"), h("a", { class: "btn ghost", href: "#/drive/" + tgt.unit.id }, "Open unit · افتح الوحدة")),
+      h("label", { class: "row", style: { color: "#fff", marginTop: "8px" } }, h("input", { type: "checkbox", checked: D.auto ? "" : null, onchange: (e) => { S().settings.driveAuto = e.target.checked; D.auto = e.target.checked; PTE.store.save(); } }), h("span", null, "Auto-play the next lesson · تشغيل الدرس التالي تلقائياً"))));
+    if (wu && wu.id !== tgt.unit.id) wrap.appendChild(h("div", { class: "card warn" }, h("b", null, "📅 This week's plan says: Unit " + wu.n + " — " + wu.en), PTE.ar("حسب خطة هذا الأسبوع: الوحدة " + wu.n + " — " + wu.ar), h("a", { class: "btn mini", href: "#/drive/" + wu.id }, "Open Unit " + wu.n)));
+    PTE.D.phases.forEach((ph) => {
+      const us = units.filter((x) => x.phase === ph.n); const tot = us.reduce((a, x) => a + x.lessons.length, 0), dn = us.reduce((a, x) => a + unitDone(x), 0);
+      wrap.appendChild(h("div", { class: "phasehead" }, h("div", null, h("b", null, "Phase " + ph.n + " · " + ph.en), h("div", { class: "ar", dir: "rtl" }, ph.ar)), h("small", null, "Units " + us[0].n + "–" + us[us.length - 1].n + " · " + dn + "/" + tot)));
+      wrap.appendChild(h("div", { class: "unitgrid" }, us.map((u) => { const d = unitDone(u); const full = d === u.lessons.length;
+        return h("a", { class: "unitcard p" + u.phase + (full ? " full" : "") + (u.n === wk ? " week" : "") + (u.id === tgt.unit.id ? " here" : ""), href: "#/drive/" + u.id },
+          h("span", { class: "un" }, full ? "✓" : String(u.n)), h("b", null, u.en), h("span", { class: "ar", dir: "rtl" }, u.ar), h("small", null, d + " / " + u.lessons.length + (u.n === wk ? " · 📅 this week" : u.id === tgt.unit.id ? " · 📍 you are here" : "")), PTE.bar((100 * d) / u.lessons.length)); })));
+    });
     const ar = PTE.tts.has("ar");
-    wrap.appendChild(h("div", { class: "card tint", style: { marginTop: "16px" } }, h("h3", null, "How a lesson works · كيف يعمل الدرس"),
-      h("ul", null, h("li", null, "Each lesson has a number and a name. It plays by itself: English, Arabic meaning, a beep — you REPEAT out loud."), h("li", null, "Big ⏮ ⏯ ⏭ buttons and your headset / steering-wheel media keys."), h("li", null, "🌙 Black-screen mode; the screen is kept awake. Plug the phone into the car charger."), h("li", null, "Finished lessons get a ✓ and the next lesson starts on its own (you can turn this off)."), h("li", null, "Words you hear join your spaced-repetition schedule.")),
-      PTE.ar("لكل درس رقم واسم ويعمل تلقائياً: كلمة إنجليزية ثم معناها ثم صفارة وأنت تكرر بصوت عالٍ. ينتقل للدرس التالي وحده، وتظهر علامة ✓ على الدروس المكتملة."),
+    wrap.appendChild(h("div", { class: "card tint", style: { marginTop: "16px" } }, h("h3", null, "Every unit has the same 9 lessons · كل وحدة بنفس الـ٩ دروس"),
+      h("ol", null, PTE.LESSON_ROLES.map((r) => h("li", null, r[1] + " " + r[2] + " — ", h("span", { class: "ar", dir: "rtl", style: { display: "inline" } }, r[3])))),
+      h("p", null, "Lessons play by themselves: English → Arabic → beep → you repeat out loud. A ✓ appears when a lesson ends and the next one starts on its own (switchable). Words you hear join your spaced-repetition schedule."),
+      PTE.ar("كل وحدة فيها نفس الدروس بنفس الترتيب فلن تتوه. الدرس يعمل تلقائياً وينتقل للتالي وحده، وتظهر علامة ✓ عند الانتهاء."),
       !ar ? h("p", { class: "bad-t" }, "⚠ No Arabic voice found on this device: Arabic parts may be silent. Install an Arabic voice in your phone's text-to-speech settings (Google Text-to-Speech).") : null));
     const mins = h("div", { class: "row" }, [5, 10, 20, 30].map((m) => h("button", { class: "btn mini ghost", type: "button", onclick: () => { D.minutes = m; mins.querySelectorAll("button").forEach((x) => x.classList.add("ghost")); mins.children[[5, 10, 20, 30].indexOf(m)].classList.remove("ghost"); } }, m + " min")));
-    wrap.appendChild(h("details", { class: "card" }, h("summary", null, h("b", null, "🚗 Quick random mixes · ميكس سريع (بدون ترتيب)")), mins,
+    wrap.appendChild(h("details", { class: "card" }, h("summary", null, h("b", null, "🚗 Quick random mixes · ميكس سريع (خارج الرحلة)")), mins,
       h("div", { class: "lines", style: { marginTop: "10px" } }, LINES.map((l) => h("button", { class: "line-card", type: "button", onclick: () => start(l, D.minutes) }, h("b", null, l.icon + " " + l.en), h("span", { class: "ar", dir: "rtl" }, l.ar), h("small", null, l.desc)))),
       h("label", { class: "row", style: { marginTop: "10px" } }, h("input", { type: "checkbox", onchange: (e) => { D.voiceCmd = e.target.checked; } }), h("span", null, "Voice commands (beta): say “next”, “pause”, “repeat”, “back” — best with a headset."))));
     wrap.appendChild(h("div", { class: "card danger" }, h("b", null, "📱 If your screen still turns off · لو الشاشة لسه بتقفل"),
