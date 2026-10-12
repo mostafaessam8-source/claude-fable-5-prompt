@@ -304,6 +304,15 @@
     if (rd && days(rd, today) > 10) add("warn", "dt-old", "", "Data", "Report Date", "The weekly data is " + days(rd, today) + " days old (report date " + dt(rd) + ") — import this week's PBI Weekly Report.", ["import", {}], "All projects");
     if (maxRp && rd && maxRp < addDays(rd.slice(0, 7) + "-01", -1)) add("warn", "dt-old", "", "Data", "Project cards", "The project cards are for " + fmt.month(maxRp) + " — import the latest EP – NSR Projects file.", ["import", {}], "All projects");
 
+    // the source file each finding comes from (Data Import source key → its label and the imported file name)
+    var SRC_KEY = { "Weekly report": "weekly", "S-curve": "weekly", "Milestones": "weekly", "Area of concern": "weekly", "Deliverables": "weekly",
+      "Spend plan": "plan", "Budget 2026": "budget", "Project card": "cards", "Issue register": "cards", "Closing": "closing" };
+    var SS = (window.SARImporter && SARImporter.SOURCES) || {}, files = D.sources ? D.sources() : {};
+    out.forEach(function (f) {
+      var k = SRC_KEY[f.src] || (f.src === "Data" ? (f.field === "Project cards" ? "cards" : "weekly") : "");
+      f.dsKey = k; f.ds = k ? (SS[k] ? SS[k].label : k) : "Other";
+      f.dsFile = k && files[k] ? files[k].fileName || "" : "";
+    });
     var seenId = {};
     out.forEach(function (f) { var n = seenId[f.id] = (seenId[f.id] || 0) + 1; if (n > 1) f.id += "|" + n; });
     out.sort(function (a, b) { return SEV_ORDER[a.sev] - SEV_ORDER[b.sev] || String(a.code).localeCompare(String(b.code)) || a.src.localeCompare(b.src); });
@@ -361,7 +370,7 @@
     var D = ctx.D, v = ctx.view, st = ctx.state;
     refresh(); var r = get(D);
     st.sev = st.sev || { error: true, warn: true, info: true };
-    var srcs = U.uniq(r.list.map(function (f) { return f.src; })), projs = U.uniq(r.list.map(function (f) { return baseCode(f.code); }).filter(Boolean)).sort();
+    var dss = U.uniq(r.list.map(function (f) { return f.ds; })).sort(), srcs = U.uniq(r.list.filter(function (f) { return !st.ds || f.ds === st.ds; }).map(function (f) { return f.src; })), projs = U.uniq(r.list.map(function (f) { return baseCode(f.code); }).filter(Boolean)).sort();
     var g = U.el('<div class="grid g-4"></div>'); v.appendChild(g);
     var nProj = Object.keys(r.byCode).filter(Boolean).length, nOk = r.list.filter(function (f) { return f.ok; }).length;
     g.innerHTML = U.tile({ value: r.counts.error, label: "Not logical", color: r.counts.error ? "red" : "slate", note: "Impossible values — fix in the source file" }) +
@@ -379,14 +388,19 @@
       b.querySelector("input").addEventListener("change", function (ev) { st.sev[k] = ev.target.checked; ctx.rerender(); });
       bar.appendChild(b);
     });
-    var ss = U.select({ label: "Source", value: st.src || "", options: [{ value: "", label: "All sources" }].concat(srcs.map(function (s) { return { value: s, label: s }; })), onChange: function (x) { st.src = x; ctx.rerender(); } });
+    var cnt = function (key, v) { return r.list.filter(function (f) { return f[key] === v && st.sev[f.sev] && (st.showOk || !f.ok); }).length; };
+    var dsel = U.select({ label: "Data source (file)", value: st.ds || "", options: [{ value: "", label: "All data sources" }].concat(dss.map(function (x) {
+      var f0 = r.list.filter(function (f) { return f.ds === x; })[0]; return { value: x, label: x + " (" + cnt("ds", x) + ")" + (f0 && f0.dsFile ? " — " + f0.dsFile : "") }; })),
+      onChange: function (x) { st.ds = x; st.src = ""; ctx.rerender(); } });
+    dsel.classList.add("dq-ds"); bar.appendChild(dsel);
+    var ss = U.select({ label: "Section", value: st.src || "", options: [{ value: "", label: "All sections" }].concat(srcs.map(function (s) { return { value: s, label: s }; })), onChange: function (x) { st.src = x; ctx.rerender(); } });
     var ps = U.select({ label: "Project", value: st.proj || "", options: [{ value: "", label: "All projects" }].concat(projs.map(function (s) { return { value: s, label: s + (r.byCode[s] ? " (" + r.byCode[s].length + ")" : "") }; })), onChange: function (x) { st.proj = x; ctx.rerender(); } });
     bar.appendChild(ss); bar.appendChild(ps);
     var okT = U.el('<label class="dq-tog"><input type="checkbox"' + (st.showOk ? " checked" : "") + "> Show findings marked OK</label>");
     okT.querySelector("input").addEventListener("change", function (ev) { st.showOk = ev.target.checked; ctx.rerender(); });
     bar.appendChild(okT);
 
-    var rows = r.list.filter(function (f) { return st.sev[f.sev] && (!st.src || f.src === st.src) && (!st.proj || baseCode(f.code) === st.proj) && (st.showOk || !f.ok); });
+    var rows = r.list.filter(function (f) { return st.sev[f.sev] && (!st.ds || f.ds === st.ds) && (!st.src || f.src === st.src) && (!st.proj || baseCode(f.code) === st.proj) && (st.showOk || !f.ok); });
     var p = U.el('<section class="panel"><div class="panel-head"><h3>Findings</h3><span class="sub">Click a row to open the page with that data · “Mark OK” hides a finding you have checked (it comes back if the value changes)</span></div></section>');
     v.appendChild(p);
     if (!r.list.length) p.appendChild(U.el('<div class="note-box ok"><b>No findings.</b> Everything checked looks logical and up to date.</div>'));
@@ -396,7 +410,7 @@
       columns: [
         { label: "Type", get: function (f) { return SEV[f.sev]; }, render: function (_, f) { return sevBadge(f.sev); } },
         { label: "Project", key: "code", render: function (_, f) { return f.code ? "<b>" + esc(f.code) + "</b>" + (f.name ? '<div class="muted dq-nm">' + esc(clip(f.name, 48)) + "</div>" : "") : esc(f.name || "—"); } },
-        { label: "Source", key: "src" },
+        { label: "Data source", key: "ds", render: function (x, f) { return esc(x) + '<div class="muted dq-sec">' + esc(f.src) + "</div>"; } },
         { label: "Field", key: "field" },
         { label: "Finding", key: "msg", render: function (_, f) { return '<span class="dq-msg">' + esc(f.msg) + "</span>"; } },
         { label: "", get: function () { return ""; }, render: function (_, f) { return '<button type="button" class="link-btn dq-ok" data-id="' + esc(f.id) + '">' + (f.ok ? "Undo OK" : "Mark OK") + "</button>"; } }

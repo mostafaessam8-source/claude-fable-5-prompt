@@ -20,6 +20,18 @@ Code: `sar-cost-dashboard/assets/js/datacheck.js` (`SARChecks`).
 - **Check** (`info`): two files disagree (spend plan ↔ weekly report, card ↔ weekly report), a field that doesn't match
   its own formula (SPI, Variance days, Paid %), or no target date (TBD).
 
+## Data source filter
+Each finding carries `ds` / `dsKey` / `dsFile`: the Data Import source it comes from (the `SRC_KEY` map in `run`):
+- weekly report, S-curve, milestones, concerns, deliverables → **PBI Weekly Report**
+- spend plan → **Delivery Plan**
+- Budget 2026 → **budget**
+- project card, issue register → **EP – NSR Projects**
+- closing → **Projects in Closing Phase**
+- "Data" findings → by field
+
+The page filters by it ("Data source (file)", with counts and the imported file name). The old area filter is now
+"Section"; it lists only the sections of the chosen file. A new finding source must be added to `SRC_KEY`.
+
 ## How it works
 - The reference date is the weekly report date (`D.reportDate`). Use today only for the "data is old" check.
 - Every rule is listed in `RULES` at the top of the file. That list is shown under "What is checked" on the page, so

@@ -1148,3 +1148,4 @@ details.ds-reg[open] > summary { margin-bottom: 10px; }
 @media (max-width: 640px) { .ds-nmw { width: 110px; } }
 #ds-ov, #ds-proj, #ds-csar, #ds-ccon, #ds-reg { scroll-margin-top: calc(var(--header-h) + var(--fbar-h, 0px) + 64px); }
 .ds-nav a.on { background: var(--sar-blue); color: #fff; }
+.dq-ds select { min-width: 280px; } .dq-sec { font-size: 11px; }
