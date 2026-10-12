@@ -57,9 +57,12 @@ plus Progress photos and the Weekly PowerPoint template, whether they have findi
   - A card more than 40 days older than the newest card.
 - Don't compare weekly "Submitted Amount" with the spend plan's work confirmed: they are different things.
 
-## Rules removed after review (don't add back)
-- Weekly "(Con) Contract Effective Date" after the report date: the field holds other dates in some reports (it equals
-  the finish date for 0647 / 0745). The user confirmed it is not a real problem.
+## Contract effective date rule (restored at the user's request)
+- Weekly "(Con) Contract Effective Date" after the report date with progress > 0 is a **Not logical** finding.
+- The message says when the date equals the project's finish date, or the same date as another project. Example: 0647
+  and 0745 both carry 08-Sep-2027 in Masterdata_Reporting AD2; the 0745 file looks copied from 0647, and its Work
+  Confirmation 5,000,000 is the same as 0647's.
+- It was removed once and then restored; keep it.
 
 ## When changing it
 - No project data, codes or names in code, comments or this file (public repository).
