@@ -365,6 +365,7 @@ svg .axl { stroke: #c4d0d8; }
 @media (max-width: 899px) { html, body { overscroll-behavior: none; } }
 .mobile #bFull .t, .mobile #bExit .t, .mobile #bPrint .t { display: none; }
 .mobile #bFull, .mobile #bExit, .mobile #bPrint { padding: 0 11px; }
+@media (min-width: 900px) and (max-width: 1499px) { #side { width: 190px; } #side small { display: none; } #side button { padding: 6px 7px; } }
 
 </style>
 </head>
@@ -1113,7 +1114,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
     const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
-    if (window.innerWidth < 1500) $('#side').classList.add('hide');
+    if (window.innerWidth < 900) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {
