@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zulfi Railway Station – Project Presentation</title>
+<meta name="description" content="Interactive management presentation: WBS, cost breakdown, 26-month schedule, Gantt chart and S-curve for the Zulfi Railway Station project.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <div class="brand"><div class="logo">SAR</div><div>Zulfi Railway Station<small>Cost, WBS &amp; 26-month schedule</small></div></div>
+    <span class="grow"></span>
+    <label class="tb-field" title="Changing the project start date moves the whole schedule">Project start <input type="date" id="startIn"></label>
+    <label class="tb-field" title="How dependent activities react when you move an activity">Linking
+      <select id="linkSel"><option value="two">Auto-link (move successors)</option><option value="push">Push delays only</option><option value="off">Off (independent)</option></select></label>
+    <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
+    <span class="grow"></span>
+    <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
+    <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
+    <span id="slideNo"></span>
+    <button class="tb-btn" id="bNext" title="Next slide (→)"></button>
+    <span id="slideMenu"><button class="tb-btn" title="All slides"></button><div id="slideList"></div></span>
+    <button class="tb-btn" id="bFull" title="Full screen (F)"></button>
+    <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
+    <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
+  </header>
+  <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
+  <main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main>
+</div>
+<script src="data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/drawers.js"></script>
+<script src="js/slides-overview.js"></script>
+<script src="js/slides-wbs.js"></script>
+<script src="js/slides-schedule.js"></script>
+<script src="js/slides-cashflow.js"></script>
+<script src="js/slides-assump.js"></script>
+<script>
+  // toolbar icon + label markup
+  (function () {
+    var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
+    set('bFilters', I.list + 'Filters');
+    set('bBack', I.prev + 'Back'); set('bNext', 'Next' + I.next);
+    document.querySelector('#slideMenu > button').innerHTML = I.list + 'Slides';
+    set('bFull', I.full + 'Full screen'); set('bExit', I.exit + 'Exit full screen'); set('bPrint', I.print + 'Print');
+    Z.app.boot();
+  })();
+</script>
+</body>
+</html>

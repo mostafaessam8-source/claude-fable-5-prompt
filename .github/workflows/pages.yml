@@ -41,6 +41,9 @@ jobs:
       # PTE-79 Express: the personal PTE Academic study site (static, no build) is published at /pte-academy/
       - name: Add the PTE Academy site
         run: cp -r pte-academy dist/pte-academy
+      # Zulfi Railway Station: interactive management presentation (static, no build) is published at /zulfi-presentation/
+      - name: Add the Zulfi presentation
+        run: cp -r zulfi-presentation dist/zulfi-presentation
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
