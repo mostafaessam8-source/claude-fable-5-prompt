@@ -1,0 +1,1857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zulfi Railway Station – Project Presentation</title>
+<meta name="description" content="Interactive management presentation: WBS, cost breakdown, 26-month schedule, Gantt chart and S-curve for the Zulfi Railway Station project.">
+<style>
+/* Zulfi Railway Station – management presentation */
+:root {
+  --brand: #00778b; --brand-d: #005566; --brand-l: #e0f2f5; --brand-xl: #f1f9fa;
+  --ink: #232e36; --ink2: #566672; --mute: #8a97a3; --line: #dce4e9; --soft: #f4f7f9; --paper: #fff; --bg: #dfe6ea;
+  --good: #0a8a4a; --warn: #b87800; --bad: #d63b3b; --accent: #3d3935;
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300; --c7: #6250d6; --c8: #e34948;
+  --gen: #8b95a1; --eng: #2a78d6; --proc: #eb6834; --cons: #1baf7a;
+  --ph1: #00778b; --ph2: #6250d6;
+  --shadow: 0 1px 2px rgba(20, 40, 55, .06), 0 4px 14px rgba(20, 40, 55, .06);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden;
+  font: 14px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ---------- toolbar ---------- */
+#bar { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 52px; background: var(--accent); color: #fff; flex: none; }
+#bar .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+#bar .logo { width: 30px; height: 30px; border-radius: 7px; background: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+#bar .brand small { display: block; font-weight: 500; font-size: 11px; opacity: .7; letter-spacing: 0; }
+#bar .grow { flex: 1; }
+.tb-btn { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.tb-btn:hover { background: rgba(255,255,255,.18); }
+.tb-btn:disabled { opacity: .35; cursor: default; }
+.tb-btn.primary { background: var(--brand); border-color: var(--brand); }
+.tb-btn svg { width: 16px; height: 16px; flex: none; }
+.tb-field { display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,.8); }
+.tb-field input, .tb-field select { height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.1); color: #fff; padding: 0 8px; color-scheme: dark; }
+.tb-field select option { color: #222; }
+#slideNo { min-width: 64px; text-align: center; font-weight: 700; font-size: 13px; }
+#slideMenu { position: relative; }
+#slideList { position: absolute; top: 40px; right: 0; width: 330px; background: #fff; color: var(--ink); border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.3); padding: 6px; display: none; z-index: 50; }
+#slideList.open { display: block; }
+#slideList button { display: flex; width: 100%; gap: 10px; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 7px; align-items: center; }
+#slideList button:hover { background: var(--soft); }
+#slideList button.on { background: var(--brand-l); color: var(--brand-d); font-weight: 700; }
+#slideList .n { width: 24px; height: 24px; border-radius: 6px; background: var(--soft); display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: none; }
+#slideList small { color: var(--mute); display: block; font-size: 11px; }
+
+/* ---------- filter bar ---------- */
+#filters { display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 46px; background: #fff; border-bottom: 1px solid var(--line); flex: none; overflow-x: auto; white-space: nowrap; }
+#filters .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); font-weight: 700; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+.seg button { border: 0; background: none; padding: 5px 11px; font-size: 12.5px; font-weight: 600; color: var(--ink2); border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--soft); }
+.seg button.on { background: var(--brand); color: #fff; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; color: var(--ink2); }
+.chip:hover { border-color: var(--brand); }
+.chip.on { background: var(--brand-l); border-color: var(--brand); color: var(--brand-d); }
+.chip i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.f-select, .f-input { height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: #fff; font-size: 12.5px; }
+.f-input { width: 150px; }
+#filters .sep { width: 1px; height: 22px; background: var(--line); }
+#fCount { font-size: 12px; color: var(--ink2); margin-left: auto; font-weight: 600; flex: none; }
+#filters > * { flex: none; }
+#fCount b { color: var(--brand-d); }
+.linkbtn { border: 0; background: none; color: var(--brand); font-weight: 700; font-size: 12.5px; padding: 4px 6px; }
+.linkbtn:hover { text-decoration: underline; }
+
+/* ---------- stage ---------- */
+#viewport { flex: 1; min-height: 0; position: relative; overflow: hidden; display: grid; place-items: center; }
+#stageBox { position: relative; }
+#stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; background: var(--paper); box-shadow: 0 8px 40px rgba(20,40,55,.25); overflow: hidden; }
+.slide { position: absolute; inset: 0; padding: 30px 44px 26px; display: none; flex-direction: column; background: var(--paper); }
+.slide.active { display: flex; }
+.s-head { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 16px; flex: none; }
+.s-head .no { width: 46px; height: 46px; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 20px; display: grid; place-items: center; flex: none; }
+.s-head h1 { margin: 0; font-size: 30px; line-height: 1.1; letter-spacing: -.01em; color: var(--accent); }
+.s-head p { margin: 3px 0 0; color: var(--ink2); font-size: 14px; }
+.s-head .src { margin-left: auto; font-size: 12px; color: var(--mute); border: 1px dashed var(--line); border-radius: 8px; padding: 5px 10px; text-align: right; line-height: 1.3; }
+.s-head .src b { color: var(--ink2); }
+.s-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.row { display: flex; gap: 16px; min-height: 0; }
+.col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.grow { flex: 1; min-width: 0; min-height: 0; }
+
+/* ---------- cards ---------- */
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.panel > .ph { display: flex; align-items: center; gap: 10px; padding: 12px 16px 6px; flex: none; }
+.panel > .ph h3 { margin: 0; font-size: 15px; color: var(--accent); }
+.panel > .ph .sub { color: var(--mute); font-size: 12px; }
+.panel > .ph .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.panel > .pb { padding: 4px 16px 14px; flex: 1; min-height: 0; position: relative; }
+.kpis { display: grid; gap: 14px; flex: none; }
+.kpi { background: linear-gradient(180deg, #fff, var(--brand-xl)); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--brand); }
+.kpi.alt::before { background: var(--c7); }
+.kpi.warn::before { background: var(--c4); }
+.kpi .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink2); font-weight: 700; }
+.kpi .v { font-size: 30px; font-weight: 800; color: var(--accent); letter-spacing: -.02em; margin: 2px 0; white-space: nowrap; }
+.kpi .v small { font-size: 14px; font-weight: 600; color: var(--ink2); margin-left: 4px; }
+.kpi .d { font-size: 12.5px; color: var(--ink2); }
+.kpi[data-nav], .kpi[data-kpi] { cursor: pointer; }
+.kpi[data-nav]:hover, .kpi[data-kpi]:hover { border-color: var(--brand); }
+.delta { font-weight: 700; }
+.delta.up { color: var(--bad); } .delta.down { color: var(--good); } .delta.zero { color: var(--mute); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11.5px; font-weight: 700; background: var(--soft); color: var(--ink2); white-space: nowrap; }
+.pill.p1 { background: #d9eef2; color: var(--brand-d); } .pill.p2 { background: #e6e2fa; color: #4a3bb3; }
+.pill.ll { background: #fdeccd; color: #8a5a00; } .pill.crit { background: #fde1e1; color: #a52626; }
+.pill.GEN { background: #e7eaee; color: #4a5661; } .pill.ENG { background: #dbe8fa; color: #1c57a3; }
+.pill.PROC { background: #fde4da; color: #a8431b; } .pill.CONS { background: #d7f3e8; color: #0e7a55; }
+.pill.warn { background: #fdeccd; color: #8a5a00; } .pill.ok { background: #d7f3e8; color: #0e7a55; } .pill.bad { background: #fde1e1; color: #a52626; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink2); }
+.legend span { cursor: default; white-space: nowrap; }
+.muted { color: var(--mute); }
+.hint { font-size: 12px; color: var(--mute); }
+
+/* ---------- svg charts ---------- */
+svg text { font-family: inherit; fill: var(--ink2); font-size: 12px; }
+svg .ax text { font-size: 11.5px; }
+svg .grid line { stroke: #e6ecf0; }
+svg .axl { stroke: #c4d0d8; }
+.hit { cursor: pointer; }
+.hit:hover .hv, .hv.hit:hover { filter: brightness(1.08); }
+.hv-ring:hover { stroke: var(--accent); stroke-width: 2; }
+#tip { position: absolute; z-index: 90; pointer-events: none; background: #1f2a31; color: #fff; padding: 9px 12px; border-radius: 9px; font-size: 12.5px; line-height: 1.45; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 340px; display: none; }
+#tip b { color: #fff; } #tip .t { font-weight: 700; margin-bottom: 3px; font-size: 13px; }
+#tip .r { display: flex; justify-content: space-between; gap: 18px; } #tip .r span:first-child { opacity: .8; } #tip .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+
+/* ---------- tables ---------- */
+.scroll { overflow: auto; min-height: 0; }
+.tbl { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+.tbl th { position: sticky; top: 0; z-index: 3; background: #eef3f5; color: var(--ink2); text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; user-select: none; }
+.tbl th.sort { cursor: pointer; } .tbl th.sort:hover { color: var(--brand-d); }
+.tbl td { padding: 6px 9px; border-bottom: 1px solid #edf1f4; white-space: nowrap; }
+.tbl td.wrap { white-space: normal; }
+.tbl tr.g td { background: var(--brand-l); font-weight: 700; color: var(--brand-d); border-bottom: 1px solid #c4e2e8; }
+.tbl tr.act { cursor: pointer; } .tbl tr.act:hover td { background: var(--brand-xl); }
+.tbl tr.sel td { background: #d3edf2 !important; }
+.tbl tfoot td { position: sticky; bottom: 0; background: #fff; font-weight: 700; border-top: 2px solid var(--line); }
+.tbl .num { text-align: right; }
+.bar-cell { display: flex; align-items: center; gap: 7px; justify-content: flex-end; }
+.bar-cell .b { height: 7px; border-radius: 4px; background: var(--brand); opacity: .75; }
+.tw { width: 22px; height: 22px; border: 0; border-radius: 6px; background: none; color: inherit; font-weight: 800; }
+.tw:hover { background: rgba(0,0,0,.08); }
+
+/* ---------- forms ---------- */
+.dinput { height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 6px; background: #fff; font-size: 12.5px; width: 124px; }
+.dinput:focus, .f-input:focus, .f-select:focus, .ninput:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.dinput.chg { background: #fff7e0; border-color: #ecc66a; }
+.ninput { width: 68px; height: 28px; border: 1px solid var(--line); border-radius: 7px; padding: 0 6px; text-align: right; background: #fff; }
+.btn { height: 32px; padding: 0 13px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 13px; color: var(--ink2); display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--brand); color: var(--brand-d); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; } .btn.primary:hover { background: var(--brand-d); color: #fff; }
+.btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+.btn.sm { height: 26px; padding: 0 9px; font-size: 12px; }
+
+/* ---------- gantt ---------- */
+.gantt { position: relative; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; flex: 1; min-height: 0; }
+.gwrap { position: relative; }
+.ghead { position: sticky; top: 0; z-index: 8; display: flex; background: #eef3f5; border-bottom: 1px solid var(--line); }
+.gleft { position: sticky; left: 0; z-index: 6; background: inherit; flex: none; display: grid; align-items: center; border-right: 1px solid var(--line); }
+.ghead .gleft { z-index: 9; background: #eef3f5; }
+.grow2 { display: flex; height: 25px; border-bottom: 1px solid #eef2f4; position: relative; }
+.grow2:hover { background: var(--brand-xl); } .grow2:hover .gleft { background: var(--brand-xl); }
+.grow2 .gleft { background: #fff; font-size: 12.5px; height: 25px; }
+.grow2.grp { background: var(--brand-l); } .grow2.grp .gleft { background: var(--brand-l); font-weight: 700; color: var(--brand-d); }
+.grow2.sel, .grow2.sel .gleft { background: #d3edf2; }
+.gleft > div { padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gtl { position: relative; flex: none; }
+.gbar { position: absolute; top: 5px; height: 15px; border-radius: 4px; cursor: grab; min-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.gbar:active { cursor: grabbing; }
+.gbar.ll { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.35) 0 4px, transparent 4px 8px); }
+.gbar.crit { outline: 2px solid var(--bad); outline-offset: 1px; }
+.gbar.conf { outline: 2px dashed #8a1fbf; outline-offset: 1px; }
+.gbar .h { position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; }
+.gbar .h.l { left: -2px; } .gbar .h.r { right: -2px; }
+.gbar .lab { position: absolute; left: calc(100% + 6px); top: -1px; font-size: 11px; color: var(--ink2); white-space: nowrap; pointer-events: none; }
+.gsum { position: absolute; top: 8px; height: 8px; background: var(--brand-d); border-radius: 1px; }
+.gsum::before, .gsum::after { content: ""; position: absolute; top: 4px; border: 4px solid transparent; border-top-color: var(--brand-d); }
+.gsum::before { left: 0; } .gsum::after { right: 0; }
+.gghost { position: absolute; top: 20px; height: 3px; background: #99a6b0; border-radius: 2px; opacity: .85; }
+.gmonth { position: absolute; top: 25px; height: 24px; text-align: center; font-size: 11px; line-height: 24px; border-left: 1px solid #d5dee4; color: var(--ink2); overflow: hidden; }
+.gyear { position: absolute; top: 0; height: 25px; text-align: left; padding-left: 8px; font-size: 12px; font-weight: 700; line-height: 25px; border-left: 1px solid #c4d0d8; color: var(--accent); }
+.gstripe { position: absolute; top: 0; bottom: 0; background: rgba(0,119,139,.045); pointer-events: none; }
+.gline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bad); z-index: 4; pointer-events: none; }
+.gline span { position: absolute; top: 2px; left: 4px; font-size: 10.5px; color: var(--bad); font-weight: 700; white-space: nowrap; background: #fff; padding: 0 3px; border-radius: 3px; }
+.ghead .gline span { top: 28px; }
+.glink { position: absolute; top: 0; pointer-events: none; z-index: 3; }
+
+/* ---------- drawer ---------- */
+#scrim { position: absolute; inset: 0; background: rgba(20,30,40,.22); display: none; z-index: 60; }
+#drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 560px; background: #fff; z-index: 70; box-shadow: -10px 0 40px rgba(0,0,0,.2); transform: translateX(105%); transition: transform .22s ease; display: flex; flex-direction: column; }
+#drawer.open { transform: none; } #scrim.open { display: block; }
+#drawer .dh { padding: 20px 24px 14px; background: linear-gradient(180deg, var(--brand-l), #fff); border-bottom: 1px solid var(--line); position: relative; flex: none; }
+#drawer .dh .cd { font-size: 12px; color: var(--brand-d); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+#drawer .dh h2 { margin: 3px 36px 8px 0; font-size: 21px; line-height: 1.2; color: var(--accent); }
+#drawer .x { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-size: 18px; line-height: 1; }
+#drawer .db { padding: 16px 24px 28px; overflow: auto; flex: 1; }
+#drawer h4 { margin: 18px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink2); }
+#drawer h4:first-child { margin-top: 0; }
+.dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dstat { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: var(--soft); }
+.dstat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); font-weight: 700; }
+.dstat .v { font-size: 18px; font-weight: 800; color: var(--accent); }
+.dstat .v small { font-size: 12px; color: var(--ink2); font-weight: 600; }
+.dlist { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.dlist .it { display: flex; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #edf1f4; align-items: center; font-size: 13px; cursor: pointer; }
+.dlist .it:last-child { border-bottom: 0; } .dlist .it:hover { background: var(--brand-xl); }
+.dlist .it .c { color: var(--brand-d); font-weight: 700; min-width: 48px; }
+.dlist .it .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlist .it .a { font-weight: 700; }
+.datefield { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.datefield label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--ink2); display: block; }
+.datefield input { width: 100%; height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; margin-top: 3px; font-size: 14px; }
+.nudge { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.note { background: #fff7e0; border: 1px solid #f0d58a; color: #6b4e00; padding: 8px 12px; border-radius: 9px; font-size: 12.5px; }
+.note.bad { background: #fde8e8; border-color: #f2b4b4; color: #8a1d1d; }
+.note.ok { background: #e3f6ec; border-color: #a9dcc2; color: #0b5a37; }
+.note.info { background: var(--brand-xl); border-color: #b8dde4; color: var(--brand-d); }
+
+/* ---------- misc ---------- */
+.hm td.c { text-align: right; font-size: 11.5px; padding: 3px 5px; min-width: 52px; border-left: 1px solid #fff; }
+.hm td.c.z { color: #c8d2d9; }
+.hm th.m { text-align: center; min-width: 52px; padding: 5px 3px; cursor: pointer; line-height: 1.15; }
+.hm th.m:hover { background: var(--brand-l); }
+.hm .stk { position: sticky; z-index: 2; background: #fff; }
+.hm tr.g .stk { background: var(--brand-l); }
+.hm tr.tot td { background: #eef3f5; font-weight: 700; position: sticky; z-index: 2; }
+.timeline { display: flex; align-items: flex-start; gap: 0; position: relative; padding: 20px 0 8px; }
+.cover { background: linear-gradient(135deg, #003f4b 0%, #00778b 62%, #2c9fb2 100%) !important; color: #fff; padding: 56px 70px !important; }
+.cover svg text { fill: inherit; }
+.cover .eyebrow { letter-spacing: .22em; font-size: 14px; font-weight: 700; opacity: .85; text-transform: uppercase; }
+.cover h1 { font-size: 80px; line-height: 1; margin: 18px 0 8px; letter-spacing: -.03em; }
+.cover h2 { font-size: 28px; font-weight: 500; margin: 0; opacity: .92; }
+.cover .startbox { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.3); border-radius: 16px; padding: 18px 22px; backdrop-filter: blur(4px); }
+.cover .startbox label { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; opacity: .85; font-weight: 700; }
+.cover .startbox input { display: block; margin-top: 6px; height: 46px; font-size: 22px; font-weight: 700; border-radius: 10px; border: 0; padding: 0 12px; background: #fff; color: var(--accent); width: 100%; }
+.cover .cstat { background: rgba(255,255,255,.1); border-radius: 14px; padding: 16px 20px; }
+.cover .cstat .k { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; font-weight: 700; }
+.cover .cstat .v { font-size: 28px; font-weight: 800; margin-top: 3px; }
+.agenda { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.agenda button { text-align: left; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1); color: #fff; border-radius: 14px; padding: 14px 16px; }
+.agenda button:hover { background: rgba(255,255,255,.22); }
+.agenda b { display: block; font-size: 16px; } .agenda span { font-size: 12.5px; opacity: .85; }
+.agenda em { font-style: normal; font-size: 11px; opacity: .7; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.dim { opacity: .35; }
+.flash { animation: flash .9s ease; } @keyframes flash { from { background: #fff1b8; } }
+.empty { padding: 30px; text-align: center; color: var(--mute); }
+
+/* ---------- print ---------- */
+@page { size: 1600px 900px; margin: 0; }
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  #app { display: block; height: auto; }
+  #bar, #filters, #drawer, #scrim, #tip { display: none !important; }
+  #viewport { display: block; overflow: visible; }
+  #stageBox { width: 1600px !important; height: auto !important; }
+  #stage { position: static; width: 1600px; height: auto; transform: none !important; box-shadow: none; overflow: visible; }
+  .slide { display: flex !important; position: relative; inset: auto; width: 1600px; min-height: 900px; height: auto; page-break-after: always; break-after: page; overflow: visible; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .scroll, .gantt { overflow: visible !important; max-height: none !important; }
+  .s-body, .grow, .panel, .panel > .pb { min-height: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tbl th, .tbl tfoot td, .hm .stk, .ghead, .gleft { position: static !important; }
+}
+
+/* ---------- additions ---------- */
+.slide.active { animation: sfade .25s ease; } @keyframes sfade { from { opacity: 0; transform: translateY(6px); } }
+.grow2:hover, .grow2:hover .gleft { background: var(--brand-xl); }
+.grow2.grp .gtl { background: rgba(0,119,139,.08); }
+.gbar { z-index: 3; }
+.grow2.rp .gleft { box-shadow: inset 4px 0 var(--c1); } .grow2.rs .gleft { box-shadow: inset 4px 0 var(--c2); }
+.grow2.rp .gbar { outline: 2px solid var(--c1); outline-offset: 1px; } .grow2.rs .gbar { outline: 2px solid var(--c2); outline-offset: 1px; }
+.gleft .dinput { border-radius: 5px; }
+.gwrap .gtl { background: transparent; }
+.ghead .gtl { background: #eef3f5; }
+.dstat[data-month] { cursor: pointer; }
+
+.btn, .chip, .seg button, .tb-btn { white-space: nowrap; }
+.grow2.crit-off .gbar { outline: 0; }
+.gbar.crit { outline-width: 1.5px; }
+.gwrap .gleft .tw { color: var(--brand-d); }
+.tbl.tight td { padding: 3px 9px; }
+.ninput { width: 60px; }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <a class="brand" href="#" title="Zulfi Railway Station" style="color:inherit;text-decoration:none"><div class="logo">SAR</div><div>Zulfi Railway Station<small>Cost, WBS &amp; 26-month schedule</small></div></a>
+    <span class="grow"></span>
+    <label class="tb-field" title="Changing the project start date moves the whole schedule">Project start <input type="date" id="startIn"></label>
+    <label class="tb-field" title="How dependent activities react when you move an activity">Linking
+      <select id="linkSel"><option value="two">Auto-link (move successors)</option><option value="push">Push delays only</option><option value="off">Off (independent)</option></select></label>
+    <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
+    <span class="grow"></span>
+    <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
+    <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
+    <span id="slideNo"></span>
+    <button class="tb-btn" id="bNext" title="Next slide (→)"></button>
+    <span id="slideMenu"><button class="tb-btn" title="All slides"></button><div id="slideList"></div></span>
+    <button class="tb-btn" id="bFull" title="Full screen (F)"></button>
+    <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
+    <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
+  </header>
+  <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
+  <main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main>
+</div>
+<script>
+window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requirements","amount":4900000},{"code":"2.0","name":"Design Works","amount":4888999.999999994},{"code":"3.0","name":"Main Building Works","amount":4550000},{"code":"4.0","name":"Ancillary Buildings","amount":8501000},{"code":"5.0","name":"External & Site Development Works","amount":12170000},{"code":"6.0","name":"Roads, Signalling & External Works","amount":34090000},{"code":"7.0","name":"Railway Track & Turnout Works","amount":30899000}],"acts":[{"code":"1.1","group":"1.0","name":"Preliminaries & General Requirements","desc":"Site establishment, mobilization, insurances/permits, HSE, project mgmt, testing labs, demobilization","boq":"1.1","phase":"Phase 1","epc":"GEN","ll":false,"s":1,"e":26,"amount":4900000,"deps":[],"pred":"Project Start","unit":"Lump Sum","kind":"gen"},{"code":"1.2","group":"1.0","name":"Access Permits – Request Submission & Approval","desc":"Access Permits – Request Submission & Approval (site access, right-of-entry, authority permits)","boq":"1.1","phase":"Phase 1","epc":"GEN","ll":false,"s":1,"e":1,"amount":0,"deps":[],"pred":"Project Start","unit":"Lump Sum","kind":"gen"},{"code":"1.3","group":"1.0","name":"Work Permit Approval","desc":"Work Permit Approval (14 days) – authority sign-off enabling site construction works to commence","boq":"1.1","phase":"Phase 1","epc":"GEN","ll":false,"s":12,"e":12,"amount":0,"deps":["2.6"],"pred":"FS: 2.6 Detailed Design - Approval","unit":"Lump Sum","kind":"gen"},{"code":"2.1","group":"2.0","name":"Concept Design - Submission","desc":"Concept Design - Submission","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":2,"e":2,"amount":279371.4286,"deps":["1.2"],"pred":"FS: 1.2 Access Permits - Request Submission & Approval","unit":"Lump Sum","kind":"eng","stage":"concept","sub":"sub"},{"code":"2.2","group":"2.0","name":"Concept Design - Approval","desc":"Concept Design - Approval","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":3,"e":3,"amount":419057.1429,"deps":["2.1"],"pred":"FS: 2.1 Concept Design - Submission","unit":"Lump Sum","kind":"eng","stage":"concept","sub":"appr"},{"code":"2.3","group":"2.0","name":"Preliminary Design - Submission","desc":"Preliminary Design - Submission","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":4,"e":4,"amount":558742.8571,"deps":["2.2"],"pred":"FS: 2.2 Concept Design - Approval","unit":"Lump Sum","kind":"eng","stage":"prelim","sub":"sub"},{"code":"2.4","group":"2.0","name":"Preliminary Design - Approval","desc":"Preliminary Design - Approval","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":5,"e":6,"amount":838114.2857,"deps":["2.3"],"pred":"FS: 2.3 Preliminary Design - Submission","unit":"Lump Sum","kind":"eng","stage":"prelim","sub":"appr"},{"code":"2.5","group":"2.0","name":"Detailed Design - Submission","desc":"Detailed Design - Submission","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":7,"e":8,"amount":1117485.7143,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval","unit":"Lump Sum","kind":"eng","stage":"detail","sub":"sub"},{"code":"2.6","group":"2.0","name":"Detailed Design - Approval","desc":"Detailed Design - Approval","boq":"2.1","phase":"Phase 1","epc":"ENG","ll":false,"s":9,"e":11,"amount":1676228.5714,"deps":["2.5"],"pred":"FS: 2.5 Detailed Design - Submission","unit":"Lump Sum","kind":"eng","stage":"detail","sub":"appr"},{"code":"3.1a1","group":"3.0","name":"Main Building – Vendor Prequalification","desc":"Main Building (GEA 1,100 m²) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"3.1","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":22500,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"3.1"},{"code":"3.1a2","group":"3.0","name":"Main Building – PO Issuance","desc":"Main Building (GEA 1,100 m²) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"3.1","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":67500,"deps":["3.1a1"],"pred":"FS: 3.1a1 Main Building (GEA 1,100 m²) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"3.1"},{"code":"3.1a3","group":"3.0","name":"Main Building – Manufacture and Delivery to Site","desc":"Main Building (GEA 1,100 m²) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"3.1","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":360000,"deps":["3.1a2"],"pred":"FS: 3.1a2 Main Building (GEA 1,100 m²) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"3.1"},{"code":"3.1b","group":"3.0","name":"Main Building – Installation & Construction","desc":"Main Building (GEA 1,100 m²) – Structure, Finishes, MEP, Fire & Life Safety, T&C","boq":"3.1","phase":"Phase 1","epc":"CONS","ll":false,"s":13,"e":24,"amount":1800000,"deps":["1.3","3.1a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 3.1a3 Main Building (GEA 1,100 m²) - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"3.1"},{"code":"3.2a1","group":"3.0","name":"IT Equipment – Vendor Prequalification","desc":"IT Equipment – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"3.2","phase":"Phase 1","epc":"PROC","ll":false,"s":21,"e":21,"amount":6000,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"3.2"},{"code":"3.2a2","group":"3.0","name":"IT Equipment – PO Issuance","desc":"IT Equipment – PO Issuance (Standard Lead, 15% of Procurement)","boq":"3.2","phase":"Phase 1","epc":"PROC","ll":false,"s":21,"e":21,"amount":18000,"deps":["3.2a1"],"pred":"FS: 3.2a1 IT Equipment - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"3.2"},{"code":"3.2a3","group":"3.0","name":"IT Equipment – Manufacture and Delivery to Site","desc":"IT Equipment – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"3.2","phase":"Phase 1","epc":"PROC","ll":false,"s":22,"e":22,"amount":96000,"deps":["3.2a2"],"pred":"FS: 3.2a2 IT Equipment - PO Issuance","unit":"Lump Sum","kind":"a3","item":"3.2"},{"code":"3.2b","group":"3.0","name":"IT Equipment – Installation & Construction","desc":"IT Equipment – Installation, Testing & Commissioning","boq":"3.2","phase":"Phase 1","epc":"CONS","ll":false,"s":23,"e":26,"amount":280000,"deps":["1.3","3.2a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 3.2a3 IT Equipment - Manufacture and Delivery to Site + 3.1b Main Building (substantially complete)","unit":"Lump Sum","kind":"b","item":"3.2"},{"code":"3.3a1","group":"3.0","name":"Furniture (FF&E) – Vendor Prequalification","desc":"Furniture, Fixtures & Equipment (FF&E) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"3.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":22,"e":22,"amount":38000,"deps":["2.6"],"pred":"FS: 2.6 Detailed Design - Approval (Phase 2 procurement gate)","unit":"Lump Sum","kind":"a1","item":"3.3"},{"code":"3.3a2","group":"3.0","name":"Furniture (FF&E) – PO Issuance","desc":"Furniture, Fixtures & Equipment (FF&E) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"3.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":23,"e":23,"amount":114000,"deps":["3.3a1"],"pred":"FS: 3.3a1 Furniture, Fixtures & Equipment (FF&E) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"3.3"},{"code":"3.3a3","group":"3.0","name":"Furniture (FF&E) – Manufacture and Delivery to Site","desc":"Furniture, Fixtures & Equipment (FF&E) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"3.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":24,"e":24,"amount":608000,"deps":["3.3a2"],"pred":"FS: 3.3a2 Furniture, Fixtures & Equipment (FF&E) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"3.3"},{"code":"3.3b","group":"3.0","name":"Furniture (FF&E) – Installation & Construction","desc":"Furniture, Fixtures & Equipment (FF&E) – Site Fixing, Installation & Handover","boq":"3.2 (Ph.2)","phase":"Phase 2","epc":"CONS","ll":false,"s":25,"e":26,"amount":1140000,"deps":["1.3","3.3a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 3.3a3 Furniture, Fixtures & Equipment (FF&E) - Manufacture and Delivery to Site + 3.1b Main Building (structure & finishes)","unit":"Lump Sum","kind":"b","item":"3.3"},{"code":"4.1a1","group":"4.0","name":"Substation & SEC – Vendor Prequalification","desc":"Substation & SEC Works – Vendor Prequalification (Long-Lead, 5% of Procurement)","boq":"4.1","phase":"Phase 1","epc":"PROC","ll":true,"s":8,"e":8,"amount":55350,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"4.1"},{"code":"4.1a2","group":"4.0","name":"Substation & SEC – PO Issuance","desc":"Substation & SEC Works – PO Issuance (Long-Lead, 15% of Procurement)","boq":"4.1","phase":"Phase 1","epc":"PROC","ll":true,"s":9,"e":9,"amount":166050,"deps":["4.1a1"],"pred":"FS: 4.1a1 Substation & SEC Works - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"4.1"},{"code":"4.1a3","group":"4.0","name":"Substation & SEC – Manufacture and Delivery to Site","desc":"Substation & SEC Works – Manufacture and Delivery to Site (Long-Lead, 80% of Procurement)","boq":"4.1","phase":"Phase 1","epc":"PROC","ll":true,"s":10,"e":12,"amount":885600,"deps":["4.1a2"],"pred":"FS: 4.1a2 Substation & SEC Works - PO Issuance","unit":"Lump Sum","kind":"a3","item":"4.1"},{"code":"4.1b","group":"4.0","name":"Substation & SEC – Installation & Construction","desc":"Substation & SEC Works – Civil, Installation, Testing & Energization","boq":"4.1","phase":"Phase 1","epc":"CONS","ll":false,"s":13,"e":22,"amount":2583000,"deps":["1.3","4.1a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 4.1a3 Substation & SEC Works - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"4.1"},{"code":"4.2a1","group":"4.0","name":"Firefighting Bldg – Vendor Prequalification","desc":"Firefighting Building (GEA 518 m²) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"4.2","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":14900,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"4.2"},{"code":"4.2a2","group":"4.0","name":"Firefighting Bldg – PO Issuance","desc":"Firefighting Building (GEA 518 m²) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"4.2","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":44700,"deps":["4.2a1"],"pred":"FS: 4.2a1 Firefighting Building (GEA 518 m²) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"4.2"},{"code":"4.2a3","group":"4.0","name":"Firefighting Bldg – Manufacture and Delivery to Site","desc":"Firefighting Building (GEA 518 m²) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"4.2","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":238400,"deps":["4.2a2"],"pred":"FS: 4.2a2 Firefighting Building (GEA 518 m²) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"4.2"},{"code":"4.2b","group":"4.0","name":"Firefighting Bldg – Installation & Construction","desc":"Firefighting Building (GEA 518 m²) – Civil Works, Fire Pump Room, Ring Main Integration","boq":"4.2","phase":"Phase 1","epc":"CONS","ll":false,"s":13,"e":21,"amount":1192000,"deps":["1.3","4.2a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 4.2a3 Firefighting Building (GEA 518 m²) - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"4.2"},{"code":"4.3a1","group":"4.0","name":"Generator Room – Vendor Prequalification","desc":"Generator Room – Vendor Prequalification (Long-Lead, 5% of Procurement)","boq":"4.3 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":11,"e":11,"amount":14850,"deps":["2.6"],"pred":"FS: 2.6 Detailed Design - Approval (Phase 2 procurement gate)","unit":"Lump Sum","kind":"a1","item":"4.3"},{"code":"4.3a2","group":"4.0","name":"Generator Room – PO Issuance","desc":"Generator Room – PO Issuance (Long-Lead, 15% of Procurement)","boq":"4.3 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":12,"e":12,"amount":44550,"deps":["4.3a1"],"pred":"FS: 4.3a1 Generator Room - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"4.3"},{"code":"4.3a3","group":"4.0","name":"Generator Room – Manufacture and Delivery to Site","desc":"Generator Room – Manufacture and Delivery to Site (Long-Lead, 80% of Procurement)","boq":"4.3 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":13,"e":14,"amount":237600,"deps":["4.3a2"],"pred":"FS: 4.3a2 Generator Room - PO Issuance","unit":"Lump Sum","kind":"a3","item":"4.3"},{"code":"4.3b","group":"4.0","name":"Generator Room – Installation & Construction","desc":"Generator Room – Civil Works, Installation & Commissioning","boq":"4.3 (Ph.2)","phase":"Phase 2","epc":"CONS","ll":false,"s":15,"e":21,"amount":693000,"deps":["1.3","4.3a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 4.3a3 Generator Room - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"4.3"},{"code":"4.4a1","group":"4.0","name":"Water Tank – Vendor Prequalification","desc":"Underground Water Tank – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"4.4","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":23310,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"4.4"},{"code":"4.4a2","group":"4.0","name":"Water Tank – PO Issuance","desc":"Underground Water Tank – PO Issuance (Standard Lead, 15% of Procurement)","boq":"4.4","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":69930,"deps":["4.4a1"],"pred":"FS: 4.4a1 Underground Water Tank - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"4.4"},{"code":"4.4a3","group":"4.0","name":"Water Tank – Manufacture and Delivery to Site","desc":"Underground Water Tank – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"4.4","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":372960,"deps":["4.4a2"],"pred":"FS: 4.4a2 Underground Water Tank - PO Issuance","unit":"Lump Sum","kind":"a3","item":"4.4"},{"code":"4.4b","group":"4.0","name":"Water Tank – Installation & Construction","desc":"Underground Water Tank – Excavation, RC Tank, Waterproofing, Hydrostatic Testing","boq":"4.4","phase":"Phase 1","epc":"CONS","ll":false,"s":13,"e":18,"amount":1864800,"deps":["1.3","4.4a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 4.4a3 Underground Water Tank - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"4.4"},{"code":"5.1a1","group":"5.0","name":"Site Works & Utilities – Vendor Prequalification","desc":"Site Works & Underground Utilities (Plot 15,000 m²) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"5.1","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":108800,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"5.1"},{"code":"5.1a2","group":"5.0","name":"Site Works & Utilities – PO Issuance","desc":"Site Works & Underground Utilities (Plot 15,000 m²) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"5.1","phase":"Phase 1","epc":"PROC","ll":false,"s":11,"e":11,"amount":326400,"deps":["5.1a1"],"pred":"FS: 5.1a1 Site Works & Underground Utilities (Plot 15,000 m²) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"5.1"},{"code":"5.1a3","group":"5.0","name":"Site Works & Utilities – Manufacture and Delivery to Site","desc":"Site Works & Underground Utilities (Plot 15,000 m²) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"5.1","phase":"Phase 1","epc":"PROC","ll":false,"s":12,"e":12,"amount":1740800,"deps":["5.1a2"],"pred":"FS: 5.1a2 Site Works & Underground Utilities (Plot 15,000 m²) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"5.1"},{"code":"5.1b","group":"5.0","name":"Site Works & Utilities – Installation & Construction","desc":"Site Works & Underground Utilities (Plot 15,000 m²) – Drainage, Water, FF Ring Main, Ducts – Installation","boq":"5.1","phase":"Phase 1","epc":"CONS","ll":false,"s":13,"e":22,"amount":8704000,"deps":["1.3","5.1a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 5.1a3 Site Works & Underground Utilities (Plot 15,000 m²) - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"5.1"},{"code":"5.2a1","group":"5.0","name":"Car Parking Sheds – Vendor Prequalification","desc":"Car Parking Sheds (80 lots) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"5.2","phase":"Phase 1","epc":"PROC","ll":false,"s":18,"e":18,"amount":7900,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"5.2"},{"code":"5.2a2","group":"5.0","name":"Car Parking Sheds – PO Issuance","desc":"Car Parking Sheds (80 lots) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"5.2","phase":"Phase 1","epc":"PROC","ll":false,"s":18,"e":18,"amount":23700,"deps":["5.2a1"],"pred":"FS: 5.2a1 Car Parking Sheds (80 lots) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"5.2"},{"code":"5.2a3","group":"5.0","name":"Car Parking Sheds – Manufacture and Delivery to Site","desc":"Car Parking Sheds (80 lots) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"5.2","phase":"Phase 1","epc":"PROC","ll":false,"s":19,"e":19,"amount":126400,"deps":["5.2a2"],"pred":"FS: 5.2a2 Car Parking Sheds (80 lots) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"5.2"},{"code":"5.2b","group":"5.0","name":"Car Parking Sheds – Installation & Construction","desc":"Car Parking Sheds (80 lots) – Structural Erection & Finishes","boq":"5.2","phase":"Phase 1","epc":"CONS","ll":false,"s":20,"e":25,"amount":632000,"deps":["1.3","5.2a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 5.2a3 Car Parking Sheds (80 lots) - Manufacture and Delivery to Site + 5.1b Site Works & Underground Utilities (partial)","unit":"Lump Sum","kind":"b","item":"5.2"},{"code":"5.3a1","group":"5.0","name":"Fence Works – Vendor Prequalification","desc":"Fence Works – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"5.3","phase":"Phase 1","epc":"PROC","ll":false,"s":22,"e":22,"amount":2000,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"5.3"},{"code":"5.3a2","group":"5.0","name":"Fence Works – PO Issuance","desc":"Fence Works – PO Issuance (Standard Lead, 15% of Procurement)","boq":"5.3","phase":"Phase 1","epc":"PROC","ll":false,"s":22,"e":22,"amount":6000,"deps":["5.3a1"],"pred":"FS: 5.3a1 Fence Works - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"5.3"},{"code":"5.3a3","group":"5.0","name":"Fence Works – Manufacture and Delivery to Site","desc":"Fence Works – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"5.3","phase":"Phase 1","epc":"PROC","ll":false,"s":22,"e":22,"amount":32000,"deps":["5.3a2"],"pred":"FS: 5.3a2 Fence Works - PO Issuance","unit":"Lump Sum","kind":"a3","item":"5.3"},{"code":"5.3b","group":"5.0","name":"Fence Works – Installation & Construction","desc":"Fence Works – Chain Link Fence – Erection","boq":"5.3","phase":"Phase 1","epc":"CONS","ll":false,"s":23,"e":26,"amount":160000,"deps":["1.3","5.3a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 5.3a3 Fence Works - Manufacture and Delivery to Site + 5.1b Site Works & Underground Utilities (substantially complete)","unit":"Lump Sum","kind":"b","item":"5.3"},{"code":"5.4a1","group":"5.0","name":"Automatic Gate – Vendor Prequalification","desc":"Automatic Gate System – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"5.4","phase":"Phase 1","epc":"PROC","ll":false,"s":23,"e":23,"amount":4500,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"5.4"},{"code":"5.4a2","group":"5.0","name":"Automatic Gate – PO Issuance","desc":"Automatic Gate System – PO Issuance (Standard Lead, 15% of Procurement)","boq":"5.4","phase":"Phase 1","epc":"PROC","ll":false,"s":23,"e":23,"amount":13500,"deps":["5.4a1"],"pred":"FS: 5.4a1 Automatic Gate System - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"5.4"},{"code":"5.4a3","group":"5.0","name":"Automatic Gate – Manufacture and Delivery to Site","desc":"Automatic Gate System – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"5.4","phase":"Phase 1","epc":"PROC","ll":false,"s":24,"e":24,"amount":72000,"deps":["5.4a2"],"pred":"FS: 5.4a2 Automatic Gate System - PO Issuance","unit":"Lump Sum","kind":"a3","item":"5.4"},{"code":"5.4b","group":"5.0","name":"Automatic Gate – Installation & Construction","desc":"Automatic Gate System – Boom Barrier Installation & Commissioning","boq":"5.4","phase":"Phase 1","epc":"CONS","ll":false,"s":25,"e":26,"amount":210000,"deps":["1.3","5.4a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 5.4a3 Automatic Gate System - Manufacture and Delivery to Site + 5.3b Fence Works (substantially complete)","unit":"Lump Sum","kind":"b","item":"5.4"},{"code":"6.1a1","group":"6.0","name":"Access Road – Vendor Prequalification","desc":"Access Road (1,700 m, dual carriageway) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"6.1 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":11,"e":11,"amount":102000,"deps":["2.6"],"pred":"FS: 2.6 Detailed Design - Approval (Phase 2 procurement gate)","unit":"Lump Sum","kind":"a1","item":"6.1"},{"code":"6.1a2","group":"6.0","name":"Access Road – PO Issuance","desc":"Access Road (1,700 m, dual carriageway) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"6.1 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":11,"e":11,"amount":306000,"deps":["6.1a1"],"pred":"FS: 6.1a1 Access Road (1,700 m, dual carriageway) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"6.1"},{"code":"6.1a3","group":"6.0","name":"Access Road – Manufacture and Delivery to Site","desc":"Access Road (1,700 m, dual carriageway) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"6.1 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":false,"s":12,"e":12,"amount":1632000,"deps":["6.1a2"],"pred":"FS: 6.1a2 Access Road (1,700 m, dual carriageway) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"6.1"},{"code":"6.1b","group":"6.0","name":"Access Road – Installation & Construction","desc":"Access Road (1,700 m, dual carriageway) – Pavement, Lighting, Drainage, Signage – Installation","boq":"6.1 (Ph.2)","phase":"Phase 2","epc":"CONS","ll":false,"s":13,"e":25,"amount":8160000,"deps":["1.3","6.1a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 6.1a3 Access Road (1,700 m, dual carriageway) - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"6.1"},{"code":"6.2a1","group":"6.0","name":"Signalling & Telecom – Vendor Prequalification","desc":"Signalling & Telecommunication – Vendor Prequalification (Long-Lead, 5% of Procurement)","boq":"6.2","phase":"Phase 1","epc":"PROC","ll":true,"s":7,"e":7,"amount":335250,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"6.2"},{"code":"6.2a2","group":"6.0","name":"Signalling & Telecom – PO Issuance","desc":"Signalling & Telecommunication – PO Issuance (Long-Lead, 15% of Procurement)","boq":"6.2","phase":"Phase 1","epc":"PROC","ll":true,"s":8,"e":8,"amount":1005750,"deps":["6.2a1"],"pred":"FS: 6.2a1 Signalling & Telecommunication - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"6.2"},{"code":"6.2a3","group":"6.0","name":"Signalling & Telecom – Manufacture and Delivery to Site","desc":"Signalling & Telecommunication – Manufacture and Delivery to Site (incl. FAT) (Long-Lead, 80% of Procurement)","boq":"6.2","phase":"Phase 1","epc":"PROC","ll":true,"s":9,"e":16,"amount":5364000,"deps":["6.2a2"],"pred":"FS: 6.2a2 Signalling & Telecommunication - PO Issuance","unit":"Lump Sum","kind":"a3","item":"6.2"},{"code":"6.2b","group":"6.0","name":"Signalling & Telecom – Installation & Construction","desc":"Signalling & Telecommunication – Installation, Integration, Testing & Commissioning","boq":"6.2","phase":"Phase 1","epc":"CONS","ll":false,"s":17,"e":26,"amount":8195000,"deps":["1.3","6.2a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 6.2a3 Signalling & Telecommunication - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"6.2"},{"code":"6.3a1","group":"6.0","name":"External Works – Vendor Prequalification","desc":"External Works (above ground) – Vendor Prequalification (Standard Lead, 5% of Procurement)","boq":"6.3","phase":"Phase 1","epc":"PROC","ll":false,"s":18,"e":18,"amount":89900,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"6.3"},{"code":"6.3a2","group":"6.0","name":"External Works – PO Issuance","desc":"External Works (above ground) – PO Issuance (Standard Lead, 15% of Procurement)","boq":"6.3","phase":"Phase 1","epc":"PROC","ll":false,"s":18,"e":18,"amount":269700,"deps":["6.3a1"],"pred":"FS: 6.3a1 External Works (above ground) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"6.3"},{"code":"6.3a3","group":"6.0","name":"External Works – Manufacture and Delivery to Site","desc":"External Works (above ground) – Manufacture and Delivery to Site (Standard Lead, 80% of Procurement)","boq":"6.3","phase":"Phase 1","epc":"PROC","ll":false,"s":19,"e":19,"amount":1438400,"deps":["6.3a2"],"pred":"FS: 6.3a2 External Works (above ground) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"6.3"},{"code":"6.3b","group":"6.0","name":"External Works – Installation & Construction","desc":"External Works (above ground) – Roads, Footpaths, Landscaping, Guard Houses","boq":"6.3","phase":"Phase 1","epc":"CONS","ll":false,"s":20,"e":26,"amount":7192000,"deps":["1.3","6.3a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 6.3a3 External Works (above ground) - Manufacture and Delivery to Site + 5.1b Site Works & Underground Utilities (partial)","unit":"Lump Sum","kind":"b","item":"6.3"},{"code":"7.2a1","group":"7.0","name":"Railway Track – Vendor Prequalification","desc":"Railway Track Works (Loop Line, 2,500 m) – Vendor Prequalification (Long-Lead, 5% of Procurement)","boq":"7.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":11,"e":11,"amount":492750,"deps":["2.6"],"pred":"FS: 2.6 Detailed Design - Approval (Phase 2 procurement gate)","unit":"Lump Sum","kind":"a1","item":"7.2"},{"code":"7.2a2","group":"7.0","name":"Railway Track – PO Issuance","desc":"Railway Track Works (Loop Line, 2,500 m) – PO Issuance (Long-Lead, 15% of Procurement)","boq":"7.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":12,"e":12,"amount":1478250,"deps":["7.2a1"],"pred":"FS: 7.2a1 Railway Track Works (Loop Line, 2,500 m) - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"7.2"},{"code":"7.2a3","group":"7.0","name":"Railway Track – Manufacture and Delivery to Site","desc":"Railway Track Works (Loop Line, 2,500 m) – Manufacture and Delivery to Site (incl. FAT) (Long-Lead, 80% of Procurement)","boq":"7.2 (Ph.2)","phase":"Phase 2","epc":"PROC","ll":true,"s":13,"e":20,"amount":7884000,"deps":["7.2a2"],"pred":"FS: 7.2a2 Railway Track Works (Loop Line, 2,500 m) - PO Issuance","unit":"Lump Sum","kind":"a3","item":"7.2"},{"code":"7.2b","group":"7.0","name":"Railway Track – Installation & Construction","desc":"Railway Track Works (Loop Line, 2,500 m) – Formation, Laying, Alignment, Testing & Commissioning","boq":"7.2 (Ph.2)","phase":"Phase 2","epc":"CONS","ll":false,"s":21,"e":26,"amount":12045000,"deps":["1.3","7.2a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 7.2a3 Railway Track Works (Loop Line, 2,500 m) - Manufacture and Delivery to Site","unit":"Lump Sum","kind":"b","item":"7.2"},{"code":"7.3a1","group":"7.0","name":"Railway Turnout – Vendor Prequalification","desc":"Railway Turnout Works – Vendor Prequalification (Long-Lead, 5% of Procurement)","boq":"7.3","phase":"Phase 1","epc":"PROC","ll":true,"s":7,"e":7,"amount":202477.5,"deps":["2.4"],"pred":"FS: 2.4 Preliminary Design - Approval + 15 days","unit":"Lump Sum","kind":"a1","item":"7.3"},{"code":"7.3a2","group":"7.0","name":"Railway Turnout – PO Issuance","desc":"Railway Turnout Works – PO Issuance (Long-Lead, 15% of Procurement)","boq":"7.3","phase":"Phase 1","epc":"PROC","ll":true,"s":8,"e":8,"amount":607432.5,"deps":["7.3a1"],"pred":"FS: 7.3a1 Railway Turnout Works - Vendor Prequalification","unit":"Lump Sum","kind":"a2","item":"7.3"},{"code":"7.3a3","group":"7.0","name":"Railway Turnout – Manufacture and Delivery to Site","desc":"Railway Turnout Works – Manufacture and Delivery to Site (incl. FAT) (Long-Lead, 80% of Procurement)","boq":"7.3","phase":"Phase 1","epc":"PROC","ll":true,"s":9,"e":16,"amount":3239640,"deps":["7.3a2"],"pred":"FS: 7.3a2 Railway Turnout Works - PO Issuance","unit":"Lump Sum","kind":"a3","item":"7.3"},{"code":"7.3b","group":"7.0","name":"Railway Turnout – Installation & Construction","desc":"Railway Turnout Works – Installation, Alignment, Tie-in, Testing & Commissioning","boq":"7.3","phase":"Phase 1","epc":"CONS","ll":false,"s":17,"e":26,"amount":4949450,"deps":["1.3","7.3a3"],"pred":"Driven by later of: FS 1.3 Work Permit Approval / FS 7.3a3 Railway Turnout Works - Manufacture and Delivery to Site + 7.2b Railway Track Works (concurrent — foundation/bed prep precedes Track, tie-in concurrent with Track's final stages)","unit":"Lump Sum","kind":"b","item":"7.3"}],"items":[{"key":"3.1","total":2250000,"name":"Main Building (GEA 1,100 m²)","group":"3.0","ratio":0.2,"disc":"civil","full":"Main Building (GEA 1,100 m²)"},{"key":"3.2","total":400000,"name":"IT Equipment","group":"3.0","ratio":0.3,"disc":"mep","full":"IT Equipment"},{"key":"3.3","total":1900000,"name":"Furniture, Fixtures & Equipment (FF&E)","group":"3.0","ratio":0.4,"disc":"fit","full":"Furniture, Fixtures & Equipment (FF&E)"},{"key":"4.1","total":3690000,"name":"Substation & SEC Works","group":"4.0","ratio":0.3,"disc":"mep","full":"Substation & SEC Works"},{"key":"4.2","total":1490000,"name":"Firefighting Building (GEA 518 m²)","group":"4.0","ratio":0.2,"disc":"civil","full":"Firefighting Building (GEA 518 m²)"},{"key":"4.3","total":990000,"name":"Generator Room","group":"4.0","ratio":0.3,"disc":"mep","full":"Generator Room"},{"key":"4.4","total":2331000,"name":"Underground Water Tank","group":"4.0","ratio":0.2,"disc":"civil","full":"Underground Water Tank"},{"key":"5.1","total":10880000,"name":"Site Works & Underground Utilities (Plot 15,000 m²)","group":"5.0","ratio":0.2,"disc":"civil","full":"Site Works & Underground Utilities (Plot 15,000 m²)"},{"key":"5.2","total":790000,"name":"Car Parking Sheds (80 lots)","group":"5.0","ratio":0.2,"disc":"civil","full":"Car Parking Sheds (80 lots)"},{"key":"5.3","total":200000,"name":"Fence Works","group":"5.0","ratio":0.2,"disc":"civil","full":"Fence Works"},{"key":"5.4","total":300000,"name":"Automatic Gate System","group":"5.0","ratio":0.3,"disc":"mep","full":"Automatic Gate System"},{"key":"6.1","total":10200000,"name":"Access Road (1,700 m, dual carriageway)","group":"6.0","ratio":0.2,"disc":"civil","full":"Access Road (1,700 m, dual carriageway)"},{"key":"6.2","total":14900000,"name":"Signalling & Telecommunication","group":"6.0","ratio":0.45,"disc":"rail","full":"Signalling & Telecommunication"},{"key":"6.3","total":8990000,"name":"External Works (above ground)","group":"6.0","ratio":0.2,"disc":"civil","full":"External Works (above ground)"},{"key":"7.2","total":21900000,"name":"Railway Track Works (Loop Line, 2,500 m)","group":"7.0","ratio":0.45,"disc":"rail","full":"Railway Track Works (Loop Line, 2,500 m)"},{"key":"7.3","total":8999000.0,"name":"Railway Turnout Works","group":"7.0","ratio":0.45,"disc":"rail","full":"Railway Turnout Works"}]};
+
+</script>
+<script>
+/* Zulfi Railway Station – scheduling & cost engine (DOM-free, testable in Node).
+   Dates are integer "day numbers" (days since 1970-01-01, UTC) so there are no DST surprises.
+   The baseline reproduces the Excel workbook exactly: every activity is month-aligned, cost is spread
+   evenly (GEN / ENG / PROC) or on a triangular ramp (CONS) over the project-month buckets. */
+(function (G) {
+  const Z = (G.Z = G.Z || {});
+  const D = G.ZULFI_DATA;
+  const MS = 86400000;
+
+  /* ------------------------------------------------------------------ dates */
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dt = {
+    ymd(y, m, d) { return Math.floor(Date.UTC(y, m, d) / MS); },
+    parts(day) { const x = new Date(day * MS); return { y: x.getUTCFullYear(), m: x.getUTCMonth(), d: x.getUTCDate() }; },
+    parse(iso) { const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return p ? dt.ymd(+p[1], +p[2] - 1, +p[3]) : null; },
+    iso(day) { const p = dt.parts(day); return p.y + '-' + String(p.m + 1).padStart(2, '0') + '-' + String(p.d).padStart(2, '0'); },
+    fmt(day) { const p = dt.parts(day); return p.d + ' ' + MON[p.m] + ' ' + p.y; },
+    fmtShort(day) { const p = dt.parts(day); return p.d + ' ' + MON[p.m] + ' ' + String(p.y).slice(2); },
+    fmtMY(day) { const p = dt.parts(day); return MON[p.m] + '-' + String(p.y).slice(2); },
+    mon(day) { return MON[dt.parts(day).m]; },
+    addMonths(day, n) {
+      const p = dt.parts(day);
+      const t = p.y * 12 + p.m + n; const y = Math.floor(t / 12), m = ((t % 12) + 12) % 12;
+      const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      return dt.ymd(y, m, Math.min(p.d, last));
+    },
+    // index of the project-month bucket that contains `d`
+    bucketOf(start, d) {
+      let k = Math.floor((d - start) / 30.4375);
+      while (dt.addMonths(start, k + 1) <= d) k++;
+      while (dt.addMonths(start, k) > d) k--;
+      return k;
+    },
+  };
+  Z.dt = dt;
+
+  /* ------------------------------------------------------------- constants */
+  Z.GROUPS = D.groups.map((g) => ({ code: g.code, name: g.name, amount: Math.round(g.amount) }));
+  Z.GROUP_BY = Object.fromEntries(Z.GROUPS.map((g) => [g.code, g]));
+  Z.ITEMS = D.items; Z.ITEM_BY = Object.fromEntries(D.items.map((i) => [i.key, i]));
+  Z.EPC = [
+    { key: 'GEN', name: 'General / Preliminaries', code: 'G.0' },
+    { key: 'ENG', name: 'Engineering (Design)', code: 'E.0' },
+    { key: 'PROC', name: 'Procurement of Materials', code: 'P.0' },
+    { key: 'CONS', name: 'Installation & Construction', code: 'C.0' },
+  ];
+  Z.EPC_BY = Object.fromEntries(Z.EPC.map((e) => [e.key, e]));
+  Z.DISC = {
+    civil: { name: 'Civil & Site Works', applies: 'Main Building, Firefighting Building, Water Tank, Site Works & Utilities, Car Parking Sheds, Fence Works, Access Road, External Works' },
+    mep: { name: 'MEP & Mechanical Equipment', applies: 'Substation & SEC Works, Generator Room, IT Equipment, Automatic Gate System' },
+    rail: { name: 'Specialised Rail & Signalling Systems', applies: 'Signalling & Telecom, Railway Track Works, Railway Turnout Works' },
+    fit: { name: 'Furniture / Fit-out', applies: 'Furniture, Fixtures & Equipment (FF&E)' },
+  };
+  Z.DEFAULT_A = {
+    disc: { civil: 20, mep: 30, rail: 45, fit: 40 }, // materials %, construction = 100 - materials
+    proc: [5, 15, 80], // vendor prequal, PO, manufacture & delivery
+    stage: { concept: 15, prelim: 30, detail: 60 }, // raw design stage weights (sum 105 -> normalised)
+    sub: { sub: 40, appr: 60 },
+  };
+  Z.cloneA = (a) => JSON.parse(JSON.stringify(a));
+  Z.VAT = 0.15;
+  Z.BASE_MONTHS = 26;
+
+  /* ----------------------------------------------------------- activities */
+  const ACTS = D.acts.map((a, i) => ({ ...a, idx: i }));
+  const BY = Object.fromEntries(ACTS.map((a) => [a.code, a]));
+  Z.ACT_DEFS = ACTS; Z.ACT_BY = BY;
+  ACTS.forEach((a) => (a.succ = []));
+  ACTS.forEach((a) => a.deps.forEach((p) => BY[p].succ.push(a.code)));
+  // topological order (Kahn)
+  Z.TOPO = (() => {
+    const indeg = {}, out = [], q = [];
+    ACTS.forEach((a) => (indeg[a.code] = a.deps.length));
+    ACTS.forEach((a) => { if (!indeg[a.code]) q.push(a.code); });
+    while (q.length) { const c = q.shift(); out.push(c); BY[c].succ.forEach((s) => { if (--indeg[s] === 0) q.push(s); }); }
+    return out;
+  })();
+  Z.AUTO = '1.1'; // preliminaries span the whole project (auto-driven)
+
+  /* ---------------------------------------------------------------- costs */
+  function amountOf(a, A) {
+    if (a.kind === 'gen') return a.amount; // fixed lump sums
+    const norm = (arr) => { const s = arr.reduce((x, y) => x + y, 0) || 1; return arr.map((v) => v / s); };
+    if (a.kind === 'eng') {
+      const st = A.stage, tot = st.concept + st.prelim + st.detail || 1;
+      const sub = A.sub, ss = sub.sub + sub.appr || 1;
+      return Z.DESIGN_TOTAL * (st[a.stage] / tot) * (sub[a.sub] / ss);
+    }
+    const it = Z.ITEM_BY[a.item];
+    const mat = Math.min(1, Math.max(0, A.disc[it.disc] / 100));
+    if (a.kind === 'b') return it.total * (1 - mat);
+    const w = norm(A.proc); const i = { a1: 0, a2: 1, a3: 2 }[a.kind];
+    return it.total * mat * w[i];
+  }
+  Z.DESIGN_TOTAL = ACTS.filter((a) => a.kind === 'eng').reduce((s, a) => s + a.amount, 0);
+
+  /* ------------------------------------------------------------ baseline */
+  function baseDates(start) {
+    const bs = [];
+    for (let k = 0; k <= Z.BASE_MONTHS; k++) bs.push(dt.addMonths(start, k));
+    const o = {};
+    ACTS.forEach((a) => (o[a.code] = [bs[a.s - 1], bs[a.e] - 1]));
+    return o;
+  }
+
+  /* ---------------------------------------------------------------- state */
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two' });
+  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link });
+
+  /* ------------------------------------------------------- distribution */
+  function distribute(a, bs, N, amount) {
+    const m = new Array(N).fill(0);
+    if (!amount) return m;
+    const s = a.s, e1 = a.e + 1;
+    const cov = [];
+    let first = -1;
+    for (let k = 0; k < N; k++) {
+      const lo = Math.max(s, bs[k]), hi = Math.min(e1, bs[k + 1]);
+      const ov = hi > lo ? (hi - lo) / (bs[k + 1] - bs[k]) : 0;
+      if (ov > 0) { if (first < 0) first = k; cov.push(ov); }
+      else if (first >= 0) break;
+    }
+    if (first < 0) { m[Math.min(N - 1, Math.max(0, dt.bucketOf(bs[0], s)))] = amount; return m; }
+    const n = cov.length;
+    const w = cov.map((ov, j) => {
+      if (a.epc !== 'CONS') return ov;
+      const jj = j + 1; // slot index 1..n  (Excel: ((G-F)/2 - |m-(F+G)/2|) + 1)
+      return (((n - 1) / 2 - Math.abs(jj - (n + 1) / 2)) + 1) * ov;
+    });
+    const sw = w.reduce((x, y) => x + y, 0) || 1;
+    w.forEach((x, j) => (m[first + j] = (x / sw) * amount));
+    return m;
+  }
+
+  /* -------------------------------------------------------------- compute */
+  Z.compute = function (st) {
+    const baseD = baseDates(st.start);
+    // dates
+    const dates = {};
+    ACTS.forEach((a) => { dates[a.code] = st.ov[a.code] ? [st.ov[a.code][0], st.ov[a.code][1]] : [baseD[a.code][0], baseD[a.code][1]]; });
+    // preliminaries span the whole project
+    let fin = 0;
+    ACTS.forEach((a) => { if (a.code !== Z.AUTO) fin = Math.max(fin, dates[a.code][1]); });
+    dates[Z.AUTO] = [st.start, Math.max(fin, st.start)];
+    const finish = dates[Z.AUTO][1];
+    let N = Z.BASE_MONTHS; while (dt.addMonths(st.start, N) <= finish) N++;
+    const bs = []; for (let k = 0; k <= N; k++) bs.push(dt.addMonths(st.start, k));
+
+    const acts = ACTS.map((def) => {
+      const a = { ...def };
+      a.s = dates[a.code][0]; a.e = dates[a.code][1];
+      a.bs = baseD[a.code][0]; a.be = baseD[a.code][1];
+      a.dur = a.e - a.s + 1; a.bdur = a.be - a.bs + 1;
+      a.amount = amountOf(def, st.A);
+      a.changed = a.s !== a.bs || a.e !== a.be;
+      a.ds = a.s - a.bs; a.de = a.e - a.be;
+      a.m = distribute(a, bs, N, a.amount);
+      return a;
+    });
+    const by = Object.fromEntries(acts.map((a) => [a.code, a]));
+
+    // logic conflicts + float (critical path)
+    const lagBase = (p, s) => by[s].bs - by[p].be;
+    acts.forEach((a) => { a.conflict = false; a.conflictWith = []; });
+    acts.forEach((s) => s.deps.forEach((p) => {
+      if (s.code === Z.AUTO) return;
+      if (s.s - by[p].e < Math.min(lagBase(p, s.code), 1)) { s.conflict = true; s.conflictWith.push(p); }
+    }));
+    const LF = {}, LS = {};
+    for (let i = Z.TOPO.length - 1; i >= 0; i--) {
+      const c = Z.TOPO[i], a = by[c];
+      if (c === Z.AUTO) continue;
+      let lf = fin;
+      a.succ.forEach((sc) => { if (sc === Z.AUTO) return; lf = Math.min(lf, LS[sc] - Math.min(lagBase(c, sc), 1)); });
+      LF[c] = lf; LS[c] = lf - a.dur + 1;
+      a.float = lf - a.e; a.critical = a.float <= 0;
+    }
+    by[Z.AUTO].float = 0; by[Z.AUTO].critical = false;
+
+    // totals
+    const totalM = new Array(N).fill(0);
+    acts.forEach((a) => a.m.forEach((v, k) => (totalM[k] += v)));
+    const total = acts.reduce((s, a) => s + a.amount, 0);
+    let c = 0; const cum = totalM.map((v) => (c += v));
+    const pct = cum.map((v) => v / total);
+
+    // baseline monthly (for comparison): month-index based
+    const baseActs = ACTS.map((def) => {
+      const a = { ...def, s: baseD[def.code][0], e: baseD[def.code][1] };
+      const bb = []; for (let k = 0; k <= Z.BASE_MONTHS; k++) bb.push(bs[k]);
+      a.amount = amountOf(def, st.A); a.m = distribute(a, bb, Z.BASE_MONTHS, a.amount); return a;
+    });
+
+    const dm = (() => { const k = dt.bucketOf(st.start, finish + 1); const lo = dt.addMonths(st.start, k), hi = dt.addMonths(st.start, k + 1); return k + (finish + 1 - lo) / (hi - lo); })();
+    const M = {
+      st, acts, by, N, bs, start: st.start, finish, total, totalM, cum, pct,
+      base: { acts: baseActs, by: Object.fromEntries(baseActs.map((a) => [a.code, a])), finish: baseD['1.1'][1] },
+      durMonths: dm,
+      changed: acts.filter((a) => a.changed),
+    };
+    M.base.totalM = new Array(Z.BASE_MONTHS).fill(0);
+    baseActs.forEach((a) => a.m.forEach((v, k) => (M.base.totalM[k] += v)));
+    c = 0; M.base.cum = M.base.totalM.map((v) => (c += v)); M.base.pct = M.base.cum.map((v) => v / total);
+    M.conflicts = acts.filter((a) => a.conflict);
+    M.criticalCount = acts.filter((a) => a.critical).length;
+    return M;
+  };
+
+  /* ---------------------------------------------------------- aggregation */
+  // sums monthly spend of filtered activities, optionally split by a dimension
+  Z.aggregate = function (M, pred, dim) {
+    const keys = [], map = {};
+    const keyOf = (a) => (dim === 'group' ? a.group : dim === 'epc' ? a.epc : dim === 'phase' ? a.phase : dim === 'act' ? a.code : 'all');
+    const list = M.acts.filter(pred);
+    list.forEach((a) => {
+      const k = keyOf(a);
+      if (!map[k]) { map[k] = new Array(M.N).fill(0); keys.push(k); }
+      a.m.forEach((v, i) => (map[k][i] += v));
+    });
+    const total = new Array(M.N).fill(0);
+    keys.forEach((k) => map[k].forEach((v, i) => (total[i] += v)));
+    const sum = total.reduce((x, y) => x + y, 0);
+    let c = 0; const cum = total.map((v) => (c += v));
+    return { keys, map, total, cum, sum, pct: cum.map((v) => (sum ? v / sum : 0)), list };
+  };
+
+  // planned cumulative spend on an arbitrary day (linear inside a month bucket)
+  Z.cumAt = function (M, cum, day) {
+    if (day < M.bs[0]) return 0;
+    if (day >= M.bs[M.N]) return cum[M.N - 1] || 0;
+    const k = dt.bucketOf(M.start, day);
+    const prev = k > 0 ? cum[k - 1] : 0;
+    return prev + ((cum[k] - prev) * (day - M.bs[k] + 1)) / (M.bs[k + 1] - M.bs[k]);
+  };
+
+  /* --------------------------------------------------------------- edits */
+  Z.setActivity = function (st, code, ns, ne, opts) {
+    opts = opts || {};
+    const M0 = Z.compute(st);
+    const before = {}; M0.acts.forEach((a) => (before[a.code] = [a.s, a.e]));
+    const out = Z.cloneState(st);
+    ns = Math.max(ns, out.start); ne = Math.max(ne, ns);
+    const after = {}; Object.keys(before).forEach((c) => (after[c] = before[c].slice()));
+    after[code] = [ns, ne];
+    const mode = opts.link || st.link;
+    if (mode !== 'off') {
+      Z.TOPO.forEach((c) => {
+        if (c === code || c === Z.AUTO) return;
+        const a = BY[c]; if (!a.deps.length) return;
+        let delta = -Infinity;
+        a.deps.forEach((p) => { delta = Math.max(delta, after[p][1] - before[p][1]); });
+        if (mode === 'push') delta = Math.max(0, delta);
+        if (!isFinite(delta) || delta === 0) return;
+        delta = Math.max(delta, out.start - before[c][0]);
+        after[c] = [before[c][0] + delta, before[c][1] + delta];
+      });
+    }
+    const baseD = baseDates(out.start);
+    Object.keys(after).forEach((c) => {
+      if (c === Z.AUTO) return;
+      const b = baseD[c];
+      if (after[c][0] === b[0] && after[c][1] === b[1]) delete out.ov[c];
+      else out.ov[c] = after[c];
+    });
+    return out;
+  };
+
+  Z.resetActivity = (st, code) => { const o = Z.cloneState(st); delete o.ov[code]; return o; };
+
+  Z.setStart = function (st, newStart) {
+    const out = Z.cloneState(st);
+    const old = st.start;
+    const remap = (d) => {
+      const k = dt.bucketOf(old, d);
+      return dt.addMonths(newStart, k) + (d - dt.addMonths(old, k));
+    };
+    Object.keys(out.ov).forEach((c) => { out.ov[c] = [remap(out.ov[c][0]), remap(out.ov[c][1])]; });
+    out.start = newStart;
+    // drop overrides that equal the new baseline
+    const baseD = baseDates(newStart);
+    Object.keys(out.ov).forEach((c) => { if (out.ov[c][0] === baseD[c][0] && out.ov[c][1] === baseD[c][1]) delete out.ov[c]; });
+    return out;
+  };
+
+  /* ---------------------------------------------------------- milestones */
+  Z.milestones = function (M) {
+    const b = M.by, bb = M.base.by;
+    const minS = (f) => Math.min(...M.acts.filter(f).map((a) => a.s));
+    const maxE = (f) => Math.max(...M.acts.filter(f).map((a) => a.e));
+    const bminS = (f) => Math.min(...M.base.acts.filter(f).map((a) => a.s));
+    const bmaxE = (f) => Math.max(...M.base.acts.filter(f).map((a) => a.e));
+    const ll = (a) => a.ll && a.kind === 'a3';
+    const list = [
+      { k: 'start', name: 'Project start / mobilisation', d: M.start, bd: M.start, code: '1.1' },
+      { k: 'access', name: 'Access permits approved', d: b['1.2'].e, bd: bb['1.2'].e, code: '1.2' },
+      { k: 'concept', name: 'Concept design approved', d: b['2.2'].e, bd: bb['2.2'].e, code: '2.2' },
+      { k: 'prelim', name: 'Preliminary design approved', d: b['2.4'].e, bd: bb['2.4'].e, code: '2.4' },
+      { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
+      { k: 'detail', name: 'Detailed design approved', d: b['2.6'].e, bd: bb['2.6'].e, code: '2.6' },
+      { k: 'permit', name: 'Work permit approved', d: b['1.3'].e, bd: bb['1.3'].e, code: '1.3' },
+      { k: 'cons', name: 'Construction starts on site', d: minS((a) => a.kind === 'b'), bd: bminS((a) => a.kind === 'b') },
+      { k: 'll', name: 'Long-lead deliveries complete', d: maxE(ll), bd: bmaxE(ll) },
+      { k: 'fin', name: 'Practical completion', d: M.finish, bd: M.base.finish, code: '1.1' },
+    ];
+    list.forEach((m) => (m.delta = m.d - m.bd));
+    return list;
+  };
+
+  /* ------------------------------------------------------------ sharing */
+  Z.serialize = function (st) {
+    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A };
+    Object.keys(st.ov).forEach((c) => (o.ov[c] = [dt.iso(st.ov[c][0]), dt.iso(st.ov[c][1])]));
+    return JSON.stringify(o);
+  };
+  Z.deserialize = function (txt) {
+    const o = JSON.parse(txt);
+    const st = Z.newState(o.s); st.link = o.l || 'two';
+    if (o.A) { const A = Z.cloneA(Z.DEFAULT_A); Object.assign(A.disc, o.A.disc); A.proc = o.A.proc || A.proc; Object.assign(A.stage, o.A.stage); Object.assign(A.sub, o.A.sub); st.A = A; }
+    Object.keys(o.ov || {}).forEach((c) => { if (BY[c]) st.ov[c] = [dt.parse(o.ov[c][0]), dt.parse(o.ov[c][1])]; });
+    return st;
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Formatting helpers + small hand-written SVG chart builders (no external libraries). */
+(function (G) {
+  const Z = (G.Z = G.Z || {});
+  const F = (Z.F = {});
+
+  F.esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  F.n0 = (v) => Math.round(v).toLocaleString('en-US');
+  F.sar = (v) => 'SAR ' + F.n0(v);
+  F.M = (v, d = 2) => (v / 1e6).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) + 'M';
+  F.compact = (v) => {
+    const a = Math.abs(v);
+    if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M';
+    if (a >= 1e3) return Math.round(v / 1e3) + 'K';
+    return String(Math.round(v));
+  };
+  F.pct = (v, d = 1) => (v * 100).toFixed(d) + '%';
+  F.days = (n) => (n === 0 ? '0 d' : (n > 0 ? '+' : '−') + Math.abs(n) + ' d');
+  F.deltaCls = (n) => (n > 0 ? 'up' : n < 0 ? 'down' : 'zero');
+  F.deltaHtml = (n, unit) => `<span class="delta ${F.deltaCls(n)}">${n === 0 ? 'on baseline' : (n > 0 ? '+' : '−') + Math.abs(n) + (unit || ' d') + (n > 0 ? ' later' : ' earlier')}</span>`;
+  F.months = (m) => (Math.abs(m - Math.round(m)) < 0.05 ? String(Math.round(m)) : m.toFixed(1));
+  // tooltip payload for data-tip="" (HTML, attribute-escaped)
+  F.tip = (title, rows) => F.esc(`<div class="t">${title}</div>` + (rows || []).map((r) => `<div class="r"><span>${r[0] ? `<i class="sw" style="background:${r[0]}"></i>` : ''}${r[1]}</span><b>${r[2]}</b></div>`).join(''));
+  F.nice = (max, ticks = 5) => {
+    if (max <= 0) return { max: 1, step: 0.25 };
+    const raw = max / ticks, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+    return { max: Math.ceil(max / step) * step, step };
+  };
+  F.groupColor = (code) => `var(--c${parseInt(code, 10)})`;
+  F.epcColor = (k) => `var(--${k.toLowerCase()})`;
+  F.phaseColor = (p) => (p === 'Phase 1' ? 'var(--ph1)' : 'var(--ph2)');
+
+  const arc = (cx, cy, r0, r1, a0, a1) => {
+    const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
+    return `M${x0},${y0} A${r1},${r1} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${large} 0 ${x3},${y3} Z`;
+  };
+
+  /* ---- donut -------------------------------------------------------- */
+  F.donut = function (items, o) {
+    o = o || {};
+    const size = o.size || 200, cx = size / 2, cy = size / 2, r1 = size / 2 - 4, r0 = r1 * (o.hole || 0.62);
+    const total = items.reduce((s, i) => s + i.value, 0) || 1;
+    let a = 0, out = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
+    items.forEach((it) => {
+      if (it.value <= 0) return;
+      const da = (it.value / total) * Math.PI * 2;
+      const full = da >= Math.PI * 2 - 1e-6;
+      const path = full ? arc(cx, cy, r0, r1, 0, Math.PI * 2 - 0.0001) : arc(cx, cy, r0, r1, a, a + da);
+      out += `<path class="hit hv" d="${path}" fill="${it.color}" stroke="#fff" stroke-width="2" ${it.attrs || ''} data-tip="${it.tip || ''}"/>`;
+      a += da;
+    });
+    if (o.center) out += `<text x="${cx}" y="${cy - 2}" text-anchor="middle" style="font-size:${o.bigSize || 22}px;font-weight:800;fill:var(--accent)">${o.center[0]}</text><text x="${cx}" y="${cy + 17}" text-anchor="middle" style="font-size:11.5px">${o.center[1] || ''}</text>`;
+    return out + '</svg>';
+  };
+
+  /* ---- horizontal bars --------------------------------------------- */
+  F.hbars = function (items, o) {
+    o = o || {};
+    const w = o.w || 600, rowH = o.rowH || 44, labelW = o.labelW || 230, valW = o.valW || (o.stack ? 120 : 118), pad = 4;
+    const max = o.max || Math.max(...items.map((i) => i.value), 1);
+    const h = items.length * rowH + pad * 2;
+    const bw = w - labelW - valW;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="xMinYMin meet">`;
+    if (o.stack) {
+      const bwS = w - valW; 
+      items.forEach((it, i) => {
+        const y = pad + i * rowH, len = Math.max(it.value > 0 ? 3 : 0, (it.value / max) * bwS);
+        out += `<g class="hit" ${it.attrs || ''} data-tip="${it.tip || ''}"><rect x="0" y="${y}" width="${w}" height="${rowH}" fill="transparent"/>
+          <text x="0" y="${y + 20}" style="font-size:13.5px;fill:var(--ink);font-weight:600">${F.esc(it.label)}</text>
+          <text x="${w}" y="${y + 20}" text-anchor="end" style="font-size:12.5px">${it.sub || ''}</text>
+          <rect class="hv" x="0" y="${y + 28}" width="${len}" height="26" rx="4" fill="${it.color}"/>
+          <text x="${len + 8}" y="${y + 46}" style="font-size:13.5px;font-weight:700;fill:var(--accent)">${it.valText}</text></g>`;
+      });
+      return out + '</svg>';
+    }
+    items.forEach((it, i) => {
+      const y = pad + i * rowH, len = Math.max(it.value > 0 ? 3 : 0, (it.value / max) * bw);
+      out += `<g class="hit" ${it.attrs || ''} data-tip="${it.tip || ''}">
+        <rect x="0" y="${y}" width="${w}" height="${rowH}" fill="transparent"/>
+        <text x="0" y="${y + rowH / 2 + 4.5}" style="font-size:13px;fill:var(--ink)">${F.esc(it.label)}</text>
+        <rect class="hv" x="${labelW}" y="${y + 9}" width="${len}" height="${rowH - 18}" rx="4" fill="${it.color}"/>
+        <text x="${labelW + len + 8}" y="${y + rowH / 2 + 4.5}" style="font-size:13px;font-weight:700;fill:var(--accent)">${it.valText}</text>
+        ${it.sub ? `<text x="${w}" y="${y + rowH / 2 + 4.5}" text-anchor="end" style="font-size:12px">${it.sub}</text>` : ''}
+      </g>`;
+    });
+    return out + '</svg>';
+  };
+
+  /* ---- treemap (squarified) ---------------------------------------- */
+  F.treemap = function (items, W, H) {
+    const total = items.reduce((s, i) => s + i.value, 0);
+    const nodes = items.filter((i) => i.value > 0).sort((a, b) => b.value - a.value).map((i) => ({ ...i, area: (i.value / total) * W * H }));
+    const rects = [];
+    (function squarify(list, x, y, w, h) {
+      if (!list.length) return;
+      const short = Math.min(w, h);
+      const worst = (row, side) => { const s = row.reduce((a, n) => a + n.area, 0); const mx = Math.max(...row.map((n) => n.area)), mn = Math.min(...row.map((n) => n.area)); return Math.max((side * side * mx) / (s * s), (s * s) / (side * side * mn)); };
+      let row = [list[0]], i = 1;
+      while (i < list.length && worst(row.concat(list[i]), short) <= worst(row, short)) row.push(list[i++]);
+      const s = row.reduce((a, n) => a + n.area, 0);
+      if (w >= h) {
+        const cw = s / h; let yy = y;
+        row.forEach((n) => { const nh = n.area / cw; rects.push({ n, x, y: yy, w: cw, h: nh }); yy += nh; });
+        squarify(list.slice(i), x + cw, y, w - cw, h);
+      } else {
+        const ch = s / w; let xx = x;
+        row.forEach((n) => { const nw = n.area / ch; rects.push({ n, x: xx, y, w: nw, h: ch }); xx += nw; });
+        squarify(list.slice(i), x, y + ch, w, h - ch);
+      }
+    })(nodes, 0, 0, W, H);
+    let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">`;
+    rects.forEach(({ n, x, y, w, h }) => {
+      const tw = w - 14, chars = Math.floor(tw / 6.6);
+      let t = n.label; if (t.length > chars) t = t.slice(0, Math.max(0, chars - 1)) + '…';
+      out += `<g class="hit" ${n.attrs || ''} data-tip="${n.tip || ''}"><rect class="hv" x="${x + 1}" y="${y + 1}" width="${Math.max(0, w - 2)}" height="${Math.max(0, h - 2)}" rx="6" fill="${n.color}" stroke="#fff" stroke-width="1"/>`;
+      if (w > 70 && h > 38) out += `<text x="${x + 9}" y="${y + 20}" style="fill:#fff;font-weight:700;font-size:12.5px">${F.esc(t)}</text><text x="${x + 9}" y="${y + 36}" style="fill:#fff;opacity:.92;font-size:12px">${n.valText}</text>`;
+      else if (w > 44 && h > 22) out += `<text x="${x + 6}" y="${y + 15}" style="fill:#fff;font-weight:700;font-size:11px">${F.esc(n.short || '')}</text>`;
+      out += '</g>';
+    });
+    return out + '</svg>';
+  };
+
+  /* ---- sparkline-like mini bars ------------------------------------ */
+  F.miniBars = function (vals, o) {
+    o = o || {};
+    const w = o.w || 480, h = o.h || 90, max = Math.max(...vals, 1), bw = w / vals.length;
+    let out = `<svg viewBox="0 0 ${w} ${h + 16}" width="100%">`;
+    vals.forEach((v, i) => {
+      const bh = (v / max) * h;
+      out += `<rect x="${i * bw + 1.5}" y="${h - bh}" width="${bw - 3}" height="${Math.max(bh, v > 0 ? 1.5 : 0)}" rx="2" fill="${o.color || 'var(--brand)'}" ${o.attr ? o.attr(i) : ''} data-tip="${o.tip ? o.tip(i, v) : ''}"/>`;
+      if (o.label && (bw > 16 || i % 2 === 0)) out += `<text x="${i * bw + bw / 2}" y="${h + 13}" text-anchor="middle" style="font-size:9.5px">${o.label(i)}</text>`;
+    });
+    return out + '</svg>';
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Presentation shell: state, navigation, filters, full-screen, print, drawer, tooltip. */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const KEY = 'zulfi-presentation-v1';
+  const W = 1600, H = 900;
+
+  const A = (Z.app = {
+    slides: [], actions: {}, changes: {}, drawers: {},
+    s: { st: null, M: null, slide: 0, drawer: null, f: { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' }, ui: {} },
+    scale: 1, dirty: new Set(),
+  });
+  Z.registerSlide = (def) => A.slides.push(def);
+  A.icons = {
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+    full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
+    print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>',
+    list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  };
+
+  /* ------------------------------------------------------------ filters */
+  A.vis = (a) => {
+    const f = A.s.f;
+    if (f.phase !== 'all' && a.phase !== f.phase) return false;
+    if (f.epc.length && !f.epc.includes(a.epc)) return false;
+    if (f.group !== 'all' && a.group !== f.group) return false;
+    if (f.ll && !a.ll) return false;
+    if (f.crit && !a.critical) return false;
+    if (f.chg && !a.changed) return false;
+    if (f.q) { const q = f.q.toLowerCase(); if (!(a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q))) return false; }
+    return true;
+  };
+  A.filtered = () => { const f = A.s.f; return f.phase !== 'all' || f.epc.length || f.group !== 'all' || f.ll || f.crit || f.chg || !!f.q; };
+  A.visList = () => A.s.M.acts.filter(A.vis);
+
+  A.renderFilters = () => {
+    const f = A.s.f, M = A.s.M, vis = A.visList();
+    const sum = vis.reduce((s, a) => s + a.amount, 0);
+    $('#fDyn').innerHTML =
+      `<span class="lbl">Phase</span><span class="seg">${['all', 'Phase 1', 'Phase 2'].map((p) => `<button data-fphase="${p}" class="${f.phase === p ? 'on' : ''}">${p === 'all' ? 'All' : p}</button>`).join('')}</span>
+       <span class="sep"></span><span class="lbl">EPC</span>${Z.EPC.map((e) => `<button class="chip ${f.epc.includes(e.key) ? 'on' : ''}" data-fepc="${e.key}"><i style="background:${F.epcColor(e.key)}"></i>${e.key === 'GEN' ? 'General' : e.key === 'ENG' ? 'Engineering' : e.key === 'PROC' ? 'Procurement' : 'Construction'}</button>`).join('')}
+       <span class="sep"></span><span class="lbl">WBS</span><select class="f-select" id="fGroup"><option value="all">All groups</option>${Z.GROUPS.map((g) => `<option value="${g.code}" ${f.group === g.code ? 'selected' : ''}>${g.code.replace('.0', '')} · ${F.esc(g.name)}</option>`).join('')}</select>
+       <button class="chip ${f.ll ? 'on' : ''}" data-ftog="ll">Long-lead</button><button class="chip ${f.crit ? 'on' : ''}" data-ftog="crit">Critical path</button><button class="chip ${f.chg ? 'on' : ''}" data-ftog="chg">Changed</button>`;
+    $('#fCount').innerHTML = `<b>${vis.length}</b> of ${M.acts.length} activities · ${F.sar(sum)}`;
+    $('#fReset').style.display = A.filtered() ? '' : 'none';
+  };
+
+  /* ----------------------------------------------------------- compute */
+  A.save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify({ ser: Z.serialize(A.s.st), slide: A.s.slide, f: A.s.f })); } catch (e) { /* ignore */ }
+  };
+  A.setState = (st) => { A.s.st = st; A.update(); };
+  A.edit = (code, ns, ne) => A.setState(Z.setActivity(A.s.st, code, ns, ne));
+
+  A.update = () => {
+    const keepScroll = {};
+    $$('[data-keep]').forEach((el) => (keepScroll[el.dataset.keep] = [el.scrollLeft, el.scrollTop]));
+    A.s.M = Z.compute(A.s.st);
+    A.dirty = new Set(A.slides.map((_, i) => i));
+    A.renderChrome();
+    A.renderSlide(A.s.slide, keepScroll);
+    A.renderDrawer();
+    A.save();
+  };
+
+  A.renderChrome = () => {
+    const M = A.s.M, st = A.s.st;
+    $('#startIn').value = dt.iso(st.start);
+    $('#linkSel').value = st.link;
+    const n = M.changed.length, fd = M.finish - M.base.finish;
+    const sc = $('#scen');
+    sc.className = 'tb-btn' + (n ? ' primary' : '');
+    sc.innerHTML = n ? `Revised · ${n} changed · finish ${fd === 0 ? 'unchanged' : F.days(fd)}` : 'Baseline schedule';
+    A.renderFilters();
+    $('#slideNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
+    $('#bBack').disabled = A.s.slide === 0;
+    $('#bNext').disabled = A.s.slide === A.slides.length - 1;
+    $$('#slideList button').forEach((b, i) => b.classList.toggle('on', i === A.s.slide));
+  };
+
+  A.head = (no, title, sub, src) =>
+    `<div class="s-head"><div class="no">${no}</div><div><h1>${title}</h1><p>${sub}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
+
+  A.renderSlide = (i, keepScroll) => {
+    const el = $('#slide-' + i); if (!el) return;
+    const def = A.slides[i];
+    el.innerHTML = def.render(A.s.M, A.s);
+    A.dirty.delete(i);
+    if (keepScroll) $$('[data-keep]', el).forEach((n) => { const k = keepScroll[n.dataset.keep]; if (k) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } });
+    if (def.after) def.after(el, A.s.M, A.s);
+  };
+  A.renderAll = () => A.slides.forEach((_, i) => A.renderSlide(i));
+
+  /* --------------------------------------------------------- navigation */
+  A.go = (i) => {
+    i = Math.max(0, Math.min(A.slides.length - 1, i));
+    A.s.slide = i;
+    $$('.slide').forEach((s, k) => s.classList.toggle('active', k === i));
+    if (A.dirty.has(i)) A.renderSlide(i);
+    A.renderChrome(); A.save();
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) { /* ignore */ }
+  };
+  A.next = () => A.go(A.s.slide + 1);
+  A.back = () => A.go(A.s.slide - 1);
+
+  /* ----------------------------------------------------------- scaling */
+  A.fit = () => {
+    const vp = $('#viewport');
+    const k = Math.min(vp.clientWidth / W, vp.clientHeight / H);
+    A.scale = k;
+    $('#stageBox').style.width = W * k + 'px'; $('#stageBox').style.height = H * k + 'px';
+    $('#stage').style.transform = `scale(${k})`;
+  };
+
+  /* -------------------------------------------------------- fullscreen */
+  A.isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  A.enterFull = () => { const el = $('#app'); (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); };
+  A.exitFull = () => { (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document); };
+  A.syncFull = () => {
+    const f = A.isFull();
+    $('#bFull').style.display = f ? 'none' : ''; $('#bExit').style.display = f ? '' : 'none';
+    setTimeout(A.fit, 50);
+  };
+  A.print = () => { A.renderAll(); setTimeout(() => window.print(), 80); };
+
+  /* ------------------------------------------------------------ drawer */
+  A.openDrawer = (type, id) => { A.s.drawer = { type, id }; A.renderDrawer(); };
+  A.closeDrawer = () => { A.s.drawer = null; A.renderDrawer(); };
+  A.renderDrawer = () => {
+    const d = A.s.drawer, el = $('#drawer'), sc = $('#scrim');
+    if (!d) { el.classList.remove('open'); sc.classList.remove('open'); return; }
+    const fn = A.drawers[d.type]; if (!fn) return;
+    const o = fn(d.id, A.s.M, A.s);
+    if (!o) { A.closeDrawer(); return; }
+    const keep = $('#drawer .db') ? $('#drawer .db').scrollTop : 0;
+    el.innerHTML = `<div class="dh"><div class="cd">${o.code}</div><h2>${o.title}</h2><div>${o.tags || ''}</div><button class="x" data-do="closeDrawer" aria-label="Close">×</button></div><div class="db">${o.html}</div>`;
+    el.classList.add('open'); sc.classList.add('open');
+    $('#drawer .db').scrollTop = keep;
+  };
+
+  /* ----------------------------------------------------------- tooltip */
+  function tipMove(e) {
+    const t = e.target.closest ? e.target.closest('[data-tip]') : null;
+    const tip = $('#tip');
+    if (!t || !t.dataset.tip) { tip.style.display = 'none'; return; }
+    if (tip.dataset.src !== t.dataset.tip) { tip.innerHTML = t.dataset.tip; tip.dataset.src = t.dataset.tip; }
+    tip.style.display = 'block';
+    const r = $('#stage').getBoundingClientRect(), k = A.scale;
+    let x = (e.clientX - r.left) / k + 16, y = (e.clientY - r.top) / k + 16;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    if (x + w > W - 8) x = (e.clientX - r.left) / k - w - 16;
+    if (y + h > H - 8) y = (e.clientY - r.top) / k - h - 16;
+    tip.style.left = Math.max(6, x) + 'px'; tip.style.top = Math.max(6, y) + 'px';
+  }
+
+  /* -------------------------------------------------------- built-in actions */
+  A.actions.closeDrawer = () => A.closeDrawer();
+  A.actions.resetAll = () => { if (confirm('Reset all schedule changes and assumptions back to the baseline Excel plan?')) { A.setState(Z.newState(dt.iso(A.s.st.start))); A.closeDrawer(); } };
+  A.actions.resetAct = (el) => A.setState(Z.resetActivity(A.s.st, el.dataset.code));
+
+  function bind() {
+    const stage = $('#stage');
+    stage.addEventListener('click', (e) => {
+      const t = e.target;
+      const doEl = t.closest('[data-do]');
+      if (doEl && A.actions[doEl.dataset.do]) { A.actions[doEl.dataset.do](doEl, e); return; }
+      if (t.closest('input,select,textarea')) return;
+      const nav = t.closest('[data-nav]'); if (nav) { A.go(+nav.dataset.nav); return; }
+      const mapping = [['data-act', 'act'], ['data-grp', 'grp'], ['data-month', 'month'], ['data-cat', 'cat'], ['data-item', 'item']];
+      for (const [attr, type] of mapping) {
+        const el = t.closest('[' + attr + ']');
+        if (el) { A.openDrawer(type, el.getAttribute(attr)); return; }
+      }
+    });
+    stage.addEventListener('change', (e) => {
+      const el = e.target.closest('[data-chg]');
+      if (el && A.changes[el.dataset.chg]) A.changes[el.dataset.chg](el, e);
+    });
+    $('#scrim').addEventListener('click', A.closeDrawer);
+    stage.addEventListener('mousemove', tipMove);
+    stage.addEventListener('mouseleave', () => ($('#tip').style.display = 'none'));
+
+    // toolbar
+    $('#bBack').onclick = A.back; $('#bNext').onclick = A.next;
+    $('#bFull').onclick = A.enterFull; $('#bExit').onclick = A.exitFull; $('#bPrint').onclick = A.print;
+    $('#bFilters').onclick = () => { const f = $('#filters'); f.style.display = f.style.display === 'none' ? '' : 'none'; setTimeout(A.fit, 20); };
+    $('#scen').onclick = () => A.go(A.slides.findIndex((s) => s.id === 'scenario'));
+    $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
+    $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
+    $('#slideMenu > button').onclick = (e) => { e.stopPropagation(); $('#slideList').classList.toggle('open'); };
+    document.addEventListener('click', () => $('#slideList').classList.remove('open'));
+    $('#slideList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) A.go(+b.dataset.i); });
+
+    // filters
+    const fb = $('#filters');
+    fb.addEventListener('click', (e) => {
+      const f = A.s.f, t = e.target.closest('button'); if (!t) return;
+      if (t.dataset.fphase) f.phase = t.dataset.fphase;
+      else if (t.dataset.fepc) { const i = f.epc.indexOf(t.dataset.fepc); if (i >= 0) f.epc.splice(i, 1); else f.epc.push(t.dataset.fepc); }
+      else if (t.dataset.ftog) f[t.dataset.ftog] = !f[t.dataset.ftog];
+      else if (t.id === 'fReset') { Object.assign(f, { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' }); $('#fQ').value = ''; }
+      else return;
+      A.refilter();
+    });
+    fb.addEventListener('change', (e) => { if (e.target.id === 'fGroup') { A.s.f.group = e.target.value; A.refilter(); } });
+    $('#fQ').addEventListener('input', (e) => { A.s.f.q = e.target.value.trim(); A.refilter(); });
+
+    // keyboard
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') { if (e.key === 'Escape') e.target.blur(); return; }
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); A.next(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); A.back(); }
+      else if (e.key === 'Home') A.go(0); else if (e.key === 'End') A.go(A.slides.length - 1);
+      else if (e.key === 'Escape') { if (A.s.drawer) A.closeDrawer(); }
+      else if (e.key === 'f' || e.key === 'F') { A.isFull() ? A.exitFull() : A.enterFull(); }
+    });
+    window.addEventListener('resize', A.fit);
+    document.addEventListener('fullscreenchange', A.syncFull); document.addEventListener('webkitfullscreenchange', A.syncFull);
+    window.addEventListener('beforeprint', A.renderAll);
+  }
+
+  A.refilter = () => {
+    A.dirty = new Set(A.slides.map((_, i) => i));
+    A.renderFilters();
+    const keep = {}; $$('[data-keep]').forEach((el) => (keep[el.dataset.keep] = [el.scrollLeft, el.scrollTop]));
+    A.renderSlide(A.s.slide, keep); A.renderDrawer(); A.save();
+  };
+
+  /* -------------------------------------------------------------- boot */
+  A.boot = () => {
+    // slides
+    $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
+    $('#slideList').innerHTML = A.slides.map((s, i) => `<button data-i="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`).join('');
+    // restore state: share link > saved session > baseline
+    let st = null, slide = 0;
+    try {
+      const h = location.hash;
+      if (h.startsWith('#s=')) st = Z.deserialize(decodeURIComponent(escape(atob(h.slice(3)))));
+      else {
+        const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (saved) { st = Z.deserialize(saved.ser); slide = saved.slide || 0; if (saved.f) Object.assign(A.s.f, saved.f); }
+        if (/^#\d+$/.test(h)) slide = +h.slice(1) - 1;
+      }
+    } catch (e) { st = null; }
+    A.s.st = st || Z.newState('2026-10-17');
+    A.s.M = Z.compute(A.s.st);
+    A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
+    $('#fQ').value = A.s.f.q || '';
+    bind(); A.fit(); A.syncFull();
+    A.dirty = new Set(A.slides.map((_, i) => i));
+    A.renderChrome(); A.go(A.s.slide);
+    A.renderDrawer();
+  };
+})(window);
+
+</script>
+<script>
+/* Detail drawer content: activity, WBS group, BOQ item, month, category */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  const pill = (c, t) => `<span class="pill ${c}">${t}</span> `;
+  const stat = (k, v, extra) => `<div class="dstat"><div class="k">${k}</div><div class="v">${v}</div>${extra || ''}</div>`;
+  const listItem = (a, right) => `<div class="it" data-act="${a.code}"><span class="c">${a.code}</span><span class="n" title="${F.esc(a.desc)}">${F.esc(a.name)}</span><span class="a">${right}</span></div>`;
+
+  A.actions.nudge = (el) => {
+    const a = A.s.M.by[el.dataset.code], unit = el.dataset.u, n = +el.dataset.n;
+    let ns, ne;
+    if (unit === 'm') { ns = dt.addMonths(a.s, n); ne = dt.addMonths(a.e + 1, n) - 1; } else { ns = a.s + n; ne = a.e + n; }
+    A.edit(a.code, ns, ne);
+  };
+
+  A.drawers.act = (code, M) => {
+    const a = M.by[code]; if (!a) return null;
+    const auto = code === Z.AUTO;
+    const preds = a.deps.map((c) => M.by[c]), succs = a.succ.map((c) => M.by[c]);
+    const sibs = a.item ? M.acts.filter((x) => x.item === a.item) : (a.kind === 'eng' ? M.acts.filter((x) => x.kind === 'eng') : []);
+    const tags = pill(a.phase === 'Phase 1' ? 'p1' : 'p2', a.phase) + pill(a.epc, Z.EPC_BY[a.epc].name) + (a.ll ? pill('ll', 'Long-lead') : '') + (a.critical ? pill('crit', 'Critical path') : '') + (a.changed ? pill('warn', 'Moved vs baseline') : '');
+    const nb = (u, n, t) => `<button class="btn sm" data-do="nudge" data-code="${code}" data-u="${u}" data-n="${n}">${t}</button>`;
+    const dstart = F.deltaHtml(a.ds), dend = F.deltaHtml(a.de);
+    const html = `
+      <h4>Cost</h4>
+      <div class="dgrid">${stat('Amount (excl. VAT)', F.n0(a.amount) + ' <small>SAR</small>')}${stat('% of project', F.pct(a.amount / M.total, 2))}${stat('Duration', F.months(a.dur / 30.4375) + ' <small>months</small>', `<div class="hint">${a.dur} days</div>`)}${stat('Float to completion', a.critical ? '0 d' : Math.round(a.float) + ' d', `<div class="hint">${a.critical ? 'on the critical path' : 'schedule slack'}</div>`)}</div>
+      <h4>Schedule – edit dates</h4>
+      <div class="datefield"><div><label>Start</label><input type="date" value="${dt.iso(a.s)}" ${auto ? 'disabled' : ''} data-chg="gdate" data-code="${code}" data-w="s"></div><div><label>Finish</label><input type="date" value="${dt.iso(a.e)}" ${auto ? 'disabled' : ''} data-chg="gdate" data-code="${code}" data-w="e"></div></div>
+      ${auto ? '<div class="note info" style="margin-top:10px">Preliminaries are cost-loaded evenly across the whole project, so these dates follow the project start and the latest finish.</div>' : `
+      <div class="nudge">${nb('d', -7, '− 1 week')}${nb('d', 7, '+ 1 week')}${nb('m', -1, '− 1 month')}${nb('m', 1, '+ 1 month')}${a.changed ? `<button class="btn sm danger" data-do="resetAct" data-code="${code}">Reset to baseline</button>` : ''}</div>
+      <div class="hint" style="margin-top:8px">Moving shifts the whole activity. Linking mode: <b>${{ two: 'successors move with it', push: 'delays are pushed to successors', off: 'successors stay put' }[M.st.link]}</b>.</div>`}
+      <div class="hint" style="margin-top:8px">Baseline: ${dt.fmtShort(a.bs)} → ${dt.fmtShort(a.be)}${a.changed ? ` · start ${dstart} · finish ${dend}` : ''}</div>
+      ${a.conflict ? `<div class="note bad" style="margin-top:10px">Logic conflict: starts before predecessor ${a.conflictWith.join(', ')} allows.</div>` : ''}
+      <h4>Predecessors (${preds.length})</h4>
+      ${preds.length ? `<div class="dlist">${preds.map((p) => listItem(p, 'ends ' + dt.fmtShort(p.e))).join('')}</div>` : '<div class="hint">Project start – no predecessor.</div>'}
+      <div class="hint" style="margin-top:6px">Logic from Excel: ${F.esc(a.pred || 'Project Start')}</div>
+      <h4>Successors (${succs.length})</h4>
+      ${succs.length ? `<div class="dlist">${succs.map((p) => listItem(p, 'starts ' + dt.fmtShort(p.s))).join('')}</div>` : '<div class="hint">No successors.</div>'}
+      ${sibs.length > 1 ? `<h4>${a.item ? 'Item chain – ' + F.esc(Z.ITEM_BY[a.item].name) : 'Design stages'}</h4><div class="dlist">${sibs.map((s) => `<div class="it" data-act="${s.code}" style="${s.code === code ? 'background:var(--brand-l)' : ''}"><span class="c">${s.code}</span><span class="n">${F.esc(s.name.split(' – ').pop())}</span><span class="a">${F.compact(s.amount)} · ${dt.fmtShort(s.s)}</span></div>`).join('')}</div>` : ''}
+      <h4>Monthly spend</h4>
+      ${F.miniBars(a.m, { w: 500, h: 80, label: (i) => 'M' + (i + 1), tip: (i, v) => F.tip('Month ' + (i + 1), [['', 'Spend', F.sar(v)]]) })}
+      <h4>Reference</h4>
+      <div style="font-size:13px;line-height:1.55"><b>Description:</b> ${F.esc(a.desc)}<br><b>BOQ ref:</b> ${F.esc(a.boq || '–')} · <b>Unit:</b> ${F.esc(a.unit || '–')}</div>`;
+    return { code: 'WBS ' + a.code, title: F.esc(a.name), tags, html };
+  };
+
+  const monthBars = (M, list) => { const t = new Array(M.N).fill(0); list.forEach((a) => a.m.forEach((v, k) => (t[k] += v))); return F.miniBars(t, { w: 500, h: 80, label: (i) => 'M' + (i + 1), attr: (i) => `data-month="${i + 1}"`, tip: (i, v) => F.tip('Month ' + (i + 1) + ' · ' + dt.fmtMY(M.bs[i]), [['', 'Spend', F.sar(v)]]) }); };
+
+  A.drawers.grp = (code, M) => {
+    const g = Z.GROUP_BY[code]; if (!g) return null;
+    const list = M.acts.filter((a) => a.group === code), tot = list.reduce((s, a) => s + a.amount, 0);
+    const s = Math.min(...list.map((a) => a.s)), e = Math.max(...list.map((a) => a.e));
+    const epc = Z.EPC.map((x) => [x, list.filter((a) => a.epc === x.key).reduce((q, a) => q + a.amount, 0)]).filter((x) => x[1] > 0);
+    const html = `<div class="dgrid">${stat('Group amount', F.n0(tot) + ' <small>SAR</small>')}${stat('% of project', F.pct(tot / M.total, 2))}${stat('Starts', dt.fmt(s))}${stat('Finishes', dt.fmt(e))}</div>
+      <h4>Cost by EPC category</h4>${epc.map(([x, v]) => `<div style="display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px"><span style="width:150px">${x.name}</span><span style="flex:1;background:var(--soft);height:10px;border-radius:5px"><i style="display:block;height:10px;border-radius:5px;width:${(v / tot) * 100}%;background:${F.epcColor(x.key)}"></i></span><b style="width:90px;text-align:right">${F.M(v)}</b></div>`).join('')}
+      <h4>Monthly spend</h4>${monthBars(M, list)}
+      <h4>Activities (${list.length})</h4><div class="dlist">${list.map((a) => listItem(a, F.compact(a.amount))).join('')}</div>`;
+    return { code: 'WBS group ' + code, title: F.esc(g.name), tags: pill('p1', list.filter((a) => a.phase === 'Phase 1').length + ' in Phase 1') + pill('p2', list.filter((a) => a.phase === 'Phase 2').length + ' in Phase 2'), html };
+  };
+
+  A.drawers.item = (key, M) => {
+    const it = Z.ITEM_BY[key]; if (!it) return null;
+    const list = M.acts.filter((a) => a.item === key), tot = list.reduce((s, a) => s + a.amount, 0);
+    const mat = list.filter((a) => a.kind !== 'b').reduce((s, a) => s + a.amount, 0);
+    const html = `<div class="dgrid">${stat('Item amount', F.n0(tot) + ' <small>SAR</small>')}${stat('% of project', F.pct(tot / M.total, 2))}${stat('Materials / procurement', F.pct(tot ? mat / tot : 0, 0), `<div class="hint">${F.M(mat)} SAR</div>`)}${stat('Construction', F.pct(tot ? 1 - mat / tot : 0, 0), `<div class="hint">${F.M(tot - mat)} SAR</div>`)}</div>
+      <div class="hint" style="margin-top:8px">Discipline: <b>${Z.DISC[it.disc].name}</b> · BOQ ${F.esc(list[0].boq)} · ${list[0].phase}</div>
+      <h4>Procurement → construction chain</h4><div class="dlist">${list.map((a) => `<div class="it" data-act="${a.code}"><span class="c">${a.code}</span><span class="n">${F.esc(a.name.split(' – ').pop())}</span><span class="a">${F.compact(a.amount)} · ${dt.fmtShort(a.s)} → ${dt.fmtShort(a.e)}</span></div>`).join('')}</div>
+      <h4>Monthly spend</h4>${monthBars(M, list)}`;
+    return { code: 'BOQ item ' + key, title: F.esc(it.full || it.name), tags: pill(list[0].phase === 'Phase 1' ? 'p1' : 'p2', list[0].phase) + (list.some((a) => a.ll) ? pill('ll', 'Long-lead') : ''), html };
+  };
+
+  A.drawers.month = (id, M) => {
+    const k = +id - 1; if (k < 0 || k >= M.N) return null;
+    const list = M.acts.filter(A.vis), agg = Z.aggregate(M, A.vis, 'group');
+    const active = list.filter((a) => a.m[k] > 0.5).sort((a, b) => b.m[k] - a.m[k]);
+    const tot = agg.total[k];
+    const html = `<div class="dgrid">${stat('Spend in month', F.n0(tot) + ' <small>SAR</small>')}${stat('Cumulative', F.pct(agg.pct[k]), `<div class="hint">${F.M(agg.cum[k])} SAR</div>`)}${stat('Baseline cumulative', k < Z.BASE_MONTHS ? F.pct(baseP(M, list, k)) : '100.0%')}${stat('Active activities', active.length)}</div>
+      <h4>Spend by WBS group</h4>${agg.keys.map((g) => ({ g, v: agg.map[g][k] })).filter((x) => x.v > 0.5).map((x) => `<div style="display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px;cursor:pointer" data-grp="${x.g}"><span style="width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="dot" style="background:${F.groupColor(x.g)}"></i>${x.g.replace('.0', '')} ${F.esc(Z.GROUP_BY[x.g].name)}</span><span style="flex:1;background:var(--soft);height:10px;border-radius:5px"><i style="display:block;height:10px;border-radius:5px;width:${(x.v / tot) * 100}%;background:${F.groupColor(x.g)}"></i></span><b style="width:80px;text-align:right">${F.compact(x.v)}</b></div>`).join('')}
+      <h4>Activities spending this month</h4><div class="dlist">${active.map((a) => listItem(a, F.compact(a.m[k]))).join('') || '<div class="it">No spend</div>'}</div>
+      <div class="nudge" style="margin-top:14px">${k > 0 ? `<button class="btn sm" data-month="${k}">‹ Month ${k}</button>` : ''}${k < M.N - 1 ? `<button class="btn sm" data-month="${k + 2}">Month ${k + 2} ›</button>` : ''}</div>`;
+    return { code: 'Month ' + (k + 1) + ' of ' + M.N, title: `${dt.fmt(M.bs[k])} → ${dt.fmt(M.bs[k + 1] - 1)}`, tags: A.filtered() ? pill('warn', 'filtered selection') : '', html };
+  };
+  const baseP = (M, list, k) => { const codes = new Set(list.map((a) => a.code)); let c = 0, t = 0; M.base.acts.forEach((a) => { if (codes.has(a.code)) { a.m.forEach((v, i) => { t += v; if (i <= k) c += v; }); } }); return t ? c / t : 0; };
+
+  A.drawers.cat = (id, M) => {
+    const [type, val] = id.split(':');
+    let list, title, code;
+    if (type === 'phase') { list = M.acts.filter((a) => a.phase === val); title = val; code = 'Phase'; }
+    else if (type === 'epc') { list = M.acts.filter((a) => a.epc === val); title = Z.EPC_BY[val].name; code = 'EPC category ' + Z.EPC_BY[val].code; }
+    else { const defs = [(a) => a.epc === 'ENG' || a.code === '1.2', (a) => a.code === '1.3', (a) => a.epc === 'PROC', (a) => a.epc === 'CONS']; list = M.acts.filter(defs[+val]); title = ['Design & approvals', 'Work permit gate', 'Procurement', 'Installation & construction'][+val]; code = 'Programme stage'; }
+    if (!list.length) return null;
+    const tot = list.reduce((s, a) => s + a.amount, 0), grp = Z.GROUPS.map((g) => [g, list.filter((a) => a.group === g.code).reduce((q, a) => q + a.amount, 0)]).filter((x) => x[1] > 0);
+    const html = `<div class="dgrid">${stat('Amount', F.n0(tot) + ' <small>SAR</small>')}${stat('% of project', F.pct(tot / M.total, 2))}${stat('Starts', dt.fmt(Math.min(...list.map((a) => a.s))))}${stat('Finishes', dt.fmt(Math.max(...list.map((a) => a.e))))}</div>
+      <h4>By WBS group</h4>${grp.map(([g, v]) => `<div style="display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px;cursor:pointer" data-grp="${g.code}"><span style="width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="dot" style="background:${F.groupColor(g.code)}"></i>${g.code.replace('.0', '')} ${F.esc(g.name)}</span><span style="flex:1;background:var(--soft);height:10px;border-radius:5px"><i style="display:block;height:10px;border-radius:5px;width:${(v / tot) * 100}%;background:${F.groupColor(g.code)}"></i></span><b style="width:80px;text-align:right">${F.M(v)}</b></div>`).join('')}
+      <h4>Monthly spend</h4>${monthBars(M, list)}
+      <h4>Activities (${list.length})</h4><div class="dlist">${list.map((a) => listItem(a, F.compact(a.amount))).join('')}</div>`;
+    return { code, title: F.esc(title), tags: '', html };
+  };
+})(window);
+
+</script>
+<script>
+/* Slides 1-3: Cover, Dashboard, Milestones & key gates */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  A.idx = (id) => A.slides.findIndex((s) => s.id === id);
+
+  A.changes.start = (el) => { const d = dt.parse(el.value); if (d) A.setState(Z.setStart(A.s.st, d)); };
+
+  const span = (list) => {
+    if (!list.length) return null;
+    return { s: Math.min(...list.map((a) => a.s)), e: Math.max(...list.map((a) => a.e)) };
+  };
+  const durText = (sp) => { if (!sp) return '–'; const M = A.s.M; const k = dt.bucketOf(M.start, sp.s); const k2 = dt.bucketOf(M.start, sp.e + 1); const lo = dt.addMonths(M.start, k2), hi = dt.addMonths(M.start, k2 + 1); const m = k2 - k + (sp.e + 1 - lo) / (hi - lo) - (sp.s - dt.addMonths(M.start, k)) / (dt.addMonths(M.start, k + 1) - dt.addMonths(M.start, k)); return F.months(m); };
+
+  /* ------------------------------------------------------------ cover */
+  Z.registerSlide({
+    id: 'cover', title: 'Cover', desc: 'Project overview & start date', cls: 'cover',
+    render(M) {
+      const stat = (k, v) => `<div class="cstat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+      const sec = [
+        ['Section 1', 'Dashboard', 'Cost summary, WBS groups, phases & EPC split', 'dash'],
+        ['Section 2', 'WBS & CBS', 'Structure, cost breakdown register & EPC categories', 'wbs'],
+        ['Section 3', '26-Month Schedule', 'Gantt chart, S-curve & monthly cash flow', 'gantt'],
+        ['Section 4', 'Assumptions & Weightages', 'Cost weightages, gates & scenario summary', 'assump'],
+      ];
+      const n = M.changed.length;
+      return `<div style="display:flex;flex:1;gap:50px">
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="eyebrow">Saudi Arabia Railway Company</div>
+          <h1>Zulfi Railway<br>Station</h1>
+          <h2>Project Cost, WBS / CBS &amp; 26-Month Schedule</h2>
+          <div style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
+            ${stat('Total project cost (excl. VAT)', F.sar(M.total))}
+            ${stat('Project duration', F.months(M.durMonths) + ' months')}
+            ${stat('Planned completion', dt.fmt(M.finish))}
+          </div>
+          <div style="margin-top:auto">
+            <div class="eyebrow" style="margin-bottom:12px">Agenda</div>
+            <div class="agenda">${sec.map((s) => `<button data-nav="${A.idx(s[3])}"><em>${s[0]}</em><b>${s[1]}</b><span>${s[2]}</span></button>`).join('')}</div>
+          </div>
+        </div>
+        <div style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
+          <div class="startbox"><label for="coverStart">Project start date</label>
+            <input type="date" id="coverStart" value="${dt.iso(M.start)}" data-chg="start">
+            <div style="margin-top:12px;font-size:13px;line-height:1.5;opacity:.92">Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.</div></div>
+          <div class="cstat"><div class="k">Scenario</div><div class="v" style="font-size:20px">${n ? `Revised – ${n} activities moved` : 'Baseline (as per Excel workbook)'}</div>
+            <div style="font-size:13px;opacity:.85;margin-top:6px">Use <b>Next</b> / <b>→</b> to move through the deck, <b>F</b> for full screen.</div></div>
+          <div class="cstat"><div class="k">Planned window</div><div class="v" style="font-size:20px">${dt.fmt(M.start)} → ${dt.fmt(M.finish)}</div></div>
+        </div></div>`;
+    },
+  });
+
+  /* -------------------------------------------------------- dashboard */
+  Z.registerSlide({
+    id: 'dash', title: 'Dashboard', desc: 'Cost summary & key figures',
+    render(M) {
+      const vis = A.visList(), sum = (f) => vis.filter(f).reduce((s, a) => s + a.amount, 0);
+      const tot = vis.reduce((s, a) => s + a.amount, 0), p1 = sum((a) => a.phase === 'Phase 1'), p2 = sum((a) => a.phase === 'Phase 2');
+      const sp = span(vis), filt = A.filtered();
+      const tag = filt ? ' <span class="pill warn">filtered</span>' : '';
+      const kpi = (k, v, d, cls, nav, attrs) => `<div class="kpi ${cls || ''}" ${nav ? `data-nav="${A.idx(nav)}"` : ''} ${attrs || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
+      const kp = `<div class="kpis" style="grid-template-columns:1.25fr 1fr 1.25fr 1.2fr 1fr 1fr">
+        ${kpi('Total project cost (excl. VAT)' + tag, F.n0(tot) + '<small>SAR</small>', `${F.pct(tot / M.total)} of full contract`, '', 'wbsreg')}
+        ${kpi('VAT (15%)', F.n0(tot * Z.VAT) + '<small>SAR</small>', 'Saudi standard rate', 'alt')}
+        ${kpi('Total project cost (incl. VAT)', F.n0(tot * (1 + Z.VAT)) + '<small>SAR</small>', 'Contract value with VAT', '', 'wbsreg')}
+        ${kpi('Project duration', sp ? durText(sp) + '<small>months</small>' : '–', sp ? `${dt.fmtShort(sp.s)} → ${dt.fmtShort(sp.e)}` : '', 'warn', 'gantt')}
+        ${kpi('Phase 1 total (excl. VAT)', F.M(p1) + '<small>SAR</small>', `${F.pct(tot ? p1 / tot : 0)} of selection`, '', null, 'data-cat="phase:Phase 1" style="cursor:pointer"')}
+        ${kpi('Phase 2 total (excl. VAT)', F.M(p2) + '<small>SAR</small>', `${F.pct(tot ? p2 / tot : 0)} of selection`, 'alt', null, 'data-cat="phase:Phase 2" style="cursor:pointer"')}
+      </div>`;
+
+      // WBS groups
+      const gItems = Z.GROUPS.map((g) => {
+        const v = vis.filter((a) => a.group === g.code).reduce((s, a) => s + a.amount, 0);
+        return { label: g.code + '  ' + g.name, value: v, color: F.groupColor(g.code), attrs: `data-grp="${g.code}"`, valText: F.M(v), sub: F.pct(tot ? v / tot : 0), tip: F.tip(g.code + ' ' + g.name, [[F.groupColor(g.code), 'Amount', F.sar(v)], ['', 'Share of selection', F.pct(tot ? v / tot : 0)], ['', 'Activities', vis.filter((a) => a.group === g.code).length], ['', 'Click', 'for details']]) };
+      });
+      const phItems = ['Phase 1', 'Phase 2'].map((p) => { const v = sum((a) => a.phase === p); return { label: p, value: v, color: F.phaseColor(p), attrs: `data-cat="phase:${p}"`, tip: F.tip(p, [[F.phaseColor(p), 'Amount', F.sar(v)], ['', 'Share', F.pct(tot ? v / tot : 0)]]) }; });
+      const epItems = Z.EPC.map((e) => { const v = sum((a) => a.epc === e.key); return { label: e.name, value: v, color: F.epcColor(e.key), attrs: `data-cat="epc:${e.key}"`, key: e.key, tip: F.tip(e.name, [[F.epcColor(e.key), 'Amount', F.sar(v)], ['', 'Share', F.pct(tot ? v / tot : 0)]]) }; });
+      const leg = (items) => `<div class="legend" style="flex-direction:column;gap:9px;flex:1;min-width:0">${items.map((i) => `<span class="hit" ${i.attrs} style="display:block;line-height:1.25"><i class="dot" style="background:${i.color}"></i>${i.label.replace(' of Materials', '').replace('Installation & Construction', 'Construction').replace(' / Preliminaries', '').replace(' (Design)', '')}<br><b style="color:var(--accent);margin-left:16px">${F.M(i.value)}</b> <span class="muted">${F.pct(tot ? i.value / tot : 0)}</span></span>`).join('')}</div>`;
+
+      const agg = Z.aggregate(M, A.vis, 'all');
+      const y1 = agg.total.slice(0, 12).reduce((s, v) => s + v, 0), y2 = agg.total.slice(12).reduce((s, v) => s + v, 0);
+      const peakI = agg.total.indexOf(Math.max(...agg.total));
+
+      return A.head('1', 'Dashboard', 'Project cost at a glance – click any bar, slice or tile for details', 'Sheet 1 · Dashboard') +
+        `<div class="s-body">${kp}
+        <div class="row grow" style="min-height:0">
+          <div class="panel" style="width:640px"><div class="ph"><h3>Cost by WBS group</h3><span class="sub">SAR, excl. VAT</span></div>
+            <div class="pb">${F.hbars(gItems, { w: 606, rowH: 74, stack: true, valW: 110, max: Math.max(...gItems.map((i) => i.value), 1) })}</div></div>
+          <div class="panel grow"><div class="ph"><h3>Cumulative spend – S-curve</h3><div class="right"><button class="btn sm" data-nav="${A.idx('cashflow')}">Open cash flow ›</button></div></div>
+            <div class="pb">${F.scurve(M, agg, { w: 378, h: 440, L: 40, R: 8, step: 3 })}
+              <div class="row" style="margin-top:8px;gap:10px">
+                <div class="dstat grow"><div class="k">Year 1 (M1–12)</div><div class="v">${F.M(y1)}</div><div class="hint">${F.pct(agg.sum ? y1 / agg.sum : 0)} of cost</div></div>
+                <div class="dstat grow"><div class="k">Year 2 (M13+)</div><div class="v">${F.M(y2)}</div><div class="hint">${F.pct(agg.sum ? y2 / agg.sum : 0)} of cost</div></div>
+                <div class="dstat grow" data-month="${peakI + 1}" style="cursor:pointer"><div class="k">Peak month</div><div class="v">M${peakI + 1} <small>${dt.fmtMY(M.bs[peakI])}</small></div><div class="hint">${F.M(agg.total[peakI])}</div></div>
+              </div></div></div>
+          <div class="panel" style="width:430px"><div class="ph"><h3>Phase &amp; EPC split</h3></div>
+            <div class="pb" style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:14px"><div style="width:160px;flex:none">${F.donut(phItems, { size: 160, center: [F.pct(tot ? p1 / tot : 0, 0), 'Phase 1'], bigSize: 24 })}</div>${leg(phItems)}</div>
+              <div style="display:flex;align-items:center;gap:14px"><div style="width:160px;flex:none">${F.donut(epItems, { size: 160, center: [F.M(tot, 1), 'by EPC'], bigSize: 21 })}</div>${leg(epItems)}</div>
+            </div></div>
+        </div></div>`;
+    },
+  });
+
+  /* -------------------------------------------------------- milestones */
+  Z.registerSlide({
+    id: 'miles', title: 'Milestones & key gates', desc: 'Design → permit → procurement → construction', cls: '',
+    render(M) {
+      const ms = Z.milestones(M);
+      const X0 = 30, X1 = 1490, T = M.finish - M.start + 1;
+      const x = (d) => X0 + ((d - M.start) / T) * (X1 - X0);
+      const bands = [
+        ['Design & approvals', M.acts.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'],
+        ['Work permit gate', M.acts.filter((a) => a.code === '1.3'), 'var(--c4)'],
+        ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)'],
+        ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)'],
+      ];
+      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300">`;
+      // quarter ticks
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
+      bands.forEach((b, i) => {
+        const sp = span(b[1]); if (!sp) return;
+        const y = 100 + i * 40;
+        svg += `<g class="hit" data-cat="band:${i}" data-tip="${F.tip(b[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', b[1].length]])}"><rect x="${x(sp.s)}" y="${y}" width="${Math.max(6, x(sp.e + 1) - x(sp.s))}" height="26" rx="6" fill="${b[2]}" class="hv"/>${x(sp.e + 1) - x(sp.s) > 260 ? `<text x="${x(sp.s) + 9}" y="${y + 17.5}" style="fill:#fff;font-weight:700;font-size:12.5px">${b[0]}</text><text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${y + 17.5}" text-anchor="end" style="fill:#fff;font-size:11.5px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${y + 17.5}" style="font-weight:700;font-size:12.5px;fill:var(--accent)">${b[0]} · ${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
+      });
+      svg += `<line x1="${X0}" x2="${X1}" y1="62" y2="62" stroke="#9fb0bb" stroke-width="2"/>`;
+      ms.forEach((m, i) => {
+        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14 - (lvl === 0 ? 0 : 0);
+        const anchor = i === 0 ? 'start' : i === ms.length - 1 ? 'end' : 'middle';
+        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${m.delta > 0 ? 'var(--bad)' : 'var(--brand)'}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
+      });
+      svg += '</svg>';
+
+      const ll = M.acts.filter((a) => a.ll && a.kind === 'a3');
+      const llAmt = M.acts.filter((a) => a.ll).reduce((s, a) => s + a.amount, 0);
+      const cons = M.acts.filter((a) => a.kind === 'b').sort((a, b) => a.dur - b.dur).slice(0, 4);
+      const agg = Z.aggregate(M, () => true, 'all'), pk = agg.total.indexOf(Math.max(...agg.total));
+      const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
+      return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
+        `<div class="s-body"><div class="panel"><div class="pb" style="padding-top:10px">${svg}</div></div>
+        <div class="row grow">
+          <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
+            <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
+            ${ms.map((m, i) => `<tr class="${m.code ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td><b>${dt.fmt(m.d)}</b></td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
+            </tbody></table></div></div>
+          <div class="col grow" style="gap:12px">
+            <div class="row" style="gap:12px">
+              <div class="kpi ${M.conflicts.length ? 'warn' : ''} grow" data-do="goCrit" style="cursor:pointer"><div class="k">Critical activities</div><div class="v">${M.criticalCount}<small>of ${M.acts.length - 1}</small></div><div class="d">zero float to completion – click to filter</div></div>
+              <div class="kpi alt grow" data-do="goLL" style="cursor:pointer"><div class="k">Long-lead items</div><div class="v">${M.acts.filter((a) => a.ll).length}<small>activities</small></div><div class="d">${F.M(llAmt)} SAR · last delivery ${ll.length ? dt.fmtShort(Math.max(...ll.map((a) => a.e))) : '–'}</div></div>
+            </div>
+            <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb" style="font-size:13.5px;line-height:1.55">
+              <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
+              <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
+              <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on ${dt.fmt(M.by['1.3'].e)} – it follows detailed-design approval (${dt.fmt(M.by['2.6'].e)}).</p>
+              ${M.conflicts.length ? `<div class="note bad">${M.conflicts.length} dependency conflict(s): ${M.conflicts.slice(0, 5).map((a) => a.code).join(', ')}${M.conflicts.length > 5 ? '…' : ''} start earlier than their predecessor allows. Open the Gantt to resolve.</div>` : '<div class="note ok">No dependency conflicts – all finish-to-start links are respected.</div>'}
+            </div></div>
+          </div></div></div>`;
+    },
+  });
+
+  A.actions.goCrit = () => { A.s.f.crit = !A.s.f.crit; A.go(A.idx('gantt')); A.refilter(); };
+  A.actions.goLL = () => { A.s.f.ll = !A.s.f.ll; A.go(A.idx('gantt')); A.refilter(); };
+})(window);
+
+</script>
+<script>
+/* Slides 4-5: WBS structure (treemap, EPC) and the CBS register table */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+
+  /* ----------------------------------------------------- WBS structure */
+  Z.registerSlide({
+    id: 'wbs', title: 'WBS structure & cost', desc: 'Treemap, cumulative % and EPC Level-0',
+    render(M) {
+      const vis = A.visList(), tot = vis.reduce((s, a) => s + a.amount, 0), all = M.total;
+      // leaf nodes: BOQ items + the two lump groups
+      const nodes = {};
+      vis.forEach((a) => {
+        const key = a.item || a.group;
+        const n = nodes[key] || (nodes[key] = { key, group: a.group, value: 0, count: 0, isItem: !!a.item });
+        n.value += a.amount; n.count++;
+      });
+      const items = Object.values(nodes).map((n) => {
+        const nm = n.isItem ? Z.ITEM_BY[n.key].name : Z.GROUP_BY[n.key].name;
+        const code = n.isItem ? n.key : n.key.replace('.0', '.0');
+        return {
+          label: `${code} ${nm}`, short: code, value: n.value, color: F.groupColor(n.group),
+          attrs: n.isItem ? `data-item="${n.key}"` : `data-grp="${n.key}"`, valText: F.M(n.value) + ' · ' + F.pct(tot ? n.value / tot : 0),
+          tip: F.tip(`${code} ${nm}`, [[F.groupColor(n.group), 'Amount', F.sar(n.value)], ['', 'Share', F.pct(tot ? n.value / tot : 0)], ['', 'Activities', n.count], ['', 'Click', 'for breakdown']]),
+        };
+      });
+      // groups cumulative table
+      let cum = 0;
+      const grows = Z.GROUPS.map((g) => {
+        const v = vis.filter((a) => a.group === g.code).reduce((s, a) => s + a.amount, 0); cum += v;
+        return `<tr class="act" data-grp="${g.code}"><td><i class="dot" style="background:${F.groupColor(g.code)}"></i><b>${g.code}</b></td><td style="max-width:190px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(g.name)}">${F.esc(g.name)}</td><td class="num">${F.n0(v)}</td><td class="num">${F.pct(tot ? v / tot : 0)}</td><td class="num">${F.pct(tot ? cum / tot : 0)}</td></tr>`;
+      }).join('');
+      // EPC level 0
+      const emax = Math.max(...Z.EPC.map((e) => vis.filter((a) => a.epc === e.key).reduce((s, a) => s + a.amount, 0)), 1);
+      const erows = Z.EPC.map((e) => {
+        const v = vis.filter((a) => a.epc === e.key).reduce((s, a) => s + a.amount, 0);
+        return `<tr class="act" data-cat="epc:${e.key}"><td><b>${e.code}</b></td><td>${e.name}</td><td class="num">${F.n0(v)}</td><td class="num"><div class="bar-cell"><span class="b" style="width:${(v / emax) * 90}px;background:${F.epcColor(e.key)}"></span>${F.pct(tot ? v / tot : 0)}</div></td></tr>`;
+      }).join('');
+      return A.head('2', 'WBS &amp; CBS structure', 'Work breakdown structure sized by cost – click any block for its cost breakdown and schedule', 'Sheet 2 · WBS &amp; CBS') +
+        `<div class="s-body"><div class="row grow">
+          <div class="panel grow"><div class="ph"><h3>Cost treemap</h3><span class="sub">area = SAR amount, colour = WBS group</span>
+            <div class="right"><div class="legend">${Z.GROUPS.map((g) => `<span><i class="dot" style="background:${F.groupColor(g.code)}"></i>${g.code.replace('.0', '')}</span>`).join('')}</div></div></div>
+            <div class="pb" style="padding-top:2px">${items.length ? F.treemap(items, 980, 700) : '<div class="empty">No activities match the filters</div>'}</div></div>
+          <div class="col" style="width:540px">
+            <div class="panel"><div class="ph"><h3>Level-1 WBS groups</h3><span class="sub">SAR excl. VAT</span></div><div class="pb scroll" style="padding-top:0">
+              <table class="tbl"><thead><tr><th>WBS</th><th>Group</th><th class="num">Amount</th><th class="num">%</th><th class="num">Cum. %</th></tr></thead><tbody>${grows}</tbody>
+              <tfoot><tr><td></td><td>Total</td><td class="num">${F.n0(tot)}</td><td class="num">${F.pct(all ? tot / all : 0)}</td><td></td></tr></tfoot></table></div></div>
+            <div class="panel"><div class="ph"><h3>EPC Level-0 summary</h3><span class="sub">General · Engineering · Procurement · Construction</span></div><div class="pb" style="padding-top:0">
+              <table class="tbl"><thead><tr><th>Code</th><th>Category</th><th class="num">Amount</th><th class="num">%</th></tr></thead><tbody>${erows}</tbody></table></div></div>
+          </div></div></div>`;
+    },
+  });
+
+  /* ------------------------------------------------------- CBS register */
+  const COLS = [
+    ['code', 'WBS', (a) => a.idx], ['desc', 'Description', (a) => a.desc], ['boq', 'BOQ ref', (a) => a.boq || ''], ['phase', 'Phase', (a) => a.phase],
+    ['amount', 'Amount (SAR)', (a) => a.amount, 'num'], ['pct', '% total', (a) => a.amount, 'num'], ['cum', 'Cum. %', null, 'num'], ['ll', 'Long-lead', (a) => (a.ll ? 1 : 0)],
+    ['epc', 'EPC', (a) => a.epc], ['s', 'Start', (a) => a.s], ['e', 'Finish', (a) => a.e], ['pred', 'Predecessor / logical link', (a) => a.pred || ''],
+  ];
+  const ui = () => (A.s.ui.reg = A.s.ui.reg || { col: 'code', dir: 1, collapsed: [] });
+
+  A.actions.regSort = (el) => { const r = ui(); const c = el.dataset.col; if (r.col === c) r.dir = -r.dir; else { r.col = c; r.dir = c === 'amount' || c === 'pct' ? -1 : 1; } A.refilter(); };
+  A.actions.regToggle = (el) => { const r = ui(), g = el.dataset.g, i = r.collapsed.indexOf(g); if (i >= 0) r.collapsed.splice(i, 1); else r.collapsed.push(g); A.refilter(); };
+  A.actions.regExpand = () => { ui().collapsed = []; A.refilter(); };
+  A.actions.regCollapse = () => { ui().collapsed = Z.GROUPS.map((g) => g.code); A.refilter(); };
+
+  Z.registerSlide({
+    id: 'wbsreg', title: 'CBS register', desc: 'Sortable cost breakdown with live dates',
+    render(M) {
+      const r = ui(), vis = A.visList(), tot = vis.reduce((s, a) => s + a.amount, 0);
+      const grouped = r.col === 'code' && r.dir === 1;
+      const colDef = COLS.find((c) => c[0] === r.col);
+      let list = vis.slice();
+      if (!grouped && colDef && colDef[2]) list.sort((a, b) => { const x = colDef[2](a), y = colDef[2](b); return (x < y ? -1 : x > y ? 1 : a.idx - b.idx) * r.dir; });
+      else if (r.col === 'code' && r.dir === -1) list.reverse();
+      let run = 0; const dtxt = (a, w) => `<td ${a.changed ? 'style="background:#fff7e0"' : ''}>${dt.fmtShort(a[w])}</td>`;
+      const row = (a) => {
+        run += a.amount;
+        return `<tr class="act" data-act="${a.code}"><td><b style="color:var(--brand-d)">${a.code}</b></td><td style="max-width:340px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(a.desc)}">${F.esc(a.desc)}${a.critical ? ' <i class="dot" style="background:var(--bad);margin:0 0 0 4px" title="On the critical path"></i>' : ''}</td><td>${a.boq || ''}</td><td><span class="pill ${a.phase === 'Phase 1' ? 'p1' : 'p2'}">${a.phase}</span></td><td class="num">${F.n0(a.amount)}</td><td class="num"><div class="bar-cell"><span class="b" style="width:${Math.min(60, (a.amount / M.total) * 1400)}px"></span>${F.pct(a.amount / M.total, 2)}</div></td><td class="num">${F.pct(M.total ? run / M.total : 0)}</td><td>${a.ll ? '<span class="pill ll">Yes</span>' : '<span class="muted">No</span>'}</td><td><span class="pill ${a.epc}">${a.epc}</span></td>${dtxt(a, 's')}${dtxt(a, 'e')}<td style="max-width:330px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(a.pred || '')}">${F.esc(a.pred || '')}</td></tr>`;
+      };
+      let body = '';
+      if (grouped) {
+        Z.GROUPS.forEach((g) => {
+          const ga = list.filter((a) => a.group === g.code); if (!ga.length) return;
+          const gv = ga.reduce((s, a) => s + a.amount, 0), col = r.collapsed.includes(g.code);
+          body += `<tr class="g" data-grp="${g.code}" style="cursor:pointer"><td><button class="tw" data-do="regToggle" data-g="${g.code}">${col ? '▸' : '▾'}</button> ${g.code}</td><td colspan="3">${F.esc(g.name)} <span class="muted" style="font-weight:500">· ${ga.length} activities</span></td><td class="num">${F.n0(gv)}</td><td class="num">${F.pct(gv / M.total, 2)}</td><td></td><td colspan="2"></td><td>${dt.fmtShort(Math.min(...ga.map((a) => a.s)))}</td><td>${dt.fmtShort(Math.max(...ga.map((a) => a.e)))}</td><td></td></tr>`;
+          if (col) run += gv; else body += ga.map(row).join('');
+        });
+      } else body = list.map(row).join('');
+      const head = COLS.map((c) => `<th class="${c[3] || ''} ${c[2] ? 'sort' : ''}" ${c[2] ? `data-do="regSort" data-col="${c[0]}"` : ''}>${c[1]}${r.col === c[0] ? (r.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
+      return A.head('2b', 'CBS register', 'Every WBS line with cost, % of total, cumulative % and its live schedule dates', 'Sheet 2 · WBS &amp; CBS') +
+        `<div class="s-body"><div class="panel grow"><div class="ph"><h3>Cost breakdown register</h3><span class="sub">click a header to sort · click a row for details</span>
+          <div class="right"><button class="btn sm" data-do="regExpand">Expand all</button><button class="btn sm" data-do="regCollapse">Collapse all</button></div></div>
+          <div class="pb scroll" data-keep="reg" style="padding:0 0 0"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="12" class="empty">No activities match the filters</td></tr>'}</tbody>
+          <tfoot><tr><td colspan="12">Total excl. VAT: <b>${F.n0(tot)}</b> SAR &nbsp;·&nbsp; VAT 15%: <b>${F.n0(tot * Z.VAT)}</b> &nbsp;·&nbsp; Total incl. VAT: <b>${F.n0(tot * (1 + Z.VAT))}</b> SAR &nbsp;·&nbsp; ${vis.length} lines</td></tr></tfoot></table></div></div></div>`;
+    },
+  });
+})(window);
+
+</script>
+<script>
+/* Slide 6: interactive Gantt chart – edit dates inline, drag bars, links highlight */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  const LW = { code: 58, name: 222, s: 118, e: 118, dur: 60 };
+  const LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur;
+  const RH = 25, HH = 59;
+  const ui = () => (A.s.ui.g = A.s.ui.g || { zoom: 'fit', collapsed: [], base: true });
+
+  A.actions.gZoom = (el) => { ui().zoom = el.dataset.z; A.refilter(); };
+  A.actions.gBase = () => { ui().base = !ui().base; A.refilter(); };
+  A.actions.gToggle = (el) => { const u = ui(), g = el.dataset.g, i = u.collapsed.indexOf(g); if (i >= 0) u.collapsed.splice(i, 1); else u.collapsed.push(g); A.refilter(); };
+  A.actions.gExpand = () => { ui().collapsed = []; A.refilter(); };
+  A.actions.gCollapse = () => { ui().collapsed = Z.GROUPS.map((g) => g.code); A.refilter(); };
+
+  A.changes.gdate = (el) => {
+    const a = A.s.M.by[el.dataset.code], d = dt.parse(el.value);
+    if (!d) { A.refilter(); return; }
+    let ns = a.s, ne = a.e;
+    if (el.dataset.w === 's') ns = d; else ne = d;
+    A.edit(a.code, ns, ne);
+  };
+
+  const dims = (M) => {
+    const u = ui(), t0 = M.start, t1 = M.bs[M.N];
+    const avail = 1512 - LEFT - 16;
+    const tlW = u.zoom === 'fit' ? avail : M.N * (u.zoom === 'wide' ? 54 : 84);
+    return { t0, t1, tlW, ppd: tlW / (t1 - t0) };
+  };
+  A.ganttDims = dims;
+
+  Z.registerSlide({
+    id: 'gantt', title: 'Gantt chart', desc: 'Edit dates · drag bars · dependencies',
+    render(M) {
+      const u = ui(), { t0, tlW, ppd } = dims(M);
+      const x = (d) => (d - t0) * ppd;
+      const vis = A.visList();
+      // header
+      let head = '';
+      let y = dt.parts(M.start).y;
+      for (let yr = y; yr <= dt.parts(M.bs[M.N]).y; yr++) {
+        const a = Math.max(t0, dt.ymd(yr, 0, 1)), b = Math.min(M.bs[M.N], dt.ymd(yr + 1, 0, 1));
+        if (b > a) head += `<div class="gyear" style="left:${x(a)}px;width:${(b - a) * ppd}px">${yr}</div>`;
+      }
+      let stripes = '';
+      for (let k = 0; k < M.N; k++) {
+        const l = x(M.bs[k]), w = (M.bs[k + 1] - M.bs[k]) * ppd;
+        head += `<div class="gmonth hit" data-month="${k + 1}" style="left:${l}px;width:${w}px;top:25px;height:34px;line-height:15px;padding-top:3px" data-tip="${F.tip('Month ' + (k + 1), [['', 'From', dt.fmt(M.bs[k])], ['', 'To', dt.fmt(M.bs[k + 1] - 1)]])}">${w >= 38 ? dt.mon(M.bs[k]) : ''}<br><span style="color:var(--mute);font-size:10px">${w >= 22 ? 'M' + (k + 1) : ''}</span></div>`;
+        if (k % 2 === 0) stripes += `<div class="gstripe" style="left:${l}px;width:${w}px"></div>`;
+      }
+      const status = A.s.ui.status;
+      const stLine = (top) => (status && status >= t0 && status <= M.bs[M.N] ? `<div class="gline" style="left:${x(status)}px"><span>${dt.fmtShort(status)}</span></div>` : '');
+      let rows = '';
+      Z.GROUPS.forEach((g) => {
+        const ga = vis.filter((a) => a.group === g.code); if (!ga.length) return;
+        const col = u.collapsed.includes(g.code);
+        const s = Math.min(...ga.map((a) => a.s)), e = Math.max(...ga.map((a) => a.e)), gv = ga.reduce((q, a) => q + a.amount, 0);
+        rows += `<div class="grow2 grp" data-row="${g.code}"><div class="gleft" style="width:${LEFT}px;grid-template-columns:${LW.code}px ${LW.name}px ${LW.s}px ${LW.e}px ${LW.dur}px">
+          <div><button class="tw" data-do="gToggle" data-g="${g.code}">${col ? '▸' : '▾'}</button></div>
+          <div class="hit" data-grp="${g.code}" title="${F.esc(g.name)}" style="cursor:pointer">${g.code.replace('.0', '')} · ${F.esc(g.name)}</div><div>${dt.fmtShort(s)}</div><div>${dt.fmtShort(e)}</div><div style="text-align:right">${F.compact(gv)}</div></div>
+          <div class="gtl" style="width:${tlW}px"><div class="gsum" style="left:${x(s)}px;width:${Math.max(3, (e + 1 - s) * ppd)}px"></div></div></div>`;
+        if (col) return;
+        ga.forEach((a) => {
+          const w = Math.max(4, (a.e + 1 - a.s) * ppd), cls = ['gbar', a.ll ? 'll' : '', a.critical ? 'crit' : '', a.conflict ? 'conf' : ''].join(' ');
+          const auto = a.code === Z.AUTO;
+          const tip = F.tip(`${a.code} · ${F.esc(a.name)}`, [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Amount', F.sar(a.amount)], ['', 'Float', a.critical ? 'critical (0 d)' : Math.round(a.float) + ' d'], ...(a.changed ? [['', 'vs baseline', `${F.days(a.ds)} start / ${F.days(a.de)} finish`]] : [])]);
+          rows += `<div class="grow2 ${A.s.drawer && A.s.drawer.type === 'act' && A.s.drawer.id === a.code ? 'sel' : ''}" data-row="${a.code}"><div class="gleft" style="width:${LEFT}px;grid-template-columns:${LW.code}px ${LW.name}px ${LW.s}px ${LW.e}px ${LW.dur}px">
+            <div class="hit" data-act="${a.code}" style="color:var(--brand-d);font-weight:700;cursor:pointer;padding-left:16px">${a.code}</div>
+            <div class="hit" data-act="${a.code}" title="${F.esc(a.desc)}" style="cursor:pointer">${F.esc(a.name)}</div>
+            <div><input type="date" class="dinput ${a.ds ? 'chg' : ''}" style="width:112px;height:21px;font-size:11.5px;padding:0 3px" value="${dt.iso(a.s)}" ${auto ? 'disabled title="Spans the whole project"' : ''} data-chg="gdate" data-code="${a.code}" data-w="s"></div>
+            <div><input type="date" class="dinput ${a.de ? 'chg' : ''}" style="width:112px;height:21px;font-size:11.5px;padding:0 3px" value="${dt.iso(a.e)}" ${auto ? 'disabled' : ''} data-chg="gdate" data-code="${a.code}" data-w="e"></div>
+            <div style="text-align:right;color:var(--ink2)">${F.months(a.dur / 30.4375)}m</div></div>
+            <div class="gtl" style="width:${tlW}px">
+              ${u.base && a.changed ? `<div class="gghost" style="left:${x(a.bs)}px;width:${Math.max(3, (a.be + 1 - a.bs) * ppd)}px"></div>` : ''}
+              <div class="${cls}" data-act="${a.code}" data-code="${a.code}" ${auto ? 'data-fixed="1"' : ''} style="left:${x(a.s)}px;width:${w}px;background:${F.epcColor(a.epc)}" data-tip="${tip}">${auto ? '' : '<span class="h l"></span><span class="h r"></span>'}<span class="lab" style="${x(a.s) + w > tlW - 54 ? 'left:auto;right:calc(100% + 6px)' : ''}">${F.compact(a.amount)}</span></div>
+            </div></div>`;
+        });
+      });
+      const nRows = (rows.match(/class="grow2/g) || []).length;
+      const zbtn = (z, t) => `<button data-do="gZoom" data-z="${z}" class="${u.zoom === z ? 'on' : ''}">${t}</button>`;
+      return A.head('3', 'Schedule – Gantt chart', 'Type a new date, or drag a bar / its ends – dependent activities, S-curve and cash flow all update live', 'Sheet 3 · 26-Month Schedule') +
+        `<div class="s-body" style="gap:10px">
+          <div class="row" style="align-items:center;gap:14px;flex:none">
+            <span class="seg">${zbtn('fit', 'Fit')}${zbtn('wide', 'Wide')}${zbtn('xwide', 'Extra wide')}</span>
+            <button class="chip ${u.base ? 'on' : ''}" data-do="gBase">Show baseline</button>
+            <button class="btn sm" data-do="gExpand">Expand groups</button><button class="btn sm" data-do="gCollapse">Collapse groups</button>
+            <div class="legend" style="margin-left:auto">${Z.EPC.map((e) => `<span><i class="dot" style="background:${F.epcColor(e.key)}"></i>${{ GEN: 'General', ENG: 'Engineering', PROC: 'Procurement', CONS: 'Construction' }[e.key]}</span>`).join('')}
+              <span><i class="dot" style="background:repeating-linear-gradient(135deg,#aaa 0 3px,#fff 3px 6px)"></i>Long-lead</span><span><i class="dot" style="border:2px solid var(--bad);background:#fff"></i>Critical</span><span><i class="dot" style="border:2px dashed #8a1fbf;background:#fff"></i>Logic conflict</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div>
+          </div>
+          <div class="gantt" data-keep="gantt" id="gantt"><div class="gwrap" style="width:${LEFT + tlW}px">
+            <div class="ghead"><div class="gleft" style="width:${LEFT}px;height:${HH}px;grid-template-columns:${LW.code}px ${LW.name}px ${LW.s}px ${LW.e}px ${LW.dur}px;font-size:11.5px;font-weight:700;text-transform:uppercase;color:var(--ink2)"><div>WBS</div><div>Activity</div><div>Start</div><div>Finish</div><div style="text-align:right">Dur</div></div>
+              <div class="gtl" style="width:${tlW}px;height:${HH}px">${head}${stLine()}</div></div>
+            <div style="position:relative">${rows || '<div class="empty">No activities match the filters</div>'}
+              <div style="position:absolute;left:${LEFT}px;top:0;width:${tlW}px;height:${nRows * RH}px;pointer-events:none">${stripes}${stLine()}</div></div>
+          </div></div>
+          <div class="hint">Linking mode: <b>${{ two: 'Auto-link – successors move with the activity', push: 'Push delays only', off: 'Off – activities move independently' }[M.st.link]}</b> (change it in the top bar). Edits that break a finish-to-start link are outlined in purple.</div>
+        </div>`;
+    },
+    after(el) { bindGantt(el); },
+  });
+
+  /* ---------------------------------------------------- drag & hover */
+  function bindGantt(root) {
+    const g = root.querySelector('#gantt'); if (!g) return;
+    const M = A.s.M, { ppd } = dims(M);
+    let drag = null;
+    g.addEventListener('pointerdown', (e) => {
+      const bar = e.target.closest('.gbar'); if (!bar || bar.dataset.fixed || e.button !== 0) return;
+      const a = M.by[bar.dataset.code];
+      drag = { bar, a, x0: e.clientX, mode: e.target.classList.contains('l') ? 'l' : e.target.classList.contains('r') ? 'r' : 'm', moved: false, l0: parseFloat(bar.style.left), w0: parseFloat(bar.style.width), ds: 0, de: 0 };
+      bar.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    g.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dd = Math.round((e.clientX - drag.x0) / A.scale / ppd);
+      if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
+      if (!drag.moved) return;
+      const a = drag.a; let ds = 0, de = 0;
+      if (drag.mode === 'm') { ds = dd; de = dd; } else if (drag.mode === 'l') { ds = Math.min(dd, a.e - a.s); } else { de = Math.max(dd, a.s - a.e); }
+      ds = Math.max(ds, M.start - a.s);
+      drag.ds = ds; drag.de = de;
+      drag.bar.style.left = drag.l0 + ds * ppd + 'px';
+      drag.bar.style.width = Math.max(4, drag.w0 + (de - ds) * ppd) + 'px';
+      const tip = document.querySelector('#tip');
+      tip.innerHTML = `<div class="t">${a.code} · ${F.esc(a.name)}</div><div class="r"><span>Start</span><b>${dt.fmt(a.s + ds)}</b></div><div class="r"><span>Finish</span><b>${dt.fmt(a.e + de)}</b></div><div class="r"><span>Duration</span><b>${a.e + de - a.s - ds + 1} d</b></div>`;
+      tip.dataset.src = ''; tip.style.display = 'block';
+      const r = document.querySelector('#stage').getBoundingClientRect();
+      tip.style.left = (e.clientX - r.left) / A.scale + 14 + 'px'; tip.style.top = (e.clientY - r.top) / A.scale + 14 + 'px';
+    });
+    const end = (e) => {
+      if (!drag) return;
+      const d = drag; drag = null;
+      document.querySelector('#tip').style.display = 'none';
+      if (d.moved) {
+        G.__ganttSuppress = true; setTimeout(() => (G.__ganttSuppress = false), 50);
+        if (d.ds || d.de) A.edit(d.a.code, d.a.s + d.ds, d.a.e + d.de); else A.refilter();
+      }
+    };
+    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    // relationship highlight
+    g.addEventListener('mouseover', (e) => {
+      const row = e.target.closest('.grow2'); g.querySelectorAll('.rp,.rs').forEach((n) => n.classList.remove('rp', 'rs'));
+      if (!row || row.classList.contains('grp')) return;
+      const a = M.by[row.dataset.row]; if (!a) return;
+      a.deps.forEach((c) => { const n = g.querySelector(`[data-row="${c}"]`); if (n) n.classList.add('rp'); });
+      a.succ.forEach((c) => { const n = g.querySelector(`[data-row="${c}"]`); if (n) n.classList.add('rs'); });
+    });
+    g.addEventListener('mouseleave', () => g.querySelectorAll('.rp,.rs').forEach((n) => n.classList.remove('rp', 'rs')));
+  }
+  // block the drawer click that follows a drag
+  document.addEventListener('click', (e) => { if (G.__ganttSuppress) { e.stopPropagation(); e.preventDefault(); } }, true);
+})(window);
+
+</script>
+<script>
+/* Slides 7-8: monthly cash flow + S-curve, and the cash-flow matrix */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', unit: 'k' });
+  const mxui = () => (A.s.ui.mx = A.s.ui.mx || { unit: 'k', heat: true });
+
+  A.changes.status = (el) => { A.s.ui.status = dt.parse(el.value) || null; A.refilter(); };
+  A.actions.clearStatus = () => { A.s.ui.status = null; A.refilter(); };
+  A.actions.cfDim = (el) => { ui().dim = el.dataset.d; A.refilter(); };
+  A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
+  A.actions.mxHeat = () => { mxui().heat = !mxui().heat; A.refilter(); };
+
+  const seriesMeta = (dim, key) => {
+    if (dim === 'group') { const g = Z.GROUP_BY[key]; return { name: key.replace('.0', '') + ' ' + g.name, color: F.groupColor(key) }; }
+    if (dim === 'epc') return { name: Z.EPC_BY[key].name, color: F.epcColor(key) };
+    if (dim === 'phase') return { name: key, color: F.phaseColor(key) };
+    return { name: 'Monthly spend', color: 'var(--brand)' };
+  };
+  const ORDER = { group: Z.GROUPS.map((g) => g.code), epc: Z.EPC.map((e) => e.key), phase: ['Phase 1', 'Phase 2'], all: ['all'] };
+
+  // baseline cumulative % for the same set of activities
+  const baseCurve = (M, list) => {
+    const codes = new Set(list.map((a) => a.code));
+    const tot = new Array(M.N).fill(0);
+    M.base.acts.forEach((a) => { if (codes.has(a.code)) a.m.forEach((v, k) => (tot[k] += v)); });
+    const sum = tot.reduce((x, y) => x + y, 0);
+    let c = 0; return tot.map((v) => (sum ? (c += v) / sum : 0));
+  };
+
+  /* ---- reusable S-curve (also on the dashboard) ---- */
+  F.scurve = function (M, agg, o) {
+    o = o || {};
+    const w = o.w || 600, h = o.h || 260, L = o.L || 44, R = o.R || 14, T = 12, B = o.B || 34;
+    const pw = w - L - R, ph = h - T - B, bw = pw / M.N;
+    const X = (k) => L + (k + 0.5) * bw, Y = (p) => T + ph - p * ph;
+    const base = baseCurve(M, agg.list);
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    [0, 0.25, 0.5, 0.75, 1].forEach((p) => (s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(p)}" y2="${Y(p)}"/></g><text x="${L - 6}" y="${Y(p) + 4}" text-anchor="end" style="font-size:11px">${p * 100}%</text>`));
+    for (let k = 0; k < M.N; k++) if (k % (o.step || 3) === 0) s += `<text x="${X(k)}" y="${h - B + 15}" text-anchor="middle" style="font-size:11px">M${k + 1}</text>` + (o.dates === false ? '' : `<text x="${X(k)}" y="${h - B + 28}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${dt.fmtMY(M.bs[k])}</text>`);
+    const pts = agg.pct.map((p, k) => [X(k), Y(p)]);
+    const poly = (arr) => arr.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+    s += `<path d="${poly([[X(0), Y(0)], ...pts])} L${X(M.N - 1)},${Y(0)} L${X(0)},${Y(0)}Z" fill="var(--brand)" opacity=".1"/>`;
+    const bpts = base.map((p, k) => [X(k), Y(p)]);
+    s += `<path d="${poly(bpts)}" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/>`;
+    s += `<path d="${poly(pts)}" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linejoin="round"/>`;
+    const st = A.s.ui.status;
+    if (st && st >= M.start && st < M.bs[M.N]) {
+      const k = dt.bucketOf(M.start, st), xf = L + (k + (st - M.bs[k]) / (M.bs[k + 1] - M.bs[k])) * bw;
+      const v = agg.sum ? Z.cumAt(M, agg.cum, st) / agg.sum : 0;
+      s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/><circle cx="${xf}" cy="${Y(v)}" r="5" fill="var(--bad)" stroke="#fff" stroke-width="2"/><text x="${xf + 6}" y="${T + 12}" style="font-size:11px;font-weight:700;fill:var(--bad)">${dt.fmtShort(st)} · ${F.pct(v)}</text>`;
+    }
+    pts.forEach((p, k) => {
+      const dv = base[k] ? agg.pct[k] - base[k] : 0;
+      s += `<rect class="hit" data-month="${k + 1}" x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip('Month ' + (k + 1) + ' · ' + dt.fmtMY(M.bs[k]), [['var(--brand)', 'Cumulative', F.pct(agg.pct[k]) + ' · ' + F.M(agg.cum[k])], ['#8a97a3', 'Baseline', F.pct(base[k])], ['', 'Monthly spend', F.sar(agg.total[k])], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
+    });
+    for (let k = 0; k < M.N; k += 1) s += `<circle cx="${X(k)}" cy="${Y(agg.pct[k])}" r="2.6" fill="var(--brand)" stroke="#fff" stroke-width="1" pointer-events="none"/>`;
+    return s + '</svg>';
+  };
+
+  /* ---- stacked monthly columns ---- */
+  function stackChart(M, agg, dim, w, h) {
+    const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / M.N;
+    const nice = F.nice(Math.max(...agg.total, 1), 5);
+    const Y = (v) => T + ph - (v / nice.max) * ph;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    for (let v = 0; v <= nice.max + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
+    const keys = ORDER[dim].filter((k) => agg.map[k]);
+    for (let k = 0; k < M.N; k++) {
+      let acc = 0; const rows = [];
+      keys.forEach((key) => {
+        const v = agg.map[key][k]; if (v <= 0) return;
+        const y1 = Y(acc + v), y0 = Y(acc); acc += v;
+        s += `<rect x="${L + k * bw + 3}" y="${y1}" width="${bw - 6}" height="${Math.max(0, y0 - y1 - 1.5)}" fill="${seriesMeta(dim, key).color}" ${y0 - y1 > 8 ? 'rx="2"' : ''} stroke="#fff" stroke-width=".5"/>`;
+        rows.push([seriesMeta(dim, key).color, seriesMeta(dim, key).name, F.n0(v)]);
+      });
+      if (k % 1 === 0) s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">M${k + 1}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${dt.mon(M.bs[k])}</text>`;
+      s += `<rect class="hit" data-month="${k + 1}" x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip('Month ' + (k + 1) + ' · ' + dt.fmt(M.bs[k]) + ' → ' + dt.fmtShort(M.bs[k + 1] - 1), [...rows.reverse(), ['', '<b>Total</b>', '<b>' + F.sar(agg.total[k]) + '</b>'], ['', 'Cumulative', F.pct(agg.pct[k])]])}"/>`;
+    }
+    const st = A.s.ui.status;
+    if (st && st >= M.start && st < M.bs[M.N]) { const k = dt.bucketOf(M.start, st), xf = L + (k + (st - M.bs[k]) / (M.bs[k + 1] - M.bs[k])) * bw; s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/>`; }
+    return s + '</svg>';
+  }
+
+  Z.registerSlide({
+    id: 'cashflow', title: 'Cash flow & S-curve', desc: 'Monthly spend, cumulative %, vs baseline',
+    render(M) {
+      const u = ui(), dim = u.dim, st = A.s.ui.status;
+      const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim);
+      const tot = agg.sum, y1 = agg.total.slice(0, 12).reduce((a, b) => a + b, 0), y2 = tot - y1;
+      const pk = agg.total.indexOf(Math.max(...agg.total)), m50 = agg.pct.findIndex((p) => p >= 0.5);
+      const keys = ORDER[dim].filter((k) => agg.map[k]);
+      const dbtn = (d, t) => `<button data-do="cfDim" data-d="${d}" class="${dim === d ? 'on' : ''}">${t}</button>`;
+      const atSt = st ? Z.cumAt(M, agg.cum, st) : null;
+      const kp = (k, v, d, extra) => `<div class="dstat" ${extra || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="hint">${d}</div></div>`;
+      return A.head('3b', 'Cash flow &amp; S-curve', 'Monthly cost-loaded spend and cumulative progress against the baseline plan', 'Sheet 3 · 26-Month Schedule (rows 80–86 + charts)') +
+        `<div class="s-body" style="gap:12px">
+          <div class="row" style="align-items:center;gap:14px;flex:none">
+            <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)">Stack by</span>
+            <span class="seg">${dbtn('group', 'WBS group')}${dbtn('epc', 'EPC category')}${dbtn('phase', 'Phase')}${dbtn('all', 'Total')}</span>
+            <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:14px">Status date</span>
+            <input type="date" class="dinput" style="width:140px;height:30px" value="${st ? dt.iso(st) : ''}" min="${dt.iso(M.start)}" max="${dt.iso(M.bs[M.N] - 1)}" data-chg="status">
+            ${st ? '<button class="btn sm" data-do="clearStatus">Clear</button>' : '<span class="hint">pick a date to read planned progress</span>'}
+            <div class="legend" style="margin-left:auto">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name}</span>`).join('')}</div>
+          </div>
+          <div class="row grow" style="gap:16px">
+            <div class="col grow" style="gap:12px">
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>Monthly spend</h3><span class="sub">SAR per project month · click a column for the month's detail</span></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305)}</div></div>
+              <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % complete (cost)</h3>
+                <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span></div></div>
+                <div class="pb" style="padding-top:0">${F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false })}</div></div>
+            </div>
+            <div class="col" style="width:372px;gap:12px">
+              ${kp('Total (selection)', F.sar(tot), `${agg.list.length} activities · ${F.pct(M.total ? tot / M.total : 0)} of project`)}
+              <div class="row" style="gap:12px">${kp('Year 1 · M1–12', F.M(y1), F.pct(tot ? y1 / tot : 0) + ' of cost', 'style="flex:1"')}${kp('Year 2 · M13+', F.M(y2), F.pct(tot ? y2 / tot : 0) + ' of cost', 'style="flex:1"')}</div>
+              ${kp('Peak month', `M${pk + 1} <small>${dt.fmtMY(M.bs[pk])}</small>`, F.sar(agg.total[pk]), `data-month="${pk + 1}" style="cursor:pointer"`)}
+              ${kp('Average monthly spend', F.M(tot / M.N), `over ${M.N} months`)}
+              ${kp('50% of cost reached', m50 >= 0 ? `M${m50 + 1} <small>${dt.fmtMY(M.bs[m50])}</small>` : '–', m50 >= 0 ? `cumulative ${F.pct(agg.pct[m50])}` : '')}
+              ${kp('Planned progress at status date', st ? F.pct(tot ? atSt / tot : 0) : '–', st ? `${dt.fmt(st)} · ${F.sar(atSt)}` : 'choose a status date above', st ? 'style="border-color:var(--bad)"' : '')}
+              <div class="note info" style="margin-top:auto">Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.</div>
+            </div>
+          </div></div>`;
+    },
+  });
+
+  /* ------------------------------------------------------------ matrix */
+  Z.registerSlide({
+    id: 'matrix', title: 'Cash-flow matrix', desc: 'Activity × month heat-map (Excel grid)',
+    render(M) {
+      const u = mxui(), vis = A.visList();
+      const fmt = (v) => (v < 0.5 ? '' : u.unit === 'sar' ? F.n0(v) : u.unit === 'k' ? F.n0(v / 1000) : (v / 1e6).toFixed(2));
+      const maxCell = Math.max(...vis.flatMap((a) => a.m), 1);
+      const cell = (v, a) => `<td class="c ${v < 0.5 ? 'z' : ''}" style="${u.heat && v >= 0.5 ? `background:rgba(0,119,139,${(0.07 + 0.78 * Math.sqrt(v / maxCell)).toFixed(2)});${v / maxCell > 0.45 ? 'color:#fff;' : ''}` : ''}">${v < 0.5 ? '·' : fmt(v)}</td>`;
+      const SC = [0, 58, 292];
+      let head = `<th class="stk" style="left:0;z-index:5;min-width:58px">WBS</th><th class="stk" style="left:58px;z-index:5;min-width:234px">Activity</th><th class="stk num" style="left:292px;z-index:5;min-width:92px">Total</th>`;
+      for (let k = 0; k < M.N; k++) head += `<th class="m hit" data-month="${k + 1}" data-tip="${F.tip('Month ' + (k + 1), [['', 'From', dt.fmt(M.bs[k])], ['', 'To', dt.fmt(M.bs[k + 1] - 1)]])}">M${k + 1}<br><span style="font-weight:500;color:var(--mute)">${dt.fmtMY(M.bs[k])}</span></th>`;
+      let body = '';
+      Z.GROUPS.forEach((g) => {
+        const ga = vis.filter((a) => a.group === g.code); if (!ga.length) return;
+        const gm = new Array(M.N).fill(0); ga.forEach((a) => a.m.forEach((v, k) => (gm[k] += v)));
+        body += `<tr class="g"><td class="stk" style="left:0">${g.code.replace('.0', '')}</td><td class="stk" style="left:58px" data-grp="${g.code}"><span style="cursor:pointer">${F.esc(g.name)}</span></td><td class="stk num" style="left:292px">${F.n0(gm.reduce((x, y) => x + y, 0))}</td>${gm.map((v) => `<td class="c" style="font-weight:700">${fmt(v) || '·'}</td>`).join('')}</tr>`;
+        ga.forEach((a) => { body += `<tr class="act" data-act="${a.code}"><td class="stk" style="left:0;color:var(--brand-d);font-weight:700">${a.code}</td><td class="stk" style="left:58px;max-width:234px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(a.desc)}">${F.esc(a.name)}</td><td class="stk num" style="left:292px">${F.n0(a.amount)}</td>${a.m.map((v) => cell(v, a)).join('')}</tr>`; });
+      });
+      const agg = Z.aggregate(M, A.vis, 'all');
+      const ft = (label, vals, top, f) => `<tr class="tot"><td class="stk" style="left:0;bottom:${top}px;z-index:4"></td><td class="stk" style="left:58px;bottom:${top}px;z-index:4">${label}</td><td class="stk num" style="left:292px;bottom:${top}px;z-index:4">${f === 'sum' ? F.n0(agg.sum) : ''}</td>${vals.map((v) => `<td class="c" style="bottom:${top}px">${f === 'pct' ? F.pct(v, 1) : fmt(v) || '·'}</td>`).join('')}</tr>`;
+      const ubtn = (k, t) => `<button data-do="mxUnit" data-u="${k}" class="${u.unit === k ? 'on' : ''}">${t}</button>`;
+      return A.head('3c', 'Cash-flow matrix', 'Every activity’s cost spread across the project months – the Excel schedule grid, live', 'Sheet 3 · 26-Month Schedule (grid)') +
+        `<div class="s-body" style="gap:10px"><div class="row" style="align-items:center;gap:14px;flex:none"><span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mute)">Units</span><span class="seg">${ubtn('sar', 'SAR')}${ubtn('k', 'SAR thousand')}${ubtn('m', 'SAR million')}</span>
+          <button class="chip ${u.heat ? 'on' : ''}" data-do="mxHeat">Heat-map</button><span class="hint">Click a row for activity details, a month header for the month's breakdown.</span></div>
+          <div class="panel grow"><div class="pb scroll hm" data-keep="matrix" style="padding:0"><table class="tbl hm"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="30" class="empty">No activities match the filters</td></tr>'}</tbody>
+          <tfoot style="display:table-footer-group">${ft('Total monthly spend', agg.total, 52, 'sum').replace(/<tr class="tot">/, '<tr class="tot">')}${ft('Cumulative spend', agg.cum, 26)}${ft('Cumulative % complete', agg.pct, 0, 'pct')}</tfoot></table></div></div></div>`;
+    },
+  });
+})(window);
+
+</script>
+<script>
+/* Slides 9-10: Assumptions & weightages (editable) and the scenario summary */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+
+  A.changes.asm = (el) => {
+    const v = Math.max(0, Math.min(100, parseFloat(el.value)));
+    if (!isFinite(v)) { A.refilter(); return; }
+    const st = Z.cloneState(A.s.st), path = el.dataset.k.split('.');
+    if (path[0] === 'proc') st.A.proc[+path[1]] = v; else st.A[path[0]][path[1]] = v;
+    A.setState(st);
+  };
+  A.actions.asmReset = () => { const st = Z.cloneState(A.s.st); st.A = Z.cloneA(Z.DEFAULT_A); A.setState(st); };
+
+  const inp = (k, v) => `<input class="ninput" type="number" min="0" max="100" step="1" value="${+(+v).toFixed(2)}" data-chg="asm" data-k="${k}">`;
+  const sumChip = (s) => (Math.abs(s - 100) < 0.001 ? '<span class="pill ok">= 100%</span>' : `<span class="pill warn">sums to ${+s.toFixed(2)}%</span>`);
+
+  Z.registerSlide({
+    id: 'assump', title: 'Assumptions & weightages', desc: 'Editable cost weightages & schedule gates',
+    render(M) {
+      const a = M.st.A, by = M.by;
+      const disc = Object.entries(Z.DISC).map(([k, d]) => {
+        const c = 100 - a.disc[k];
+        return `<tr><td><b>${d.name}</b></td><td>${inp('disc.' + k, a.disc[k])} %</td><td class="num"><b>${+c.toFixed(2)}%</b> ${c <= a.disc[k] ? '<span class="pill warn">materials ≥ construction</span>' : ''}</td><td class="wrap muted" style="max-width:300px;font-size:12px">${d.applies}</td></tr>`;
+      }).join('');
+      const ps = a.proc.reduce((x, y) => x + y, 0), dsum = a.stage.concept + a.stage.prelim + a.stage.detail, ss = a.sub.sub + a.sub.appr;
+      const dur = (c1, c2) => F.months((by[c2].e - by[c1].s + 1) / 30.4375);
+      const procRows = [['Vendor Prequalification', 0], ['PO Issuance', 1], ['Manufacture and Delivery to Site', 2]].map(([n, i]) => `<tr><td>${n}</td><td>${inp('proc.' + i, a.proc[i])} %</td></tr>`).join('');
+      const stRows = [['Concept Design', 'concept', '2.1', '2.2'], ['Preliminary Design', 'prelim', '2.3', '2.4'], ['Detailed Design', 'detail', '2.5', '2.6']].map(([n, k, c1, c2]) => `<tr><td>${n}<div class="hint">${dur(c1, c2)} months</div></td><td>${inp('stage.' + k, a.stage[k])} %</td><td class="num">${F.pct(a.stage[k] / (dsum || 1), 2)}</td></tr>`).join('');
+      const p1a1 = M.acts.filter((x) => x.kind === 'a1' && x.phase === 'Phase 1'), p2a1 = M.acts.filter((x) => x.kind === 'a1' && x.phase === 'Phase 2');
+      const lag = p1a1.length ? Math.min(...p1a1.map((x) => x.s)) - by['2.4'].e : 0;
+      const gates = [
+        ['Access permits (request submission & approval)', `${dt.fmtShort(by['1.2'].s)} → ${dt.fmtShort(by['1.2'].e)}`, '1.2'],
+        ['Concept design – submission / approval', `${dt.fmtShort(by['2.1'].s)} / ${dt.fmtShort(by['2.2'].e)}`, '2.1'],
+        ['Work permit approval (14 days)', `${dt.fmtShort(by['1.3'].s)} → ${dt.fmtShort(by['1.3'].e)}`, '1.3'],
+        ['Work permit predecessor', 'FS: Detailed Design Approval (2.6) – ends ' + dt.fmtShort(by['2.6'].e), '2.6'],
+        ['Construction commencement', 'Later of Work Permit OR own Manufacture & Delivery', null],
+        ['Phase 1 procurement lag after Preliminary Design approval', `${lag} day${lag === 1 ? '' : 's'} (Excel: 15 days → next month)`, '2.4'],
+        ['Phase 2 procurement gate', 'After Detailed Design approval · from ' + (p2a1.length ? dt.fmtShort(Math.min(...p2a1.map((x) => x.s))) : '–'), '2.6'],
+        ['Long-lead threshold', '4+ months lead time · Signalling, Track, Turnout, Substation, Generator', null],
+        ['Total project duration', `${F.months(M.durMonths)} months (${dt.fmtShort(M.start)} → ${dt.fmtShort(M.finish)}) · baseline 26`, null],
+      ];
+      const proc = M.acts.filter((x) => x.epc === 'PROC').reduce((s, x) => s + x.amount, 0), cons = M.acts.filter((x) => x.epc === 'CONS').reduce((s, x) => s + x.amount, 0);
+      const eng = M.acts.filter((x) => x.epc === 'ENG').reduce((s, x) => s + x.amount, 0), gen = by['1.1'].amount + by['1.2'].amount + by['1.3'].amount;
+      const parts = [['General', gen, 'var(--gen)'], ['Engineering', eng, 'var(--eng)'], ['Procurement', proc, 'var(--proc)'], ['Construction', cons, 'var(--cons)']];
+      return A.head('4', 'Assumptions &amp; weightages', 'Edit any weightage – amounts, cash flow and S-curve recalculate; the total contract value stays fixed', 'Sheet 4 · Assumptions &amp; Weightages') +
+        `<div class="s-body"><div class="row grow">
+          <div class="col grow" style="gap:14px">
+            <div class="panel"><div class="ph"><h3>1 · Discipline materials / construction split</h3><span class="sub">construction is always the higher share</span></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Discipline</th><th>Materials</th><th class="num">Construction</th><th>Applies to</th></tr></thead><tbody>${disc}</tbody></table></div></div>
+            <div class="row" style="gap:14px">
+              <div class="panel" style="width:320px"><div class="ph"><h3>2 · Procurement stages</h3>${sumChip(ps)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Weight</th></tr></thead><tbody>${procRows}</tbody></table><div class="hint" style="margin-top:6px">Within each item’s procurement share.</div></div></div>
+              <div class="panel grow"><div class="ph"><h3>3 · Design stages</h3>${sumChip(dsum)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Raw</th><th class="num">Normalised</th></tr></thead><tbody>${stRows}</tbody></table><div class="hint" style="margin-top:6px">Raw weights sum to 105% – normalised so design stays SAR ${F.n0(Z.DESIGN_TOTAL)}.</div></div></div>
+              <div class="panel" style="width:230px"><div class="ph"><h3>4 · Sub-activity</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Sub-activity</th><th>Weight</th></tr></thead><tbody><tr><td>Submission</td><td>${inp('sub.sub', a.sub.sub)} %</td></tr><tr><td>Approval</td><td>${inp('sub.appr', a.sub.appr)} %</td></tr></tbody></table><div style="margin-top:6px">${sumChip(ss)}</div></div></div>
+            </div>
+            <div class="row" style="align-items:center;gap:12px"><button class="btn" data-do="asmReset">Reset weightages to Excel values</button><span class="hint">Changes are saved in this browser and included in the share link.</span></div>
+          </div>
+          <div class="col" style="width:560px;gap:14px">
+            <div class="panel grow" style="min-height:0"><div class="ph"><h3>5 · Schedule gates &amp; key assumptions</h3><span class="sub">live values</span></div><div class="pb scroll" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Rule</th><th>Value now</th></tr></thead><tbody>${gates.map((g) => `<tr class="${g[2] ? 'act' : ''}" ${g[2] ? `data-act="${g[2]}"` : ''}><td class="wrap" style="width:230px">${g[0]}</td><td class="wrap"><b>${g[1]}</b></td></tr>`).join('')}</tbody></table></div></div>
+            <div class="panel"><div class="ph"><h3>Impact on cost mix</h3><span class="sub">total stays SAR ${F.n0(M.total)}</span></div><div class="pb">
+              <div style="display:flex;height:26px;border-radius:7px;overflow:hidden">${parts.map((p) => `<div style="width:${(p[1] / M.total) * 100}%;background:${p[2]}" data-tip="${F.tip(p[0], [['', 'Amount', F.sar(p[1])], ['', 'Share', F.pct(p[1] / M.total)]])}"></div>`).join('')}</div>
+              <table class="tbl tight" style="margin-top:10px"><thead><tr><th>Discipline</th><th class="num">Materials</th><th class="num">Construction</th></tr></thead><tbody>${Object.entries(Z.DISC).map(([k, d]) => { const its = Z.ITEMS.filter((i) => i.disc === k).map((i) => i.key); const mt = M.acts.filter((x) => its.includes(x.item) && x.kind !== 'b').reduce((s, x) => s + x.amount, 0), cs = M.acts.filter((x) => its.includes(x.item) && x.kind === 'b').reduce((s, x) => s + x.amount, 0); return `<tr><td>${d.name}</td><td class="num">${F.M(mt)}</td><td class="num">${F.M(cs)}</td></tr>`; }).join('')}</tbody></table>
+              <div class="legend" style="margin-top:8px">${parts.map((p) => `<span><i class="dot" style="background:${p[2]}"></i>${p[0]} <b style="color:var(--accent)">${F.pct(p[1] / M.total)}</b></span>`).join('')}</div></div></div>
+          </div></div></div>`;
+    },
+  });
+
+  /* ------------------------------------------------------- scenario */
+  const csv = (M) => {
+    const hdr = ['WBS', 'Activity', 'Phase', 'EPC', 'Amount_SAR', 'Start', 'Finish', 'Duration_days', 'Baseline_start', 'Baseline_finish', 'Start_shift_days', 'Finish_shift_days'];
+    for (let k = 0; k < M.N; k++) hdr.push('M' + (k + 1) + ' ' + dt.fmtMY(M.bs[k]));
+    const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+    const rows = M.acts.map((a) => [a.code, q(a.desc), a.phase, a.epc, Math.round(a.amount * 100) / 100, dt.iso(a.s), dt.iso(a.e), a.dur, dt.iso(a.bs), dt.iso(a.be), a.ds, a.de, ...a.m.map((v) => Math.round(v))]);
+    return [hdr.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  };
+  A.actions.exportCsv = () => {
+    const blob = new Blob(['﻿' + csv(A.s.M)], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'zulfi-schedule-' + dt.iso(A.s.M.start) + '.csv';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+  A.actions.shareLink = () => {
+    const url = location.href.split('#')[0] + '#s=' + btoa(unescape(encodeURIComponent(Z.serialize(A.s.st))));
+    const done = () => { const b = document.querySelector('[data-do="shareLink"]'); if (b) { b.textContent = 'Link copied ✓'; setTimeout(() => A.refilter(), 1600); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => prompt('Copy this link', url)); else prompt('Copy this link', url);
+  };
+
+  Z.registerSlide({
+    id: 'scenario', title: 'Scenario summary', desc: 'Baseline vs revised · changes · export',
+    render(M) {
+      const ag = Z.aggregate(M, () => true, 'all'), bt = M.base.totalM;
+      const y1 = ag.total.slice(0, 12).reduce((a, b) => a + b, 0), by1 = bt.slice(0, 12).reduce((a, b) => a + b, 0);
+      const pk = ag.total.indexOf(Math.max(...ag.total)), bpk = bt.indexOf(Math.max(...bt));
+      const m50 = ag.pct.findIndex((p) => p >= 0.5), b50 = M.base.pct.findIndex((p) => p >= 0.5);
+      const fd = M.finish - M.base.finish;
+      const row = (k, b, r, d) => `<tr><td>${k}</td><td class="muted">${b}</td><td><b>${r}</b></td><td>${d}</td></tr>`;
+      const ch = M.changed.filter((a) => a.code !== Z.AUTO);
+      const crow = ch.map((a) => `<tr class="act" data-act="${a.code}"><td><b style="color:var(--brand-d)">${a.code}</b></td><td style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${F.esc(a.name)}</td><td class="muted">${dt.fmtShort(a.bs)} → ${dt.fmtShort(a.be)}</td><td><b>${dt.fmtShort(a.s)} → ${dt.fmtShort(a.e)}</b></td><td>${F.deltaHtml(a.ds, ' d')}</td><td>${F.deltaHtml(a.de, ' d')}</td></tr>`).join('');
+      const asmChanged = JSON.stringify(M.st.A) !== JSON.stringify(Z.DEFAULT_A);
+      return A.head('5', 'Scenario summary', 'What changed versus the Excel baseline – and how to take it with you', 'Derived from all four sheets') +
+        `<div class="s-body"><div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi"><div class="k">Project start</div><div class="v" style="font-size:24px">${dt.fmt(M.start)}</div><div class="d">anchor for all 26 monthly buckets</div></div>
+          <div class="kpi ${fd > 0 ? 'warn' : ''}"><div class="k">Planned completion</div><div class="v" style="font-size:24px">${dt.fmt(M.finish)}</div><div class="d">${F.deltaHtml(fd)}</div></div>
+          <div class="kpi alt"><div class="k">Activities moved</div><div class="v">${ch.length}<small>of ${M.acts.length - 1}</small></div><div class="d">${asmChanged ? 'Weightages edited too' : 'Weightages as per Excel'}</div></div>
+          <div class="kpi ${M.conflicts.length ? 'warn' : ''}"><div class="k">Dependency conflicts</div><div class="v">${M.conflicts.length}</div><div class="d">${M.conflicts.length ? 'review in the Gantt' : 'all links respected'}</div></div>
+        </div>
+        <div class="row grow">
+          <div class="col" style="width:640px;gap:14px">
+            <div class="panel"><div class="ph"><h3>Baseline vs revised</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Metric</th><th>Baseline</th><th>Revised</th><th>Δ</th></tr></thead><tbody>
+              ${row('Completion date', dt.fmtShort(M.base.finish), dt.fmtShort(M.finish), F.deltaHtml(fd))}
+              ${row('Duration (months)', '26', F.months(M.durMonths), F.deltaHtml(Math.round((M.durMonths - 26) * 30.4375)))}
+              ${row('Total cost (excl. VAT)', F.M(M.total), F.M(M.total), '<span class="delta zero">fixed</span>')}
+              ${row('Year-1 spend (M1–12)', F.M(by1), F.M(y1), `<span class="delta ${y1 > by1 ? 'down' : y1 < by1 ? 'up' : 'zero'}">${y1 === by1 ? '–' : (y1 > by1 ? '+' : '−') + F.M(Math.abs(y1 - by1))}</span>`)}
+              ${row('Peak month', `M${bpk + 1} · ${F.M(bt[bpk])}`, `M${pk + 1} · ${F.M(ag.total[pk])}`, '')}
+              ${row('50% of cost reached', 'M' + (b50 + 1), m50 >= 0 ? 'M' + (m50 + 1) : '–', m50 >= 0 ? `${m50 - b50 >= 0 ? '+' : '−'}${Math.abs(m50 - b50)} mo` : '')}
+            </tbody></table></div></div>
+            <div class="panel grow"><div class="ph"><h3>Take it with you</h3></div><div class="pb" style="display:flex;flex-direction:column;gap:10px">
+              <div class="row" style="flex-wrap:wrap;gap:10px"><button class="btn primary" data-do="shareLink">Copy share link</button><button class="btn" data-do="exportCsv">Export schedule (CSV)</button><button class="btn" onclick="Z.app.print()">Print / save PDF</button><button class="btn danger" data-do="resetAll">Reset everything to baseline</button></div>
+              <div class="hint">The share link carries the start date, every moved activity and edited weightage – anyone who opens it sees the same scenario. Your edits are also remembered in this browser.</div></div></div>
+          </div>
+          <div class="panel grow"><div class="ph"><h3>Moved activities</h3><span class="sub">${ch.length} versus baseline</span></div><div class="pb scroll" data-keep="scen" style="padding:0">
+            ${ch.length ? `<table class="tbl"><thead><tr><th>WBS</th><th>Activity</th><th>Baseline</th><th>Revised</th><th>Start Δ</th><th>Finish Δ</th></tr></thead><tbody>${crow}</tbody></table>` : '<div class="empty">No changes yet.<br>Edit a date on the Gantt slide, or change the project start in the top bar –<br>this list and every chart will update.</div>'}</div></div>
+        </div></div>`;
+    },
+  });
+})(window);
+
+</script>
+<script>
+  // toolbar icon + label markup
+  (function () {
+    var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
+    set('bFilters', I.list + 'Filters');
+    set('bBack', I.prev + 'Back'); set('bNext', 'Next' + I.next);
+    document.querySelector('#slideMenu > button').innerHTML = I.list + 'Slides';
+    set('bFull', I.full + 'Full screen'); set('bExit', I.exit + 'Exit full screen'); set('bPrint', I.print + 'Print');
+    Z.app.boot();
+  })();
+</script>
+</body>
+</html>

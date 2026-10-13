@@ -3,52 +3,167 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zulfi Railway Station – Project Presentation</title>
-<meta name="description" content="Interactive management presentation: WBS, cost breakdown, 26-month schedule, Gantt chart and S-curve for the Zulfi Railway Station project.">
-<link rel="stylesheet" href="css/style.css">
+<title>Zulfi Railway Station – Project Workbook Guide</title>
+<meta name="description" content="Guide to the Zulfi Railway Station WBS, CBS and 26-month schedule workbook, with the interactive presentation and an offline download.">
+<style>
+  :root { --brand:#00778b; --brand-d:#005566; --brand-l:#e0f2f5; --ink:#232e36; --ink2:#566672; --line:#dce4e9; --soft:#f4f7f9; --accent:#3d3935; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; color: var(--ink); background: #fff; font: 16px/1.6 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  a { color: var(--brand-d); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(61,57,53,.96); backdrop-filter: blur(6px); }
+  nav .wrap { display: flex; align-items: center; gap: 22px; height: 54px; }
+  nav b { color: #fff; letter-spacing: .02em; margin-right: auto; white-space: nowrap; }
+  nav a { color: #d6dde2; text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  nav a:hover { color: #fff; }
+  .hero { background: linear-gradient(135deg, #003f4b, #00778b 62%, #2c9fb2); color: #fff; padding: 70px 0 64px; }
+  .hero .eyebrow { letter-spacing: .2em; text-transform: uppercase; font-weight: 700; font-size: 13px; opacity: .85; }
+  .hero h1 { font-size: clamp(34px, 6vw, 62px); line-height: 1.05; margin: 14px 0 12px; letter-spacing: -.02em; }
+  .hero p { font-size: 19px; max-width: 720px; opacity: .93; margin: 0 0 28px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 11px; font-weight: 700; text-decoration: none; border: 2px solid #fff; color: #fff; font-size: 16px; }
+  .btn.primary { background: #fff; color: var(--brand-d); }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .btn.dark { border-color: var(--brand); background: var(--brand); color: #fff; }
+  .btn.line { border-color: var(--brand); color: var(--brand-d); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 38px; }
+  .stat { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); border-radius: 14px; padding: 14px 18px; }
+  .stat small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; opacity: .85; font-weight: 700; }
+  .stat b { font-size: 24px; }
+  section { padding: 58px 0 10px; }
+  h2 { font-size: 32px; margin: 0 0 6px; color: var(--accent); letter-spacing: -.01em; }
+  .lead { color: var(--ink2); font-size: 18px; max-width: 800px; margin: 0 0 26px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+  .card { border: 1px solid var(--line); border-radius: 16px; padding: 24px 26px; background: #fff; box-shadow: 0 1px 2px rgba(20,40,55,.05), 0 6px 20px rgba(20,40,55,.05); }
+  .card .no { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 800; margin-bottom: 8px; }
+  .card h3 { margin: 0 0 4px; font-size: 22px; color: var(--accent); }
+  .card .tag { color: var(--ink2); font-size: 14px; margin-bottom: 10px; }
+  .card ul { padding-left: 20px; margin: 8px 0 14px; } .card li { margin: 4px 0; }
+  .card .go { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .card .go a { font-size: 14px; font-weight: 700; padding: 7px 13px; border-radius: 9px; background: var(--brand-l); text-decoration: none; }
+  .card .go a:hover { background: #c9e8ee; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 8px 0 4px; }
+  th { text-align: left; background: #eef3f5; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); }
+  th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .box { background: var(--soft); border-left: 5px solid var(--brand); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+  .step { display: flex; gap: 14px; margin: 14px 0; } .step .c { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; display: grid; place-items: center; }
+  .dl { background: linear-gradient(180deg, var(--brand-l), #fff); border: 1px solid #b8dde4; border-radius: 18px; padding: 30px; }
+  code, kbd { background: #eef3f5; border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 14px; }
+  footer { margin-top: 70px; background: var(--accent); color: #cfd6db; padding: 26px 0; font-size: 14px; }
+  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } nav a:not(.keep) { display: none; } }
+</style>
 </head>
 <body>
-<div id="app">
-  <header id="bar">
-    <div class="brand"><div class="logo">SAR</div><div>Zulfi Railway Station<small>Cost, WBS &amp; 26-month schedule</small></div></div>
-    <span class="grow"></span>
-    <label class="tb-field" title="Changing the project start date moves the whole schedule">Project start <input type="date" id="startIn"></label>
-    <label class="tb-field" title="How dependent activities react when you move an activity">Linking
-      <select id="linkSel"><option value="two">Auto-link (move successors)</option><option value="push">Push delays only</option><option value="off">Off (independent)</option></select></label>
-    <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
-    <span class="grow"></span>
-    <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
-    <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
-    <span id="slideNo"></span>
-    <button class="tb-btn" id="bNext" title="Next slide (→)"></button>
-    <span id="slideMenu"><button class="tb-btn" title="All slides"></button><div id="slideList"></div></span>
-    <button class="tb-btn" id="bFull" title="Full screen (F)"></button>
-    <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
-    <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
-  </header>
-  <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
-  <main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main>
-</div>
-<script src="data.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/drawers.js"></script>
-<script src="js/slides-overview.js"></script>
-<script src="js/slides-wbs.js"></script>
-<script src="js/slides-schedule.js"></script>
-<script src="js/slides-cashflow.js"></script>
-<script src="js/slides-assump.js"></script>
-<script>
-  // toolbar icon + label markup
-  (function () {
-    var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
-    set('bFilters', I.list + 'Filters');
-    set('bBack', I.prev + 'Back'); set('bNext', 'Next' + I.next);
-    document.querySelector('#slideMenu > button').innerHTML = I.list + 'Slides';
-    set('bFull', I.full + 'Full screen'); set('bExit', I.exit + 'Exit full screen'); set('bPrint', I.print + 'Print');
-    Z.app.boot();
-  })();
-</script>
+<nav><div class="wrap"><b>SAR · Zulfi Railway Station</b><a href="#sheets">The workbook</a><a href="#logic">How it works</a><a href="#use">Using the deck</a><a class="keep" href="#download">Download offline</a></div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Saudi Arabia Railway Company</div>
+  <h1>Zulfi Railway Station<br>Project workbook, explained</h1>
+  <p>The cost, WBS/CBS and 26-month schedule workbook turned into an interactive management presentation – with a guide to every sheet and a copy you can take offline.</p>
+  <div class="btns"><a class="btn primary" href="presentation.html">▶ Open the presentation</a><a class="btn" href="#download">⬇ Download for offline use</a></div>
+  <div class="stats">
+    <div class="stat"><small>Total cost (excl. VAT)</small><b>SAR 99,999,000</b></div>
+    <div class="stat"><small>Total incl. 15% VAT</small><b>SAR 114,998,850</b></div>
+    <div class="stat"><small>Duration</small><b>26 months</b></div>
+    <div class="stat"><small>Activities</small><b>73 in 7 WBS groups</b></div>
+  </div>
+</div></header>
+
+<section id="sheets"><div class="wrap">
+  <h2>What is inside the Excel file</h2>
+  <p class="lead">The workbook has four sheets. Each one has its own section in the presentation, so what you read here is exactly what you will see on screen.</p>
+  <div class="cards">
+    <div class="card"><div class="no">1</div><h3>Dashboard</h3><div class="tag">Sheet “Dashboard” · executive summary</div>
+      <ul><li>Headline numbers: total cost excl. VAT, VAT (15%), total incl. VAT, duration (26 months).</li>
+        <li>Phase split: <b>Phase 1 SAR 65,009,000</b> and <b>Phase 2 SAR 34,990,000</b>.</li>
+        <li>Cost of the seven WBS groups, from Preliminaries (SAR 4.9M) up to Roads, Signalling &amp; External Works (SAR 34.09M) and Railway Track &amp; Turnouts (SAR 30.90M).</li>
+        <li>Two charts: cost by WBS group and by phase.</li></ul>
+      <div class="go"><a href="presentation.html#2">Dashboard slide</a><a href="presentation.html#3">Milestones &amp; gates</a></div></div>
+
+    <div class="card"><div class="no">2</div><h3>WBS &amp; CBS</h3><div class="tag">Sheet “WBS &amp; CBS” · the cost breakdown register</div>
+      <ul><li>The work breakdown structure: 7 level-1 groups and 73 activity lines.</li>
+        <li>For each line: BOQ reference, phase, amount (SAR), % of total, cumulative %, long-lead flag, predecessor / logical link and EPC category.</li>
+        <li>The <b>EPC Level-0 summary</b>: General 4.9M, Engineering 4.89M, Procurement 30.41M, Installation &amp; Construction 59.80M.</li>
+        <li>Totals with VAT at the bottom.</li></ul>
+      <div class="go"><a href="presentation.html#4">WBS structure (treemap)</a><a href="presentation.html#5">CBS register</a></div></div>
+
+    <div class="card"><div class="no">3</div><h3>26-Month Schedule</h3><div class="tag">Sheet “26-Month Schedule” · Gantt and cost-loaded cash flow</div>
+      <ul><li>Start month, end month and duration for every activity, with its logical predecessor.</li>
+        <li>A month-by-month grid (M1–M26) that spreads each activity’s cost across its duration.</li>
+        <li>Totals: monthly spend, cumulative spend and cumulative % complete (the S-curve), plus Year 1 (<b>SAR 22.17M, 22.2%</b>) and Year 2 (<b>SAR 77.83M</b>).</li>
+        <li>Two charts: monthly spend by activity and the cumulative curve.</li></ul>
+      <div class="go"><a href="presentation.html#6">Gantt chart</a><a href="presentation.html#7">Cash flow &amp; S-curve</a><a href="presentation.html#8">Cash-flow matrix</a></div></div>
+
+    <div class="card"><div class="no">4</div><h3>Assumptions &amp; Weightages</h3><div class="tag">Sheet “Assumptions &amp; Weightages” · the rules behind the numbers</div>
+      <ul><li>Materials vs construction split per discipline (Civil 20/80, MEP 30/70, Rail &amp; signalling 45/55, Fit-out 40/60).</li>
+        <li>Procurement stage weights: vendor prequalification 5%, PO issuance 15%, manufacture &amp; delivery 80%.</li>
+        <li>Design stage weights (concept 15%, preliminary 30%, detailed 60% – normalised from 105%) and submission 40% / approval 60%.</li>
+        <li>Schedule gates: work permit, Phase 1 / Phase 2 procurement gates, long-lead threshold, fixed 26 months.</li></ul>
+      <div class="go"><a href="presentation.html#9">Assumptions slide</a><a href="presentation.html#10">Scenario summary</a></div></div>
+  </div>
+</div></section>
+
+<section id="logic"><div class="wrap">
+  <h2>How the numbers are built</h2>
+  <p class="lead">Understanding these five rules explains almost everything in the workbook.</p>
+  <div class="grid2">
+    <div>
+      <div class="step"><div class="c">1</div><div><b>Every item is split into stages.</b> Each procurement-and-construction item (for example the Main Building) becomes four lines: <code>a1</code> vendor prequalification → <code>a2</code> PO issuance → <code>a3</code> manufacture &amp; delivery → <code>b</code> installation &amp; construction.</div></div>
+      <div class="step"><div class="c">2</div><div><b>Cost is shared between materials and construction</b> using the discipline split (e.g. Civil 20% materials / 80% construction). The materials share is then split 5% / 15% / 80% across the three procurement stages.</div></div>
+      <div class="step"><div class="c">3</div><div><b>Design works</b> are weighted by stage (concept, preliminary, detailed) and each stage into submission 40% and approval 60%. The raw stage weights add up to 105%, so they are normalised to keep the design total at SAR 4,889,000.</div></div>
+    </div>
+    <div>
+      <div class="step"><div class="c">4</div><div><b>Gates drive the dates.</b> Access permits (month 1) → concept → preliminary → detailed design → work permit (14 days) → construction. Phase 1 procurement starts 15 days after preliminary-design approval; Phase 2 only after detailed-design approval. Construction starts at the later of the work permit or its own delivery.</div></div>
+      <div class="step"><div class="c">5</div><div><b>Cost is loaded over time.</b> Preliminaries, design and procurement are spread evenly over their months; installation &amp; construction uses a triangular ramp-up / peak / ramp-down. The monthly totals add up to the S-curve.</div></div>
+      <div class="box"><b>Heads-up from the workbook:</b> the work-permit gate is the binding constraint for several buildings, so installation windows at the end of the programme are tight (IT, fence, gate and FF&amp;E are only 2–4 months). Shortening the front-end approvals would relieve it – and you can test that directly in the Gantt.</div>
+    </div>
+  </div>
+  <h3 style="margin-top:26px">Cost summary by WBS group (SAR, excl. VAT)</h3>
+  <table><thead><tr><th>WBS</th><th>Group</th><th class="n">Amount</th><th class="n">Share</th></tr></thead><tbody>
+    <tr><td>1.0</td><td>Preliminaries &amp; General Requirements</td><td class="n">4,900,000</td><td class="n">4.9%</td></tr>
+    <tr><td>2.0</td><td>Design Works</td><td class="n">4,889,000</td><td class="n">4.9%</td></tr>
+    <tr><td>3.0</td><td>Main Building Works</td><td class="n">4,550,000</td><td class="n">4.6%</td></tr>
+    <tr><td>4.0</td><td>Ancillary Buildings</td><td class="n">8,501,000</td><td class="n">8.5%</td></tr>
+    <tr><td>5.0</td><td>External &amp; Site Development Works</td><td class="n">12,170,000</td><td class="n">12.2%</td></tr>
+    <tr><td>6.0</td><td>Roads, Signalling &amp; External Works</td><td class="n">34,090,000</td><td class="n">34.1%</td></tr>
+    <tr><td>7.0</td><td>Railway Track &amp; Turnout Works</td><td class="n">30,899,000</td><td class="n">30.9%</td></tr>
+    <tr><th></th><th>Total</th><th class="n">99,999,000</th><th class="n">100%</th></tr></tbody></table>
+</div></section>
+
+<section id="use"><div class="wrap">
+  <h2>Using the interactive presentation</h2>
+  <p class="lead">Built for a management meeting – everything is clickable, and everything recalculates when you change a date.</p>
+  <div class="grid2">
+    <div class="card"><h3>Change the plan</h3><ul>
+      <li><b>Project start date</b> (top bar, default 17 Oct 2026): the whole project moves with it.</li>
+      <li><b>Any activity’s start / finish:</b> type a date in the Gantt, drag a bar, or open the activity and use the +/− week and month buttons.</li>
+      <li><b>Linking</b> decides whether dependent activities move automatically, only get pushed, or stay put.</li>
+      <li><b>Weightages</b> on the Assumptions slide: change a percentage and amounts and cash flow recalculate (the total stays fixed).</li>
+      <li>The scenario summary lists every change against the Excel baseline and can export a CSV or a share link.</li></ul></div>
+    <div class="card"><h3>Present it</h3><ul>
+      <li><b>Full screen / Exit full screen</b>, <b>Next</b> and <b>Back</b>, and <b>Print</b> (all slides, or save as PDF) are in the top bar.</li>
+      <li>Keyboard: <kbd>←</kbd> <kbd>→</kbd> to move, <kbd>F</kbd> for full screen, <kbd>Esc</kbd> to close details.</li>
+      <li>Filters under the top bar: phase, EPC category, WBS group, long-lead, critical path, changed, and search.</li>
+      <li>Click any bar, slice, tile, row or month to open a details panel with dates, predecessors, successors and monthly spend.</li></ul></div>
+  </div>
+</div></section>
+
+<section id="download"><div class="wrap">
+  <h2>Take it offline</h2>
+  <div class="dl">
+    <p class="lead" style="margin-top:0">Download the presentation as <b>one HTML file</b>. Double-click it and it opens in any modern browser – no internet, no installation, and all the interactive features keep working (editing dates, Gantt, S-curve, print).</p>
+    <div class="btns">
+      <a class="btn dark" href="downloads/Zulfi-Presentation-Offline.html" download>⬇ Download presentation (offline HTML)</a>
+      <a class="btn line" href="downloads/Zulfi_Station_WBS_CBS_Schedule.xlsx" download>⬇ Download the source Excel workbook</a>
+      <a class="btn line" href="presentation.html">▶ Open online</a>
+    </div>
+    <p style="margin-bottom:0;color:var(--ink2);font-size:14px">Tip: for a meeting, open the downloaded file, press <kbd>F</kbd> for full screen. Changes you make offline are saved in that browser only; use “Copy share link” on the last slide to carry a scenario to someone else.</p>
+  </div>
+</div></section>
+
+<footer><div class="wrap">Zulfi Railway Station · Saudi Arabia Railway Company · figures in SAR, excluding VAT unless stated · source: Zulfi_Station_WBS_CBS_Schedule.xlsx</div></footer>
 </body>
 </html>

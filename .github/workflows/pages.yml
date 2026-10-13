@@ -43,7 +43,9 @@ jobs:
         run: cp -r pte-academy dist/pte-academy
       # Zulfi Railway Station: interactive management presentation (static, no build) is published at /zulfi-presentation/
       - name: Add the Zulfi presentation
-        run: cp -r zulfi-presentation dist/zulfi-presentation
+        run: |
+          python3 zulfi-presentation/build_offline.py
+          cp -r zulfi-presentation dist/zulfi-presentation
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
