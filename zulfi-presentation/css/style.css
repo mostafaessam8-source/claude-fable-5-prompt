@@ -298,3 +298,60 @@ svg .axl { stroke: #c4d0d8; }
 @media (max-width: 1750px) { #bar .brand small, #bSide .t, #bFilters .t, .tb-field .t { display: none; } .tb-btn { padding: 0 10px; } }
 @media (max-width: 1450px) { #bExit .t, #bFull .t, #bPrint .t, #bBack .t { display: none; } #scen { max-width: 160px; } [data-online] { display: none !important; } }
 @media print { #side { display: none !important; } #body { display: block; } }
+
+/* ================= mobile (< 900px): scrolling pages instead of a scaled 16:9 stage ================= */
+#mnav { display: none; }
+.mobile #bar { height: 48px; gap: 6px; padding: 0 10px; }
+.mobile #bar .brand div:last-child, .mobile #scen, .mobile .tb-field:nth-of-type(2), .mobile #bSide, .mobile #bFilters, .mobile #bBack, .mobile #bNext, .mobile #slideNo, .mobile #bFull, .mobile #bExit, .mobile [data-online] { display: none !important; }
+.mobile #bar .grow { display: none; }
+.mobile #bar .brand { margin-right: auto; }
+.mobile #startIn { width: 142px; }
+.mobile #filters { display: none; }
+.mobile.showf #filters { display: flex; }
+.mobile #mnav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--accent); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); gap: 6px; align-items: center; }
+.mobile #mnav button { flex: 1; height: 40px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; background: rgba(255,255,255,.1); color: #fff; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.mobile #mnav button:disabled { opacity: .35; }
+.mobile #mnav svg { width: 15px; height: 15px; }
+.mobile #mNo { color: #fff; font-weight: 700; font-size: 13px; min-width: 52px; text-align: center; }
+.mobile #body { position: relative; }
+.mobile #side { position: fixed; top: 48px; bottom: 58px; left: 0; width: min(86vw, 320px); z-index: 130; box-shadow: 8px 0 30px rgba(0,0,0,.3); }
+.mobile #viewport { display: block; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; }
+.mobile #stageBox { width: 100% !important; height: auto !important; position: static; }
+.mobile #stage { position: relative; width: 100%; height: auto; transform: none !important; box-shadow: none; overflow: visible; }
+.mobile .slide { position: relative; inset: auto; padding: 16px 12px 28px; min-height: 0; }
+.mobile .s-head { flex-wrap: wrap; gap: 10px; align-items: center; }
+.mobile .s-head h1 { font-size: 22px; } .mobile .s-head p { font-size: 13px; }
+.mobile .s-head .no { width: 38px; height: 38px; font-size: 16px; }
+.mobile .s-head .src { display: none; }
+.mobile .s-body { flex: none; min-height: 0; }
+.mobile .grow { flex: none; min-height: 0; }
+.mobile .row:not([style*="align-items"]) { flex-direction: column; }
+.mobile .row[style*="align-items"] { flex-wrap: wrap; }
+.mobile .row > .grow, .mobile .row > .panel, .mobile .row > .col, .mobile .col { width: auto !important; flex: none !important; }
+.mobile .panel[style*="width"], .mobile .col[style*="width"] { width: auto !important; }
+.mobile .panel > .pb { overflow-x: auto; }
+.mobile .panel .pb.scroll { max-height: 68vh; }
+.mobile .kpis { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+.mobile .kpi { padding: 10px 12px; } .mobile .kpi .v { font-size: 21px; }
+.mobile .dgrid { grid-template-columns: 1fr 1fr; }
+.mobile .agenda { grid-template-columns: 1fr 1fr; }
+.mobile .cover { padding: 28px 18px 36px !important; }
+.mobile .cover .cv { flex-direction: column; gap: 22px; }
+.mobile .cover h1 { font-size: 44px; } .mobile .cover h2 { font-size: 18px; }
+.mobile .cover .cv-stats { grid-template-columns: 1fr !important; margin-top: 22px !important; }
+.mobile .cover .cv-r { width: auto !important; }
+.mobile .cover .cv > div:first-child > div[style*="margin-top:auto"] { margin-top: 24px !important; }
+.mobile .legend { gap: 4px 10px; }
+.mobile .panel > .ph { flex-wrap: wrap; }
+.mobile .panel > .ph .right { margin-left: 0; width: 100%; }
+.mobile .gantt { height: 72vh; flex: none; }
+.mobile .gleft .pill { display: none; }
+.mobile .gbar { touch-action: none; }
+.mobile #drawer { position: fixed; width: 100%; max-width: 560px; z-index: 200; }
+.mobile #scrim { position: fixed; z-index: 190; }
+.mobile .tbl { font-size: 12.5px; }
+.mobile .hint { font-size: 11.5px; }
+.mobile .dstat .v { font-size: 16px; }
+.mobile .panel > .pb svg[viewBox]:not([width="100%"]) { max-width: 100%; }
+.mobile .row > div[style*="width:160px"] { margin: 0 auto; }
+@media (max-width: 899px) { html, body { overscroll-behavior: none; } }

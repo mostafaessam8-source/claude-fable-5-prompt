@@ -78,6 +78,8 @@
     sc.innerHTML = n ? `Revised · ${n} changed · finish ${fd === 0 ? 'unchanged' : F.days(fd)}` : 'Baseline schedule';
     A.renderFilters();
     $('#slideNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
+    $('#mNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
+    $('#mBack').disabled = A.s.slide === 0; $('#mNext').disabled = A.s.slide === A.slides.length - 1;
     $('#bBack').disabled = A.s.slide === 0;
     $('#bNext').disabled = A.s.slide === A.slides.length - 1;
     $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
@@ -103,6 +105,7 @@
     $$('.slide').forEach((s, k) => s.classList.toggle('active', k === i));
     if (A.dirty.has(i)) A.renderSlide(i);
     A.renderChrome(); A.save();
+    $('#viewport').scrollTop = 0;
     try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) { /* ignore */ }
   };
   A.next = () => A.go(A.s.slide + 1);
@@ -111,6 +114,12 @@
   /* ----------------------------------------------------------- scaling */
   A.fit = () => {
     const vp = $('#viewport');
+    const mob = window.innerWidth < 900;
+    if (mob !== A.mobile) {
+      A.mobile = mob; $('#app').classList.toggle('mobile', mob);
+      if (A.s.M && A.slides.length) { A.dirty = new Set(A.slides.map((_, i) => i)); A.renderSlide(A.s.slide); }
+    }
+    if (mob) { A.scale = 1; $('#stageBox').style.width = ''; $('#stageBox').style.height = ''; $('#stage').style.transform = 'none'; return; }
     const k = Math.min(vp.clientWidth / W, vp.clientHeight / H);
     A.scale = k;
     $('#stageBox').style.width = W * k + 'px'; $('#stageBox').style.height = H * k + 'px';
@@ -193,7 +202,10 @@
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
     $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
     $('#bSide').onclick = () => { $('#side').classList.toggle('hide'); setTimeout(A.fit, 30); };
-    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) A.go(+b.dataset.go); });
+    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { A.go(+b.dataset.go); if (A.mobile) $('#side').classList.add('hide'); } });
+    $('#mBack').onclick = A.back; $('#mNext').onclick = A.next;
+    $('#mSide').onclick = () => $('#side').classList.toggle('hide');
+    $('#mFilt').onclick = () => $('#app').classList.toggle('showf');
 
     // filters
     const fb = $('#filters');
@@ -220,6 +232,7 @@
       else if (e.key === 'f' || e.key === 'F') { A.isFull() ? A.exitFull() : A.enterFull(); }
     });
     window.addEventListener('resize', A.fit);
+    if (window.ResizeObserver) new ResizeObserver(() => A.fit()).observe($('#viewport'));
     document.addEventListener('fullscreenchange', A.syncFull); document.addEventListener('webkitfullscreenchange', A.syncFull);
     window.addEventListener('beforeprint', A.renderAll);
   }
@@ -237,7 +250,7 @@
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
     const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
-    if (window.innerWidth < 1250) $('#side').classList.add('hide');
+    if (window.innerWidth < 1500) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {

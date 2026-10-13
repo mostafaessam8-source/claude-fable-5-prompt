@@ -48,7 +48,7 @@
     const base = baseCurve(M, agg.list);
     const pct = []; const bpct = [];
     for (let k = 0; k < P; k++) { pct.push(agg.pct[lastIdx(M, k, per)]); bpct.push(base[lastIdx(M, k, per)]); }
-    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:${w > 900 ? 780 : 0}px">`;
     [0, 0.25, 0.5, 0.75, 1].forEach((p) => (s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(p)}" y2="${Y(p)}"/></g><text x="${L - 6}" y="${Y(p) + 4}" text-anchor="end" style="font-size:11px">${p * 100}%</text>`));
     for (let k = 0; k < P; k++) if (per > 1 || k % (o.step || 3) === 0) s += `<text x="${X(k)}" y="${h - B + 15}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text>` + (o.dates === false ? '' : `<text x="${X(k)}" y="${h - B + 28}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${per === 1 ? dt.fmtMY(M.bs[k]) : pSub(M, k, per)}</text>`);
     const pts = pct.map((p, k) => [X(k), Y(p)]);
@@ -76,7 +76,7 @@
     const tot = []; for (let k = 0; k < P; k++) tot.push(sumP(agg.total, k, per));
     const nice = F.nice(Math.max(...tot, 1), 5);
     const Y = (v) => T + ph - (v / nice.max) * ph;
-    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
     for (let v = 0; v <= nice.max + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
     const keys = ORDER[dim].filter((k) => agg.map[k]);
     const gap = per === 1 ? 3 : 10;

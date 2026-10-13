@@ -1,8 +1,11 @@
 /* Slide 6: interactive Gantt chart – edit dates inline, drag bars, links highlight */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const LW = { code: 88, name: 200, s: 118, e: 118, dur: 60 };
-  const LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur;
+  const DESK = { code: 88, name: 200, s: 118, e: 118, dur: 60 }, MOB = { code: 70, name: 134, s: 0, e: 0, dur: 0 };
+  const LW = Object.assign({}, DESK);
+  let LEFT = 0;
+  const setCols = () => { Object.assign(LW, A.mobile ? MOB : DESK); LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur; };
+  setCols();
   const RH = 25, HH = 59;
   const ui = () => (A.s.ui.g = A.s.ui.g || { zoom: 'fit', collapsed: [], base: true });
 
@@ -34,8 +37,9 @@
   };
 
   const dims = (M) => {
+    setCols();
     const u = ui(), t0 = M.start, t1 = M.bs[M.N];
-    const avail = 1512 - LEFT - 16;
+    const avail = A.mobile ? M.N * 36 : 1512 - LEFT - 16;
     const tlW = u.zoom === 'fit' ? avail : M.N * (u.zoom === 'wide' ? 54 : 84);
     return { t0, t1, tlW, ppd: tlW / (t1 - t0) };
   };
@@ -44,6 +48,7 @@
   Z.registerSlide({
     id: 'gantt', title: 'Gantt chart', desc: 'Edit dates · drag bars · dependencies',
     render(M) {
+      setCols();
       const u = ui(), { t0, tlW, ppd } = dims(M);
       const x = (d) => (d - t0) * ppd;
       const vis = A.visList();
