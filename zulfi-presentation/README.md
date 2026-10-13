@@ -1,0 +1,11 @@
+# Zulfi Railway Station – interactive management presentation
+
+Static HTML presentation (no build step, no external libraries) generated from `Zulfi_Station_WBS_CBS_Schedule.xlsx`.
+Published by GitHub Pages at `/zulfi-presentation/`.
+
+Slides follow the workbook sheets: Dashboard → WBS & CBS → 26-Month Schedule (Gantt, S-curve, cash-flow matrix) → Assumptions & Weightages → Scenario summary.
+
+* Project start date (default 17 Oct 2026) and every activity's start/finish are editable; Gantt, S-curve, milestones and cash flow recalculate live.
+* Linking modes control how dependent activities move. Weightages on the Assumptions slide are editable too.
+* Controls: Back / Next (← →), Full screen / Exit (F), Print (all slides), filters, click-for-details drawer.
+* `data.js` holds the extracted workbook data; `js/engine.js` reproduces the Excel cash flow exactly.
