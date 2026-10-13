@@ -1,10 +1,23 @@
 /* Slide 6: interactive Gantt chart – edit dates inline, drag bars, links highlight */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const LW = { code: 58, name: 222, s: 118, e: 118, dur: 60 };
+  const LW = { code: 88, name: 200, s: 118, e: 118, dur: 60 };
   const LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur;
   const RH = 25, HH = 59;
   const ui = () => (A.s.ui.g = A.s.ui.g || { zoom: 'fit', collapsed: [], base: true });
+
+  A.actions.phaseFilter = (el) => { const f = A.s.f; f.phase = f.phase === el.dataset.p ? 'all' : el.dataset.p; A.refilter(); };
+  // always-on Phase 1 / Phase 2 summary (whole project, ignores the filters) – click to filter by that phase
+  Z.phaseStrip = (M, compact) => {
+    const cur = A.s.f.phase;
+    return ['Phase 1', 'Phase 2'].map((p) => {
+      const l = M.acts.filter((a) => a.phase === p), v = l.reduce((s, a) => s + a.amount, 0);
+      const s0 = Math.min(...l.map((a) => a.s)), e0 = Math.max(...l.map((a) => a.e)), c = F.phaseColor(p);
+      return `<div class="hit" data-do="phaseFilter" data-p="${p}" title="Click to show only ${p}" style="display:flex;align-items:center;gap:12px;border:2px solid ${cur === p ? c : 'var(--line)'};background:${cur === p ? 'var(--brand-xl)' : '#fff'};border-left:8px solid ${c};border-radius:12px;padding:${compact ? '8px 12px' : '8px 16px'};cursor:pointer;flex:1;min-width:0">
+        <div><div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:${c}">${p}</div><div style="font-size:${compact ? 17 : 20}px;font-weight:800;color:var(--accent)">${F.M(v)} <span style="font-size:12px;color:var(--ink2);font-weight:600">SAR · ${F.pct(M.total ? v / M.total : 0, 0)}</span></div></div>
+        <div style="font-size:12px;color:var(--ink2);line-height:1.35;margin-left:auto;text-align:right">${l.length} activities<br>${dt.fmtShort(s0)} → ${dt.fmtShort(e0)}</div></div>`;
+    }).join('');
+  };
 
   A.actions.gZoom = (el) => { ui().zoom = el.dataset.z; A.refilter(); };
   A.actions.gBase = () => { ui().base = !ui().base; A.refilter(); };
@@ -64,7 +77,7 @@
           const auto = a.code === Z.AUTO;
           const tip = F.tip(`${a.code} · ${F.esc(a.name)}`, [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Amount', F.sar(a.amount)], ['', 'Float', a.critical ? 'critical (0 d)' : Math.round(a.float) + ' d'], ...(a.changed ? [['', 'vs baseline', `${F.days(a.ds)} start / ${F.days(a.de)} finish`]] : [])]);
           rows += `<div class="grow2 ${A.s.drawer && A.s.drawer.type === 'act' && A.s.drawer.id === a.code ? 'sel' : ''}" data-row="${a.code}"><div class="gleft" style="width:${LEFT}px;grid-template-columns:${LW.code}px ${LW.name}px ${LW.s}px ${LW.e}px ${LW.dur}px">
-            <div class="hit" data-act="${a.code}" style="color:var(--brand-d);font-weight:700;cursor:pointer;padding-left:16px">${a.code}</div>
+            <div class="hit" data-act="${a.code}" style="color:var(--brand-d);font-weight:700;cursor:pointer;padding-left:10px;display:flex;align-items:center;gap:6px"><span style="width:6px;height:16px;border-radius:2px;flex:none;background:${F.phaseColor(a.phase)}" title="${a.phase}"></span>${a.code}<span class="pill ${a.phase === 'Phase 1' ? 'p1' : 'p2'}" style="font-size:10px;padding:0 5px">${a.phase === 'Phase 1' ? 'P1' : 'P2'}</span></div>
             <div class="hit" data-act="${a.code}" title="${F.esc(a.desc)}" style="cursor:pointer">${F.esc(a.name)}</div>
             <div><input type="date" class="dinput ${a.ds ? 'chg' : ''}" style="width:112px;height:21px;font-size:11.5px;padding:0 3px" value="${dt.iso(a.s)}" ${auto ? 'disabled title="Spans the whole project"' : ''} data-chg="gdate" data-code="${a.code}" data-w="s"></div>
             <div><input type="date" class="dinput ${a.de ? 'chg' : ''}" style="width:112px;height:21px;font-size:11.5px;padding:0 3px" value="${dt.iso(a.e)}" ${auto ? 'disabled' : ''} data-chg="gdate" data-code="${a.code}" data-w="e"></div>
@@ -79,12 +92,13 @@
       const zbtn = (z, t) => `<button data-do="gZoom" data-z="${z}" class="${u.zoom === z ? 'on' : ''}">${t}</button>`;
       return A.head('3', 'Schedule – Gantt chart', 'Type a new date, or drag a bar / its ends – dependent activities, S-curve and cash flow all update live', 'Sheet 3 · 26-Month Schedule') +
         `<div class="s-body" style="gap:10px">
+          <div class="row" style="gap:12px;flex:none">${Z.phaseStrip(M, true)}</div>
           <div class="row" style="align-items:center;gap:14px;flex:none">
             <span class="seg">${zbtn('fit', 'Fit')}${zbtn('wide', 'Wide')}${zbtn('xwide', 'Extra wide')}</span>
             <button class="chip ${u.base ? 'on' : ''}" data-do="gBase">Show baseline</button>
             <button class="btn sm" data-do="gExpand">Expand groups</button><button class="btn sm" data-do="gCollapse">Collapse groups</button>
             <div class="legend" style="margin-left:auto">${Z.EPC.map((e) => `<span><i class="dot" style="background:${F.epcColor(e.key)}"></i>${{ GEN: 'General', ENG: 'Engineering', PROC: 'Procurement', CONS: 'Construction' }[e.key]}</span>`).join('')}
-              <span><i class="dot" style="background:repeating-linear-gradient(135deg,#aaa 0 3px,#fff 3px 6px)"></i>Long-lead</span><span><i class="dot" style="border:2px solid var(--bad);background:#fff"></i>Critical</span><span><i class="dot" style="border:2px dashed #8a1fbf;background:#fff"></i>Logic conflict</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div>
+              <span><i class="dot" style="background:var(--ph1)"></i>Phase 1</span><span><i class="dot" style="background:var(--ph2)"></i>Phase 2</span><span><i class="dot" style="background:repeating-linear-gradient(135deg,#aaa 0 3px,#fff 3px 6px)"></i>Long-lead</span><span><i class="dot" style="border:2px solid var(--bad);background:#fff"></i>Critical</span><span><i class="dot" style="border:2px dashed #8a1fbf;background:#fff"></i>Logic conflict</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div>
           </div>
           <div class="gantt" data-keep="gantt" id="gantt"><div class="gwrap" style="width:${LEFT + tlW}px">
             <div class="ghead"><div class="gleft" style="width:${LEFT}px;height:${HH}px;grid-template-columns:${LW.code}px ${LW.name}px ${LW.s}px ${LW.e}px ${LW.dur}px;font-size:11.5px;font-weight:700;text-transform:uppercase;color:var(--ink2)"><div>WBS</div><div>Activity</div><div>Start</div><div>Finish</div><div style="text-align:right">Dur</div></div>

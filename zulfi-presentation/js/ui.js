@@ -245,7 +245,7 @@
       if (h.startsWith('#s=')) st = Z.deserialize(decodeURIComponent(escape(atob(h.slice(3)))));
       else {
         const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (saved) { st = Z.deserialize(saved.ser); slide = saved.slide || 0; if (saved.f) Object.assign(A.s.f, saved.f); }
+        if (saved) { st = Z.deserialize(saved.ser); slide = saved.slide || 0; }
         if (/^#\d+$/.test(h)) slide = +h.slice(1) - 1;
       }
     } catch (e) { st = null; }
