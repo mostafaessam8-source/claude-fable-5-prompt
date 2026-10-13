@@ -302,7 +302,7 @@ svg .axl { stroke: #c4d0d8; }
 /* ================= mobile (< 900px): scrolling pages instead of a scaled 16:9 stage ================= */
 #mnav { display: none; }
 .mobile #bar { height: 48px; gap: 6px; padding: 0 10px; }
-.mobile #bar .brand div:last-child, .mobile #scen, .mobile .tb-field:nth-of-type(2), .mobile #bSide, .mobile #bFilters, .mobile #bBack, .mobile #bNext, .mobile #slideNo, .mobile #bFull, .mobile #bExit, .mobile [data-online] { display: none !important; }
+.mobile #bar .brand div:last-child, .mobile #scen, .mobile .tb-field:nth-of-type(2), .mobile #bSide, .mobile #bFilters, .mobile #bBack, .mobile #bNext, .mobile #slideNo, .mobile [data-online] { display: none !important; }
 .mobile #bar .grow { display: none; }
 .mobile #bar .brand { margin-right: auto; }
 .mobile #startIn { width: 142px; }
@@ -355,3 +355,5 @@ svg .axl { stroke: #c4d0d8; }
 .mobile .panel > .pb svg[viewBox]:not([width="100%"]) { max-width: 100%; }
 .mobile .row > div[style*="width:160px"] { margin: 0 auto; }
 @media (max-width: 899px) { html, body { overscroll-behavior: none; } }
+.mobile #bFull .t, .mobile #bExit .t, .mobile #bPrint .t { display: none; }
+.mobile #bFull, .mobile #bExit, .mobile #bPrint { padding: 0 11px; }
