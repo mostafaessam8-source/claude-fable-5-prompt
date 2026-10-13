@@ -250,7 +250,7 @@
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
     const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
-    if (window.innerWidth < 1500) $('#side').classList.add('hide');
+    if (window.innerWidth < 900) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {
