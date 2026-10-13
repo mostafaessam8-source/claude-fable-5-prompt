@@ -62,7 +62,7 @@
     const max = o.max || Math.max(...items.map((i) => i.value), 1);
     const h = items.length * rowH + pad * 2;
     const bw = w - labelW - valW;
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="xMinYMin meet">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="xMinYMin meet" style="min-width:${o.minW || 0}px">`;
     if (o.stack) {
       const bwS = w - valW; 
       items.forEach((it, i) => {
@@ -110,7 +110,7 @@
         squarify(list.slice(i), x, y + ch, w, h - ch);
       }
     })(nodes, 0, 0, W, H);
-    let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">`;
+    let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="min-width:640px">`;
     rects.forEach(({ n, x, y, w, h }) => {
       const tw = w - 14, chars = Math.floor(tw / 6.6);
       let t = n.label; if (t.length > chars) t = t.slice(0, Math.max(0, chars - 1)) + '…';

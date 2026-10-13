@@ -28,6 +28,7 @@
     <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
   </header>
   <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
+  <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt"></button><button id="mNext"></button></div>
   <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
 </div>
 <script src="data.js"></script>
@@ -45,6 +46,8 @@
   (function () {
     var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
     var T = function (t) { return '<span class="t">' + t + '</span>'; };
+    set('mBack', I.prev + 'Back'); set('mNext', 'Next' + I.next); set('mSide', I.menu + 'Sections'); set('mFilt', I.filter + 'Filters');
+    if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) { document.getElementById('bFull').style.display = 'none'; }
     set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
     set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
     set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));

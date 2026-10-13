@@ -307,6 +307,63 @@ svg .axl { stroke: #c4d0d8; }
 @media (max-width: 1450px) { #bExit .t, #bFull .t, #bPrint .t, #bBack .t { display: none; } #scen { max-width: 160px; } [data-online] { display: none !important; } }
 @media print { #side { display: none !important; } #body { display: block; } }
 
+/* ================= mobile (< 900px): scrolling pages instead of a scaled 16:9 stage ================= */
+#mnav { display: none; }
+.mobile #bar { height: 48px; gap: 6px; padding: 0 10px; }
+.mobile #bar .brand div:last-child, .mobile #scen, .mobile .tb-field:nth-of-type(2), .mobile #bSide, .mobile #bFilters, .mobile #bBack, .mobile #bNext, .mobile #slideNo, .mobile #bFull, .mobile #bExit, .mobile [data-online] { display: none !important; }
+.mobile #bar .grow { display: none; }
+.mobile #bar .brand { margin-right: auto; }
+.mobile #startIn { width: 142px; }
+.mobile #filters { display: none; }
+.mobile.showf #filters { display: flex; }
+.mobile #mnav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--accent); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); gap: 6px; align-items: center; }
+.mobile #mnav button { flex: 1; height: 40px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; background: rgba(255,255,255,.1); color: #fff; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.mobile #mnav button:disabled { opacity: .35; }
+.mobile #mnav svg { width: 15px; height: 15px; }
+.mobile #mNo { color: #fff; font-weight: 700; font-size: 13px; min-width: 52px; text-align: center; }
+.mobile #body { position: relative; }
+.mobile #side { position: fixed; top: 48px; bottom: 58px; left: 0; width: min(86vw, 320px); z-index: 130; box-shadow: 8px 0 30px rgba(0,0,0,.3); }
+.mobile #viewport { display: block; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 70px; }
+.mobile #stageBox { width: 100% !important; height: auto !important; position: static; }
+.mobile #stage { position: relative; width: 100%; height: auto; transform: none !important; box-shadow: none; overflow: visible; }
+.mobile .slide { position: relative; inset: auto; padding: 16px 12px 28px; min-height: 0; }
+.mobile .s-head { flex-wrap: wrap; gap: 10px; align-items: center; }
+.mobile .s-head h1 { font-size: 22px; } .mobile .s-head p { font-size: 13px; }
+.mobile .s-head .no { width: 38px; height: 38px; font-size: 16px; }
+.mobile .s-head .src { display: none; }
+.mobile .s-body { flex: none; min-height: 0; }
+.mobile .grow { flex: none; min-height: 0; }
+.mobile .row:not([style*="align-items"]) { flex-direction: column; }
+.mobile .row[style*="align-items"] { flex-wrap: wrap; }
+.mobile .row > .grow, .mobile .row > .panel, .mobile .row > .col, .mobile .col { width: auto !important; flex: none !important; }
+.mobile .panel[style*="width"], .mobile .col[style*="width"] { width: auto !important; }
+.mobile .panel > .pb { overflow-x: auto; }
+.mobile .panel .pb.scroll { max-height: 68vh; }
+.mobile .kpis { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+.mobile .kpi { padding: 10px 12px; } .mobile .kpi .v { font-size: 21px; }
+.mobile .dgrid { grid-template-columns: 1fr 1fr; }
+.mobile .agenda { grid-template-columns: 1fr 1fr; }
+.mobile .cover { padding: 28px 18px 36px !important; }
+.mobile .cover .cv { flex-direction: column; gap: 22px; }
+.mobile .cover h1 { font-size: 44px; } .mobile .cover h2 { font-size: 18px; }
+.mobile .cover .cv-stats { grid-template-columns: 1fr !important; margin-top: 22px !important; }
+.mobile .cover .cv-r { width: auto !important; }
+.mobile .cover .cv > div:first-child > div[style*="margin-top:auto"] { margin-top: 24px !important; }
+.mobile .legend { gap: 4px 10px; }
+.mobile .panel > .ph { flex-wrap: wrap; }
+.mobile .panel > .ph .right { margin-left: 0; width: 100%; }
+.mobile .gantt { height: 72vh; flex: none; }
+.mobile .gleft .pill { display: none; }
+.mobile .gbar { touch-action: none; }
+.mobile #drawer { position: fixed; width: 100%; max-width: 560px; z-index: 200; }
+.mobile #scrim { position: fixed; z-index: 190; }
+.mobile .tbl { font-size: 12.5px; }
+.mobile .hint { font-size: 11.5px; }
+.mobile .dstat .v { font-size: 16px; }
+.mobile .panel > .pb svg[viewBox]:not([width="100%"]) { max-width: 100%; }
+.mobile .row > div[style*="width:160px"] { margin: 0 auto; }
+@media (max-width: 899px) { html, body { overscroll-behavior: none; } }
+
 </style>
 </head>
 <body>
@@ -329,6 +386,7 @@ svg .axl { stroke: #c4d0d8; }
     <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
   </header>
   <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
+  <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt"></button><button id="mNext"></button></div>
   <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
 </div>
 <script>
@@ -725,7 +783,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const max = o.max || Math.max(...items.map((i) => i.value), 1);
     const h = items.length * rowH + pad * 2;
     const bw = w - labelW - valW;
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="xMinYMin meet">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="xMinYMin meet" style="min-width:${o.minW || 0}px">`;
     if (o.stack) {
       const bwS = w - valW; 
       items.forEach((it, i) => {
@@ -773,7 +831,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         squarify(list.slice(i), x, y + ch, w, h - ch);
       }
     })(nodes, 0, 0, W, H);
-    let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">`;
+    let out = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="min-width:640px">`;
     rects.forEach(({ n, x, y, w, h }) => {
       const tw = w - 14, chars = Math.floor(tw / 6.6);
       let t = n.label; if (t.length > chars) t = t.slice(0, Math.max(0, chars - 1)) + '…';
@@ -881,6 +939,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     sc.innerHTML = n ? `Revised · ${n} changed · finish ${fd === 0 ? 'unchanged' : F.days(fd)}` : 'Baseline schedule';
     A.renderFilters();
     $('#slideNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
+    $('#mNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
+    $('#mBack').disabled = A.s.slide === 0; $('#mNext').disabled = A.s.slide === A.slides.length - 1;
     $('#bBack').disabled = A.s.slide === 0;
     $('#bNext').disabled = A.s.slide === A.slides.length - 1;
     $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
@@ -906,6 +966,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $$('.slide').forEach((s, k) => s.classList.toggle('active', k === i));
     if (A.dirty.has(i)) A.renderSlide(i);
     A.renderChrome(); A.save();
+    $('#viewport').scrollTop = 0;
     try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) { /* ignore */ }
   };
   A.next = () => A.go(A.s.slide + 1);
@@ -914,6 +975,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   /* ----------------------------------------------------------- scaling */
   A.fit = () => {
     const vp = $('#viewport');
+    const mob = window.innerWidth < 900;
+    if (mob !== A.mobile) {
+      A.mobile = mob; $('#app').classList.toggle('mobile', mob);
+      if (A.s.M && A.slides.length) { A.dirty = new Set(A.slides.map((_, i) => i)); A.renderSlide(A.s.slide); }
+    }
+    if (mob) { A.scale = 1; $('#stageBox').style.width = ''; $('#stageBox').style.height = ''; $('#stage').style.transform = 'none'; return; }
     const k = Math.min(vp.clientWidth / W, vp.clientHeight / H);
     A.scale = k;
     $('#stageBox').style.width = W * k + 'px'; $('#stageBox').style.height = H * k + 'px';
@@ -996,7 +1063,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
     $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
     $('#bSide').onclick = () => { $('#side').classList.toggle('hide'); setTimeout(A.fit, 30); };
-    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) A.go(+b.dataset.go); });
+    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { A.go(+b.dataset.go); if (A.mobile) $('#side').classList.add('hide'); } });
+    $('#mBack').onclick = A.back; $('#mNext').onclick = A.next;
+    $('#mSide').onclick = () => $('#side').classList.toggle('hide');
+    $('#mFilt').onclick = () => $('#app').classList.toggle('showf');
 
     // filters
     const fb = $('#filters');
@@ -1023,6 +1093,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       else if (e.key === 'f' || e.key === 'F') { A.isFull() ? A.exitFull() : A.enterFull(); }
     });
     window.addEventListener('resize', A.fit);
+    if (window.ResizeObserver) new ResizeObserver(() => A.fit()).observe($('#viewport'));
     document.addEventListener('fullscreenchange', A.syncFull); document.addEventListener('webkitfullscreenchange', A.syncFull);
     window.addEventListener('beforeprint', A.renderAll);
   }
@@ -1040,7 +1111,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
     const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
-    if (window.innerWidth < 1250) $('#side').classList.add('hide');
+    if (window.innerWidth < 1500) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {
@@ -1191,12 +1262,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         ['Section 4', 'Assumptions & Weightages', 'Cost weightages, gates & scenario summary', 'assump'],
       ];
       const n = M.changed.length;
-      return `<div style="display:flex;flex:1;gap:50px">
+      return `<div class="cv" style="display:flex;flex:1;gap:50px">
         <div style="flex:1;display:flex;flex-direction:column">
           <div class="eyebrow">Saudi Arabia Railway Company</div>
           <h1>Zulfi Railway<br>Station</h1>
           <h2>Project Cost, WBS / CBS &amp; 26-Month Schedule</h2>
-          <div style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
+          <div class="cv-stats" style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
             ${stat('Total project cost (excl. VAT)', F.sar(M.total))}
             ${stat('Project duration', F.months(M.durMonths) + ' months')}
             ${stat('Planned completion', dt.fmt(M.finish))}
@@ -1206,7 +1277,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
             <div class="agenda">${sec.map((s) => `<button data-nav="${A.idx(s[3])}"><em>${s[0]}</em><b>${s[1]}</b><span>${s[2]}</span></button>`).join('')}</div>
           </div>
         </div>
-        <div style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
+        <div class="cv-r" style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
           <div class="startbox"><label for="coverStart">Project start date</label>
             <input type="date" id="coverStart" value="${dt.iso(M.start)}" data-chg="start">
             <div style="margin-top:12px;font-size:13px;line-height:1.5;opacity:.92">Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.</div></div>
@@ -1252,7 +1323,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         `<div class="s-body">${kp}
         <div class="row grow" style="min-height:0">
           <div class="panel" style="width:640px"><div class="ph"><h3>Cost by WBS group</h3><span class="sub">SAR, excl. VAT</span></div>
-            <div class="pb">${F.hbars(gItems, { w: 606, rowH: 74, stack: true, valW: 110, max: Math.max(...gItems.map((i) => i.value), 1) })}</div></div>
+            <div class="pb">${F.hbars(gItems, { w: 606, rowH: 74, stack: true, valW: 110, minW: 460, max: Math.max(...gItems.map((i) => i.value), 1) })}</div></div>
           <div class="panel grow"><div class="ph"><h3>Cumulative spend – S-curve</h3><div class="right"><button class="btn sm" data-nav="${A.idx('cashflow')}">Open cash flow ›</button></div></div>
             <div class="pb">${F.scurve(M, agg, { w: 378, h: 440, L: 40, R: 8, step: 3 })}
               <div class="row" style="margin-top:8px;gap:10px">
@@ -1282,7 +1353,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)'],
         ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)'],
       ];
-      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300">`;
+      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300" style="min-width:900px">`;
       // quarter ticks
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       bands.forEach((b, i) => {
@@ -1434,8 +1505,11 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 /* Slide 6: interactive Gantt chart – edit dates inline, drag bars, links highlight */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const LW = { code: 88, name: 200, s: 118, e: 118, dur: 60 };
-  const LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur;
+  const DESK = { code: 88, name: 200, s: 118, e: 118, dur: 60 }, MOB = { code: 70, name: 134, s: 0, e: 0, dur: 0 };
+  const LW = Object.assign({}, DESK);
+  let LEFT = 0;
+  const setCols = () => { Object.assign(LW, A.mobile ? MOB : DESK); LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur; };
+  setCols();
   const RH = 25, HH = 59;
   const ui = () => (A.s.ui.g = A.s.ui.g || { zoom: 'fit', collapsed: [], base: true });
 
@@ -1467,8 +1541,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   };
 
   const dims = (M) => {
+    setCols();
     const u = ui(), t0 = M.start, t1 = M.bs[M.N];
-    const avail = 1512 - LEFT - 16;
+    const avail = A.mobile ? M.N * 36 : 1512 - LEFT - 16;
     const tlW = u.zoom === 'fit' ? avail : M.N * (u.zoom === 'wide' ? 54 : 84);
     return { t0, t1, tlW, ppd: tlW / (t1 - t0) };
   };
@@ -1477,6 +1552,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   Z.registerSlide({
     id: 'gantt', title: 'Gantt chart', desc: 'Edit dates · drag bars · dependencies',
     render(M) {
+      setCols();
       const u = ui(), { t0, tlW, ppd } = dims(M);
       const x = (d) => (d - t0) * ppd;
       const vis = A.visList();
@@ -1649,7 +1725,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const base = baseCurve(M, agg.list);
     const pct = []; const bpct = [];
     for (let k = 0; k < P; k++) { pct.push(agg.pct[lastIdx(M, k, per)]); bpct.push(base[lastIdx(M, k, per)]); }
-    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:${w > 900 ? 780 : 0}px">`;
     [0, 0.25, 0.5, 0.75, 1].forEach((p) => (s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(p)}" y2="${Y(p)}"/></g><text x="${L - 6}" y="${Y(p) + 4}" text-anchor="end" style="font-size:11px">${p * 100}%</text>`));
     for (let k = 0; k < P; k++) if (per > 1 || k % (o.step || 3) === 0) s += `<text x="${X(k)}" y="${h - B + 15}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text>` + (o.dates === false ? '' : `<text x="${X(k)}" y="${h - B + 28}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${per === 1 ? dt.fmtMY(M.bs[k]) : pSub(M, k, per)}</text>`);
     const pts = pct.map((p, k) => [X(k), Y(p)]);
@@ -1677,7 +1753,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const tot = []; for (let k = 0; k < P; k++) tot.push(sumP(agg.total, k, per));
     const nice = F.nice(Math.max(...tot, 1), 5);
     const Y = (v) => T + ph - (v / nice.max) * ph;
-    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">`;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
     for (let v = 0; v <= nice.max + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
     const keys = ORDER[dim].filter((k) => agg.map[k]);
     const gap = per === 1 ? 3 : 10;
@@ -1902,6 +1978,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   (function () {
     var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
     var T = function (t) { return '<span class="t">' + t + '</span>'; };
+    set('mBack', I.prev + 'Back'); set('mNext', 'Next' + I.next); set('mSide', I.menu + 'Sections'); set('mFilt', I.filter + 'Filters');
+    if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) { document.getElementById('bFull').style.display = 'none'; }
     set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
     set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
     set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));

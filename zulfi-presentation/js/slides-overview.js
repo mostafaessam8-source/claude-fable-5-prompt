@@ -23,12 +23,12 @@
         ['Section 4', 'Assumptions & Weightages', 'Cost weightages, gates & scenario summary', 'assump'],
       ];
       const n = M.changed.length;
-      return `<div style="display:flex;flex:1;gap:50px">
+      return `<div class="cv" style="display:flex;flex:1;gap:50px">
         <div style="flex:1;display:flex;flex-direction:column">
           <div class="eyebrow">Saudi Arabia Railway Company</div>
           <h1>Zulfi Railway<br>Station</h1>
           <h2>Project Cost, WBS / CBS &amp; 26-Month Schedule</h2>
-          <div style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
+          <div class="cv-stats" style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
             ${stat('Total project cost (excl. VAT)', F.sar(M.total))}
             ${stat('Project duration', F.months(M.durMonths) + ' months')}
             ${stat('Planned completion', dt.fmt(M.finish))}
@@ -38,7 +38,7 @@
             <div class="agenda">${sec.map((s) => `<button data-nav="${A.idx(s[3])}"><em>${s[0]}</em><b>${s[1]}</b><span>${s[2]}</span></button>`).join('')}</div>
           </div>
         </div>
-        <div style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
+        <div class="cv-r" style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
           <div class="startbox"><label for="coverStart">Project start date</label>
             <input type="date" id="coverStart" value="${dt.iso(M.start)}" data-chg="start">
             <div style="margin-top:12px;font-size:13px;line-height:1.5;opacity:.92">Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.</div></div>
@@ -84,7 +84,7 @@
         `<div class="s-body">${kp}
         <div class="row grow" style="min-height:0">
           <div class="panel" style="width:640px"><div class="ph"><h3>Cost by WBS group</h3><span class="sub">SAR, excl. VAT</span></div>
-            <div class="pb">${F.hbars(gItems, { w: 606, rowH: 74, stack: true, valW: 110, max: Math.max(...gItems.map((i) => i.value), 1) })}</div></div>
+            <div class="pb">${F.hbars(gItems, { w: 606, rowH: 74, stack: true, valW: 110, minW: 460, max: Math.max(...gItems.map((i) => i.value), 1) })}</div></div>
           <div class="panel grow"><div class="ph"><h3>Cumulative spend – S-curve</h3><div class="right"><button class="btn sm" data-nav="${A.idx('cashflow')}">Open cash flow ›</button></div></div>
             <div class="pb">${F.scurve(M, agg, { w: 378, h: 440, L: 40, R: 8, step: 3 })}
               <div class="row" style="margin-top:8px;gap:10px">
@@ -114,7 +114,7 @@
         ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)'],
         ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)'],
       ];
-      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300">`;
+      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300" style="min-width:900px">`;
       // quarter ticks
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       bands.forEach((b, i) => {
