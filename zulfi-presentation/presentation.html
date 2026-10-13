@@ -12,23 +12,23 @@
   <header id="bar">
     <a class="brand" href="index.html" title="Back to the guide" style="color:inherit;text-decoration:none"><div class="logo">SAR</div><div>Zulfi Railway Station<small>Cost, WBS &amp; 26-month schedule</small></div></a>
     <span class="grow"></span>
-    <label class="tb-field" title="Changing the project start date moves the whole schedule">Project start <input type="date" id="startIn"></label>
-    <label class="tb-field" title="How dependent activities react when you move an activity">Linking
-      <select id="linkSel"><option value="two">Auto-link (move successors)</option><option value="push">Push delays only</option><option value="off">Off (independent)</option></select></label>
+    <label class="tb-field" title="Changing the project start date moves the whole schedule"><span class="t">Project start</span> <input type="date" id="startIn"></label>
+    <label class="tb-field" title="How dependent activities react when you move an activity"><span class="t">Linking</span>
+      <select id="linkSel"><option value="two">Auto-link</option><option value="push">Push only</option><option value="off">Off</option></select></label>
     <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
     <span class="grow"></span>
+    <button class="tb-btn" id="bSide" title="Show / hide the sections menu"></button>
     <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
     <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
     <span id="slideNo"></span>
     <button class="tb-btn" id="bNext" title="Next slide (→)"></button>
-    <span id="slideMenu"><button class="tb-btn" title="All slides"></button><div id="slideList"></div></span>
     <button class="tb-btn" id="bFull" title="Full screen (F)"></button>
     <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
-    <a class="tb-btn" data-online href="index.html#download" title="Guide and offline download" style="text-decoration:none">Guide &amp; offline copy</a>
+    <a class="tb-btn" data-online href="index.html#download" title="Guide and offline download" style="text-decoration:none">Guide</a>
     <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
   </header>
   <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
-  <main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main>
+  <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
 </div>
 <script src="data.js"></script>
 <script src="js/engine.js"></script>
@@ -44,10 +44,10 @@
   // toolbar icon + label markup
   (function () {
     var I = Z.app.icons, set = function (id, h) { document.getElementById(id).innerHTML = h; };
-    set('bFilters', I.list + 'Filters');
-    set('bBack', I.prev + 'Back'); set('bNext', 'Next' + I.next);
-    document.querySelector('#slideMenu > button').innerHTML = I.list + 'Slides';
-    set('bFull', I.full + 'Full screen'); set('bExit', I.exit + 'Exit full screen'); set('bPrint', I.print + 'Print');
+    var T = function (t) { return '<span class="t">' + t + '</span>'; };
+    set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
+    set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
+    set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));
     Z.app.boot();
   })();
 </script>
