@@ -202,7 +202,7 @@
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
     $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
     $('#bSide').onclick = () => { $('#side').classList.toggle('hide'); setTimeout(A.fit, 30); };
-    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { A.go(+b.dataset.go); if (A.mobile) $('#side').classList.add('hide'); } });
+    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { A.go(+b.dataset.go); if (window.innerWidth < 600) $('#side').classList.add('hide'); } });
     $('#mBack').onclick = A.back; $('#mNext').onclick = A.next;
     $('#mSide').onclick = () => $('#side').classList.toggle('hide');
     $('#mFilt').onclick = () => $('#app').classList.toggle('showf');
@@ -250,7 +250,7 @@
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
     const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
-    if (window.innerWidth < 900) $('#side').classList.add('hide');
+    if (window.innerWidth < 600) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {
