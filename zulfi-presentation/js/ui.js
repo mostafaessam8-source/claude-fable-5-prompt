@@ -18,6 +18,8 @@
     full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
     exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>',
+    filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
   };
 
@@ -78,7 +80,7 @@
     $('#slideNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
     $('#bBack').disabled = A.s.slide === 0;
     $('#bNext').disabled = A.s.slide === A.slides.length - 1;
-    $$('#slideList button').forEach((b, i) => b.classList.toggle('on', i === A.s.slide));
+    $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
   };
 
   A.head = (no, title, sub, src) =>
@@ -190,9 +192,8 @@
     $('#scen').onclick = () => A.go(A.slides.findIndex((s) => s.id === 'scenario'));
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
     $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
-    $('#slideMenu > button').onclick = (e) => { e.stopPropagation(); $('#slideList').classList.toggle('open'); };
-    document.addEventListener('click', () => $('#slideList').classList.remove('open'));
-    $('#slideList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) A.go(+b.dataset.i); });
+    $('#bSide').onclick = () => { $('#side').classList.toggle('hide'); setTimeout(A.fit, 30); };
+    $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) A.go(+b.dataset.go); });
 
     // filters
     const fb = $('#filters');
@@ -234,7 +235,9 @@
   A.boot = () => {
     // slides
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
-    $('#slideList').innerHTML = A.slides.map((s, i) => `<button data-i="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`).join('');
+    const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
+    $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
+    if (window.innerWidth < 1250) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
     try {
