@@ -18,6 +18,7 @@
     full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
     exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>',
+    reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>',
     filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
@@ -169,7 +170,15 @@
 
   /* -------------------------------------------------------- built-in actions */
   A.actions.closeDrawer = () => A.closeDrawer();
-  A.actions.resetAll = () => { if (confirm('Reset all schedule changes and assumptions back to the baseline Excel plan?')) { A.setState(Z.newState(dt.iso(A.s.st.start))); A.closeDrawer(); } };
+  A.actions.resetDefault = () => {
+    if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (17 Oct 2026), all activity dates, weightages, filters and views.')) return;
+    A.s.st = Z.newState('2026-10-17');
+    Object.assign(A.s.f, { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' });
+    A.s.ui = {}; A.s.drawer = null; $('#fQ').value = '';
+    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+    A.update(); A.closeDrawer();
+  };
+  A.actions.resetAll = A.actions.resetDefault;
   A.actions.resetAct = (el) => A.setState(Z.resetActivity(A.s.st, el.dataset.code));
 
   function bind() {
@@ -198,6 +207,7 @@
     $('#bBack').onclick = A.back; $('#bNext').onclick = A.next;
     $('#bFull').onclick = A.enterFull; $('#bExit').onclick = A.exitFull; $('#bPrint').onclick = A.print;
     $('#bFilters').onclick = () => { const f = $('#filters'); f.style.display = f.style.display === 'none' ? '' : 'none'; setTimeout(A.fit, 20); };
+    $('#bReset').onclick = A.actions.resetDefault;
     $('#scen').onclick = () => A.go(A.slides.findIndex((s) => s.id === 'scenario'));
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
     $('#linkSel').onchange = (e) => { const st = Z.cloneState(A.s.st); st.link = e.target.value; A.setState(st); };
