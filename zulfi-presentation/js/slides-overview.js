@@ -105,9 +105,9 @@
   Z.registerSlide({
     id: 'miles', title: 'Milestones & key gates', desc: 'Design → permit → procurement → construction', cls: '',
     render(M) {
-      const ms = Z.milestones(M);
-      const X0 = 30, X1 = 1490, T = M.finish - M.start + 1;
-      const x = (d) => X0 + ((d - M.start) / T) * (X1 - X0);
+      const ms = Z.milestones(M), P2 = Z.phase2(M);
+      const X0 = 30, X1 = 1490, t0 = Math.min(M.start, ...ms.map((m) => m.d)) - 4, T = M.finish - t0 + 1;
+      const x = (d) => X0 + ((d - t0) / T) * (X1 - X0);
       const bands = [
         ['Design & approvals', M.acts.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'],
         ['Work permit gate', M.acts.filter((a) => a.code === '1.3'), 'var(--c4)'],
@@ -116,7 +116,7 @@
       ];
       let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300" style="min-width:900px">`;
       // quarter ticks
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       bands.forEach((b, i) => {
         const sp = span(b[1]); if (!sp) return;
         const y = 100 + i * 40;
@@ -124,9 +124,10 @@
       });
       svg += `<line x1="${X0}" x2="${X1}" y1="62" y2="62" stroke="#9fb0bb" stroke-width="2"/>`;
       ms.forEach((m, i) => {
-        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14 - (lvl === 0 ? 0 : 0);
+        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14;
+        const col = m.delta > 0 ? 'var(--bad)' : m.k === 'grant1' || m.k === 'grant2' ? 'var(--c4)' : m.k === 'p2' || m.k === 'p2late' ? 'var(--ph2)' : m.k === 'ntp' ? 'var(--c3)' : 'var(--brand)';
         const anchor = i === 0 ? 'start' : i === ms.length - 1 ? 'end' : 'middle';
-        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${m.delta > 0 ? 'var(--bad)' : 'var(--brand)'}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
+        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
       });
       svg += '</svg>';
 
@@ -140,7 +141,7 @@
         <div class="row grow">
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
-            ${ms.map((m, i) => `<tr class="${m.code ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td><b>${dt.fmt(m.d)}</b></td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
+            ${ms.map((m, i) => `<tr class="${m.code || (m.nav && m.nav !== 'miles') ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} ${m.edit ? 'style="background:#f1eefc"' : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td>${m.edit ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" min="${dt.iso(M.start)}" data-chg="p2date" title="Move the Phase 2 start – the whole programme updates">` : `<b>${dt.fmt(m.d)}</b>`}</td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
             </tbody></table></div></div>
           <div class="col grow" style="gap:12px">
             <div class="row" style="gap:12px">
@@ -150,6 +151,8 @@
             <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb" style="font-size:13.5px;line-height:1.55">
               <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
               <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
+              <p style="margin:0 0 8px"><b>Phase 2:</b> must start by <a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a> to hold completion${P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : ''}. Move the milestone in the register (row ${ms.findIndex((m) => m.k === 'p2') + 1}) or on the Phase 2 slide.</p>
+              <p style="margin:0 0 8px"><b>Advance payment:</b> ${F.sar(M.pay.amount)} (${M.pay.pct}% of contract) at NTP, recovered ${F.sar(M.pay.perMonth)} per month over ${M.pay.months} months.</p>
               <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on ${dt.fmt(M.by['1.3'].e)} – it follows detailed-design approval (${dt.fmt(M.by['2.6'].e)}).</p>
               ${M.conflicts.length ? `<div class="note bad">${M.conflicts.length} dependency conflict(s): ${M.conflicts.slice(0, 5).map((a) => a.code).join(', ')}${M.conflicts.length > 5 ? '…' : ''} start earlier than their predecessor allows. Open the Gantt to resolve.</div>` : '<div class="note ok">No dependency conflicts – all finish-to-start links are respected.</div>'}
             </div></div>

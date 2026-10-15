@@ -104,8 +104,10 @@
   }
 
   /* ---------------------------------------------------------------- state */
-  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two' });
-  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link });
+  Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
+  Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS } });
+  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) } });
 
   /* ------------------------------------------------------- distribution */
   function distribute(a, bs, N, amount) {
@@ -176,6 +178,15 @@
       a.float = lf - a.e; a.critical = a.float <= 0;
     }
     by[Z.AUTO].float = 0; by[Z.AUTO].critical = false;
+    // float against the BASELINE completion date (negative = would finish after the baseline completion)
+    const finB = baseD[Z.AUTO][1], LSb = {};
+    for (let i = Z.TOPO.length - 1; i >= 0; i--) {
+      const c = Z.TOPO[i], a = by[c];
+      if (c === Z.AUTO) { a.floatB = 0; continue; }
+      let lf = finB;
+      a.succ.forEach((sc) => { if (sc === Z.AUTO) return; lf = Math.min(lf, LSb[sc] - Math.min(lagBase(c, sc), 1)); });
+      LSb[c] = lf - a.dur + 1; a.floatB = lf - a.e;
+    }
 
     // totals
     const totalM = new Array(N).fill(0);
@@ -183,6 +194,19 @@
     const total = acts.reduce((s, a) => s + a.amount, 0);
     let c = 0; const cum = totalM.map((v) => (c += v));
     const pct = cum.map((v) => v / total);
+
+    // advance payment: received at NTP (month 1), recovered in equal monthly deductions until the last project month
+    const adv = st.adv || Z.DEFAULT_ADV;
+    const advAmt = total * Math.max(0, adv.pct) / 100;
+    const recFrom = Math.min(Math.max(1, Math.round(adv.from || 1)), N);
+    const nRec = N - recFrom + 1;
+    const advIn = new Array(N).fill(0); advIn[0] = advAmt;
+    const rec = new Array(N).fill(0); for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec;
+    const net = totalM.map((v, k) => v + advIn[k] - rec[k]);
+    let cp = 0, bal = 0;
+    const cumPay = net.map((v) => (cp += v));
+    const balance = advIn.map((v, k) => (bal += v - rec[k]));
+    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: nRec ? advAmt / nRec : 0, months: nRec, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
 
     // baseline monthly (for comparison): month-index based
     const baseActs = ACTS.map((def) => {
@@ -195,7 +219,7 @@
     const M = {
       st, acts, by, N, bs, start: st.start, finish, total, totalM, cum, pct,
       base: { acts: baseActs, by: Object.fromEntries(baseActs.map((a) => [a.code, a])), finish: baseD['1.1'][1] },
-      durMonths: dm,
+      durMonths: dm, pay: payment,
       changed: acts.filter((a) => a.changed),
     };
     M.base.totalM = new Array(Z.BASE_MONTHS).fill(0);
@@ -283,19 +307,59 @@
   };
 
   /* ---------------------------------------------------------- milestones */
+  /* ------------------------------------------------------------ Phase 2 */
+  Z.isP2 = (a) => a.phase === 'Phase 2';
+  // analysis of the Phase 2 packages (Access Road, FF&E, Generator Room, Railway Track)
+  Z.phase2 = function (M) {
+    const l = M.acts.filter(Z.isP2);
+    const start = Math.min(...l.map((a) => a.s)), baseStart = Math.min(...l.map((a) => a.bs));
+    const minF = Math.min(...l.map((a) => a.floatB));
+    return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
+  };
+  // Move the Phase 2 start (release). Later: Phase 2 activities starting before it are pushed (with their successors).
+  // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
+  Z.setPhase2Start = function (st, day) {
+    const bd = baseDates(st.start);
+    const p2 = ACTS.filter(Z.isP2);
+    const b0 = Math.min(...p2.map((a) => bd[a.code][0]));
+    day = Math.max(day, st.start);
+    let cur = Z.cloneState(st);
+    p2.forEach((a) => delete cur.ov[a.code]);
+    const delta = day - b0;
+    if (delta < 0) {
+      // pull only the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
+      const early = new Set(p2.filter((a) => bd[a.code][0] <= b0 + 45).map((a) => a.item));
+      p2.filter((a) => early.has(a.item)).forEach((a) => (cur.ov[a.code] = [Math.max(st.start, bd[a.code][0] + delta), Math.max(st.start, bd[a.code][1] + delta)]));
+      return cur;
+    }
+    if (delta === 0) return cur;
+    Z.TOPO.filter((c) => Z.isP2(BY[c])).forEach((c) => {
+      const m = Z.compute(cur).by[c];
+      if (m.s < day) cur = Z.setActivity(cur, c, day, day + (m.e - m.s), { link: 'push' });
+    });
+    return cur;
+  };
+
+  /* ---------------------------------------------------------- milestones */
   Z.milestones = function (M) {
-    const b = M.by, bb = M.base.by;
+    const b = M.by, bb = M.base.by, st = M.st;
+    const g1 = st.ms ? st.ms.g1 : 30, g2 = st.ms ? st.ms.g2 : 30;
+    const P2 = Z.phase2(M);
     const minS = (f) => Math.min(...M.acts.filter(f).map((a) => a.s));
     const maxE = (f) => Math.max(...M.acts.filter(f).map((a) => a.e));
     const bminS = (f) => Math.min(...M.base.acts.filter(f).map((a) => a.s));
     const bmaxE = (f) => Math.max(...M.base.acts.filter(f).map((a) => a.e));
     const ll = (a) => a.ll && a.kind === 'a3';
     const list = [
-      { k: 'start', name: 'Project start / mobilisation', d: M.start, bd: M.start, code: '1.1' },
+      { k: 'grant1', name: 'Phase 1 amount granted (funds approved)', d: M.start - g1, bd: M.start - g1, nav: 'miles' },
+      { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
       { k: 'access', name: 'Access permits approved', d: b['1.2'].e, bd: bb['1.2'].e, code: '1.2' },
       { k: 'concept', name: 'Concept design approved', d: b['2.2'].e, bd: bb['2.2'].e, code: '2.2' },
       { k: 'prelim', name: 'Preliminary design approved', d: b['2.4'].e, bd: bb['2.4'].e, code: '2.4' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
+      { k: 'grant2', name: 'Phase 2 amount granted (funds approved)', d: P2.start - g2, bd: P2.baseStart - g2, nav: 'phase2' },
+      { k: 'p2', name: 'Phase 2 start (release) – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
+      { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
       { k: 'detail', name: 'Detailed design approved', d: b['2.6'].e, bd: bb['2.6'].e, code: '2.6' },
       { k: 'permit', name: 'Work permit approved', d: b['1.3'].e, bd: bb['1.3'].e, code: '1.3' },
       { k: 'cons', name: 'Construction starts on site', d: minS((a) => a.kind === 'b'), bd: bminS((a) => a.kind === 'b') },
@@ -308,13 +372,14 @@
 
   /* ------------------------------------------------------------ sharing */
   Z.serialize = function (st) {
-    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A };
+    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms };
     Object.keys(st.ov).forEach((c) => (o.ov[c] = [dt.iso(st.ov[c][0]), dt.iso(st.ov[c][1])]));
     return JSON.stringify(o);
   };
   Z.deserialize = function (txt) {
     const o = JSON.parse(txt);
     const st = Z.newState(o.s); st.link = o.l || 'two';
+    if (o.adv) st.adv = { ...Z.DEFAULT_ADV, ...o.adv }; if (o.ms) st.ms = { ...Z.DEFAULT_MS, ...o.ms };
     if (o.A) { const A = Z.cloneA(Z.DEFAULT_A); Object.assign(A.disc, o.A.disc); A.proc = o.A.proc || A.proc; Object.assign(A.stage, o.A.stage); Object.assign(A.sub, o.A.sub); st.A = A; }
     Object.keys(o.ov || {}).forEach((c) => { if (BY[c]) st.ov[c] = [dt.parse(o.ov[c][0]), dt.parse(o.ov[c][1])]; });
     return st;

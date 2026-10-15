@@ -514,8 +514,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   }
 
   /* ---------------------------------------------------------------- state */
-  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two' });
-  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link });
+  Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
+  Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS } });
+  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) } });
 
   /* ------------------------------------------------------- distribution */
   function distribute(a, bs, N, amount) {
@@ -586,6 +588,15 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       a.float = lf - a.e; a.critical = a.float <= 0;
     }
     by[Z.AUTO].float = 0; by[Z.AUTO].critical = false;
+    // float against the BASELINE completion date (negative = would finish after the baseline completion)
+    const finB = baseD[Z.AUTO][1], LSb = {};
+    for (let i = Z.TOPO.length - 1; i >= 0; i--) {
+      const c = Z.TOPO[i], a = by[c];
+      if (c === Z.AUTO) { a.floatB = 0; continue; }
+      let lf = finB;
+      a.succ.forEach((sc) => { if (sc === Z.AUTO) return; lf = Math.min(lf, LSb[sc] - Math.min(lagBase(c, sc), 1)); });
+      LSb[c] = lf - a.dur + 1; a.floatB = lf - a.e;
+    }
 
     // totals
     const totalM = new Array(N).fill(0);
@@ -593,6 +604,19 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const total = acts.reduce((s, a) => s + a.amount, 0);
     let c = 0; const cum = totalM.map((v) => (c += v));
     const pct = cum.map((v) => v / total);
+
+    // advance payment: received at NTP (month 1), recovered in equal monthly deductions until the last project month
+    const adv = st.adv || Z.DEFAULT_ADV;
+    const advAmt = total * Math.max(0, adv.pct) / 100;
+    const recFrom = Math.min(Math.max(1, Math.round(adv.from || 1)), N);
+    const nRec = N - recFrom + 1;
+    const advIn = new Array(N).fill(0); advIn[0] = advAmt;
+    const rec = new Array(N).fill(0); for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec;
+    const net = totalM.map((v, k) => v + advIn[k] - rec[k]);
+    let cp = 0, bal = 0;
+    const cumPay = net.map((v) => (cp += v));
+    const balance = advIn.map((v, k) => (bal += v - rec[k]));
+    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: nRec ? advAmt / nRec : 0, months: nRec, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
 
     // baseline monthly (for comparison): month-index based
     const baseActs = ACTS.map((def) => {
@@ -605,7 +629,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const M = {
       st, acts, by, N, bs, start: st.start, finish, total, totalM, cum, pct,
       base: { acts: baseActs, by: Object.fromEntries(baseActs.map((a) => [a.code, a])), finish: baseD['1.1'][1] },
-      durMonths: dm,
+      durMonths: dm, pay: payment,
       changed: acts.filter((a) => a.changed),
     };
     M.base.totalM = new Array(Z.BASE_MONTHS).fill(0);
@@ -693,19 +717,59 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   };
 
   /* ---------------------------------------------------------- milestones */
+  /* ------------------------------------------------------------ Phase 2 */
+  Z.isP2 = (a) => a.phase === 'Phase 2';
+  // analysis of the Phase 2 packages (Access Road, FF&E, Generator Room, Railway Track)
+  Z.phase2 = function (M) {
+    const l = M.acts.filter(Z.isP2);
+    const start = Math.min(...l.map((a) => a.s)), baseStart = Math.min(...l.map((a) => a.bs));
+    const minF = Math.min(...l.map((a) => a.floatB));
+    return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
+  };
+  // Move the Phase 2 start (release). Later: Phase 2 activities starting before it are pushed (with their successors).
+  // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
+  Z.setPhase2Start = function (st, day) {
+    const bd = baseDates(st.start);
+    const p2 = ACTS.filter(Z.isP2);
+    const b0 = Math.min(...p2.map((a) => bd[a.code][0]));
+    day = Math.max(day, st.start);
+    let cur = Z.cloneState(st);
+    p2.forEach((a) => delete cur.ov[a.code]);
+    const delta = day - b0;
+    if (delta < 0) {
+      // pull only the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
+      const early = new Set(p2.filter((a) => bd[a.code][0] <= b0 + 45).map((a) => a.item));
+      p2.filter((a) => early.has(a.item)).forEach((a) => (cur.ov[a.code] = [Math.max(st.start, bd[a.code][0] + delta), Math.max(st.start, bd[a.code][1] + delta)]));
+      return cur;
+    }
+    if (delta === 0) return cur;
+    Z.TOPO.filter((c) => Z.isP2(BY[c])).forEach((c) => {
+      const m = Z.compute(cur).by[c];
+      if (m.s < day) cur = Z.setActivity(cur, c, day, day + (m.e - m.s), { link: 'push' });
+    });
+    return cur;
+  };
+
+  /* ---------------------------------------------------------- milestones */
   Z.milestones = function (M) {
-    const b = M.by, bb = M.base.by;
+    const b = M.by, bb = M.base.by, st = M.st;
+    const g1 = st.ms ? st.ms.g1 : 30, g2 = st.ms ? st.ms.g2 : 30;
+    const P2 = Z.phase2(M);
     const minS = (f) => Math.min(...M.acts.filter(f).map((a) => a.s));
     const maxE = (f) => Math.max(...M.acts.filter(f).map((a) => a.e));
     const bminS = (f) => Math.min(...M.base.acts.filter(f).map((a) => a.s));
     const bmaxE = (f) => Math.max(...M.base.acts.filter(f).map((a) => a.e));
     const ll = (a) => a.ll && a.kind === 'a3';
     const list = [
-      { k: 'start', name: 'Project start / mobilisation', d: M.start, bd: M.start, code: '1.1' },
+      { k: 'grant1', name: 'Phase 1 amount granted (funds approved)', d: M.start - g1, bd: M.start - g1, nav: 'miles' },
+      { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
       { k: 'access', name: 'Access permits approved', d: b['1.2'].e, bd: bb['1.2'].e, code: '1.2' },
       { k: 'concept', name: 'Concept design approved', d: b['2.2'].e, bd: bb['2.2'].e, code: '2.2' },
       { k: 'prelim', name: 'Preliminary design approved', d: b['2.4'].e, bd: bb['2.4'].e, code: '2.4' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
+      { k: 'grant2', name: 'Phase 2 amount granted (funds approved)', d: P2.start - g2, bd: P2.baseStart - g2, nav: 'phase2' },
+      { k: 'p2', name: 'Phase 2 start (release) – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
+      { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
       { k: 'detail', name: 'Detailed design approved', d: b['2.6'].e, bd: bb['2.6'].e, code: '2.6' },
       { k: 'permit', name: 'Work permit approved', d: b['1.3'].e, bd: bb['1.3'].e, code: '1.3' },
       { k: 'cons', name: 'Construction starts on site', d: minS((a) => a.kind === 'b'), bd: bminS((a) => a.kind === 'b') },
@@ -718,13 +782,14 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 
   /* ------------------------------------------------------------ sharing */
   Z.serialize = function (st) {
-    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A };
+    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms };
     Object.keys(st.ov).forEach((c) => (o.ov[c] = [dt.iso(st.ov[c][0]), dt.iso(st.ov[c][1])]));
     return JSON.stringify(o);
   };
   Z.deserialize = function (txt) {
     const o = JSON.parse(txt);
     const st = Z.newState(o.s); st.link = o.l || 'two';
+    if (o.adv) st.adv = { ...Z.DEFAULT_ADV, ...o.adv }; if (o.ms) st.ms = { ...Z.DEFAULT_MS, ...o.ms };
     if (o.A) { const A = Z.cloneA(Z.DEFAULT_A); Object.assign(A.disc, o.A.disc); A.proc = o.A.proc || A.proc; Object.assign(A.stage, o.A.stage); Object.assign(A.sub, o.A.sub); st.A = A; }
     Object.keys(o.ov || {}).forEach((c) => { if (BY[c]) st.ov[c] = [dt.parse(o.ov[c][0]), dt.parse(o.ov[c][1])]; });
     return st;
@@ -1133,7 +1198,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   A.boot = () => {
     // slides
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
-    const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
+    const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles', 'phase2']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
     $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
     if (window.innerWidth < 600) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
@@ -1368,9 +1433,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   Z.registerSlide({
     id: 'miles', title: 'Milestones & key gates', desc: 'Design → permit → procurement → construction', cls: '',
     render(M) {
-      const ms = Z.milestones(M);
-      const X0 = 30, X1 = 1490, T = M.finish - M.start + 1;
-      const x = (d) => X0 + ((d - M.start) / T) * (X1 - X0);
+      const ms = Z.milestones(M), P2 = Z.phase2(M);
+      const X0 = 30, X1 = 1490, t0 = Math.min(M.start, ...ms.map((m) => m.d)) - 4, T = M.finish - t0 + 1;
+      const x = (d) => X0 + ((d - t0) / T) * (X1 - X0);
       const bands = [
         ['Design & approvals', M.acts.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'],
         ['Work permit gate', M.acts.filter((a) => a.code === '1.3'), 'var(--c4)'],
@@ -1379,7 +1444,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       ];
       let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300" style="min-width:900px">`;
       // quarter ticks
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       bands.forEach((b, i) => {
         const sp = span(b[1]); if (!sp) return;
         const y = 100 + i * 40;
@@ -1387,9 +1452,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       });
       svg += `<line x1="${X0}" x2="${X1}" y1="62" y2="62" stroke="#9fb0bb" stroke-width="2"/>`;
       ms.forEach((m, i) => {
-        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14 - (lvl === 0 ? 0 : 0);
+        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14;
+        const col = m.delta > 0 ? 'var(--bad)' : m.k === 'grant1' || m.k === 'grant2' ? 'var(--c4)' : m.k === 'p2' || m.k === 'p2late' ? 'var(--ph2)' : m.k === 'ntp' ? 'var(--c3)' : 'var(--brand)';
         const anchor = i === 0 ? 'start' : i === ms.length - 1 ? 'end' : 'middle';
-        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${m.delta > 0 ? 'var(--bad)' : 'var(--brand)'}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
+        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
       });
       svg += '</svg>';
 
@@ -1403,7 +1469,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         <div class="row grow">
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
-            ${ms.map((m, i) => `<tr class="${m.code ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td><b>${dt.fmt(m.d)}</b></td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
+            ${ms.map((m, i) => `<tr class="${m.code || (m.nav && m.nav !== 'miles') ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} ${m.edit ? 'style="background:#f1eefc"' : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td>${m.edit ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" min="${dt.iso(M.start)}" data-chg="p2date" title="Move the Phase 2 start – the whole programme updates">` : `<b>${dt.fmt(m.d)}</b>`}</td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
             </tbody></table></div></div>
           <div class="col grow" style="gap:12px">
             <div class="row" style="gap:12px">
@@ -1413,6 +1479,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
             <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb" style="font-size:13.5px;line-height:1.55">
               <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
               <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
+              <p style="margin:0 0 8px"><b>Phase 2:</b> must start by <a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a> to hold completion${P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : ''}. Move the milestone in the register (row ${ms.findIndex((m) => m.k === 'p2') + 1}) or on the Phase 2 slide.</p>
+              <p style="margin:0 0 8px"><b>Advance payment:</b> ${F.sar(M.pay.amount)} (${M.pay.pct}% of contract) at NTP, recovered ${F.sar(M.pay.perMonth)} per month over ${M.pay.months} months.</p>
               <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on ${dt.fmt(M.by['1.3'].e)} – it follows detailed-design approval (${dt.fmt(M.by['2.6'].e)}).</p>
               ${M.conflicts.length ? `<div class="note bad">${M.conflicts.length} dependency conflict(s): ${M.conflicts.slice(0, 5).map((a) => a.code).join(', ')}${M.conflicts.length > 5 ? '…' : ''} start earlier than their predecessor allows. Open the Gantt to resolve.</div>` : '<div class="note ok">No dependency conflicts – all finish-to-start links are respected.</div>'}
             </div></div>
@@ -1422,6 +1490,99 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 
   A.actions.goCrit = () => { A.s.f.crit = !A.s.f.crit; A.go(A.idx('gantt')); A.refilter(); };
   A.actions.goLL = () => { A.s.f.ll = !A.s.f.ll; A.go(A.idx('gantt')); A.refilter(); };
+})(window);
+
+</script>
+<script>
+/* Slide: why Phase 2 must start with Phase 1 – critical Phase 2 activities, the movable Phase 2 start milestone and scenarios */
+(function (G) {
+  const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
+
+  const apply = (day) => { if (day) A.setState(Z.setPhase2Start(A.s.st, day)); };
+  A.changes.p2date = (el) => apply(dt.parse(el.value));
+  A.changes.p2range = (el) => { const P = Z.phase2(A.s.M); apply(P.baseStart + (+el.value)); };
+  A.actions.p2set = (el) => apply(+el.dataset.day);
+  A.actions.p2reset = () => apply(Z.phase2(A.s.M).baseStart);
+
+  Z.registerSlide({
+    id: 'phase2', title: 'Why Phase 2 starts with Phase 1', desc: 'Critical Phase 2 activities & start scenarios',
+    render(M) {
+      const P = Z.phase2(M), st = M.st, g2 = st.ms.g2;
+      const off = P.start - P.baseStart, delay = P.delay;
+      const lo = M.start - P.baseStart, hi = 540;
+      const p2amt = P.list.reduce((s, a) => s + a.amount, 0);
+      const crit = P.list.filter((a) => a.floatB <= 45).sort((a, b) => a.floatB - b.floatB || a.s - b.s);
+      const trackF = Math.min(...P.list.filter((a) => a.item === '7.2').map((a) => a.floatB));
+      const state = off < 0 ? ['at risk – starts before the Detailed Design gate', 'var(--c4)'] : off === 0 ? ['baseline plan', 'var(--good)'] : ['released late – completion is exposed', 'var(--bad)'];
+      const pre = (label, day, extra) => `<button class="chip ${Math.abs(day - P.start) < 1 ? 'on' : ''}" data-do="p2set" data-day="${day}" ${extra || ''}>${label}</button>`;
+      const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
+
+      // timeline of the four Phase 2 packages
+      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 170, R = 14, rowH = 50, top = 54;
+      const x = (d) => L + ((d - t0) / (t1 - t0)) * (W - L - R);
+      let svg = `<svg viewBox="0 0 ${W} ${top + ITEMS.length * rowH + 44}" width="100%" style="min-width:760px">`;
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${top - 6}" y2="${top + ITEMS.length * rowH}" stroke="#e6ecf0"/><text x="${x(d)}" y="${top + ITEMS.length * rowH + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
+      ITEMS.forEach(([key, name], i) => {
+        const y = top + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
+        svg += `<text x="0" y="${y + 21}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name.length > 26 ? name.slice(0, 25) + '…' : name)}</text><text x="0" y="${y + 36}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
+        list.forEach((a) => {
+          const col = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
+          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 33}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
+          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 8}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="20" rx="3" fill="${col}" ${a.ll ? 'opacity=".95"' : ''}/></g>`;
+        });
+      });
+      const vline = (d, col, label, dy, dash, anchor) => `<line x1="${x(d)}" x2="${x(d)}" y1="${top - 20}" y2="${top + ITEMS.length * rowH}" stroke="${col}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/><text x="${x(d) + (anchor === 'end' ? -4 : 4)}" y="${top - 24 + dy}" text-anchor="${anchor || 'start'}" style="font-size:10.5px;font-weight:700;fill:${col}">${label}</text>`;
+      svg += vline(M.start, 'var(--c3)', 'NTP ' + dt.fmtShort(M.start), 0);
+      svg += vline(P.latest, 'var(--bad)', 'Latest start ' + dt.fmtShort(P.latest), 12, true, 'end');
+      svg += vline(P.start, 'var(--ph2)', 'Phase 2 start ' + dt.fmtShort(P.start), 0);
+      svg += vline(M.base.finish, '#8a97a3', 'Baseline completion', 0, true, 'end');
+      if (delay > 0) svg += vline(M.finish, 'var(--bad)', 'Completion ' + dt.fmtShort(M.finish), 12, false, 'end');
+      svg += `<g transform="translate(${L},${top + ITEMS.length * rowH + 30})" style="font-size:11px"><rect width="10" height="10" fill="#f3a888"/><text x="14" y="9">Prequal. / PO</text><rect x="110" width="10" height="10" fill="var(--proc)"/><text x="124" y="9">Manufacture & delivery (long-lead)</text><rect x="320" width="10" height="10" fill="var(--cons)"/><text x="334" y="9">Installation</text><rect x="420" y="3" width="14" height="3" fill="#99a6b0"/><text x="438" y="9">Baseline position</text></g></svg>`;
+
+      const rows = crit.map((a) => {
+        const f = Math.round(a.floatB);
+        const pill = f < 0 ? `<span class="pill bad">late ${-f} d</span>` : f === 0 ? '<span class="pill crit">critical</span>' : `<span class="pill warn">${f} d float</span>`;
+        return `<tr class="act" data-act="${a.code}"><td><b style="color:var(--brand-d)">${a.code}</b></td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">${F.esc(a.name)}${a.ll ? ' <span class="pill ll">long-lead</span>' : ''}</td><td>${dt.fmtShort(a.s)}</td><td><b>${dt.fmtShort(a.s + a.floatB)}</b></td><td class="num">${F.compact(a.amount)}</td><td>${pill}</td></tr>`;
+      }).join('');
+
+      return A.head('1c', 'Why Phase 2 must start with Phase 1', 'The Phase 2 packages that drive the completion date – move the Phase 2 start and see the consequences', 'Sheet 3 + Sheet 4 · gates & long-lead') +
+        `<div class="s-body" style="gap:12px">
+          <div class="panel"><div class="pb" style="padding:12px 16px">
+            <div class="row" style="align-items:center;gap:14px;flex-wrap:wrap">
+              <b style="color:var(--ph2)">Move the Phase 2 start (release)</b>
+              <input type="date" class="dinput" style="width:150px;height:32px" value="${dt.iso(P.start)}" min="${dt.iso(M.start)}" data-chg="p2date">
+              <input type="range" id="p2range" min="${lo}" max="${hi}" step="1" value="${off}" style="width:300px;accent-color:var(--ph2)" data-chg="p2range">
+              <span id="p2lbl" style="min-width:210px;font-weight:700;color:${state[1]}">${F.days(off)} · ${state[0]}</span>
+              <span class="seg" style="border:0;gap:6px;background:none">${pre('With Phase 1 (NTP)', M.start)}${pre('Baseline', P.baseStart)}${pre('+1 month', dt.addMonths(P.baseStart, 1))}${pre('+3 months', dt.addMonths(P.baseStart, 3))}${pre('+6 months', dt.addMonths(P.baseStart, 6))}</span>
+              <button class="btn sm" data-do="p2reset">Reset</button>
+            </div>
+          </div></div>
+          <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+            ${kpi('Phase 2 start (release)', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
+            ${kpi('Latest start to hold completion', dt.fmt(P.latest), P.latest - P.start >= 0 ? `${Math.round(P.latest - P.start)} days of margin left` : `<b style="color:var(--bad)">${Math.round(P.start - P.latest)} days too late</b>`, P.latest - P.start >= 0 ? '' : 'warn')}
+            ${kpi('Project completion', dt.fmt(M.finish), delay > 0 ? `<span class="delta up">${F.days(delay)} vs baseline ${dt.fmtShort(M.base.finish)}</span>` : `<span class="delta zero">on baseline ${dt.fmtShort(M.base.finish)}</span>`, delay > 0 ? 'warn' : '')}
+            ${kpi('Phase 2 amount granted by', dt.fmt(P.start - g2), `${g2} days before the Phase 2 start · Phase 2 value ${F.M(p2amt)} SAR`, '')}
+          </div>
+          <div class="row grow" style="gap:14px">
+            <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span></div><div class="pb scroll" style="padding-top:0">${svg}</div></div>
+            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb" style="font-size:13px;line-height:1.5;padding-top:0">
+              <p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> ${F.M(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0))} SAR (${F.pct(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0) / M.total, 0)} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with ${trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`}.</p>
+              <p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval (${dt.fmtShort(M.by['2.6'].e)}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
+              <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after ${dt.fmtShort(P.latest)} moves completion one-for-one${delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : ''}.</p>
+              <p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
+              <p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted ${g2} days before the start – by <b>${dt.fmtShort(P.start - g2)}</b>.</p>
+            </div></div>
+          </div>
+          <div class="panel" style="max-height:230px"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
+            <div class="pb scroll" data-keep="p2tbl" style="padding-top:0"><table class="tbl tight"><thead><tr><th>WBS</th><th>Activity</th><th>Start</th><th>Must start by</th><th class="num">SAR</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="empty">No critical Phase 2 activity</td></tr>'}</tbody></table></div></div>
+        </div>`;
+    },
+    after(el) {
+      const r = el.querySelector('#p2range'), l = el.querySelector('#p2lbl');
+      if (r && l) r.addEventListener('input', () => { const P = Z.phase2(A.s.M); l.textContent = dt.fmt(P.baseStart + (+r.value)) + ' (' + F.days(+r.value) + ')'; });
+    },
+  });
 })(window);
 
 </script>
@@ -1516,7 +1677,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       } else body = list.map(row).join('');
       const head = COLS.map((c) => `<th class="${c[3] || ''} ${c[2] ? 'sort' : ''}" ${c[2] ? `data-do="regSort" data-col="${c[0]}"` : ''}>${c[1]}${r.col === c[0] ? (r.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
       return A.head('2b', 'CBS register', 'Every WBS line with cost, % of total, cumulative % and its live schedule dates', 'Sheet 2 · WBS &amp; CBS') +
-        `<div class="s-body"><div class="panel grow"><div class="ph"><h3>Cost breakdown register</h3><span class="sub">click a header to sort · click a row for details</span>
+        `<div class="s-body"><div class="panel grow"><div class="ph"><h3>Cost breakdown register</h3><span class="sub">click a header to sort · click a row for details · payment terms: ${M.pay.pct}% advance at NTP (SAR ${F.n0(M.pay.amount)}), recovered in equal monthly deductions</span>
           <div class="right"><button class="btn sm" data-do="regExpand">Expand all</button><button class="btn sm" data-do="regCollapse">Collapse all</button></div></div>
           <div class="pb scroll" data-keep="reg" style="padding:0 0 0"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="12" class="empty">No activities match the filters</td></tr>'}</tbody>
           <tfoot><tr><td colspan="12">Total excl. VAT: <b>${F.n0(tot)}</b> SAR &nbsp;·&nbsp; VAT 15%: <b>${F.n0(tot * Z.VAT)}</b> &nbsp;·&nbsp; Total incl. VAT: <b>${F.n0(tot * (1 + Z.VAT))}</b> SAR &nbsp;·&nbsp; ${vis.length} lines</td></tr></tfoot></table></div></div></div>`;
@@ -1702,11 +1863,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 /* Slides 7-8: monthly cash flow + S-curve, and the cash-flow matrix */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', per: 1 });
+  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', per: 1, basis: 'cost' });
   const mxui = () => (A.s.ui.mx = A.s.ui.mx || { unit: 'k', heat: true });
 
   A.changes.status = (el) => { A.s.ui.status = dt.parse(el.value) || null; A.refilter(); };
   A.actions.clearStatus = () => { A.s.ui.status = null; A.refilter(); };
+  A.actions.cfBasis = (el) => { ui().basis = el.dataset.b; A.refilter(); };
   A.actions.cfPer = (el) => { ui().per = +el.dataset.p; A.refilter(); };
   A.actions.cfDim = (el) => { ui().dim = el.dataset.d; A.refilter(); };
   A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
@@ -1746,7 +1908,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const w = o.w || 600, h = o.h || 260, L = o.L || 44, R = o.R || 14, T = 12, B = o.B || 34;
     const pw = w - L - R, ph = h - T - B, bw = pw / P;
     const X = (k) => L + (k + 0.5) * bw, Y = (p) => T + ph - p * ph;
-    const base = baseCurve(M, agg.list);
+    const base = o.baseArr || baseCurve(M, agg.list);
+    const LB = o.labels || { cur: 'Cumulative', base: 'Baseline', spend: per === 1 ? 'Monthly spend' : 'Quarter spend' };
     const pct = []; const bpct = [];
     for (let k = 0; k < P; k++) { pct.push(agg.pct[lastIdx(M, k, per)]); bpct.push(base[lastIdx(M, k, per)]); }
     let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:${w > 900 ? 780 : 0}px">`;
@@ -1764,7 +1927,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     }
     for (let k = 0; k < P; k++) {
       const dv = pct[k] - bpct[k], spend = sumP(agg.total, k, per);
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', 'Cumulative', F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ['#8a97a3', 'Baseline', F.pct(bpct[k])], ['', per === 1 ? 'Monthly spend' : 'Quarter spend', F.sar(spend)], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ['#8a97a3', LB.base, F.pct(bpct[k])], ['', LB.spend, F.sar(spend)], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
       s += `<circle cx="${X(k)}" cy="${Y(pct[k])}" r="${per === 1 ? 2.6 : 3.6}" fill="var(--brand)" stroke="#fff" stroke-width="1" pointer-events="none"/>`;
     }
     return s + '</svg>';
@@ -1797,10 +1960,71 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     return s + '</svg>';
   }
 
+  /* ---- payments view: work done + advance (up), recovery (down) ---- */
+  function payChart(M, w, h, per) {
+    const pay = M.pay, P = periods(M, per);
+    const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
+    const up = [], dn = [];
+    for (let k = 0; k < P; k++) { up.push(sumP(M.totalM, k, per) + sumP(pay.advIn, k, per)); dn.push(sumP(pay.rec, k, per)); }
+    const maxUp = Math.max(...up, 1), maxDn = Math.max(...dn, 0);
+    const nice = F.nice(maxUp + maxDn, 6), top = Math.ceil(maxUp / nice.step) * nice.step, bot = Math.ceil(maxDn / nice.step) * nice.step;
+    const span = top + bot, Y = (v) => T + ph - ((v + bot) / span) * ph;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
+    for (let v = -bot; v <= top + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
+    s += `<line x1="${L}" x2="${w - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#7d8b96" stroke-width="1.5"/>`;
+    for (let k = 0; k < P; k++) {
+      const work = sumP(M.totalM, k, per), adv = sumP(pay.advIn, k, per), rec = sumP(pay.rec, k, per), x = L + k * bw + (per === 1 ? 3 : 10), ww = bw - (per === 1 ? 6 : 20);
+      s += `<rect x="${x}" y="${Y(work)}" width="${ww}" height="${Math.max(0, Y(0) - Y(work) - 1)}" fill="var(--brand)" rx="2"/>`;
+      if (adv > 0) s += `<rect x="${x}" y="${Y(work + adv)}" width="${ww}" height="${Math.max(0, Y(work) - Y(work + adv) - 1.5)}" fill="var(--c1)" rx="2"/>`;
+      if (rec > 0) s += `<rect x="${x}" y="${Y(0) + 1}" width="${ww}" height="${Math.max(0, Y(-rec) - Y(0) - 1)}" fill="var(--c2)" rx="2"/>`;
+      const netv = work + adv - rec;
+      s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', 'Work done', F.sar(work)], ['var(--c1)', 'Advance received', F.sar(adv)], ['var(--c2)', 'Advance recovery', '− ' + F.sar(rec)], ['', '<b>Net payment</b>', '<b>' + F.sar(netv) + '</b>'], ['', 'Advance balance', F.sar(pay.balance[lastIdx(M, k, per)])]])}"/>`;
+    }
+    return s + '</svg>';
+  }
+
+  const lblS = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)';
+  const basisSeg = (b) => `<span class="lbl" style="${lblS}">Basis</span><span class="seg"><button data-do="cfBasis" data-b="cost" class="${b === 'cost' ? 'on' : ''}">Work done (cost)</button><button data-do="cfBasis" data-b="pay" class="${b === 'pay' ? 'on' : ''}">Payments (with advance)</button></span><span class="sep" style="margin:0 2px"></span>`;
+  function payView(M, per) {
+    const pay = M.pay, dtp = (d) => dt.fmtMY(d);
+    const pkI = pay.net.indexOf(Math.max(...pay.net));
+    const kp = (k, v, d, extra) => `<div class="dstat" ${extra || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="hint">${d}</div></div>`;
+    const fake = { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: M.acts };
+    const workPct = M.cum.map((v) => v / M.total);
+    return A.head('3b', 'Cash flow &amp; payments', 'Advance payment of ' + pay.pct + '% received at NTP and recovered in equal monthly deductions', 'Payment terms · applied to the total contract value') +
+      `<div class="s-body" style="gap:12px">
+        <div class="row" style="align-items:center;gap:14px;flex:none">${basisSeg('pay')}
+          <span class="lbl" style="${lblS}">View</span>
+          <span class="seg"><button data-do="cfPer" data-p="1" class="${per === 1 ? 'on' : ''}">Monthly</button><button data-do="cfPer" data-p="3" class="${per === 3 ? 'on' : ''}">Quarterly</button></span>
+          <span class="hint">Edit the advance % and recovery start on the Assumptions slide.</span>
+        </div>
+        <div class="row grow" style="gap:16px">
+          <div class="col grow" style="gap:12px">
+            <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} payments</h3><span class="sub">SAR · work done + advance above the line, recovery below</span>
+              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Work done</span><span><i class="dot" style="background:var(--c1)"></i>Advance received</span><span><i class="dot" style="background:var(--c2)"></i>Advance recovery</span></div></div>
+              <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
+            <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments vs work done</h3>
+              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Cumulative payments</span><span><i class="dot" style="background:#8a97a3"></i>Cumulative work done</span></div></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, baseArr: workPct, labels: { cur: 'Cumulative payments', base: 'Cumulative work done', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } })}</div></div>
+          </div>
+          <div class="col" style="width:372px;gap:12px">
+            ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
+            ${kp('Monthly recovery', F.sar(pay.perMonth), `equal deductions · month ${pay.from} → ${M.N} (${pay.months} months)`)}
+            <div class="row" style="gap:12px">${kp('Balance after 12 months', F.M(pay.balance[Math.min(11, M.N - 1)]), 'advance still to recover', 'style="flex:1"')}${kp('Balance at end', F.sar(pay.balance[M.N - 1]), 'fully recovered', 'style="flex:1"')}</div>
+            ${kp('Net payment in month 1', F.sar(pay.net[0]), 'work done + advance − recovery')}
+            ${kp('Peak net payment', `M${pkI + 1} <small>${dtp(M.bs[pkI])}</small>`, F.sar(pay.net[pkI]), `data-month="${pkI + 1}" style="cursor:pointer"`)}
+            ${kp('Total payments', F.sar(pay.cum[M.N - 1]), 'equals the contract value – the advance nets to zero')}
+            <div class="note info" style="margin-top:auto">The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).</div>
+          </div>
+        </div></div>`;
+  }
+
   Z.registerSlide({
     id: 'cashflow', title: 'Cash flow & S-curve', desc: 'Monthly spend, cumulative %, vs baseline',
     render(M) {
       const u = ui(), dim = u.dim, st = A.s.ui.status, per = u.per || 1;
+      if ((u.basis || 'cost') === 'pay') return payView(M, per);
       const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim);
       const tot = agg.sum, y1 = agg.total.slice(0, 12).reduce((a, b) => a + b, 0), y2 = tot - y1;
       const pk = agg.total.indexOf(Math.max(...agg.total)), m50 = agg.pct.findIndex((p) => p >= 0.5);
@@ -1811,6 +2035,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       return A.head('3b', 'Cash flow &amp; S-curve', 'Monthly cost-loaded spend and cumulative progress against the baseline plan', 'Sheet 3 · 26-Month Schedule (rows 80–86 + charts)') +
         `<div class="s-body" style="gap:12px">
           <div class="row" style="align-items:center;gap:14px;flex:none">
+            ${basisSeg('cost')}
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)">Stack by</span>
             <span class="seg">${dbtn('group', 'WBS group')}${dbtn('epc', 'EPC category')}${dbtn('phase', 'Phase')}${dbtn('all', 'Total')}</span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">View</span>
@@ -1859,13 +2084,13 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         ga.forEach((a) => { body += `<tr class="act" data-act="${a.code}"><td class="stk" style="left:0;color:var(--brand-d);font-weight:700">${a.code}</td><td class="stk" style="left:58px;max-width:234px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(a.desc)}">${F.esc(a.name)}</td><td class="stk num" style="left:292px">${F.n0(a.amount)}</td>${a.m.map((v) => cell(v, a)).join('')}</tr>`; });
       });
       const agg = Z.aggregate(M, A.vis, 'all');
-      const ft = (label, vals, top, f) => `<tr class="tot"><td class="stk" style="left:0;bottom:${top}px;z-index:4"></td><td class="stk" style="left:58px;bottom:${top}px;z-index:4">${label}</td><td class="stk num" style="left:292px;bottom:${top}px;z-index:4">${f === 'sum' ? F.n0(agg.sum) : ''}</td>${vals.map((v) => `<td class="c" style="bottom:${top}px">${f === 'pct' ? F.pct(v, 1) : fmt(v) || '·'}</td>`).join('')}</tr>`;
+      const ft = (label, vals, top, f) => `<tr class="tot"><td class="stk" style="left:0;bottom:${top}px;z-index:4"></td><td class="stk" style="left:58px;bottom:${top}px;z-index:4">${label}</td><td class="stk num" style="left:292px;bottom:${top}px;z-index:4">${f === 'sum' ? F.n0(agg.sum) : f === 'adv' ? F.n0(M.pay.amount) : f === 'rec' ? F.n0(-M.pay.amount) : f === 'net' ? F.n0(M.total) : ''}</td>${vals.map((v) => `<td class="c" style="bottom:${top}px">${f === 'pct' ? F.pct(v, 1) : v < 0 ? '−' + fmt(-v) : fmt(v) || '·'}</td>`).join('')}</tr>`;
       const ubtn = (k, t) => `<button data-do="mxUnit" data-u="${k}" class="${u.unit === k ? 'on' : ''}">${t}</button>`;
       return A.head('3c', 'Cash-flow matrix', 'Every activity’s cost spread across the project months – the Excel schedule grid, live', 'Sheet 3 · 26-Month Schedule (grid)') +
         `<div class="s-body" style="gap:10px"><div class="row" style="align-items:center;gap:14px;flex:none"><span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mute)">Units</span><span class="seg">${ubtn('sar', 'SAR')}${ubtn('k', 'SAR thousand')}${ubtn('m', 'SAR million')}</span>
           <button class="chip ${u.heat ? 'on' : ''}" data-do="mxHeat">Heat-map</button><span class="hint">Click a row for activity details, a month header for the month's breakdown.</span></div>
           <div class="panel grow"><div class="pb scroll hm" data-keep="matrix" style="padding:0"><table class="tbl hm"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="30" class="empty">No activities match the filters</td></tr>'}</tbody>
-          <tfoot style="display:table-footer-group">${ft('Total monthly spend', agg.total, 52, 'sum').replace(/<tr class="tot">/, '<tr class="tot">')}${ft('Cumulative spend', agg.cum, 26)}${ft('Cumulative % complete', agg.pct, 0, 'pct')}</tfoot></table></div></div></div>`;
+          <tfoot style="display:table-footer-group">${ft('Total monthly spend', agg.total, 130, 'sum')}${ft('Cumulative spend', agg.cum, 104)}${ft('Cumulative % complete', agg.pct, 78, 'pct')}${ft('Advance payment received', M.pay.advIn, 52, 'adv')}${ft('Advance recovery (−)', M.pay.rec.map((v) => -v), 26, 'rec')}${ft('Net payment', M.pay.net, 0, 'net')}</tfoot></table></div></div></div>`;
     },
   });
 })(window);
@@ -1877,15 +2102,22 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
 
   A.changes.asm = (el) => {
+    const key = el.dataset.k;
+    if (key.startsWith('adv.') || key.startsWith('ms.')) {
+      const lim = { 'adv.pct': [0, 100], 'adv.from': [1, 60], 'ms.g1': [0, 730], 'ms.g2': [0, 730] }[key] || [0, 100];
+      const val = Math.round(Math.max(lim[0], Math.min(lim[1], parseFloat(el.value))));
+      if (!isFinite(val)) { A.refilter(); return; }
+      const st2 = Z.cloneState(A.s.st); const [g, f] = key.split('.'); st2[g][f] = val; A.setState(st2); return;
+    }
     const v = Math.max(0, Math.min(100, parseFloat(el.value)));
     if (!isFinite(v)) { A.refilter(); return; }
     const st = Z.cloneState(A.s.st), path = el.dataset.k.split('.');
     if (path[0] === 'proc') st.A.proc[+path[1]] = v; else st.A[path[0]][path[1]] = v;
     A.setState(st);
   };
-  A.actions.asmReset = () => { const st = Z.cloneState(A.s.st); st.A = Z.cloneA(Z.DEFAULT_A); A.setState(st); };
+  A.actions.asmReset = () => { const st = Z.cloneState(A.s.st); st.A = Z.cloneA(Z.DEFAULT_A); st.adv = { ...Z.DEFAULT_ADV }; st.ms = { ...Z.DEFAULT_MS }; A.setState(st); };
 
-  const inp = (k, v) => `<input class="ninput" type="number" min="0" max="100" step="1" value="${+(+v).toFixed(2)}" data-chg="asm" data-k="${k}">`;
+  const inp = (k, v, max) => `<input class="ninput" type="number" min="0" max="${max || 100}" step="1" value="${+(+v).toFixed(2)}" data-chg="asm" data-k="${k}">`;
   const sumChip = (s) => (Math.abs(s - 100) < 0.001 ? '<span class="pill ok">= 100%</span>' : `<span class="pill warn">sums to ${+s.toFixed(2)}%</span>`);
 
   Z.registerSlide({
@@ -1894,7 +2126,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const a = M.st.A, by = M.by;
       const disc = Object.entries(Z.DISC).map(([k, d]) => {
         const c = 100 - a.disc[k];
-        return `<tr><td><b>${d.name}</b></td><td>${inp('disc.' + k, a.disc[k])} %</td><td class="num"><b>${+c.toFixed(2)}%</b> ${c <= a.disc[k] ? '<span class="pill warn">materials ≥ construction</span>' : ''}</td><td class="wrap muted" style="max-width:300px;font-size:12px">${d.applies}</td></tr>`;
+        return `<tr><td><b>${d.name}</b></td><td>${inp('disc.' + k, a.disc[k])} %</td><td class="num"><b>${+c.toFixed(2)}%</b> ${c <= a.disc[k] ? '<span class="pill warn">materials ≥ construction</span>' : ''}</td><td class="muted" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${F.esc(d.applies)}">${d.applies}</td></tr>`;
       }).join('');
       const ps = a.proc.reduce((x, y) => x + y, 0), dsum = a.stage.concept + a.stage.prelim + a.stage.detail, ss = a.sub.sub + a.sub.appr;
       const dur = (c1, c2) => F.months((by[c2].e - by[c1].s + 1) / 30.4375);
@@ -1919,12 +2151,17 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       return A.head('4', 'Assumptions &amp; weightages', 'Edit any weightage – amounts, cash flow and S-curve recalculate; the total contract value stays fixed', 'Sheet 4 · Assumptions &amp; Weightages') +
         `<div class="s-body"><div class="row grow">
           <div class="col grow" style="gap:14px">
-            <div class="panel"><div class="ph"><h3>1 · Discipline materials / construction split</h3><span class="sub">construction is always the higher share</span></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Discipline</th><th>Materials</th><th class="num">Construction</th><th>Applies to</th></tr></thead><tbody>${disc}</tbody></table></div></div>
+            <div class="panel"><div class="ph"><h3>1 · Discipline materials / construction split</h3><span class="sub">construction is always the higher share</span></div><div class="pb" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Discipline</th><th>Materials</th><th class="num">Construction</th><th>Applies to</th></tr></thead><tbody>${disc}</tbody></table></div></div>
             <div class="row" style="gap:14px">
               <div class="panel" style="width:320px"><div class="ph"><h3>2 · Procurement stages</h3>${sumChip(ps)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Weight</th></tr></thead><tbody>${procRows}</tbody></table><div class="hint" style="margin-top:6px">Within each item’s procurement share.</div></div></div>
               <div class="panel grow"><div class="ph"><h3>3 · Design stages</h3>${sumChip(dsum)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Raw</th><th class="num">Normalised</th></tr></thead><tbody>${stRows}</tbody></table><div class="hint" style="margin-top:6px">Raw weights sum to 105% – normalised so design stays SAR ${F.n0(Z.DESIGN_TOTAL)}.</div></div></div>
               <div class="panel" style="width:230px"><div class="ph"><h3>4 · Sub-activity</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Sub-activity</th><th>Weight</th></tr></thead><tbody><tr><td>Submission</td><td>${inp('sub.sub', a.sub.sub)} %</td></tr><tr><td>Approval</td><td>${inp('sub.appr', a.sub.appr)} %</td></tr></tbody></table><div style="margin-top:6px">${sumChip(ss)}</div></div></div>
             </div>
+            <div class="panel"><div class="ph"><h3>6 · Advance payment &amp; funding milestones</h3><span class="sub">taken from the total contract value</span></div><div class="pb" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Item</th><th>Value</th><th>Result</th></tr></thead><tbody>
+              <tr><td>Advance payment (received at NTP)</td><td>${inp('adv.pct', M.pay.pct)} % of contract</td><td><b>${F.sar(M.pay.amount)}</b></td></tr>
+              <tr><td>Recovery starts in month (equal monthly deductions to the last month)</td><td>${inp('adv.from', M.pay.from, 60)} month</td><td><b>${F.sar(M.pay.perMonth)}</b> × ${M.pay.months} months</td></tr>
+              <tr><td>Phase 1 amount granted – before NTP</td><td>${inp('ms.g1', M.st.ms.g1, 730)} days</td><td><b>${dt.fmt(M.start - M.st.ms.g1)}</b></td></tr>
+              <tr><td>Phase 2 amount granted – before the Phase 2 start</td><td>${inp('ms.g2', M.st.ms.g2, 730)} days</td><td><b>${dt.fmt(Z.phase2(M).start - M.st.ms.g2)}</b></td></tr></tbody></table></div></div>
             <div class="row" style="align-items:center;gap:12px"><button class="btn" data-do="asmReset">Reset weightages to Excel values</button><span class="hint">Changes are saved in this browser and included in the share link.</span></div>
           </div>
           <div class="col" style="width:560px;gap:14px">
@@ -1978,6 +2215,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         <div class="row grow">
           <div class="col" style="width:640px;gap:14px">
             <div class="panel"><div class="ph"><h3>Baseline vs revised</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Metric</th><th>Baseline</th><th>Revised</th><th>Δ</th></tr></thead><tbody>
+              ${row('Phase 2 start (release)', dt.fmtShort(Z.phase2(M).baseStart), dt.fmtShort(Z.phase2(M).start), F.deltaHtml(Z.phase2(M).start - Z.phase2(M).baseStart))}
+              ${row('Advance payment', 'SAR ' + F.n0(M.pay.amount), 'SAR ' + F.n0(M.pay.amount), `<span class="delta zero">${M.pay.pct}% · ${F.n0(M.pay.perMonth)}/month</span>`)}
               ${row('Completion date', dt.fmtShort(M.base.finish), dt.fmtShort(M.finish), F.deltaHtml(fd))}
               ${row('Duration (months)', '26', F.months(M.durMonths), F.deltaHtml(Math.round((M.durMonths - 26) * 30.4375)))}
               ${row('Total cost (excl. VAT)', F.M(M.total), F.M(M.total), '<span class="delta zero">fixed</span>')}

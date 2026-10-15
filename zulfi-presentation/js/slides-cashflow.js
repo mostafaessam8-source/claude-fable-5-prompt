@@ -1,11 +1,12 @@
 /* Slides 7-8: monthly cash flow + S-curve, and the cash-flow matrix */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', per: 1 });
+  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', per: 1, basis: 'cost' });
   const mxui = () => (A.s.ui.mx = A.s.ui.mx || { unit: 'k', heat: true });
 
   A.changes.status = (el) => { A.s.ui.status = dt.parse(el.value) || null; A.refilter(); };
   A.actions.clearStatus = () => { A.s.ui.status = null; A.refilter(); };
+  A.actions.cfBasis = (el) => { ui().basis = el.dataset.b; A.refilter(); };
   A.actions.cfPer = (el) => { ui().per = +el.dataset.p; A.refilter(); };
   A.actions.cfDim = (el) => { ui().dim = el.dataset.d; A.refilter(); };
   A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
@@ -45,7 +46,8 @@
     const w = o.w || 600, h = o.h || 260, L = o.L || 44, R = o.R || 14, T = 12, B = o.B || 34;
     const pw = w - L - R, ph = h - T - B, bw = pw / P;
     const X = (k) => L + (k + 0.5) * bw, Y = (p) => T + ph - p * ph;
-    const base = baseCurve(M, agg.list);
+    const base = o.baseArr || baseCurve(M, agg.list);
+    const LB = o.labels || { cur: 'Cumulative', base: 'Baseline', spend: per === 1 ? 'Monthly spend' : 'Quarter spend' };
     const pct = []; const bpct = [];
     for (let k = 0; k < P; k++) { pct.push(agg.pct[lastIdx(M, k, per)]); bpct.push(base[lastIdx(M, k, per)]); }
     let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:${w > 900 ? 780 : 0}px">`;
@@ -63,7 +65,7 @@
     }
     for (let k = 0; k < P; k++) {
       const dv = pct[k] - bpct[k], spend = sumP(agg.total, k, per);
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', 'Cumulative', F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ['#8a97a3', 'Baseline', F.pct(bpct[k])], ['', per === 1 ? 'Monthly spend' : 'Quarter spend', F.sar(spend)], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ['#8a97a3', LB.base, F.pct(bpct[k])], ['', LB.spend, F.sar(spend)], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
       s += `<circle cx="${X(k)}" cy="${Y(pct[k])}" r="${per === 1 ? 2.6 : 3.6}" fill="var(--brand)" stroke="#fff" stroke-width="1" pointer-events="none"/>`;
     }
     return s + '</svg>';
@@ -96,10 +98,71 @@
     return s + '</svg>';
   }
 
+  /* ---- payments view: work done + advance (up), recovery (down) ---- */
+  function payChart(M, w, h, per) {
+    const pay = M.pay, P = periods(M, per);
+    const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
+    const up = [], dn = [];
+    for (let k = 0; k < P; k++) { up.push(sumP(M.totalM, k, per) + sumP(pay.advIn, k, per)); dn.push(sumP(pay.rec, k, per)); }
+    const maxUp = Math.max(...up, 1), maxDn = Math.max(...dn, 0);
+    const nice = F.nice(maxUp + maxDn, 6), top = Math.ceil(maxUp / nice.step) * nice.step, bot = Math.ceil(maxDn / nice.step) * nice.step;
+    const span = top + bot, Y = (v) => T + ph - ((v + bot) / span) * ph;
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
+    for (let v = -bot; v <= top + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
+    s += `<line x1="${L}" x2="${w - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#7d8b96" stroke-width="1.5"/>`;
+    for (let k = 0; k < P; k++) {
+      const work = sumP(M.totalM, k, per), adv = sumP(pay.advIn, k, per), rec = sumP(pay.rec, k, per), x = L + k * bw + (per === 1 ? 3 : 10), ww = bw - (per === 1 ? 6 : 20);
+      s += `<rect x="${x}" y="${Y(work)}" width="${ww}" height="${Math.max(0, Y(0) - Y(work) - 1)}" fill="var(--brand)" rx="2"/>`;
+      if (adv > 0) s += `<rect x="${x}" y="${Y(work + adv)}" width="${ww}" height="${Math.max(0, Y(work) - Y(work + adv) - 1.5)}" fill="var(--c1)" rx="2"/>`;
+      if (rec > 0) s += `<rect x="${x}" y="${Y(0) + 1}" width="${ww}" height="${Math.max(0, Y(-rec) - Y(0) - 1)}" fill="var(--c2)" rx="2"/>`;
+      const netv = work + adv - rec;
+      s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', 'Work done', F.sar(work)], ['var(--c1)', 'Advance received', F.sar(adv)], ['var(--c2)', 'Advance recovery', '− ' + F.sar(rec)], ['', '<b>Net payment</b>', '<b>' + F.sar(netv) + '</b>'], ['', 'Advance balance', F.sar(pay.balance[lastIdx(M, k, per)])]])}"/>`;
+    }
+    return s + '</svg>';
+  }
+
+  const lblS = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)';
+  const basisSeg = (b) => `<span class="lbl" style="${lblS}">Basis</span><span class="seg"><button data-do="cfBasis" data-b="cost" class="${b === 'cost' ? 'on' : ''}">Work done (cost)</button><button data-do="cfBasis" data-b="pay" class="${b === 'pay' ? 'on' : ''}">Payments (with advance)</button></span><span class="sep" style="margin:0 2px"></span>`;
+  function payView(M, per) {
+    const pay = M.pay, dtp = (d) => dt.fmtMY(d);
+    const pkI = pay.net.indexOf(Math.max(...pay.net));
+    const kp = (k, v, d, extra) => `<div class="dstat" ${extra || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="hint">${d}</div></div>`;
+    const fake = { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: M.acts };
+    const workPct = M.cum.map((v) => v / M.total);
+    return A.head('3b', 'Cash flow &amp; payments', 'Advance payment of ' + pay.pct + '% received at NTP and recovered in equal monthly deductions', 'Payment terms · applied to the total contract value') +
+      `<div class="s-body" style="gap:12px">
+        <div class="row" style="align-items:center;gap:14px;flex:none">${basisSeg('pay')}
+          <span class="lbl" style="${lblS}">View</span>
+          <span class="seg"><button data-do="cfPer" data-p="1" class="${per === 1 ? 'on' : ''}">Monthly</button><button data-do="cfPer" data-p="3" class="${per === 3 ? 'on' : ''}">Quarterly</button></span>
+          <span class="hint">Edit the advance % and recovery start on the Assumptions slide.</span>
+        </div>
+        <div class="row grow" style="gap:16px">
+          <div class="col grow" style="gap:12px">
+            <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} payments</h3><span class="sub">SAR · work done + advance above the line, recovery below</span>
+              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Work done</span><span><i class="dot" style="background:var(--c1)"></i>Advance received</span><span><i class="dot" style="background:var(--c2)"></i>Advance recovery</span></div></div>
+              <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
+            <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments vs work done</h3>
+              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Cumulative payments</span><span><i class="dot" style="background:#8a97a3"></i>Cumulative work done</span></div></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, baseArr: workPct, labels: { cur: 'Cumulative payments', base: 'Cumulative work done', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } })}</div></div>
+          </div>
+          <div class="col" style="width:372px;gap:12px">
+            ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
+            ${kp('Monthly recovery', F.sar(pay.perMonth), `equal deductions · month ${pay.from} → ${M.N} (${pay.months} months)`)}
+            <div class="row" style="gap:12px">${kp('Balance after 12 months', F.M(pay.balance[Math.min(11, M.N - 1)]), 'advance still to recover', 'style="flex:1"')}${kp('Balance at end', F.sar(pay.balance[M.N - 1]), 'fully recovered', 'style="flex:1"')}</div>
+            ${kp('Net payment in month 1', F.sar(pay.net[0]), 'work done + advance − recovery')}
+            ${kp('Peak net payment', `M${pkI + 1} <small>${dtp(M.bs[pkI])}</small>`, F.sar(pay.net[pkI]), `data-month="${pkI + 1}" style="cursor:pointer"`)}
+            ${kp('Total payments', F.sar(pay.cum[M.N - 1]), 'equals the contract value – the advance nets to zero')}
+            <div class="note info" style="margin-top:auto">The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).</div>
+          </div>
+        </div></div>`;
+  }
+
   Z.registerSlide({
     id: 'cashflow', title: 'Cash flow & S-curve', desc: 'Monthly spend, cumulative %, vs baseline',
     render(M) {
       const u = ui(), dim = u.dim, st = A.s.ui.status, per = u.per || 1;
+      if ((u.basis || 'cost') === 'pay') return payView(M, per);
       const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim);
       const tot = agg.sum, y1 = agg.total.slice(0, 12).reduce((a, b) => a + b, 0), y2 = tot - y1;
       const pk = agg.total.indexOf(Math.max(...agg.total)), m50 = agg.pct.findIndex((p) => p >= 0.5);
@@ -110,6 +173,7 @@
       return A.head('3b', 'Cash flow &amp; S-curve', 'Monthly cost-loaded spend and cumulative progress against the baseline plan', 'Sheet 3 · 26-Month Schedule (rows 80–86 + charts)') +
         `<div class="s-body" style="gap:12px">
           <div class="row" style="align-items:center;gap:14px;flex:none">
+            ${basisSeg('cost')}
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)">Stack by</span>
             <span class="seg">${dbtn('group', 'WBS group')}${dbtn('epc', 'EPC category')}${dbtn('phase', 'Phase')}${dbtn('all', 'Total')}</span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">View</span>
@@ -158,13 +222,13 @@
         ga.forEach((a) => { body += `<tr class="act" data-act="${a.code}"><td class="stk" style="left:0;color:var(--brand-d);font-weight:700">${a.code}</td><td class="stk" style="left:58px;max-width:234px;overflow:hidden;text-overflow:ellipsis" title="${F.esc(a.desc)}">${F.esc(a.name)}</td><td class="stk num" style="left:292px">${F.n0(a.amount)}</td>${a.m.map((v) => cell(v, a)).join('')}</tr>`; });
       });
       const agg = Z.aggregate(M, A.vis, 'all');
-      const ft = (label, vals, top, f) => `<tr class="tot"><td class="stk" style="left:0;bottom:${top}px;z-index:4"></td><td class="stk" style="left:58px;bottom:${top}px;z-index:4">${label}</td><td class="stk num" style="left:292px;bottom:${top}px;z-index:4">${f === 'sum' ? F.n0(agg.sum) : ''}</td>${vals.map((v) => `<td class="c" style="bottom:${top}px">${f === 'pct' ? F.pct(v, 1) : fmt(v) || '·'}</td>`).join('')}</tr>`;
+      const ft = (label, vals, top, f) => `<tr class="tot"><td class="stk" style="left:0;bottom:${top}px;z-index:4"></td><td class="stk" style="left:58px;bottom:${top}px;z-index:4">${label}</td><td class="stk num" style="left:292px;bottom:${top}px;z-index:4">${f === 'sum' ? F.n0(agg.sum) : f === 'adv' ? F.n0(M.pay.amount) : f === 'rec' ? F.n0(-M.pay.amount) : f === 'net' ? F.n0(M.total) : ''}</td>${vals.map((v) => `<td class="c" style="bottom:${top}px">${f === 'pct' ? F.pct(v, 1) : v < 0 ? '−' + fmt(-v) : fmt(v) || '·'}</td>`).join('')}</tr>`;
       const ubtn = (k, t) => `<button data-do="mxUnit" data-u="${k}" class="${u.unit === k ? 'on' : ''}">${t}</button>`;
       return A.head('3c', 'Cash-flow matrix', 'Every activity’s cost spread across the project months – the Excel schedule grid, live', 'Sheet 3 · 26-Month Schedule (grid)') +
         `<div class="s-body" style="gap:10px"><div class="row" style="align-items:center;gap:14px;flex:none"><span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mute)">Units</span><span class="seg">${ubtn('sar', 'SAR')}${ubtn('k', 'SAR thousand')}${ubtn('m', 'SAR million')}</span>
           <button class="chip ${u.heat ? 'on' : ''}" data-do="mxHeat">Heat-map</button><span class="hint">Click a row for activity details, a month header for the month's breakdown.</span></div>
           <div class="panel grow"><div class="pb scroll hm" data-keep="matrix" style="padding:0"><table class="tbl hm"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="30" class="empty">No activities match the filters</td></tr>'}</tbody>
-          <tfoot style="display:table-footer-group">${ft('Total monthly spend', agg.total, 52, 'sum').replace(/<tr class="tot">/, '<tr class="tot">')}${ft('Cumulative spend', agg.cum, 26)}${ft('Cumulative % complete', agg.pct, 0, 'pct')}</tfoot></table></div></div></div>`;
+          <tfoot style="display:table-footer-group">${ft('Total monthly spend', agg.total, 130, 'sum')}${ft('Cumulative spend', agg.cum, 104)}${ft('Cumulative % complete', agg.pct, 78, 'pct')}${ft('Advance payment received', M.pay.advIn, 52, 'adv')}${ft('Advance recovery (−)', M.pay.rec.map((v) => -v), 26, 'rec')}${ft('Net payment', M.pay.net, 0, 'net')}</tfoot></table></div></div></div>`;
     },
   });
 })(window);
