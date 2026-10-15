@@ -1687,41 +1687,40 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const pre = (label, day, extra) => `<button class="chip ${Math.abs(day - P.start) < 1 ? 'on' : ''}" data-do="p2set" data-day="${day}" ${extra || ''}>${label}</button>`;
       const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
 
-      // timeline: Phase 1 context, Phase 2, the overlap between them, and the four Phase 2 packages
-      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 235, R = 14, rowH = 40, ph1Y = 44, ph2Y = 68, top = 98;
+      // timeline: two clear periods (Phase 1 alone / both together), one bar per phase, then the Phase 2 packages
+      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 128, R = 14, rowH = 38, pkTop = 96;
       const x = (d) => L + ((d - t0) / (t1 - t0)) * (W - L - R);
       const P1 = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO);
-      const sp = (l) => (l.length ? { s: Math.min(...l.map((a) => a.s)), e: Math.max(...l.map((a) => a.e)) } : null);
-      const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = top + ITEMS.length * rowH;
-      const stages = [['Design', P1.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'], ['Procurement', P1.filter((a) => a.epc === 'PROC'), 'var(--proc)'], ['Construction', P1.filter((a) => a.epc === 'CONS'), 'var(--cons)']];
-      let svg = `<svg viewBox="0 0 ${W} ${bot + 22}" width="100%" style="min-width:760px">`;
-      // overlap zone (Phase 2 start -> Phase 1 completion)
-      svg += `<rect x="${x(P.start)}" y="34" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 34}" fill="var(--ph2)" opacity=".07"/>`;
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${ph1Y - 6}" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
-      // Phase 1 row: what Phase 1 is doing (three thin lanes)
-      svg += `<text x="0" y="${ph1Y + 11}" style="font-size:12px;font-weight:800;fill:var(--ph1)">Phase 1</text><text x="52" y="${ph1Y + 11}" style="font-size:10.5px">design · procurement · construction</text>`;
-      stages.forEach(([nm, l, col], i) => { const q = sp(l); if (!q) return; svg += `<g class="hit" data-tip="${F.tip('Phase 1 – ' + nm, [['', 'Start', dt.fmt(q.s)], ['', 'Finish', dt.fmt(q.e)]])}"><rect x="${x(q.s)}" y="${ph1Y + i * 6}" width="${Math.max(3, x(q.e + 1) - x(q.s))}" height="5" rx="2" fill="${col}"/></g>`; });
-      // Phase 2 row
-      const q2 = sp(P.list);
-      svg += `<text x="0" y="${ph2Y + 11}" style="font-size:12px;font-weight:800;fill:var(--ph2)">Phase 2</text><rect x="${x(q2.s)}" y="${ph2Y}" width="${Math.max(3, x(q2.e + 1) - x(q2.s))}" height="16" rx="4" fill="var(--ph2)"/><text x="${x(q2.s) + 8}" y="${ph2Y + 12}" style="fill:#fff;font-size:11px;font-weight:700">Overlaps Phase 1 for ${F.months((ovEnd + 1 - P.start) / 30.4375)} months</text>`;
+      const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = pkTop + ITEMS.length * rowH;
+      const q2 = { s: P.start, e: Math.max(...P.list.map((a) => a.e)) };
+      const aMonths = (P.start - M.start) / 30.4375, bMonths = (ovEnd + 1 - P.start) / 30.4375;
+      let svg = `<svg viewBox="0 0 ${W} ${bot + 20}" width="100%" style="min-width:760px">`;
+      svg += `<rect x="${x(P.start)}" y="32" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 32}" fill="var(--ph2)" opacity=".06"/>`;
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="32" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
+      // period header
+      if (x(P.start) - x(M.start) > 6) svg += `<rect x="${x(M.start)}" y="2" width="${x(P.start) - x(M.start)}" height="26" rx="5" fill="#d9eef2"/><text x="${(x(M.start) + x(P.start)) / 2}" y="19" text-anchor="middle" style="font-size:11.5px;font-weight:800;fill:var(--brand-d)">Phase 1 alone · ${F.months(aMonths)} months</text>`;
+      svg += `<rect x="${x(P.start)}" y="2" width="${Math.max(6, x(ovEnd + 1) - x(P.start))}" height="26" rx="5" fill="#e3def9"/><text x="${(x(P.start) + x(ovEnd + 1)) / 2}" y="19" text-anchor="middle" style="font-size:12px;font-weight:800;fill:#4a3bb3">Phase 1 + Phase 2 together · ${F.months(bMonths)} months</text>`;
+      // one bar per phase
+      svg += `<text x="0" y="50" style="font-size:12.5px;font-weight:800;fill:var(--ph1)">Phase 1</text><rect x="${x(M.start)}" y="36" width="${x(p1End + 1) - x(M.start)}" height="20" rx="4" fill="var(--ph1)"/><text x="${x(M.start) + 8}" y="50" style="fill:#fff;font-size:11px;font-weight:700">${dt.fmtShort(M.start)} → ${dt.fmtShort(p1End)}</text>`;
+      svg += `<text x="0" y="74" style="font-size:12.5px;font-weight:800;fill:var(--ph2)">Phase 2</text><rect x="${x(q2.s)}" y="60" width="${Math.max(4, x(q2.e + 1) - x(q2.s))}" height="20" rx="4" fill="var(--ph2)"/><text x="${x(q2.s) + 8}" y="74" style="fill:#fff;font-size:11px;font-weight:700">${dt.fmtShort(q2.s)} → ${dt.fmtShort(q2.e)}</text>`;
+      // Phase 2 packages
       ITEMS.forEach(([key, name], i) => {
-        const y = top + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
-        const first = Math.min(...list.map((a) => a.s));
-        svg += `<text x="0" y="${y + 17}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name)}</text><text x="0" y="${y + 31}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
-        if (f <= 45 && first <= P.start + 45) svg += `<text x="${x(first) - 6}" y="${y + 21}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad)">${f < 0 ? 'late ▶' : 'must start now ▶'}</text>`;
+        const y = pkTop + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
+        const first = Math.min(...list.map((a) => a.s)), short = { '7.2': 'Railway Track', '3.3': 'FF&E (Furniture)', '6.1': 'Access Road', '4.3': 'Generator Room' }[key];
+        svg += `<text x="0" y="${y + 15}" style="font-size:12px;font-weight:700;fill:var(--accent)">${key} ${short}</text>`;
+        const early = f <= 45 && first <= P.start + 45;
+        const lab = f < 0 ? `late ${-Math.round(f)} d` : early ? `MUST START BY ${dt.fmtShort(first + f)}` : f <= 45 ? 'critical – cannot slip' : `${Math.round(f)} d float`;
+        const col = f < 0 ? 'var(--bad)' : f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)';
+        if (early || f < 0) svg += `<text x="${x(first) - 6}" y="${y + 19}" text-anchor="end" style="font-size:11px;font-weight:800;fill:${col}">${lab} ▶</text>`;
+        else svg += `<text x="${x(first) - 6}" y="${y + 19}" text-anchor="end" style="font-size:10.5px;font-weight:700;fill:${col}">${lab}</text>`;
         list.forEach((a) => {
-          const col = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
-          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 29}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
-          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 6}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="18" rx="3" fill="${col}"/></g>`;
+          const c = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
+          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 26}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
+          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 5}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="19" rx="3" fill="${c}" ${early && a === list[0] ? 'stroke="var(--bad)" stroke-width="2"' : ''}/></g>`;
         });
       });
-      const vline = (d, col, label, dy, dash, anchor) => `<line x1="${x(d)}" x2="${x(d)}" y1="${ph1Y - 12}" y2="${bot}" stroke="${col}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/><text x="${x(d) + (anchor === 'end' ? -4 : 4)}" y="${14 + dy}" text-anchor="${anchor || 'start'}" style="font-size:10.5px;font-weight:700;fill:${col}">${label}</text>`;
-      svg += vline(M.start, 'var(--c3)', 'NTP ' + dt.fmtShort(M.start), 0);
-      svg += vline(P.latest, 'var(--bad)', 'Latest start ' + dt.fmtShort(P.latest), 12, true, 'end');
-      svg += vline(P.start, 'var(--ph2)', 'Phase 2 start ' + dt.fmtShort(P.start), 0);
-      svg += `<line x1="${x(M.by['2.6'].e)}" x2="${x(M.by['2.6'].e)}" y1="${ph1Y - 12}" y2="${bot}" stroke="#6a7a86" stroke-width="1.2" stroke-dasharray="2 3"/><text x="${x(M.by['2.6'].e) + 4}" y="${26}" style="font-size:10px;fill:#6a7a86">Detailed design approved (shared gate)</text>`;
-      svg += vline(M.base.finish, '#8a97a3', 'Baseline completion', 0, true, 'end');
-      if (delay > 0) svg += vline(M.finish, 'var(--bad)', 'Completion ' + dt.fmtShort(M.finish), 12, false, 'end');
+      svg += `<line x1="${x(P.start)}" x2="${x(P.start)}" y1="30" y2="${bot}" stroke="var(--ph2)" stroke-width="2"/>`;
+      if (delay > 0) svg += `<line x1="${x(M.finish)}" x2="${x(M.finish)}" y1="30" y2="${bot}" stroke="var(--bad)" stroke-width="2"/><text x="${x(M.finish) - 4}" y="${pkTop - 6}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad)">New completion ${dt.fmtShort(M.finish)} (${F.days(delay)})</text>`;
       svg += '</svg>';
 
       const rows = crit.map((a) => {
