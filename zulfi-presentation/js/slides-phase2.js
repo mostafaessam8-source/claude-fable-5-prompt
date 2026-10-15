@@ -8,12 +8,16 @@
 <p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval ({ddDate}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
 <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after {latest} moves completion one-for-one{delayNow}.</p>
 <p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
-<p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
+<p style="margin:0 0 7px"><b>5 · Phase 1 and Phase 2 overlap.</b> Phase 2 runs inside Phase 1's window for {overlapMonths} months. When it starts, Phase 1 is still busy with {p1Now}; the critical Phase 2 packages ({critList}) must be launched in parallel – they cannot wait for Phase 1 to finish.</p>
+<p style="margin:0"><b>6 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
   const whyTokens = (M, P, g2, delay, trackF) => {
     const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
     return {
       trackAmt: F.M(trk), trackPct: F.pct(trk / M.total, 0),
       trackFloat: trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`,
+      overlapMonths: F.months((Math.min(Math.max(...M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO).map((a) => a.e)), M.finish) + 1 - P.start) / 30.4375),
+      p1Now: (() => { const l = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO && a.s <= P.start && a.e >= P.start).sort((x, y) => y.amount - x.amount).slice(0, 3); return l.length ? l.map((a) => a.code + ' ' + a.name.split(' – ').pop()).join(', ') : 'construction'; })(),
+      critList: [...new Set(P.list.filter((a) => a.floatB <= 45).map((a) => Z.ITEM_BY[a.item].name.replace(/ \(.*\)/, '')))].join(', '),
       ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
       delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
@@ -38,24 +42,39 @@
       const pre = (label, day, extra) => `<button class="chip ${Math.abs(day - P.start) < 1 ? 'on' : ''}" data-do="p2set" data-day="${day}" ${extra || ''}>${label}</button>`;
       const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
 
-      // timeline of the four Phase 2 packages
-      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 235, R = 14, rowH = 46, top = 46;
+      // timeline: Phase 1 context, Phase 2, the overlap between them, and the four Phase 2 packages
+      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 235, R = 14, rowH = 40, ph1Y = 44, ph2Y = 68, top = 98;
       const x = (d) => L + ((d - t0) / (t1 - t0)) * (W - L - R);
-      let svg = `<svg viewBox="0 0 ${W} ${top + ITEMS.length * rowH + 22}" width="100%" style="min-width:760px">`;
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${top - 6}" y2="${top + ITEMS.length * rowH}" stroke="#e6ecf0"/><text x="${x(d)}" y="${top + ITEMS.length * rowH + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
+      const P1 = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO);
+      const sp = (l) => (l.length ? { s: Math.min(...l.map((a) => a.s)), e: Math.max(...l.map((a) => a.e)) } : null);
+      const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = top + ITEMS.length * rowH;
+      const stages = [['Design', P1.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'], ['Procurement', P1.filter((a) => a.epc === 'PROC'), 'var(--proc)'], ['Construction', P1.filter((a) => a.epc === 'CONS'), 'var(--cons)']];
+      let svg = `<svg viewBox="0 0 ${W} ${bot + 22}" width="100%" style="min-width:760px">`;
+      // overlap zone (Phase 2 start -> Phase 1 completion)
+      svg += `<rect x="${x(P.start)}" y="34" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 34}" fill="var(--ph2)" opacity=".07"/>`;
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${ph1Y - 6}" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
+      // Phase 1 row: what Phase 1 is doing (three thin lanes)
+      svg += `<text x="0" y="${ph1Y + 11}" style="font-size:12px;font-weight:800;fill:var(--ph1)">Phase 1</text><text x="52" y="${ph1Y + 11}" style="font-size:10.5px">design · procurement · construction</text>`;
+      stages.forEach(([nm, l, col], i) => { const q = sp(l); if (!q) return; svg += `<g class="hit" data-tip="${F.tip('Phase 1 – ' + nm, [['', 'Start', dt.fmt(q.s)], ['', 'Finish', dt.fmt(q.e)]])}"><rect x="${x(q.s)}" y="${ph1Y + i * 6}" width="${Math.max(3, x(q.e + 1) - x(q.s))}" height="5" rx="2" fill="${col}"/></g>`; });
+      // Phase 2 row
+      const q2 = sp(P.list);
+      svg += `<text x="0" y="${ph2Y + 11}" style="font-size:12px;font-weight:800;fill:var(--ph2)">Phase 2</text><rect x="${x(q2.s)}" y="${ph2Y}" width="${Math.max(3, x(q2.e + 1) - x(q2.s))}" height="16" rx="4" fill="var(--ph2)"/><text x="${x(q2.s) + 8}" y="${ph2Y + 12}" style="fill:#fff;font-size:11px;font-weight:700">Overlaps Phase 1 for ${F.months((ovEnd + 1 - P.start) / 30.4375)} months</text>`;
       ITEMS.forEach(([key, name], i) => {
         const y = top + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
-        svg += `<text x="0" y="${y + 19}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name)}</text><text x="0" y="${y + 34}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
+        const first = Math.min(...list.map((a) => a.s));
+        svg += `<text x="0" y="${y + 17}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name)}</text><text x="0" y="${y + 31}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
+        if (f <= 45 && first <= P.start + 45) svg += `<text x="${x(first) - 6}" y="${y + 21}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad)">${f < 0 ? 'late ▶' : 'must start now ▶'}</text>`;
         list.forEach((a) => {
           const col = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
-           if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 31}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
-          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 8}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="20" rx="3" fill="${col}" ${a.ll ? 'opacity=".95"' : ''}/></g>`;
+          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 29}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
+          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 6}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="18" rx="3" fill="${col}"/></g>`;
         });
       });
-      const vline = (d, col, label, dy, dash, anchor) => `<line x1="${x(d)}" x2="${x(d)}" y1="${top - 20}" y2="${top + ITEMS.length * rowH}" stroke="${col}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/><text x="${x(d) + (anchor === 'end' ? -4 : 4)}" y="${top - 24 + dy}" text-anchor="${anchor || 'start'}" style="font-size:10.5px;font-weight:700;fill:${col}">${label}</text>`;
+      const vline = (d, col, label, dy, dash, anchor) => `<line x1="${x(d)}" x2="${x(d)}" y1="${ph1Y - 12}" y2="${bot}" stroke="${col}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''}/><text x="${x(d) + (anchor === 'end' ? -4 : 4)}" y="${14 + dy}" text-anchor="${anchor || 'start'}" style="font-size:10.5px;font-weight:700;fill:${col}">${label}</text>`;
       svg += vline(M.start, 'var(--c3)', 'NTP ' + dt.fmtShort(M.start), 0);
       svg += vline(P.latest, 'var(--bad)', 'Latest start ' + dt.fmtShort(P.latest), 12, true, 'end');
       svg += vline(P.start, 'var(--ph2)', 'Phase 2 start ' + dt.fmtShort(P.start), 0);
+      svg += `<line x1="${x(M.by['2.6'].e)}" x2="${x(M.by['2.6'].e)}" y1="${ph1Y - 12}" y2="${bot}" stroke="#6a7a86" stroke-width="1.2" stroke-dasharray="2 3"/><text x="${x(M.by['2.6'].e) + 4}" y="${26}" style="font-size:10px;fill:#6a7a86">Detailed design approved (shared gate)</text>`;
       svg += vline(M.base.finish, '#8a97a3', 'Baseline completion', 0, true, 'end');
       if (delay > 0) svg += vline(M.finish, 'var(--bad)', 'Completion ' + dt.fmtShort(M.finish), 12, false, 'end');
       svg += '</svg>';
@@ -86,11 +105,11 @@
           </div>
           <div class="row grow" style="gap:14px">
             <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span><div class="right legend" style="font-size:11px"><span><i class="dot" style="background:#f3a888"></i>Prequal. / PO</span><span><i class="dot" style="background:var(--proc)"></i>Manufacture &amp; delivery</span><span><i class="dot" style="background:var(--cons)"></i>Installation</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div></div><div class="pb" style="padding-top:0;overflow-x:auto;overflow-y:hidden">${svg}</div></div>
-            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5;padding-top:0">
+            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:12px;line-height:1.42;padding-top:0">
               ${A.ed('why:p2', WHY_TPL, whyTokens(M, P, g2, delay, trackF))}
             </div></div>
           </div>
-          <div class="panel" style="max-height:190px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
+          <div class="panel" style="max-height:170px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
             <div class="pb scroll" data-keep="p2tbl" style="padding-top:0"><table class="tbl tight"><thead><tr><th>WBS</th><th>Activity</th><th>Start</th><th>Must start by</th><th class="num">SAR</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="empty">No critical Phase 2 activity</td></tr>'}</tbody></table></div></div>
         </div>`;
     },
