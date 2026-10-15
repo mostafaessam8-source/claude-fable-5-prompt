@@ -88,7 +88,7 @@
       } else body = list.map(row).join('');
       const head = COLS.map((c) => `<th class="${c[3] || ''} ${c[2] ? 'sort' : ''}" ${c[2] ? `data-do="regSort" data-col="${c[0]}"` : ''}>${c[1]}${r.col === c[0] ? (r.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
       return A.head('2b', 'CBS register', 'Every WBS line with cost, % of total, cumulative % and its live schedule dates', 'Sheet 2 · WBS &amp; CBS') +
-        `<div class="s-body"><div class="panel grow"><div class="ph"><h3>Cost breakdown register</h3><span class="sub">click a header to sort · click a row for details</span>
+        `<div class="s-body"><div class="panel grow"><div class="ph"><h3>Cost breakdown register</h3><span class="sub">click a header to sort · click a row for details · payment terms: ${M.pay.pct}% advance at NTP (SAR ${F.n0(M.pay.amount)}), recovered in equal monthly deductions</span>
           <div class="right"><button class="btn sm" data-do="regExpand">Expand all</button><button class="btn sm" data-do="regCollapse">Collapse all</button></div></div>
           <div class="pb scroll" data-keep="reg" style="padding:0 0 0"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body || '<tr><td colspan="12" class="empty">No activities match the filters</td></tr>'}</tbody>
           <tfoot><tr><td colspan="12">Total excl. VAT: <b>${F.n0(tot)}</b> SAR &nbsp;·&nbsp; VAT 15%: <b>${F.n0(tot * Z.VAT)}</b> &nbsp;·&nbsp; Total incl. VAT: <b>${F.n0(tot * (1 + Z.VAT))}</b> SAR &nbsp;·&nbsp; ${vis.length} lines</td></tr></tfoot></table></div></div></div>`;

@@ -3,15 +3,22 @@
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
 
   A.changes.asm = (el) => {
+    const key = el.dataset.k;
+    if (key.startsWith('adv.') || key.startsWith('ms.')) {
+      const lim = { 'adv.pct': [0, 100], 'adv.from': [1, 60], 'ms.g1': [0, 730], 'ms.g2': [0, 730] }[key] || [0, 100];
+      const val = Math.round(Math.max(lim[0], Math.min(lim[1], parseFloat(el.value))));
+      if (!isFinite(val)) { A.refilter(); return; }
+      const st2 = Z.cloneState(A.s.st); const [g, f] = key.split('.'); st2[g][f] = val; A.setState(st2); return;
+    }
     const v = Math.max(0, Math.min(100, parseFloat(el.value)));
     if (!isFinite(v)) { A.refilter(); return; }
     const st = Z.cloneState(A.s.st), path = el.dataset.k.split('.');
     if (path[0] === 'proc') st.A.proc[+path[1]] = v; else st.A[path[0]][path[1]] = v;
     A.setState(st);
   };
-  A.actions.asmReset = () => { const st = Z.cloneState(A.s.st); st.A = Z.cloneA(Z.DEFAULT_A); A.setState(st); };
+  A.actions.asmReset = () => { const st = Z.cloneState(A.s.st); st.A = Z.cloneA(Z.DEFAULT_A); st.adv = { ...Z.DEFAULT_ADV }; st.ms = { ...Z.DEFAULT_MS }; A.setState(st); };
 
-  const inp = (k, v) => `<input class="ninput" type="number" min="0" max="100" step="1" value="${+(+v).toFixed(2)}" data-chg="asm" data-k="${k}">`;
+  const inp = (k, v, max) => `<input class="ninput" type="number" min="0" max="${max || 100}" step="1" value="${+(+v).toFixed(2)}" data-chg="asm" data-k="${k}">`;
   const sumChip = (s) => (Math.abs(s - 100) < 0.001 ? '<span class="pill ok">= 100%</span>' : `<span class="pill warn">sums to ${+s.toFixed(2)}%</span>`);
 
   Z.registerSlide({
@@ -20,7 +27,7 @@
       const a = M.st.A, by = M.by;
       const disc = Object.entries(Z.DISC).map(([k, d]) => {
         const c = 100 - a.disc[k];
-        return `<tr><td><b>${d.name}</b></td><td>${inp('disc.' + k, a.disc[k])} %</td><td class="num"><b>${+c.toFixed(2)}%</b> ${c <= a.disc[k] ? '<span class="pill warn">materials ≥ construction</span>' : ''}</td><td class="wrap muted" style="max-width:300px;font-size:12px">${d.applies}</td></tr>`;
+        return `<tr><td><b>${d.name}</b></td><td>${inp('disc.' + k, a.disc[k])} %</td><td class="num"><b>${+c.toFixed(2)}%</b> ${c <= a.disc[k] ? '<span class="pill warn">materials ≥ construction</span>' : ''}</td><td class="muted" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${F.esc(d.applies)}">${d.applies}</td></tr>`;
       }).join('');
       const ps = a.proc.reduce((x, y) => x + y, 0), dsum = a.stage.concept + a.stage.prelim + a.stage.detail, ss = a.sub.sub + a.sub.appr;
       const dur = (c1, c2) => F.months((by[c2].e - by[c1].s + 1) / 30.4375);
@@ -45,12 +52,17 @@
       return A.head('4', 'Assumptions &amp; weightages', 'Edit any weightage – amounts, cash flow and S-curve recalculate; the total contract value stays fixed', 'Sheet 4 · Assumptions &amp; Weightages') +
         `<div class="s-body"><div class="row grow">
           <div class="col grow" style="gap:14px">
-            <div class="panel"><div class="ph"><h3>1 · Discipline materials / construction split</h3><span class="sub">construction is always the higher share</span></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Discipline</th><th>Materials</th><th class="num">Construction</th><th>Applies to</th></tr></thead><tbody>${disc}</tbody></table></div></div>
+            <div class="panel"><div class="ph"><h3>1 · Discipline materials / construction split</h3><span class="sub">construction is always the higher share</span></div><div class="pb" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Discipline</th><th>Materials</th><th class="num">Construction</th><th>Applies to</th></tr></thead><tbody>${disc}</tbody></table></div></div>
             <div class="row" style="gap:14px">
               <div class="panel" style="width:320px"><div class="ph"><h3>2 · Procurement stages</h3>${sumChip(ps)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Weight</th></tr></thead><tbody>${procRows}</tbody></table><div class="hint" style="margin-top:6px">Within each item’s procurement share.</div></div></div>
               <div class="panel grow"><div class="ph"><h3>3 · Design stages</h3>${sumChip(dsum)}</div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Stage</th><th>Raw</th><th class="num">Normalised</th></tr></thead><tbody>${stRows}</tbody></table><div class="hint" style="margin-top:6px">Raw weights sum to 105% – normalised so design stays SAR ${F.n0(Z.DESIGN_TOTAL)}.</div></div></div>
               <div class="panel" style="width:230px"><div class="ph"><h3>4 · Sub-activity</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Sub-activity</th><th>Weight</th></tr></thead><tbody><tr><td>Submission</td><td>${inp('sub.sub', a.sub.sub)} %</td></tr><tr><td>Approval</td><td>${inp('sub.appr', a.sub.appr)} %</td></tr></tbody></table><div style="margin-top:6px">${sumChip(ss)}</div></div></div>
             </div>
+            <div class="panel"><div class="ph"><h3>6 · Advance payment &amp; funding milestones</h3><span class="sub">taken from the total contract value</span></div><div class="pb" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Item</th><th>Value</th><th>Result</th></tr></thead><tbody>
+              <tr><td>Advance payment (received at NTP)</td><td>${inp('adv.pct', M.pay.pct)} % of contract</td><td><b>${F.sar(M.pay.amount)}</b></td></tr>
+              <tr><td>Recovery starts in month (equal monthly deductions to the last month)</td><td>${inp('adv.from', M.pay.from, 60)} month</td><td><b>${F.sar(M.pay.perMonth)}</b> × ${M.pay.months} months</td></tr>
+              <tr><td>Phase 1 amount granted – before NTP</td><td>${inp('ms.g1', M.st.ms.g1, 730)} days</td><td><b>${dt.fmt(M.start - M.st.ms.g1)}</b></td></tr>
+              <tr><td>Phase 2 amount granted – before the Phase 2 start</td><td>${inp('ms.g2', M.st.ms.g2, 730)} days</td><td><b>${dt.fmt(Z.phase2(M).start - M.st.ms.g2)}</b></td></tr></tbody></table></div></div>
             <div class="row" style="align-items:center;gap:12px"><button class="btn" data-do="asmReset">Reset weightages to Excel values</button><span class="hint">Changes are saved in this browser and included in the share link.</span></div>
           </div>
           <div class="col" style="width:560px;gap:14px">
@@ -104,6 +116,8 @@
         <div class="row grow">
           <div class="col" style="width:640px;gap:14px">
             <div class="panel"><div class="ph"><h3>Baseline vs revised</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Metric</th><th>Baseline</th><th>Revised</th><th>Δ</th></tr></thead><tbody>
+              ${row('Phase 2 start (release)', dt.fmtShort(Z.phase2(M).baseStart), dt.fmtShort(Z.phase2(M).start), F.deltaHtml(Z.phase2(M).start - Z.phase2(M).baseStart))}
+              ${row('Advance payment', 'SAR ' + F.n0(M.pay.amount), 'SAR ' + F.n0(M.pay.amount), `<span class="delta zero">${M.pay.pct}% · ${F.n0(M.pay.perMonth)}/month</span>`)}
               ${row('Completion date', dt.fmtShort(M.base.finish), dt.fmtShort(M.finish), F.deltaHtml(fd))}
               ${row('Duration (months)', '26', F.months(M.durMonths), F.deltaHtml(Math.round((M.durMonths - 26) * 30.4375)))}
               ${row('Total cost (excl. VAT)', F.M(M.total), F.M(M.total), '<span class="delta zero">fixed</span>')}
