@@ -1,7 +1,7 @@
 /* Slide: why Phase 2 must start with Phase 1 – critical Phase 2 activities, the movable Phase 2 start milestone and scenarios */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const CTX = [['7.3', 'Railway Turnout (Phase 1)'], ['6.2', 'Signalling & Telecom (Phase 1)']];
+  const CTX = [['7.3', 'Railway Turnout (Phase 1)'], ['7.4', 'Signalling & Telecom (Phase 1)']];
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
 
   /* editable explanation: {tokens} are live values */
@@ -18,9 +18,9 @@
       overlapMonths: F.months((Math.min(Math.max(...M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO).map((a) => a.e)), M.finish) + 1 - P.start) / 30.4375),
       p1Now: (() => { const l = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO && a.s <= P.start && a.e >= P.start).sort((x, y) => y.amount - x.amount).slice(0, 3); return l.length ? l.map((a) => a.code + ' ' + a.name.split(' – ').pop()).join(', ') : 'construction'; })(),
       critList: [...new Set(P.list.filter((a) => a.floatB <= 45).map((a) => Z.ITEM_BY[a.item].name.replace(/ \(.*\)/, '')))].join(', '),
-      sigAmt: F.M(M.acts.filter((a) => a.item === '6.2').reduce((q, a) => q + a.amount, 0)) + ' SAR',
+      sigAmt: F.M(M.acts.filter((a) => a.item === '7.4').reduce((q, a) => q + a.amount, 0)) + ' SAR',
       sigCheck: (() => {
-        const g = (it) => M.acts.find((a) => a.item === it && a.kind === 'b'), sg = g('6.2'), tk = g('7.2'), tn = g('7.3');
+        const g = (it) => M.acts.find((a) => a.item === it && a.kind === 'b'), sg = g('7.4'), tk = g('7.2'), tn = g('7.3');
         const gap = sg.s - Math.max(tk.s, tn.s);
         return gap >= 0 ? `<b style="color:var(--good)">✓ Planned correctly</b> – Signalling installation ${gap > 0 ? 'starts ' + gap + ' days after' : 'starts when'} Track &amp; Turnout ${gap > 0 ? '' : 'installation start (' + dt.fmtShort(sg.s) + ')'}.` : `<b style="color:var(--bad)">⚠ Signalling is planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
