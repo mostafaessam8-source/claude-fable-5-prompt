@@ -3,6 +3,22 @@
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
 
+  /* editable explanation: {tokens} are live values */
+  const WHY_TPL = `<p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> {trackAmt} SAR ({trackPct} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with {trackFloat}.</p>
+<p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval ({ddDate}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
+<p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after {latest} moves completion one-for-one{delayNow}.</p>
+<p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
+<p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
+  const whyTokens = (M, P, g2, delay, trackF) => {
+    const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
+    return {
+      trackAmt: F.M(trk), trackPct: F.pct(trk / M.total, 0),
+      trackFloat: trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`,
+      ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
+      delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
+    };
+  };
+
   const apply = (day) => { if (day) A.setState(Z.setPhase2Start(A.s.st, day)); };
   A.changes.p2date = (el) => apply(dt.parse(el.value));
   A.changes.p2range = (el) => { const P = Z.phase2(A.s.M); apply(P.baseStart + (+el.value)); };
@@ -71,11 +87,7 @@
           <div class="row grow" style="gap:14px">
             <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span><div class="right legend" style="font-size:11px"><span><i class="dot" style="background:#f3a888"></i>Prequal. / PO</span><span><i class="dot" style="background:var(--proc)"></i>Manufacture &amp; delivery</span><span><i class="dot" style="background:var(--cons)"></i>Installation</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div></div><div class="pb" style="padding-top:0;overflow-x:auto;overflow-y:hidden">${svg}</div></div>
             <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5;padding-top:0">
-              <p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> ${F.M(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0))} SAR (${F.pct(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0) / M.total, 0)} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with ${trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`}.</p>
-              <p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval (${dt.fmtShort(M.by['2.6'].e)}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
-              <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after ${dt.fmtShort(P.latest)} moves completion one-for-one${delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : ''}.</p>
-              <p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
-              <p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted ${g2} days before the start – by <b>${dt.fmtShort(P.start - g2)}</b>.</p>
+              ${A.ed('why:p2', WHY_TPL, whyTokens(M, P, g2, delay, trackF))}
             </div></div>
           </div>
           <div class="panel" style="max-height:190px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>

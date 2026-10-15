@@ -377,6 +377,19 @@ svg .axl { stroke: #c4d0d8; }
 @media (max-width: 1750px) { #bReset .t { display: none; } }
 .mobile #bReset { padding: 0 11px; }
 
+/* ---------- editable text ---------- */
+#edbar { display: none; align-items: center; gap: 12px; flex: none; padding: 6px 14px; background: #fff7e0; border-bottom: 1px solid #f0d58a; font-size: 13px; color: #6b4e00; flex-wrap: wrap; }
+.editing #edbar { display: flex; }
+#edbar kbd { background: #fff; border: 1px solid #e3c978; border-radius: 4px; padding: 0 5px; font-size: 12px; }
+.edtext.on { outline: 1.5px dashed var(--brand); outline-offset: 2px; background: rgba(0,119,139,.05); border-radius: 5px; cursor: text; min-height: 1em; }
+.edtext.on:focus { outline: 2px solid var(--brand); background: #fff; }
+.edtext.edited:not(.on) { }
+.tk { background: #e0f2f5; color: var(--brand-d); border-radius: 4px; padding: 0 4px; font-weight: 700; font-size: .92em; white-space: nowrap; }
+h1.edtext, .s-head p .edtext { display: inline; }
+h1.edtext { display: block; }
+.mobile #bEdit { display: none; }
+@media (max-width: 1750px) { #bEdit .t { display: none; } }
+
 </style>
 </head>
 <body>
@@ -390,6 +403,7 @@ svg .axl { stroke: #c4d0d8; }
     <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
     <button class="tb-btn" id="bReset" title="Reset the presentation to its default (start date 17 Oct 2026, no changes)"></button>
     <span class="grow"></span>
+    <button class="tb-btn" id="bEdit" title="Edit the text on the slides (saved with the scenario)"></button>
     <button class="tb-btn" id="bSide" title="Show / hide the sections menu"></button>
     <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
     <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
@@ -399,6 +413,7 @@ svg .axl { stroke: #c4d0d8; }
     <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
     <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
   </header>
+  <div id="edbar"><b>Edit text</b> · click any dashed text and type · <kbd>Ctrl</kbd>+<kbd>B</kbd> bold · coloured <span class="tk">{tags}</span> are live values and update by themselves · changes are saved automatically<span style="flex:1"></span><button class="btn sm" data-do="edResetSlide">Restore this slide</button><button class="btn sm" data-do="edResetAll">Restore all</button><button class="btn sm primary" id="edDone">Done</button></div>
   <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
   <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt"></button><button id="mNext"></button></div>
   <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
@@ -516,8 +531,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   /* ---------------------------------------------------------------- state */
   Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
   Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
-  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS } });
-  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) } });
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
+  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) }, notes: { ...(s.notes || {}) } });
 
   /* ------------------------------------------------------- distribution */
   function distribute(a, bs, N, amount) {
@@ -782,7 +797,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 
   /* ------------------------------------------------------------ sharing */
   Z.serialize = function (st) {
-    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms };
+    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms, notes: st.notes };
     Object.keys(st.ov).forEach((c) => (o.ov[c] = [dt.iso(st.ov[c][0]), dt.iso(st.ov[c][1])]));
     return JSON.stringify(o);
   };
@@ -790,6 +805,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const o = JSON.parse(txt);
     const st = Z.newState(o.s); st.link = o.l || 'two';
     if (o.adv) st.adv = { ...Z.DEFAULT_ADV, ...o.adv }; if (o.ms) st.ms = { ...Z.DEFAULT_MS, ...o.ms };
+    if (o.notes) st.notes = { ...o.notes };
     if (o.A) { const A = Z.cloneA(Z.DEFAULT_A); Object.assign(A.disc, o.A.disc); A.proc = o.A.proc || A.proc; Object.assign(A.stage, o.A.stage); Object.assign(A.sub, o.A.sub); st.A = A; }
     Object.keys(o.ov || {}).forEach((c) => { if (BY[c]) st.ov[c] = [dt.parse(o.ov[c][0]), dt.parse(o.ov[c][1])]; });
     return st;
@@ -959,6 +975,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>',
     reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>',
     filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
@@ -1026,8 +1043,58 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
   };
 
+  /* ---- editable text blocks: any text can be edited in 'Edit text' mode and is saved with the scenario ----
+     A block is a template; {tokens} are replaced by live values, so edited sentences keep updating. */
+  A.edDef = {};
+  A.ed = (id, def, tokens, opts) => {
+    opts = opts || {};
+    const tag = opts.tag || 'div', st = A.s.st, custom = !!(st && st.notes && st.notes[id] != null);
+    A.edDef[id] = def;
+    const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
+    const body = editing
+      ? tpl.replace(/\{(\w+)\}/g, '<span class="tk" contenteditable="false">{$1}</span>')
+      : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
+    return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
+  };
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  A.cleanHtml = (html) => {
+    const box = document.createElement('div'); box.innerHTML = html;
+    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.textContent)));
+    (function walk(n) {
+      Array.from(n.children).forEach((c) => {
+        walk(c);
+        if (!ALLOWED.has(c.tagName)) { c.replaceWith(...Array.from(c.childNodes)); return; }
+        Array.from(c.attributes).forEach((a) => c.removeAttribute(a.name));
+      });
+    })(box);
+    return box.innerHTML.replace(/\u00a0/g, ' ').trim();
+  };
+  A.saveEd = (el) => {
+    const id = el.dataset.ed, st = A.s.st; st.notes = st.notes || {};
+    const html = A.cleanHtml(el.innerHTML), norm = (t) => t.replace(/\s+/g, ' ').trim();
+    const tmp = document.createElement('div'); tmp.innerHTML = A.edDef[id] || '';
+    if (norm(html) === norm(tmp.innerHTML)) delete st.notes[id]; else st.notes[id] = html;
+    el.classList.toggle('edited', st.notes[id] != null);
+    A.save();
+  };
+  A.toggleEdit = () => {
+    A.s.editText = !A.s.editText; $('#app').classList.toggle('editing', A.s.editText);
+    $('#bEdit').classList.toggle('primary', A.s.editText);
+    A.refilter();
+  };
+  A.actions.edDone = () => A.toggleEdit();
+  A.actions.edResetSlide = () => {
+    if (!confirm('Restore the original text of this slide?')) return;
+    $$('#slide-' + A.s.slide + ' [data-ed]').forEach((el) => delete A.s.st.notes[el.dataset.ed]);
+    A.save(); A.refilter();
+  };
+  A.actions.edResetAll = () => {
+    if (!confirm('Restore the original text on ALL slides?')) return;
+    A.s.st.notes = {}; A.save(); A.refilter();
+  };
+
   A.head = (no, title, sub, src) =>
-    `<div class="s-head"><div class="no">${no}</div><div><h1>${title}</h1><p>${sub}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
+    `<div class="s-head"><div class="no">${no}</div><div>${A.ed('title:' + no, title, null, { tag: 'h1' })}<p>${A.ed('sub:' + no, sub, null, { tag: 'span' })}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
 
   A.renderSlide = (i, keepScroll) => {
     const el = $('#slide-' + i); if (!el) return;
@@ -1125,6 +1192,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const stage = $('#stage');
     stage.addEventListener('click', (e) => {
       const t = e.target;
+      if (A.s.editText && t.closest('[data-ed]')) return;
       const doEl = t.closest('[data-do]');
       if (doEl && A.actions[doEl.dataset.do]) { A.actions[doEl.dataset.do](doEl, e); return; }
       if (t.closest('input,select,textarea')) return;
@@ -1139,6 +1207,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const el = e.target.closest('[data-chg]');
       if (el && A.changes[el.dataset.chg]) A.changes[el.dataset.chg](el, e);
     });
+    stage.addEventListener('input', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (el) el.dataset.dirty = '1'; });
+    stage.addEventListener('focusout', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (el && A.s.editText && el.dataset.dirty) { delete el.dataset.dirty; A.saveEd(el); } });
+    stage.addEventListener('paste', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (!el) return; e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); });
+    $('#bEdit').onclick = A.toggleEdit; $('#edDone').onclick = A.toggleEdit;
     $('#scrim').addEventListener('click', A.closeDrawer);
     stage.addEventListener('mousemove', tipMove);
     stage.addEventListener('mouseleave', () => ($('#tip').style.display = 'none'));
@@ -1174,6 +1246,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     // keyboard
     document.addEventListener('keydown', (e) => {
       const tag = (e.target.tagName || '').toLowerCase();
+      if (e.target.isContentEditable) { if (e.key === 'Escape') e.target.blur(); return; }
       if (tag === 'input' || tag === 'select' || tag === 'textarea') { if (e.key === 'Escape') e.target.blur(); return; }
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); A.next(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); A.back(); }
@@ -1331,6 +1404,24 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
   A.idx = (id) => A.slides.findIndex((s) => s.id === id);
 
+
+  /* editable "Schedule insights" text: {tokens} are live values */
+  const INS_TPL = `<p style="margin:0 0 8px"><b>Tight tail-end:</b> {tightCount} installation activities finish in the last ~3 months ({tightCodes}…). Shortest installation windows: {shortWin}.</p>
+<p style="margin:0 0 8px"><b>Peak spend:</b> month {peakMonth} ({peakDate}) at {peakAmt}.</p>
+<p style="margin:0 0 8px"><b>Phase 2:</b> must start by {p2latest} to hold completion{p2late}. Move the milestone in the register (row {p2row}) or on the Phase 2 slide.</p>
+<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
+<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
+  const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
+    tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
+    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', '),
+    peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
+    p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
+    p2late: P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : '',
+    p2row: ms.findIndex((m) => m.k === 'p2') + 1,
+    advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
+    permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),
+  });
+
   A.changes.start = (el) => { const d = dt.parse(el.value); if (d) A.setState(Z.setStart(A.s.st, d)); };
 
   const span = (list) => {
@@ -1355,7 +1446,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         <div style="flex:1;display:flex;flex-direction:column">
           <div class="eyebrow">Saudi Arabia Railway Company</div>
           <h1>Zulfi Railway<br>Station</h1>
-          <h2>Project Cost, WBS / CBS &amp; 26-Month Schedule</h2>
+          ${A.ed('cv:h2', 'Project Cost, WBS / CBS &amp; 26-Month Schedule', null, { tag: 'h2' })}
           <div class="cv-stats" style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
             ${stat('Total project cost (excl. VAT)', F.sar(M.total))}
             ${stat('Project duration', F.months(M.durMonths) + ' months')}
@@ -1369,7 +1460,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         <div class="cv-r" style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
           <div class="startbox"><label for="coverStart">Project start date</label>
             <input type="date" id="coverStart" value="${dt.iso(M.start)}" data-chg="start">
-            <div style="margin-top:12px;font-size:13px;line-height:1.5;opacity:.92">Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.</div></div>
+            ${A.ed('cv:blurb', 'Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.', null, { style: 'margin-top:12px;font-size:13px;line-height:1.5;opacity:.92' })}</div>
           <div class="cstat"><div class="k">Scenario</div><div class="v" style="font-size:20px">${n ? `Revised – ${n} activities moved` : 'Baseline (as per Excel workbook)'}</div>
             <div style="font-size:13px;opacity:.85;margin-top:6px">Use <b>Next</b> / <b>→</b> to move through the deck, <b>F</b> for full screen.</div></div>
           <div class="cstat"><div class="k">Planned window</div><div class="v" style="font-size:20px">${dt.fmt(M.start)} → ${dt.fmt(M.finish)}</div></div>
@@ -1498,11 +1589,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
               <div class="kpi alt grow" data-do="goLL" style="cursor:pointer"><div class="k">Long-lead items</div><div class="v">${M.acts.filter((a) => a.ll).length}<small>activities</small></div><div class="d">${F.M(llAmt)} SAR · last delivery ${ll.length ? dt.fmtShort(Math.max(...ll.map((a) => a.e))) : '–'}</div></div>
             </div>
             <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5">
-              <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
-              <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
-              <p style="margin:0 0 8px"><b>Phase 2:</b> must start by <a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a> to hold completion${P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : ''}. Move the milestone in the register (row ${ms.findIndex((m) => m.k === 'p2') + 1}) or on the Phase 2 slide.</p>
-              <p style="margin:0 0 8px"><b>Advance payment:</b> ${F.sar(M.pay.amount)} (${M.pay.pct}% of contract) at NTP, recovered ${F.sar(M.pay.perMonth)} per month over ${M.pay.months} months.</p>
-              <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on ${dt.fmt(M.by['1.3'].e)} – it follows detailed-design approval (${dt.fmt(M.by['2.6'].e)}).</p>
+              ${A.ed('ins:miles', INS_TPL, insTokens(M, ms, P2, tight, cons, agg, pk))}
               ${M.conflicts.length ? `<div class="note bad">${M.conflicts.length} dependency conflict(s): ${M.conflicts.slice(0, 5).map((a) => a.code).join(', ')}${M.conflicts.length > 5 ? '…' : ''} start earlier than their predecessor allows. Open the Gantt to resolve.</div>` : '<div class="note ok">No dependency conflicts – all finish-to-start links are respected.</div>'}
             </div></div>
           </div></div></div>`;
@@ -1560,6 +1647,22 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
+
+  /* editable explanation: {tokens} are live values */
+  const WHY_TPL = `<p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> {trackAmt} SAR ({trackPct} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with {trackFloat}.</p>
+<p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval ({ddDate}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
+<p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after {latest} moves completion one-for-one{delayNow}.</p>
+<p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
+<p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
+  const whyTokens = (M, P, g2, delay, trackF) => {
+    const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
+    return {
+      trackAmt: F.M(trk), trackPct: F.pct(trk / M.total, 0),
+      trackFloat: trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`,
+      ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
+      delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
+    };
+  };
 
   const apply = (day) => { if (day) A.setState(Z.setPhase2Start(A.s.st, day)); };
   A.changes.p2date = (el) => apply(dt.parse(el.value));
@@ -1629,11 +1732,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
           <div class="row grow" style="gap:14px">
             <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span><div class="right legend" style="font-size:11px"><span><i class="dot" style="background:#f3a888"></i>Prequal. / PO</span><span><i class="dot" style="background:var(--proc)"></i>Manufacture &amp; delivery</span><span><i class="dot" style="background:var(--cons)"></i>Installation</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div></div><div class="pb" style="padding-top:0;overflow-x:auto;overflow-y:hidden">${svg}</div></div>
             <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5;padding-top:0">
-              <p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> ${F.M(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0))} SAR (${F.pct(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0) / M.total, 0)} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with ${trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`}.</p>
-              <p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval (${dt.fmtShort(M.by['2.6'].e)}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
-              <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after ${dt.fmtShort(P.latest)} moves completion one-for-one${delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : ''}.</p>
-              <p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
-              <p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted ${g2} days before the start – by <b>${dt.fmtShort(P.start - g2)}</b>.</p>
+              ${A.ed('why:p2', WHY_TPL, whyTokens(M, P, g2, delay, trackF))}
             </div></div>
           </div>
           <div class="panel" style="max-height:190px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
@@ -2077,7 +2176,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
             ${kp('Net payment in month 1', F.sar(pay.net[0]), 'work done + advance − recovery')}
             ${kp('Peak net payment', `M${pkI + 1} <small>${dtp(M.bs[pkI])}</small>`, F.sar(pay.net[pkI]), `data-month="${pkI + 1}" style="cursor:pointer"`)}
             ${kp('Total payments', F.sar(pay.cum[M.N - 1]), 'equals the contract value – the advance nets to zero')}
-            <div class="note info" style="margin-top:auto">The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).</div>
+            <div class="note info" style="margin-top:auto">${A.ed('note:pay', 'The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).')}</div>
           </div>
         </div></div>`;
   }
@@ -2121,7 +2220,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
               ${kp('Average monthly spend', F.M(tot / M.N), `over ${M.N} months`)}
               ${kp('50% of cost reached', m50 >= 0 ? `M${m50 + 1} <small>${dt.fmtMY(M.bs[m50])}</small>` : '–', m50 >= 0 ? `cumulative ${F.pct(agg.pct[m50])}` : '')}
               ${kp('Planned progress at status date', st ? F.pct(tot ? atSt / tot : 0) : '–', st ? `${dt.fmt(st)} · ${F.sar(atSt)}` : 'choose a status date above', st ? 'style="border-color:var(--bad)"' : '')}
-              <div class="note info" style="margin-top:auto">Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.</div>
+              <div class="note info" style="margin-top:auto">${A.ed('note:cf', 'Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.')}</div>
             </div>
           </div></div>`;
     },
@@ -2288,7 +2387,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
             </tbody></table></div></div>
             <div class="panel grow"><div class="ph"><h3>Take it with you</h3></div><div class="pb" style="display:flex;flex-direction:column;gap:10px">
               <div class="row" style="flex-wrap:wrap;gap:10px"><button class="btn primary" data-do="shareLink">Copy share link</button><button class="btn" data-do="exportCsv">Export schedule (CSV)</button><button class="btn" onclick="Z.app.print()">Print / save PDF</button><button class="btn danger" data-do="resetAll">Reset everything to baseline</button></div>
-              <div class="hint">The share link carries the start date, every moved activity and edited weightage – anyone who opens it sees the same scenario. Your edits are also remembered in this browser.</div></div></div>
+              <div class="hint">${A.ed('hint:scen', 'The share link carries the start date, every moved activity and edited weightage – anyone who opens it sees the same scenario. Your edits are also remembered in this browser.')}</div></div></div>
           </div>
           <div class="panel grow"><div class="ph"><h3>Moved activities</h3><span class="sub">${ch.length} versus baseline</span></div><div class="pb scroll" data-keep="scen" style="padding:0">
             ${ch.length ? `<table class="tbl"><thead><tr><th>WBS</th><th>Activity</th><th>Baseline</th><th>Revised</th><th>Start Δ</th><th>Finish Δ</th></tr></thead><tbody>${crow}</tbody></table>` : '<div class="empty">No changes yet.<br>Edit a date on the Gantt slide, or change the project start in the top bar –<br>this list and every chart will update.</div>'}</div></div>
@@ -2306,7 +2405,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     set('mBack', I.prev + 'Back'); set('mNext', 'Next' + I.next); set('mSide', I.menu + 'Sections'); set('mFilt', I.filter + 'Filters');
     if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) { document.getElementById('bFull').style.display = 'none'; }
     set('bReset', I.reset + T('Reset'));
-    set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
+    set('bEdit', I.pencil + T('Edit text')); set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
     set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
     set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));
     Z.app.boot();

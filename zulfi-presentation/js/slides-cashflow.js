@@ -153,7 +153,7 @@
             ${kp('Net payment in month 1', F.sar(pay.net[0]), 'work done + advance − recovery')}
             ${kp('Peak net payment', `M${pkI + 1} <small>${dtp(M.bs[pkI])}</small>`, F.sar(pay.net[pkI]), `data-month="${pkI + 1}" style="cursor:pointer"`)}
             ${kp('Total payments', F.sar(pay.cum[M.N - 1]), 'equals the contract value – the advance nets to zero')}
-            <div class="note info" style="margin-top:auto">The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).</div>
+            <div class="note info" style="margin-top:auto">${A.ed('note:pay', 'The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).')}</div>
           </div>
         </div></div>`;
   }
@@ -197,7 +197,7 @@
               ${kp('Average monthly spend', F.M(tot / M.N), `over ${M.N} months`)}
               ${kp('50% of cost reached', m50 >= 0 ? `M${m50 + 1} <small>${dt.fmtMY(M.bs[m50])}</small>` : '–', m50 >= 0 ? `cumulative ${F.pct(agg.pct[m50])}` : '')}
               ${kp('Planned progress at status date', st ? F.pct(tot ? atSt / tot : 0) : '–', st ? `${dt.fmt(st)} · ${F.sar(atSt)}` : 'choose a status date above', st ? 'style="border-color:var(--bad)"' : '')}
-              <div class="note info" style="margin-top:auto">Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.</div>
+              <div class="note info" style="margin-top:auto">${A.ed('note:cf', 'Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.')}</div>
             </div>
           </div></div>`;
     },

@@ -19,6 +19,7 @@
     exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>',
     reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+    pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>',
     filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
@@ -86,8 +87,58 @@
     $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
   };
 
+  /* ---- editable text blocks: any text can be edited in 'Edit text' mode and is saved with the scenario ----
+     A block is a template; {tokens} are replaced by live values, so edited sentences keep updating. */
+  A.edDef = {};
+  A.ed = (id, def, tokens, opts) => {
+    opts = opts || {};
+    const tag = opts.tag || 'div', st = A.s.st, custom = !!(st && st.notes && st.notes[id] != null);
+    A.edDef[id] = def;
+    const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
+    const body = editing
+      ? tpl.replace(/\{(\w+)\}/g, '<span class="tk" contenteditable="false">{$1}</span>')
+      : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
+    return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
+  };
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  A.cleanHtml = (html) => {
+    const box = document.createElement('div'); box.innerHTML = html;
+    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.textContent)));
+    (function walk(n) {
+      Array.from(n.children).forEach((c) => {
+        walk(c);
+        if (!ALLOWED.has(c.tagName)) { c.replaceWith(...Array.from(c.childNodes)); return; }
+        Array.from(c.attributes).forEach((a) => c.removeAttribute(a.name));
+      });
+    })(box);
+    return box.innerHTML.replace(/\u00a0/g, ' ').trim();
+  };
+  A.saveEd = (el) => {
+    const id = el.dataset.ed, st = A.s.st; st.notes = st.notes || {};
+    const html = A.cleanHtml(el.innerHTML), norm = (t) => t.replace(/\s+/g, ' ').trim();
+    const tmp = document.createElement('div'); tmp.innerHTML = A.edDef[id] || '';
+    if (norm(html) === norm(tmp.innerHTML)) delete st.notes[id]; else st.notes[id] = html;
+    el.classList.toggle('edited', st.notes[id] != null);
+    A.save();
+  };
+  A.toggleEdit = () => {
+    A.s.editText = !A.s.editText; $('#app').classList.toggle('editing', A.s.editText);
+    $('#bEdit').classList.toggle('primary', A.s.editText);
+    A.refilter();
+  };
+  A.actions.edDone = () => A.toggleEdit();
+  A.actions.edResetSlide = () => {
+    if (!confirm('Restore the original text of this slide?')) return;
+    $$('#slide-' + A.s.slide + ' [data-ed]').forEach((el) => delete A.s.st.notes[el.dataset.ed]);
+    A.save(); A.refilter();
+  };
+  A.actions.edResetAll = () => {
+    if (!confirm('Restore the original text on ALL slides?')) return;
+    A.s.st.notes = {}; A.save(); A.refilter();
+  };
+
   A.head = (no, title, sub, src) =>
-    `<div class="s-head"><div class="no">${no}</div><div><h1>${title}</h1><p>${sub}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
+    `<div class="s-head"><div class="no">${no}</div><div>${A.ed('title:' + no, title, null, { tag: 'h1' })}<p>${A.ed('sub:' + no, sub, null, { tag: 'span' })}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
 
   A.renderSlide = (i, keepScroll) => {
     const el = $('#slide-' + i); if (!el) return;
@@ -185,6 +236,7 @@
     const stage = $('#stage');
     stage.addEventListener('click', (e) => {
       const t = e.target;
+      if (A.s.editText && t.closest('[data-ed]')) return;
       const doEl = t.closest('[data-do]');
       if (doEl && A.actions[doEl.dataset.do]) { A.actions[doEl.dataset.do](doEl, e); return; }
       if (t.closest('input,select,textarea')) return;
@@ -199,6 +251,10 @@
       const el = e.target.closest('[data-chg]');
       if (el && A.changes[el.dataset.chg]) A.changes[el.dataset.chg](el, e);
     });
+    stage.addEventListener('input', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (el) el.dataset.dirty = '1'; });
+    stage.addEventListener('focusout', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (el && A.s.editText && el.dataset.dirty) { delete el.dataset.dirty; A.saveEd(el); } });
+    stage.addEventListener('paste', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (!el) return; e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); });
+    $('#bEdit').onclick = A.toggleEdit; $('#edDone').onclick = A.toggleEdit;
     $('#scrim').addEventListener('click', A.closeDrawer);
     stage.addEventListener('mousemove', tipMove);
     stage.addEventListener('mouseleave', () => ($('#tip').style.display = 'none'));
@@ -234,6 +290,7 @@
     // keyboard
     document.addEventListener('keydown', (e) => {
       const tag = (e.target.tagName || '').toLowerCase();
+      if (e.target.isContentEditable) { if (e.key === 'Escape') e.target.blur(); return; }
       if (tag === 'input' || tag === 'select' || tag === 'textarea') { if (e.key === 'Escape') e.target.blur(); return; }
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); A.next(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); A.back(); }
