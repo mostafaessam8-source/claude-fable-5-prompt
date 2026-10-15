@@ -23,16 +23,16 @@
       const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
 
       // timeline of the four Phase 2 packages
-      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 170, R = 14, rowH = 50, top = 54;
+      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 235, R = 14, rowH = 46, top = 46;
       const x = (d) => L + ((d - t0) / (t1 - t0)) * (W - L - R);
-      let svg = `<svg viewBox="0 0 ${W} ${top + ITEMS.length * rowH + 44}" width="100%" style="min-width:760px">`;
+      let svg = `<svg viewBox="0 0 ${W} ${top + ITEMS.length * rowH + 22}" width="100%" style="min-width:760px">`;
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${top - 6}" y2="${top + ITEMS.length * rowH}" stroke="#e6ecf0"/><text x="${x(d)}" y="${top + ITEMS.length * rowH + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
       ITEMS.forEach(([key, name], i) => {
         const y = top + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
-        svg += `<text x="0" y="${y + 21}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name.length > 26 ? name.slice(0, 25) + '…' : name)}</text><text x="0" y="${y + 36}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
+        svg += `<text x="0" y="${y + 19}" style="font-size:12.5px;font-weight:700;fill:var(--accent)">${key} ${F.esc(name)}</text><text x="0" y="${y + 34}" style="font-size:11px;fill:${f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)'};font-weight:700">${f <= 0 ? (f < 0 ? 'late ' + Math.abs(Math.round(f)) + ' d' : 'critical – 0 d float') : f <= 45 ? 'near-critical – ' + Math.round(f) + ' d' : Math.round(f) + ' d float'}</text>`;
         list.forEach((a) => {
           const col = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
-          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 33}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
+           if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 31}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
           svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 8}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="20" rx="3" fill="${col}" ${a.ll ? 'opacity=".95"' : ''}/></g>`;
         });
       });
@@ -42,7 +42,7 @@
       svg += vline(P.start, 'var(--ph2)', 'Phase 2 start ' + dt.fmtShort(P.start), 0);
       svg += vline(M.base.finish, '#8a97a3', 'Baseline completion', 0, true, 'end');
       if (delay > 0) svg += vline(M.finish, 'var(--bad)', 'Completion ' + dt.fmtShort(M.finish), 12, false, 'end');
-      svg += `<g transform="translate(${L},${top + ITEMS.length * rowH + 30})" style="font-size:11px"><rect width="10" height="10" fill="#f3a888"/><text x="14" y="9">Prequal. / PO</text><rect x="110" width="10" height="10" fill="var(--proc)"/><text x="124" y="9">Manufacture & delivery (long-lead)</text><rect x="320" width="10" height="10" fill="var(--cons)"/><text x="334" y="9">Installation</text><rect x="420" y="3" width="14" height="3" fill="#99a6b0"/><text x="438" y="9">Baseline position</text></g></svg>`;
+      svg += '</svg>';
 
       const rows = crit.map((a) => {
         const f = Math.round(a.floatB);
@@ -69,8 +69,8 @@
             ${kpi('Phase 2 amount granted by', dt.fmt(P.start - g2), `${g2} days before the Phase 2 start · Phase 2 value ${F.M(p2amt)} SAR`, '')}
           </div>
           <div class="row grow" style="gap:14px">
-            <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span></div><div class="pb scroll" style="padding-top:0">${svg}</div></div>
-            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb" style="font-size:13px;line-height:1.5;padding-top:0">
+            <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span><div class="right legend" style="font-size:11px"><span><i class="dot" style="background:#f3a888"></i>Prequal. / PO</span><span><i class="dot" style="background:var(--proc)"></i>Manufacture &amp; delivery</span><span><i class="dot" style="background:var(--cons)"></i>Installation</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div></div><div class="pb" style="padding-top:0;overflow-x:auto;overflow-y:hidden">${svg}</div></div>
+            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5;padding-top:0">
               <p style="margin:0 0 7px"><b>1 · Railway Track is the longest path.</b> ${F.M(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0))} SAR (${F.pct(P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0) / M.total, 0)} of the contract): 8 months manufacture &amp; delivery and only 6 months installation, with ${trackF < 0 ? `<b style="color:var(--bad)">${-Math.round(trackF)} d late</b>` : `<b>${Math.round(trackF)} d</b> float`}.</p>
               <p style="margin:0 0 7px"><b>2 · Detailed Design is the gate.</b> Phase 2 procurement waits for Detailed Design approval (${dt.fmtShort(M.by['2.6'].e)}); Track, Access Road, Generator Room and FF&amp;E must be released with Phase 1 so they are inside the design from Concept stage.</p>
               <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after ${dt.fmtShort(P.latest)} moves completion one-for-one${delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : ''}.</p>
@@ -78,7 +78,7 @@
               <p style="margin:0"><b>5 · Funds first.</b> Phase 2 amount must be granted ${g2} days before the start – by <b>${dt.fmtShort(P.start - g2)}</b>.</p>
             </div></div>
           </div>
-          <div class="panel" style="max-height:230px"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
+          <div class="panel" style="max-height:190px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
             <div class="pb scroll" data-keep="p2tbl" style="padding-top:0"><table class="tbl tight"><thead><tr><th>WBS</th><th>Activity</th><th>Start</th><th>Must start by</th><th class="num">SAR</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="empty">No critical Phase 2 activity</td></tr>'}</tbody></table></div></div>
         </div>`;
     },
