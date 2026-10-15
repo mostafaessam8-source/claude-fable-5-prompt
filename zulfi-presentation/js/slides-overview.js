@@ -3,6 +3,24 @@
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
   A.idx = (id) => A.slides.findIndex((s) => s.id === id);
 
+
+  /* editable "Schedule insights" text: {tokens} are live values */
+  const INS_TPL = `<p style="margin:0 0 8px"><b>Tight tail-end:</b> {tightCount} installation activities finish in the last ~3 months ({tightCodes}…). Shortest installation windows: {shortWin}.</p>
+<p style="margin:0 0 8px"><b>Peak spend:</b> month {peakMonth} ({peakDate}) at {peakAmt}.</p>
+<p style="margin:0 0 8px"><b>Phase 2:</b> must start by {p2latest} to hold completion{p2late}. Move the milestone in the register (row {p2row}) or on the Phase 2 slide.</p>
+<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
+<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
+  const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
+    tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
+    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', '),
+    peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
+    p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
+    p2late: P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : '',
+    p2row: ms.findIndex((m) => m.k === 'p2') + 1,
+    advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
+    permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),
+  });
+
   A.changes.start = (el) => { const d = dt.parse(el.value); if (d) A.setState(Z.setStart(A.s.st, d)); };
 
   const span = (list) => {
@@ -27,7 +45,7 @@
         <div style="flex:1;display:flex;flex-direction:column">
           <div class="eyebrow">Saudi Arabia Railway Company</div>
           <h1>Zulfi Railway<br>Station</h1>
-          <h2>Project Cost, WBS / CBS &amp; 26-Month Schedule</h2>
+          ${A.ed('cv:h2', 'Project Cost, WBS / CBS &amp; 26-Month Schedule', null, { tag: 'h2' })}
           <div class="cv-stats" style="margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px">
             ${stat('Total project cost (excl. VAT)', F.sar(M.total))}
             ${stat('Project duration', F.months(M.durMonths) + ' months')}
@@ -41,7 +59,7 @@
         <div class="cv-r" style="width:430px;display:flex;flex-direction:column;gap:18px;justify-content:center">
           <div class="startbox"><label for="coverStart">Project start date</label>
             <input type="date" id="coverStart" value="${dt.iso(M.start)}" data-chg="start">
-            <div style="margin-top:12px;font-size:13px;line-height:1.5;opacity:.92">Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.</div></div>
+            ${A.ed('cv:blurb', 'Change the start date and every activity, Gantt bar, S-curve, milestone and monthly cash-flow figure in this presentation moves with it.', null, { style: 'margin-top:12px;font-size:13px;line-height:1.5;opacity:.92' })}</div>
           <div class="cstat"><div class="k">Scenario</div><div class="v" style="font-size:20px">${n ? `Revised – ${n} activities moved` : 'Baseline (as per Excel workbook)'}</div>
             <div style="font-size:13px;opacity:.85;margin-top:6px">Use <b>Next</b> / <b>→</b> to move through the deck, <b>F</b> for full screen.</div></div>
           <div class="cstat"><div class="k">Planned window</div><div class="v" style="font-size:20px">${dt.fmt(M.start)} → ${dt.fmt(M.finish)}</div></div>
@@ -170,11 +188,7 @@
               <div class="kpi alt grow" data-do="goLL" style="cursor:pointer"><div class="k">Long-lead items</div><div class="v">${M.acts.filter((a) => a.ll).length}<small>activities</small></div><div class="d">${F.M(llAmt)} SAR · last delivery ${ll.length ? dt.fmtShort(Math.max(...ll.map((a) => a.e))) : '–'}</div></div>
             </div>
             <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5">
-              <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
-              <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
-              <p style="margin:0 0 8px"><b>Phase 2:</b> must start by <a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a> to hold completion${P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : ''}. Move the milestone in the register (row ${ms.findIndex((m) => m.k === 'p2') + 1}) or on the Phase 2 slide.</p>
-              <p style="margin:0 0 8px"><b>Advance payment:</b> ${F.sar(M.pay.amount)} (${M.pay.pct}% of contract) at NTP, recovered ${F.sar(M.pay.perMonth)} per month over ${M.pay.months} months.</p>
-              <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on ${dt.fmt(M.by['1.3'].e)} – it follows detailed-design approval (${dt.fmt(M.by['2.6'].e)}).</p>
+              ${A.ed('ins:miles', INS_TPL, insTokens(M, ms, P2, tight, cons, agg, pk))}
               ${M.conflicts.length ? `<div class="note bad">${M.conflicts.length} dependency conflict(s): ${M.conflicts.slice(0, 5).map((a) => a.code).join(', ')}${M.conflicts.length > 5 ? '…' : ''} start earlier than their predecessor allows. Open the Gantt to resolve.</div>` : '<div class="note ok">No dependency conflicts – all finish-to-start links are respected.</div>'}
             </div></div>
           </div></div></div>`;

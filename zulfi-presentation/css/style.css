@@ -368,3 +368,16 @@ svg .axl { stroke: #c4d0d8; }
 }
 @media (max-width: 1750px) { #bReset .t { display: none; } }
 .mobile #bReset { padding: 0 11px; }
+
+/* ---------- editable text ---------- */
+#edbar { display: none; align-items: center; gap: 12px; flex: none; padding: 6px 14px; background: #fff7e0; border-bottom: 1px solid #f0d58a; font-size: 13px; color: #6b4e00; flex-wrap: wrap; }
+.editing #edbar { display: flex; }
+#edbar kbd { background: #fff; border: 1px solid #e3c978; border-radius: 4px; padding: 0 5px; font-size: 12px; }
+.edtext.on { outline: 1.5px dashed var(--brand); outline-offset: 2px; background: rgba(0,119,139,.05); border-radius: 5px; cursor: text; min-height: 1em; }
+.edtext.on:focus { outline: 2px solid var(--brand); background: #fff; }
+.edtext.edited:not(.on) { }
+.tk { background: #e0f2f5; color: var(--brand-d); border-radius: 4px; padding: 0 4px; font-weight: 700; font-size: .92em; white-space: nowrap; }
+h1.edtext, .s-head p .edtext { display: inline; }
+h1.edtext { display: block; }
+.mobile #bEdit { display: none; }
+@media (max-width: 1750px) { #bEdit .t { display: none; } }

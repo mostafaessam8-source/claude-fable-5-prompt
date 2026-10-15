@@ -18,6 +18,7 @@
     <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
     <button class="tb-btn" id="bReset" title="Reset the presentation to its default (start date 17 Oct 2026, no changes)"></button>
     <span class="grow"></span>
+    <button class="tb-btn" id="bEdit" title="Edit the text on the slides (saved with the scenario)"></button>
     <button class="tb-btn" id="bSide" title="Show / hide the sections menu"></button>
     <button class="tb-btn" id="bFilters" title="Show / hide the filter bar"></button>
     <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
@@ -28,6 +29,7 @@
     <a class="tb-btn" data-online href="index.html#download" title="Guide and offline download" style="text-decoration:none">Guide</a>
     <button class="tb-btn" id="bPrint" title="Print all slides / save as PDF"></button>
   </header>
+  <div id="edbar"><b>Edit text</b> · click any dashed text and type · <kbd>Ctrl</kbd>+<kbd>B</kbd> bold · coloured <span class="tk">{tags}</span> are live values and update by themselves · changes are saved automatically<span style="flex:1"></span><button class="btn sm" data-do="edResetSlide">Restore this slide</button><button class="btn sm" data-do="edResetAll">Restore all</button><button class="btn sm primary" id="edDone">Done</button></div>
   <div id="filters"><span id="fDyn"></span><span class="sep"></span><input class="f-input" id="fQ" type="search" placeholder="Search code or activity…"><button class="linkbtn" id="fReset">Clear filters</button><span id="fCount"></span></div>
   <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt"></button><button id="mNext"></button></div>
   <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
@@ -51,7 +53,7 @@
     set('mBack', I.prev + 'Back'); set('mNext', 'Next' + I.next); set('mSide', I.menu + 'Sections'); set('mFilt', I.filter + 'Filters');
     if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) { document.getElementById('bFull').style.display = 'none'; }
     set('bReset', I.reset + T('Reset'));
-    set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
+    set('bEdit', I.pencil + T('Edit text')); set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
     set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
     set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));
     Z.app.boot();

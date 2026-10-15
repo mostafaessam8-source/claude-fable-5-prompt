@@ -127,7 +127,7 @@
             </tbody></table></div></div>
             <div class="panel grow"><div class="ph"><h3>Take it with you</h3></div><div class="pb" style="display:flex;flex-direction:column;gap:10px">
               <div class="row" style="flex-wrap:wrap;gap:10px"><button class="btn primary" data-do="shareLink">Copy share link</button><button class="btn" data-do="exportCsv">Export schedule (CSV)</button><button class="btn" onclick="Z.app.print()">Print / save PDF</button><button class="btn danger" data-do="resetAll">Reset everything to baseline</button></div>
-              <div class="hint">The share link carries the start date, every moved activity and edited weightage – anyone who opens it sees the same scenario. Your edits are also remembered in this browser.</div></div></div>
+              <div class="hint">${A.ed('hint:scen', 'The share link carries the start date, every moved activity and edited weightage – anyone who opens it sees the same scenario. Your edits are also remembered in this browser.')}</div></div></div>
           </div>
           <div class="panel grow"><div class="ph"><h3>Moved activities</h3><span class="sub">${ch.length} versus baseline</span></div><div class="pb scroll" data-keep="scen" style="padding:0">
             ${ch.length ? `<table class="tbl"><thead><tr><th>WBS</th><th>Activity</th><th>Baseline</th><th>Revised</th><th>Start Δ</th><th>Finish Δ</th></tr></thead><tbody>${crow}</tbody></table>` : '<div class="empty">No changes yet.<br>Edit a date on the Gantt slide, or change the project start in the top bar –<br>this list and every chart will update.</div>'}</div></div>

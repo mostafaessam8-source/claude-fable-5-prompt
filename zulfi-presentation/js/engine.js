@@ -106,8 +106,8 @@
   /* ---------------------------------------------------------------- state */
   Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
   Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
-  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS } });
-  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) } });
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
+  Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) }, notes: { ...(s.notes || {}) } });
 
   /* ------------------------------------------------------- distribution */
   function distribute(a, bs, N, amount) {
@@ -372,7 +372,7 @@
 
   /* ------------------------------------------------------------ sharing */
   Z.serialize = function (st) {
-    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms };
+    const o = { s: dt.iso(st.start), l: st.link, ov: {}, A: st.A, adv: st.adv, ms: st.ms, notes: st.notes };
     Object.keys(st.ov).forEach((c) => (o.ov[c] = [dt.iso(st.ov[c][0]), dt.iso(st.ov[c][1])]));
     return JSON.stringify(o);
   };
@@ -380,6 +380,7 @@
     const o = JSON.parse(txt);
     const st = Z.newState(o.s); st.link = o.l || 'two';
     if (o.adv) st.adv = { ...Z.DEFAULT_ADV, ...o.adv }; if (o.ms) st.ms = { ...Z.DEFAULT_MS, ...o.ms };
+    if (o.notes) st.notes = { ...o.notes };
     if (o.A) { const A = Z.cloneA(Z.DEFAULT_A); Object.assign(A.disc, o.A.disc); A.proc = o.A.proc || A.proc; Object.assign(A.stage, o.A.stage); Object.assign(A.sub, o.A.sub); st.A = A; }
     Object.keys(o.ov || {}).forEach((c) => { if (BY[c]) st.ov[c] = [dt.parse(o.ov[c][0]), dt.parse(o.ov[c][1])]; });
     return st;
