@@ -118,7 +118,7 @@
         ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)', 'band:3'],
       ];
       const AX = 100, BOT = 322;
-      let svg = `<svg viewBox="0 0 1512 372" width="100%" height="372" style="min-width:900px">`;
+      let svg = `<svg viewBox="0 0 1512 372" width="100%" height="372" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}">`;
       // quarter ticks
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${AX + 12}" y2="${BOT}" stroke="#e6ecf0"/><text x="${x(d)}" y="344" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="358" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       // guide lines for NTP / Phase 2 start / latest start through the bands
@@ -137,6 +137,7 @@
       const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept', prelim: 'Preliminary', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction', ll: 'Long-lead done', fin: 'Completion' };
       const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
       const lastEnd = [-1e9, -1e9, -1e9, -1e9, -1e9];
+      const mk = [];
       ms.forEach((m, i) => {
         const px = x(Math.min(m.d, M.finish)), txt = `${i + 1} ${SHORT[m.k] || m.name}`, wdt = txt.length * (KEY.includes(m.k) ? 6.4 : 5.8) + 6;
         const col = m.delta > 0 ? 'var(--bad)' : m.k === 'grant1' || m.k === 'grant2' ? 'var(--c4)' : m.k === 'p2' || m.k === 'p2late' ? 'var(--ph2)' : m.k === 'ntp' ? 'var(--c3)' : 'var(--brand)';
@@ -145,8 +146,10 @@
         let lvl = 0; while (lvl < 4 && x0 < lastEnd[lvl] + 4) lvl++;
         lastEnd[lvl] = x1;
         const ly = 14 + lvl * 14;
-        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 4}" y2="${AX}" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},${AX - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${anchor === 'end' ? px + 3 : px - 3}" y="${ly}" text-anchor="${anchor}" style="font-size:11px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text></g>`;
+        const drg = m.edit ? `data-grant="${m.edit}" data-day="${m.d}" style="cursor:ew-resize;touch-action:none"` : '';
+        mk.push({ e: !!m.edit, h: `<g class="hit" ${drg} ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 4}" y2="${AX}" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},${AX - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${anchor === 'end' ? px + 3 : px - 3}" y="${ly}" text-anchor="${anchor}" style="font-size:11px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text></g>` });
       });
+      svg += mk.filter((q) => !q.e).map((q) => q.h).join('') + mk.filter((q) => q.e).map((q) => q.h).join('');
       svg += '</svg>';
 
       const ll = M.acts.filter((a) => a.ll && a.kind === 'a3');
@@ -155,11 +158,11 @@
       const agg = Z.aggregate(M, () => true, 'all'), pk = agg.total.indexOf(Math.max(...agg.total));
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
-        `<div class="s-body"><div class="panel"><div class="pb" style="padding-top:10px">${svg}</div></div>
+        `<div class="s-body"><div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.</div>${svg}</div></div>
         <div class="row grow">
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
-            ${ms.map((m, i) => `<tr class="${m.code || (m.nav && m.nav !== 'miles') ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} ${m.edit ? 'style="background:#f1eefc"' : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td>${m.edit ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" min="${dt.iso(M.start)}" data-chg="p2date" title="Move the Phase 2 start – the whole programme updates">` : `<b>${dt.fmt(m.d)}</b>`}</td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
+            ${ms.map((m, i) => `<tr class="${m.code || (m.nav && m.nav !== 'miles') ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} ${m.edit ? 'style="background:#f1eefc"' : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td>${m.edit === 'p2' ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" min="${dt.iso(M.start)}" data-chg="p2date" title="Move the Phase 2 start – the whole programme updates">` : m.edit ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" max="${dt.iso(m.edit === 'g1' ? M.start : P2.start)}" data-chg="grantdate" data-k="${m.edit}" title="Move the funds approval – it must be before its phase starts">` : `<b>${dt.fmt(m.d)}</b>`}</td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
             </tbody></table></div></div>
           <div class="col grow" style="gap:12px">
             <div class="row" style="gap:12px">
@@ -177,6 +180,47 @@
           </div></div></div>`;
     },
   });
+
+
+  /* ---- movable funds-granted milestones and Phase 2 start ---- */
+  A.changes.grantdate = (el) => {
+    const d = dt.parse(el.value); if (!d) return;
+    const M = A.s.M, k = el.dataset.k, base = k === 'g1' ? M.start : Z.phase2(M).start;
+    const st = Z.cloneState(A.s.st); st.ms[k] = Math.min(730, Math.max(0, base - d)); A.setState(st);
+  };
+  A.slides.find((s) => s.id === 'miles').after = (el) => {
+    const svg = el.querySelector('svg[data-t0]'); if (!svg) return;
+    const t0 = +svg.dataset.t0, T = +svg.dataset.t, X0 = +svg.dataset.x0, X1 = +svg.dataset.x1;
+    const base = { g1: +svg.dataset.b1, g2: +svg.dataset.b2 };
+    const dayAt = (cx) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = 0; const sx = pt.matrixTransform(svg.getScreenCTM().inverse()).x; return Math.round(t0 + ((sx - X0) / (X1 - X0)) * T); };
+    let drag = null;
+    const tip = document.querySelector('#tip');
+    svg.querySelectorAll('[data-grant]').forEach((g) => {
+      g.addEventListener('pointerdown', (e) => { drag = { g, k: g.dataset.grant, x0: e.clientX, moved: false, day: +g.dataset.day }; g.setPointerCapture(e.pointerId); e.preventDefault(); });
+      g.addEventListener('pointermove', (e) => {
+        if (!drag || drag.g !== g) return;
+        if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
+        if (!drag.moved) return;
+        let d = dayAt(e.clientX), note = '';
+        if (drag.k === 'p2') d = Math.max(d, A.s.M.start);
+        else { if (d > base[drag.k]) { d = base[drag.k]; note = 'must be before the phase starts'; } d = Math.max(d, base[drag.k] - 730); }
+        drag.day = d;
+        g.setAttribute('transform', `translate(${((d - +g.dataset.day) * (X1 - X0)) / T},0)`);
+        tip.innerHTML = `<div class="t">${drag.k === 'p2' ? 'Phase 2 start' : drag.k === 'g1' ? 'Phase 1 funds granted' : 'Phase 2 funds granted'}</div><div class="r"><span>Date</span><b>${dt.fmt(d)}</b></div>${drag.k === 'p2' ? '' : `<div class="r"><span>Before phase start</span><b>${base[drag.k] - d} days</b></div>`}${note ? `<div style="color:#ffd27a">${note}</div>` : ''}`;
+        tip.dataset.src = ''; tip.style.display = 'block';
+        const r = document.querySelector('#stage').getBoundingClientRect();
+        tip.style.left = (e.clientX - r.left) / A.scale + 14 + 'px'; tip.style.top = (e.clientY - r.top) / A.scale + 14 + 'px';
+      });
+      const end = () => {
+        if (!drag) return; const d = drag; drag = null; tip.style.display = 'none';
+        if (!d.moved) return;
+        G.__ganttSuppress = true; setTimeout(() => (G.__ganttSuppress = false), 50);
+        if (d.k === 'p2') A.setState(Z.setPhase2Start(A.s.st, d.day));
+        else { const st = Z.cloneState(A.s.st); st.ms[d.k] = Math.max(0, base[d.k] - d.day); A.setState(st); }
+      };
+      g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    });
+  };
 
   A.actions.goCrit = () => { A.s.f.crit = !A.s.f.crit; A.go(A.idx('gantt')); A.refilter(); };
   A.actions.goLL = () => { A.s.f.ll = !A.s.f.ll; A.go(A.idx('gantt')); A.refilter(); };
