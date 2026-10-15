@@ -1436,26 +1436,44 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const ms = Z.milestones(M), P2 = Z.phase2(M);
       const X0 = 30, X1 = 1490, t0 = Math.min(M.start, ...ms.map((m) => m.d)) - 4, T = M.finish - t0 + 1;
       const x = (d) => X0 + ((d - t0) / T) * (X1 - X0);
+      const PH = (ph) => M.acts.filter((a) => a.phase === ph && a.code !== Z.AUTO);
       const bands = [
-        ['Design & approvals', M.acts.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)'],
-        ['Work permit gate', M.acts.filter((a) => a.code === '1.3'), 'var(--c4)'],
-        ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)'],
-        ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)'],
+        ['Phase 1', PH('Phase 1'), 'var(--ph1)', 'phase:Phase 1', true],
+        ['Phase 2', PH('Phase 2'), 'var(--ph2)', 'phase:Phase 2', true],
+        ['Design & approvals', M.acts.filter((a) => a.epc === 'ENG' || a.code === '1.2'), 'var(--eng)', 'band:0'],
+        ['Work permit gate', M.acts.filter((a) => a.code === '1.3'), 'var(--c4)', 'band:1'],
+        ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)', 'band:2'],
+        ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)', 'band:3'],
       ];
-      let svg = `<svg viewBox="0 0 1512 300" width="100%" height="300" style="min-width:900px">`;
+      const AX = 100, BOT = 322;
+      let svg = `<svg viewBox="0 0 1512 372" width="100%" height="372" style="min-width:900px">`;
       // quarter ticks
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="94" y2="258" stroke="#e6ecf0"/><text x="${x(d)}" y="276" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="290" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
-      bands.forEach((b, i) => {
-        const sp = span(b[1]); if (!sp) return;
-        const y = 100 + i * 40;
-        svg += `<g class="hit" data-cat="band:${i}" data-tip="${F.tip(b[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', b[1].length]])}"><rect x="${x(sp.s)}" y="${y}" width="${Math.max(6, x(sp.e + 1) - x(sp.s))}" height="26" rx="6" fill="${b[2]}" class="hv"/>${x(sp.e + 1) - x(sp.s) > 260 ? `<text x="${x(sp.s) + 9}" y="${y + 17.5}" style="fill:#fff;font-weight:700;font-size:12.5px">${b[0]}</text><text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${y + 17.5}" text-anchor="end" style="fill:#fff;font-size:11.5px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${y + 17.5}" style="font-weight:700;font-size:12.5px;fill:var(--accent)">${b[0]} · ${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${AX + 12}" y2="${BOT}" stroke="#e6ecf0"/><text x="${x(d)}" y="344" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="358" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
+      // guide lines for NTP / Phase 2 start / latest start through the bands
+      ms.filter((m) => ['ntp', 'p2', 'p2late'].includes(m.k)).forEach((m) => {
+        const c = m.k === 'ntp' ? 'var(--c3)' : m.k === 'p2' ? 'var(--ph2)' : 'var(--bad)';
+        svg += `<line x1="${x(m.d)}" x2="${x(m.d)}" y1="${AX + 8}" y2="${BOT}" stroke="${c}" stroke-width="1.5" stroke-dasharray="${m.k === 'ntp' ? '0' : '5 4'}" opacity=".7"/>`;
       });
-      svg += `<line x1="${X0}" x2="${X1}" y1="62" y2="62" stroke="#9fb0bb" stroke-width="2"/>`;
+      bands.forEach((bd, i) => {
+        const sp = span(bd[1]); if (!sp) return;
+        const slim = bd[4], y = slim ? 126 + i * 24 : 182 + (i - 2) * 38, h = slim ? 18 : 26, fs = slim ? 11.5 : 12.5;
+        const tip = F.tip(bd[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', bd[1].length]]);
+        const w = Math.max(6, x(sp.e + 1) - x(sp.s));
+        svg += `<g class="hit" data-cat="${bd[3]}" data-tip="${tip}"><rect x="${x(sp.s)}" y="${y}" width="${w}" height="${h}" rx="${slim ? 5 : 6}" fill="${bd[2]}" class="hv"/>${w > 260 ? `<text x="${x(sp.s) + 9}" y="${y + h / 2 + 4.2}" style="fill:#fff;font-weight:700;font-size:${fs}px">${bd[0]}</text><text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${y + h / 2 + 4.2}" text-anchor="end" style="fill:#fff;font-size:${fs - 1}px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${y + h / 2 + 4.2}" style="font-weight:700;font-size:${fs}px;fill:var(--accent)">${bd[0]} · ${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
+      });
+      svg += `<line x1="${X0}" x2="${X1}" y1="${AX}" y2="${AX}" stroke="#9fb0bb" stroke-width="2"/>`;
+      const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept', prelim: 'Preliminary', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction', ll: 'Long-lead done', fin: 'Completion' };
+      const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
+      const lastEnd = [-1e9, -1e9, -1e9, -1e9, -1e9];
       ms.forEach((m, i) => {
-        const px = x(Math.min(m.d, M.finish)), lvl = i % 3, ly = 14 + lvl * 14;
+        const px = x(Math.min(m.d, M.finish)), txt = `${i + 1} ${SHORT[m.k] || m.name}`, wdt = txt.length * (KEY.includes(m.k) ? 6.4 : 5.8) + 6;
         const col = m.delta > 0 ? 'var(--bad)' : m.k === 'grant1' || m.k === 'grant2' ? 'var(--c4)' : m.k === 'p2' || m.k === 'p2late' ? 'var(--ph2)' : m.k === 'ntp' ? 'var(--c3)' : 'var(--brand)';
-        const anchor = i === 0 ? 'start' : i === ms.length - 1 ? 'end' : 'middle';
-        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 6}" y2="62" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},54 l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${px}" y="${ly}" text-anchor="${anchor}" style="font-size:11.5px;font-weight:700;fill:var(--accent)">${i + 1}</text></g>`;
+        let anchor = 'start', x0 = px - 3, x1 = px - 3 + wdt;
+        if (px + wdt > X1 + 14) { anchor = 'end'; x1 = px + 3; x0 = x1 - wdt; }
+        let lvl = 0; while (lvl < 4 && x0 < lastEnd[lvl] + 4) lvl++;
+        lastEnd[lvl] = x1;
+        const ly = 14 + lvl * 14;
+        svg += `<g class="hit" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><line x1="${px}" x2="${px}" y1="${ly + 4}" y2="${AX}" stroke="#9fb0bb" stroke-dasharray="3 3"/><path d="M${px},${AX - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${anchor === 'end' ? px + 3 : px - 3}" y="${ly}" text-anchor="${anchor}" style="font-size:11px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text></g>`;
       });
       svg += '</svg>';
 
@@ -1476,7 +1494,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
               <div class="kpi ${M.conflicts.length ? 'warn' : ''} grow" data-do="goCrit" style="cursor:pointer"><div class="k">Critical activities</div><div class="v">${M.criticalCount}<small>of ${M.acts.length - 1}</small></div><div class="d">zero float to completion – click to filter</div></div>
               <div class="kpi alt grow" data-do="goLL" style="cursor:pointer"><div class="k">Long-lead items</div><div class="v">${M.acts.filter((a) => a.ll).length}<small>activities</small></div><div class="d">${F.M(llAmt)} SAR · last delivery ${ll.length ? dt.fmtShort(Math.max(...ll.map((a) => a.e))) : '–'}</div></div>
             </div>
-            <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb" style="font-size:13.5px;line-height:1.55">
+            <div class="panel grow"><div class="ph"><h3>Schedule insights</h3></div><div class="pb scroll" style="font-size:13px;line-height:1.5">
               <p style="margin:0 0 8px"><b>Tight tail-end:</b> ${tight.length} installation activities finish in the last ~3 months (${tight.slice(0, 4).map((a) => a.code).join(', ')}…). Shortest installation windows: ${cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', ')}.</p>
               <p style="margin:0 0 8px"><b>Peak spend:</b> month ${pk + 1} (${dt.fmtMY(M.bs[pk])}) at ${F.sar(agg.total[pk])}.</p>
               <p style="margin:0 0 8px"><b>Phase 2:</b> must start by <a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a> to hold completion${P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : ''}. Move the milestone in the register (row ${ms.findIndex((m) => m.k === 'p2') + 1}) or on the Phase 2 slide.</p>
