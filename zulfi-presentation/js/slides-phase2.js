@@ -22,7 +22,7 @@
       sigCheck: (() => {
         const g = (it) => M.acts.find((a) => a.item === it && a.kind === 'b'), sg = g('6.2'), tk = g('7.2'), tn = g('7.3');
         const gap = sg.s - Math.max(tk.s, tn.s);
-        return gap >= 0 ? `<b style="color:var(--good)">✓ Planned correctly</b> – Signalling starts ${gap} days after Track &amp; Turnout.` : `<b style="color:var(--bad)">⚠ Signalling is planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
+        return gap >= 0 ? `<b style="color:var(--good)">✓ Planned correctly</b> – Signalling installation ${gap > 0 ? 'starts ' + gap + ' days after' : 'starts when'} Track &amp; Turnout ${gap > 0 ? '' : 'installation start (' + dt.fmtShort(sg.s) + ')'}.` : `<b style="color:var(--bad)">⚠ Signalling is planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
       ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
       delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
