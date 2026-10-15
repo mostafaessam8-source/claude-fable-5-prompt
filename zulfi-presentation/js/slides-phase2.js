@@ -1,6 +1,7 @@
 /* Slide: why Phase 2 must start with Phase 1 – critical Phase 2 activities, the movable Phase 2 start milestone and scenarios */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
+  const CTX = [['7.3', 'Railway Turnout (Phase 1)'], ['6.2', 'Signalling & Telecom (Phase 1)']];
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
 
   /* editable explanation: {tokens} are live values */
@@ -9,7 +10,8 @@
 <p style="margin:0 0 7px"><b>3 · Every day late is a day of delay.</b> Zero float on the Track chain: Phase 2 released after {latest} moves completion one-for-one{delayNow}.</p>
 <p style="margin:0 0 7px"><b>4 · The tail-end has no room.</b> Installation windows at the end are only 2–6 months, so slippage cannot be absorbed.</p>
 <p style="margin:0 0 7px"><b>5 · Phase 1 and Phase 2 overlap.</b> Phase 2 runs inside Phase 1's window for {overlapMonths} months. When it starts, Phase 1 is still busy with {p1Now}; the critical Phase 2 packages ({critList}) must be launched in parallel – they cannot wait for Phase 1 to finish.</p>
-<p style="margin:0"><b>6 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
+<p style="margin:0 0 7px"><b>6 · Signalling follows Track &amp; Turnout.</b> Signalling &amp; Telecom installation ({sigAmt}) must start after Track and Turnout installation. {sigCheck} A late Track therefore also delays Signalling – and Signalling finishes the project.</p>
+<p style="margin:0"><b>7 · Funds first.</b> Phase 2 amount must be granted {g2} days before the start – by <b>{grantDate}</b>.</p>`;
   const whyTokens = (M, P, g2, delay, trackF) => {
     const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
     return {
@@ -18,6 +20,12 @@
       overlapMonths: F.months((Math.min(Math.max(...M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO).map((a) => a.e)), M.finish) + 1 - P.start) / 30.4375),
       p1Now: (() => { const l = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO && a.s <= P.start && a.e >= P.start).sort((x, y) => y.amount - x.amount).slice(0, 3); return l.length ? l.map((a) => a.code + ' ' + a.name.split(' – ').pop()).join(', ') : 'construction'; })(),
       critList: [...new Set(P.list.filter((a) => a.floatB <= 45).map((a) => Z.ITEM_BY[a.item].name.replace(/ \(.*\)/, '')))].join(', '),
+      sigAmt: F.M(M.acts.filter((a) => a.item === '6.2').reduce((q, a) => q + a.amount, 0)) + ' SAR',
+      sigCheck: (() => {
+        const g = (it) => M.acts.find((a) => a.item === it && a.kind === 'b'), sg = g('6.2'), tk = g('7.2'), tn = g('7.3');
+        const gap = sg.s - Math.max(tk.s, tn.s), pre = `Planned starts – Track ${dt.fmtShort(tk.s)}, Turnout ${dt.fmtShort(tn.s)}, Signalling ${dt.fmtShort(sg.s)}: `;
+        return pre + (gap >= 0 ? `<b style="color:var(--good)">sequence respected (${gap} d after)</b>.` : `<b style="color:var(--bad)">sequence NOT respected – Signalling is planned ${-gap} d before Track installation</b>, so Track and Turnout must be brought forward (start Phase 2 early) or Signalling moved after them.`);
+      })(),
       ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
       delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
@@ -43,13 +51,13 @@
       const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
 
       // timeline: two clear periods (Phase 1 alone / both together), one bar per phase, then the Phase 2 packages
-      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 128, R = 14, rowH = 38, pkTop = 96;
+      const t0 = M.start - 5, t1 = Math.max(M.finish, M.base.finish) + 20, W = 940, L = 128, R = 14, rowH = 31, pkTop = 92;
       const x = (d) => L + ((d - t0) / (t1 - t0)) * (W - L - R);
       const P1 = M.acts.filter((a) => a.phase === 'Phase 1' && a.code !== Z.AUTO);
-      const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = pkTop + ITEMS.length * rowH;
+      const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = pkTop + (ITEMS.length + CTX.length) * rowH + 16;
       const q2 = { s: P.start, e: Math.max(...P.list.map((a) => a.e)) };
       const aMonths = (P.start - M.start) / 30.4375, bMonths = (ovEnd + 1 - P.start) / 30.4375;
-      let svg = `<svg viewBox="0 0 ${W} ${bot + 20}" width="100%" style="min-width:760px">`;
+      let svg = `<svg viewBox="0 0 ${W} ${bot + 36}" width="100%" style="min-width:760px">`;
       svg += `<rect x="${x(P.start)}" y="32" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 32}" fill="var(--ph2)" opacity=".06"/>`;
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="32" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
       // period header
@@ -62,20 +70,37 @@
       ITEMS.forEach(([key, name], i) => {
         const y = pkTop + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
         const first = Math.min(...list.map((a) => a.s)), short = { '7.2': 'Railway Track', '3.3': 'FF&E (Furniture)', '6.1': 'Access Road', '4.3': 'Generator Room' }[key];
-        svg += `<text x="0" y="${y + 15}" style="font-size:12px;font-weight:700;fill:var(--accent)">${key} ${short}</text>`;
+        svg += `<text x="0" y="${y + 17}" style="font-size:12px;font-weight:700;fill:var(--accent)">${key} ${short}</text>`;
         const early = f <= 45 && first <= P.start + 45;
         const lab = f < 0 ? `late ${-Math.round(f)} d` : early ? `MUST START BY ${dt.fmtShort(first + f)}` : f <= 45 ? 'critical – cannot slip' : `${Math.round(f)} d float`;
         const col = f < 0 ? 'var(--bad)' : f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)';
-        if (early || f < 0) svg += `<text x="${x(first) - 6}" y="${y + 19}" text-anchor="end" style="font-size:11px;font-weight:800;fill:${col}">${lab} ▶</text>`;
-        else svg += `<text x="${x(first) - 6}" y="${y + 19}" text-anchor="end" style="font-size:10.5px;font-weight:700;fill:${col}">${lab}</text>`;
+        if (early || f < 0) svg += `<text x="${x(first) - 6}" y="${y + 17}" text-anchor="end" style="font-size:11px;font-weight:800;fill:${col}">${lab} ▶</text>`;
+        else svg += `<text x="${x(first) - 6}" y="${y + 17}" text-anchor="end" style="font-size:10.5px;font-weight:700;fill:${col}">${lab}</text>`;
         list.forEach((a) => {
           const c = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
-          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 26}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
-          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 5}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="19" rx="3" fill="${c}" ${early && a === list[0] ? 'stroke="var(--bad)" stroke-width="2"' : ''}/></g>`;
+          if (a.changed) svg += `<rect x="${x(a.bs)}" y="${y + 23}" width="${Math.max(2, x(a.be + 1) - x(a.bs))}" height="3" fill="#99a6b0"/>`;
+          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)], ['', 'Float to baseline completion', Math.round(a.floatB) + ' d'], ['', 'Latest start', dt.fmt(a.s + a.floatB)]])}"><rect class="hv" x="${x(a.s)}" y="${y + 3}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="18" rx="3" fill="${c}" ${early && a === list[0] ? 'stroke="var(--bad)" stroke-width="2"' : ''}/></g>`;
         });
       });
+      // Phase 1 context: Signalling must start after Track & Turnout
+      const sig = M.acts.filter((a) => a.item === '6.2' && a.kind === 'b')[0], trk = M.acts.filter((a) => a.item === '7.2' && a.kind === 'b')[0], tur = M.acts.filter((a) => a.item === '7.3' && a.kind === 'b')[0];
+      const ctxY = pkTop + ITEMS.length * rowH;
+      svg += `<line x1="0" x2="${W}" y1="${ctxY}" y2="${ctxY}" stroke="#cfd9e0" stroke-dasharray="3 3"/><text x="0" y="${ctxY + 12}" style="font-size:10px;font-weight:700;fill:var(--ph1)">PHASE 1 · Signalling must start after Track &amp; Turnout</text>`;
+      CTX.forEach(([key, nm], i) => {
+        const y = ctxY + 16 + i * rowH, list = M.acts.filter((a) => a.item === key);
+        svg += `<text x="0" y="${y + 17}" style="font-size:11.5px;font-weight:700;fill:var(--ph1)">${key} ${nm.replace(' (Phase 1)', '')}</text>`;
+        list.forEach((a) => {
+          const c = a.kind === 'b' ? 'var(--cons)' : a.kind === 'a3' ? 'var(--proc)' : '#f3a888';
+          svg += `<g class="hit" data-act="${a.code}" data-tip="${F.tip(a.code + ' · ' + F.esc(a.name), [['', 'Start', dt.fmt(a.s)], ['', 'Finish', dt.fmt(a.e)]])}"><rect x="${x(a.s)}" y="${y + 4}" width="${Math.max(3, x(a.e + 1) - x(a.s))}" height="14" rx="3" fill="${c}" opacity=".55"/></g>`;
+        });
+      });
+      if (sig && trk && tur) {
+        const ok = sig.s >= Math.max(trk.s, tur.s);
+        const sy = ctxY + 16 + rowH;
+        svg += `<line x1="${x(sig.s)}" x2="${x(sig.s)}" y1="${pkTop}" y2="${sy + 22}" stroke="${ok ? 'var(--good)' : 'var(--bad)'}" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${x(sig.s) - 5}" y="${sy + 15}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:${ok ? 'var(--good)' : 'var(--bad)'};paint-order:stroke;stroke:#fff;stroke-width:3px">${ok ? 'Signalling starts after Track & Turnout ✓' : '⚠ Signalling starts before Track installation'}</text>`;
+      }
       svg += `<line x1="${x(P.start)}" x2="${x(P.start)}" y1="30" y2="${bot}" stroke="var(--ph2)" stroke-width="2"/>`;
-      if (delay > 0) svg += `<line x1="${x(M.finish)}" x2="${x(M.finish)}" y1="30" y2="${bot}" stroke="var(--bad)" stroke-width="2"/><text x="${x(M.finish) - 4}" y="${pkTop - 6}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad)">New completion ${dt.fmtShort(M.finish)} (${F.days(delay)})</text>`;
+      if (delay > 0) svg += `<line x1="${x(M.finish)}" x2="${x(M.finish)}" y1="30" y2="${bot}" stroke="var(--bad)" stroke-width="2"/><text x="${x(M.finish) - 4}" y="${bot + 30}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad);paint-order:stroke;stroke:#fff;stroke-width:3px">New completion ${dt.fmtShort(M.finish)} (${F.days(delay)})</text>`;
       svg += '</svg>';
 
       const rows = crit.map((a) => {
@@ -104,11 +129,11 @@
           </div>
           <div class="row grow" style="gap:14px">
             <div class="panel" style="width:960px"><div class="ph"><h3>Phase 2 packages on the programme</h3><span class="sub">click a bar for details</span><div class="right legend" style="font-size:11px"><span><i class="dot" style="background:#f3a888"></i>Prequal. / PO</span><span><i class="dot" style="background:var(--proc)"></i>Manufacture &amp; delivery</span><span><i class="dot" style="background:var(--cons)"></i>Installation</span><span><i class="dot" style="background:#99a6b0;height:3px;vertical-align:3px"></i>Baseline</span></div></div><div class="pb" style="padding-top:0;overflow-x:auto;overflow-y:hidden">${svg}</div></div>
-            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:12px;line-height:1.42;padding-top:0">
+            <div class="panel grow"><div class="ph"><h3>Why it must start with Phase 1</h3></div><div class="pb scroll" style="font-size:11px;line-height:1.34;padding-top:0">
               ${A.ed('why:p2', WHY_TPL, whyTokens(M, P, g2, delay, trackF))}
             </div></div>
           </div>
-          <div class="panel" style="max-height:170px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
+          <div class="panel" style="max-height:150px;flex:none"><div class="ph"><h3>Critical Phase 2 activities that must start early</h3><span class="sub">float to the baseline completion ≤ 45 days · ${crit.length} of ${P.list.length} Phase 2 activities</span></div>
             <div class="pb scroll" data-keep="p2tbl" style="padding-top:0"><table class="tbl tight"><thead><tr><th>WBS</th><th>Activity</th><th>Start</th><th>Must start by</th><th class="num">SAR</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="empty">No critical Phase 2 activity</td></tr>'}</tbody></table></div></div>
         </div>`;
     },
