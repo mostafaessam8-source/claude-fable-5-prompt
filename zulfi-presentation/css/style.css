@@ -381,3 +381,9 @@ h1.edtext, .s-head p .edtext { display: inline; }
 h1.edtext { display: block; }
 .mobile #bEdit { display: none; }
 @media (max-width: 1750px) { #bEdit .t { display: none; } }
+
+/* edit mode: every piece of text on a slide can be renamed (click it) */
+.editing .slide [data-ovk] { cursor: text; }
+.editing .slide [data-ovk]:not(svg):hover { outline: 1.5px dashed var(--brand); outline-offset: 2px; background: rgba(0,119,139,.07); }
+.editing .slide svg text[data-ovk]:hover { text-decoration: underline; fill: var(--brand-d); }
+.editing .slide [data-ovd] { background: rgba(237,161,0,.14); }
