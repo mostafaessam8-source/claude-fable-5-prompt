@@ -145,6 +145,8 @@
 
   /* ---- editable text blocks: any text can be edited in 'Edit text' mode and is saved with the scenario ----
      A block is a template; {tokens} are replaced by live values, so edited sentences keep updating. */
+  const TKL = { trackFloat: 'هامش السكة', ddDate: 'تاريخ اعتماد التصميم التفصيلي', latest: 'آخر موعد لبدء المرحلة الثانية', delayNow: 'التأخير الحالي', grantDate: 'تاريخ اعتماد التمويل', g2: 'عدد الأيام', sigCheck: 'حالة الإشارات',
+    tightCount: 'عدد الأنشطة', tightCodes: 'رموز الأنشطة', shortWin: 'أقصر فترات التركيب', peakMonth: 'شهر الذروة', peakDate: 'تاريخ الذروة', peakAmt: 'مبلغ الذروة', p2latest: 'آخر موعد لبدء المرحلة الثانية', p2late: 'تأخر المرحلة الثانية', p2row: 'رقم الصف', advAmt: 'مبلغ الدفعة المقدمة', advPct: 'نسبة الدفعة المقدمة', advPer: 'الاسترداد الشهري', advMonths: 'عدد أشهر الاسترداد', permitDate: 'تاريخ تصريح العمل', deadline: 'الموعد النهائي' };
   A.edDef = {};
   A.ed = (id, def, tokens, opts) => {
     opts = opts || {};
@@ -154,14 +156,14 @@
     A.edDef[id] = def;
     const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
     const body = editing
-      ? tpl.replace(/\{(\w+)\}/g, '<span class="tk" contenteditable="false">{$1}</span>')
+      ? tpl.replace(/\{(\w+)\}/g, (m, k) => `<span class="tk" contenteditable="false" data-k="${k}">${MODE && A.isAr() ? '‹' + (TKL[k] || k) + '›' : '{' + k + '}'}</span>`)
       : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
     return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
   };
   const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
   A.cleanHtml = (html) => {
     const box = document.createElement('div'); box.innerHTML = html;
-    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.textContent)));
+    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.dataset.k ? '{' + n.dataset.k + '}' : n.textContent)));
     (function walk(n) {
       Array.from(n.children).forEach((c) => {
         walk(c);
@@ -216,7 +218,7 @@
     const def = A.slides[i];
     let html = def.render(A.s.M, A.s);
     if (MODE && MODE.translate && !def.native && A.lang === 'ar') html = Z.i18n.html(html);
-    if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'Internal')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
+    if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'داخلي')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
     el.innerHTML = html;
     A.markOv(el);
     A.dirty.delete(i);
