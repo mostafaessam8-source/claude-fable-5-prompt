@@ -104,7 +104,7 @@
   }
 
   /* ---------------------------------------------------------------- state */
-  Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
+  Z.DEFAULT_ADV = { pct: 10, from: 1, per: 0 }; // per: fixed monthly recovery amount in SAR (0 = equal instalments to the last project month) // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
   Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
   Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-25'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
   Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) }, notes: { ...(s.notes || {}) } });
@@ -201,12 +201,14 @@
     const recFrom = Math.min(Math.max(1, Math.round(adv.from || 1)), N);
     const nRec = N - recFrom + 1;
     const advIn = new Array(N).fill(0); advIn[0] = advAmt;
-    const rec = new Array(N).fill(0); for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec;
+    const rec = new Array(N).fill(0), perFix = adv.per > 0 ? adv.per : 0;
+    let left = advAmt;
+    if (perFix) { for (let k = recFrom - 1; k < N && left > 0.005; k++) { rec[k] = Math.min(perFix, left); left -= rec[k]; } left = Math.max(0, left); } else { for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec; left = 0; }
     const net = totalM.map((v, k) => v + advIn[k] - rec[k]);
     let cp = 0, bal = 0;
     const cumPay = net.map((v) => (cp += v));
     const balance = advIn.map((v, k) => (bal += v - rec[k]));
-    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: nRec ? advAmt / nRec : 0, months: nRec, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
+    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: perFix || (nRec ? advAmt / nRec : 0), fixed: !!perFix, unrecovered: left, months: rec.filter((v) => v > 0).length, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
 
     // baseline monthly (for comparison): month-index based
     const baseActs = ACTS.map((def) => {
