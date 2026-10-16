@@ -76,6 +76,7 @@
     pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>',
     filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
+    ppt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 16V8h3.2a2.2 2.2 0 0 1 0 4.4H9"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
   };
 
@@ -347,6 +348,7 @@
 
     // toolbar
     $('#bBack').onclick = A.back; $('#bNext').onclick = A.next;
+    if ($('#bPptx')) $('#bPptx').onclick = () => A.exportPptx();
     $('#bFull').onclick = A.enterFull; $('#bExit').onclick = A.exitFull; $('#bPrint').onclick = A.print;
     if ($('#bFilters')) $('#bFilters').onclick = () => { const f = $('#filters'); f.style.display = f.style.display === 'none' ? '' : 'none'; setTimeout(A.fit, 20); };
     $('#bReset').onclick = A.actions.resetDefault;

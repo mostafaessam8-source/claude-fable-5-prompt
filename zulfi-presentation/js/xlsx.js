@@ -61,7 +61,7 @@
     const parts = [], cen = []; let off = 0;
     const u16 = (v) => [v & 255, (v >> 8) & 255], u32 = (v) => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
     files.forEach(([name, text]) => {
-      const nb = enc.encode(name), d = enc.encode(text), c = crc(d);
+      const nb = enc.encode(name), d = typeof text === 'string' ? enc.encode(text) : text, c = crc(d);
       const lh = new Uint8Array([0x50, 0x4b, 3, 4, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(d.length), ...u32(d.length), ...u16(nb.length), ...u16(0)]);
       parts.push(lh, nb, d);
       cen.push(new Uint8Array([0x50, 0x4b, 1, 2, ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(d.length), ...u32(d.length), ...u16(nb.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nb);
@@ -72,6 +72,7 @@
     return new Blob([...parts, ...cen, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   };
 
+  Z.zip = zip;
   Z.xlsx = {
     col: colL,
     serial: (iso) => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d) / 86400000 + 25569; },

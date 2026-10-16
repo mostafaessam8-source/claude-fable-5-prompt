@@ -12,6 +12,7 @@
     set('mBack', I.prev + L('Back', 'السابق')); set('mNext', L('Next', 'التالي') + I.next); set('mSide', I.menu + L('Agenda', 'الأجندة'));
     set('bReset', I.reset + T(L('Reset', 'إعادة ضبط'))); set('bEdit', I.pencil + T(L('Edit', 'تعديل'))); set('bSide', I.menu + T(L('Agenda', 'الأجندة')));
     set('bBack', I.prev + T(L('Back', 'السابق'))); set('bNext', T(L('Next', 'التالي')) + I.next);
+    set('bPptx', I.ppt + T(L('PowerPoint', 'تصدير PowerPoint'))); $('bPptx').title = L('Export the edited presentation as an editable PowerPoint file', 'تصدير العرض بعد التعديل كملف PowerPoint قابل للتعديل');
     set('bFull', I.full + T(L('Full screen', 'ملء الشاشة'))); set('bExit', I.exit + T(L('Exit full screen', 'إغلاق ملء الشاشة'))); set('bPrint', I.print + T(L('Print', 'طباعة')));
     set('mFilt', A.isAr() ? 'EN' : 'عربي'); set('bLang', A.isAr() ? 'English' : 'العربية'); $('bLang').title = L('Switch the whole presentation to Arabic', 'عرض كل العرض باللغة الإنجليزية');
     if ($('bGuide')) $('bGuide').textContent = L('Guide', 'الدليل');
