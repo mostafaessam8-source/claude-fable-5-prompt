@@ -5,7 +5,7 @@
   A.changes.asm = (el) => {
     const key = el.dataset.k;
     if (key.startsWith('adv.') || key.startsWith('ms.')) {
-      const lim = { 'adv.pct': [0, 100], 'adv.from': [1, 60], 'ms.g1': [0, 730], 'ms.g2': [0, 730] }[key] || [0, 100];
+      const lim = { 'adv.pct': [0, 100], 'adv.from': [1, 60], 'adv.per': [0, 1e10], 'ms.g1': [0, 730], 'ms.g2': [0, 730] }[key] || [0, 100];
       const val = Math.round(Math.max(lim[0], Math.min(lim[1], parseFloat(el.value))));
       if (!isFinite(val)) { A.refilter(); return; }
       const st2 = Z.cloneState(A.s.st); const [g, f] = key.split('.'); st2[g][f] = val; A.setState(st2); return;
@@ -60,6 +60,7 @@
             </div>
             <div class="panel"><div class="ph"><h3>6 · Advance payment &amp; funding milestones</h3><span class="sub">taken from the total contract value</span></div><div class="pb" style="padding-top:0"><table class="tbl tight"><thead><tr><th>Item</th><th>Value</th><th>Result</th></tr></thead><tbody>
               <tr><td>Advance payment (received at NTP)</td><td>${inp('adv.pct', M.pay.pct)} % of contract</td><td><b>${F.sar(M.pay.amount)}</b></td></tr>
+              <tr><td>Monthly recovery amount (0 = automatic equal instalments)</td><td><input class="ninput" style="width:110px" type="number" min="0" step="1000" value="${Math.round(M.pay.fixed ? M.pay.perMonth : 0)}" data-chg="asm" data-k="adv.per"> SAR</td><td><b>${F.sar(M.pay.perMonth)}</b>${M.pay.unrecovered > 1 ? ' · <span style="color:var(--bad)">' + F.sar(M.pay.unrecovered) + ' not recovered by the end</span>' : ''}</td></tr>
               <tr><td>Recovery starts in month (equal monthly deductions to the last month)</td><td>${inp('adv.from', M.pay.from, 60)} month</td><td><b>${F.sar(M.pay.perMonth)}</b> × ${M.pay.months} months</td></tr>
               <tr><td>Phase 1 amount granted – before NTP</td><td>${inp('ms.g1', M.st.ms.g1, 730)} days</td><td><b>${dt.fmt(M.start - M.st.ms.g1)}</b></td></tr>
               <tr><td>Phase 2 amount granted – before the Phase 2 start</td><td>${inp('ms.g2', M.st.ms.g2, 730)} days</td><td><b>${dt.fmt(Z.phase2(M).start - M.st.ms.g2)}</b></td></tr></tbody></table></div></div>

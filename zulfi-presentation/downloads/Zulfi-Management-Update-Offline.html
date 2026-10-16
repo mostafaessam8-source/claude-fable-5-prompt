@@ -554,6 +554,14 @@ html[dir=rtl] #drawer { transform: translateX(-105%); box-shadow: 10px 0 40px rg
 @page { size: 1600px 900px; margin: 0; }
 @media print { .slide { height: 900px !important; min-height: 900px !important; max-height: 900px !important; overflow: hidden !important; } #stage { height: auto !important; } html, body { background: #fff !important; } }
 
+.c6-ctl { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: #f2f8f9; border-inline-start: 6px solid var(--sar); padding: 10px 14px; font-size: 14px; color: var(--sar-black); }
+.c6-ctl label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 13px; color: var(--sar-gray); }
+.c6-ctl input { height: 34px; width: 150px; border: 1px solid var(--sar-cool); border-radius: 6px; padding: 0 8px; font-size: 16px; font-weight: 700; color: var(--sar-black); direction: ltr; background: #fff; }
+.c6-ctl input.fixed { border-color: var(--sar-yellow); background: #fdf6e3; }
+.c6-ctl .btn:disabled { opacity: .4; cursor: default; }
+.c6-hint { font-size: 12.5px; color: var(--sar-gray); align-self: center; }
+.c6-warn { background: #fdecec; border-inline-start: 6px solid var(--sar-red); color: #8a1d1d; padding: 8px 14px; font-size: 14px; font-weight: 700; }
+
 </style>
 </head>
 <body>
@@ -713,7 +721,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   }
 
   /* ---------------------------------------------------------------- state */
-  Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
+  Z.DEFAULT_ADV = { pct: 10, from: 1, per: 0 }; // per: fixed monthly recovery amount in SAR (0 = equal instalments to the last project month) // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
   Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
   Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-25'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
   Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) }, notes: { ...(s.notes || {}) } });
@@ -810,12 +818,14 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const recFrom = Math.min(Math.max(1, Math.round(adv.from || 1)), N);
     const nRec = N - recFrom + 1;
     const advIn = new Array(N).fill(0); advIn[0] = advAmt;
-    const rec = new Array(N).fill(0); for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec;
+    const rec = new Array(N).fill(0), perFix = adv.per > 0 ? adv.per : 0;
+    let left = advAmt;
+    if (perFix) { for (let k = recFrom - 1; k < N && left > 0.005; k++) { rec[k] = Math.min(perFix, left); left -= rec[k]; } left = Math.max(0, left); } else { for (let k = recFrom - 1; k < N; k++) rec[k] = advAmt / nRec; left = 0; }
     const net = totalM.map((v, k) => v + advIn[k] - rec[k]);
     let cp = 0, bal = 0;
     const cumPay = net.map((v) => (cp += v));
     const balance = advIn.map((v, k) => (bal += v - rec[k]));
-    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: nRec ? advAmt / nRec : 0, months: nRec, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
+    const payment = { pct: adv.pct, amount: advAmt, from: recFrom, perMonth: perFix || (nRec ? advAmt / nRec : 0), fixed: !!perFix, unrecovered: left, months: rec.filter((v) => v > 0).length, advIn, rec, net, cum: cumPay, cumPct: cumPay.map((v) => v / total), balance };
 
     // baseline monthly (for comparison): month-index based
     const baseActs = ACTS.map((def) => {
@@ -2840,6 +2850,13 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const img = (n) => A.asset(n);
   const go = (id) => `data-nav="${A.idx(id)}"`;
 
+  A.changes.advset = (el) => {
+    const k = el.dataset.k, lim = { pct: [0, 100], from: [1, 60], per: [0, 1e10] }[k];
+    let v = parseFloat(el.value); if (!isFinite(v)) { A.refilter(); return; }
+    v = Math.max(lim[0], Math.min(lim[1], v)); if (k !== 'per') v = Math.round(v);
+    const st = Z.cloneState(A.s.st); st.adv[k] = k === 'per' ? Math.round(v) : v; A.setState(st);
+  };
+  A.actions.advAuto = () => { const st = Z.cloneState(A.s.st); st.adv.per = 0; A.setState(st); };
   const AGENDA = [
     ['m-intro', ['Introduction', 'المقدمة']],
     ['m-about', ['About the project', 'نبذة عن المشروع']],
@@ -2943,6 +2960,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       return A.mhead('m-cash6', L('Project cash flows during the first six months', 'التدفقات النقدية للمشروع خلال الأشهر الستة الأولى'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
         `<div class="c6"><div class="c6-text"><div class="c6-panel">${body}</div></div>
           <div class="c6-right"><div class="c6-tiles">${tile(L('Advance payment', 'الدفعة المقدمة') + ` (${pay.pct}%)`, f0(at), L('received at NTP', 'تُستلم عند أمر البدء'))}${tile(L('Interim payments', 'الدفعات المرحلية'), f0(wt), L('work value, months 1–6', 'قيمة الأعمال، الأشهر 1–6'), 'alt')}${tile(L('Total requirement', 'إجمالي الاحتياج المالي'), f0(nt), L('net of advance recovery, before ', 'بعد خصم استرداد الدفعة، قبل ') + deadline, 'key')}</div>
+          <div class="c6-ctl"><label>${L('Advance %', 'نسبة الدفعة المقدمة %')}<input type="number" min="0" max="100" step="1" value="${pay.pct}" data-chg="advset" data-k="pct"></label><label>${L('Recovery starts in month', 'شهر بداية الاسترداد')}<input type="number" min="1" max="${M.N}" step="1" value="${pay.from}" data-chg="advset" data-k="from"></label><label>${L('Monthly recovery (SAR)', 'قيمة الاسترداد الشهري (ريال)')}<input type="number" min="0" step="1000" value="${Math.round(pay.perMonth)}" data-chg="advset" data-k="per" class="${pay.fixed ? 'fixed' : ''}"></label><button class="btn sm" data-do="advAuto" ${pay.fixed ? '' : 'disabled'}>${L('Automatic (equal)', 'تلقائي (متساوٍ)')}</button><span class="c6-hint">${pay.fixed ? L('fixed amount', 'مبلغ ثابت') : L('equal instalments to the last month', 'أقساط متساوية حتى آخر شهر')}</span></div>
+          ${pay.unrecovered > 1 ? `<div class="c6-warn">${L('Warning: ', 'تنبيه: ')}${f0(pay.unrecovered)} ${cur} ${L('of the advance is not recovered by the end of the project.', 'من الدفعة المقدمة لن تُسترد قبل نهاية المشروع.')}</div>` : ''}
           <div class="c6-note">${L('Figures are taken from the project cost and schedule model and update with any change to the start date or schedule.', 'الأرقام مأخوذة من نموذج تكلفة وجدول المشروع وتتحدث مع أي تعديل في تاريخ البدء أو الجدول.')}</div>
           <div class="c6-tblw">${tbl}</div></div></div>`;
     },

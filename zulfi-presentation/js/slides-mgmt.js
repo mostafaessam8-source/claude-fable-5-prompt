@@ -9,6 +9,13 @@
   const img = (n) => A.asset(n);
   const go = (id) => `data-nav="${A.idx(id)}"`;
 
+  A.changes.advset = (el) => {
+    const k = el.dataset.k, lim = { pct: [0, 100], from: [1, 60], per: [0, 1e10] }[k];
+    let v = parseFloat(el.value); if (!isFinite(v)) { A.refilter(); return; }
+    v = Math.max(lim[0], Math.min(lim[1], v)); if (k !== 'per') v = Math.round(v);
+    const st = Z.cloneState(A.s.st); st.adv[k] = k === 'per' ? Math.round(v) : v; A.setState(st);
+  };
+  A.actions.advAuto = () => { const st = Z.cloneState(A.s.st); st.adv.per = 0; A.setState(st); };
   const AGENDA = [
     ['m-intro', ['Introduction', 'المقدمة']],
     ['m-about', ['About the project', 'نبذة عن المشروع']],
@@ -112,6 +119,8 @@
       return A.mhead('m-cash6', L('Project cash flows during the first six months', 'التدفقات النقدية للمشروع خلال الأشهر الستة الأولى'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
         `<div class="c6"><div class="c6-text"><div class="c6-panel">${body}</div></div>
           <div class="c6-right"><div class="c6-tiles">${tile(L('Advance payment', 'الدفعة المقدمة') + ` (${pay.pct}%)`, f0(at), L('received at NTP', 'تُستلم عند أمر البدء'))}${tile(L('Interim payments', 'الدفعات المرحلية'), f0(wt), L('work value, months 1–6', 'قيمة الأعمال، الأشهر 1–6'), 'alt')}${tile(L('Total requirement', 'إجمالي الاحتياج المالي'), f0(nt), L('net of advance recovery, before ', 'بعد خصم استرداد الدفعة، قبل ') + deadline, 'key')}</div>
+          <div class="c6-ctl"><label>${L('Advance %', 'نسبة الدفعة المقدمة %')}<input type="number" min="0" max="100" step="1" value="${pay.pct}" data-chg="advset" data-k="pct"></label><label>${L('Recovery starts in month', 'شهر بداية الاسترداد')}<input type="number" min="1" max="${M.N}" step="1" value="${pay.from}" data-chg="advset" data-k="from"></label><label>${L('Monthly recovery (SAR)', 'قيمة الاسترداد الشهري (ريال)')}<input type="number" min="0" step="1000" value="${Math.round(pay.perMonth)}" data-chg="advset" data-k="per" class="${pay.fixed ? 'fixed' : ''}"></label><button class="btn sm" data-do="advAuto" ${pay.fixed ? '' : 'disabled'}>${L('Automatic (equal)', 'تلقائي (متساوٍ)')}</button><span class="c6-hint">${pay.fixed ? L('fixed amount', 'مبلغ ثابت') : L('equal instalments to the last month', 'أقساط متساوية حتى آخر شهر')}</span></div>
+          ${pay.unrecovered > 1 ? `<div class="c6-warn">${L('Warning: ', 'تنبيه: ')}${f0(pay.unrecovered)} ${cur} ${L('of the advance is not recovered by the end of the project.', 'من الدفعة المقدمة لن تُسترد قبل نهاية المشروع.')}</div>` : ''}
           <div class="c6-note">${L('Figures are taken from the project cost and schedule model and update with any change to the start date or schedule.', 'الأرقام مأخوذة من نموذج تكلفة وجدول المشروع وتتحدث مع أي تعديل في تاريخ البدء أو الجدول.')}</div>
           <div class="c6-tblw">${tbl}</div></div></div>`;
     },
