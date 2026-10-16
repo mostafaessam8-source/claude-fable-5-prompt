@@ -121,7 +121,7 @@
   }
 
   const lblS = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)';
-  const basisSeg = () => '';
+  const basisSeg = (b) => `<span class="lbl" style="${lblS}">Basis</span><span class="seg"><button data-do="cfBasis" data-b="cost" class="${b === 'cost' ? 'on' : ''}">Work done (cost)</button><button data-do="cfBasis" data-b="pay" class="${b === 'pay' ? 'on' : ''}">Payments (with advance)</button></span><span class="sep" style="margin:0 2px"></span>`;
   function payView(M, per) {
     const pay = M.pay, dtp = (d) => dt.fmtMY(d);
     const pkI = pay.net.indexOf(Math.max(...pay.net));
@@ -158,7 +158,7 @@
     id: 'cashflow', title: 'Cash flow & S-curve', desc: 'Monthly spend, cumulative %, vs baseline',
     render(M) {
       const u = ui(), dim = u.dim, st = A.s.ui.status, per = u.per || 1;
-      return payView(M, per);
+      if ((u.basis || 'cost') === 'pay') return payView(M, per);
       const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim);
       const tot = agg.sum, y1 = agg.total.slice(0, 12).reduce((a, b) => a + b, 0), y2 = tot - y1;
       const pk = agg.total.indexOf(Math.max(...agg.total)), m50 = agg.pct.findIndex((p) => p >= 0.5);
