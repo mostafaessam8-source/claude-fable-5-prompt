@@ -1536,34 +1536,38 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         ['Procurement', M.acts.filter((a) => a.epc === 'PROC'), 'var(--proc)', 'band:2'],
         ['Installation & construction', M.acts.filter((a) => a.epc === 'CONS'), 'var(--cons)', 'band:3'],
       ];
-      const TOP = 34, BRH = 25, MRH = 19, MTOP = TOP + bands.length * BRH + 22, BOT = MTOP + ms.length * MRH + 4, H = BOT + 8;
+      const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept design', prelim: 'Preliminary design', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction start', ll: 'Long-lead done', fin: 'Completion' };
+      const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
+      // one chronological list: milestones and activity bars together, earliest on top
+      const rows = [];
+      bands.forEach((bd) => { const sp = span(bd[1]); if (sp) rows.push({ t: 'b', d: sp.s, bd, sp }); });
+      ms.forEach((m, i) => rows.push({ t: 'm', d: m.d, m, i }));
+      rows.sort((p, q) => p.d - q.d || (p.t === 'm' ? -1 : 1) - (q.t === 'm' ? -1 : 1));
+      const TOP = 34, RH = 23, BOT = TOP + rows.length * RH + 4, H = BOT + 40;
       let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}">`;
-      // row stripes
-      for (let i = 0; i < ms.length; i++) if (i % 2 === 0) svg += `<rect x="0" y="${MTOP + i * MRH}" width="1512" height="${MRH}" fill="#f4f8fa"/>`;
-      svg += `<text x="8" y="${MTOP - 8}" style="font-size:11px;font-weight:800;letter-spacing:.06em;fill:var(--mute)">MILESTONES</text><line x1="0" x2="1512" y1="${MTOP - 3}" y2="${MTOP - 3}" stroke="#cfd9e0"/>`;
-      // quarter ticks (top axis)
-      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${TOP - 4}" y2="${BOT}" stroke="#e6ecf0"/><text x="${x(d)}" y="12" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="25" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
-      // guide lines for NTP / Phase 2 start / latest start through everything
+      rows.forEach((r, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOP + i * RH}" width="1512" height="${RH}" fill="#f4f8fa"/>`; });
+      // date ruler – top and bottom
+      for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${TOP - 4}" y2="${BOT}" stroke="#d9e2e8"/><text x="${x(d)}" y="12" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="25" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text><text x="${x(d)}" y="${BOT + 16}" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="${BOT + 29}" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
+      svg += `<line x1="${X0}" x2="${X1}" y1="${BOT}" y2="${BOT}" stroke="#9fb0bb" stroke-width="2"/>`;
       ms.filter((m) => ['ntp', 'p2', 'p2late'].includes(m.k)).forEach((m) => {
         const c = m.k === 'ntp' ? 'var(--c3)' : m.k === 'p2' ? 'var(--ph2)' : 'var(--bad)';
         svg += `<line x1="${x(m.d)}" x2="${x(m.d)}" y1="${TOP - 4}" y2="${BOT}" stroke="${c}" stroke-width="1.5" stroke-dasharray="${m.k === 'ntp' ? '0' : '5 4'}" opacity=".6"/>`;
       });
-      bands.forEach((bd, i) => {
-        const sp = span(bd[1]); if (!sp) return;
-        const y = TOP + i * BRH + 3, h = BRH - 6;
-        const tip = F.tip(bd[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', bd[1].length]]);
-        const w = Math.max(6, x(sp.e + 1) - x(sp.s));
-        svg += `<text x="8" y="${y + h / 2 + 4}" style="font-size:12px;font-weight:700;fill:${bd[2]}">${bd[0].length > 30 ? bd[0].slice(0, 28) + '…' : bd[0]}</text><g class="hit" data-cat="${bd[3]}" data-tip="${tip}"><rect x="${x(sp.s)}" y="${y}" width="${w}" height="${h}" rx="5" fill="${bd[2]}" class="hv"/>${w > 190 ? `<text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${y + h / 2 + 4}" text-anchor="end" style="fill:#fff;font-size:11px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${y + h / 2 + 4}" style="font-weight:700;font-size:11px;fill:var(--accent)">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
-      });
-      const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept design', prelim: 'Preliminary design', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction start', ll: 'Long-lead done', fin: 'Completion' };
-      const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
       const mk = [];
-      ms.forEach((m, i) => {
-        const px = x(Math.min(m.d, M.finish)), cy = MTOP + i * MRH + MRH / 2, txt = `${i + 1} · ${SHORT[m.k] || m.name}`;
+      rows.forEach((r, i) => {
+        const cy = TOP + i * RH + RH / 2;
+        if (r.t === 'b') {
+          const bd = r.bd, sp = r.sp, y = cy - 8, h = 16;
+          const tip = F.tip(bd[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', bd[1].length]]);
+          const w = Math.max(6, x(sp.e + 1) - x(sp.s));
+          svg += `<text x="8" y="${cy + 4}" style="font-size:12px;font-weight:700;fill:${bd[2]}">${bd[0].length > 30 ? bd[0].slice(0, 28) + '…' : bd[0]}</text><g class="hit" data-cat="${bd[3]}" data-tip="${tip}"><rect x="${x(sp.s)}" y="${y}" width="${w}" height="${h}" rx="5" fill="${bd[2]}" class="hv"/>${w > 190 ? `<text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${cy + 4}" text-anchor="end" style="fill:#fff;font-size:11px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${cy + 4}" style="font-weight:700;font-size:11px;fill:var(--accent)">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
+          return;
+        }
+        const m = r.m, px = x(Math.min(m.d, M.finish)), txt = `◆ ${r.i + 1} · ${SHORT[m.k] || m.name}`;
         const col = m.delta > 0 ? 'var(--bad)' : m.k === 'grant1' || m.k === 'grant2' ? 'var(--c4)' : m.k === 'p2' || m.k === 'p2late' ? 'var(--ph2)' : m.k === 'ntp' ? 'var(--c3)' : 'var(--brand)';
         const late = px > X1 - 130, dl = `${dt.fmtShort(m.d)}${m.delta ? ' (' + F.days(m.delta) + ')' : ''}`;
         const drg = m.edit ? `data-grant="${m.edit}" data-day="${m.d}" style="cursor:ew-resize;touch-action:none"` : '';
-        mk.push({ e: !!m.edit, h: `<g class="hit" ${drg} ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><rect x="0" y="${cy - MRH / 2}" width="${X0 - 6}" height="${MRH}" fill="transparent"/><text x="8" y="${cy + 4}" style="font-size:11.5px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text><path d="M${px},${cy - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${late ? px - 13 : px + 13}" y="${cy + 4}" text-anchor="${late ? 'end' : 'start'}" style="font-size:11px;font-weight:700;fill:${col}">${dl}</text></g>` });
+        mk.push({ e: !!m.edit, h: `<g class="hit" ${drg} ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><rect x="0" y="${cy - RH / 2}" width="${X0 - 6}" height="${RH}" fill="transparent"/><text x="8" y="${cy + 4}" style="font-size:11.5px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text><path d="M${px},${cy - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${late ? px - 13 : px + 13}" y="${cy + 4}" text-anchor="${late ? 'end' : 'start'}" style="font-size:11px;font-weight:700;fill:${col}">${dl}</text></g>` });
       });
       svg += mk.filter((q) => !q.e).map((q) => q.h).join('') + mk.filter((q) => q.e).map((q) => q.h).join('');
       svg += '</svg>';
