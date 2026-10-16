@@ -13,6 +13,69 @@
   A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
   A.actions.mxHeat = () => { mxui().heat = !mxui().heat; A.refilter(); };
 
+
+  /* ---- export the current view (stack-by + period) to a SAR-styled Excel workbook ---- */
+  A.actions.cfExport = () => {
+    const M = A.s.M, u = ui(), dim = u.dim, per = u.per || 1, adv = u.adv !== false, pay = M.pay, X = Z.xlsx;
+    const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim), P = periods(M, per), keys = ORDER[dim].filter((k) => agg.map[k]);
+    const DN = { group: 'WBS group', epc: 'EPC category', phase: 'Phase', all: 'Total only' };
+    const C = (v, s, f) => ({ v, s, f }), n = P, tc = n + 1, L = (k) => X.col(k);
+    const R = [];
+    R.push([C('Zulfi Railway Station – Cash Flow', 'title')]);
+    R.push([C(`Stack by: ${DN[dim]}  ·  View: ${pn(per)[2]}  ·  SAR excl. VAT  ·  NTP ${dt.fmt(M.start)}  ·  Completion ${dt.fmt(M.finish)}${adv ? `  ·  Advance ${pay.pct}% at NTP, recovered monthly from month ${pay.from}` : ''}`, 'sub')]);
+    R.push([]);
+    const hd = [C('Item', 'headL')], hs = [C('', 'headSub')];
+    for (let k = 0; k < P; k++) { hd.push(C(pLabel(M, k, per), 'head')); hs.push(C(dt.fmtMY(M.bs[k * per]) + (per > 1 ? ' – ' + dt.fmtMY(M.bs[lastIdx(M, k, per) + 1] - 1) : ''), 'headSub')); }
+    hd.push(C('Total', 'head')); hs.push(C('', 'headSub')); R.push(hd, hs);
+    const first = R.length + 1; let sums = new Array(P).fill(0);
+    keys.forEach((key) => {
+      const row = [C(seriesMeta(dim, key).name, 'lab')]; let t = 0;
+      for (let k = 0; k < P; k++) { const v = sumP(agg.map[key], k, per); row.push(C(v, 'num')); sums[k] += v; t += v; }
+      const r = R.length + 1; row.push(C(t, 'sNum', `SUM(B${r}:${L(n)}${r})`)); R.push(row);
+    });
+    const last = R.length, totRow = R.length + 1;
+    const tot = [C('Total work cost', 'sLab')]; let gt = 0;
+    for (let k = 0; k < P; k++) { tot.push(C(sums[k], 'sNum', `SUM(${L(k + 1)}${first}:${L(k + 1)}${last})`)); gt += sums[k]; }
+    tot.push(C(gt, 'sNum', `SUM(B${totRow}:${L(n)}${totRow})`)); R.push(tot);
+    let netRow = totRow;
+    if (adv) {
+      const ain = [], rec = [], net = [];
+      for (let k = 0; k < P; k++) { ain.push(sumP(pay.advIn, k, per)); rec.push(sumP(pay.rec, k, per)); }
+      const aR = R.length + 1, rR = aR + 1; netRow = rR + 1;
+      R.push([C('Advance payment received', 'lab'), ...ain.map((v) => C(v, 'num')), C(ain.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${aR}:${L(n)}${aR})`)]);
+      R.push([C('Advance recovery', 'lab'), ...rec.map((v) => C(-v, 'neg')), C(-rec.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${rR}:${L(n)}${rR})`)]);
+      for (let k = 0; k < P; k++) net.push(sums[k] + ain[k] - rec[k]);
+      R.push([C('Net payment', 'tLab'), ...net.map((v, k) => C(v, 'tNum', `${L(k + 1)}${totRow}+${L(k + 1)}${aR}+${L(k + 1)}${rR}`)), C(net.reduce((x, y) => x + y, 0), 'tNum', `SUM(B${netRow}:${L(n)}${netRow})`)]);
+    }
+    R.push([]);
+    // cumulative blocks
+    const cum = (label, src, pctLabel) => {
+      const cr = R.length + 1, row = [C(label, 'zLab')]; let acc = 0, tv = src.reduce((x, y) => x + y, 0);
+      src.forEach((v, k) => { acc += v; row.push(C(acc, 'zNum', k ? `${L(k)}${cr}+${L(k + 1)}${src === cs ? totRow : netRow}` : `${L(1)}${src === cs ? totRow : netRow}`)); });
+      row.push(C('', 'zLab')); R.push(row);
+      R.push([C(pctLabel, 'lab'), ...src.map((_, k) => C(tv ? src.slice(0, k + 1).reduce((x, y) => x + y, 0) / tv : 0, 'pct', `${L(k + 1)}${cr}/${L(n)}${src === cs ? totRow : netRow}`)), C('', 'lab')]);
+    };
+    const cs = sums.slice();
+    cum('Cumulative work cost', cs, 'Cumulative work cost %');
+    if (adv) { const net = sums.map((v, k) => v + sumP(pay.advIn, k, per) - sumP(pay.rec, k, per)); cum('Cumulative payments (with advance)', net, 'Cumulative payments %'); }
+    R.push([]);
+    R.push([C(`Source: Zulfi Railway Station WBS / CBS / 26-month schedule · generated ${new Date().toISOString().slice(0, 10)} from the interactive presentation. Scenario edits (dates, assumptions) are included. Filters on the presentation apply to the cost rows; advance payment is for the whole contract.`, 'note')]);
+    const s1 = { name: 'Cash flow', cols: [34, ...new Array(P).fill(per === 1 ? 13 : 16), 16], rows: R, freeze: { x: 1, y: 5 }, footer: 'Zulfi Railway Station – Cash flow' };
+    // sheet 2: schedule
+    const acts = A.visList(), S = [];
+    S.push([C('Zulfi Railway Station – Schedule & cost register', 'title')]);
+    S.push([C(`${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
+    S.push(['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link'].map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
+    const f0 = S.length + 1;
+    acts.forEach((a) => S.push([C(a.code, 'lab'), C(a.name, 'lab'), C(a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? 'Yes' : '', 'lab'), C(a.pred || '', 'txt')]));
+    S.push([C('Total', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
+    const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, footer: 'Zulfi Railway Station – Schedule' };
+    const blob = X.blob([s1, s2]);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `Zulfi-CashFlow-${dim === 'all' ? 'Total' : DN[dim].replace(/\W+/g, '')}-${pn(per)[2]}.xlsx`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+
   const seriesMeta = (dim, key) => {
     if (dim === 'group') { const g = Z.GROUP_BY[key]; return { name: key.replace('.0', '') + ' ' + g.name, color: F.groupColor(key) }; }
     if (dim === 'epc') return { name: Z.EPC_BY[key].name, color: F.epcColor(key) };
@@ -189,6 +252,7 @@
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">Status date</span>
             <input type="date" class="dinput" style="width:140px;height:30px" value="${st ? dt.iso(st) : ''}" min="${dt.iso(M.start)}" max="${dt.iso(M.bs[M.N] - 1)}" data-chg="status">
             ${st ? '<button class="btn sm" data-do="clearStatus">Clear</button>' : '<span class="hint">pick a date to read planned progress</span>'}
+            <button class="btn sm" data-do="cfExport" style="margin-left:auto" title="Download the current view (stack-by and period) as a SAR-styled Excel table">⬇ Export Excel</button>
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
