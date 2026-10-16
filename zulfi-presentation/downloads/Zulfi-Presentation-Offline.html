@@ -959,7 +959,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const Z = G.Z, F = Z.F, dt = Z.dt;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-  const KEY = 'zulfi-presentation-v1';
+  const KEY = G.ZMODE ? 'zulfi-mgmt-v1' : 'zulfi-presentation-v1';
   const W = 1600, H = 900;
 
   const A = (Z.app = {
@@ -968,6 +968,19 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     scale: 1, dirty: new Set(),
   });
   Z.registerSlide = (def) => A.slides.push(def);
+  /* ---- optional "deck" mode (management.html): own slide order, Arabic/English switch, deletable slides ---- */
+  const MODE = G.ZMODE || null; A.mode = MODE;
+  const LKEY = 'zulfi-lang-v1', HKEY = 'zulfi-hidden-v1';
+  A.lang = 'en';
+  if (MODE) { A.lang = MODE.lang || 'en'; try { const l = localStorage.getItem(LKEY); if (l === 'ar' || l === 'en') A.lang = l; } catch (e) { /* ignore */ } }
+  A.isAr = () => A.lang === 'ar';
+  A.asset = (n) => (G.ZASSETS && G.ZASSETS[n]) || 'assets/' + n;
+  A.L = (en, ar) => (A.lang === 'ar' ? ar : en);
+  A.tr = (h) => (MODE && MODE.translate && A.lang === 'ar' && Z.i18n ? Z.i18n.html(h) : h);
+  A.hidden = new Set(); try { if (MODE) JSON.parse(localStorage.getItem(HKEY) || '[]').forEach((x) => A.hidden.add(x)); } catch (e) { /* ignore */ }
+  A.saveHidden = () => { try { localStorage.setItem(HKEY, JSON.stringify([...A.hidden])); } catch (e) { /* ignore */ } };
+  A.isGone = (i) => !!(A.slides[i] && A.hidden.has(A.slides[i].id));
+  A.visIdx = () => A.slides.map((_, i) => i).filter((i) => !A.isGone(i));
   A.icons = {
     prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
     next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
@@ -1033,14 +1046,16 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const n = M.changed.length, fd = M.finish - M.base.finish;
     const sc = $('#scen');
     sc.className = 'tb-btn' + (n ? ' primary' : '');
-    sc.innerHTML = n ? `Revised · ${n} changed · finish ${fd === 0 ? 'unchanged' : F.days(fd)}` : 'Baseline schedule';
+    sc.innerHTML = A.tr(n ? `Revised · ${n} changed · finish ${fd === 0 ? 'unchanged' : F.days(fd)}` : 'Baseline schedule');
     A.renderFilters();
-    $('#slideNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
-    $('#mNo').textContent = `${A.s.slide + 1} / ${A.slides.length}`;
-    $('#mBack').disabled = A.s.slide === 0; $('#mNext').disabled = A.s.slide === A.slides.length - 1;
-    $('#bBack').disabled = A.s.slide === 0;
-    $('#bNext').disabled = A.s.slide === A.slides.length - 1;
-    $$('#side [data-go]').forEach((b) => b.classList.toggle('on', +b.dataset.go === A.s.slide));
+    const vi = A.visIdx(), pos = Math.max(0, vi.indexOf(A.s.slide)), first = pos <= 0, last = pos >= vi.length - 1;
+    $('#slideNo').textContent = `${pos + 1} / ${vi.length}`;
+    $('#mNo').textContent = `${pos + 1} / ${vi.length}`;
+    $('#mBack').disabled = first; $('#mNext').disabled = last;
+    $('#bBack').disabled = first;
+    $('#bNext').disabled = last;
+    $$('#side [data-go]').forEach((b) => { const k = +b.dataset.go; b.classList.toggle('on', k === A.s.slide); b.style.display = A.isGone(k) ? 'none' : ''; });
+    $$('.slide').forEach((el, k) => { el.classList.toggle('gone', A.isGone(k)); const pn = el.querySelector('.mfoot .pn'); if (pn) pn.textContent = vi.indexOf(k) + 1; });
   };
 
   /* ---- editable text blocks: any text can be edited in 'Edit text' mode and is saved with the scenario ----
@@ -1048,7 +1063,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   A.edDef = {};
   A.ed = (id, def, tokens, opts) => {
     opts = opts || {};
-    const tag = opts.tag || 'div', st = A.s.st, custom = !!(st && st.notes && st.notes[id] != null);
+    const tag = opts.tag || 'div', st = A.s.st;
+    if (MODE) { if (MODE.translate && A.lang === 'ar' && !opts.native && Z.i18n) { def = Z.i18n.tpl(id, def); if (tokens) { tokens = Object.assign({}, tokens); Object.keys(tokens).forEach((k) => { if (typeof tokens[k] === 'string') tokens[k] = Z.i18n.html(tokens[k]); }); } } id = id + '@' + A.lang; }
+    const custom = !!(st && st.notes && st.notes[id] != null);
     A.edDef[id] = def;
     const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
     const body = editing
@@ -1083,23 +1100,38 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     A.refilter();
   };
   A.actions.edDone = () => A.toggleEdit();
+  A.actions.delSlide = () => {
+    const vi = A.visIdx(); if (vi.length <= 1) return;
+    if (!confirm(A.L('Delete this slide from the presentation? (You can bring deleted slides back with "Restore deleted slides".)', 'حذف هذه الشريحة من العرض؟ (يمكنك استرجاع الشرائح المحذوفة من زر «استرجاع الشرائح المحذوفة».)'))) return;
+    const cur = A.s.slide; A.hidden.add(A.slides[cur].id); A.saveHidden();
+    const nx = vi.find((k) => k > cur); A.go(nx != null ? nx : vi.filter((k) => k < cur).pop()); A.updateEdbar();
+  };
+  A.actions.restoreSlides = () => { A.hidden.clear(); A.saveHidden(); A.renderChrome(); A.updateEdbar(); };
+  A.updateEdbar = () => { const b = $('#edRestore'); if (b) b.style.display = A.hidden.size ? '' : 'none'; };
   A.actions.edResetSlide = () => {
-    if (!confirm('Restore the original text of this slide?')) return;
+    if (!confirm(A.L('Restore the original text of this slide?', 'استرجاع النص الأصلي لهذه الشريحة؟'))) return;
     $$('#slide-' + A.s.slide + ' [data-ed]').forEach((el) => delete A.s.st.notes[el.dataset.ed]);
     A.save(); A.refilter();
   };
   A.actions.edResetAll = () => {
-    if (!confirm('Restore the original text on ALL slides?')) return;
+    if (!confirm(A.L('Restore the original text on ALL slides?', 'استرجاع النص الأصلي في كل الشرائح؟'))) return;
     A.s.st.notes = {}; A.save(); A.refilter();
   };
 
-  A.head = (no, title, sub, src) =>
-    `<div class="s-head"><div class="no">${no}</div><div>${A.ed('title:' + no, title, null, { tag: 'h1' })}<p>${A.ed('sub:' + no, sub, null, { tag: 'span' })}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
+  A.head = (no, title, sub, src) => {
+    if (MODE && MODE.num) { const m = MODE.num[no] || no; return `<div class="s-head m"><img class="hlogo" src="${A.asset('sar-logo.png')}" alt="SAR"><div class="ht">${A.ed('title:' + no, title, null, { tag: 'h1' })}<p>${A.ed('sub:' + no, sub, null, { tag: 'span' })}</p></div></div>`; }
+    return `<div class="s-head"><div class="no">${no}</div><div>${A.ed('title:' + no, title, null, { tag: 'h1' })}<p>${A.ed('sub:' + no, sub, null, { tag: 'span' })}</p></div>${src ? `<div class="src">Excel source<br><b>${src}</b></div>` : ''}</div>`;
+  };
+  /* header + footer in the SAR template look, used by the deck's own slides */
+  A.mhead = (key, title, sub) => `<div class="s-head m"><img class="hlogo" src="${A.asset('sar-logo.png')}" alt="SAR"><div class="ht">${A.ed('title:' + key, title, null, { tag: 'h1', native: true })}<p>${A.ed('sub:' + key, sub, null, { tag: 'span', native: true })}</p></div></div>`;
 
   A.renderSlide = (i, keepScroll) => {
     const el = $('#slide-' + i); if (!el) return;
     const def = A.slides[i];
-    el.innerHTML = def.render(A.s.M, A.s);
+    let html = def.render(A.s.M, A.s);
+    if (MODE && MODE.translate && !def.native && A.lang === 'ar') html = Z.i18n.html(html);
+    if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'Internal')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
+    el.innerHTML = html;
     A.dirty.delete(i);
     if (keepScroll) $$('[data-keep]', el).forEach((n) => { const k = keepScroll[n.dataset.keep]; if (k) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } });
     if (def.after) def.after(el, A.s.M, A.s);
@@ -1109,6 +1141,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   /* --------------------------------------------------------- navigation */
   A.go = (i) => {
     i = Math.max(0, Math.min(A.slides.length - 1, i));
+    if (A.isGone(i)) { const vi = A.visIdx(); i = vi.find((k) => k >= i) != null ? vi.find((k) => k >= i) : vi[vi.length - 1]; }
     A.s.slide = i;
     $$('.slide').forEach((s, k) => s.classList.toggle('active', k === i));
     if (A.dirty.has(i)) A.renderSlide(i);
@@ -1116,8 +1149,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $('#viewport').scrollTop = 0;
     try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) { /* ignore */ }
   };
-  A.next = () => A.go(A.s.slide + 1);
-  A.back = () => A.go(A.s.slide - 1);
+  A.next = () => { const vi = A.visIdx(), k = vi.find((x) => x > A.s.slide); if (k != null) A.go(k); };
+  A.back = () => { const vi = A.visIdx().filter((x) => x < A.s.slide); if (vi.length) A.go(vi[vi.length - 1]); };
 
   /* ----------------------------------------------------------- scaling */
   A.fit = () => {
@@ -1165,7 +1198,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const t = e.target.closest ? e.target.closest('[data-tip]') : null;
     const tip = $('#tip');
     if (!t || !t.dataset.tip) { tip.style.display = 'none'; return; }
-    if (tip.dataset.src !== t.dataset.tip) { tip.innerHTML = t.dataset.tip; tip.dataset.src = t.dataset.tip; }
+    if (tip.dataset.src !== t.dataset.tip) { tip.innerHTML = A.tr(t.dataset.tip); tip.dataset.src = t.dataset.tip; }
     tip.style.display = 'block';
     const r = $('#stage').getBoundingClientRect(), k = A.scale;
     let x = (e.clientX - r.left) / k + 16, y = (e.clientY - r.top) / k + 16;
@@ -1197,6 +1230,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       if (doEl && A.actions[doEl.dataset.do]) { A.actions[doEl.dataset.do](doEl, e); return; }
       if (t.closest('input,select,textarea')) return;
       const nav = t.closest('[data-nav]'); if (nav) { A.go(+nav.dataset.nav); return; }
+      if (MODE && MODE.noDrawer) return;
       const mapping = [['data-act', 'act'], ['data-grp', 'grp'], ['data-month', 'month'], ['data-cat', 'cat'], ['data-item', 'item']];
       for (const [attr, type] of mapping) {
         const el = t.closest('[' + attr + ']');
@@ -1211,6 +1245,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     stage.addEventListener('focusout', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (el && A.s.editText && el.dataset.dirty) { delete el.dataset.dirty; A.saveEd(el); } });
     stage.addEventListener('paste', (e) => { const el = e.target.closest && e.target.closest('[data-ed]'); if (!el) return; e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); });
     $('#bEdit').onclick = A.toggleEdit; $('#edDone').onclick = A.toggleEdit;
+    $('#edbar').addEventListener('click', (e) => { const b = e.target.closest('[data-do]'); if (b && A.actions[b.dataset.do]) A.actions[b.dataset.do](b, e); });
     $('#scrim').addEventListener('click', A.closeDrawer);
     stage.addEventListener('mousemove', tipMove);
     stage.addEventListener('mouseleave', () => ($('#tip').style.display = 'none'));
@@ -1218,7 +1253,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     // toolbar
     $('#bBack').onclick = A.back; $('#bNext').onclick = A.next;
     $('#bFull').onclick = A.enterFull; $('#bExit').onclick = A.exitFull; $('#bPrint').onclick = A.print;
-    $('#bFilters').onclick = () => { const f = $('#filters'); f.style.display = f.style.display === 'none' ? '' : 'none'; setTimeout(A.fit, 20); };
+    if ($('#bFilters')) $('#bFilters').onclick = () => { const f = $('#filters'); f.style.display = f.style.display === 'none' ? '' : 'none'; setTimeout(A.fit, 20); };
     $('#bReset').onclick = A.actions.resetDefault;
     $('#scen').onclick = () => A.go(A.slides.findIndex((s) => s.id === 'scenario'));
     $('#startIn').onchange = (e) => { const d = dt.parse(e.target.value); if (d) A.setState(Z.setStart(A.s.st, d)); else A.renderChrome(); };
@@ -1227,7 +1262,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     $('#side').addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) { A.go(+b.dataset.go); if (window.innerWidth < 600) $('#side').classList.add('hide'); } });
     $('#mBack').onclick = A.back; $('#mNext').onclick = A.next;
     $('#mSide').onclick = () => $('#side').classList.toggle('hide');
-    $('#mFilt').onclick = () => $('#app').classList.toggle('showf');
+    if ($('#mFilt')) $('#mFilt').onclick = () => $('#app').classList.toggle('showf');
 
     // filters
     const fb = $('#filters');
@@ -1248,9 +1283,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const tag = (e.target.tagName || '').toLowerCase();
       if (e.target.isContentEditable) { if (e.key === 'Escape') e.target.blur(); return; }
       if (tag === 'input' || tag === 'select' || tag === 'textarea') { if (e.key === 'Escape') e.target.blur(); return; }
-      if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); A.next(); }
-      else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); A.back(); }
-      else if (e.key === 'Home') A.go(0); else if (e.key === 'End') A.go(A.slides.length - 1);
+      const fwd = A.isAr() ? 'ArrowLeft' : 'ArrowRight', bwd = A.isAr() ? 'ArrowRight' : 'ArrowLeft';
+      if (e.key === fwd || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { e.preventDefault(); A.next(); }
+      else if (e.key === bwd || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); A.back(); }
+      else if (e.key === 'Home') A.go(A.visIdx()[0]); else if (e.key === 'End') A.go(A.visIdx().slice(-1)[0]);
       else if (e.key === 'Escape') { if (A.s.drawer) A.closeDrawer(); }
       else if (e.key === 'f' || e.key === 'F') { A.isFull() ? A.exitFull() : A.enterFull(); }
     });
@@ -1268,11 +1304,27 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   };
 
   /* -------------------------------------------------------------- boot */
+  A.setLang = (l) => {
+    A.lang = l; try { localStorage.setItem(LKEY, l); } catch (e) { /* ignore */ }
+    A.applyLang(); A.dirty = new Set(A.slides.map((_, i) => i));
+    A.renderChrome(); A.renderSlide(A.s.slide); A.renderDrawer();
+  };
+  A.applyLang = () => {
+    document.documentElement.lang = A.lang; document.documentElement.dir = A.isAr() ? 'rtl' : 'ltr';
+    document.body.classList.toggle('ar', A.isAr());
+    if (A.labels) A.labels(); A.buildSide();
+  };
+  A.slideInfo = (s) => { const t = MODE && MODE.titles && MODE.titles[s.id]; if (t) return A.isAr() ? t.ar : t.en; if (s.i18n) return A.isAr() ? s.i18n.ar : s.i18n.en; return [s.title, s.desc]; };
+  A.buildSide = () => {
+    const SEC = MODE ? MODE.sec.map((x) => [A.isAr() ? x.ar : x.en, x.ids]) : [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles', 'phase2']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
+    $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); if (i < 0) return ''; const [ti, de] = A.slideInfo(A.slides[i]); return `<button data-go="${i}"><span class="n">${i + 1}</span><span>${ti}<small>${de}</small></span></button>`; }).join('')).join('');
+    $$('#side [data-go]').forEach((b) => { b.style.display = A.isGone(+b.dataset.go) ? 'none' : ''; });
+  };
   A.boot = () => {
+    if (MODE && MODE.order) A.slides = MODE.order.map((id) => A.slides.find((s) => s.id === id)).filter(Boolean);
     // slides
     $('#stage').insertAdjacentHTML('afterbegin', A.slides.map((s, i) => `<section class="slide ${s.cls || ''}" id="slide-${i}"></section>`).join(''));
-    const SEC = [['Introduction', ['cover']], ['1 · Dashboard', ['dash', 'miles', 'phase2']], ['2 · WBS & CBS', ['wbs', 'wbsreg']], ['3 · 26-Month Schedule', ['gantt', 'cashflow', 'matrix']], ['4 · Assumptions & Scenario', ['assump', 'scenario']]];
-    $('#side').innerHTML = SEC.map(([t, ids]) => `<div class="sec">${t}</div>` + ids.map((id) => { const i = A.slides.findIndex((s) => s.id === id); const s = A.slides[i]; return i < 0 ? '' : `<button data-go="${i}"><span class="n">${i + 1}</span><span>${s.title}<small>${s.desc}</small></span></button>`; }).join('')).join('');
+    A.applyLang();
     if (window.innerWidth < 600) $('#side').classList.add('hide');
     // restore state: share link > saved session > baseline
     let st = null, slide = 0;
@@ -1289,7 +1341,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
-    bind(); A.fit(); A.syncFull();
+    bind(); if (A.updateEdbar) A.updateEdbar(); A.fit(); A.syncFull();
     A.dirty = new Set(A.slides.map((_, i) => i));
     A.renderChrome(); A.go(A.s.slide);
     A.renderDrawer();
@@ -1413,10 +1465,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
   const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
     tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
-    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', '),
+    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
     peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
     p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
-    p2late: P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : '',
+    p2late: P2.delay > 0 ? (A.isAr() ? ` – الإفراج الحالي متأخر ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
     p2row: ms.findIndex((m) => m.k === 'p2') + 1,
     advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
     permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),
@@ -1582,7 +1634,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
         `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the diamonds to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
-        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.</div>${svg}</div></div>` : ''}
+        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">${A.isAr() ? 'اسحب معلمَي <b style="color:var(--c4)">اعتماد التمويل</b> و<b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات – يجب أن يسبق اعتماد التمويل بداية مرحلته.' : 'Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.'}</div>${svg}</div></div>` : ''}
         <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
@@ -1648,7 +1700,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         else { if (d > base[drag.k]) { d = base[drag.k]; note = 'must be before the phase starts'; } d = Math.max(d, base[drag.k] - 730); }
         drag.day = d;
         g.setAttribute('transform', `translate(${((d - +g.dataset.day) * (X1 - X0)) / T},0)`);
-        tip.innerHTML = `<div class="t">${drag.k === 'p2' ? 'Phase 2 start' : drag.k === 'g1' ? 'Phase 1 funds granted' : 'Phase 2 funds granted'}</div><div class="r"><span>Date</span><b>${dt.fmt(d)}</b></div>${drag.k === 'p2' ? '' : `<div class="r"><span>Before phase start</span><b>${base[drag.k] - d} days</b></div>`}${note ? `<div style="color:#ffd27a">${note}</div>` : ''}`;
+        tip.innerHTML = A.tr(`<div class="t">${drag.k === 'p2' ? 'Phase 2 start' : drag.k === 'g1' ? 'Phase 1 funds granted' : 'Phase 2 funds granted'}</div><div class="r"><span>Date</span><b>${dt.fmt(d)}</b></div>${drag.k === 'p2' ? '' : `<div class="r"><span>Before phase start</span><b>${base[drag.k] - d} days</b></div>`}${note ? `<div style="color:#ffd27a">${note}</div>` : ''}`);
         tip.dataset.src = ''; tip.style.display = 'block';
         const r = document.querySelector('#stage').getBoundingClientRect();
         tip.style.left = (e.clientX - r.left) / A.scale + 14 + 'px'; tip.style.top = (e.clientY - r.top) / A.scale + 14 + 'px';
@@ -1699,7 +1751,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         return gap >= 0 ? base : base + ` <b style="color:var(--bad)">⚠ Now planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
       ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
-      delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
+      delayNow: delay > 0 ? (A.isAr() ? ` (الآن <b style="color:var(--bad)">+${delay} يوم</b>)` : ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)`) : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
   };
 
@@ -2125,7 +2177,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       return `<row r="${ri + 1}"${h}>${cs}</row>`;
     }).join('');
     const fr = sh.freeze ? `<pane xSplit="${sh.freeze.x || 0}" ySplit="${sh.freeze.y || 0}" topLeftCell="${colL(sh.freeze.x || 0)}${(sh.freeze.y || 0) + 1}" activePane="bottomRight" state="frozen"/>` : '';
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><tabColor rgb="FF00778B"/><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView showGridLines="0" workbookViewId="0"${sh.first ? ' tabSelected="1"' : ''}>${fr}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>${sh.cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData><pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/><headerFooter><oddFooter>&amp;L${esc(sh.footer || '')}&amp;RPage &amp;P of &amp;N</oddFooter></headerFooter></worksheet>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><tabColor rgb="FF00778B"/><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView showGridLines="0" workbookViewId="0"${sh.rtl ? ' rightToLeft="1"' : ''}${sh.first ? ' tabSelected="1"' : ''}>${fr}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>${sh.cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData><pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/><headerFooter><oddFooter>&amp;L${esc(sh.footer || '')}&amp;RPage &amp;P of &amp;N</oddFooter></headerFooter></worksheet>`;
   };
 
   /* zip (stored) */
@@ -2182,23 +2234,26 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   A.actions.cfExport = () => {
     const M = A.s.M, u = ui(), dim = u.dim, per = u.per || 1, adv = u.adv !== false, pay = M.pay, X = Z.xlsx;
     const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim), P = periods(M, per), keys = ORDER[dim].filter((k) => agg.map[k]);
-    const DN = { group: 'WBS group', epc: 'EPC category', phase: 'Phase', all: 'Total only' };
+    const ar = A.isAr(), Lx = (en, a) => (ar ? a : en), nm = (t) => (ar ? Z.i18n.tr(t) : t), dfm = (d) => (ar ? Z.i18n.tr(dt.fmt(d)) : dt.fmt(d)), dmy = (d) => (ar ? Z.i18n.tr(dt.fmtMY(d).replace('-', ' 20')) : dt.fmtMY(d));
+    const DN = { group: Lx('WBS group', 'مجموعة WBS'), epc: Lx('EPC category', 'فئة EPC'), phase: Lx('Phase', 'المرحلة'), all: Lx('Total only', 'الإجمالي فقط') };
+    const PNm = { 1: Lx('Monthly', 'شهري'), 3: Lx('Quarterly', 'ربع سنوي'), 6: Lx('Half-yearly', 'نصف سنوي'), 12: Lx('Yearly', 'سنوي') };
     const C = (v, s, f) => ({ v, s, f }), n = P, tc = n + 1, L = (k) => X.col(k);
     const R = [];
-    R.push([C('Zulfi Railway Station – Cash Flow', 'title')]);
-    R.push([C(`Stack by: ${DN[dim]}  ·  View: ${pn(per)[2]}  ·  SAR excl. VAT  ·  NTP ${dt.fmt(M.start)}  ·  Completion ${dt.fmt(M.finish)}${adv ? `  ·  Advance ${pay.pct}% at NTP, recovered monthly from month ${pay.from}` : ''}`, 'sub')]);
+    R.push([C(Lx('Zulfi Railway Station – Cash Flow', 'محطة قطار الزلفي – التدفقات النقدية'), 'title')]);
+    R.push([C(ar ? `التقسيم: ${DN[dim]}  ·  العرض: ${PNm[per]}  ·  بالريال السعودي دون ضريبة القيمة المضافة  ·  أمر البدء ${dfm(M.start)}  ·  الإنجاز ${dfm(M.finish)}${adv ? `  ·  دفعة مقدمة ${pay.pct}% عند البدء تُسترد شهرياً من الشهر ${pay.from}` : ''}` : `Stack by: ${DN[dim]}  ·  View: ${PNm[per]}  ·  SAR excl. VAT  ·  NTP ${dt.fmt(M.start)}  ·  Completion ${dt.fmt(M.finish)}${adv ? `  ·  Advance ${pay.pct}% at NTP, recovered monthly from month ${pay.from}` : ''}`, 'sub')]);
     R.push([]);
-    const hd = [C('Item', 'headL')], hs = [C('', 'headSub')];
-    for (let k = 0; k < P; k++) { hd.push(C(pLabel(M, k, per), 'head')); hs.push(C(dt.fmtMY(M.bs[k * per]) + (per > 1 ? ' – ' + dt.fmtMY(M.bs[lastIdx(M, k, per) + 1] - 1) : ''), 'headSub')); }
-    hd.push(C('Total', 'head')); hs.push(C('', 'headSub')); R.push(hd, hs);
+    const PL = (k) => (ar ? { 1: 'ش', 3: 'ر', 6: 'ن', 12: 'س' }[per] + (k + 1) : pLabel(M, k, per));
+    const hd = [C(Lx('Item', 'البند'), 'headL')], hs = [C('', 'headSub')];
+    for (let k = 0; k < P; k++) { hd.push(C(PL(k), 'head')); hs.push(C(dmy(M.bs[k * per]) + (per > 1 ? ' – ' + dmy(M.bs[lastIdx(M, k, per) + 1] - 1) : ''), 'headSub')); }
+    hd.push(C(Lx('Total', 'الإجمالي'), 'head')); hs.push(C('', 'headSub')); R.push(hd, hs);
     const first = R.length + 1; let sums = new Array(P).fill(0);
     keys.forEach((key) => {
-      const row = [C(seriesMeta(dim, key).name, 'lab')]; let t = 0;
+      const row = [C(nm(seriesMeta(dim, key).name), 'lab')]; let t = 0;
       for (let k = 0; k < P; k++) { const v = sumP(agg.map[key], k, per); row.push(C(v, 'num')); sums[k] += v; t += v; }
       const r = R.length + 1; row.push(C(t, 'sNum', `SUM(B${r}:${L(n)}${r})`)); R.push(row);
     });
     const last = R.length, totRow = R.length + 1;
-    const tot = [C('Total work cost', 'sLab')]; let gt = 0;
+    const tot = [C(Lx('Total work cost', 'إجمالي تكلفة الأعمال'), 'sLab')]; let gt = 0;
     for (let k = 0; k < P; k++) { tot.push(C(sums[k], 'sNum', `SUM(${L(k + 1)}${first}:${L(k + 1)}${last})`)); gt += sums[k]; }
     tot.push(C(gt, 'sNum', `SUM(B${totRow}:${L(n)}${totRow})`)); R.push(tot);
     let netRow = totRow;
@@ -2206,10 +2261,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const ain = [], rec = [], net = [];
       for (let k = 0; k < P; k++) { ain.push(sumP(pay.advIn, k, per)); rec.push(sumP(pay.rec, k, per)); }
       const aR = R.length + 1, rR = aR + 1; netRow = rR + 1;
-      R.push([C('Advance payment received', 'lab'), ...ain.map((v) => C(v, 'num')), C(ain.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${aR}:${L(n)}${aR})`)]);
-      R.push([C('Advance recovery', 'lab'), ...rec.map((v) => C(-v, 'neg')), C(-rec.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${rR}:${L(n)}${rR})`)]);
+      R.push([C(Lx('Advance payment received', 'الدفعة المقدمة المستلمة'), 'lab'), ...ain.map((v) => C(v, 'num')), C(ain.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${aR}:${L(n)}${aR})`)]);
+      R.push([C(Lx('Advance recovery', 'استرداد الدفعة المقدمة'), 'lab'), ...rec.map((v) => C(-v, 'neg')), C(-rec.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${rR}:${L(n)}${rR})`)]);
       for (let k = 0; k < P; k++) net.push(sums[k] + ain[k] - rec[k]);
-      R.push([C('Net payment', 'tLab'), ...net.map((v, k) => C(v, 'tNum', `${L(k + 1)}${totRow}+${L(k + 1)}${aR}+${L(k + 1)}${rR}`)), C(net.reduce((x, y) => x + y, 0), 'tNum', `SUM(B${netRow}:${L(n)}${netRow})`)]);
+      R.push([C(Lx('Net payment', 'صافي الدفعة'), 'tLab'), ...net.map((v, k) => C(v, 'tNum', `${L(k + 1)}${totRow}+${L(k + 1)}${aR}+${L(k + 1)}${rR}`)), C(net.reduce((x, y) => x + y, 0), 'tNum', `SUM(B${netRow}:${L(n)}${netRow})`)]);
     }
     R.push([]);
     // cumulative blocks
@@ -2220,23 +2275,23 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       R.push([C(pctLabel, 'lab'), ...src.map((_, k) => C(tv ? src.slice(0, k + 1).reduce((x, y) => x + y, 0) / tv : 0, 'pct', `${L(k + 1)}${cr}/${L(n)}${src === cs ? totRow : netRow}`)), C('', 'lab')]);
     };
     const cs = sums.slice();
-    cum('Cumulative work cost', cs, 'Cumulative work cost %');
-    if (adv) { const net = sums.map((v, k) => v + sumP(pay.advIn, k, per) - sumP(pay.rec, k, per)); cum('Cumulative payments (with advance)', net, 'Cumulative payments %'); }
+    cum(Lx('Cumulative work cost', 'تكلفة الأعمال التراكمية'), cs, Lx('Cumulative work cost %', 'نسبة تكلفة الأعمال التراكمية'));
+    if (adv) { const net = sums.map((v, k) => v + sumP(pay.advIn, k, per) - sumP(pay.rec, k, per)); cum(Lx('Cumulative payments (with advance)', 'الدفعات التراكمية (مع الدفعة المقدمة)'), net, Lx('Cumulative payments %', 'نسبة الدفعات التراكمية')); }
     R.push([]);
-    R.push([C(`Source: Zulfi Railway Station WBS / CBS / 26-month schedule · generated ${new Date().toISOString().slice(0, 10)} from the interactive presentation. Scenario edits (dates, assumptions) are included. Filters on the presentation apply to the cost rows; advance payment is for the whole contract.`, 'note')]);
-    const s1 = { name: 'Cash flow', cols: [34, ...new Array(P).fill(per === 1 ? 13 : 16), 16], rows: R, freeze: { x: 1, y: 5 }, footer: 'Zulfi Railway Station – Cash flow' };
+    R.push([C(ar ? `المصدر: WBS / CBS / الجدول الزمني (26 شهراً) لمشروع محطة قطار الزلفي · تاريخ الإنشاء ${new Date().toISOString().slice(0, 10)} من العرض التفاعلي. تشمل التعديلات الحالية (التواريخ والافتراضات). الدفعة المقدمة على مستوى العقد كاملاً.` : `Source: Zulfi Railway Station WBS / CBS / 26-month schedule · generated ${new Date().toISOString().slice(0, 10)} from the interactive presentation. Scenario edits (dates, assumptions) are included. Filters on the presentation apply to the cost rows; advance payment is for the whole contract.`, 'note')]);
+    const s1 = { name: 'Cash flow', cols: [34, ...new Array(P).fill(per === 1 ? 13 : 16), 16], rows: R, freeze: { x: 1, y: 5 }, rtl: ar, footer: Lx('Zulfi Railway Station – Cash flow', 'محطة قطار الزلفي – التدفقات النقدية') };
     // sheet 2: schedule
     const acts = A.visList(), S = [];
-    S.push([C('Zulfi Railway Station – Schedule & cost register', 'title')]);
-    S.push([C(`${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
-    S.push(['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link'].map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
+    S.push([C(Lx('Zulfi Railway Station – Schedule & cost register', 'محطة قطار الزلفي – الجدول وسجل التكلفة'), 'title')]);
+    S.push([C(ar ? `${acts.length} نشاط · البدء ${dfm(M.start)} · بالريال دون الضريبة` : `${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
+    S.push((ar ? ['WBS', 'النشاط', 'المرحلة', 'EPC', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
     const f0 = S.length + 1;
-    acts.forEach((a) => S.push([C(a.code, 'lab'), C(a.name, 'lab'), C(a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? 'Yes' : '', 'lab'), C(a.pred || '', 'txt')]));
-    S.push([C('Total', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
-    const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, footer: 'Zulfi Railway Station – Schedule' };
+    acts.forEach((a) => S.push([C(a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
+    S.push([C(Lx('Total', 'الإجمالي'), 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
+    const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, rtl: ar, footer: Lx('Zulfi Railway Station – Schedule', 'محطة قطار الزلفي – الجدول') };
     const blob = X.blob([s1, s2]);
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `Zulfi-CashFlow-${dim === 'all' ? 'Total' : DN[dim].replace(/\W+/g, '')}-${pn(per)[2]}.xlsx`;
+    a.download = `Zulfi-CashFlow-${dim === 'all' ? 'Total' : { group: 'WBSgroup', epc: 'EPC', phase: 'Phase' }[dim]}-${pn(per)[2]}${ar ? '-AR' : ''}.xlsx`;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
 
@@ -2377,7 +2432,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
               </div>
               <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
             <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments</h3></div>
-              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } })}</div></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } })}</div></div>
           </div>
           <div class="col" style="width:372px;gap:12px">
             ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
@@ -2420,13 +2475,13 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${(A.isAr() ? seriesMeta(dim, k).name : seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m))}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, A.mode ? 250 : 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % ${adv ? 'of payments (with advance)' : 'complete (cost)'}</h3>
                 <div class="right legend">${adv ? '<span><i class="dot" style="background:var(--brand)"></i>Cumulative payments (advance at NTP, recovered monthly)</span>' : '<span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>'}</div></div>
-                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
+                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
             </div>
             <div class="col" style="width:372px;gap:12px">
-              <div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>
+              ${A.mode ? '' : `<div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>`}
               ${adv ? `<div class="row" style="gap:12px">${kp('Advance (' + pay.pct + '%)', F.M(pay.amount), 'received at NTP', 'style="flex:1"')}${kp('Monthly recovery', F.M(pay.perMonth), 'M' + pay.from + '–M' + M.N, 'style="flex:1"')}</div>` : ''}
               ${kp('Total (selection)', F.sar(tot), `${agg.list.length} activities · ${F.pct(M.total ? tot / M.total : 0)} of project`)}
               <div class="row" style="gap:12px">${kp('Year 1 · M1–12', F.M(y1), F.pct(tot ? y1 / tot : 0) + ' of cost', 'style="flex:1"')}${kp('Year 2 · M13+', F.M(y2), F.pct(tot ? y2 / tot : 0) + ' of cost', 'style="flex:1"')}</div>

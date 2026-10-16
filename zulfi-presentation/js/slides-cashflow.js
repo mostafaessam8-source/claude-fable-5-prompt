@@ -18,23 +18,26 @@
   A.actions.cfExport = () => {
     const M = A.s.M, u = ui(), dim = u.dim, per = u.per || 1, adv = u.adv !== false, pay = M.pay, X = Z.xlsx;
     const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim), P = periods(M, per), keys = ORDER[dim].filter((k) => agg.map[k]);
-    const DN = { group: 'WBS group', epc: 'EPC category', phase: 'Phase', all: 'Total only' };
+    const ar = A.isAr(), Lx = (en, a) => (ar ? a : en), nm = (t) => (ar ? Z.i18n.tr(t) : t), dfm = (d) => (ar ? Z.i18n.tr(dt.fmt(d)) : dt.fmt(d)), dmy = (d) => (ar ? Z.i18n.tr(dt.fmtMY(d).replace('-', ' 20')) : dt.fmtMY(d));
+    const DN = { group: Lx('WBS group', 'مجموعة WBS'), epc: Lx('EPC category', 'فئة EPC'), phase: Lx('Phase', 'المرحلة'), all: Lx('Total only', 'الإجمالي فقط') };
+    const PNm = { 1: Lx('Monthly', 'شهري'), 3: Lx('Quarterly', 'ربع سنوي'), 6: Lx('Half-yearly', 'نصف سنوي'), 12: Lx('Yearly', 'سنوي') };
     const C = (v, s, f) => ({ v, s, f }), n = P, tc = n + 1, L = (k) => X.col(k);
     const R = [];
-    R.push([C('Zulfi Railway Station – Cash Flow', 'title')]);
-    R.push([C(`Stack by: ${DN[dim]}  ·  View: ${pn(per)[2]}  ·  SAR excl. VAT  ·  NTP ${dt.fmt(M.start)}  ·  Completion ${dt.fmt(M.finish)}${adv ? `  ·  Advance ${pay.pct}% at NTP, recovered monthly from month ${pay.from}` : ''}`, 'sub')]);
+    R.push([C(Lx('Zulfi Railway Station – Cash Flow', 'محطة قطار الزلفي – التدفقات النقدية'), 'title')]);
+    R.push([C(ar ? `التقسيم: ${DN[dim]}  ·  العرض: ${PNm[per]}  ·  بالريال السعودي دون ضريبة القيمة المضافة  ·  أمر البدء ${dfm(M.start)}  ·  الإنجاز ${dfm(M.finish)}${adv ? `  ·  دفعة مقدمة ${pay.pct}% عند البدء تُسترد شهرياً من الشهر ${pay.from}` : ''}` : `Stack by: ${DN[dim]}  ·  View: ${PNm[per]}  ·  SAR excl. VAT  ·  NTP ${dt.fmt(M.start)}  ·  Completion ${dt.fmt(M.finish)}${adv ? `  ·  Advance ${pay.pct}% at NTP, recovered monthly from month ${pay.from}` : ''}`, 'sub')]);
     R.push([]);
-    const hd = [C('Item', 'headL')], hs = [C('', 'headSub')];
-    for (let k = 0; k < P; k++) { hd.push(C(pLabel(M, k, per), 'head')); hs.push(C(dt.fmtMY(M.bs[k * per]) + (per > 1 ? ' – ' + dt.fmtMY(M.bs[lastIdx(M, k, per) + 1] - 1) : ''), 'headSub')); }
-    hd.push(C('Total', 'head')); hs.push(C('', 'headSub')); R.push(hd, hs);
+    const PL = (k) => (ar ? { 1: 'ش', 3: 'ر', 6: 'ن', 12: 'س' }[per] + (k + 1) : pLabel(M, k, per));
+    const hd = [C(Lx('Item', 'البند'), 'headL')], hs = [C('', 'headSub')];
+    for (let k = 0; k < P; k++) { hd.push(C(PL(k), 'head')); hs.push(C(dmy(M.bs[k * per]) + (per > 1 ? ' – ' + dmy(M.bs[lastIdx(M, k, per) + 1] - 1) : ''), 'headSub')); }
+    hd.push(C(Lx('Total', 'الإجمالي'), 'head')); hs.push(C('', 'headSub')); R.push(hd, hs);
     const first = R.length + 1; let sums = new Array(P).fill(0);
     keys.forEach((key) => {
-      const row = [C(seriesMeta(dim, key).name, 'lab')]; let t = 0;
+      const row = [C(nm(seriesMeta(dim, key).name), 'lab')]; let t = 0;
       for (let k = 0; k < P; k++) { const v = sumP(agg.map[key], k, per); row.push(C(v, 'num')); sums[k] += v; t += v; }
       const r = R.length + 1; row.push(C(t, 'sNum', `SUM(B${r}:${L(n)}${r})`)); R.push(row);
     });
     const last = R.length, totRow = R.length + 1;
-    const tot = [C('Total work cost', 'sLab')]; let gt = 0;
+    const tot = [C(Lx('Total work cost', 'إجمالي تكلفة الأعمال'), 'sLab')]; let gt = 0;
     for (let k = 0; k < P; k++) { tot.push(C(sums[k], 'sNum', `SUM(${L(k + 1)}${first}:${L(k + 1)}${last})`)); gt += sums[k]; }
     tot.push(C(gt, 'sNum', `SUM(B${totRow}:${L(n)}${totRow})`)); R.push(tot);
     let netRow = totRow;
@@ -42,10 +45,10 @@
       const ain = [], rec = [], net = [];
       for (let k = 0; k < P; k++) { ain.push(sumP(pay.advIn, k, per)); rec.push(sumP(pay.rec, k, per)); }
       const aR = R.length + 1, rR = aR + 1; netRow = rR + 1;
-      R.push([C('Advance payment received', 'lab'), ...ain.map((v) => C(v, 'num')), C(ain.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${aR}:${L(n)}${aR})`)]);
-      R.push([C('Advance recovery', 'lab'), ...rec.map((v) => C(-v, 'neg')), C(-rec.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${rR}:${L(n)}${rR})`)]);
+      R.push([C(Lx('Advance payment received', 'الدفعة المقدمة المستلمة'), 'lab'), ...ain.map((v) => C(v, 'num')), C(ain.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${aR}:${L(n)}${aR})`)]);
+      R.push([C(Lx('Advance recovery', 'استرداد الدفعة المقدمة'), 'lab'), ...rec.map((v) => C(-v, 'neg')), C(-rec.reduce((x, y) => x + y, 0), 'sNum', `SUM(B${rR}:${L(n)}${rR})`)]);
       for (let k = 0; k < P; k++) net.push(sums[k] + ain[k] - rec[k]);
-      R.push([C('Net payment', 'tLab'), ...net.map((v, k) => C(v, 'tNum', `${L(k + 1)}${totRow}+${L(k + 1)}${aR}+${L(k + 1)}${rR}`)), C(net.reduce((x, y) => x + y, 0), 'tNum', `SUM(B${netRow}:${L(n)}${netRow})`)]);
+      R.push([C(Lx('Net payment', 'صافي الدفعة'), 'tLab'), ...net.map((v, k) => C(v, 'tNum', `${L(k + 1)}${totRow}+${L(k + 1)}${aR}+${L(k + 1)}${rR}`)), C(net.reduce((x, y) => x + y, 0), 'tNum', `SUM(B${netRow}:${L(n)}${netRow})`)]);
     }
     R.push([]);
     // cumulative blocks
@@ -56,23 +59,23 @@
       R.push([C(pctLabel, 'lab'), ...src.map((_, k) => C(tv ? src.slice(0, k + 1).reduce((x, y) => x + y, 0) / tv : 0, 'pct', `${L(k + 1)}${cr}/${L(n)}${src === cs ? totRow : netRow}`)), C('', 'lab')]);
     };
     const cs = sums.slice();
-    cum('Cumulative work cost', cs, 'Cumulative work cost %');
-    if (adv) { const net = sums.map((v, k) => v + sumP(pay.advIn, k, per) - sumP(pay.rec, k, per)); cum('Cumulative payments (with advance)', net, 'Cumulative payments %'); }
+    cum(Lx('Cumulative work cost', 'تكلفة الأعمال التراكمية'), cs, Lx('Cumulative work cost %', 'نسبة تكلفة الأعمال التراكمية'));
+    if (adv) { const net = sums.map((v, k) => v + sumP(pay.advIn, k, per) - sumP(pay.rec, k, per)); cum(Lx('Cumulative payments (with advance)', 'الدفعات التراكمية (مع الدفعة المقدمة)'), net, Lx('Cumulative payments %', 'نسبة الدفعات التراكمية')); }
     R.push([]);
-    R.push([C(`Source: Zulfi Railway Station WBS / CBS / 26-month schedule · generated ${new Date().toISOString().slice(0, 10)} from the interactive presentation. Scenario edits (dates, assumptions) are included. Filters on the presentation apply to the cost rows; advance payment is for the whole contract.`, 'note')]);
-    const s1 = { name: 'Cash flow', cols: [34, ...new Array(P).fill(per === 1 ? 13 : 16), 16], rows: R, freeze: { x: 1, y: 5 }, footer: 'Zulfi Railway Station – Cash flow' };
+    R.push([C(ar ? `المصدر: WBS / CBS / الجدول الزمني (26 شهراً) لمشروع محطة قطار الزلفي · تاريخ الإنشاء ${new Date().toISOString().slice(0, 10)} من العرض التفاعلي. تشمل التعديلات الحالية (التواريخ والافتراضات). الدفعة المقدمة على مستوى العقد كاملاً.` : `Source: Zulfi Railway Station WBS / CBS / 26-month schedule · generated ${new Date().toISOString().slice(0, 10)} from the interactive presentation. Scenario edits (dates, assumptions) are included. Filters on the presentation apply to the cost rows; advance payment is for the whole contract.`, 'note')]);
+    const s1 = { name: 'Cash flow', cols: [34, ...new Array(P).fill(per === 1 ? 13 : 16), 16], rows: R, freeze: { x: 1, y: 5 }, rtl: ar, footer: Lx('Zulfi Railway Station – Cash flow', 'محطة قطار الزلفي – التدفقات النقدية') };
     // sheet 2: schedule
     const acts = A.visList(), S = [];
-    S.push([C('Zulfi Railway Station – Schedule & cost register', 'title')]);
-    S.push([C(`${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
-    S.push(['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link'].map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
+    S.push([C(Lx('Zulfi Railway Station – Schedule & cost register', 'محطة قطار الزلفي – الجدول وسجل التكلفة'), 'title')]);
+    S.push([C(ar ? `${acts.length} نشاط · البدء ${dfm(M.start)} · بالريال دون الضريبة` : `${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
+    S.push((ar ? ['WBS', 'النشاط', 'المرحلة', 'EPC', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
     const f0 = S.length + 1;
-    acts.forEach((a) => S.push([C(a.code, 'lab'), C(a.name, 'lab'), C(a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? 'Yes' : '', 'lab'), C(a.pred || '', 'txt')]));
-    S.push([C('Total', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
-    const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, footer: 'Zulfi Railway Station – Schedule' };
+    acts.forEach((a) => S.push([C(a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
+    S.push([C(Lx('Total', 'الإجمالي'), 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
+    const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, rtl: ar, footer: Lx('Zulfi Railway Station – Schedule', 'محطة قطار الزلفي – الجدول') };
     const blob = X.blob([s1, s2]);
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `Zulfi-CashFlow-${dim === 'all' ? 'Total' : DN[dim].replace(/\W+/g, '')}-${pn(per)[2]}.xlsx`;
+    a.download = `Zulfi-CashFlow-${dim === 'all' ? 'Total' : { group: 'WBSgroup', epc: 'EPC', phase: 'Phase' }[dim]}-${pn(per)[2]}${ar ? '-AR' : ''}.xlsx`;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
 
@@ -213,7 +216,7 @@
               </div>
               <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
             <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments</h3></div>
-              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } })}</div></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } })}</div></div>
           </div>
           <div class="col" style="width:372px;gap:12px">
             ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
@@ -256,13 +259,13 @@
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${(A.isAr() ? seriesMeta(dim, k).name : seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m))}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, A.mode ? 250 : 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % ${adv ? 'of payments (with advance)' : 'complete (cost)'}</h3>
                 <div class="right legend">${adv ? '<span><i class="dot" style="background:var(--brand)"></i>Cumulative payments (advance at NTP, recovered monthly)</span>' : '<span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>'}</div></div>
-                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
+                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
             </div>
             <div class="col" style="width:372px;gap:12px">
-              <div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>
+              ${A.mode ? '' : `<div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>`}
               ${adv ? `<div class="row" style="gap:12px">${kp('Advance (' + pay.pct + '%)', F.M(pay.amount), 'received at NTP', 'style="flex:1"')}${kp('Monthly recovery', F.M(pay.perMonth), 'M' + pay.from + '–M' + M.N, 'style="flex:1"')}</div>` : ''}
               ${kp('Total (selection)', F.sar(tot), `${agg.list.length} activities · ${F.pct(M.total ? tot / M.total : 0)} of project`)}
               <div class="row" style="gap:12px">${kp('Year 1 · M1–12', F.M(y1), F.pct(tot ? y1 / tot : 0) + ' of cost', 'style="flex:1"')}${kp('Year 2 · M13+', F.M(y2), F.pct(tot ? y2 / tot : 0) + ' of cost', 'style="flex:1"')}</div>
