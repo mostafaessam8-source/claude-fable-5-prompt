@@ -245,7 +245,7 @@
   /* ----------------------------------------------------------- scaling */
   A.fit = () => {
     const vp = $('#viewport');
-    const mob = window.innerWidth < 900;
+    const mob = !A.forceDesktop && window.innerWidth < 900;
     if (mob !== A.mobile) {
       A.mobile = mob; $('#app').classList.toggle('mobile', mob);
       if (A.s.M && A.slides.length) { A.dirty = new Set(A.slides.map((_, i) => i)); A.renderSlide(A.s.slide); }

@@ -387,3 +387,5 @@ h1.edtext { display: block; }
 .editing .slide [data-ovk]:not(svg):hover { outline: 1.5px dashed var(--brand); outline-offset: 2px; background: rgba(0,119,139,.07); }
 .editing .slide svg text[data-ovk]:hover { text-decoration: underline; fill: var(--brand-d); }
 .editing .slide [data-ovd] { background: rgba(237,161,0,.14); }
+
+.mobile #bPptx { display: inline-flex !important; } .mobile #bPptx .t { display: none; }
