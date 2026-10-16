@@ -173,14 +173,16 @@
       svg += `<g id="hdate" style="display:none" pointer-events="none"><line id="hline" x1="0" x2="0" y1="${TOP - 4}" y2="${BOT}" stroke="var(--brand-d)" stroke-width="1"/><rect id="hbox" x="0" y="${BOT + 4}" width="150" height="34" rx="6" fill="var(--brand-d)"/><text id="htxt" x="0" y="${BOT + 19}" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:800"></text><text id="htxt2" x="0" y="${BOT + 33}" text-anchor="middle" style="fill:#cfeef3;font-size:10px"></text></g>`;
       svg += '</svg>';
 
+      const tab = (A.s.ui.ms = A.s.ui.ms || { tab: 'chart' }).tab;
       const ll = M.acts.filter((a) => a.ll && a.kind === 'a3');
       const llAmt = M.acts.filter((a) => a.ll).reduce((s, a) => s + a.amount, 0);
       const cons = M.acts.filter((a) => a.kind === 'b').sort((a, b) => a.dur - b.dur).slice(0, 4);
       const agg = Z.aggregate(M, () => true, 'all'), pk = agg.total.indexOf(Math.max(...agg.total));
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
-        `<div class="s-body"><div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.</div>${svg}</div></div>
-        <div class="row grow">
+        `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the diamonds to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
+        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.</div>${svg}</div></div>` : ''}
+        <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
             ${ms.map((m, i) => `<tr class="${m.code || (m.nav && m.nav !== 'miles') ? 'act' : ''}" ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} ${m.edit ? 'style="background:#f1eefc"' : ''}><td><b>${i + 1}</b></td><td>${m.name}</td><td>${m.edit === 'p2' ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" min="${dt.iso(M.start)}" data-chg="p2date" title="Move the Phase 2 start – the whole programme updates">` : m.edit ? `<input type="date" class="dinput" style="width:140px" value="${dt.iso(m.d)}" max="${dt.iso(m.edit === 'g1' ? M.start : P2.start)}" data-chg="grantdate" data-k="${m.edit}" title="Move the funds approval – it must be before its phase starts">` : `<b>${dt.fmt(m.d)}</b>`}</td><td class="muted">${dt.fmt(m.bd)}</td><td>${F.deltaHtml(m.delta)}</td></tr>`).join('')}
@@ -261,6 +263,7 @@
     });
   };
 
+  A.actions.msTab = (el) => { (A.s.ui.ms = A.s.ui.ms || {}).tab = el.dataset.t; A.refilter(); };
   A.actions.goCrit = () => { A.s.f.crit = !A.s.f.crit; A.go(A.idx('gantt')); A.refilter(); };
   A.actions.goLL = () => { A.s.f.ll = !A.s.f.ll; A.go(A.idx('gantt')); A.refilter(); };
 })(window);
