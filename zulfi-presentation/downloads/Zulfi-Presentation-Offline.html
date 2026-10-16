@@ -2125,11 +2125,13 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const P = periods(M, per);
     const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
     const tot = []; for (let k = 0; k < P; k++) tot.push(sumP(agg.total, k, per));
-    const net = adv ? tot.map((_, k) => sumP(adv.net, k, per)) : [];
-    const nice = F.nice(Math.max(...tot, ...net, 1), 5);
-    const Y = (v) => T + ph - (v / nice.max) * ph;
+    const ain = adv ? tot.map((_, k) => sumP(adv.advIn, k, per)) : [], arec = adv ? tot.map((_, k) => sumP(adv.rec, k, per)) : [];
+    const up = tot.map((v, k) => v + (ain[k] || 0)), maxDn = Math.max(0, ...arec);
+    const nice = F.nice(Math.max(...up, 1) + maxDn, 5), top = Math.ceil(Math.max(...up, 1) / nice.step) * nice.step, bot = Math.ceil(maxDn / nice.step) * nice.step;
+    const span = top + bot, Y = (v) => T + ph - ((v + bot) / span) * ph;
     let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
-    for (let v = 0; v <= nice.max + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
+    for (let v = -bot; v <= top + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
+    if (bot) s += `<line x1="${L}" x2="${w - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#7d8b96" stroke-width="1.5"/>`;
     const keys = ORDER[dim].filter((k) => agg.map[k]);
     const gap = per === 1 ? 3 : 10;
     for (let k = 0; k < P; k++) {
@@ -2140,13 +2142,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         s += `<rect x="${L + k * bw + gap}" y="${y1}" width="${bw - gap * 2}" height="${Math.max(0, y0 - y1 - 1.5)}" fill="${seriesMeta(dim, key).color}" ${y0 - y1 > 8 ? 'rx="2"' : ''} stroke="#fff" stroke-width=".5"/>`;
         rows.push([seriesMeta(dim, key).color, seriesMeta(dim, key).name, F.n0(v)]);
       });
+      if (adv && ain[k] > 0) { const y1 = Y(acc + ain[k]), y0 = Y(acc); s += `<rect x="${L + k * bw + gap}" y="${y1}" width="${bw - gap * 2}" height="${Math.max(0, y0 - y1 - 1.5)}" fill="#111827" rx="2"/>`; rows.push(['#111827', 'Advance payment received', F.n0(ain[k])]); }
+      if (adv && arec[k] > 0) { s += `<rect x="${L + k * bw + gap}" y="${Y(0) + 1}" width="${bw - gap * 2}" height="${Math.max(0, Y(-arec[k]) - Y(0) - 1)}" fill="#e11d48" rx="2"/>`; rows.push(['#e11d48', 'Advance recovery', '− ' + F.n0(arec[k])]); }
       s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv ? [['#111', 'Advance received', F.sar(sumP(adv.advIn, k, per))], ['#111', 'Advance recovery', '− ' + F.sar(sumP(adv.rec, k, per))], ['#111', '<b>Net payment</b>', '<b>' + F.sar(net[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
-    }
-    if (adv) {
-      const pts = net.map((v, k) => [L + (k + 0.5) * bw, Y(v)]);
-      s += `<path d="${pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('')}" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="6 4" pointer-events="none"/>`;
-      pts.forEach((q) => (s += `<circle cx="${q[0]}" cy="${q[1]}" r="${per === 1 ? 2.8 : 4}" fill="#111" stroke="#fff" stroke-width="1" pointer-events="none"/>`));
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv ? [['', '<b>Net payment</b>', '<b>' + F.sar(tot[k] + ain[k] - arec[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
     }
     const st = A.s.ui.status;
     if (st && st >= M.start && st < M.bs[M.N]) { const xf = statusX(M, st, per, L, bw); s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/>`; }
@@ -2237,7 +2236,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : 'quarter (3 months)'}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111"></i>Net payment (with advance)</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : 'quarter (3 months)'}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % complete (cost)</h3>
                 <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>${adv ? '<span><i class="dot" style="background:#111"></i>Cumulative payments (with advance)</span>' : ''}</div></div>
                 <div class="pb" style="padding-top:0">${F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, advPct: adv ? pay.cumPct : null })}</div></div>
