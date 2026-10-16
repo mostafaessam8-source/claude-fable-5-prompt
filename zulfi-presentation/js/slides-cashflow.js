@@ -8,6 +8,7 @@
   A.actions.clearStatus = () => { A.s.ui.status = null; A.refilter(); };
   A.actions.cfBasis = (el) => { ui().basis = el.dataset.b; A.refilter(); };
   A.actions.cfPer = (el) => { ui().per = +el.dataset.p; A.refilter(); };
+  A.actions.cfAdv = (el) => { ui().adv = el.dataset.v === '1'; A.refilter(); };
   A.actions.cfDim = (el) => { ui().dim = el.dataset.d; A.refilter(); };
   A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
   A.actions.mxHeat = () => { mxui().heat = !mxui().heat; A.refilter(); };
@@ -49,6 +50,7 @@
     const base = o.baseArr || baseCurve(M, agg.list);
     const LB = o.labels || { cur: 'Cumulative', base: 'Baseline', spend: per === 1 ? 'Monthly spend' : 'Quarter spend' };
     const pct = []; const bpct = [];
+    if (o.advPct) o.advPct = Array.from({ length: P }, (_, k) => o.advPct[lastIdx(M, k, per)]);
     for (let k = 0; k < P; k++) { pct.push(agg.pct[lastIdx(M, k, per)]); bpct.push(base[lastIdx(M, k, per)]); }
     let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:${w > 900 ? 780 : 0}px">`;
     [0, 0.25, 0.5, 0.75, 1].forEach((p) => (s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(p)}" y2="${Y(p)}"/></g><text x="${L - 6}" y="${Y(p) + 4}" text-anchor="end" style="font-size:11px">${p * 100}%</text>`));
@@ -56,6 +58,7 @@
     const pts = pct.map((p, k) => [X(k), Y(p)]);
     const poly = (arr) => arr.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
     s += `<path d="${poly([[L, Y(0)], ...pts])} L${X(P - 1)},${Y(0)} L${L},${Y(0)}Z" fill="var(--brand)" opacity=".1"/>`;
+    if (o.advPct) s += `<path d="${poly([[L, Y(0)], ...o.advPct.map((p, k) => [X(k), Y(p)])])}" fill="none" stroke="#111" stroke-width="2.4" stroke-dasharray="6 4"/>`;
     if (!o.noBase) s += `<path d="${poly([[L, Y(0)], ...bpct.map((p, k) => [X(k), Y(p)])])}" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/>`;
     s += `<path d="${poly([[L, Y(0)], ...pts])}" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linejoin="round"/>`;
     const st = A.s.ui.status;
@@ -65,18 +68,19 @@
     }
     for (let k = 0; k < P; k++) {
       const dv = pct[k] - bpct[k], spend = sumP(agg.total, k, per);
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ...(o.noBase ? [] : [['#8a97a3', LB.base, F.pct(bpct[k])]]), ['', LB.spend, F.sar(spend)], ...(o.noBase ? [] : [['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ...(o.noBase ? [] : [['#8a97a3', LB.base, F.pct(bpct[k])]]), ...(o.advPct ? [['#111', 'Cumulative payments (with advance)', F.pct(o.advPct[k])]] : []), ['', LB.spend, F.sar(spend)], ...(o.noBase ? [] : [['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])])}"/>`;
       s += `<circle cx="${X(k)}" cy="${Y(pct[k])}" r="${per === 1 ? 2.6 : 3.6}" fill="var(--brand)" stroke="#fff" stroke-width="1" pointer-events="none"/>`;
     }
     return s + '</svg>';
   };
 
   /* ---- stacked columns (month or quarter) ---- */
-  function stackChart(M, agg, dim, w, h, per) {
+  function stackChart(M, agg, dim, w, h, per, adv) {
     const P = periods(M, per);
     const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
     const tot = []; for (let k = 0; k < P; k++) tot.push(sumP(agg.total, k, per));
-    const nice = F.nice(Math.max(...tot, 1), 5);
+    const net = adv ? tot.map((_, k) => sumP(adv.net, k, per)) : [];
+    const nice = F.nice(Math.max(...tot, ...net, 1), 5);
     const Y = (v) => T + ph - (v / nice.max) * ph;
     let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="min-width:780px">`;
     for (let v = 0; v <= nice.max + 1; v += nice.step) s += `<g class="grid"><line x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/></g><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" style="font-size:11px">${F.compact(v)}</text>`;
@@ -91,7 +95,12 @@
         rows.push([seriesMeta(dim, key).color, seriesMeta(dim, key).name, F.n0(v)]);
       });
       s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total</b>', '<b>' + F.sar(tot[k]) + '</b>'], ['', 'Cumulative', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv ? [['#111', 'Advance received', F.sar(sumP(adv.advIn, k, per))], ['#111', 'Advance recovery', '− ' + F.sar(sumP(adv.rec, k, per))], ['#111', '<b>Net payment</b>', '<b>' + F.sar(net[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
+    }
+    if (adv) {
+      const pts = net.map((v, k) => [L + (k + 0.5) * bw, Y(v)]);
+      s += `<path d="${pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('')}" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="6 4" pointer-events="none"/>`;
+      pts.forEach((q) => (s += `<circle cx="${q[0]}" cy="${q[1]}" r="${per === 1 ? 2.8 : 4}" fill="#111" stroke="#fff" stroke-width="1" pointer-events="none"/>`));
     }
     const st = A.s.ui.status;
     if (st && st >= M.start && st < M.bs[M.N]) { const xf = statusX(M, st, per, L, bw); s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/>`; }
@@ -121,7 +130,7 @@
   }
 
   const lblS = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)';
-  const basisSeg = (b) => `<span class="lbl" style="${lblS}">Basis</span><span class="seg"><button data-do="cfBasis" data-b="cost" class="${b === 'cost' ? 'on' : ''}">Work done (cost)</button><button data-do="cfBasis" data-b="pay" class="${b === 'pay' ? 'on' : ''}">Payments (with advance)</button></span><span class="sep" style="margin:0 2px"></span>`;
+  const basisSeg = () => '';
   function payView(M, per) {
     const pay = M.pay, dtp = (d) => dt.fmtMY(d);
     const pkI = pay.net.indexOf(Math.max(...pay.net));
@@ -158,7 +167,7 @@
     id: 'cashflow', title: 'Cash flow & S-curve', desc: 'Monthly spend, cumulative %, vs baseline',
     render(M) {
       const u = ui(), dim = u.dim, st = A.s.ui.status, per = u.per || 1;
-      if ((u.basis || 'cost') === 'pay') return payView(M, per);
+      const adv = u.adv !== false, pay = M.pay;
       const agg = Z.aggregate(M, A.vis, dim === 'all' ? 'all' : dim);
       const tot = agg.sum, y1 = agg.total.slice(0, 12).reduce((a, b) => a + b, 0), y2 = tot - y1;
       const pk = agg.total.indexOf(Math.max(...agg.total)), m50 = agg.pct.findIndex((p) => p >= 0.5);
@@ -174,23 +183,25 @@
             <span class="seg">${dbtn('group', 'WBS group')}${dbtn('epc', 'EPC category')}${dbtn('phase', 'Phase')}${dbtn('all', 'Total')}</span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">View</span>
             <span class="seg"><button data-do="cfPer" data-p="1" class="${per === 1 ? 'on' : ''}">Monthly</button><button data-do="cfPer" data-p="3" class="${per === 3 ? 'on' : ''}">Quarterly</button></span>
+            <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">Advance payment</span>
+            <span class="seg"><button data-do="cfAdv" data-v="1" class="${adv ? 'on' : ''}">Show</button><button data-do="cfAdv" data-v="0" class="${adv ? '' : 'on'}">Hide</button></span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">Status date</span>
             <input type="date" class="dinput" style="width:140px;height:30px" value="${st ? dt.iso(st) : ''}" min="${dt.iso(M.start)}" max="${dt.iso(M.bs[M.N] - 1)}" data-chg="status">
             ${st ? '<button class="btn sm" data-do="clearStatus">Clear</button>' : '<span class="hint">pick a date to read planned progress</span>'}
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : 'quarter (3 months)'}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : 'quarter (3 months)'}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111"></i>Net payment (with advance)</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % complete (cost)</h3>
-                <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span></div></div>
-                <div class="pb" style="padding-top:0">${F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per })}</div></div>
+                <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>${adv ? '<span><i class="dot" style="background:#111"></i>Cumulative payments (with advance)</span>' : ''}</div></div>
+                <div class="pb" style="padding-top:0">${F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, advPct: adv ? pay.cumPct : null })}</div></div>
             </div>
             <div class="col" style="width:372px;gap:12px">
               <div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>
+              ${adv ? `<div class="row" style="gap:12px">${kp('Advance (' + pay.pct + '%)', F.M(pay.amount), 'received at NTP', 'style="flex:1"')}${kp('Monthly recovery', F.M(pay.perMonth), 'M' + pay.from + '–M' + M.N, 'style="flex:1"')}</div>` : ''}
               ${kp('Total (selection)', F.sar(tot), `${agg.list.length} activities · ${F.pct(M.total ? tot / M.total : 0)} of project`)}
               <div class="row" style="gap:12px">${kp('Year 1 · M1–12', F.M(y1), F.pct(tot ? y1 / tot : 0) + ' of cost', 'style="flex:1"')}${kp('Year 2 · M13+', F.M(y2), F.pct(tot ? y2 / tot : 0) + ' of cost', 'style="flex:1"')}</div>
               ${kp('Peak month', `M${pk + 1} <small>${dt.fmtMY(M.bs[pk])}</small>`, F.sar(agg.total[pk]), `data-month="${pk + 1}" style="cursor:pointer"`)}
-              ${kp('Average monthly spend', F.M(tot / M.N), `over ${M.N} months`)}
               ${kp('50% of cost reached', m50 >= 0 ? `M${m50 + 1} <small>${dt.fmtMY(M.bs[m50])}</small>` : '–', m50 >= 0 ? `cumulative ${F.pct(agg.pct[m50])}` : '')}
               ${kp('Planned progress at status date', st ? F.pct(tot ? atSt / tot : 0) : '–', st ? `${dt.fmt(st)} · ${F.sar(atSt)}` : 'choose a status date above', st ? 'style="border-color:var(--bad)"' : '')}
               <div class="note info" style="margin-top:auto">${A.ed('note:cf', 'Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.')}</div>
