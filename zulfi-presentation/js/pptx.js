@@ -355,7 +355,8 @@
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   A.exportPptx = async () => {
-    if (A.mobile) { alert(A.L('PowerPoint export is available on a laptop screen.', 'تصدير PowerPoint متاح على شاشة الكمبيوتر.')); return; }
+    // phones: lay the deck out as on a laptop while the file is built, then go back to the phone layout
+    const wasMobile = A.mobile; A.forceDesktop = true; if (wasMobile) { A.fit(); await nextFrame(); }
     const btn = document.getElementById('bPptx'), old = btn ? btn.innerHTML : '';
     const wasEdit = A.s.editText; if (wasEdit) { A.s.editText = false; document.getElementById('app').classList.remove('editing'); }
     const keepSlide = A.s.slide, drawer = A.s.drawer; A.s.drawer = null; A.renderDrawer();
@@ -403,6 +404,7 @@
       if (btn) { btn.disabled = false; btn.innerHTML = old; }
       A.s.drawer = drawer; A.s.slide = keepSlide;
       if (wasEdit) { A.s.editText = true; document.getElementById('app').classList.add('editing'); }
+      A.forceDesktop = false; if (wasMobile) A.fit();
       A.dirty = new Set(A.slides.map((_, i) => i)); A.go(keepSlide); A.renderDrawer();
     }
   };
