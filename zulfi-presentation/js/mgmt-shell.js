@@ -17,8 +17,8 @@
     $('bEdit').title = L('Edit any text, delete slides, move milestones', 'تعديل أي نص، حذف الشرائح، تحريك المعالم');
     $('bReset').title = L('Reset dates, edits and deleted slides to the default', 'إعادة التواريخ والتعديلات والشرائح المحذوفة إلى الوضع الافتراضي');
     $('edTxt').innerHTML = A.isAr()
-      ? '<b>وضع التعديل</b> · اضغط على أي نص (بحدود متقطعة) واكتب · <kbd>Ctrl</kbd>+<kbd>B</kbd> خط عريض · الوسوم الملونة <span class="tk">{…}</span> قيم حية تتحدث تلقائياً · اسحب المعالم في المخطط الزمني للتعديل · يتم الحفظ تلقائياً'
-      : '<b>Edit mode</b> · click any dashed text and type · <kbd>Ctrl</kbd>+<kbd>B</kbd> bold · coloured <span class="tk">{tags}</span> are live values · drag milestones on the timeline · changes are saved automatically';
+      ? '<b>وضع التعديل</b> · اضغط على أي نص (بحدود متقطعة) واكتب · <kbd>Ctrl</kbd>+<kbd>B</kbd> خط عريض · الوسوم الملونة <span class="tk">{…}</span> قيم حية تتحدث تلقائياً · اضغط على أي اسم (نشاط، معلم، عنوان، تسمية) لتغييره · اسحب المعالم في المخطط الزمني · يتم الحفظ تلقائياً'
+      : '<b>Edit mode</b> · click any dashed text and type · <kbd>Ctrl</kbd>+<kbd>B</kbd> bold · coloured <span class="tk">{tags}</span> are live values · click any name (activity, milestone, heading, label) to rename it · drag milestones on the timeline · changes are saved automatically';
     $('edR1').textContent = L('Restore this slide', 'استرجاع هذه الشريحة'); $('edR2').textContent = L('Restore all text', 'استرجاع كل النصوص');
     $('edDel').textContent = L('Delete this slide', 'حذف هذه الشريحة'); $('edRestore').textContent = L('Restore deleted slides', 'استرجاع الشرائح المحذوفة'); $('edDone').textContent = L('Done', 'تم');
     $('linkSel').options[0].text = L('Auto-link', 'ربط تلقائي');

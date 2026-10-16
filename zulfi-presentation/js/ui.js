@@ -20,7 +20,48 @@
   A.isAr = () => A.lang === 'ar';
   A.asset = (n) => (G.ZASSETS && G.ZASSETS[n]) || 'assets/' + n;
   A.L = (en, ar) => (A.lang === 'ar' ? ar : en);
-  A.tr = (h) => (MODE && MODE.translate && A.lang === 'ar' && Z.i18n ? Z.i18n.html(h) : h);
+  const OVL = () => (MODE ? A.lang : 'en');
+  const ovKey = (t) => 'ov:' + OVL() + ':' + t;
+  const stripB = (t) => t.replace(/[\u2066\u2069]/g, '');
+  /* ---- rename anything: text overrides keyed by the displayed text (per language), saved with the scenario ---- */
+  A.ovHtml = (h) => {
+    const n = A.s.st && A.s.st.notes; if (!n) return h;
+    let any = false; for (const k in n) if (k.indexOf('ov:' + OVL() + ':') === 0) { any = true; break; } if (!any) return h;
+    return String(h).replace(/(<[^>]*>)|([^<]+)/g, (all, tag, text) => {
+      if (tag) return tag;
+      const c = text.trim(); if (!c) return text; const v = n[ovKey(stripB(c.replace(/&amp;/g, '&')))];
+      return v != null ? text.replace(c, v.replace(/&/g, '&amp;').replace(/</g, '&lt;')) : text;
+    });
+  };
+  A.tr = (h) => A.ovHtml(MODE && MODE.translate && A.lang === 'ar' && Z.i18n ? Z.i18n.html(h) : h);
+  A.markOv = (root) => {
+    const n = (A.s.st && A.s.st.notes) || {};
+    root.querySelectorAll('*').forEach((el) => {
+      if (el.children.length || /^(SCRIPT|STYLE|INPUT|SELECT|OPTION|TEXTAREA)$/i.test(el.tagName)) return;
+      if (el.closest('[data-ed],.mfoot')) return;
+      const t = stripB(el.textContent).trim(); if (!t) return;
+      el.setAttribute('data-ovk', t);
+      const v = n[ovKey(t)];
+      if (v != null) { el.textContent = (A.isAr() && el.closest('svg') ? '\u2066' + v + '\u2069' : v); el.setAttribute('data-ovd', '1'); }
+    });
+  };
+  A.openOv = (el) => {
+    const k = el.getAttribute('data-ovk'), st = A.s.st; st.notes = st.notes || {};
+    const old = document.querySelector('.ov-input'); if (old) old.remove();
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    const inp = document.createElement('input'); inp.className = 'ov-input'; inp.type = 'text'; inp.value = stripB(el.textContent).trim();
+    inp.style.cssText = `position:fixed;left:${Math.max(4, r.left - 6)}px;top:${r.top - 4}px;min-width:${Math.max(180, r.width + 40)}px;height:${Math.max(30, r.height + 8)}px;font:${cs.fontWeight} ${Math.max(13, parseFloat(cs.fontSize) * (el.closest('svg') ? A.scale : 1))}px ${cs.fontFamily};z-index:300;border:2px solid var(--brand);border-radius:6px;padding:0 8px;background:#fff;color:#222;direction:${document.documentElement.dir};box-shadow:0 6px 24px rgba(0,0,0,.3)`;
+    document.body.appendChild(inp); inp.focus(); inp.select();
+    let done = false;
+    const fin = (save) => {
+      if (done) return; done = true; const v = inp.value.trim(); inp.remove();
+      if (!save) return;
+      if (!v || v === k) delete st.notes[ovKey(k)]; else st.notes[ovKey(k)] = v;
+      A.save(); A.refilter();
+    };
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fin(true); } else if (e.key === 'Escape') fin(false); e.stopPropagation(); });
+    inp.addEventListener('blur', () => fin(true));
+  };
   A.hidden = new Set(); try { if (MODE) JSON.parse(localStorage.getItem(HKEY) || '[]').forEach((x) => A.hidden.add(x)); } catch (e) { /* ignore */ }
   A.saveHidden = () => { try { localStorage.setItem(HKEY, JSON.stringify([...A.hidden])); } catch (e) { /* ignore */ } };
   A.isGone = (i) => !!(A.slides[i] && A.hidden.has(A.slides[i].id));
@@ -155,6 +196,7 @@
   A.actions.edResetSlide = () => {
     if (!confirm(A.L('Restore the original text of this slide?', 'استرجاع النص الأصلي لهذه الشريحة؟'))) return;
     $$('#slide-' + A.s.slide + ' [data-ed]').forEach((el) => delete A.s.st.notes[el.dataset.ed]);
+    $$('#slide-' + A.s.slide + ' [data-ovk]').forEach((el) => delete A.s.st.notes[ovKey(el.getAttribute('data-ovk'))]);
     A.save(); A.refilter();
   };
   A.actions.edResetAll = () => {
@@ -176,6 +218,7 @@
     if (MODE && MODE.translate && !def.native && A.lang === 'ar') html = Z.i18n.html(html);
     if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'Internal')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
     el.innerHTML = html;
+    A.markOv(el);
     A.dirty.delete(i);
     if (keepScroll) $$('[data-keep]', el).forEach((n) => { const k = keepScroll[n.dataset.keep]; if (k) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } });
     if (def.after) def.after(el, A.s.M, A.s);
@@ -267,6 +310,12 @@
 
   function bind() {
     const stage = $('#stage');
+    stage.addEventListener('click', (e) => {
+      if (!A.s.editText) return;
+      const t = e.target; if (t.closest('[data-ed]') || t.closest('input,select,textarea')) return;
+      const el = t.closest('[data-ovk]'); if (!el) return;
+      e.stopPropagation(); e.preventDefault(); A.openOv(el);
+    }, true);
     stage.addEventListener('click', (e) => {
       const t = e.target;
       if (A.s.editText && t.closest('[data-ed]')) return;
