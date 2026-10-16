@@ -143,8 +143,9 @@
       ms.forEach((m, i) => rows.push({ t: 'm', d: m.d, m, i }));
       rows.sort((p, q) => p.d - q.d || (p.t === 'm' ? -1 : 1) - (q.t === 'm' ? -1 : 1));
       const TOP = 34, RH = 23, BOT = TOP + rows.length * RH + 4, H = BOT + 40;
-      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}">`;
+      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
       rows.forEach((r, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOP + i * RH}" width="1512" height="${RH}" fill="#f4f8fa"/>`; });
+      svg += `<rect id="hrow" x="0" y="0" width="1512" height="${RH}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/><rect id="hcol" x="0" y="${TOP - 4}" width="26" height="${BOT - TOP + 4}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/>`;
       // date ruler – top and bottom
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; if (d < t0) continue; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="${TOP - 4}" y2="${BOT}" stroke="#d9e2e8"/><text x="${x(d)}" y="12" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="25" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text><text x="${x(d)}" y="${BOT + 16}" text-anchor="middle" style="font-size:11px">${dt.fmtMY(d)}</text><text x="${x(d)}" y="${BOT + 29}" text-anchor="middle" style="font-size:10px;fill:var(--mute)">M${k + 1}</text>`; }
       svg += `<line x1="${X0}" x2="${X1}" y1="${BOT}" y2="${BOT}" stroke="#9fb0bb" stroke-width="2"/>`;
@@ -169,6 +170,7 @@
         mk.push({ e: !!m.edit, h: `<g class="hit" ${drg} ${m.code ? `data-act="${m.code}"` : m.nav && m.nav !== 'miles' && !m.edit ? `data-nav="${A.idx(m.nav)}"` : ''} data-tip="${F.tip(m.name, [['', 'Date', dt.fmt(m.d)], ['', 'Baseline', dt.fmt(m.bd)], ['', 'Variance', F.days(m.delta)]])}"><rect x="0" y="${cy - RH / 2}" width="${X0 - 6}" height="${RH}" fill="transparent"/><text x="8" y="${cy + 4}" style="font-size:11.5px;font-weight:${KEY.includes(m.k) ? 800 : 600};fill:${KEY.includes(m.k) ? col : 'var(--accent)'}">${txt}</text><path d="M${px},${cy - 8} l8,8 -8,8 -8,-8z" fill="${col}" stroke="#fff" stroke-width="2"/><text x="${late ? px - 13 : px + 13}" y="${cy + 4}" text-anchor="${late ? 'end' : 'start'}" style="font-size:11px;font-weight:700;fill:${col}">${dl}</text></g>` });
       });
       svg += mk.filter((q) => !q.e).map((q) => q.h).join('') + mk.filter((q) => q.e).map((q) => q.h).join('');
+      svg += `<g id="hdate" style="display:none" pointer-events="none"><line id="hline" x1="0" x2="0" y1="${TOP - 4}" y2="${BOT}" stroke="var(--brand-d)" stroke-width="1"/><rect id="hbox" x="0" y="${BOT + 4}" width="150" height="34" rx="6" fill="var(--brand-d)"/><text id="htxt" x="0" y="${BOT + 19}" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:800"></text><text id="htxt2" x="0" y="${BOT + 33}" text-anchor="middle" style="fill:#cfeef3;font-size:10px"></text></g>`;
       svg += '</svg>';
 
       const ll = M.acts.filter((a) => a.ll && a.kind === 'a3');
@@ -210,6 +212,28 @@
     const dayAt = (cx) => { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = 0; const sx = pt.matrixTransform(svg.getScreenCTM().inverse()).x; return Math.round(t0 + ((sx - X0) / (X1 - X0)) * T); };
     let drag = null;
     const tip = document.querySelector('#tip');
+    const top = +svg.dataset.top, rh = +svg.dataset.rh, nR = +svg.dataset.n, bot = +svg.dataset.bot, M0 = A.s.M;
+    const q = (id) => svg.querySelector('#' + id), hrow = q('hrow'), hcol = q('hcol'), hd = q('hdate');
+    const toSvg = (e) => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+    svg.addEventListener('pointermove', (e) => {
+      if (drag) return;
+      const p = toSvg(e);
+      if (p.x < X0 || p.x > X1 || p.y < top - 4 || p.y > bot) { hrow.style.display = hcol.style.display = hd.style.display = 'none'; return; }
+      const d = dayAt(e.clientX), k = Math.max(0, Math.min(M0.N - 1, dt.bucketOf(M0.start, d)));
+      const row = Math.min(nR - 1, Math.max(0, Math.floor((p.y - top) / rh)));
+      hrow.setAttribute('y', top + row * rh); hrow.style.display = '';
+      // highlight the whole month column under the cursor
+      const m0 = Math.max(M0.bs[k], t0), m1 = Math.min(M0.bs[k + 1], t0 + T);
+      hcol.setAttribute('x', X0 + ((m0 - t0) / T) * (X1 - X0)); hcol.setAttribute('width', Math.max(2, ((m1 - m0) / T) * (X1 - X0))); hcol.style.display = '';
+      const lx = X0 + ((d - t0) / T) * (X1 - X0);
+      q('hline').setAttribute('x1', lx); q('hline').setAttribute('x2', lx);
+      q('hbox').setAttribute('x', Math.min(1512 - 154, Math.max(2, lx - 75)));
+      const cx = Math.min(1512 - 79, Math.max(77, lx));
+      q('htxt').setAttribute('x', cx); q('htxt2').setAttribute('x', cx);
+      q('htxt').textContent = dt.fmt(d); q('htxt2').textContent = 'Month ' + (k + 1) + ' of ' + M0.N;
+      hd.style.display = '';
+    });
+    svg.addEventListener('pointerleave', () => { hrow.style.display = hcol.style.display = hd.style.display = 'none'; });
     svg.querySelectorAll('[data-grant]').forEach((g) => {
       g.addEventListener('pointerdown', (e) => { drag = { g, k: g.dataset.grant, x0: e.clientX, moved: false, day: +g.dataset.day }; g.setPointerCapture(e.pointerId); e.preventDefault(); });
       g.addEventListener('pointermove', (e) => {
