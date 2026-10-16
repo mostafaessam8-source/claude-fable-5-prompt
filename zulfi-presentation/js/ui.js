@@ -255,8 +255,8 @@
   /* -------------------------------------------------------- built-in actions */
   A.actions.closeDrawer = () => A.closeDrawer();
   A.actions.resetDefault = () => {
-    if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (17 Oct 2026), all activity dates, weightages, filters and views.')) return;
-    A.s.st = Z.newState('2026-10-17');
+    if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (25 Oct 2026), all activity dates, weightages, filters and views.')) return;
+    A.s.st = Z.newState('2026-10-25');
     Object.assign(A.s.f, { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' });
     A.s.ui = {}; A.s.drawer = null; $('#fQ').value = '';
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
@@ -381,7 +381,7 @@
         if (/^#\d+$/.test(h)) slide = +h.slice(1) - 1;
       }
     } catch (e) { st = null; }
-    A.s.st = st || Z.newState('2026-10-17');
+    A.s.st = st || Z.newState('2026-10-25');
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
