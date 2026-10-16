@@ -1873,7 +1873,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 /* Slide 6: interactive Gantt chart – edit dates inline, drag bars, links highlight */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const DESK = { code: 88, name: 200, s: 118, e: 118, dur: 60 }, MOB = { code: 70, name: 134, s: 0, e: 0, dur: 0 };
+  const DESK = { code: 88, name: 340, s: 118, e: 118, dur: 60 }, MOB = { code: 70, name: 134, s: 0, e: 0, dur: 0 };
   const LW = Object.assign({}, DESK);
   let LEFT = 0;
   const setCols = () => { Object.assign(LW, A.mobile ? MOB : DESK); LEFT = LW.code + LW.name + LW.s + LW.e + LW.dur; };
