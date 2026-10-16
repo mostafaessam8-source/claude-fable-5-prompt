@@ -401,7 +401,7 @@ h1.edtext { display: block; }
     <label class="tb-field" title="How dependent activities react when you move an activity"><span class="t">Linking</span>
       <select id="linkSel"><option value="two">Auto-link</option><option value="push">Push only</option><option value="off">Off</option></select></label>
     <button class="tb-btn" id="scen" title="Open the scenario summary"></button>
-    <button class="tb-btn" id="bReset" title="Reset the presentation to its default (start date 17 Oct 2026, no changes)"></button>
+    <button class="tb-btn" id="bReset" title="Reset the presentation to its default (start date 25 Oct 2026, no changes)"></button>
     <span class="grow"></span>
     <button class="tb-btn" id="bEdit" title="Edit the text on the slides (saved with the scenario)"></button>
     <button class="tb-btn" id="bSide" title="Show / hide the sections menu"></button>
@@ -531,7 +531,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   /* ---------------------------------------------------------------- state */
   Z.DEFAULT_ADV = { pct: 10, from: 1 }; // advance payment: % of contract value, recovered in equal monthly deductions from this month to the last project month
   Z.DEFAULT_MS = { g1: 30, g2: 30 }; // days by which 'amount granted' precedes NTP (Phase 1) / the Phase 2 start
-  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-17'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
+  Z.newState = (startIso) => ({ start: dt.parse(startIso || '2026-10-25'), ov: {}, A: Z.cloneA(Z.DEFAULT_A), link: 'two', adv: { ...Z.DEFAULT_ADV }, ms: { ...Z.DEFAULT_MS }, notes: {} });
   Z.cloneState = (s) => ({ start: s.start, ov: JSON.parse(JSON.stringify(s.ov)), A: Z.cloneA(s.A), link: s.link, adv: { ...(s.adv || Z.DEFAULT_ADV) }, ms: { ...(s.ms || Z.DEFAULT_MS) }, notes: { ...(s.notes || {}) } });
 
   /* ------------------------------------------------------- distribution */
@@ -1211,8 +1211,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   /* -------------------------------------------------------- built-in actions */
   A.actions.closeDrawer = () => A.closeDrawer();
   A.actions.resetDefault = () => {
-    if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (17 Oct 2026), all activity dates, weightages, filters and views.')) return;
-    A.s.st = Z.newState('2026-10-17');
+    if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (25 Oct 2026), all activity dates, weightages, filters and views.')) return;
+    A.s.st = Z.newState('2026-10-25');
     Object.assign(A.s.f, { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' });
     A.s.ui = {}; A.s.drawer = null; $('#fQ').value = '';
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
@@ -1337,7 +1337,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         if (/^#\d+$/.test(h)) slide = +h.slice(1) - 1;
       }
     } catch (e) { st = null; }
-    A.s.st = st || Z.newState('2026-10-17');
+    A.s.st = st || Z.newState('2026-10-25');
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';

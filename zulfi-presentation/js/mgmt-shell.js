@@ -26,7 +26,7 @@
   };
   A.actions.resetDefault = () => {
     if (!confirm(A.L('Reset the presentation to its default?\n\nThis restores the start date, all edits, deleted slides and views.', 'إعادة العرض إلى الوضع الافتراضي؟\n\nسيتم استرجاع تاريخ البدء وكل التعديلات والشرائح المحذوفة.'))) return;
-    A.s.st = Z.newState('2026-10-17'); A.s.ui = {}; A.s.drawer = null; A.hidden.clear(); A.saveHidden();
+    A.s.st = Z.newState('2026-10-25'); A.s.ui = {}; A.s.drawer = null; A.hidden.clear(); A.saveHidden();
     try { localStorage.removeItem('zulfi-mgmt-v1'); } catch (e) { /* ignore */ }
     A.updateEdbar(); A.update();
   };
