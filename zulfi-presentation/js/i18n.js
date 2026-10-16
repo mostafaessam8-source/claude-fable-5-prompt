@@ -80,7 +80,9 @@
   // dates inside charts are written numerically (25/10/2026) so Arabic and digits never reorder
   const MNUM = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
   const yy = (y) => (y.length === 2 ? '20' + y : y);
-  const numDates = (t) => t.replace(/\b(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{2,4})\b/g, (m, d, mo, y) => d + '/' + MNUM[mo] + '/' + yy(y)).replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})\b/g, (m, mo, y) => MNUM[mo] + '/' + yy(y));
+  const fullYears = (t) => t.replace(/\b(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{2})\b/g, (m, d, mo, y) => d + ' ' + mo + ' 20' + y).replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})\b/g, (m, mo, y) => mo + ' 20' + y);
+  const AR_M = '(?:يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)';
+  const isoDates = (t) => t.replace(new RegExp('(\\d{1,2} ' + AR_M + ' \\d{4}|' + AR_M + ' \\d{4})', 'g'), '\u2067$1\u2069');
   // activity codes: 3.3b -> 3.3ب, 7.2a1 -> 7.2أ1 (no Latin letters in the Arabic deck)
   const codes = (t) => t.replace(/(^|[^\w.])(\d+\.\d+)([ab])(\d?)(?![A-Za-z])/g, (m, pre, n, l, d) => pre + n + (l === 'a' ? 'أ' : 'ب') + d);
   const amt = (v) => v.replace(/M$/, ' مليون').replace(/K$/, ' ألف');
@@ -158,11 +160,11 @@
         }
         const lead = text.match(/^\s*/)[0], trail = text.match(/\s*$/)[0], c = text.trim();
         if (!c || !/[A-Za-z]/.test(c)) return text;
-        const src = svg ? numDates(dec(c)) : dec(c);
+        const src = svg ? fullYears(dec(c)) : dec(c);
         let r = core(src);
-        if (r == null && svg && src !== dec(c)) r = src;
         if (r == null) { Z.i18n.miss.add(c); return text; }
-        const out = codes(mon(r)).replace(/&/g, '&amp;');
+        let out = codes(mon(r)).replace(/&/g, '&amp;');
+        if (svg) out = isoDates(out);
         // chart text stays left-to-right as a whole (numbers + Arabic words in a predictable order)
         return lead + (svg ? '\u2066' + out + '\u2069' : out) + trail;
       });

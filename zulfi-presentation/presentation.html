@@ -24,6 +24,7 @@
     <button class="tb-btn" id="bBack" title="Previous slide (←)"></button>
     <span id="slideNo"></span>
     <button class="tb-btn" id="bNext" title="Next slide (→)"></button>
+    <button class="tb-btn" id="bPptx" title="Export the deck as an editable PowerPoint file"></button>
     <button class="tb-btn" id="bFull" title="Full screen (F)"></button>
     <button class="tb-btn" id="bExit" title="Exit full screen (Esc)" style="display:none"></button>
     <a class="tb-btn" data-online href="management.html" title="Management update – Arabic / English" style="text-decoration:none">عربي</a>
@@ -47,6 +48,7 @@
 <script src="js/xlsx.js"></script>
 <script src="js/slides-cashflow.js"></script>
 <script src="js/slides-assump.js"></script>
+<script src="js/pptx.js"></script>
 <script>
   // toolbar icon + label markup
   (function () {
@@ -57,7 +59,7 @@
     set('bReset', I.reset + T('Reset'));
     set('bEdit', I.pencil + T('Edit text')); set('bSide', I.menu + T('Sections')); set('bFilters', I.filter + T('Filters'));
     set('bBack', I.prev + T('Back')); set('bNext', T('Next') + I.next);
-    set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));
+    set('bPptx', I.ppt + T('PowerPoint')); set('bFull', I.full + T('Full screen')); set('bExit', I.exit + T('Exit full screen')); set('bPrint', I.print + T('Print'));
     Z.app.boot();
   })();
 </script>
