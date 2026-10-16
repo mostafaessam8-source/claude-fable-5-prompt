@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>عرض مستجدات مشروع محطة قطار الزلفي – Management Update</title>
+<meta name="description" content="عرض مستجدات مشروع محطة قطار الزلفي – عرض تفاعلي بالعربية والإنجليزية (SAR template).">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/mgmt.css">
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <a class="brand" href="index.html" title="Guide" style="color:inherit;text-decoration:none"><div class="logo">SAR</div><div><span id="brandT"></span><small id="brandS"></small></div></a>
+    <span class="grow"></span>
+    <label class="tb-field"><span class="t" id="lblStart"></span> <input type="date" id="startIn"></label>
+    <label class="tb-field" style="display:none"><span class="t">Linking</span><select id="linkSel"><option value="two">Auto-link</option><option value="push">Push only</option><option value="off">Off</option></select></label>
+    <button class="tb-btn" id="scen" style="display:none"></button>
+    <button class="tb-btn" id="bReset"></button>
+    <span class="grow"></span>
+    <button class="tb-btn" id="bEdit"></button>
+    <button class="tb-btn" id="bSide"></button>
+    <button class="tb-btn" id="bBack"></button>
+    <span id="slideNo"></span>
+    <button class="tb-btn" id="bNext"></button>
+    <button class="tb-btn" id="bFull"></button>
+    <button class="tb-btn" id="bExit" style="display:none"></button>
+    <button class="tb-btn lang" id="bLang"></button>
+    <a class="tb-btn" data-online id="bGuide" href="index.html#download" style="text-decoration:none"></a>
+    <button class="tb-btn" id="bPrint"></button>
+  </header>
+  <div id="edbar"><span id="edTxt"></span><span style="flex:1"></span><button class="btn sm" data-do="edResetSlide" id="edR1"></button><button class="btn sm" data-do="edResetAll" id="edR2"></button><button class="btn sm danger" data-do="delSlide" id="edDel"></button><button class="btn sm" data-do="restoreSlides" id="edRestore" style="display:none"></button><button class="btn sm primary" id="edDone"></button></div>
+  <div id="filters" style="display:none"><span id="fDyn"></span><input id="fQ" type="hidden"><button id="fReset" style="display:none"></button><span id="fCount"></span></div>
+  <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt" style="display:none"></button><button id="mNext"></button></div>
+  <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
+</div>
+<script>window.ZMODE = {
+  id: 'mgmt', lang: 'ar', translate: true, noDrawer: true,
+  order: ['m-cover', 'm-agenda', 'm-intro', 'm-about', 'm-status', 'miles', 'phase2', 'm-guar', 'm-cash6', 'cashflow', 'm-next', 'm-thanks'],
+  sec: [
+    { ar: 'الافتتاح', en: 'Opening', ids: ['m-cover', 'm-agenda'] },
+    { ar: '1 · المقدمة', en: '1 · Introduction', ids: ['m-intro'] },
+    { ar: '2 · نبذة عن المشروع', en: '2 · About the project', ids: ['m-about'] },
+    { ar: '3 · حالة المشروع الحالية', en: '3 · Current project status', ids: ['m-status', 'miles', 'phase2'] },
+    { ar: '4 · حالة الضمانات', en: '4 · Guarantees', ids: ['m-guar'] },
+    { ar: '5 · التدفقات النقدية', en: '5 · Cash flows', ids: ['m-cash6', 'cashflow'] },
+    { ar: '6 · الخطوات القادمة', en: '6 · Next steps', ids: ['m-next'] },
+    { ar: 'الختام', en: 'Closing', ids: ['m-thanks'] }
+  ],
+  num: { '1b': 3, '1c': 3, '3b': 5 },
+  titles: {
+    miles: { ar: ['المعالم الرئيسية وبوابات المشروع', 'المخطط الزمني وسجل المعالم'], en: ['Milestones & key gates', 'Timeline and milestone register'] },
+    phase2: { ar: ['لماذا تبدأ المرحلة الثانية مع الأولى', 'الحزم الحرجة وسيناريوهات البدء'], en: ['Why Phase 2 starts with Phase 1', 'Critical packages and start scenarios'] },
+    cashflow: { ar: ['التدفقات النقدية ومنحنى S', 'شهري / ربع سنوي / نصف سنوي / سنوي'], en: ['Cash flow & S-curve', 'Monthly / quarterly / half-year / yearly'] }
+  }
+};</script>
+<script src="data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/drawers.js"></script>
+<script src="js/slides-overview.js"></script>
+<script src="js/slides-phase2.js"></script>
+<script src="js/slides-schedule.js"></script>
+<script src="js/xlsx.js"></script>
+<script src="js/slides-cashflow.js"></script>
+<script src="js/slides-mgmt.js"></script>
+<script src="js/mgmt-shell.js"></script>
+</body>
+</html>

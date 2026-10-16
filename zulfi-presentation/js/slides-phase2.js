@@ -26,7 +26,7 @@
         return gap >= 0 ? base : base + ` <b style="color:var(--bad)">⚠ Now planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
       ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
-      delayNow: delay > 0 ? ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)` : '', g2, grantDate: dt.fmtShort(P.start - g2),
+      delayNow: delay > 0 ? (A.isAr() ? ` (الآن <b style="color:var(--bad)">+${delay} يوم</b>)` : ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)`) : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
   };
 

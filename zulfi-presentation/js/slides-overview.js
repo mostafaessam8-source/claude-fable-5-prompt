@@ -12,10 +12,10 @@
 <p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
   const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
     tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
-    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} mo)</a>`).join(', '),
+    shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
     peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
     p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
-    p2late: P2.delay > 0 ? ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>` : '',
+    p2late: P2.delay > 0 ? (A.isAr() ? ` – الإفراج الحالي متأخر ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
     p2row: ms.findIndex((m) => m.k === 'p2') + 1,
     advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
     permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),
@@ -181,7 +181,7 @@
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
         `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the diamonds to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
-        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.</div>${svg}</div></div>` : ''}
+        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">${A.isAr() ? 'اسحب معلمَي <b style="color:var(--c4)">اعتماد التمويل</b> و<b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات – يجب أن يسبق اعتماد التمويل بداية مرحلته.' : 'Drag the <b style="color:var(--c4)">funds-granted</b> milestones and the <b style="color:var(--ph2)">Phase 2 start</b> to test scenarios – funds approval must stay before its phase starts.'}</div>${svg}</div></div>` : ''}
         <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
@@ -247,7 +247,7 @@
         else { if (d > base[drag.k]) { d = base[drag.k]; note = 'must be before the phase starts'; } d = Math.max(d, base[drag.k] - 730); }
         drag.day = d;
         g.setAttribute('transform', `translate(${((d - +g.dataset.day) * (X1 - X0)) / T},0)`);
-        tip.innerHTML = `<div class="t">${drag.k === 'p2' ? 'Phase 2 start' : drag.k === 'g1' ? 'Phase 1 funds granted' : 'Phase 2 funds granted'}</div><div class="r"><span>Date</span><b>${dt.fmt(d)}</b></div>${drag.k === 'p2' ? '' : `<div class="r"><span>Before phase start</span><b>${base[drag.k] - d} days</b></div>`}${note ? `<div style="color:#ffd27a">${note}</div>` : ''}`;
+        tip.innerHTML = A.tr(`<div class="t">${drag.k === 'p2' ? 'Phase 2 start' : drag.k === 'g1' ? 'Phase 1 funds granted' : 'Phase 2 funds granted'}</div><div class="r"><span>Date</span><b>${dt.fmt(d)}</b></div>${drag.k === 'p2' ? '' : `<div class="r"><span>Before phase start</span><b>${base[drag.k] - d} days</b></div>`}${note ? `<div style="color:#ffd27a">${note}</div>` : ''}`);
         tip.dataset.src = ''; tip.style.display = 'block';
         const r = document.querySelector('#stage').getBoundingClientRect();
         tip.style.left = (e.clientX - r.left) / A.scale + 14 + 'px'; tip.style.top = (e.clientY - r.top) / A.scale + 14 + 'px';
