@@ -56,7 +56,7 @@
     const pts = pct.map((p, k) => [X(k), Y(p)]);
     const poly = (arr) => arr.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
     s += `<path d="${poly([[L, Y(0)], ...pts])} L${X(P - 1)},${Y(0)} L${L},${Y(0)}Z" fill="var(--brand)" opacity=".1"/>`;
-    s += `<path d="${poly([[L, Y(0)], ...bpct.map((p, k) => [X(k), Y(p)])])}" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/>`;
+    if (!o.noBase) s += `<path d="${poly([[L, Y(0)], ...bpct.map((p, k) => [X(k), Y(p)])])}" fill="none" stroke="#8a97a3" stroke-width="2" stroke-dasharray="5 4"/>`;
     s += `<path d="${poly([[L, Y(0)], ...pts])}" fill="none" stroke="var(--brand)" stroke-width="3" stroke-linejoin="round"/>`;
     const st = A.s.ui.status;
     if (st && st >= M.start && st < M.bs[M.N]) {
@@ -65,7 +65,7 @@
     }
     for (let k = 0; k < P; k++) {
       const dv = pct[k] - bpct[k], spend = sumP(agg.total, k, per);
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ['#8a97a3', LB.base, F.pct(bpct[k])], ['', LB.spend, F.sar(spend)], ['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', LB.cur, F.pct(pct[k]) + ' · ' + F.M(agg.cum[lastIdx(M, k, per)])], ...(o.noBase ? [] : [['#8a97a3', LB.base, F.pct(bpct[k])]]), ['', LB.spend, F.sar(spend)], ...(o.noBase ? [] : [['', 'Δ vs baseline', (dv >= 0 ? '+' : '−') + Math.abs(dv * 100).toFixed(1) + ' pts']])])}"/>`;
       s += `<circle cx="${X(k)}" cy="${Y(pct[k])}" r="${per === 1 ? 2.6 : 3.6}" fill="var(--brand)" stroke="#fff" stroke-width="1" pointer-events="none"/>`;
     }
     return s + '</svg>';
@@ -98,12 +98,12 @@
     return s + '</svg>';
   }
 
-  /* ---- payments view: work done + advance (up), recovery (down) ---- */
+  /* ---- payments view: net payment per period ---- */
   function payChart(M, w, h, per) {
     const pay = M.pay, P = periods(M, per);
     const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
     const up = [], dn = [];
-    for (let k = 0; k < P; k++) { up.push(sumP(M.totalM, k, per) + sumP(pay.advIn, k, per)); dn.push(sumP(pay.rec, k, per)); }
+    for (let k = 0; k < P; k++) { up.push(sumP(pay.net, k, per)); dn.push(0); }
     const maxUp = Math.max(...up, 1), maxDn = Math.max(...dn, 0);
     const nice = F.nice(maxUp + maxDn, 6), top = Math.ceil(maxUp / nice.step) * nice.step, bot = Math.ceil(maxDn / nice.step) * nice.step;
     const span = top + bot, Y = (v) => T + ph - ((v + bot) / span) * ph;
@@ -112,12 +112,10 @@
     s += `<line x1="${L}" x2="${w - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#7d8b96" stroke-width="1.5"/>`;
     for (let k = 0; k < P; k++) {
       const work = sumP(M.totalM, k, per), adv = sumP(pay.advIn, k, per), rec = sumP(pay.rec, k, per), x = L + k * bw + (per === 1 ? 3 : 10), ww = bw - (per === 1 ? 6 : 20);
-      s += `<rect x="${x}" y="${Y(work)}" width="${ww}" height="${Math.max(0, Y(0) - Y(work) - 1)}" fill="var(--brand)" rx="2"/>`;
-      if (adv > 0) s += `<rect x="${x}" y="${Y(work + adv)}" width="${ww}" height="${Math.max(0, Y(work) - Y(work + adv) - 1.5)}" fill="var(--c1)" rx="2"/>`;
-      if (rec > 0) s += `<rect x="${x}" y="${Y(0) + 1}" width="${ww}" height="${Math.max(0, Y(-rec) - Y(0) - 1)}" fill="var(--c2)" rx="2"/>`;
+      s += `<rect x="${x}" y="${Y(sumP(pay.net, k, per))}" width="${ww}" height="${Math.max(0, Y(0) - Y(sumP(pay.net, k, per)) - 1)}" fill="var(--brand)" rx="2"/>`;
       const netv = work + adv - rec;
       s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--brand)', 'Work done', F.sar(work)], ['var(--c1)', 'Advance received', F.sar(adv)], ['var(--c2)', 'Advance recovery', '− ' + F.sar(rec)], ['', '<b>Net payment</b>', '<b>' + F.sar(netv) + '</b>'], ['', 'Advance balance', F.sar(pay.balance[lastIdx(M, k, per)])]])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [['var(--c1)', 'Advance received', F.sar(adv)], ['var(--c2)', 'Advance recovery', '− ' + F.sar(rec)], ['var(--brand)', '<b>Net payment</b>', '<b>' + F.sar(netv) + '</b>'], ['', 'Advance balance', F.sar(pay.balance[lastIdx(M, k, per)])]])}"/>`;
     }
     return s + '</svg>';
   }
@@ -129,7 +127,6 @@
     const pkI = pay.net.indexOf(Math.max(...pay.net));
     const kp = (k, v, d, extra) => `<div class="dstat" ${extra || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="hint">${d}</div></div>`;
     const fake = { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: M.acts };
-    const workPct = M.cum.map((v) => v / M.total);
     return A.head('3b', 'Cash flow &amp; payments', 'Advance payment of ' + pay.pct + '% received at NTP and recovered in equal monthly deductions', 'Payment terms · applied to the total contract value') +
       `<div class="s-body" style="gap:12px">
         <div class="row" style="align-items:center;gap:14px;flex:none">${basisSeg('pay')}
@@ -139,18 +136,17 @@
         </div>
         <div class="row grow" style="gap:16px">
           <div class="col grow" style="gap:12px">
-            <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} payments</h3><span class="sub">SAR · work done + advance above the line, recovery below</span>
-              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Work done</span><span><i class="dot" style="background:var(--c1)"></i>Advance received</span><span><i class="dot" style="background:var(--c2)"></i>Advance recovery</span></div></div>
+            <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} payments</h3><span class="sub">SAR · net payment after advance and recovery</span>
+              </div>
               <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
-            <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments vs work done</h3>
-              <div class="right legend"><span><i class="dot" style="background:var(--brand)"></i>Cumulative payments</span><span><i class="dot" style="background:#8a97a3"></i>Cumulative work done</span></div></div>
-              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, baseArr: workPct, labels: { cur: 'Cumulative payments', base: 'Cumulative work done', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } })}</div></div>
+            <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments</h3></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } })}</div></div>
           </div>
           <div class="col" style="width:372px;gap:12px">
             ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
             ${kp('Monthly recovery', F.sar(pay.perMonth), `equal deductions · month ${pay.from} → ${M.N} (${pay.months} months)`)}
             <div class="row" style="gap:12px">${kp('Balance after 12 months', F.M(pay.balance[Math.min(11, M.N - 1)]), 'advance still to recover', 'style="flex:1"')}${kp('Balance at end', F.sar(pay.balance[M.N - 1]), 'fully recovered', 'style="flex:1"')}</div>
-            ${kp('Net payment in month 1', F.sar(pay.net[0]), 'work done + advance − recovery')}
+            ${kp('Net payment in month 1', F.sar(pay.net[0]), 'advance received − recovery + valuation')}
             ${kp('Peak net payment', `M${pkI + 1} <small>${dtp(M.bs[pkI])}</small>`, F.sar(pay.net[pkI]), `data-month="${pkI + 1}" style="cursor:pointer"`)}
             ${kp('Total payments', F.sar(pay.cum[M.N - 1]), 'equals the contract value – the advance nets to zero')}
             <div class="note info" style="margin-top:auto">${A.ed('note:pay', 'The advance is paid on account, not extra cost: total payments equal the contract value (excl. VAT). Payments are for the whole contract (filters do not apply).')}</div>
