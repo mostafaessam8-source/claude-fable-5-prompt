@@ -68,9 +68,9 @@
     const acts = A.visList(), S = [];
     S.push([C(Lx('Zulfi Railway Station – Schedule & cost register', 'محطة قطار الزلفي – الجدول وسجل التكلفة'), 'title')]);
     S.push([C(ar ? `${acts.length} نشاط · البدء ${dfm(M.start)} · بالريال دون الضريبة` : `${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
-    S.push((ar ? ['WBS', 'النشاط', 'المرحلة', 'EPC', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
+    S.push((ar ? ['الرمز', 'النشاط', 'المرحلة', 'الفئة', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
     const f0 = S.length + 1;
-    acts.forEach((a) => S.push([C(a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
+    acts.forEach((a) => S.push([C(ar ? Z.i18n.tr(a.code) : a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(ar ? Z.i18n.tr(Z.EPC_BY[a.epc].name) : a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
     S.push([C(Lx('Total', 'الإجمالي'), 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
     const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, rtl: ar, footer: Lx('Zulfi Railway Station – Schedule', 'محطة قطار الزلفي – الجدول') };
     const blob = X.blob([s1, s2]);

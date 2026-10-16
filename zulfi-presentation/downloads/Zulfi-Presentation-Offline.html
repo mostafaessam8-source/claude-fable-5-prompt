@@ -1107,6 +1107,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 
   /* ---- editable text blocks: any text can be edited in 'Edit text' mode and is saved with the scenario ----
      A block is a template; {tokens} are replaced by live values, so edited sentences keep updating. */
+  const TKL = { trackFloat: 'هامش السكة', ddDate: 'تاريخ اعتماد التصميم التفصيلي', latest: 'آخر موعد لبدء المرحلة الثانية', delayNow: 'التأخير الحالي', grantDate: 'تاريخ اعتماد التمويل', g2: 'عدد الأيام', sigCheck: 'حالة الإشارات',
+    tightCount: 'عدد الأنشطة', tightCodes: 'رموز الأنشطة', shortWin: 'أقصر فترات التركيب', peakMonth: 'شهر الذروة', peakDate: 'تاريخ الذروة', peakAmt: 'مبلغ الذروة', p2latest: 'آخر موعد لبدء المرحلة الثانية', p2late: 'تأخر المرحلة الثانية', p2row: 'رقم الصف', advAmt: 'مبلغ الدفعة المقدمة', advPct: 'نسبة الدفعة المقدمة', advPer: 'الاسترداد الشهري', advMonths: 'عدد أشهر الاسترداد', permitDate: 'تاريخ تصريح العمل', deadline: 'الموعد النهائي' };
   A.edDef = {};
   A.ed = (id, def, tokens, opts) => {
     opts = opts || {};
@@ -1116,14 +1118,14 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     A.edDef[id] = def;
     const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
     const body = editing
-      ? tpl.replace(/\{(\w+)\}/g, '<span class="tk" contenteditable="false">{$1}</span>')
+      ? tpl.replace(/\{(\w+)\}/g, (m, k) => `<span class="tk" contenteditable="false" data-k="${k}">${MODE && A.isAr() ? '‹' + (TKL[k] || k) + '›' : '{' + k + '}'}</span>`)
       : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
     return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
   };
   const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
   A.cleanHtml = (html) => {
     const box = document.createElement('div'); box.innerHTML = html;
-    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.textContent)));
+    box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.dataset.k ? '{' + n.dataset.k + '}' : n.textContent)));
     (function walk(n) {
       Array.from(n.children).forEach((c) => {
         walk(c);
@@ -1178,7 +1180,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const def = A.slides[i];
     let html = def.render(A.s.M, A.s);
     if (MODE && MODE.translate && !def.native && A.lang === 'ar') html = Z.i18n.html(html);
-    if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'Internal')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
+    if (MODE && !def.bare) html += `<div class="mfoot"><span class="int">${A.L('Internal', 'داخلي')}</span><b class="pn">${A.visIdx().indexOf(i) + 1}</b></div>`;
     el.innerHTML = html;
     A.markOv(el);
     A.dirty.delete(i);
@@ -2339,9 +2341,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const acts = A.visList(), S = [];
     S.push([C(Lx('Zulfi Railway Station – Schedule & cost register', 'محطة قطار الزلفي – الجدول وسجل التكلفة'), 'title')]);
     S.push([C(ar ? `${acts.length} نشاط · البدء ${dfm(M.start)} · بالريال دون الضريبة` : `${acts.length} activities · start ${dt.fmt(M.start)} · SAR excl. VAT`, 'sub')]); S.push([]);
-    S.push((ar ? ['WBS', 'النشاط', 'المرحلة', 'EPC', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
+    S.push((ar ? ['الرمز', 'النشاط', 'المرحلة', 'الفئة', 'البداية', 'النهاية', 'الأشهر', 'المبلغ (ريال)', 'طويل التوريد', 'النشاط السابق / الارتباط'] : ['WBS', 'Activity', 'Phase', 'EPC', 'Start', 'Finish', 'Months', 'Amount (SAR)', 'Long-lead', 'Predecessor / link']).map((h, i) => C(h, i === 1 || i === 9 ? 'headL' : 'head')));
     const f0 = S.length + 1;
-    acts.forEach((a) => S.push([C(a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
+    acts.forEach((a) => S.push([C(ar ? Z.i18n.tr(a.code) : a.code, 'lab'), C(ar ? Z.i18n.tr(a.name) : a.name, 'lab'), C(ar ? Z.i18n.tr(a.phase) : a.phase, 'lab'), C(ar ? Z.i18n.tr(Z.EPC_BY[a.epc].name) : a.epc, 'lab'), C(X.serial(dt.iso(a.s)), 'date'), C(X.serial(dt.iso(a.e + 1) ) - 1, 'date'), C(Math.round((a.dur / 30.4375) * 10) / 10, 'num'), C(Math.round(a.amount), 'num'), C(a.ll ? Lx('Yes', 'نعم') : '', 'lab'), C(a.pred || '', 'txt')]));
     S.push([C(Lx('Total', 'الإجمالي'), 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C('', 'tLab'), C(Math.round(acts.reduce((x, a) => x + a.amount, 0)), 'tNum', `SUM(H${f0}:H${S.length})`), C('', 'tLab'), C('', 'tLab')]);
     const s2 = { name: 'Schedule', cols: [9, 50, 10, 8, 12, 12, 9, 15, 10, 60], rows: S, freeze: { x: 2, y: 4 }, rtl: ar, footer: Lx('Zulfi Railway Station – Schedule', 'محطة قطار الزلفي – الجدول') };
     const blob = X.blob([s1, s2]);

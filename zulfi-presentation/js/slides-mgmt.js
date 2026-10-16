@@ -28,7 +28,7 @@
           <div class="mc-title">${ED('c:title', L('Al-Zulfi Railway Station Project<br>Progress Update', 'عرض مستجدات مشروع<br>محطة قطار الزلفي'), null, { tag: 'h1' })}
           ${ED('c:date', L('19 October 2026', '19 أكتوبر 2026'), null, { tag: 'div', style: 'font-size:26px;color:#768692;margin-top:16px' })}</div></div>
         <div class="mc-photo"><img src="${img('photo-cover.jpg')}" alt=""><i class="cut"></i></div>
-        <div class="mc-foot"><span>Internal</span><span>SAR.COM.SA</span></div>`;
+        <div class="mc-foot"><span>${L('Internal', 'داخلي')}</span><span>SAR.COM.SA</span></div>`;
     },
   });
 
@@ -138,7 +138,7 @@
     id: 'm-thanks', cls: 'm-thanks', bare: true, i18n: { en: ['Thank you', 'Closing'], ar: ['شكراً', 'الختام'] },
     render() {
       return `<i class="tk-st l"></i><i class="tk-st r"></i>
-        <div class="tk-title">${ED('tk:t', L('Thank You', 'شكراً'), null, { tag: 'h1' })}${ED('tk:s', L('شكراً', 'Thank You'), null, { tag: 'div', style: 'font-size:34px;opacity:.9;margin-top:6px' })}</div>
+        <div class="tk-title">${ED('tk:t', L('Thank You', 'شكراً'), null, { tag: 'h1' })}</div>
         <div class="tk-logo"><img src="${img('sar-logo-white-ar.png')}" alt="SAR"><span>SAR.COM.SA</span></div>`;
     },
   });
