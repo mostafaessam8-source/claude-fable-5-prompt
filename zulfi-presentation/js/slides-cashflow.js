@@ -34,10 +34,12 @@
   const periods = (M, per) => Math.ceil(M.N / per);
   const sumP = (arr, k, per) => { let t = 0; for (let i = k * per; i < Math.min(arr.length, (k + 1) * per); i++) t += arr[i]; return t; };
   const lastIdx = (M, k, per) => Math.min(M.N, (k + 1) * per) - 1;
-  const pLabel = (M, k, per) => (per === 1 ? 'M' + (k + 1) : 'Q' + (k + 1));
+  const PN = { 1: ['M', 'Month', 'Monthly', 'month'], 3: ['Q', 'Quarter', 'Quarterly', 'quarter (3 months)'], 6: ['H', 'Half-year', 'Half-yearly', 'half-year (6 months)'], 12: ['Y', 'Year', 'Yearly', 'year (12 months)'] };
+  const pn = (per) => PN[per] || PN[3];
+  const pLabel = (M, k, per) => (per === 1 ? 'M' + (k + 1) : pn(per)[0] + (k + 1));
   const pSub = (M, k, per) => (per === 1 ? dt.mon(M.bs[k]) : 'M' + (k * per + 1) + '–' + (lastIdx(M, k, per) + 1));
   const pTitle = (M, k, per) => (per === 1 ? 'Month ' + (k + 1) + ' · ' + dt.fmt(M.bs[k]) + ' → ' + dt.fmtShort(M.bs[k + 1] - 1)
-    : 'Quarter ' + (k + 1) + ' · M' + (k * per + 1) + '–M' + (lastIdx(M, k, per) + 1) + ' · ' + dt.fmtShort(M.bs[k * per]) + ' → ' + dt.fmtShort(M.bs[lastIdx(M, k, per) + 1] - 1));
+    : pn(per)[1] + ' ' + (k + 1) + ' · M' + (k * per + 1) + '–M' + (lastIdx(M, k, per) + 1) + ' · ' + dt.fmtShort(M.bs[k * per]) + ' → ' + dt.fmtShort(M.bs[lastIdx(M, k, per) + 1] - 1));
   const statusX = (M, st, per, L, bw) => { const k = dt.bucketOf(M.start, st); return L + ((k + (st - M.bs[k]) / (M.bs[k + 1] - M.bs[k])) / per) * bw; };
 
   /* ---- reusable S-curve (also on the dashboard) ---- */
@@ -148,7 +150,7 @@
               </div>
               <div class="pb" style="padding-top:0">${payChart(M, 1090, 305, per)}</div></div>
             <div class="panel" style="flex:1"><div class="ph"><h3>Cumulative payments</h3></div>
-              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } })}</div></div>
+              <div class="pb" style="padding-top:0">${F.scurve(M, fake, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } })}</div></div>
           </div>
           <div class="col" style="width:372px;gap:12px">
             ${kp('Advance payment (' + pay.pct + '%)', F.sar(pay.amount), 'of ' + F.sar(M.total) + ' · received at NTP ' + dt.fmtShort(M.start))}
@@ -181,7 +183,7 @@
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)">Stack by</span>
             <span class="seg">${dbtn('group', 'WBS group')}${dbtn('epc', 'EPC category')}${dbtn('phase', 'Phase')}${dbtn('all', 'Total')}</span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">View</span>
-            <span class="seg"><button data-do="cfPer" data-p="1" class="${per === 1 ? 'on' : ''}">Monthly</button><button data-do="cfPer" data-p="3" class="${per === 3 ? 'on' : ''}">Quarterly</button></span>
+            <span class="seg"><button data-do="cfPer" data-p="1" class="${per === 1 ? 'on' : ''}">Monthly</button><button data-do="cfPer" data-p="3" class="${per === 3 ? 'on' : ''}">Quarterly</button><button data-do="cfPer" data-p="6" class="${per === 6 ? 'on' : ''}">Half-year</button><button data-do="cfPer" data-p="12" class="${per === 12 ? 'on' : ''}">Yearly</button></span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">Advance payment</span>
             <span class="seg"><button data-do="cfAdv" data-v="1" class="${adv ? 'on' : ''}">Show</button><button data-do="cfAdv" data-v="0" class="${adv ? '' : 'on'}">Hide</button></span>
             <span class="lbl" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-left:10px">Status date</span>
@@ -190,10 +192,10 @@
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${per === 1 ? 'Monthly' : 'Quarterly'} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : 'quarter (3 months)'}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m)}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % ${adv ? 'of payments (with advance)' : 'complete (cost)'}</h3>
                 <div class="right legend">${adv ? '<span><i class="dot" style="background:var(--brand)"></i>Cumulative payments (advance at NTP, recovered monthly)</span>' : '<span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>'}</div></div>
-                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: per === 1 ? 'Net payment' : 'Net payment (quarter)' } }) : F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
+                <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
             </div>
             <div class="col" style="width:372px;gap:12px">
               <div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>
