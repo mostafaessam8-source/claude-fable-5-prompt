@@ -147,7 +147,7 @@
       });
       ms.forEach((m, i) => { if (m.k === 'fin') rows.push({ t: 'm', d: m.d, m, i }); });
       const TOP = 34, RH = Math.max(23, Math.min(46, Math.floor(560 / rows.length))), K = RH / 23, FK = Math.min(1.3, 1 + (K - 1) * 0.35), BOT = TOP + rows.length * RH + 4, H = BOT + 40;
-      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px;touch-action:pan-y" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
+      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
       rows.forEach((r, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOP + i * RH}" width="1512" height="${RH}" fill="#f4f8fa"/>`; });
       svg += `<rect id="hrow" x="0" y="0" width="1512" height="${RH}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/><rect id="hcol" x="0" y="${TOP - 4}" width="26" height="${BOT - TOP + 4}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/>`;
       // date ruler – top and bottom
