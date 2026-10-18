@@ -46,7 +46,7 @@
   ];
   Z.EPC_BY = Object.fromEntries(Z.EPC.map((e) => [e.key, e]));
   Z.DISC = {
-    civil: { name: 'Civil & Site Works', applies: 'Main Building, Firefighting Building, Water Tank, Site Works & Utilities, Car Parking Sheds, Fence Works, Access Road, External Works' },
+    civil: { name: 'Civil & Site Works', applies: 'Main Building, Firefighting Building, Water Tank, Site Works & Utilities, Car Parking Sheds, Fence Works, Station Road, External Works' },
     mep: { name: 'MEP & Mechanical Equipment', applies: 'Substation & SEC Works, Generator Room, IT Equipment, Automatic Gate System' },
     rail: { name: 'Specialised Rail & Signalling Systems', applies: 'Signalling & Telecom, Railway Track Works, Railway Turnout Works' },
     fit: { name: 'Furniture / Fit-out', applies: 'Furniture, Fixtures & Equipment (FF&E)' },
@@ -311,7 +311,7 @@
   /* ---------------------------------------------------------- milestones */
   /* ------------------------------------------------------------ Phase 2 */
   Z.isP2 = (a) => a.phase === 'Phase 2';
-  // analysis of the Phase 2 packages (Access Road, FF&E, Generator Room, Railway Track)
+  // analysis of the Phase 2 packages (Station Road, FF&E, Generator Room, Railway Track)
   Z.phase2 = function (M) {
     const l = M.acts.filter(Z.isP2);
     const start = Math.min(...l.map((a) => a.s)), baseStart = Math.min(...l.map((a) => a.bs));

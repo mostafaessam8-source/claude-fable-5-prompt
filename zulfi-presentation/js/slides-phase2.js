@@ -2,7 +2,7 @@
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
   const CTX = [['7.3', 'Railway Turnout (Phase 1)'], ['7.4', 'Signalling & Telecom (Phase 1)']];
-  const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Access Road (1,700 m)'], ['4.3', 'Generator Room']];
+  const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Station Road (1,700 m)'], ['4.3', 'Generator Room']];
 
   /* editable explanation: {tokens} are live values */
   const WHY_TPL = `<p style="margin:0 0 12px"><b>1 · Railway Track is the longest job.</b><br>8 months to manufacture &amp; deliver + 6 months to install – {trackFloat}.</p>
@@ -68,7 +68,7 @@
       // Phase 2 packages
       ITEMS.forEach(([key, name], i) => {
         const y = pkTop + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
-        const first = Math.min(...list.map((a) => a.s)), short = { '7.2': 'Railway Track', '3.3': 'FF&E (Furniture)', '6.1': 'Access Road', '4.3': 'Generator Room' }[key];
+        const first = Math.min(...list.map((a) => a.s)), short = { '7.2': 'Railway Track', '3.3': 'FF&E (Furniture)', '6.1': 'Station Road', '4.3': 'Generator Room' }[key];
         svg += `<text x="0" y="${y + 17}" style="font-size:12px;font-weight:700;fill:var(--accent)">${key} ${short}</text>`;
         const early = f <= 45 && first <= P.start + 45;
         const lab = f < 0 ? `late ${-Math.round(f)} d` : early ? `MUST START BY ${dt.fmtShort(first + f)}` : f <= 45 ? 'critical – cannot slip' : `${Math.round(f)} d float`;
