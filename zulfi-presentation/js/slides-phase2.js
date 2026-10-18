@@ -95,7 +95,7 @@
         `<div class="s-body" style="gap:12px">
           <div class="panel"><div class="pb" style="padding:12px 16px">
             <div class="row" style="align-items:center;gap:14px;flex-wrap:wrap">
-              <b style="color:var(--ph2)">Move the Phase 2 start (release)</b>
+              <b style="color:var(--ph2)">Move the Phase 2 start</b>
               <input type="date" class="dinput" style="width:150px;height:32px" value="${dt.iso(P.start)}" min="${dt.iso(M.start)}" data-chg="p2date">
               <input type="range" id="p2range" min="${lo}" max="${hi}" step="1" value="${off}" style="width:300px;accent-color:var(--ph2)" data-chg="p2range">
               <span id="p2lbl" style="min-width:210px;font-weight:700;color:${state[1]}">${F.days(off)} · ${state[0]}</span>
@@ -104,7 +104,7 @@
             </div>
           </div></div>
           <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-            ${kpi('Phase 2 start (release)', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
+            ${kpi('Phase 2 start', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
             ${kpi('Latest start to hold completion', dt.fmt(P.latest), P.latest - P.start >= 0 ? `${Math.round(P.latest - P.start)} days of margin left` : `<b style="color:var(--bad)">${Math.round(P.start - P.latest)} days too late</b>`, P.latest - P.start >= 0 ? '' : 'warn')}
             ${kpi('Project completion', dt.fmt(M.finish), delay > 0 ? `<span class="delta up">${F.days(delay)} vs baseline ${dt.fmtShort(M.base.finish)}</span>` : `<span class="delta zero">on baseline ${dt.fmtShort(M.base.finish)}</span>`, delay > 0 ? 'warn' : '')}
             ${kpi('Phase 2 amount granted by', dt.fmt(P.start - g2), `${g2} days before the Phase 2 start · Phase 2 value ${F.M(p2amt)} SAR`, '')}
