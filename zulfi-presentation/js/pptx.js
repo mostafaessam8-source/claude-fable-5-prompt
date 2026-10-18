@@ -56,7 +56,7 @@
   };
   const runXml = (r) => {
     const ar = ARABIC.test(r.t);
-    return `<a:r><a:rPr lang="${ar ? 'ar-SA' : 'en-US'}" sz="${r.sz}" b="${r.b ? 1 : 0}" i="${r.i ? 1 : 0}"${r.u ? ' u="sng"' : ''} dirty="0"><a:solidFill>${clr(r.c)}</a:solidFill><a:latin typeface="${FONT_LATIN}"/><a:ea typeface="${FONT_LATIN}"/><a:cs typeface="${FONT_CS}"/></a:rPr><a:t>${esc(r.t)}</a:t></a:r>`;
+    return `<a:r><a:rPr lang="${ar ? 'ar-SA' : 'en-US'}" sz="${r.sz}" b="${r.b ? 1 : 0}" i="${r.i ? 1 : 0}"${r.u ? ' u="sng"' : ''} dirty="0"><a:solidFill>${clr(r.c)}</a:solidFill>${r.hl ? `<a:highlight>${clr(r.hl)}</a:highlight>` : ''}<a:latin typeface="${esc(r.f || FONT_LATIN)}"/><a:ea typeface="${esc(r.f || FONT_LATIN)}"/><a:cs typeface="${esc(r.f || FONT_CS)}"/></a:rPr><a:t>${esc(r.t)}</a:t></a:r>`;
   };
   const paraXml = (runs, o) => {
     const lnS = o.lh ? `<a:lnSpc><a:spcPts val="${Math.round(o.lh)}"/></a:lnSpc>` : '';
@@ -156,18 +156,19 @@
     // runs from child nodes
     const runs = [];
     const bulletLI = cs.display === 'list-item' && cs.listStyleType !== 'none';
-    const walkRuns = (n, pcs) => {
+    const famOf = (c2) => { const f = (c2.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(); return f && !/^(29LT Kaff|Diodrum Arabic|Segoe UI|system-ui|sans-serif)$/i.test(f) ? f : ''; };
+    const walkRuns = (n, pcs, inl) => {
       n.childNodes.forEach((ch) => {
         if (ch.nodeType === 3) {
           let t = ch.textContent.replace(/[⁦⁧⁩]/g, '').replace(/\s+/g, ' ');
           if (!t) return;
           const tt = pcs.textTransform === 'uppercase' ? t.toUpperCase() : t;
           const color = parseColor(pcs.color) || { hex: '3D3935', a: 1 };
-          runs.push({ t: tt, sz: Math.max(100, Math.round(ptOf(num(pcs.fontSize)) * 100)), b: parseInt(pcs.fontWeight, 10) >= 600 || pcs.fontWeight === 'bold', i: pcs.fontStyle === 'italic', u: /underline/.test(pcs.textDecorationLine || ''), c: color });
+          runs.push({ t: tt, sz: Math.max(100, Math.round(ptOf(num(pcs.fontSize)) * 100)), b: parseInt(pcs.fontWeight, 10) >= 600 || pcs.fontWeight === 'bold', i: pcs.fontStyle === 'italic', u: /underline/.test(pcs.textDecorationLine || ''), c: color, f: famOf(pcs), hl: inl ? parseColor(pcs.backgroundColor) : null });
         } else if (ch.nodeType === 1) {
           if (ch.tagName === 'BR') { runs.push({ br: true }); return; }
           const ccs = getComputedStyle(ch); if (ccs.display === 'none') return;
-          walkRuns(ch, ccs);
+          walkRuns(ch, ccs, true);
         }
       });
     };
@@ -241,7 +242,7 @@
         let algn = 'l';
         if (anchor === 'end') { algn = 'r'; x -= extra; w += extra; } else if (anchor === 'middle') { algn = 'ctr'; x -= extra / 2; w += extra; } else w += extra;
         const col = Object.assign({}, fill, { a: fill.a * fa });
-        const run = { t: t, sz: Math.max(100, Math.round(ptOf(fsPx) * 100)), b: parseInt(cs.fontWeight, 10) >= 600, i: false, u: false, c: col };
+        const fam = (cs.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(); const run = { t: t, sz: Math.max(100, Math.round(ptOf(fsPx) * 100)), b: parseInt(cs.fontWeight, 10) >= 600, i: cs.fontStyle === 'italic', u: /underline/.test(cs.textDecorationLine || ''), c: col, f: /^(29LT Kaff|Diodrum Arabic|Segoe UI|system-ui|sans-serif|)$/i.test(fam) ? '' : fam };
         S.shape({ x, y, w, h, txBox: true, text: textBody(paraXml([run], { algn, rtl: ar, lh: 0 }), { anchor: 'ctr', nowrap: true }), name: 'Label' });
         return;
       }
