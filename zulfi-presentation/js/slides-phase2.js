@@ -72,9 +72,10 @@
         const y = pkTop + i * rowH, list = P.list.filter((a) => a.item === key), f = Math.min(...list.map((a) => a.floatB));
         const first = Math.min(...list.map((a) => a.s)), short = { '7.2': 'Railway Track', '3.3': 'FF&E (Furniture)', '6.1': 'Station Road', '4.3': 'Generator Room' }[key];
         svg += `<text x="0" y="${y + 17}" style="font-size:12px;font-weight:700;fill:var(--accent)">${key} ${short}</text>`;
-        const early = f <= 45 && first <= P.start + 45;
-        const lab = f < 0 ? `late ${-Math.round(f)} d` : early ? `MUST START BY ${dt.fmtShort(first + f)}` : f <= 45 ? 'critical – cannot slip' : `${Math.round(f)} d float`;
-        const col = f < 0 ? 'var(--bad)' : f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)';
+        const forced = key === '7.2' || key === '6.1'; // Railway Track and Station Road are treated as critical
+        const early = (f <= 45 || forced) && first <= P.start + 45;
+        const lab = forced && f >= 0 ? `CRITICAL · by ${dt.fmtShort(first + f)}` : f < 0 ? `late ${-Math.round(f)} d` : early ? `MUST START BY ${dt.fmtShort(first + f)}` : f <= 45 ? 'critical – cannot slip' : `${Math.round(f)} d float`;
+        const col = forced || f < 0 ? 'var(--bad)' : f <= 0 ? 'var(--bad)' : f <= 45 ? 'var(--warn)' : 'var(--good)';
         if (early || f < 0) svg += `<text x="${x(first) - 6}" y="${y + 17}" text-anchor="end" style="font-size:11px;font-weight:800;fill:${col}">${lab} ▶</text>`;
         else svg += `<text x="${x(first) - 6}" y="${y + 17}" text-anchor="end" style="font-size:10.5px;font-weight:700;fill:${col}">${lab}</text>`;
         const last = Math.max(...list.map((a) => a.e)), codes = list.map((a) => a.code);
