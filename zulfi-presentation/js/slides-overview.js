@@ -127,10 +127,10 @@
       const X0 = 245, X1 = 1490, t0 = Math.min(M.start, ...ms.map((m) => m.d)) - 4, T = M.finish - t0 + 1;
       const x = (d) => X0 + ((d - t0) / T) * (X1 - X0);
       const PH = (ph) => M.acts.filter((a) => a.phase === ph && a.code !== Z.AUTO);
-      const epcBands = (ph) => [
-        ['Design & approvals', M.acts.filter((a) => a.phase === ph && (a.epc === 'ENG' || a.code === '1.2')), 'var(--eng)', 'band:0', true],
-        ['Procurement', M.acts.filter((a) => a.phase === ph && a.epc === 'PROC'), 'var(--proc)', 'band:2', true],
-        ['Installation & construction', M.acts.filter((a) => a.phase === ph && a.epc === 'CONS'), 'var(--cons)', 'band:3', true],
+      const epcBands = (ph, col) => [
+        ['Design & approvals', M.acts.filter((a) => a.phase === ph && (a.epc === 'ENG' || a.code === '1.2')), col, 'band:0', true],
+        ['Procurement', M.acts.filter((a) => a.phase === ph && a.epc === 'PROC'), col, 'band:2', true],
+        ['Installation & construction', M.acts.filter((a) => a.phase === ph && a.epc === 'CONS'), col, 'band:3', true],
       ];
       const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept design', prelim: 'Preliminary design', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction start', ll: 'Long-lead done', fin: 'Completion' };
       const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
@@ -142,7 +142,7 @@
         const sp = span(PH(ph)); if (!sp) return;
         rows.push({ t: 'b', d: sp.s, bd: [ph, PH(ph), col, 'phase:' + ph], sp });
         pushMs(k);
-        epcBands(ph).forEach((bd) => { const q = span(bd[1]); if (q) rows.push({ t: 'b', d: q.s, bd, sp: q }); });
+        epcBands(ph, col).forEach((bd) => { const q = span(bd[1]); if (q) rows.push({ t: 'b', d: q.s, bd, sp: q }); });
       });
       pushMs('fin');
       const TOP = 34, RH = Math.max(23, Math.min(46, Math.floor(560 / rows.length))), K = RH / 23, FK = Math.min(1.3, 1 + (K - 1) * 0.35), BOT = TOP + rows.length * RH + 4, H = BOT + 40;
@@ -160,10 +160,10 @@
       rows.forEach((r, i) => {
         const cy = TOP + i * RH + RH / 2;
         if (r.t === 'b') {
-          const bd = r.bd, sp = r.sp, y = cy - 8 * K, h = 16 * K;
+          const bd = r.bd, sp = r.sp, y = cy - (bd[4] ? 6 : 8) * K, h = (bd[4] ? 12 : 16) * K;
           const tip = F.tip(bd[0], [['', 'Start', dt.fmt(sp.s)], ['', 'Finish', dt.fmt(sp.e)], ['', 'Activities', bd[1].length]]);
           const w = Math.max(6, x(sp.e + 1) - x(sp.s));
-          svg += `<text x="${bd[4] ? 26 : 8}" y="${cy + 4}" style="font-size:${((bd[4] ? 11 : 12) * FK).toFixed(1)}px;font-weight:${bd[4] ? 600 : 800};fill:${bd[2]}">${bd[0].length > 30 ? bd[0].slice(0, 28) + '…' : bd[0]}</text><g class="hit" data-cat="${bd[3]}" data-tip="${tip}"><rect x="${x(sp.s)}" y="${y}" width="${w}" height="${h}" rx="${5 * K}" fill="${bd[2]}" class="hv"/>${w > 190 ? `<text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${cy + 4}" text-anchor="end" style="fill:#fff;font-size:${(11 * FK).toFixed(1)}px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${cy + 4}" style="font-weight:700;font-size:${(11 * FK).toFixed(1)}px;fill:var(--accent)">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
+          svg += `<text x="${bd[4] ? 26 : 8}" y="${cy + 4}" style="font-size:${((bd[4] ? 11 : 12) * FK).toFixed(1)}px;font-weight:${bd[4] ? 600 : 800};fill:${bd[2]}">${bd[0].length > 30 ? bd[0].slice(0, 28) + '…' : bd[0]}</text><g class="hit" data-cat="${bd[3]}" data-tip="${tip}"><rect x="${x(sp.s)}" y="${y}" width="${w}" height="${h}" rx="${5 * K}" fill="${bd[2]}" ${bd[4] ? 'fill-opacity=".42"' : ''} class="hv"/>${w > 190 ? `<text x="${Math.min(X1, x(sp.e + 1) - 8)}" y="${cy + 4}" text-anchor="end" style="fill:${bd[4] ? 'var(--accent)' : '#fff'};font-size:${(11 * FK).toFixed(1)}px">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>` : `<text x="${x(sp.e + 1) + 8}" y="${cy + 4}" style="font-weight:700;font-size:${(11 * FK).toFixed(1)}px;fill:var(--accent)">${dt.fmtShort(sp.s)} – ${dt.fmtShort(sp.e)}</text>`}</g>`;
           return;
         }
         const m = r.m, px = x(Math.min(m.d, M.finish)), txt = `◆ ${A.L(SHORT[m.k] || m.name, { ntp: 'أمر البدء', p2: 'بداية المرحلة الثانية', fin: 'الإنجاز' }[m.k] || m.name)}`;
