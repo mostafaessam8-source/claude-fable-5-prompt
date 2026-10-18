@@ -61,6 +61,7 @@
       svg += `<rect x="${x(P.start)}" y="32" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 32}" fill="var(--ph2)" opacity=".06"/>`;
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="32" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
       // period header
+      if (x(P.start) - x(M.start) > 6) svg += `<rect x="${x(M.start)}" y="2" width="${x(P.start) - x(M.start)}" height="26" rx="5" fill="#d9eef2"/><text x="${(x(M.start) + x(P.start)) / 2}" y="19" text-anchor="middle" style="font-size:11.5px;font-weight:800;fill:var(--brand-d)">Phase 1 alone · ${F.months(aMonths)} months</text>`;
       svg += `<rect x="${x(P.start)}" y="2" width="${Math.max(6, x(ovEnd + 1) - x(P.start))}" height="26" rx="5" fill="#e3def9"/><text x="${(x(P.start) + x(ovEnd + 1)) / 2}" y="19" text-anchor="middle" style="font-size:12px;font-weight:800;fill:#4a3bb3">Phase 1 + Phase 2 together · ${F.months(bMonths)} months</text>`;
       // one bar per phase
       svg += `<text x="0" y="50" style="font-size:12.5px;font-weight:800;fill:var(--ph1)">Phase 1</text><rect x="${x(M.start)}" y="36" width="${x(p1End + 1) - x(M.start)}" height="20" rx="4" fill="var(--ph1)"/><text x="${x(M.start) + 8}" y="50" style="fill:#fff;font-size:11px;font-weight:700">${dt.fmtShort(M.start)} → ${dt.fmtShort(p1End)}</text>`;
