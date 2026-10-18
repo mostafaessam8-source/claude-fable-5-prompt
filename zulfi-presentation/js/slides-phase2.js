@@ -56,7 +56,8 @@
       const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = pkTop + ITEMS.length * rowH + 6;
       const q2 = { s: P.start, e: Math.max(...P.list.map((a) => a.e)) };
       const aMonths = (P.start - M.start) / 30.4375, bMonths = (ovEnd + 1 - P.start) / 30.4375;
-      let svg = `<svg viewBox="0 0 ${W} ${bot + 36}" width="100%" style="min-width:760px">`;
+      let svg = `<svg viewBox="0 0 ${W} ${bot + 36}" width="100%" style="min-width:760px;touch-action:pan-y" data-rl="1" data-t0="${t0}" data-t1="${t1}" data-w="${W}" data-l="${L}" data-r="${R}" data-bot="${bot}" data-pk="${pkTop}" data-rh="${rowH}" data-n="${ITEMS.length}">`;
+      svg += `<rect id="hcol" x="0" y="32" width="10" height="${bot - 32}" fill="var(--brand)" opacity=".12" style="display:none" pointer-events="none"/><rect id="hrow" x="${L}" y="0" width="${W - L - R}" height="20" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/>`;
       svg += `<rect x="${x(P.start)}" y="32" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 32}" fill="var(--ph2)" opacity=".06"/>`;
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="32" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
       // period header
@@ -79,6 +80,7 @@
       });
       svg += `<line x1="${x(P.start)}" x2="${x(P.start)}" y1="30" y2="${bot}" stroke="var(--ph2)" stroke-width="2"/>`;
       if (delay > 0) svg += `<line x1="${x(M.finish)}" x2="${x(M.finish)}" y1="30" y2="${bot}" stroke="var(--bad)" stroke-width="2"/><text x="${x(M.finish) - 4}" y="${bot + 30}" text-anchor="end" style="font-size:10.5px;font-weight:800;fill:var(--bad);paint-order:stroke;stroke:#fff;stroke-width:3px">New completion ${dt.fmtShort(M.finish)} (${F.days(delay)})</text>`;
+      svg += `<g id="hdate" style="display:none" pointer-events="none"><line id="hline" x1="0" x2="0" y1="30" y2="${bot}" stroke="var(--brand-d)" stroke-width="1"/><rect id="hbox" x="0" y="2" width="170" height="26" rx="6" fill="var(--brand-d)"/><text id="htxt" x="0" y="13" text-anchor="middle" style="fill:#fff;font-size:11.5px;font-weight:800"></text><text id="htxt2" x="0" y="24" text-anchor="middle" style="fill:#cfeef3;font-size:9.5px"></text></g>`;
       svg += '</svg>';
 
       const rows = crit.map((a) => {
@@ -114,6 +116,31 @@
         </div>`;
     },
     after(el) {
+      const svg = el.querySelector('svg[data-rl]');
+      if (svg) {
+        const M0 = A.s.M, d = svg.dataset, t0 = +d.t0, t1 = +d.t1, W = +d.w, L = +d.l, Rr = +d.r, bot = +d.bot, pk = +d.pk, rh = +d.rh, n = +d.n;
+        const q = (id) => svg.querySelector('#' + id), hrow = q('hrow'), hcol = q('hcol'), hd = q('hdate');
+        const x = (day) => L + ((day - t0) / (t1 - t0)) * (W - L - Rr);
+        const iso = (t) => (A.isAr() ? '\u2066\u2067' + A.tr(t) + '\u2069\u2069' : t);
+        const hide = () => { hrow.style.display = hcol.style.display = hd.style.display = 'none'; };
+        const show = (e) => {
+          const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+          if (p.x < L || p.x > W - Rr || p.y < 30 || p.y > bot) { hide(); return; }
+          const day = Math.round(t0 + ((p.x - L) / (W - L - Rr)) * (t1 - t0)), k = Math.max(0, Math.min(M0.N - 1, dt.bucketOf(M0.start, day)));
+          const row = p.y >= pk ? [pk + Math.min(n - 1, Math.floor((p.y - pk) / rh)) * rh, rh] : p.y < 58 ? [36, 22] : [60, 22];
+          hrow.setAttribute('y', row[0]); hrow.setAttribute('height', row[1]); hrow.style.display = '';
+          const m0 = Math.max(M0.bs[k], t0), m1 = Math.min(M0.bs[k + 1], t1);
+          hcol.setAttribute('x', x(m0)); hcol.setAttribute('width', Math.max(2, x(m1) - x(m0))); hcol.style.display = '';
+          const lx = x(day), cx = Math.min(W - 87, Math.max(L + 2, lx));
+          q('hline').setAttribute('x1', lx); q('hline').setAttribute('x2', lx);
+          q('hbox').setAttribute('x', cx - 85); q('htxt').setAttribute('x', cx); q('htxt2').setAttribute('x', cx);
+          q('htxt').textContent = iso(dt.fmt(day)); q('htxt2').textContent = A.L('Month ' + (k + 1) + ' of ' + M0.N, 'الشهر ' + (k + 1) + ' من ' + M0.N);
+          hd.style.display = '';
+        };
+        svg.addEventListener('pointermove', show);
+        svg.addEventListener('pointerdown', show);
+        svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
+      }
       const r = el.querySelector('#p2range'), l = el.querySelector('#p2lbl');
       if (r && l) r.addEventListener('input', () => { const P = Z.phase2(A.s.M); l.textContent = dt.fmt(P.baseStart + (+r.value)) + ' (' + F.days(+r.value) + ')'; });
     },

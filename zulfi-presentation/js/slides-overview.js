@@ -147,7 +147,7 @@
       });
       ms.forEach((m, i) => { if (m.k === 'fin') rows.push({ t: 'm', d: m.d, m, i }); });
       const TOP = 34, RH = Math.max(23, Math.min(46, Math.floor(560 / rows.length))), K = RH / 23, FK = Math.min(1.3, 1 + (K - 1) * 0.35), BOT = TOP + rows.length * RH + 4, H = BOT + 40;
-      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
+      let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px;touch-action:pan-y" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
       rows.forEach((r, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOP + i * RH}" width="1512" height="${RH}" fill="#f4f8fa"/>`; });
       svg += `<rect id="hrow" x="0" y="0" width="1512" height="${RH}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/><rect id="hcol" x="0" y="${TOP - 4}" width="26" height="${BOT - TOP + 4}" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/>`;
       // date ruler – top and bottom
@@ -221,7 +221,7 @@
     const top = +svg.dataset.top, rh = +svg.dataset.rh, nR = +svg.dataset.n, bot = +svg.dataset.bot, M0 = A.s.M;
     const q = (id) => svg.querySelector('#' + id), hrow = q('hrow'), hcol = q('hcol'), hd = q('hdate');
     const toSvg = (e) => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
-    svg.addEventListener('pointermove', (e) => {
+    const showRuler = (e) => {
       if (drag) return;
       const p = toSvg(e);
       if (p.x < X0 || p.x > X1 || p.y < top - 4 || p.y > bot) { hrow.style.display = hcol.style.display = hd.style.display = 'none'; return; }
@@ -236,10 +236,12 @@
       q('hbox').setAttribute('x', Math.min(1512 - 154, Math.max(2, lx - 75)));
       const cx = Math.min(1512 - 79, Math.max(77, lx));
       q('htxt').setAttribute('x', cx); q('htxt2').setAttribute('x', cx);
-      q('htxt').textContent = dt.fmt(d); q('htxt2').textContent = 'Month ' + (k + 1) + ' of ' + M0.N;
+      q('htxt').textContent = A.isAr() ? '\u2066\u2067' + A.tr(dt.fmt(d)) + '\u2069\u2069' : dt.fmt(d); q('htxt2').textContent = A.L('Month ' + (k + 1) + ' of ' + M0.N, 'الشهر ' + (k + 1) + ' من ' + M0.N);
       hd.style.display = '';
-    });
-    svg.addEventListener('pointerleave', () => { hrow.style.display = hcol.style.display = hd.style.display = 'none'; });
+    };
+    svg.addEventListener('pointermove', showRuler);
+    svg.addEventListener('pointerdown', showRuler);
+    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hrow.style.display = hcol.style.display = hd.style.display = 'none'; });
     svg.querySelectorAll('[data-grant]').forEach((g) => {
       g.addEventListener('pointerdown', (e) => { drag = { g, k: g.dataset.grant, x0: e.clientX, moved: false, day: +g.dataset.day }; g.setPointerCapture(e.pointerId); e.preventDefault(); });
       g.addEventListener('pointermove', (e) => {
