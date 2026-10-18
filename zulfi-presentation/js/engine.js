@@ -332,18 +332,23 @@
     p2.forEach((a) => walk(a.code));
     clear.forEach((c) => delete cur.ov[c]);
     const delta = day - b0;
-    if (delta < 0) {
-      // pull only the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
+    // pull the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
+    const pull = (c, d, endAt) => {
       const early = new Set(p2.filter((a) => bd[a.code][0] <= b0 + 45).map((a) => a.item));
-      p2.filter((a) => early.has(a.item)).forEach((a) => (cur.ov[a.code] = [Math.max(st.start, bd[a.code][0] + delta), Math.max(st.start, bd[a.code][1] + delta)]));
-      return cur;
+      p2.filter((a) => early.has(a.item)).forEach((a) => (c.ov[a.code] = [Math.max(st.start, bd[a.code][0] + d), Math.max(st.start, bd[a.code][1] + d)]));
+      // critical packages (set by the deck): the installation absorbs the earlier start and still ends with the project, so any slip moves the completion date
+      if (endAt) (Z.CRIT_P2 || []).forEach((item) => { const bb = p2.find((a) => a.item === item && a.kind === 'b'); if (bb && c.ov[bb.code]) c.ov[bb.code] = [c.ov[bb.code][0], Math.max(c.ov[bb.code][1], endAt)]; });
+      return c;
+    };
+    const push = (c, d) => { Z.TOPO.filter((x) => Z.isP2(BY[x])).forEach((x) => { const m = Z.compute(c).by[x]; if (m.s < d) c = Z.setActivity(c, x, d, d + (m.e - m.s), { link: 'push' }); }); return c; };
+    if (Z.CRIT_P2 && Z.CRIT_P2.length && Z.planP2) {
+      const plan = Math.max(Z.planP2(st.start), st.start), fin = Z.compute(cur).base.finish;
+      if (day <= plan) return pull(cur, day - b0, fin);
+      return push(pull(cur, plan - b0, fin), day);
     }
+    if (delta < 0) return pull(cur, delta);
     if (delta === 0) return cur;
-    Z.TOPO.filter((c) => Z.isP2(BY[c])).forEach((c) => {
-      const m = Z.compute(cur).by[c];
-      if (m.s < day) cur = Z.setActivity(cur, c, day, day + (m.e - m.s), { link: 'push' });
-    });
-    return cur;
+    return push(cur, day);
   };
 
   /* ---------------------------------------------------------- milestones */
