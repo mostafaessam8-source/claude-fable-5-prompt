@@ -20,7 +20,6 @@
     ['m-intro', ['Introduction', 'المقدمة']],
     ['m-about', ['About the project', 'نبذة عن المشروع']],
     ['m-status', ['Current project status', 'حالة المشروع الحالية']],
-    ['m-guar', ['Status of the guarantees provided by the Association', 'حالة الضمانات المقدمة من الجمعية']],
     ['m-cash6', ['Project cash flows during the first six months', 'التدفقات النقدية للمشروع خلال الأشهر الستة الأولى']],
     ['m-next', ['Next steps', 'الخطوات القادمة']],
   ];
@@ -54,7 +53,7 @@
     id: 'm-intro', i18n: { en: ['Introduction', 'Purpose of this presentation'], ar: ['المقدمة', 'الغرض من العرض'] },
     render() {
       return A.mhead('m-intro', L('Introduction', 'المقدمة'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
-        split('photo-platform.jpg', ED('intro:body', L('This presentation summarises the current position of the Al-Zulfi Railway Station project, the latest developments on the signing of the project contract, the guarantees provided by the Association, and the next steps to start project execution.', 'يقدم هذا العرض ملخصًا عن الوضع الحالي لمشروع محطة قطار الزلفي، وأبرز المستجدات المتعلقة بتوقيع عقد المشروع، والضمانات المقدمة من الجمعية، إضافة إلى الخطوات القادمة لبدء تنفيذ المشروع.'), null, { tag: 'p', style: 'font-size:34px;line-height:1.85;margin:0' }));
+        split('photo-platform.jpg', ED('intro:body', L('This presentation summarises the current position of the Al-Zulfi Railway Station project, the latest developments on the signing of the project contract, and the next steps to start project execution.', 'يقدم هذا العرض ملخصًا عن الوضع الحالي لمشروع محطة قطار الزلفي، وأبرز المستجدات المتعلقة بتوقيع عقد المشروع، إضافة إلى الخطوات القادمة لبدء تنفيذ المشروع.'), null, { tag: 'p', style: 'font-size:34px;line-height:1.85;margin:0' }));
     },
   });
 
@@ -85,16 +84,6 @@
       return A.mhead('m-status', L('Current project status', 'حالة المشروع الحالية'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
         split('photo-train.jpg', `<div class="st-list">${it.map(([done, t], i) => `<div class="st-item"><i class="${done ? 'ok' : 'wip'}">${done ? '✓' : '…'}</i>${ED('st:' + i, t, null, { tag: 'span' })}</div>`).join('')}</div>
           <div class="st-leg"><span><i class="ok">✓</i>${L('Completed', 'مكتمل')}</span><span><i class="wip">…</i>${L('In progress', 'قيد التنفيذ')}</span></div>`);
-    },
-  });
-
-  /* ---------------------------------------------------------------- 8 guarantees */
-  mkSlide({
-    id: 'm-guar', i18n: { en: ['Guarantees', 'Guarantees provided by the Association'], ar: ['الضمانات', 'الضمانات المقدمة من الجمعية'] },
-    render() {
-      return A.mhead('m-guar', L('Status of the guarantees provided by the Association', 'حالة الضمانات المقدمة من الجمعية'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
-        split('photo-platform.jpg', ED('gu:body', L('Part of the required guarantees has been received from the Riyadh Logistics Services Cooperative Association. The remaining part must be completed and submitted within one year, in accordance with the agreed arrangements.', 'تم استلام جزء من الضمانات المطلوبة من الجمعية التعاونية للخدمات اللوجستية بمنطقة الرياض، ويتعين استكمال وتقديم الجزء المتبقي من الضمانات خلال مدة سنة وفقًا للترتيبات المتفق عليها.'), null, { tag: 'p', style: 'font-size:32px;line-height:1.85;margin:0 0 28px' }) +
-          `<div class="callout"><b>${L('Required', 'المطلوب')}</b>${ED('gu:call', L('Submit the remaining guarantees within one year, as agreed.', 'تقديم الجزء المتبقي من الضمانات خلال سنة وفق الاتفاق.'), null, { tag: 'span' })}</div>`);
     },
   });
 

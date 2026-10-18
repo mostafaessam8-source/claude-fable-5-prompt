@@ -17,7 +17,7 @@ Slides follow the workbook sheets: Dashboard → WBS & CBS → 26-Month Schedule
 * `downloads/Zulfi_Station_WBS_CBS_Schedule.xlsx` – the source workbook.
 
 ## Management update deck (Arabic / English) – `management.html`
-SAR-template deck rebuilt from the "عرض مستجدات مشروع محطة قطار الزلفي" PowerPoint: cover, agenda (side menu), introduction, about the project, current status, guarantees, first-six-months cash flow, next steps and thank-you – plus the **Milestones**, **Why Phase 2 starts with Phase 1** and **Cash flow & S-curve** slides of the main deck (live model, same scenario controls).
+SAR-template deck rebuilt from the "عرض مستجدات مشروع محطة قطار الزلفي" PowerPoint: cover, agenda (side menu), introduction, about the project, current status, first-six-months cash flow, next steps and thank-you – plus the **Milestones**, **Why Phase 2 starts with Phase 1** and **Cash flow & S-curve** slides of the main deck (live model, same scenario controls).
 * Language switch (toolbar): the whole deck flips between Arabic (RTL, default) and English; edits are stored per language.
 * **Edit** mode: click any text to change it (saved in the browser), drag the milestones, **Delete this slide** / **Restore deleted slides**. **Reset** restores everything.
 * Cash flow slide: Monthly / Quarterly / Half-year / Yearly + **Export Excel** (SAR-styled, Arabic sheet when the deck is in Arabic).
