@@ -315,11 +315,15 @@
     tip.style.left = Math.max(6, x) + 'px'; tip.style.top = Math.max(6, y) + 'px';
   }
 
+  // deck mode: the planned Phase 2 start is April (month 7, with the first procurement); the baseline stays as the comparison
+  A.planP2 = (start) => dt.addMonths(start, 6);
+  A.freshState = (iso) => { const s = Z.newState(iso || '2026-10-25'); return MODE ? Z.setPhase2Start(s, A.planP2(s.start)) : s; };
+
   /* -------------------------------------------------------- built-in actions */
   A.actions.closeDrawer = () => A.closeDrawer();
   A.actions.resetDefault = () => {
     if (!confirm('Reset the presentation to its default?\n\nThis restores the project start date (25 Oct 2026), all activity dates, weightages, filters and views.')) return;
-    A.s.st = Z.newState('2026-10-25');
+    A.s.st = A.freshState();
     Object.assign(A.s.f, { phase: 'all', epc: [], group: 'all', ll: false, crit: false, chg: false, q: '' });
     A.s.ui = {}; A.s.drawer = null; $('#fQ').value = '';
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
@@ -452,8 +456,10 @@
         if (/^#\d+$/.test(h)) slide = +h.slice(1) - 1;
       }
     } catch (e) { st = null; }
-    A.s.st = st || Z.newState('2026-10-25');
+    A.s.st = st || A.freshState();
     // heal states saved before the Phase 2 fix: releasing Phase 2 early can never finish later than the baseline
+    // deck mode, one-time: an untouched saved scenario adopts the April Phase 2 plan
+    try { const n = (A.s.st.notes = A.s.st.notes || {}); if (MODE && !n.__p2plan) { n.__p2plan = '1'; if (!Object.keys(A.s.st.ov).length) A.s.st = Z.setPhase2Start(A.s.st, A.planP2(A.s.st.start)); } } catch (e) { /* ignore */ }
     try { const M0 = Z.compute(A.s.st), P0 = Z.phase2(M0); if (P0.start <= P0.baseStart && M0.finish > M0.base.finish) A.s.st = Z.setPhase2Start(A.s.st, P0.start); } catch (e) { /* ignore */ }
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
