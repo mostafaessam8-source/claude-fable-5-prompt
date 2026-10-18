@@ -358,17 +358,10 @@
     const list = [
       { k: 'grant1', name: 'Phase 1 amount granted (funds approved) – movable', d: M.start - g1, bd: M.start - Z.DEFAULT_MS.g1, nav: 'miles', edit: 'g1' },
       { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
-      { k: 'access', name: 'Access permits approved', d: b['1.2'].e, bd: bb['1.2'].e, code: '1.2' },
-      { k: 'concept', name: 'Concept design approved', d: b['2.2'].e, bd: bb['2.2'].e, code: '2.2' },
-      { k: 'prelim', name: 'Preliminary design approved', d: b['2.4'].e, bd: bb['2.4'].e, code: '2.4' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
       { k: 'grant2', name: 'Phase 2 amount granted (funds approved) – movable', d: P2.start - g2, bd: P2.baseStart - Z.DEFAULT_MS.g2, nav: 'phase2', edit: 'g2' },
       { k: 'p2', name: 'Phase 2 start (release) – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
       { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
-      { k: 'detail', name: 'Detailed design approved', d: b['2.6'].e, bd: bb['2.6'].e, code: '2.6' },
-      { k: 'permit', name: 'Work permit approved', d: b['1.3'].e, bd: bb['1.3'].e, code: '1.3' },
-      { k: 'cons', name: 'Construction starts on site', d: minS((a) => a.kind === 'b'), bd: bminS((a) => a.kind === 'b') },
-      { k: 'll', name: 'Long-lead deliveries complete', d: maxE(ll), bd: bmaxE(ll) },
       { k: 'fin', name: 'Practical completion', d: M.finish, bd: M.base.finish, code: '1.1' },
     ];
     list.forEach((m) => (m.delta = m.d - m.bd));
