@@ -355,7 +355,7 @@
   Z.milestones = function (M) {
     const b = M.by, bb = M.base.by, st = M.st;
     const g1 = st.ms ? st.ms.g1 : 30, g2 = st.ms ? st.ms.g2 : 30;
-    const P2 = Z.phase2(M);
+    const P2 = Z.phase2(M), p2Plan = Z.planP2 ? Math.max(Z.planP2(M.start), M.start) : P2.baseStart; // deck mode: variances are measured against the April plan
     const minS = (f) => Math.min(...M.acts.filter(f).map((a) => a.s));
     const maxE = (f) => Math.max(...M.acts.filter(f).map((a) => a.e));
     const bminS = (f) => Math.min(...M.base.acts.filter(f).map((a) => a.s));
@@ -365,9 +365,9 @@
       { k: 'grant1', name: 'Phase 1 amount granted (funds approved) – movable', d: M.start - g1, bd: M.start - Z.DEFAULT_MS.g1, nav: 'miles', edit: 'g1' },
       { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
-      { k: 'grant2', name: 'Phase 2 amount granted (funds approved) – movable', d: P2.start - g2, bd: P2.baseStart - Z.DEFAULT_MS.g2, nav: 'phase2', edit: 'g2' },
-      { k: 'p2', name: 'Phase 2 start – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
-      { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
+      { k: 'grant2', name: 'Phase 2 amount granted (funds approved) – movable', d: P2.start - g2, bd: p2Plan - Z.DEFAULT_MS.g2, nav: 'phase2', edit: 'g2' },
+      { k: 'p2', name: 'Phase 2 start – movable', d: P2.start, bd: p2Plan, nav: 'phase2', edit: 'p2' },
+      { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: p2Plan, nav: 'phase2' },
       { k: 'fin', name: 'Practical completion', d: M.finish, bd: M.base.finish, code: '1.1' },
     ];
     list.forEach((m) => (m.delta = m.d - m.bd));
