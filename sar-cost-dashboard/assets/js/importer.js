@@ -797,8 +797,147 @@
       out[tname] = rows;
       report.push({ table: tname, rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: via });
     });
-    return { source: source, label: spec.label, tables: out, report: report };
+    var res = { source: source, label: spec.label, tables: out, report: report };
+    // the combined "EPBU NSR Projects Database" workbook = weekly query tables + the delivery plan in normalized tables
+    if (source === "weekly" && isCombined(names)) {
+      res.extra = [planFromCombined(XLSX, wb, meta)];
+      res.combined = true;
+    }
+    return res;
   }
 
-  return { SOURCES: SOURCES, parseWorkbook: parseWorkbook, normKey: normKey };
+  /* ---------------------------------------------------------------------- */
+  /* Combined workbook (test version): the plan lives in normalized tables   */
+  /* (Projects, Monthly_Plan, KPI_Scorecard, Delivery_Targets, …). They are  */
+  /* turned back into the old Delivery Plan tables so every page keeps       */
+  /* working, whichever file was imported.                                   */
+  /* ---------------------------------------------------------------------- */
+  var COMBINED = ["Projects", "Monthly_Plan", "KPI_Scorecard"];
+  function isCombined(names) { return COMBINED.every(function (n) { return names.indexOf(n) >= 0; }); }
+
+  function tableRows(XLSX, wb, meta, name) {
+    var t = meta.tables[name];
+    if (!t || !wb.Sheets[t.sheet]) return [];
+    return readRange(XLSX, wb.Sheets[t.sheet], t.ref, t.columns, t.headerRowCount, t.totalsRowCount);
+  }
+  /* row with the old (original) column names */
+  function rec(o) { var r = {}; Object.keys(o).forEach(function (k) { r[normKey(k)] = o[k] === undefined ? null : o[k]; }); return r; }
+
+  function planFromCombined(XLSX, wb, meta) {
+    function T(n) { return tableRows(XLSX, wb, meta, n); }
+    function g(row, k) { var v = row[normKey(k)]; return v === undefined ? null : v; }
+    var P = T("Projects"), MP = T("Monthly_Plan"), KS = T("KPI_Scorecard"), DT = T("Delivery_Targets");
+    var byCode = {}, months = {};
+    P.forEach(function (p) { byCode[String(g(p, "Code"))] = p; });
+    MP.forEach(function (m) { var c = String(g(m, "Code")); (months[c] = months[c] || []).push(m); });
+    function num(v) { return typeof v === "number" ? v : v == null || v === "" ? null : +v; }
+    function sub(a, b) { return a == null && b == null ? null : (num(a) || 0) - (num(b) || 0); }
+
+    var sp = [];
+    Object.keys(months).forEach(function (code) {
+      var p = byCode[code] || {}, rows = months[code].slice().sort(function (a, b) { return String(g(a, "Month")).localeCompare(String(g(b, "Month"))); });
+      rows.forEach(function (m, i) {
+        var ytd = g(m, "In YTD?") === "Yes";
+        sp.push(rec({
+          "Month": g(m, "Month"), "Fund Type": g(p, "Fund Type"), "PROG": g(p, "Program"), "ID": code, "Project Name": g(p, "Short Name"),
+          "Full Cost": g(p, "Full Cost (SAR)"), "Contract Value": g(p, "Contract Value (SAR)"),
+          "WC previous year": g(p, "WC Previous Years (SAR)"), "WC current year": g(p, "WC Current Year (SAR)"), "Total WC YTD": g(p, "Total WC (SAR)"),
+          "Paid from CV as per ERP": g(p, "Paid from CV as per ERP (SAR)"), "Remaining WC": g(p, "Remaining WC (SAR)"),
+          "Pending payment from approved WC and submitted invoice": g(p, "Pending Payment (SAR)"),
+          "Start Date": g(p, "Start Date"), "End Date": g(p, "End Date"), "Project Phase": g(p, "Project Phase"),
+          "Total Project Spend Plan as per Budgeting FTY 2026": i === 0 ? g(p, "Budget Plan FY (SAR)") : null,
+          "Spend Plan as per Budgeting (Incr)": g(m, "Budget Plan (Incr)"),
+          "Plan as per V0 Forecast in Jan-26 (Shared with PC) (Incr)2": g(m, "V0 Forecast Jan-26 (Incr)"),
+          "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Incr)3": g(m, "V2 Forecast Mar-26 (Incr)"),
+          "Actual Spend (Incr)4": g(m, "Actual Spend (Incr)"),
+          "Forecast as per Contractor cashflow / updated Progress / Program(Incr)5": g(m, "Contractor Forecast (Incr)"),
+          "Invoice Related actvities": g(m, "Invoice-related Activities"),
+          "Spend Plan as per Budgeting (Cum)": g(m, "Budget Plan (Cum)"),
+          "Plan as per V0 Forecast in Jan-26 (Shared with PC) (Cum)2": g(m, "V0 Forecast (Cum)"),
+          "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Cum)3": g(m, "V2 Forecast (Cum)"),
+          "Actual Spend(Cum)4": g(m, "Actual Spend (Cum)"),
+          "Forecast as per Contractor cashflow / updated Progress / Program(Cum)5": g(m, "Contractor Forecast (Cum)"),
+          "Milestones": g(m, "Milestones"),
+          "YTD Spend Plan as per Budgeting": ytd ? num(g(m, "Budget Plan (Incr)")) || 0 : null,
+          "YTD Plan as per V2 Forecast": ytd ? num(g(m, "V2 Forecast Mar-26 (Incr)")) || 0 : null,
+          "YTD Actual": ytd ? num(g(m, "Actual Spend (Incr)")) || 0 : null,
+          "Remarks/Concern": g(m, "Remarks / Concern")
+        }));
+      });
+    });
+
+    var kpiOf = {};
+    KS.forEach(function (k) { kpiOf[String(g(k, "KPI Code"))] = k; });
+    var planned = P.filter(function (p) { return months[String(g(p, "Code"))]; });
+    var kpd = planned.filter(function (p) { return g(p, "KPI Code") != null; }).map(function (p) {
+      var k = kpiOf[String(g(p, "KPI Code"))] || {};
+      var yb = g(p, "YTD Budget Plan (SAR)"), ya = g(p, "YTD Actual (SAR)");
+      return rec({
+        "Code": g(p, "Code"), "Project Name": g(p, "Short Name"), "KPI Code": g(p, "KPI Code"), "KPI Filter": g(k, "Perspective"),
+        "Objective/ KPIs": g(k, "Objective / KPI"), "Category Type": g(p, "Fund Type"),
+        "Spend Plan as per Budgeting (M) FTY 2026": g(p, "Budget Plan FY (SAR)"), "Spend Plan as per V2 Forecast (M) FTY 2026": g(p, "V2 Forecast FY (SAR)"),
+        "Variance (M)": g(p, "FY Variance Budget − V2 (SAR)"),
+        "Forecast as per Contractor cashflow / updated Progress / Program": g(p, "Contractor Forecast FY (SAR)"),
+        "YTD Spend Plan as per Budgeting (M)": yb, "YTD Plan as per V2 Forecast (M)2": g(p, "YTD V2 Forecast (SAR)"), "YTD Actual (M)": ya,
+        "Variance (M)2 w.r.t. Budgeting Spending Plan": g(p, "YTD Variance vs Budget (SAR)"), "Variance (M)2 w.r.t. V2 forecast Plan": g(p, "YTD Variance vs V2 (SAR)"),
+        "%Variance w.r.t. Budgeting Spending Plan": g(p, "YTD % Variance vs Budget"),
+        "Interval Plan as per V2 Forecast for next month": g(p, "Next Month V2 Forecast (SAR)"),
+        "Interval Forecast as per Contractor cashflow for next month": g(p, "Next Month Contractor Forecast (SAR)"), "Remarks": null
+      });
+    });
+    // manual KPIs (safety, governance, …) – the old file listed them as "-" rows too
+    KS.filter(function (k) { return g(k, "Measured From") !== "Monthly Plan" && num(g(k, "FY Target / Plan")); }).forEach(function (k) {
+      var t = g(k, "YTD Target / Plan"), a = g(k, "YTD Actual");
+      kpd.push(rec({ "Code": "-", "Project Name": g(k, "Objective / KPI"), "KPI Code": g(k, "KPI Code"), "KPI Filter": g(k, "Perspective"),
+        "Objective/ KPIs": g(k, "Objective / KPI"), "Category Type": g(k, "Perspective"), "Spend Plan as per Budgeting (M) FTY 2026": g(k, "FY Target / Plan"),
+        "YTD Spend Plan as per Budgeting (M)": t, "YTD Actual (M)": a, "%Variance w.r.t. Budgeting Spending Plan": t ? (num(a) - num(t)) / num(t) : 0 }));
+    });
+
+    var nsr = planned.map(function (p, i) {
+      return rec({ "SN": i + 1, "Fund Type": g(p, "Fund Type"), "PROG": g(p, "Program"), "Section": g(p, "Section"), "PO Number": g(p, "PO Number"),
+        "ID": g(p, "Code"), "Project Name": g(p, "Short Name"), "Full Cost": g(p, "Full Cost (SAR)"), "Contract Value": g(p, "Contract Value (SAR)"),
+        "WC 2025": g(p, "WC Previous Years (SAR)"), "WC 2026": g(p, "WC Current Year (SAR)"), "Total WC": g(p, "Total WC (SAR)"), "Total WC %": g(p, "Total WC %"),
+        "Paid from CV as per ERP (Gross value)": g(p, "Paid from CV as per ERP (SAR)"), "Remaining WC": g(p, "Remaining WC (SAR)"),
+        "Start Date": g(p, "Start Date"), "End Date": g(p, "End Date"), "Project Phase": g(p, "Project Phase"), "Remarks/Concern": g(p, "Remarks / Concern") });
+    });
+
+    var summary = KS.map(function (k) {
+      return rec({ "KPI Code": g(k, "KPI Code"), "KPI SN": g(k, "KPI Code"), "KPI Filter": g(k, "Perspective"), "Objective/ KPIs": g(k, "Objective / KPI"),
+        "KPI Weight (%)": g(k, "KPI Weight"), "NSR Spend Plan 2026 as per Budgeting": g(k, "FY Target / Plan"), "NSR V2 Forecast 2026 shared to PC": g(k, "FY V2 Forecast"),
+        "FTY Variance": g(k, "FY Variance"), "YTD Spend Plan 2026 as per Budgeting": g(k, "YTD Target / Plan"), "YTD V2 Forecast 2026": g(k, "YTD V2 Forecast"),
+        "YTD Actual": g(k, "YTD Actual"), "YTD Variance": g(k, "YTD Variance"), "% Achieved": g(k, "% Achieved"), "KPI Result": g(k, "KPI Result"),
+        "Indicator": g(k, "Indicator"), "Remarks": g(k, "Remarks") });
+    });
+
+    var k12 = KS.filter(function (k) { return /delivery against approved business plan/i.test(g(k, "Objective / KPI") || ""); })[0] || {};
+    var dkpi = DT.map(function (d) {
+      var p = byCode[String(g(d, "Project Code"))] || {};
+      return rec({ "KPI Filter": g(k12, "Perspective"), "Objective/ KPIs": g(k12, "Objective / KPI"), "KPI Weight (%)": g(k12, "KPI Weight"),
+        "Project Code": g(d, "Project Code"), "NSR Plan": g(d, "Project") || g(p, "Project Name"), "Performing Organization BU": "E&P",
+        "Actual Phase": g(d, "Project Phase"), "Budget (SAR)": g(d, "Budget (Full Cost, SAR)"), "Target Completion Date": g(d, "Target Completion Date"),
+        "Current SPI": g(d, "SPI (weekly)"), "Project End Date": g(p, "End Date"), "Forecast Finish Date": g(d, "Forecast Finish (weekly)"),
+        "Indicator": g(d, "Status"), "Remarks": g(d, "Remarks") });
+    });
+
+    var rd = null;
+    P.forEach(function (p) { var v = g(p, "Weekly Report Date"); if (v && (!rd || v > rd)) rd = v; });
+    var dates = [];
+    if (rd) { var d0 = new Date(rd + "T00:00:00Z"); for (var i = 0; i < 30; i++) { var dd = new Date(d0.getTime() - i * 7 * 864e5); dates.push(rec({ "Report Date": dd.toISOString().slice(0, 10) })); } }
+
+    var tables = {
+      KPI_Summary: summary, KPI_Projects_Data: kpd, NSR_Project_Data: nsr, Spending_Plan: sp, Delivery_KPI: dkpi,
+      ABBREVIATIONS: P.map(function (p) { return rec({ "ABBREVIATIONS": g(p, "Short Name"), "MEANING": g(p, "Project Name") }); }),
+      ABBREVIATIONS_2: T("Glossary").map(function (x) { return rec({ "ABBREVIATIONS": g(x, "Abbreviation"), "MEANING": g(x, "Meaning") }); }),
+      Report_Date: dates,
+      Project_Phase: T("List_Phase").map(function (x) { return rec({ "Project Phase": g(x, "Project Phase") }); }),
+      Fund_Type: T("List_FundType").map(function (x) { return rec({ "Fund Type": g(x, "Fund Type") }); })
+    };
+    var report = Object.keys(SOURCES.plan.tables).map(function (n) {
+      var rows = tables[n] || [];
+      return { table: n, rows: rows.length, status: rows.length ? "ok" : "missing", missing: [], via: "combined workbook" };
+    });
+    return { source: "plan", label: SOURCES.plan.label + " (from the combined workbook)", tables: tables, report: report };
+  }
+
+  return { SOURCES: SOURCES, parseWorkbook: parseWorkbook, normKey: normKey, isCombined: isCombined };
 });

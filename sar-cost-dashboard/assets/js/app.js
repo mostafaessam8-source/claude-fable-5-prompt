@@ -388,10 +388,11 @@
       }).join("");
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +
+        (src && src.combinedWith ? '<br><span class="badge" title="This source was read from the combined workbook (test version)">from the combined workbook</span>' : "") +
         '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul>" +
-        (src && (src.imported || cloudIx.sources[k]) ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(k) + '" title="Download the file you imported, update it in Excel and import it again">' +
+        (src && (src.imported || cloudIx.sources[k]) ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(src.combinedWith || k) + '" title="Download the file you imported, update it in Excel and import it again">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' +
-          (src.hasFile || cloudIx.sources[k] ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
+          (src.hasFile || src.combinedWith || cloudIx.sources[k] ? "" : '<div class="src-dl-note">Imported before downloads were available — import this file once more to keep a downloadable copy.</div>') : "") + "</div>"));
     });
     view.appendChild(grid);
     if (window.SARPhotos) {   // progress photos from the per-project weekly report files (kept in this browser only)
@@ -528,16 +529,23 @@
             return f.arrayBuffer().then(function (buf) { orig = buf.slice(0); return SARImporter.parseWorkbook(buf, XLSX, JSZip); }).then(function (res) {
               Object.assign(stored.tables, res.tables);
               stored.sources[res.source] = { fileName: f.name, importedAt: new Date().toISOString(), report: res.report, hasFile: true, size: f.size };
+              // combined workbook: the same file also feeds other sources (the delivery plan)
+              (res.extra || []).forEach(function (x) {
+                Object.assign(stored.tables, x.tables);
+                stored.sources[x.source] = { fileName: f.name, importedAt: new Date().toISOString(), report: x.report, hasFile: false, size: f.size, combinedWith: res.source };
+              });
               if (!opts.fromCloud) toCloud.push({ source: res.source, name: f.name, buf: orig });
               // keep the original workbook so it can be downloaded, updated and imported again
               return SARStore.set("file:" + res.source, { name: f.name, type: f.type || XLSX_MIME, buffer: orig, savedAt: new Date().toISOString() }).catch(function () {
                 stored.sources[res.source].hasFile = false;
               }).then(function () { return res; });
             }).then(function (res) {
-              write("  ✓ recognised as: " + res.label);
-              res.report.forEach(function (r) {
-                write("    " + (r.status === "ok" ? "✓" : r.status === "warning" ? "!" : "✗") + " " + r.table + " — " + r.rows + " rows" +
-                  (r.missing.length ? " (missing columns: " + r.missing.join(", ") + ")" : "") + (r.status === "missing" ? " (table not found)" : ""));
+              [res].concat(res.extra || []).forEach(function (x, i) {
+                write((i ? "  ✓ also contains: " : "  ✓ recognised as: ") + x.label);
+                x.report.forEach(function (r) {
+                  write("    " + (r.status === "ok" ? "✓" : r.status === "warning" ? "!" : "✗") + " " + r.table + " — " + r.rows + " rows" +
+                    (r.missing.length ? " (missing columns: " + r.missing.join(", ") + ")" : "") + (r.status === "missing" ? " (table not found)" : ""));
+                });
               });
               ok++;
             }).catch(function (e) {

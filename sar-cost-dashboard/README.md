@@ -199,6 +199,7 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
 2. Drop any of the six workbooks (one or several at once):
    * `PBI Weekly Report.xlsx`
    * `EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx`
+   * **or** the combined test workbook `EPBU NSR Projects Database.xlsx` (see below): it feeds both of the two files above
    * `Contract details.xlsx`
    * `EP - NSR Projects <Month>.xlsx` (monthly project cards; feeds the **Issue Register**)
    * `Projects in Closing phase.xlsx` (closing-phase register; feeds **Projects in Closing**)
@@ -253,6 +254,22 @@ import before they can be downloaded.
   enter the PIN — no need to find the token again (GitHub shows it only once). Lost everywhere? Create a new token
   (expiration: *No expiration*) and connect with it; the files stay in the repository.
 Public repositories are refused, and the token stays in the browser (`localStorage`). Project files never go to this public repository.
+
+## Combined workbook (test version)
+
+`EPBU NSR Projects Database.xlsx` joins the **PBI Weekly Report** and the **2026 Delivery Plan** into one workbook.
+It is still under test: the two old files keep working and either can be imported.
+
+* It is the weekly workbook with its Power Queries, connections, query tables and Data Model unchanged
+  (Data ▸ Refresh All still reads the weekly folder), plus new sheets in front: *Read Me, Dashboard, Projects,
+  Monthly Plan, KPI Scorecard, Delivery KPI, Data Checks, Review Notes, Data Sources, Settings*.
+* The plan is normalized: one row per project (`Projects`), one row per project per month (`Monthly_Plan`), one row
+  per KPI (`KPI_Scorecard`), target dates (`Delivery_Targets`). One YTD cut-off month in *Settings*.
+* The importer recognises it by the tables `Projects` + `Monthly_Plan` + `KPI_Scorecard`, reads the weekly tables as
+  usual and rebuilds the old plan tables (`Spending_Plan`, `KPI_Projects_Data`, `NSR_Project_Data`, `KPI_Summary`,
+  `Delivery_KPI`, …) from them (`planFromCombined` in importer.js). The plan card on Data Import then says
+  *from the combined workbook*. Importing the old Delivery Plan file later replaces the plan tables again.
+* Build tools (no data inside): `workbook-tools/` in the repo root. Rules: `.claude/skills/combined-workbook/SKILL.md`.
 
 ## Baseline data (optional)
 
