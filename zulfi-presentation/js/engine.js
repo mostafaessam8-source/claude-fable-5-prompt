@@ -319,6 +319,11 @@
     const minF = Math.min(...l.filter((a) => a.s <= start + 45).map((a) => a.floatB));
     return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
   };
+  // deck mode: Phase 2 buying follows the preliminary-design approval (not the detailed design), so it can start with the April plan
+  Z.relinkP2 = (pred) => ACTS.filter((a) => Z.isP2(a) && a.kind === 'a1').forEach((a) => {
+    a.deps.forEach((p) => { BY[p].succ = BY[p].succ.filter((x) => x !== a.code); });
+    a.deps = [pred]; BY[pred].succ.push(a.code);
+  });
   // Move the Phase 2 start. Later: Phase 2 activities starting before it are pushed (with their successors).
   // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
   Z.setPhase2Start = function (st, day) {
@@ -335,7 +340,12 @@
     // pull the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
     const pull = (c, d, endAt) => {
       const early = new Set(p2.filter((a) => bd[a.code][0] <= b0 + 45).map((a) => a.item));
-      p2.filter((a) => early.has(a.item)).forEach((a) => (c.ov[a.code] = [Math.max(st.start, bd[a.code][0] + d), Math.max(st.start, bd[a.code][1] + d)]));
+      p2.filter((a) => early.has(a.item)).forEach((a) => {
+        let s0 = Math.max(st.start, bd[a.code][0] + d), e0 = Math.max(st.start, bd[a.code][1] + d);
+        // deck mode: installation can never start before the work-permit gate
+        if (endAt && a.kind === 'b') { const g = bd['1.3'][1] + 1; if (s0 < g) { e0 += g - s0; s0 = g; } }
+        c.ov[a.code] = [s0, e0];
+      });
       // critical packages (set by the deck): the installation absorbs the earlier start and still ends with the project, so any slip moves the completion date
       if (endAt) (Z.CRIT_P2 || []).forEach((item) => { const bb = p2.find((a) => a.item === item && a.kind === 'b'); if (bb && c.ov[bb.code]) c.ov[bb.code] = [c.ov[bb.code][0], Math.max(c.ov[bb.code][1], endAt)]; });
       return c;

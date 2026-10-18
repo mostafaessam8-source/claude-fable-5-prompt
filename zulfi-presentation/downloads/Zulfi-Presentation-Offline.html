@@ -770,6 +770,11 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const minF = Math.min(...l.filter((a) => a.s <= start + 45).map((a) => a.floatB));
     return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
   };
+  // deck mode: Phase 2 buying follows the preliminary-design approval (not the detailed design), so it can start with the April plan
+  Z.relinkP2 = (pred) => ACTS.filter((a) => Z.isP2(a) && a.kind === 'a1').forEach((a) => {
+    a.deps.forEach((p) => { BY[p].succ = BY[p].succ.filter((x) => x !== a.code); });
+    a.deps = [pred]; BY[pred].succ.push(a.code);
+  });
   // Move the Phase 2 start. Later: Phase 2 activities starting before it are pushed (with their successors).
   // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
   Z.setPhase2Start = function (st, day) {
@@ -786,7 +791,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     // pull the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
     const pull = (c, d, endAt) => {
       const early = new Set(p2.filter((a) => bd[a.code][0] <= b0 + 45).map((a) => a.item));
-      p2.filter((a) => early.has(a.item)).forEach((a) => (c.ov[a.code] = [Math.max(st.start, bd[a.code][0] + d), Math.max(st.start, bd[a.code][1] + d)]));
+      p2.filter((a) => early.has(a.item)).forEach((a) => {
+        let s0 = Math.max(st.start, bd[a.code][0] + d), e0 = Math.max(st.start, bd[a.code][1] + d);
+        // deck mode: installation can never start before the work-permit gate
+        if (endAt && a.kind === 'b') { const g = bd['1.3'][1] + 1; if (s0 < g) { e0 += g - s0; s0 = g; } }
+        c.ov[a.code] = [s0, e0];
+      });
       // critical packages (set by the deck): the installation absorbs the earlier start and still ends with the project, so any slip moves the completion date
       if (endAt) (Z.CRIT_P2 || []).forEach((item) => { const bb = p2.find((a) => a.item === item && a.kind === 'b'); if (bb && c.ov[bb.code]) c.ov[bb.code] = [c.ov[bb.code][0], Math.max(c.ov[bb.code][1], endAt)]; });
       return c;
@@ -1303,7 +1313,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 
   // deck mode: the planned Phase 2 start is April (month 7, with the first procurement); the baseline stays as the comparison
   A.planP2 = (start) => dt.addMonths(start, 6);
-  if (MODE) { Z.CRIT_P2 = ['7.2', '6.1']; Z.planP2 = A.planP2; }
+  if (MODE) { Z.CRIT_P2 = ['7.2', '6.1']; Z.planP2 = A.planP2; Z.relinkP2('2.4'); }
   A.freshState = (iso) => { const s = Z.newState(iso || '2026-10-25'); return MODE ? Z.setPhase2Start(s, A.planP2(s.start)) : s; };
 
   /* -------------------------------------------------------- built-in actions */
@@ -1667,8 +1677,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const INS_TPL = `<p style="margin:0 0 8px"><b>Tight tail-end:</b> {tightCount} installation activities finish in the last ~3 months ({tightCodes}…). Shortest installation windows: {shortWin}.</p>
 <p style="margin:0 0 8px"><b>Peak spend:</b> month {peakMonth} ({peakDate}) at {peakAmt}.</p>
 <p style="margin:0 0 8px"><b>Phase 2:</b> must start by {p2latest} to hold completion{p2late}. Move the milestone in the register (row {p2row}) or on the Phase 2 slide.</p>
-<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
-<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
+${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
+`}<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
   const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
     tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
     shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
@@ -1842,7 +1852,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const agg = Z.aggregate(M, () => true, 'all'), pk = agg.total.indexOf(Math.max(...agg.total));
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
-        `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the diamonds to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
+        `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the Phase 2 diamond (◆) to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
         ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">${A.isAr() ? 'اسحب معلم <b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات.' : 'Drag the <b style="color:var(--ph2)">Phase 2 start</b> milestone to test scenarios.'}</div>${svg}</div></div>` : ''}
         <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
@@ -1941,11 +1951,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Station Road (1,700 m)'], ['4.3', 'Generator Room']];
 
   /* editable explanation: {tokens} are live values */
-  const WHY_TPL = `<p style="margin:0 0 12px"><b>1 · Railway Track is the longest job.</b><br>8 months to manufacture &amp; deliver + 6 months to install – {trackFloat}.</p>
-<p style="margin:0 0 12px"><b>2 · Design comes first.</b><br>Phase 2 buying starts after Detailed Design approval ({ddDate}), so these packages must be released together with Phase 1.</p>
+  const WHY_TPL = `<p style="margin:0 0 12px"><b>1 · Railway Track is the longest job.</b><br>{mfgM} to manufacture &amp; deliver + {instM} to install – {trackFloat}.</p>
+<p style="margin:0 0 12px"><b>2 · Design comes first.</b><br>${A.mode ? 'Phase 2 buying starts as soon as the preliminary design is approved ({ddDate}), in parallel with the detailed design, so these packages must be launched together with Phase 1.' : 'Phase 2 buying starts after Detailed Design approval ({ddDate}), so these packages must be released together with Phase 1.'}</p>
 <p style="margin:0 0 12px"><b>3 · Every day late = a day of delay.</b><br>Latest Phase 2 start to keep the completion date: <b>{latest}</b>{delayNow}.</p>
 <p style="margin:0 0 12px"><b>4 · Signalling comes after Track &amp; Turnout.</b><br>{sigCheck}</p>
 <p style="margin:0"><b>5 · Funds first.</b><br>Phase 2 amount must be granted by <b>{grantDate}</b> ({g2} days before the start).</p>`;
+  const mw = (a) => { const n = Math.round((a.e - a.s + 1) / 30.4375); return A.isAr() ? (n >= 3 && n <= 10 ? n + ' أشهر' : n + ' شهراً') : n + ' months'; };
   const whyTokens = (M, P, g2, delay, trackF) => {
     const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
     return {
@@ -1961,7 +1972,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         const base = 'Trackside equipment (point machines, axle counters, signals) can only be installed once Track &amp; Turnout are laid.';
         return gap >= 0 ? base : base + ` <b style="color:var(--bad)">⚠ Now planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
-      ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
+      ddDate: dt.fmtShort(M.by[A.mode ? '2.4' : '2.6'].e),
+      mfgM: mw(M.by['7.2a3']), instM: mw(M.by['7.2b']), latest: dt.fmtShort(P.latest),
       delayNow: delay > 0 ? (A.isAr() ? ` (الآن <b style="color:var(--bad)">+${delay} يوم</b>)` : ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)`) : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
   };

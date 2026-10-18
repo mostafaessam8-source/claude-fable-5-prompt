@@ -317,7 +317,7 @@
 
   // deck mode: the planned Phase 2 start is April (month 7, with the first procurement); the baseline stays as the comparison
   A.planP2 = (start) => dt.addMonths(start, 6);
-  if (MODE) { Z.CRIT_P2 = ['7.2', '6.1']; Z.planP2 = A.planP2; }
+  if (MODE) { Z.CRIT_P2 = ['7.2', '6.1']; Z.planP2 = A.planP2; Z.relinkP2('2.4'); }
   A.freshState = (iso) => { const s = Z.newState(iso || '2026-10-25'); return MODE ? Z.setPhase2Start(s, A.planP2(s.start)) : s; };
 
   /* -------------------------------------------------------- built-in actions */
