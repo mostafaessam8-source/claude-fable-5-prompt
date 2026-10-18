@@ -477,17 +477,30 @@
           report: [{ table: "Engineering_Drawings", rows: keep.length, status: "ok", missing: [] }] };
         return n;
       }
+      /* full review of the weekly report files → table Weekly_File_Audit (shown on Data Checks) */
+      function applyAudit(obj, audit, names) {
+        var files = Object.keys(audit || {}); if (!files.length) return 0;
+        obj.tables = obj.tables || {}; obj.sources = obj.sources || {};
+        var keep = (obj.tables.Weekly_File_Audit || []).filter(function (r) { return files.indexOf(r.File) < 0; }), n = 0;
+        files.forEach(function (f) { n += audit[f].length; keep = keep.concat(audit[f].map(function (x) { var o = {}; for (var k in x) o[k] = x[k]; return o; })); });
+        obj.tables.Weekly_File_Audit = keep;
+        obj.sources.wkaudit = { fileName: names, importedAt: new Date().toISOString(), hasFile: false,
+          report: [{ table: "Weekly_File_Audit", rows: keep.length, status: "ok", missing: [] }] };
+        return n;
+      }
       function photos() {
         if (!photoFiles.length) return Promise.resolve(0);
         write("Progress photos & design registers:");
         return SARPhotos.importFiles(photoFiles, write).then(function (r) {
           var names = photoFiles.map(function (f) { return f.name; }).join(", ");
-          if (Object.keys(r.design || {}).length) return SARStore.load().then(function (s) {
+          if (Object.keys(r.design || {}).length || Object.keys(r.audit || {}).length) return SARStore.load().then(function (s) {
             s = s || { tables: {}, sources: {} };
             nDesign = applyDesign(s, r.design, names); if (pending) applyDesign(pending, r.design, names);
+            var nAud = applyAudit(s, r.audit, names); if (pending) applyAudit(pending, r.audit, names);
             return SARStore.save(s).then(function () {
-              mergeDataset(s); renderHeader();
-              write("  ✓ " + nDesign + " design document rows from " + Object.keys(r.design).length + " project(s) — Design Review page");
+              mergeDataset(s); renderHeader(); if (window.SARChecks) { SARChecks.refresh(); SARChecks.chip(); }
+              if (nDesign) write("  ✓ " + nDesign + " design document rows from " + Object.keys(r.design).length + " project(s) — Design Review page");
+              if (Object.keys(r.audit || {}).length) write("  ✓ full review of " + Object.keys(r.audit).length + " weekly report file(s): " + nAud + " findings — Data Checks page (source “Weekly report files”)");
               return r;
             });
           });

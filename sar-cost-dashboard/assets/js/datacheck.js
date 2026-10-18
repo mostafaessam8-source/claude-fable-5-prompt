@@ -313,11 +313,22 @@
     if (rd && days(rd, today) > 10) add("warn", "dt-old", "", "Data", "Report Date", "The weekly data is " + days(rd, today) + " days old (report date " + dt(rd) + ") — import this week's PBI Weekly Report.", ["import", {}], "All projects");
     if (maxRp && rd && maxRp < addDays(rd.slice(0, 7) + "-01", -1)) add("warn", "dt-old", "", "Data", "Project cards", "The project cards are for " + fmt.month(maxRp) + " — import the latest EP – NSR Projects file.", ["import", {}], "All projects");
 
+    /* --- weekly report files (.rar): full review of every sheet, done on import by SARWeeklyAudit --- */
+    var wfRd = D.t("Weekly_File_Audit").map(function (a) { return iso(a.ReportDate); }).filter(Boolean).sort().pop();
+    if (wfRd && rd && wfRd > rd) add("warn", "dt-wf", "", "Data", "Report Date", "The weekly project files (.rar) are for " + dt(wfRd) + " but the PBI Weekly Report on the site is for " + dt(rd) + " — Refresh All in the PBI Weekly Report and import it.", ["import", {}], "All projects");
+    D.t("Weekly_File_Audit").forEach(function (a) {
+      var sev = a.Severity === "error" || a.Severity === "warn" ? a.Severity : "info";
+      out.push({ sev: sev, rule: "wf-" + a.Rule, code: a.Code || "", name: a.Code ? nameOf(a.Code) : "", src: a.Sheet || "Workbook", field: a.Section || "",
+        msg: a.Finding + (a.Fix ? " → " + a.Fix : ""), go: null, audit: a, id: ["wf", a.File, a.Sheet, a.Cell, a.Rule, a.Finding].join("|") });
+    });
+
     // the source file each finding comes from (Data Import source key → its label and the imported file name)
     var SRC_KEY = { "Weekly report": "weekly", "S-curve": "weekly", "Milestones": "weekly", "Area of concern": "weekly", "Deliverables": "weekly",
       "Spend plan": "plan", "Budget 2026": "budget", "Project card": "cards", "Issue register": "cards", "Closing": "closing" };
     var SS = (window.SARImporter && SARImporter.SOURCES) || {}, files = D.sources ? D.sources() : {};
     out.forEach(function (f) {
+      if (f.audit) { f.dsKey = "wkfiles"; f.ds = "Weekly report files – full review"; f.dsFile = f.audit.File;
+        f.where = [f.audit.File, "sheet “" + f.audit.Sheet + "”", f.audit.Cell ? "cell" + (/[,:]/.test(f.audit.Cell) ? "s " : " ") + f.audit.Cell : ""].filter(Boolean).join(" › "); f.from = ""; return; }
       var k = SRC_KEY[f.src] || (f.src === "Data" ? (f.field === "Project cards" ? "cards" : "weekly") : "");
       f.dsKey = k; f.ds = k ? (SS[k] ? SS[k].label : k) : "Other";
       f.dsFile = k && files[k] ? files[k].fileName || "" : "";
@@ -356,8 +367,8 @@
   }
 
   var cache = null;
-  function get(D) { if (!cache || cache.D !== D || cache.v !== D.reportDate + "|" + D.t("Weekly_Report_Updates").length + "|" + D.t("Project_Cards").length + "|" + D.t("Spending_Plan").length) {
-    cache = { D: D, v: D.reportDate + "|" + D.t("Weekly_Report_Updates").length + "|" + D.t("Project_Cards").length + "|" + D.t("Spending_Plan").length, r: run(D) }; }
+  function get(D) { if (!cache || cache.D !== D || cache.v !== D.reportDate + "|" + D.t("Weekly_Report_Updates").length + "|" + D.t("Project_Cards").length + "|" + D.t("Spending_Plan").length + "|" + D.t("Weekly_File_Audit").length) {
+    cache = { D: D, v: D.reportDate + "|" + D.t("Weekly_Report_Updates").length + "|" + D.t("Project_Cards").length + "|" + D.t("Spending_Plan").length + "|" + D.t("Weekly_File_Audit").length, r: run(D) }; }
     return cache.r; }
   function refresh() { cache = null; }
 
@@ -399,7 +410,7 @@
     // every Data Import source (as on the import page), with its findings count — a clean source shows ✓
     var SS = (window.SARImporter && SARImporter.SOURCES) || {}, files = D.sources ? D.sources() : {};
     var dss = Object.keys(SS).map(function (k) { return { k: k, label: SS[k].label }; })
-      .concat([{ k: "photos", label: "Progress photos (weekly report files)" }, { k: "__tpl", label: "Weekly PowerPoint template" }]);
+      .concat([{ k: "wkfiles", label: "Weekly report files (.rar) – full review of every sheet" }, { k: "photos", label: "Progress photos (weekly report files)" }, { k: "__tpl", label: "Weekly PowerPoint template" }]);
     if (st.ds && !dss.some(function (x) { return x.k === st.ds; })) st.ds = "";
     var srcs = U.uniq(r.list.filter(function (f) { return !st.ds || f.dsKey === st.ds; }).map(function (f) { return f.src; })), projs = U.uniq(r.list.map(function (f) { return baseCode(f.code); }).filter(Boolean)).sort();
     var g = U.el('<div class="grid g-4"></div>'); v.appendChild(g);
@@ -421,7 +432,7 @@
     });
     var cnt = function (k) { return r.list.filter(function (f) { return f.dsKey === k && st.sev[f.sev] && (st.showOk || !f.ok); }).length; };
     var dsel = U.select({ label: "Data source (file)", value: st.ds || "", options: [{ value: "", label: "All data sources" }].concat(dss.map(function (x) {
-      var n = cnt(x.k), fn = files[x.k] && files[x.k].fileName;
+      var n = cnt(x.k), fn = files[x.k === "wkfiles" ? "wkaudit" : x.k] && files[x.k === "wkfiles" ? "wkaudit" : x.k].fileName;
       return { value: x.k, label: x.label + " — " + (n ? n + " finding" + (n === 1 ? "" : "s") : "✓ no findings") + (fn ? " · " + fn : "") }; })),
       onChange: function (x) { st.ds = x; st.src = ""; ctx.rerender(); } });
     dsel.classList.add("dq-ds"); bar.appendChild(dsel);
@@ -455,8 +466,9 @@
       if (f) { setAccepted(f.id, !f.ok); refresh(); chip(); ctx.rerender(); }
     }, true);
 
-    var rp = U.el('<details class="panel dq-rules"><summary><b>What is checked</b> <span class="muted">· ' + RULES.length + " rules</span></summary></details>");
-    var tb = "<table class=\"dq-rt\"><thead><tr><th>Source</th><th>Type</th><th>Rule</th></tr></thead><tbody>" + RULES.map(function (x) {
+    var ALL = RULES.concat((window.SARWeeklyAudit ? SARWeeklyAudit.RULES : []).map(function (x) { return ["Weekly report files (.rar)", "warn", x]; }));
+    var rp = U.el('<details class="panel dq-rules"><summary><b>What is checked</b> <span class="muted">· ' + ALL.length + " rules</span></summary></details>");
+    var tb = "<table class=\"dq-rt\"><thead><tr><th>Source</th><th>Type</th><th>Rule</th></tr></thead><tbody>" + ALL.map(function (x) {
       return "<tr><td>" + esc(x[0]) + "</td><td>" + sevBadge(x[1]) + "</td><td>" + esc(x[2]) + "</td></tr>"; }).join("") + "</tbody></table>";
     rp.appendChild(U.el("<div>" + tb + "</div>"));
     v.appendChild(rp);

@@ -201,7 +201,7 @@
    */
   function importFiles(files, log) {
     log = log || function () {};
-    var results = [], design = {}, chain = Promise.resolve();
+    var results = [], design = {}, audit = {}, auditMeta = {}, chain = Promise.resolve();
     files.forEach(function (f) {
       chain = chain.then(function () {
         log("Reading " + f.name + " …");
@@ -216,6 +216,14 @@
                 var dr = SARDesign.fromWorkbook(b.buffer, b.name, r.code || codeOf(b.name));
                 if (dr.length) { design[b.name] = dr; log("  ✓ " + b.name + ": " + dr.length + " design document rows (" + dr[0].Sheet + ")"); }
               } catch (e) { log("  ! " + b.name + ": design sheet not read — " + e.message); }
+              // full review of every sheet of the workbook → Data Checks
+              if (window.SARWeeklyAudit) try {
+                var fa = SARWeeklyAudit.fromBuffer(b.buffer, b.name, r.code || codeOf(b.name));
+                audit[b.name] = fa; auditMeta[b.name] = { code: r.code || codeOf(b.name), meta: fa.meta, reportDate: fa.reportDate };
+                log("  ✓ " + b.name + ": full review — " + fa.length + " finding" + (fa.length === 1 ? "" : "s"));
+              } catch (e) { log("  ! " + b.name + ": review not done — " + e.message); }
+              if (r.found && !r.photos.length && audit[b.name]) audit[b.name].push({ File: b.name, Code: r.code || codeOf(b.name), Sheet: r.sheet || "Progress Photo", Cell: "", Severity: "warn",
+                Section: "Workbook", Rule: "no-photo", Finding: "The Progress Photo sheet has no photos.", Fix: "Add this week's site photos (4).", ReportDate: (audit[b.name][0] || {}).ReportDate || "" });
               log("  " + (r.photos.length ? "✓ " : r.found ? "! " : "– ") + r.file + (r.code ? " → " + r.code : "") + ": " +
                 (r.photos.length ? r.photos.length + " photo" + (r.photos.length === 1 ? "" : "s") : r.found ? "no photos in “" + r.sheet + "”" : "no Progress Photo sheet"));
             }, function (e) { log("  ✗ " + b.name + ": " + e.message); });
@@ -225,14 +233,17 @@
       });
     });
     return chain.then(function () {
+      if (window.SARWeeklyAudit && Object.keys(auditMeta).length > 1) try {
+        SARWeeklyAudit.cross(auditMeta).forEach(function (f) { (audit[f.File] = audit[f.File] || []).push(f); });
+      } catch (e) { log("  ! cross-project review not done — " + e.message); }
       var got = results.filter(function (r) { return r.photos.length; });
-      if (!got.length) return { projects: 0, photos: 0, design: design };
+      if (!got.length) return { projects: 0, photos: 0, design: design, audit: audit };
       return load().then(function (st) {
         st = st || { projects: {} };
         got.forEach(function (r) { st.projects[r.file] = { file: r.file, code: r.code, sheet: r.sheet, importedAt: new Date().toISOString(), photos: r.photos }; });
         st.updatedAt = new Date().toISOString();
         return SARStore.set(KEY, st).then(function () {
-          return { projects: got.length, photos: got.reduce(function (s, r) { return s + r.photos.length; }, 0), design: design };
+          return { projects: got.length, photos: got.reduce(function (s, r) { return s + r.photos.length; }, 0), design: design, audit: audit };
         });
       });
     });

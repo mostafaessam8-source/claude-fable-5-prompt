@@ -160,6 +160,19 @@ On the page, click a row to open the page with that data. **Mark OK** hides a fi
 this browser and comes back if the value changes. **Export CSV** gives the list to send to the project teams. The full
 rule list is under "What is checked" at the bottom of the page.
 
+## Weekly report files — full review (Data Checks)
+
+When the weekly report archive (.rar / .zip of the per-project `NSR_<code>_….xlsx` files) is imported, every sheet of
+every project file is reviewed the way a consultant reviews a weekly report (`assets/js/wkaudit.js`, `SARWeeklyAudit`).
+The findings are stored as table `Weekly_File_Audit` and shown on **Data Checks** under the data source
+*Weekly report files (.rar) – full review*. The **Section** filter is the sheet name. Every finding gives
+file › sheet › cell(s) and what to fix. Checks cover formula errors, a report date / calendar week / project week
+left on an old week, Masterdata_Reporting (mandatory fields, dates, %, SPI, EV/PV, IPC, VO, safety, NCR), the S-curve,
+progress / milestones / lookahead, safety statistics, deliverables, NCR, IPC, the manpower / equipment / cashflow
+windows, Data Input (concerns, risks), activities, H&S, key items, the engineering log and submissions. They also
+compare sheets with each other and projects with each other (same PO, cost code of another project, another week).
+The full list is under *What is checked* on the page.
+
 ## Card Updates (Team) — monthly update of the project cards
 
 Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Project Card` sheet in

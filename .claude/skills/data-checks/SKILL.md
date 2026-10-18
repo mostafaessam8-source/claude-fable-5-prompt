@@ -80,3 +80,18 @@ plus Progress photos and the Weekly PowerPoint template, whether they have findi
 - Test against real data: import the cloud files in a browser and dump `SARChecks.run(SARApp.D).list`. Read every new
   finding and look for false positives before committing. Check the page at 1440 / 1920 / 390 px.
 - Then run `npm run release` in `sar-cost-dashboard`, commit with the session trailers, and push to the working branch.
+
+## Weekly report files — full review (user request: "تشيك علي كل الملف … كانك استشارى بيستلم التقرير الأسبوعي")
+- Code: `assets/js/wkaudit.js` (`SARWeeklyAudit.auditBook / fromBuffer / cross / RULES`), run from `SARPhotos.importFiles` for
+  every workbook in the .rar / .zip; `app.js applyAudit` stores table `Weekly_File_Audit` (rows: File, Code, Sheet, Cell,
+  Severity, Section, Rule, Finding, Fix, ReportDate) and source `wkaudit`.
+- `datacheck.js run()` turns each row into a finding with `dsKey "wkfiles"`, `src` = sheet name (Section filter),
+  `where` = file › sheet › cell(s). The message ends with "→ what to fix". Also a warning when the .rar files are newer
+  than the PBI Weekly Report on the site.
+- Rules find their cells by label / header text (the SAR template is the same in all files, but rows move a little).
+  Every rule group runs in `safe()`, so a changed layout gives one "could not be fully checked" note instead of breaking.
+- Keep a rule only if it is a real reviewer comment. Tested on the 15-Oct-2026 archive (13 files, ~200 findings).
+  Removed false alarms: milestone variance written with either sign, "Solved" counts as closed, m/d/yyyy text dates,
+  manpower cell holding man-hours reported once as its own error.
+- Node test: `node <scratch>/run.js <site dir> <folder of extracted xlsx>` (extract the .rar with `assets/vendor/unrar.min.js`
+  + `unrar.wasm` in Node, global.window = global).
