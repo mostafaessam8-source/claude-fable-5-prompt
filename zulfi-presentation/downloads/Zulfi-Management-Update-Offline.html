@@ -975,7 +975,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const minF = Math.min(...l.map((a) => a.floatB));
     return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
   };
-  // Move the Phase 2 start (release). Later: Phase 2 activities starting before it are pushed (with their successors).
+  // Move the Phase 2 start. Later: Phase 2 activities starting before it are pushed (with their successors).
   // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
   Z.setPhase2Start = function (st, day) {
     const bd = baseDates(st.start);
@@ -1017,7 +1017,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
       { k: 'grant2', name: 'Phase 2 amount granted (funds approved) – movable', d: P2.start - g2, bd: P2.baseStart - Z.DEFAULT_MS.g2, nav: 'phase2', edit: 'g2' },
-      { k: 'p2', name: 'Phase 2 start (release) – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
+      { k: 'p2', name: 'Phase 2 start – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
       { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
       { k: 'fin', name: 'Practical completion', d: M.finish, bd: M.base.finish, code: '1.1' },
     ];
@@ -1209,7 +1209,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     'Access permits approved': 'اعتماد تصاريح الدخول', 'Concept design approved': 'اعتماد التصميم المفاهيمي', 'Preliminary design approved': 'اعتماد التصميم الأولي',
     'First procurement starts (Phase 1)': 'بدء أول مشتريات (المرحلة الأولى)',
     'Phase 2 amount granted (funds approved) – movable': 'اعتماد مبلغ المرحلة الثانية (الموافقة على التمويل) – قابل للتحريك',
-    'Phase 2 start (release) – movable': 'بدء المرحلة الثانية (الإفراج) – قابل للتحريك',
+    'Phase 2 start – movable': 'بدء المرحلة الثانية – قابل للتحريك',
     'Latest Phase 2 start to hold completion': 'آخر موعد لبدء المرحلة الثانية دون تأخير الإنجاز',
     'Detailed design approved': 'اعتماد التصميم التفصيلي', 'Work permit approved': 'اعتماد تصريح العمل', 'Construction starts on site': 'بدء الإنشاء في الموقع',
     'Long-lead deliveries complete': 'اكتمال توريد المواد طويلة المدة', 'Practical completion': 'الإنجاز الفعلي',
@@ -1219,9 +1219,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     // phase 2 slide
     'Why Phase 2 must start with Phase 1': 'لماذا يجب أن تبدأ المرحلة الثانية مع المرحلة الأولى',
     'The Phase 2 packages that drive the completion date – move the Phase 2 start and see the consequences': 'حزم المرحلة الثانية التي تحدد موعد الإنجاز – حرّك بداية المرحلة الثانية وشاهد النتائج',
-    'Sheet 3 + Sheet 4 · gates & long-lead': '', 'Move the Phase 2 start (release)': 'حرّك بداية المرحلة الثانية (الإفراج)', 'With Phase 1 (NTP)': 'مع المرحلة الأولى (أمر البدء)', '+1 month': '+1 شهر', '+3 months': '+3 أشهر', '+6 months': '+6 أشهر',
+    'Sheet 3 + Sheet 4 · gates & long-lead': '', 'Move the Phase 2 start': 'حرّك بداية المرحلة الثانية', 'With Phase 1 (NTP)': 'مع المرحلة الأولى (أمر البدء)', '+1 month': '+1 شهر', '+3 months': '+3 أشهر', '+6 months': '+6 أشهر',
     'baseline plan': 'حسب الخطة الأساسية', 'at risk – starts before the Detailed Design gate': 'مخاطرة – يبدأ قبل بوابة التصميم التفصيلي', 'released late – completion is exposed': 'إفراج متأخر – الإنجاز معرّض للتأخير',
-    'Phase 2 start (release)': 'بداية المرحلة الثانية (الإفراج)', 'Latest start to hold completion': 'آخر بداية للحفاظ على الإنجاز', 'Project completion': 'إنجاز المشروع', 'Phase 2 amount granted by': 'اعتماد مبلغ المرحلة الثانية بتاريخ',
+    'Phase 2 start': 'بداية المرحلة الثانية', 'Latest start to hold completion': 'آخر بداية للحفاظ على الإنجاز', 'Project completion': 'إنجاز المشروع', 'Phase 2 amount granted by': 'اعتماد مبلغ المرحلة الثانية بتاريخ',
     'Phase 2 packages on the programme': 'حزم المرحلة الثانية على البرنامج الزمني', 'click a bar for details': 'مرّر المؤشر على الشريط للتفاصيل',
     'Prequal. / PO': 'التأهيل / أمر الشراء', 'Manufacture & delivery': 'التصنيع والتوريد', 'Installation': 'التركيب', 'Float to baseline completion': 'الهامش حتى الإنجاز الأساسي', 'Latest start': 'آخر موعد للبداية',
     '7.2 Railway Track': '7.2 السكة الحديدية', '3.3 FF&E (Furniture)': '3.3 الأثاث والتجهيزات', '6.1 Access Road': '6.1 طريق الوصول', '4.3 Generator Room': '4.3 غرفة المولدات',
@@ -2043,7 +2043,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
     peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
     p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
-    p2late: P2.delay > 0 ? (A.isAr() ? ` – الإفراج الحالي متأخر ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
+    p2late: P2.delay > 0 ? (A.isAr() ? ` – البداية الحالية متأخرة ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
     p2row: ms.findIndex((m) => m.k === 'p2') + 1,
     advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
     permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),
@@ -2399,7 +2399,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         `<div class="s-body" style="gap:12px">
           <div class="panel"><div class="pb" style="padding:12px 16px">
             <div class="row" style="align-items:center;gap:14px;flex-wrap:wrap">
-              <b style="color:var(--ph2)">Move the Phase 2 start (release)</b>
+              <b style="color:var(--ph2)">Move the Phase 2 start</b>
               <input type="date" class="dinput" style="width:150px;height:32px" value="${dt.iso(P.start)}" min="${dt.iso(M.start)}" data-chg="p2date">
               <input type="range" id="p2range" min="${lo}" max="${hi}" step="1" value="${off}" style="width:300px;accent-color:var(--ph2)" data-chg="p2range">
               <span id="p2lbl" style="min-width:210px;font-weight:700;color:${state[1]}">${F.days(off)} · ${state[0]}</span>
@@ -2408,7 +2408,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
             </div>
           </div></div>
           <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-            ${kpi('Phase 2 start (release)', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
+            ${kpi('Phase 2 start', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
             ${kpi('Latest start to hold completion', dt.fmt(P.latest), P.latest - P.start >= 0 ? `${Math.round(P.latest - P.start)} days of margin left` : `<b style="color:var(--bad)">${Math.round(P.start - P.latest)} days too late</b>`, P.latest - P.start >= 0 ? '' : 'warn')}
             ${kpi('Project completion', dt.fmt(M.finish), delay > 0 ? `<span class="delta up">${F.days(delay)} vs baseline ${dt.fmtShort(M.base.finish)}</span>` : `<span class="delta zero">on baseline ${dt.fmtShort(M.base.finish)}</span>`, delay > 0 ? 'warn' : '')}
             ${kpi('Phase 2 amount granted by', dt.fmt(P.start - g2), `${g2} days before the Phase 2 start · Phase 2 value ${F.M(p2amt)} SAR`, '')}

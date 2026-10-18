@@ -15,7 +15,7 @@
     shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
     peakMonth: pk + 1, peakDate: dt.fmtMY(M.bs[pk]), peakAmt: F.sar(agg.total[pk]),
     p2latest: `<a data-nav="${A.idx('phase2')}" style="color:var(--ph2);cursor:pointer;font-weight:700">${dt.fmt(P2.latest)}</a>`,
-    p2late: P2.delay > 0 ? (A.isAr() ? ` – الإفراج الحالي متأخر ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
+    p2late: P2.delay > 0 ? (A.isAr() ? ` – البداية الحالية متأخرة ${P2.start - P2.baseStart} يوماً، والإنجاز <b style="color:var(--bad)">+${P2.delay} يوم</b>` : ` – currently released ${F.days(P2.start - P2.baseStart)} late, completion <b style="color:var(--bad)">${F.days(P2.delay)}</b>`) : '',
     p2row: ms.findIndex((m) => m.k === 'p2') + 1,
     advAmt: F.sar(M.pay.amount), advPct: M.pay.pct, advPer: F.sar(M.pay.perMonth), advMonths: M.pay.months,
     permitDate: dt.fmt(M.by['1.3'].e), ddDate: dt.fmt(M.by['2.6'].e),

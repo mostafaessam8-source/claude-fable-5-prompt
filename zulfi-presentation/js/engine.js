@@ -318,7 +318,7 @@
     const minF = Math.min(...l.map((a) => a.floatB));
     return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
   };
-  // Move the Phase 2 start (release). Later: Phase 2 activities starting before it are pushed (with their successors).
+  // Move the Phase 2 start. Later: Phase 2 activities starting before it are pushed (with their successors).
   // Earlier: the Phase 2 activities are pulled earlier by the same number of days (at-risk, before the Detailed Design gate).
   Z.setPhase2Start = function (st, day) {
     const bd = baseDates(st.start);
@@ -360,7 +360,7 @@
       { k: 'ntp', name: 'NTP – Notice to Proceed (project start)', d: M.start, bd: M.start, code: '1.1' },
       { k: 'proc', name: 'First procurement starts (Phase 1)', d: minS((a) => a.kind === 'a1' && a.phase === 'Phase 1'), bd: bminS((a) => a.kind === 'a1' && a.phase === 'Phase 1') },
       { k: 'grant2', name: 'Phase 2 amount granted (funds approved) – movable', d: P2.start - g2, bd: P2.baseStart - Z.DEFAULT_MS.g2, nav: 'phase2', edit: 'g2' },
-      { k: 'p2', name: 'Phase 2 start (release) – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
+      { k: 'p2', name: 'Phase 2 start – movable', d: P2.start, bd: P2.baseStart, nav: 'phase2', edit: 'p2' },
       { k: 'p2late', name: 'Latest Phase 2 start to hold completion', d: P2.latest, bd: P2.baseStart, nav: 'phase2' },
       { k: 'fin', name: 'Practical completion', d: M.finish, bd: M.base.finish, code: '1.1' },
     ];

@@ -117,7 +117,7 @@
         <div class="row grow">
           <div class="col" style="width:640px;gap:14px">
             <div class="panel"><div class="ph"><h3>Baseline vs revised</h3></div><div class="pb" style="padding-top:0"><table class="tbl"><thead><tr><th>Metric</th><th>Baseline</th><th>Revised</th><th>Δ</th></tr></thead><tbody>
-              ${row('Phase 2 start (release)', dt.fmtShort(Z.phase2(M).baseStart), dt.fmtShort(Z.phase2(M).start), F.deltaHtml(Z.phase2(M).start - Z.phase2(M).baseStart))}
+              ${row('Phase 2 start', dt.fmtShort(Z.phase2(M).baseStart), dt.fmtShort(Z.phase2(M).start), F.deltaHtml(Z.phase2(M).start - Z.phase2(M).baseStart))}
               ${row('Advance payment', 'SAR ' + F.n0(M.pay.amount), 'SAR ' + F.n0(M.pay.amount), `<span class="delta zero">${M.pay.pct}% · ${F.n0(M.pay.perMonth)}/month</span>`)}
               ${row('Completion date', dt.fmtShort(M.base.finish), dt.fmtShort(M.finish), F.deltaHtml(fd))}
               ${row('Duration (months)', '26', F.months(M.durMonths), F.deltaHtml(Math.round((M.durMonths - 26) * 30.4375)))}
