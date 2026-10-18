@@ -138,10 +138,13 @@
       const SHORT = { grant1: 'Phase 1 funds granted', ntp: 'NTP', access: 'Access permits', concept: 'Concept design', prelim: 'Preliminary design', proc: '1st procurement', grant2: 'Phase 2 funds granted', p2: 'Phase 2 start', p2late: 'Latest Phase 2 start', detail: 'Detailed design', permit: 'Work permit', cons: 'Construction start', ll: 'Long-lead done', fin: 'Completion' };
       const KEY = ['grant1', 'ntp', 'grant2', 'p2', 'p2late'];
       // one chronological list: milestones and activity bars together, earliest on top
+      // each milestone sits directly under the band (phase / work package) it belongs to
+      const OWN = { grant1: 0, ntp: 0, grant2: 1, p2: 1, p2late: 1, access: 2, concept: 2, prelim: 2, detail: 2, permit: 3, proc: 4, cons: 5, ll: 5, fin: 5 };
       const rows = [];
-      bands.forEach((bd) => { const sp = span(bd[1]); if (sp) rows.push({ t: 'b', d: sp.s, bd, sp }); });
-      ms.forEach((m, i) => rows.push({ t: 'm', d: m.d, m, i }));
-      rows.sort((p, q) => p.d - q.d || (p.t === 'm' ? -1 : 1) - (q.t === 'm' ? -1 : 1));
+      bands.map((bd, bi) => ({ bd, bi, sp: span(bd[1]) })).filter((q) => q.sp).sort((p, q) => p.sp.s - q.sp.s || p.bi - q.bi).forEach((q) => {
+        rows.push({ t: 'b', d: q.sp.s, bd: q.bd, sp: q.sp });
+        ms.map((m, i) => ({ m, i })).filter((o) => OWN[o.m.k] === q.bi).sort((a, b) => a.m.d - b.m.d).forEach((o) => rows.push({ t: 'm', d: o.m.d, m: o.m, i: o.i }));
+      });
       const TOP = 34, RH = 23, BOT = TOP + rows.length * RH + 4, H = BOT + 40;
       let svg = `<svg viewBox="0 0 1512 ${H}" width="100%" height="${H}" style="min-width:900px" data-t0="${t0}" data-t="${T}" data-x0="${X0}" data-x1="${X1}" data-b1="${M.start}" data-b2="${P2.start}" data-top="${TOP}" data-rh="${RH}" data-n="${rows.length}" data-bot="${BOT}">`;
       rows.forEach((r, i) => { if (i % 2 === 0) svg += `<rect x="0" y="${TOP + i * RH}" width="1512" height="${RH}" fill="#f4f8fa"/>`; });
