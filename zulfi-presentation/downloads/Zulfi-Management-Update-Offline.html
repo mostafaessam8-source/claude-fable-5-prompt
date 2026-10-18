@@ -3141,8 +3141,9 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       const it = [
         [L('Install the main board of the project.', 'تركيب اللوحة الأساسية للمشروع.'), ''],
         [L('Provide the remaining part of the guarantees by the Riyadh Logistics Services Cooperative Association.', 'توفير الجزء المتبقي من الضمانات من قبل الجمعية التعاونية للخدمات اللوجستية بمنطقة الرياض.'), ''],
-        [L(`The Association to provide the liquidity needed to cover the cash flows of the first six months, including the ${M.pay.pct}% advance payment, before ${dl}, to keep the project running without delay.`, `على الجمعية توفير السيولة المالية اللازمة لتغطية التدفقات النقدية للأشهر الستة الأولى، شاملةً الدفعة المقدمة بنسبة ${M.pay.pct}%، وذلك قبل ${dl}، لضمان سير المشروع بدون تأخير.`), L('Before ', 'قبل ') + dl],
+        [L(`Provide the liquidity needed to cover the cash flows of the first six months, including the ${M.pay.pct}% advance payment.`, `توفير السيولة المالية اللازمة لتغطية التدفقات النقدية للأشهر الستة الأولى، شاملةً الدفعة المقدمة بنسبة ${M.pay.pct}%.`), ''],
         [L('Complete the remaining preparations to start the project.', 'استكمال التجهيزات والتحضيرات المتبقية لبدء المشروع.'), ''],
+        [L('Issue the purchase order and the Notice to Proceed letter.', 'إصدار أمر الشراء وخطاب الإشعار ببدء التنفيذ.'), ''],
       ];
       return A.mhead('m-next', L('Next steps', 'الخطوات القادمة'), L('Al-Zulfi Passenger Station', 'محطة ركاب الزلفي')) +
         split('photo-train.jpg', `<div class="nx-list">${it.map(([t, chip], i) => `<div class="nx-item"><b>${i + 1}</b><div>${ED('nx:' + i, t, null, { tag: 'span' })}${chip ? `<em class="chip-dl">${chip}</em>` : ''}</div></div>`).join('')}</div>`);
