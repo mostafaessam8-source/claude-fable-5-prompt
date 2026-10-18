@@ -315,7 +315,8 @@
   Z.phase2 = function (M) {
     const l = M.acts.filter(Z.isP2);
     const start = Math.min(...l.map((a) => a.s)), baseStart = Math.min(...l.map((a) => a.bs));
-    const minF = Math.min(...l.map((a) => a.floatB));
+    // margin of the packages that begin at the Phase 2 start (later packages, e.g. FF&E, have their own timing)
+    const minF = Math.min(...l.filter((a) => a.s <= start + 45).map((a) => a.floatB));
     return { list: l, start, baseStart, minFloat: minF, latest: start + minF, delay: M.finish - M.base.finish };
   };
   // Move the Phase 2 start. Later: Phase 2 activities starting before it are pushed (with their successors).

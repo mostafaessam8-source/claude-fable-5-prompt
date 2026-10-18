@@ -30,22 +30,23 @@
     };
   };
 
+  const planOf = (M) => (A.mode ? A.planP2(M.start) : Z.phase2(M).baseStart);
   const apply = (day) => { if (day) A.setState(Z.setPhase2Start(A.s.st, day)); };
   A.changes.p2date = (el) => apply(dt.parse(el.value));
-  A.changes.p2range = (el) => { const P = Z.phase2(A.s.M); apply(P.baseStart + (+el.value)); };
+  A.changes.p2range = (el) => { const P = Z.phase2(A.s.M); apply(planOf(A.s.M) + (+el.value)); };
   A.actions.p2set = (el) => apply(+el.dataset.day);
-  A.actions.p2reset = () => apply(Z.phase2(A.s.M).baseStart);
+  A.actions.p2reset = () => apply(planOf(A.s.M));
 
   Z.registerSlide({
     id: 'phase2', title: 'Why Phase 2 starts with Phase 1', desc: 'Critical Phase 2 activities & start scenarios',
     render(M) {
       const P = Z.phase2(M), st = M.st, g2 = st.ms.g2;
-      const off = P.start - P.baseStart, delay = P.delay;
-      const lo = M.start - P.baseStart, hi = 540;
+      const plan = planOf(M), off = P.start - plan, delay = P.delay;
+      const lo = M.start - plan, hi = 540;
       const p2amt = P.list.reduce((s, a) => s + a.amount, 0);
       const crit = P.list.filter((a) => a.floatB <= 45).sort((a, b) => a.floatB - b.floatB || a.s - b.s);
       const trackF = Math.min(...P.list.filter((a) => a.item === '7.2').map((a) => a.floatB));
-      const state = off < 0 ? ['at risk – starts before the Detailed Design gate', 'var(--c4)'] : off === 0 ? ['baseline plan', 'var(--good)'] : ['released late – completion is exposed', 'var(--bad)'];
+      const state = A.mode ? (delay > 0 ? [A.L('later than planned – completion is exposed', 'متأخر عن المخطط – الإنجاز معرّض للتأخير'), 'var(--bad)'] : off === 0 ? [A.L('as planned', 'حسب المخطط'), 'var(--good)'] : off < 0 ? [A.L('ahead of plan', 'أبكر من المخطط'), 'var(--good)'] : [A.L('later than planned – within the margin', 'أبعد من المخطط – ضمن الهامش'), 'var(--c4)']) : off < 0 ? ['at risk – starts before the Detailed Design gate', 'var(--c4)'] : off === 0 ? ['baseline plan', 'var(--good)'] : ['released late – completion is exposed', 'var(--bad)'];
       const pre = (label, day, extra) => `<button class="chip ${Math.abs(day - P.start) < 1 ? 'on' : ''}" data-do="p2set" data-day="${day}" ${extra || ''}>${label}</button>`;
       const kpi = (k, v, d, cls) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v" style="font-size:24px">${v}</div><div class="d">${d}</div></div>`;
 
@@ -98,12 +99,12 @@
               <input type="date" class="dinput" style="width:150px;height:32px" value="${dt.iso(P.start)}" min="${dt.iso(M.start)}" data-chg="p2date">
               <input type="range" id="p2range" min="${lo}" max="${hi}" step="1" value="${off}" style="width:300px;accent-color:var(--ph2)" data-chg="p2range">
               <span id="p2lbl" style="min-width:210px;font-weight:700;color:${state[1]}">${F.days(off)} · ${state[0]}</span>
-              <span class="seg" style="border:0;gap:6px;background:none">${pre('With Phase 1 (NTP)', M.start)}${pre('Baseline', P.baseStart)}${pre('+1 month', dt.addMonths(P.baseStart, 1))}${pre('+3 months', dt.addMonths(P.baseStart, 3))}${pre('+6 months', dt.addMonths(P.baseStart, 6))}</span>
+              <span class="seg" style="border:0;gap:6px;background:none">${pre('With Phase 1 (NTP)', M.start)}${pre(A.mode ? A.L('Plan', 'الخطة') : 'Baseline', plan)}${pre('+1 month', dt.addMonths(plan, 1))}${pre('+3 months', dt.addMonths(plan, 3))}${pre('+6 months', dt.addMonths(plan, 6))}</span>
               <button class="btn sm" data-do="p2reset">Reset</button>
             </div>
           </div></div>
           <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
-            ${kpi('Phase 2 start', dt.fmt(P.start), `baseline ${dt.fmtShort(P.baseStart)} · ${F.deltaHtml(off)}`, 'alt')}
+            ${kpi('Phase 2 start', dt.fmt(P.start), `${A.mode ? A.L('plan', 'الخطة') : 'baseline'} ${dt.fmtShort(plan)} · ${F.deltaHtml(off)}`, 'alt')}
             ${kpi('Latest start to hold completion', dt.fmt(P.latest), P.latest - P.start >= 0 ? `${Math.round(P.latest - P.start)} days of margin left` : `<b style="color:var(--bad)">${Math.round(P.start - P.latest)} days too late</b>`, P.latest - P.start >= 0 ? '' : 'warn')}
             ${kpi('Project completion', dt.fmt(M.finish), delay > 0 ? `<span class="delta up">${F.days(delay)} vs baseline ${dt.fmtShort(M.base.finish)}</span>` : `<span class="delta zero">on baseline ${dt.fmtShort(M.base.finish)}</span>`, delay > 0 ? 'warn' : '')}
             ${kpi('Phase 2 amount granted by', dt.fmt(P.start - g2), `${g2} days before the Phase 2 start · Phase 2 value ${F.M(p2amt)} SAR`, '')}
@@ -143,7 +144,7 @@
         svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
       }
       const r = el.querySelector('#p2range'), l = el.querySelector('#p2lbl');
-      if (r && l) r.addEventListener('input', () => { const P = Z.phase2(A.s.M); l.textContent = dt.fmt(P.baseStart + (+r.value)) + ' (' + F.days(+r.value) + ')'; });
+      if (r && l) r.addEventListener('input', () => { const P = Z.phase2(A.s.M); l.textContent = dt.fmt(planOf(A.s.M) + (+r.value)) + ' (' + F.days(+r.value) + ')'; });
     },
   });
 })(window);
