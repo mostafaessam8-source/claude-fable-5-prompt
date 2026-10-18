@@ -405,3 +405,4 @@ h1.edtext { display: block; }
 .fmt-dd div:hover { background: var(--brand-l); }
 .fmt-target { outline: 2px solid var(--sar-yellow, #f1b434) !important; outline-offset: 2px; }
 .mobile #fmtbar { padding: 6px 8px; gap: 5px; } .mobile #fmtbar .fb { height: 36px; min-width: 36px; }
+@media print { #zbuild { display: none !important; } }
