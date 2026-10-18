@@ -453,6 +453,8 @@
       }
     } catch (e) { st = null; }
     A.s.st = st || Z.newState('2026-10-25');
+    // heal states saved before the Phase 2 fix: releasing Phase 2 early can never finish later than the baseline
+    try { const M0 = Z.compute(A.s.st), P0 = Z.phase2(M0); if (P0.start <= P0.baseStart && M0.finish > M0.base.finish) A.s.st = Z.setPhase2Start(A.s.st, P0.start); } catch (e) { /* ignore */ }
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
