@@ -326,7 +326,10 @@
     const b0 = Math.min(...p2.map((a) => bd[a.code][0]));
     day = Math.max(day, st.start);
     let cur = Z.cloneState(st);
-    p2.forEach((a) => delete cur.ov[a.code]);
+    // earlier moves left behind overrides on Phase 2 AND on everything pushed by them (successors): clear both so each move starts from the baseline
+    const clear = new Set(), walk = (c) => { if (clear.has(c)) return; clear.add(c); BY[c].succ.forEach(walk); };
+    p2.forEach((a) => walk(a.code));
+    clear.forEach((c) => delete cur.ov[c]);
     const delta = day - b0;
     if (delta < 0) {
       // pull only the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)

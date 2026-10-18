@@ -982,7 +982,10 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const b0 = Math.min(...p2.map((a) => bd[a.code][0]));
     day = Math.max(day, st.start);
     let cur = Z.cloneState(st);
-    p2.forEach((a) => delete cur.ov[a.code]);
+    // earlier moves left behind overrides on Phase 2 AND on everything pushed by them (successors): clear both so each move starts from the baseline
+    const clear = new Set(), walk = (c) => { if (clear.has(c)) return; clear.add(c); BY[c].succ.forEach(walk); };
+    p2.forEach((a) => walk(a.code));
+    clear.forEach((c) => delete cur.ov[c]);
     const delta = day - b0;
     if (delta < 0) {
       // pull only the packages whose procurement begins at the Phase 2 start (FF&E starts much later and is not pulled)
@@ -1818,6 +1821,8 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       }
     } catch (e) { st = null; }
     A.s.st = st || Z.newState('2026-10-25');
+    // heal states saved before the Phase 2 fix: releasing Phase 2 early can never finish later than the baseline
+    try { const M0 = Z.compute(A.s.st), P0 = Z.phase2(M0); if (P0.start <= P0.baseStart && M0.finish > M0.base.finish) A.s.st = Z.setPhase2Start(A.s.st, P0.start); } catch (e) { /* ignore */ }
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
