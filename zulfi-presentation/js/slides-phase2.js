@@ -5,11 +5,12 @@
   const ITEMS = [['7.2', 'Railway Track Works (2,500 m)'], ['3.3', 'Furniture, Fixtures & Equipment'], ['6.1', 'Station Road (1,700 m)'], ['4.3', 'Generator Room']];
 
   /* editable explanation: {tokens} are live values */
-  const WHY_TPL = `<p style="margin:0 0 12px"><b>1 · Railway Track is the longest job.</b><br>8 months to manufacture &amp; deliver + 6 months to install – {trackFloat}.</p>
-<p style="margin:0 0 12px"><b>2 · Design comes first.</b><br>Phase 2 buying starts after Detailed Design approval ({ddDate}), so these packages must be released together with Phase 1.</p>
+  const WHY_TPL = `<p style="margin:0 0 12px"><b>1 · Railway Track is the longest job.</b><br>{mfgM} to manufacture &amp; deliver + {instM} to install – {trackFloat}.</p>
+<p style="margin:0 0 12px"><b>2 · Design comes first.</b><br>${A.mode ? 'Phase 2 buying starts as soon as the preliminary design is approved ({ddDate}), in parallel with the detailed design, so these packages must be launched together with Phase 1.' : 'Phase 2 buying starts after Detailed Design approval ({ddDate}), so these packages must be released together with Phase 1.'}</p>
 <p style="margin:0 0 12px"><b>3 · Every day late = a day of delay.</b><br>Latest Phase 2 start to keep the completion date: <b>{latest}</b>{delayNow}.</p>
 <p style="margin:0 0 12px"><b>4 · Signalling comes after Track &amp; Turnout.</b><br>{sigCheck}</p>
 <p style="margin:0"><b>5 · Funds first.</b><br>Phase 2 amount must be granted by <b>{grantDate}</b> ({g2} days before the start).</p>`;
+  const mw = (a) => { const n = Math.round((a.e - a.s + 1) / 30.4375); return A.isAr() ? (n >= 3 && n <= 10 ? n + ' أشهر' : n + ' شهراً') : n + ' months'; };
   const whyTokens = (M, P, g2, delay, trackF) => {
     const trk = P.list.filter((a) => a.item === '7.2').reduce((s, a) => s + a.amount, 0);
     return {
@@ -25,7 +26,8 @@
         const base = 'Trackside equipment (point machines, axle counters, signals) can only be installed once Track &amp; Turnout are laid.';
         return gap >= 0 ? base : base + ` <b style="color:var(--bad)">⚠ Now planned ${-gap} days before Track &amp; Turnout</b> – move it after them, or start Phase 2 earlier.`;
       })(),
-      ddDate: dt.fmtShort(M.by['2.6'].e), latest: dt.fmtShort(P.latest),
+      ddDate: dt.fmtShort(M.by[A.mode ? '2.4' : '2.6'].e),
+      mfgM: mw(M.by['7.2a3']), instM: mw(M.by['7.2b']), latest: dt.fmtShort(P.latest),
       delayNow: delay > 0 ? (A.isAr() ? ` (الآن <b style="color:var(--bad)">+${delay} يوم</b>)` : ` (now <b style="color:var(--bad)">${F.days(delay)}</b>)`) : '', g2, grantDate: dt.fmtShort(P.start - g2),
     };
   };

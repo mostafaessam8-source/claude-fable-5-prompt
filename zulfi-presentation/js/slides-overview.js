@@ -8,8 +8,8 @@
   const INS_TPL = `<p style="margin:0 0 8px"><b>Tight tail-end:</b> {tightCount} installation activities finish in the last ~3 months ({tightCodes}…). Shortest installation windows: {shortWin}.</p>
 <p style="margin:0 0 8px"><b>Peak spend:</b> month {peakMonth} ({peakDate}) at {peakAmt}.</p>
 <p style="margin:0 0 8px"><b>Phase 2:</b> must start by {p2latest} to hold completion{p2late}. Move the milestone in the register (row {p2row}) or on the Phase 2 slide.</p>
-<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
-<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
+${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({advPct}% of contract) at NTP, recovered {advPer} per month over {advMonths} months.</p>
+`}<p style="margin:0 0 8px"><b>Binding gate:</b> construction cannot start before the work permit on {permitDate} – it follows detailed-design approval ({ddDate}).</p>`;
   const insTokens = (M, ms, P2, tight, cons, agg, pk) => ({
     tightCount: tight.length, tightCodes: tight.slice(0, 4).map((a) => a.code).join(', '),
     shortWin: cons.map((a) => `<a data-act="${a.code}" style="color:var(--brand-d);cursor:pointer;font-weight:700">${a.code} (${F.months(a.dur / 30.4)} ${A.L('mo', 'ش')})</a>`).join(', '),
@@ -183,7 +183,7 @@
       const agg = Z.aggregate(M, () => true, 'all'), pk = agg.total.indexOf(Math.max(...agg.total));
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
-        `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the diamonds to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
+        `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the Phase 2 diamond (◆) to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
         ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">${A.isAr() ? 'اسحب معلم <b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات.' : 'Drag the <b style="color:var(--ph2)">Phase 2 start</b> milestone to test scenarios.'}</div>${svg}</div></div>` : ''}
         <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">

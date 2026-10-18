@@ -12,7 +12,7 @@
     'Milestones & key gates': 'المعالم الرئيسية وبوابات المشروع',
     'How the schedule gates drive the 26-month programme': 'كيف تتحكم بوابات الجدول الزمني في برنامج المشروع (26 شهراً)',
     'Sheet 3 · Schedule + Sheet 4 · gates': '', 'Timeline': 'المخطط الزمني', 'Register & insights': 'السجل والملاحظات',
-    'Hover for the date ruler · drag the diamonds to test scenarios': 'مرّر المؤشر لقراءة التاريخ · اسحب المعالم (◆) لتجربة السيناريوهات',
+    'Hover for the date ruler · drag the Phase 2 diamond (◆) to test scenarios': 'مرّر المؤشر لقراءة التاريخ · اسحب معلم بداية المرحلة الثانية (◆) لتجربة السيناريوهات',
     'Milestone register, key figures and schedule insights': 'سجل المعالم والأرقام الرئيسية وملاحظات الجدول الزمني',
     'Design & approvals': 'التصاميم والموافقات', 'Procurement': 'المشتريات', 'Work permit gate': 'بوابة تصريح العمل', 'Installation & construction': 'التركيب والإنشاءات',
     'Milestone register': 'سجل المعالم', 'dates move with the start date and your edits': 'التواريخ تتحرك مع تاريخ البدء وتعديلاتك', 'Milestone': 'المعلم',
@@ -65,10 +65,9 @@
     'ins:miles': `<p style="margin:0 0 8px"><b>ضيق في نهاية المشروع:</b> {tightCount} نشاط تركيب ينتهي خلال آخر ~3 أشهر ({tightCodes}…). أقصر فترات التركيب: {shortWin}.</p>
 <p style="margin:0 0 8px"><b>ذروة الصرف:</b> الشهر {peakMonth} ({peakDate}) بقيمة {peakAmt}.</p>
 <p style="margin:0 0 8px"><b>المرحلة الثانية:</b> يجب أن تبدأ قبل {p2latest} للحفاظ على موعد الإنجاز{p2late}. حرّك المعلم في السجل (الصف {p2row}) أو من شريحة المرحلة الثانية.</p>
-<p style="margin:0 0 8px"><b>الدفعة المقدمة:</b> {advAmt} ({advPct}% من العقد) عند أمر البدء، وتُسترد بمبلغ {advPer} شهرياً على مدى {advMonths} شهراً.</p>
 <p style="margin:0 0 8px"><b>البوابة الحاكمة:</b> لا يمكن بدء الإنشاء قبل تصريح العمل بتاريخ {permitDate} – وهو يلي اعتماد التصميم التفصيلي ({ddDate}).</p>`,
-    'why:p2': `<p style="margin:0 0 12px"><b>1 · سكة القطار هي أطول بند.</b><br>8 أشهر للتصنيع والتوريد + 6 أشهر للتركيب – {trackFloat}.</p>
-<p style="margin:0 0 12px"><b>2 · التصميم أولاً.</b><br>تبدأ مشتريات المرحلة الثانية بعد اعتماد التصميم التفصيلي ({ddDate})، لذلك يجب الإفراج عن هذه الحزم مع المرحلة الأولى.</p>
+    'why:p2': `<p style="margin:0 0 12px"><b>1 · سكة القطار هي أطول بند.</b><br>{mfgM} للتصنيع والتوريد + {instM} للتركيب – {trackFloat}.</p>
+<p style="margin:0 0 12px"><b>2 · التصميم أولاً.</b><br>تبدأ مشتريات المرحلة الثانية فور اعتماد التصميم الأولي ({ddDate})، بالتوازي مع التصميم التفصيلي، لذلك يجب إطلاق هذه الحزم مع المرحلة الأولى.</p>
 <p style="margin:0 0 12px"><b>3 · كل يوم تأخير = يوم تأخير في التسليم.</b><br>آخر موعد لبدء المرحلة الثانية للحفاظ على موعد الإنجاز: <b>{latest}</b>{delayNow}.</p>
 <p style="margin:0 0 12px"><b>4 · الإشارات بعد السكة والتحويلات.</b><br>{sigCheck}</p>
 <p style="margin:0"><b>5 · التمويل أولاً.</b><br>يجب اعتماد مبلغ المرحلة الثانية قبل <b>{grantDate}</b> ({g2} يوماً قبل البداية).</p>`,
