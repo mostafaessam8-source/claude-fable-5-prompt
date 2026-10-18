@@ -278,45 +278,98 @@ dv = DataValidation(type="list", formula1="=" + LIST_REF["List_Month"], allow_bl
 # ------------------------------------------------------------------ KPI Scorecard
 ks = S["KPI Scorecard"]
 title(ks, "KPI Scorecard 2026",
-      "Spend KPIs (Measured from = Monthly Plan) are calculated from the projects with that KPI Code. Manual KPIs: type target and actual in the blue cells.")
+      "Measured From: Monthly Plan = spend KPIs from the projects with that KPI Code · Weekly Report = calculated from the weekly project files (block under the table) · Manual = type target and actual in the blue cells.")
+NF2 = "#,##0.00;(#,##0.00);\"-\""
 KCOLS = [
     ("KPI Code", "in", 7, "0", "Input · key"),
     ("Perspective", "in", 18, None, "Input"),
     ("Objective / KPI", "in", 42, None, "Input"),
     ("KPI Weight", "in", 8, PCT, "Input"),
-    ("Measured From", "in", 14, None, "Input: Monthly Plan / Manual"),
-    ("FY Target / Plan", "in", 15, "#,##0.00;(#,##0.00);\"-\"", "Spend: = Projects"),
-    ("FY V2 Forecast", "in", 15, "#,##0.00;(#,##0.00);\"-\"", "Spend: = Projects"),
-    ("FY Variance", "f", 14, "#,##0.00;(#,##0.00);\"-\"", "Calc: V2 − Target"),
-    ("YTD Target / Plan", "in", 15, "#,##0.00;(#,##0.00);\"-\"", "Spend: = Projects"),
-    ("YTD V2 Forecast", "in", 15, "#,##0.00;(#,##0.00);\"-\"", "Spend: = Projects"),
-    ("YTD Actual", "in", 15, "#,##0.00;(#,##0.00);\"-\"", "Spend: = Projects"),
-    ("YTD Variance", "f", 14, "#,##0.00;(#,##0.00);\"-\"", "Calc: Actual − Target"),
-    ("% Achieved", "f", 9, PCT, "Calc: Actual ÷ Target (max 100%)"),
+    ("Measured From", "in", 14, None, "Monthly Plan / Weekly Report / Manual"),
+    ("FY Target / Plan", "in", 15, NF2, "Spend: Calc · else Input"),
+    ("FY V2 Forecast", "in", 15, NF2, "Spend: Calc · else Input"),
+    ("FY Variance", "f", 14, NF2, "Calc: V2 − Target"),
+    ("YTD Target / Plan", "in", 15, NF2, "Spend: Calc · else Input"),
+    ("YTD V2 Forecast", "in", 15, NF2, "Spend: Calc · else Input"),
+    ("YTD Actual", "in", 15, NF2, "Monthly Plan / Weekly Report: Calc · Manual: Input"),
+    ("YTD Variance", "f", 14, NF2, "Calc: Actual − Target"),
+    ("% Achieved", "f", 9, PCT, "Calc: vs Target (max 100%)"),
     ("KPI Result", "f", 9, '0.00%;(0.00%);"-"', "Calc: % Achieved × Weight"),
     ("Indicator", "f", 11, None, "Calc: from % Achieved"),
     ("Remarks", "in", 30, None, "Input"),
+    ("Linked Project", "in", 9, "@", "Input (Five Bridges KPI)"),
+    ("Better When", "in", 9, None, "Input: Higher / Lower"),
+    ("How the YTD Actual is found", "f", 52, None, "Source of the actual"),
 ]
 header_row(ks, 4, KCOLS)
 def pjr(k): return "Projects!$%s$5:$%s$500" % (PC[k], PC[k])
+KN = 4 + len(M["kpis"])
+# weekly-report block under the table (every number shows where it comes from)
+B0 = KN + 5
+def hdrq(h): return '"' + h.replace("\n", '"&CHAR(10)&"') + '"'
+def wsum(*hs): return "+".join("SUM(INDEX(%s,0,MATCH(%s,%s,0)))" % (WRA, hdrq(h), WRH) for h in hs)
+WBLK = [
+    ("fat", "Fatalities (cumulative, all weekly files)", "=" + wsum("Fatality (Cumulative)"), "0", "Weekly Report Updates › Fatality (Cumulative)"),
+    ("maj", "Major injuries = Lost Time + Restricted Work-Day cases", "=" + wsum("Lost Time Incident (Cumulative)", "Restricted Work-Day Case (Cumulative)"), "0", "Weekly Report Updates › Lost Time Incident (Cumulative) + Restricted Work-Day Case (Cumulative)"),
+    ("min", "Minor injuries = Medical Treatment + First Aid cases", "=" + wsum("Medical Treatment Case (Cumulative)", "First Aid Case (Cumulative)"), "0", "Weekly Report Updates › Medical Treatment Case (Cumulative) + First Aid Case (Cumulative)"),
+    ("nm", "Near misses", "=" + wsum("Near Misses (Cumulative)"), "0", "Weekly Report Updates › Near Misses (Cumulative)"),
+    ("mh", "Man-hours worked", "=" + wsum("Total Man-Hours\n(Cumulative)"), "#,##0", "Weekly Report Updates › Total Man-Hours (Cumulative)"),
+    ("fwi", "FWI = (fatalities + major/10 + minor/200 + near misses/1000) ÷ man-hours × 1,000,000", None, "0.000", "Formula from the 2026 Balanced Scorecard (Projects Department)"),
+    ("ev", "Cumulative Earned Value (SAR)", "=" + wsum("Cumulative EV (SAR)"), NUM, "Weekly Report Updates › Cumulative EV (SAR)"),
+    ("pv", "Cumulative Planned Value (SAR)", "=" + wsum("Cumulative PV (SAR)"), NUM, "Weekly Report Updates › Cumulative PV (SAR)"),
+    ("spi", "SPI = Earned Value ÷ Planned Value (all weekly projects)", None, "0.00", "Formula from the 2026 Balanced Scorecard"),
+    ("due", "Delivery projects due by the report date", "=COUNTIF('Delivery KPI'!$L$5:$L$200,\"Yes\")", "0", "Delivery KPI › Due by Report Date?"),
+    ("dlv", "… of them delivered (weekly actual progress 100%)", "=COUNTIFS('Delivery KPI'!$L$5:$L$200,\"Yes\",'Delivery KPI'!$M$5:$M$200,\"Yes\")", "0", "Delivery KPI › Delivered?"),
+    ("pdl", "% delivery = delivered ÷ due", None, PCT, "Formula from the 2026 Balanced Scorecard: total projects delivered / planned"),
+]
+WR_ = {k: "$F$%d" % (B0 + 1 + i) for i, (k, *_x) in enumerate(WBLK)}
+c = ks.cell(B0, 3, "Weekly report inputs (calculated from the weekly project files – do not type)"); c.font = font(bold=True, size=11, color="2E7D32")
+for i, (k, lab, f, fmt, src) in enumerate(WBLK):
+    r = B0 + 1 + i
+    if k == "fwi": f = "=IFERROR((%s+%s/10+%s/200+%s/1000)/%s*1000000,0)" % (WR_["fat"], WR_["maj"], WR_["min"], WR_["nm"], WR_["mh"])
+    if k == "spi": f = "=IFERROR(%s/%s,0)" % (WR_["ev"], WR_["pv"])
+    if k == "pdl": f = "=IFERROR(%s/%s,0)" % (WR_["dlv"], WR_["due"])
+    a = ks.cell(r, 3, lab); a.font = font(size=9, bold=k in ("fwi", "spi", "pdl")); a.border = BOX; a.alignment = Alignment(wrap_text=True)
+    put(ks, r, 6, f, "wk" if k not in ("fwi", "spi", "pdl") else "f", fmt)
+    n = ks.cell(r, 9, src); n.font = font(size=8, italic=True, color="595959")
+    ks.row_dimensions[r].height = 24
+AUTO = [  # (name pattern, YTD actual formula, how, better, linked)
+    (r"fatality weight", "=" + WR_["fwi"], "Weekly report: FWI from the safety figures (block below). Lower is better.", "Lower", None),
+    (r"five bridges", '=IFERROR(INDEX(%s,MATCH($Q{r},%s,0)),0)' % (pjr("w_ac"), pjr("code")), "Weekly report: Actual % (cum) of the linked project (Projects ◂ weekly).", "Higher", "N003"),
+    (r"schedule performance", "=" + WR_["spi"], "Weekly report: Σ Earned Value ÷ Σ Planned Value (block below).", "Higher", None),
+    (r"delivery against approved business plan", "=" + WR_["pdl"], "Delivery KPI sheet: projects delivered ÷ projects due by the report date.", "Higher", None),
+]
 for i, k in enumerate(M["kpis"]):
     r = 5 + i
+    auto = next((a for a in AUTO if re.search(a[0], k["name"], re.I)), None)
+    better = auto[3] if auto else ("Lower" if re.search(r"incident weight", k["name"], re.I) else "Higher")
+    mf = "Monthly Plan" if k["spend"] else "Weekly Report" if auto else "Manual"
     put(ks, r, 1, k["code"], "in", "0"); put(ks, r, 2, k["persp"], "in"); put(ks, r, 3, k["name"], "in", wrap=True)
-    put(ks, r, 4, k["weight"], "in", PCT); put(ks, r, 5, "Monthly Plan" if k["spend"] else "Manual", "in")
+    put(ks, r, 4, k["weight"], "in", PCT); put(ks, r, 5, mf, "in")
     for c, key, src in ((6, "fy", "fy_b"), (7, "fy_v2", "fy_v2"), (9, "ytd", "ytd_b"), (10, "ytd_v2", "ytd_v2"), (11, "act", "ytd_a")):
         if k["spend"]:
             put(ks, r, c, "=SUMIFS(%s,%s,$A%d)" % (pjr(src), pjr("kpi"), r), "f", KCOLS[c - 1][3])
+        elif auto and c == 11:
+            put(ks, r, c, auto[1].replace("{r}", str(r)), "wk", KCOLS[c - 1][3])
+        elif auto and better == "Lower" and c == 9:
+            put(ks, r, c, "=F%d" % r, "f", KCOLS[c - 1][3])
         else:
             put(ks, r, c, k[key] or 0, "in", KCOLS[c - 1][3])
     put(ks, r, 8, "=G%d-F%d" % (r, r), "f", KCOLS[7][3])
     put(ks, r, 12, "=K%d-I%d" % (r, r), "f", KCOLS[11][3])
-    put(ks, r, 13, "=IFERROR(MIN(K%d/I%d,1),0)" % (r, r), "f", PCT)
+    put(ks, r, 13, '=IFERROR(IF($R%d="Lower",IF(K%d<=I%d,1,I%d/K%d),MIN(K%d/I%d,1)),0)' % ((r,) * 7), "f", PCT)
     put(ks, r, 14, "=M%d*D%d" % (r, r), "f", '0.00%;(0.00%);"-"')
     put(ks, r, 15, '=IF(D%d=0,"Not weighted",IF(M%d>=0.95,"On target",IF(M%d>=0.8,"Watch","Below target")))' % (r, r, r), "f")
     put(ks, r, 16, k["remarks"], "in")
-    ks.row_dimensions[r].height = 26
-KN = 4 + len(M["kpis"])
-add_table(ks, "KPI_Scorecard", "A4:P%d" % KN)
+    put(ks, r, 17, auto[4] if auto else None, "in", "@")
+    put(ks, r, 18, better, "in")
+    how = auto[2] if auto else ("Monthly Plan: Σ YTD Actual of the projects with this KPI Code (Projects sheet)." if k["spend"] else
+                                "Manual: not in the weekly report – type the actual (source: " + {"Safety": "SRGC", "Financial": "Finance"}.get(k["persp"].split()[0], "PMO / owner department") + ").")
+    put(ks, r, 19, how, "f", wrap=True)
+    ks.row_dimensions[r].height = 30
+dv = DataValidation(type="list", formula1='"Higher,Lower"'); dv.add("R5:R200"); ks.add_data_validation(dv)
+dv = DataValidation(type="list", formula1='"Monthly Plan,Weekly Report,Manual"'); dv.add("E5:E200"); ks.add_data_validation(dv)
+add_table(ks, "KPI_Scorecard", "A4:S%d" % KN)
 ks.cell(KN + 2, 3, "Total weight (must be 100%)").font = font(bold=True)
 c = ks.cell(KN + 2, 4, "=SUM(D5:D%d)" % KN); c.number_format = PCT; c.font = font(bold=True)
 ks.cell(KN + 2, 13, "Scorecard result").font = font(bold=True)
@@ -327,13 +380,14 @@ ks.freeze_panes = "D5"
 # ------------------------------------------------------------------ Delivery KPI
 dk = S["Delivery KPI"]
 title(dk, "Delivery KPI – target completion dates",
-      "Type the project code and its target date. Everything else is read from Projects and the weekly files. Linked to KPI 12 (% of delivery against approved business plan).")
+      "Type the project code and its target date. Everything else is read from Projects and the weekly files. Feeds KPI 12 (% of delivery against approved business plan): delivered ÷ due.")
 DCOLS = [
     ("Project Code", "in", 10, "@", "Input"), ("Target Completion Date", "in", 13, DATE, "Input"), ("Remarks", "in", 30, None, "Input"),
     ("Project", "f", 40, None, "Calc: Projects"), ("Project Phase", "f", 12, None, "Calc: Projects"), ("Budget (Full Cost, SAR)", "f", 15, NUM, "Calc: Projects"),
     ("Forecast Finish (weekly)", "f", 13, DATE, "Calc: Projects ◂ weekly"), ("SPI (weekly)", "f", 8, "0.00", "Calc: Projects ◂ weekly"),
     ("Actual % (weekly)", "f", 9, PCT, "Calc: Projects ◂ weekly"), ("Days vs Target", "f", 9, '#,##0;(#,##0);"0"', "Calc: Forecast − Target"),
     ("Status", "f", 16, None, "Calc: from the dates"),
+    ("Due by Report Date?", "f", 10, None, "Calc: Target ≤ report date"), ("Delivered?", "f", 10, None, "Calc: weekly Actual % = 100%"),
 ]
 header_row(dk, 4, DCOLS)
 def pjx(k, r): return 'IFERROR(INDEX(Projects!$%s$5:$%s$500,MATCH($A%d,Projects!$A$5:$A$500,0)),"")' % (PC[k], PC[k], r)
@@ -344,8 +398,10 @@ for i, x in enumerate(M["delivery"]):
     put(dk, r, 7, "=" + pjx("w_fin", r), "f", DATE); put(dk, r, 8, "=" + pjx("w_spi", r), "f", "0.00"); put(dk, r, 9, "=" + pjx("w_ac", r), "f", PCT)
     put(dk, r, 10, '=IF(ISNUMBER(G%d),G%d-B%d,"")' % (r, r, r), "f", '#,##0;(#,##0);"0"')
     put(dk, r, 11, '=IF(NOT(ISNUMBER(G%d)),"No weekly data",IF(G%d<=B%d,"On track","Late"))' % (r, r, r), "f")
+    put(dk, r, 12, '=IF(B%d<=cfg_ReportDate,"Yes","No")' % r, "f")
+    put(dk, r, 13, '=IF(N(I%d)>=0.999,"Yes","No")' % r, "f")
 DN = 4 + len(M["delivery"])
-add_table(dk, "Delivery_Targets", "A4:K%d" % DN)
+add_table(dk, "Delivery_Targets", "A4:M%d" % DN)
 dv = DataValidation(type="list", formula1="=Projects!$A$5:$A$500"); dv.add("A5:A200"); dk.add_data_validation(dv)
 
 # ------------------------------------------------------------------ Data Checks (live)

@@ -22,6 +22,14 @@ file. Never remove the old import path.
   its header text in row 3 (robust to query column moves) and the row by `Project Code`.
 - No duplicated data: static project fields live once in `Projects`; months only in `Monthly_Plan`; KPIs once in
   `KPI_Scorecard`; target dates in `Delivery_Targets`. Everything else is calculated.
+- KPI actuals come from the data whenever the data exists (user rule: "تتحسب اوتوماتيك من الويكلي ريبوت").
+  KPI Scorecard › Measured From = Monthly Plan (spend KPIs), Weekly Report (calculated in the "Weekly report inputs"
+  block under the table, every line naming its weekly column) or Manual (not in any source: IWI needs train-km, SPAI,
+  revenues, EBITDA, OPEX, PCG, local content, strategy, audit). Formulas follow the 2026 Balanced Scorecard file
+  (kpiTargets source): SPI = ΣEV ÷ ΣPV; Five Bridges = Actual % of the Linked Project (N003); % delivery = projects with
+  weekly Actual % = 100% ÷ projects whose target date ≤ report date (Delivery KPI › Due / Delivered); FWI =
+  (fatalities + major/10 + minor/200 + near misses/1000) ÷ man-hours × 1e6 with major = Lost Time + Restricted
+  Work-Day, minor = Medical Treatment + First Aid (cumulative figures). "Better When" = Lower → % achieved = target ÷ actual.
 - One YTD cut-off (`Settings!B6`, name `cfg_YTDMonth`); next month = cut-off + 1; report date = latest weekly Report Date.
 - Every finding in *Review Notes* gives its source as file › sheet › cells (user rule: always show the source).
 - Cached values come from LibreOffice (`recalc.py` of the xlsx skill) on the standalone build, then merge.py writes
