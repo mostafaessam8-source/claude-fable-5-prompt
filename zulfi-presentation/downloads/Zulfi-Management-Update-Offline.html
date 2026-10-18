@@ -1236,7 +1236,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     'Monthly spend': 'الصرف الشهري', 'Quarterly spend': 'الصرف الربع سنوي', 'Quarter spend': 'الصرف الربع سنوي', 'Download the current view (stack-by and period) as a SAR-styled Excel table': 'تنزيل العرض الحالي (التقسيم والفترة) كجدول إكسل بقالب سار', 'Half-yearly spend': 'الصرف النصف سنوي', 'Yearly spend': 'الصرف السنوي',
     'SAR per project month · click for detail': 'بالريال لكل شهر من المشروع', 'SAR per project month': 'بالريال لكل شهر من المشروع', 'SAR per project quarter (3 months)': 'بالريال لكل ربع سنة (3 أشهر)', 'SAR per project half-year (6 months)': 'بالريال لكل نصف سنة (6 أشهر)', 'SAR per project year (12 months)': 'بالريال لكل سنة (12 شهراً)',
     'Advance recovery': 'استرداد الدفعة المقدمة', 'Advance payment received': 'الدفعة المقدمة المستلمة', 'Total work cost': 'إجمالي تكلفة الأعمال', 'Net payment': 'صافي الدفعة', 'Cumulative cost': 'التكلفة التراكمية',
-    'Cumulative payments (with advance)': 'الدفعات التراكمية (مع الدفعة المقدمة)', 'Cumulative payments (advance at NTP, recovered monthly)': 'الدفعات التراكمية (دفعة مقدمة عند أمر البدء وتُسترد شهرياً)',
+    'Cumulative payments (with advance)': 'الدفعات التراكمية (مع الدفعة المقدمة)', 'Cumulative payments (advance at NTP)': 'الدفعات التراكمية (دفعة مقدمة عند أمر البدء)', 'Cumulative payments (advance at NTP, recovered monthly)': 'الدفعات التراكمية (دفعة مقدمة عند أمر البدء وتُسترد شهرياً)',
     'S-curve – cumulative % of payments (with advance)': 'منحنى الدفعات التراكمية (مع الدفعة المقدمة)', 'S-curve – cumulative % complete (cost)': 'منحنى الإنجاز التراكمي (التكلفة)',
     'Current plan': 'الخطة الحالية', 'Cumulative': 'التراكمي', 'Δ vs baseline': 'الفرق عن الخطة', 'received at NTP': 'تُستلم عند أمر البدء', 'Monthly recovery': 'الاسترداد الشهري',
     'Total (selection)': 'الإجمالي (المحدد)', 'Peak month': 'ذروة الصرف (الشهر)', '50% of cost reached': 'الوصول إلى 50% من التكلفة', 'Planned progress at status date': 'التقدم المخطط في تاريخ المتابعة', 'choose a status date above': 'اختر تاريخ المتابعة أعلاه',
@@ -2697,7 +2697,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
 /* Slides 7-8: monthly cash flow + S-curve, and the cash-flow matrix */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: 'group', per: 1, basis: 'cost' });
+  const ui = () => (A.s.ui.cf = A.s.ui.cf || { dim: A.mode ? 'phase' : 'group', per: A.mode ? 3 : 1, basis: 'cost' });
   const mxui = () => (A.s.ui.mx = A.s.ui.mx || { unit: 'k', heat: true });
 
   A.changes.status = (el) => { A.s.ui.status = dt.parse(el.value) || null; A.refilter(); };
@@ -2843,7 +2843,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     const P = periods(M, per);
     const L = 58, R = 14, T = 12, B = 38, pw = w - L - R, ph = h - T - B, bw = pw / P;
     const tot = []; for (let k = 0; k < P; k++) tot.push(sumP(agg.total, k, per));
-    const ain = adv ? tot.map((_, k) => sumP(adv.advIn, k, per)) : [], arec = adv ? tot.map((_, k) => sumP(adv.rec, k, per)) : [];
+    const ain = adv ? tot.map((_, k) => sumP(adv.advIn, k, per)) : [], arec = adv && !A.mode ? tot.map((_, k) => sumP(adv.rec, k, per)) : [];
     const up = tot.map((v, k) => v + (ain[k] || 0)), maxDn = Math.max(0, ...arec);
     const nice = F.nice(Math.max(...up, 1) + maxDn, 5), top = Math.ceil(Math.max(...up, 1) / nice.step) * nice.step, bot = Math.ceil(maxDn / nice.step) * nice.step;
     const span = top + bot, Y = (v) => T + ph - ((v + bot) / span) * ph;
@@ -2863,7 +2863,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       if (adv && ain[k] > 0) { const y1 = Y(acc + ain[k]), y0 = Y(acc); s += `<rect x="${L + k * bw + gap}" y="${y1}" width="${bw - gap * 2}" height="${Math.max(0, y0 - y1 - 1.5)}" fill="#111827" rx="2"/>`; rows.push(['#111827', 'Advance payment received', F.n0(ain[k])]); }
       if (adv && arec[k] > 0) { s += `<rect x="${L + k * bw + gap}" y="${Y(0) + 1}" width="${bw - gap * 2}" height="${Math.max(0, Y(-arec[k]) - Y(0) - 1)}" fill="#e11d48" rx="2"/>`; rows.push(['#e11d48', 'Advance recovery', '− ' + F.n0(arec[k])]); }
       s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv ? [['', '<b>Net payment</b>', '<b>' + F.sar(tot[k] + ain[k] - arec[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
+      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv && !A.mode ? [['', '<b>Net payment</b>', '<b>' + F.sar(tot[k] + ain[k] - arec[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
     }
     const st = A.s.ui.status;
     if (st && st >= M.start && st < M.bs[M.N]) { const xf = statusX(M, st, per, L, bw); s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/>`; }
@@ -2955,14 +2955,14 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
           </div>
           <div class="row grow" style="gap:16px">
             <div class="col grow" style="gap:12px">
-              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${(A.isAr() ? seriesMeta(dim, k).name : seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m))}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span><span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>' : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, A.mode ? 250 : 305, per, adv ? pay : null)}</div></div>
+              <div class="panel" style="flex:1.15"><div class="ph"><h3>${pn(per)[2]} spend</h3><span class="sub">SAR per project ${per === 1 ? 'month · click for detail' : pn(per)[3]}</span><div class="right legend" style="max-width:640px;justify-content:flex-end">${keys.map((k) => `<span><i class="dot" style="background:${seriesMeta(dim, k).color}"></i>${(A.isAr() ? seriesMeta(dim, k).name : seriesMeta(dim, k).name.replace(/^(\d) .*/, (m, d) => m.length > 24 ? m.slice(0, 22) + '…' : m))}</span>`).join('')}${adv ? '<span><i class="dot" style="background:#111827"></i>Advance payment</span>' + (A.mode ? '' : '<span><i class="dot" style="background:#e11d48"></i>Advance recovery</span>') : ''}</div></div><div class="pb" style="padding-top:0">${stackChart(M, agg, dim, 1090, A.mode ? 250 : 305, per, adv ? pay : null)}</div></div>
               <div class="panel" style="flex:1"><div class="ph"><h3>S-curve – cumulative % ${adv ? 'of payments (with advance)' : 'complete (cost)'}</h3>
-                <div class="right legend">${adv ? '<span><i class="dot" style="background:var(--brand)"></i>Cumulative payments (advance at NTP, recovered monthly)</span>' : '<span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>'}</div></div>
+                <div class="right legend">${adv ? '<span><i class="dot" style="background:var(--brand)"></i>Cumulative payments (advance at NTP' + (A.mode ? ')' : ', recovered monthly)') + '</span>' : '<span><i class="dot" style="background:var(--brand)"></i>Current plan</span><span><i class="dot" style="background:#8a97a3"></i>Baseline</span>'}</div></div>
                 <div class="pb" style="padding-top:0">${(adv ? F.scurve(M, { pct: pay.cumPct, cum: pay.cum, total: pay.net, sum: M.total, list: agg.list }, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per, noBase: true, labels: { cur: 'Cumulative payments (with advance)', base: '', spend: 'Net payment' + (per === 1 ? '' : ' (' + pn(per)[1].toLowerCase() + ')') } }) : F.scurve(M, agg, { w: 1090, h: A.mode ? 195 : 245, L: 58, R: 14, B: 36, step: 1, dates: false, per }))}</div></div>
             </div>
             <div class="col" style="width:372px;gap:12px">
               ${A.mode ? '' : `<div class="col" style="gap:8px">${Z.phaseStrip(M, true)}</div>`}
-              ${adv ? `<div class="row" style="gap:12px">${kp('Advance (' + pay.pct + '%)', F.M(pay.amount), 'received at NTP', 'style="flex:1"')}${kp('Monthly recovery', F.M(pay.perMonth), 'M' + pay.from + '–M' + M.N, 'style="flex:1"')}</div>` : ''}
+              ${adv ? `<div class="row" style="gap:12px">${kp('Advance (' + pay.pct + '%)', F.M(pay.amount), 'received at NTP', 'style="flex:1"')}${A.mode ? '' : kp('Monthly recovery', F.M(pay.perMonth), 'M' + pay.from + '–M' + M.N, 'style="flex:1"')}</div>` : ''}
               ${kp('Total (selection)', F.sar(tot), `${agg.list.length} activities · ${F.pct(M.total ? tot / M.total : 0)} of project`)}
               <div class="row" style="gap:12px">${kp('Year 1 · M1–12', F.M(y1), F.pct(tot ? y1 / tot : 0) + ' of cost', 'style="flex:1"')}${kp('Year 2 · M13+', F.M(y2), F.pct(tot ? y2 / tot : 0) + ' of cost', 'style="flex:1"')}</div>
               ${kp('Peak month', `M${pk + 1} <small>${dt.fmtMY(M.bs[pk])}</small>`, F.sar(agg.total[pk]), `data-month="${pk + 1}" style="cursor:pointer"`)}
