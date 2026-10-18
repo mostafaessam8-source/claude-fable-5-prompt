@@ -387,7 +387,7 @@ svg .axl { stroke: #c4d0d8; }
 .tk { background: #e0f2f5; color: var(--brand-d); border-radius: 4px; padding: 0 4px; font-weight: 700; font-size: .92em; white-space: nowrap; }
 h1.edtext, .s-head p .edtext { display: inline; }
 h1.edtext { display: block; }
-.mobile #bEdit { display: none; }
+.mobile #bEdit { display: inline-flex; } .mobile #bEdit .t { display: none; }
 @media (max-width: 1750px) { #bEdit .t { display: none; } }
 
 /* edit mode: every piece of text on a slide can be renamed (click it) */
@@ -397,6 +397,22 @@ h1.edtext { display: block; }
 .editing .slide [data-ovd] { background: rgba(237,161,0,.14); }
 
 .mobile #bPptx { display: inline-flex !important; } .mobile #bPptx .t { display: none; }
+
+/* ---------- formatting toolbar (edit mode) ---------- */
+#fmtbar { display: none; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px; background: #fff; border-bottom: 1px solid var(--line); flex: none; direction: ltr; position: relative; z-index: 60; }
+.editing #fmtbar { display: flex; }
+#fmtbar .fb { height: 32px; min-width: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+#fmtbar .fb:hover { background: var(--soft); border-color: var(--brand); }
+#fmtbar .fb.on { background: var(--brand-l); border-color: var(--brand); color: var(--brand-d); }
+#fmtbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+#fmtbar .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.25); padding: 0; cursor: pointer; }
+#fmtbar .lbl { font-size: 11px; color: var(--mute); font-weight: 700; }
+#fmtbar .fb.wide { min-width: 120px; justify-content: space-between; }
+.fmt-dd { position: fixed; z-index: 500; background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 4px; max-height: 300px; overflow: auto; min-width: 150px; direction: ltr; }
+.fmt-dd div { padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+.fmt-dd div:hover { background: var(--brand-l); }
+.fmt-target { outline: 2px solid var(--sar-yellow, #f1b434) !important; outline-offset: 2px; }
+.mobile #fmtbar { padding: 6px 8px; gap: 5px; } .mobile #fmtbar .fb { height: 36px; min-width: 36px; }
 
 </style>
 </head>
@@ -1001,6 +1017,15 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     });
   };
   A.tr = (h) => A.ovHtml(MODE && MODE.translate && A.lang === 'ar' && Z.i18n ? Z.i18n.html(h) : h);
+  A.styleEl = (el, o) => {
+    const st = el.style, svg = !!el.closest('svg');
+    st.removeProperty(svg ? 'fill' : 'color');
+    if (o.c) st.setProperty(svg ? 'fill' : 'color', o.c, 'important'); else { st.removeProperty('fill'); st.removeProperty('color'); }
+    st.fontWeight = o.b == null ? '' : (o.b ? '800' : '400'); st.fontStyle = o.i ? 'italic' : (o.i === false ? 'normal' : '');
+    st.textDecoration = o.u ? 'underline' : (o.u === false ? 'none' : '');
+    st.fontFamily = o.f || ''; st.fontSize = o.s ? o.s + 'px' : '';
+    if (o.bg && !svg) st.backgroundColor = o.bg; else if (!svg) st.backgroundColor = '';
+  };
   A.markOv = (root) => {
     const n = (A.s.st && A.s.st.notes) || {};
     root.querySelectorAll('*').forEach((el) => {
@@ -1010,10 +1035,12 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
       el.setAttribute('data-ovk', t);
       const v = n[ovKey(t)];
       if (v != null) { el.textContent = (A.isAr() && el.closest('svg') ? '\u2066' + v + '\u2069' : v); el.setAttribute('data-ovd', '1'); }
+      const sv = n['ovs:' + OVL() + ':' + t]; if (sv) { try { A.styleEl(el, JSON.parse(sv)); } catch (e) { /* ignore */ } }
     });
   };
   A.openOv = (el) => {
     const k = el.getAttribute('data-ovk'), st = A.s.st; st.notes = st.notes || {};
+    document.querySelectorAll('.fmt-target').forEach((x) => x.classList.remove('fmt-target')); el.classList.add('fmt-target'); A.ovTarget = el; A.fmtMode = 'ov'; if (A.syncFmt) A.syncFmt();
     const old = document.querySelector('.ov-input'); if (old) old.remove();
     const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
     const inp = document.createElement('input'); inp.className = 'ov-input'; inp.type = 'text'; inp.value = stripB(el.textContent).trim();
@@ -1122,24 +1149,30 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     if (MODE) { if (MODE.translate && A.lang === 'ar' && !opts.native && Z.i18n) { def = Z.i18n.tpl(id, def); if (tokens) { tokens = Object.assign({}, tokens); Object.keys(tokens).forEach((k) => { if (typeof tokens[k] === 'string') tokens[k] = Z.i18n.html(tokens[k]); }); } } id = id + '@' + A.lang; }
     const custom = !!(st && st.notes && st.notes[id] != null);
     A.edDef[id] = def;
-    const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
+    const tpl = custom ? A.cleanHtml(st.notes[id]).replace(/&lt;/g, '&lt;') : def, editing = A.s.editText;
     const body = editing
       ? tpl.replace(/\{(\w+)\}/g, (m, k) => `<span class="tk" contenteditable="false" data-k="${k}">${MODE && A.isAr() ? '‹' + (TKL[k] || k) + '›' : '{' + k + '}'}</span>`)
       : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
     return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
   };
-  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  const STYLE_OK = { color: /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i, 'background-color': /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i, 'font-size': /^[\d.]+(px|pt|em|rem|%)$|^(x{0,2}-)?(small|large)$|^medium$/i, 'font-family': /^[\w\s,"'\-؀-ۿ]+$/, 'font-weight': /^(normal|bold|[1-9]00)$/, 'font-style': /^(normal|italic)$/, 'text-decoration': /^[a-z\s]+$/i, 'text-decoration-line': /^[a-z\s]+$/i, 'text-align': /^(left|right|center|justify|start|end)$/ };
+  const cleanStyle = (st) => st.split(';').map((d) => { const i = d.indexOf(':'); if (i < 0) return ''; const k = d.slice(0, i).trim().toLowerCase(), v = d.slice(i + 1).trim(); return STYLE_OK[k] && STYLE_OK[k].test(v) && !/url|expression|javascript/i.test(v) ? k + ':' + v : ''; }).filter(Boolean).join(';');
   A.cleanHtml = (html) => {
     const box = document.createElement('div'); box.innerHTML = html;
     box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.dataset.k ? '{' + n.dataset.k + '}' : n.textContent)));
+    box.querySelectorAll('font').forEach((f) => { const sp = document.createElement('span'); const st = []; if (f.color) st.push('color:' + f.color); if (f.face) st.push('font-family:' + f.face); if (st.length) sp.setAttribute('style', st.join(';')); sp.append(...Array.from(f.childNodes)); f.replaceWith(sp); });
     (function walk(n) {
       Array.from(n.children).forEach((c) => {
         walk(c);
         if (!ALLOWED.has(c.tagName)) { c.replaceWith(...Array.from(c.childNodes)); return; }
+        const st = c.getAttribute('style');
         Array.from(c.attributes).forEach((a) => c.removeAttribute(a.name));
+        if (st) { const cs = cleanStyle(st); if (cs) c.setAttribute('style', cs); }
       });
     })(box);
-    return box.innerHTML.replace(/\u00a0/g, ' ').trim();
+    box.querySelectorAll('span:not([style])').forEach((sp) => sp.replaceWith(...Array.from(sp.childNodes)));
+    return box.innerHTML.replace(/ /g, ' ').trim();
   };
   A.saveEd = (el) => {
     const id = el.dataset.ed, st = A.s.st; st.notes = st.notes || {};
@@ -1374,6 +1407,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     A.renderChrome(); A.renderSlide(A.s.slide); A.renderDrawer();
   };
   A.applyLang = () => {
+    if (A.renderFmt) A.renderFmt();
     document.documentElement.lang = A.lang; document.documentElement.dir = A.isAr() ? 'rtl' : 'ltr';
     document.body.classList.toggle('ar', A.isAr());
     if (A.labels) A.labels(); A.buildSide();
@@ -1405,10 +1439,106 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
-    bind(); if (A.updateEdbar) A.updateEdbar(); A.fit(); A.syncFull();
+    bind(); if (A.initFmt) A.initFmt(); if (A.updateEdbar) A.updateEdbar(); A.fit(); A.syncFull();
     A.dirty = new Set(A.slides.map((_, i) => i));
     A.renderChrome(); A.go(A.s.slide);
     A.renderDrawer();
+  };
+})(window);
+
+</script>
+<script>
+/* Word-style formatting toolbar for edit mode: font, size, bold, italic, underline, colour, highlight, alignment.
+   - inside an editable text block (dashed box): formats the selected words
+   - on any other text (click it first – chart labels, tiles, table cells…): formats that whole text */
+(function (G) {
+  const Z = G.Z, A = Z.app;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const SAR = ['#00778B', '#3D3935', '#768692', '#59CBE8', '#71B2C9', '#C8C9C7', '#CB2C30', '#F1B434', '#FFFFFF', '#000000'];
+  const FONTS = [['', 'SAR (default)', 'الخط الافتراضي (سار)'], ['Tahoma', 'Tahoma', 'Tahoma'], ['Segoe UI', 'Segoe UI', 'Segoe UI'], ['Arial', 'Arial', 'Arial'], ['Times New Roman', 'Times New Roman', 'Times New Roman'], ['Georgia', 'Georgia', 'Georgia'], ['Courier New', 'Courier New', 'Courier New'], ['Traditional Arabic', 'Traditional Arabic', 'Traditional Arabic'], ['Simplified Arabic', 'Simplified Arabic', 'Simplified Arabic']];
+  const SIZES = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 60, 72];
+  let savedRange = null, savedEd = null;
+
+  const inEd = (n) => { const e = n && (n.nodeType === 1 ? n : n.parentElement); return e && e.closest ? e.closest('#stage [data-ed][contenteditable="true"]') : null; };
+  document.addEventListener('selectionchange', () => {
+    const s = document.getSelection(); if (!s || !s.rangeCount) return;
+    const ed = inEd(s.anchorNode);
+    if (ed) { savedRange = s.getRangeAt(0).cloneRange(); savedEd = ed; A.fmtMode = 'ed'; A.ovTarget && A.ovTarget.classList.remove('fmt-target'); A.ovTarget = null; }
+  });
+
+  const ovKey = (el) => 'ovs:' + (A.mode ? A.lang : 'en') + ':' + el.getAttribute('data-ovk');
+  const withEd = (fn) => {
+    const el = savedEd; if (!el || !document.body.contains(el) || !savedRange) return false;
+    el.focus(); const s = document.getSelection(); s.removeAllRanges(); s.addRange(savedRange);
+    document.execCommand('styleWithCSS', false, true);
+    fn(el);
+    if (s.rangeCount) savedRange = s.getRangeAt(0).cloneRange();
+    el.dataset.dirty = '1'; A.saveEd(el); delete el.dataset.dirty;
+    return true;
+  };
+  const withOv = (patch, toggle) => {
+    const el = A.ovTarget; if (!el || !document.body.contains(el)) return false;
+    const st = A.s.st; st.notes = st.notes || {}; const k = ovKey(el);
+    let cur = {}; try { cur = st.notes[k] ? JSON.parse(st.notes[k]) : {}; } catch (e) { cur = {}; }
+    if (patch.clear) { delete st.notes[k]; A.styleEl(el, {}); A.save(); return true; }
+    if (toggle) { const cs = getComputedStyle(el); const now = toggle === 'b' ? parseInt(cs.fontWeight, 10) >= 600 : toggle === 'i' ? cs.fontStyle === 'italic' : /underline/.test(cs.textDecorationLine || ''); cur[toggle] = cur[toggle] == null ? !now : !cur[toggle]; }
+    Object.assign(cur, patch); st.notes[k] = JSON.stringify(cur); A.styleEl(el, cur); A.save();
+    return true;
+  };
+  const apply = (edFn, ovPatch, toggle) => { if (A.fmtMode === 'ov' && A.ovTarget) { if (withOv(ovPatch, toggle)) return; } if (!withEd(edFn)) withOv(ovPatch, toggle); };
+
+  const act = {
+    bold: () => apply(() => document.execCommand('bold'), {}, 'b'),
+    italic: () => apply(() => document.execCommand('italic'), {}, 'i'),
+    underline: () => apply(() => document.execCommand('underline'), {}, 'u'),
+    color: (c) => apply(() => document.execCommand('foreColor', false, c), { c }),
+    hilite: (c) => apply(() => document.execCommand('hiliteColor', false, c), { bg: c }),
+    font: (f) => apply(() => { if (f) document.execCommand('fontName', false, f); else document.execCommand('removeFormat'); }, { f }),
+    size: (px) => apply((el) => { document.execCommand('fontSize', false, '7'); el.querySelectorAll('span,font').forEach((n) => { if (n.style && n.style.fontSize === 'xxx-large') n.style.fontSize = px + 'px'; if (n.tagName === 'FONT' && n.getAttribute('size') === '7') { n.removeAttribute('size'); n.style.fontSize = px + 'px'; } }); }, { s: px }),
+    align: (a) => apply(() => document.execCommand(a === 'center' ? 'justifyCenter' : a === 'right' ? 'justifyRight' : 'justifyLeft'), {}),
+    clear: () => apply(() => document.execCommand('removeFormat'), { clear: true }),
+  };
+
+  const closeDD = () => document.querySelectorAll('.fmt-dd').forEach((d) => d.remove());
+  const dd = (btn, items, onPick) => {
+    closeDD(); const r = btn.getBoundingClientRect(), d = document.createElement('div'); d.className = 'fmt-dd';
+    d.style.left = Math.max(4, Math.min(innerWidth - 170, r.left)) + 'px'; d.style.top = r.bottom + 4 + 'px';
+    items.forEach(([v, label, style]) => { const i = document.createElement('div'); i.textContent = label; if (style) i.style.cssText = style; i.addEventListener('mousedown', (e) => e.preventDefault()); i.addEventListener('click', () => { onPick(v); closeDD(); }); d.appendChild(i); });
+    document.body.appendChild(d);
+  };
+
+  A.renderFmt = () => {
+    const bar = $('#fmtbar'); if (!bar) return;
+    const L = A.L, sw = SAR.map((c) => `<button class="sw" data-c="${c}" style="background:${c}" title="${c}"></button>`).join('');
+    bar.innerHTML = `<span class="lbl">${L('Format', 'التنسيق')}</span>
+      <button class="fb wide" data-f="font">${L('Font', 'الخط')} ▾</button><button class="fb" data-f="size" style="min-width:64px">${L('Size', 'الحجم')} ▾</button>
+      <span class="sep"></span>
+      <button class="fb" data-f="bold" title="${L('Bold', 'عريض')}"><b>B</b></button><button class="fb" data-f="italic" title="${L('Italic', 'مائل')}"><i>I</i></button><button class="fb" data-f="underline" title="${L('Underline', 'تسطير')}"><u>U</u></button>
+      <span class="sep"></span><span class="lbl">${L('Colour', 'اللون')}</span>${sw}<label class="fb" title="${L('Custom colour', 'لون مخصص')}" style="position:relative;overflow:hidden">🎨<input type="color" data-f="custom" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+      <span class="sep"></span><span class="lbl">${L('Highlight', 'تمييز')}</span><button class="sw" data-h="#FFF2A8" style="background:#FFF2A8" title="${L('Yellow', 'أصفر')}"></button><button class="sw" data-h="#CFEFF5" style="background:#CFEFF5"></button><button class="sw" data-h="#FFD9D9" style="background:#FFD9D9"></button><button class="fb" data-h="transparent" title="${L('No highlight', 'بدون تمييز')}">⌀</button>
+      <span class="sep"></span>
+      <button class="fb" data-f="alR" title="${L('Align right', 'محاذاة لليمين')}">⇥</button><button class="fb" data-f="alC" title="${L('Centre', 'توسيط')}">≡</button><button class="fb" data-f="alL" title="${L('Align left', 'محاذاة لليسار')}">⇤</button>
+      <span class="sep"></span><button class="fb" data-f="clear" title="${L('Clear formatting', 'مسح التنسيق')}">Tx</button>
+      <span class="lbl" style="margin-inline-start:8px">${L('Select words inside a dashed box, or click any text, then format', 'حدّد كلمات داخل مربع متقطع، أو اضغط على أي نص ثم نسّقه')}</span>`;
+  };
+  A.syncFmt = () => {};
+  A.initFmt = () => {
+    let bar = $('#fmtbar'); if (!bar) { bar = document.createElement('div'); bar.id = 'fmtbar'; const eb = $('#edbar'); (eb || $('#bar')).after(bar); }
+    A.renderFmt();
+    bar.addEventListener('mousedown', (e) => { if (!e.target.closest('input[type=color]')) e.preventDefault(); });
+    bar.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-f],[data-c],[data-h]'); if (!t) return;
+      if (t.dataset.c) return act.color(t.dataset.c);
+      if (t.dataset.h) return act.hilite(t.dataset.h);
+      const f = t.dataset.f;
+      if (f === 'bold' || f === 'italic' || f === 'underline') return act[f]();
+      if (f === 'font') return dd(t, FONTS.map(([v, en, ar]) => [v, A.L(en, ar), v ? `font-family:${v}` : '']), act.font);
+      if (f === 'size') return dd(t, SIZES.map((n) => [n, String(n)]), act.size);
+      if (f === 'alR') return act.align('right'); if (f === 'alC') return act.align('center'); if (f === 'alL') return act.align('left');
+      if (f === 'clear') return act.clear();
+    });
+    bar.addEventListener('input', (e) => { if (e.target.dataset.f === 'custom') act.color(e.target.value); });
+    document.addEventListener('mousedown', (e) => { if (!e.target.closest('.fmt-dd') && !e.target.closest('#fmtbar')) closeDD(); });
   };
 })(window);
 
@@ -2790,7 +2920,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   };
   const runXml = (r) => {
     const ar = ARABIC.test(r.t);
-    return `<a:r><a:rPr lang="${ar ? 'ar-SA' : 'en-US'}" sz="${r.sz}" b="${r.b ? 1 : 0}" i="${r.i ? 1 : 0}"${r.u ? ' u="sng"' : ''} dirty="0"><a:solidFill>${clr(r.c)}</a:solidFill><a:latin typeface="${FONT_LATIN}"/><a:ea typeface="${FONT_LATIN}"/><a:cs typeface="${FONT_CS}"/></a:rPr><a:t>${esc(r.t)}</a:t></a:r>`;
+    return `<a:r><a:rPr lang="${ar ? 'ar-SA' : 'en-US'}" sz="${r.sz}" b="${r.b ? 1 : 0}" i="${r.i ? 1 : 0}"${r.u ? ' u="sng"' : ''} dirty="0"><a:solidFill>${clr(r.c)}</a:solidFill>${r.hl ? `<a:highlight>${clr(r.hl)}</a:highlight>` : ''}<a:latin typeface="${esc(r.f || FONT_LATIN)}"/><a:ea typeface="${esc(r.f || FONT_LATIN)}"/><a:cs typeface="${esc(r.f || FONT_CS)}"/></a:rPr><a:t>${esc(r.t)}</a:t></a:r>`;
   };
   const paraXml = (runs, o) => {
     const lnS = o.lh ? `<a:lnSpc><a:spcPts val="${Math.round(o.lh)}"/></a:lnSpc>` : '';
@@ -2890,18 +3020,19 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
     // runs from child nodes
     const runs = [];
     const bulletLI = cs.display === 'list-item' && cs.listStyleType !== 'none';
-    const walkRuns = (n, pcs) => {
+    const famOf = (c2) => { const f = (c2.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(); return f && !/^(29LT Kaff|Diodrum Arabic|Segoe UI|system-ui|sans-serif)$/i.test(f) ? f : ''; };
+    const walkRuns = (n, pcs, inl) => {
       n.childNodes.forEach((ch) => {
         if (ch.nodeType === 3) {
           let t = ch.textContent.replace(/[⁦⁧⁩]/g, '').replace(/\s+/g, ' ');
           if (!t) return;
           const tt = pcs.textTransform === 'uppercase' ? t.toUpperCase() : t;
           const color = parseColor(pcs.color) || { hex: '3D3935', a: 1 };
-          runs.push({ t: tt, sz: Math.max(100, Math.round(ptOf(num(pcs.fontSize)) * 100)), b: parseInt(pcs.fontWeight, 10) >= 600 || pcs.fontWeight === 'bold', i: pcs.fontStyle === 'italic', u: /underline/.test(pcs.textDecorationLine || ''), c: color });
+          runs.push({ t: tt, sz: Math.max(100, Math.round(ptOf(num(pcs.fontSize)) * 100)), b: parseInt(pcs.fontWeight, 10) >= 600 || pcs.fontWeight === 'bold', i: pcs.fontStyle === 'italic', u: /underline/.test(pcs.textDecorationLine || ''), c: color, f: famOf(pcs), hl: inl ? parseColor(pcs.backgroundColor) : null });
         } else if (ch.nodeType === 1) {
           if (ch.tagName === 'BR') { runs.push({ br: true }); return; }
           const ccs = getComputedStyle(ch); if (ccs.display === 'none') return;
-          walkRuns(ch, ccs);
+          walkRuns(ch, ccs, true);
         }
       });
     };
@@ -2975,7 +3106,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
         let algn = 'l';
         if (anchor === 'end') { algn = 'r'; x -= extra; w += extra; } else if (anchor === 'middle') { algn = 'ctr'; x -= extra / 2; w += extra; } else w += extra;
         const col = Object.assign({}, fill, { a: fill.a * fa });
-        const run = { t: t, sz: Math.max(100, Math.round(ptOf(fsPx) * 100)), b: parseInt(cs.fontWeight, 10) >= 600, i: false, u: false, c: col };
+        const fam = (cs.fontFamily || '').split(',')[0].replace(/["']/g, '').trim(); const run = { t: t, sz: Math.max(100, Math.round(ptOf(fsPx) * 100)), b: parseInt(cs.fontWeight, 10) >= 600, i: cs.fontStyle === 'italic', u: /underline/.test(cs.textDecorationLine || ''), c: col, f: /^(29LT Kaff|Diodrum Arabic|Segoe UI|system-ui|sans-serif|)$/i.test(fam) ? '' : fam };
         S.shape({ x, y, w, h, txBox: true, text: textBody(paraXml([run], { algn, rtl: ar, lh: 0 }), { anchor: 'ctr', nowrap: true }), name: 'Label' });
         return;
       }

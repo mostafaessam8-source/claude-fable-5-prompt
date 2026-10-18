@@ -379,7 +379,7 @@ svg .axl { stroke: #c4d0d8; }
 .tk { background: #e0f2f5; color: var(--brand-d); border-radius: 4px; padding: 0 4px; font-weight: 700; font-size: .92em; white-space: nowrap; }
 h1.edtext, .s-head p .edtext { display: inline; }
 h1.edtext { display: block; }
-.mobile #bEdit { display: none; }
+.mobile #bEdit { display: inline-flex; } .mobile #bEdit .t { display: none; }
 @media (max-width: 1750px) { #bEdit .t { display: none; } }
 
 /* edit mode: every piece of text on a slide can be renamed (click it) */
@@ -389,3 +389,19 @@ h1.edtext { display: block; }
 .editing .slide [data-ovd] { background: rgba(237,161,0,.14); }
 
 .mobile #bPptx { display: inline-flex !important; } .mobile #bPptx .t { display: none; }
+
+/* ---------- formatting toolbar (edit mode) ---------- */
+#fmtbar { display: none; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px; background: #fff; border-bottom: 1px solid var(--line); flex: none; direction: ltr; position: relative; z-index: 60; }
+.editing #fmtbar { display: flex; }
+#fmtbar .fb { height: 32px; min-width: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+#fmtbar .fb:hover { background: var(--soft); border-color: var(--brand); }
+#fmtbar .fb.on { background: var(--brand-l); border-color: var(--brand); color: var(--brand-d); }
+#fmtbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+#fmtbar .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.25); padding: 0; cursor: pointer; }
+#fmtbar .lbl { font-size: 11px; color: var(--mute); font-weight: 700; }
+#fmtbar .fb.wide { min-width: 120px; justify-content: space-between; }
+.fmt-dd { position: fixed; z-index: 500; background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 4px; max-height: 300px; overflow: auto; min-width: 150px; direction: ltr; }
+.fmt-dd div { padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+.fmt-dd div:hover { background: var(--brand-l); }
+.fmt-target { outline: 2px solid var(--sar-yellow, #f1b434) !important; outline-offset: 2px; }
+.mobile #fmtbar { padding: 6px 8px; gap: 5px; } .mobile #fmtbar .fb { height: 36px; min-width: 36px; }

@@ -163,3 +163,21 @@ html[dir=rtl] #drawer { transform: translateX(-105%); box-shadow: 10px 0 40px rg
 .c6-warn { background: #fdecec; border-inline-start: 6px solid var(--sar-red); color: #8a1d1d; padding: 8px 14px; font-size: 14px; font-weight: 700; }
 
 .mobile #bPptx { display: inline-flex !important; } .mobile #bPptx .t { display: none; } .mobile #bPptx svg { margin: 0; }
+
+/* ---- phones & tablets: fluid type, wrapping controls ---- */
+.mobile .kpi .v { font-size: clamp(15px, 4.8vw, 22px); white-space: normal; line-height: 1.25; }
+.mobile .kpi .k { font-size: 11px; }
+.mobile .seg { flex-wrap: wrap; max-width: 100%; }
+.mobile .chip { padding: 4px 9px; font-size: 12px; }
+.mobile .c6-tile .v { font-size: clamp(19px, 6.4vw, 28px); }
+.mobile .c6-ctl { gap: 8px; } .mobile .c6-ctl label { flex: 1 1 130px; } .mobile .c6-ctl input { width: 100%; }
+.mobile .c6-tbl { font-size: 12.5px; min-width: 560px; } .mobile .c6-tblw { overflow-x: auto; }
+.mobile .m-panel p, .mobile .st-item, .mobile .nx-item, .mobile .ab-row, .mobile .ag-item { font-size: clamp(16px, 4.7vw, 24px) !important; }
+.mobile .s-head.m h1 { font-size: clamp(20px, 6vw, 30px); } .mobile .s-head.m p { font-size: clamp(12px, 3.4vw, 15px); }
+.mobile .dstat .v { font-size: clamp(14px, 4.4vw, 18px); white-space: normal; }
+.mobile .s-body { gap: 10px; }
+.mobile .panel > .ph h3 { font-size: 14px; } .mobile .panel > .ph .sub { font-size: 11px; }
+@media (min-width: 600px) and (max-width: 899px) { .mobile .kpi .v { font-size: clamp(18px, 3.2vw, 24px); } .mobile .m-panel p, .mobile .st-item, .mobile .nx-item, .mobile .ab-row, .mobile .ag-item { font-size: clamp(17px, 2.8vw, 24px) !important; } .mobile .m-photo { height: 260px; } }
+.mobile .seg[style*="border:0"] { overflow: visible; }
+.mobile .pb:has(svg) { direction: ltr; } .mobile .pb:has(svg) .hint { direction: rtl; text-align: right; }
+html[dir=ltr] .mobile .pb:has(svg) .hint { direction: ltr; text-align: left; }

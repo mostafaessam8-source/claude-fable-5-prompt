@@ -34,6 +34,15 @@
     });
   };
   A.tr = (h) => A.ovHtml(MODE && MODE.translate && A.lang === 'ar' && Z.i18n ? Z.i18n.html(h) : h);
+  A.styleEl = (el, o) => {
+    const st = el.style, svg = !!el.closest('svg');
+    st.removeProperty(svg ? 'fill' : 'color');
+    if (o.c) st.setProperty(svg ? 'fill' : 'color', o.c, 'important'); else { st.removeProperty('fill'); st.removeProperty('color'); }
+    st.fontWeight = o.b == null ? '' : (o.b ? '800' : '400'); st.fontStyle = o.i ? 'italic' : (o.i === false ? 'normal' : '');
+    st.textDecoration = o.u ? 'underline' : (o.u === false ? 'none' : '');
+    st.fontFamily = o.f || ''; st.fontSize = o.s ? o.s + 'px' : '';
+    if (o.bg && !svg) st.backgroundColor = o.bg; else if (!svg) st.backgroundColor = '';
+  };
   A.markOv = (root) => {
     const n = (A.s.st && A.s.st.notes) || {};
     root.querySelectorAll('*').forEach((el) => {
@@ -43,10 +52,12 @@
       el.setAttribute('data-ovk', t);
       const v = n[ovKey(t)];
       if (v != null) { el.textContent = (A.isAr() && el.closest('svg') ? '\u2066' + v + '\u2069' : v); el.setAttribute('data-ovd', '1'); }
+      const sv = n['ovs:' + OVL() + ':' + t]; if (sv) { try { A.styleEl(el, JSON.parse(sv)); } catch (e) { /* ignore */ } }
     });
   };
   A.openOv = (el) => {
     const k = el.getAttribute('data-ovk'), st = A.s.st; st.notes = st.notes || {};
+    document.querySelectorAll('.fmt-target').forEach((x) => x.classList.remove('fmt-target')); el.classList.add('fmt-target'); A.ovTarget = el; A.fmtMode = 'ov'; if (A.syncFmt) A.syncFmt();
     const old = document.querySelector('.ov-input'); if (old) old.remove();
     const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
     const inp = document.createElement('input'); inp.className = 'ov-input'; inp.type = 'text'; inp.value = stripB(el.textContent).trim();
@@ -155,24 +166,30 @@
     if (MODE) { if (MODE.translate && A.lang === 'ar' && !opts.native && Z.i18n) { def = Z.i18n.tpl(id, def); if (tokens) { tokens = Object.assign({}, tokens); Object.keys(tokens).forEach((k) => { if (typeof tokens[k] === 'string') tokens[k] = Z.i18n.html(tokens[k]); }); } } id = id + '@' + A.lang; }
     const custom = !!(st && st.notes && st.notes[id] != null);
     A.edDef[id] = def;
-    const tpl = custom ? st.notes[id] : def, editing = A.s.editText;
+    const tpl = custom ? A.cleanHtml(st.notes[id]).replace(/&lt;/g, '&lt;') : def, editing = A.s.editText;
     const body = editing
       ? tpl.replace(/\{(\w+)\}/g, (m, k) => `<span class="tk" contenteditable="false" data-k="${k}">${MODE && A.isAr() ? '‹' + (TKL[k] || k) + '›' : '{' + k + '}'}</span>`)
       : tpl.replace(/\{(\w+)\}/g, (m, k) => (tokens && tokens[k] != null ? tokens[k] : m));
     return `<${tag} class="edtext${editing ? ' on' : ''}${custom ? ' edited' : ''}" data-ed="${id}" ${editing ? 'contenteditable="true" spellcheck="false"' : ''} ${opts.style ? `style="${opts.style}"` : ''}>${body}</${tag}>`;
   };
-  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'SPAN', 'H1']);
+  const STYLE_OK = { color: /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i, 'background-color': /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i, 'font-size': /^[\d.]+(px|pt|em|rem|%)$|^(x{0,2}-)?(small|large)$|^medium$/i, 'font-family': /^[\w\s,"'\-؀-ۿ]+$/, 'font-weight': /^(normal|bold|[1-9]00)$/, 'font-style': /^(normal|italic)$/, 'text-decoration': /^[a-z\s]+$/i, 'text-decoration-line': /^[a-z\s]+$/i, 'text-align': /^(left|right|center|justify|start|end)$/ };
+  const cleanStyle = (st) => st.split(';').map((d) => { const i = d.indexOf(':'); if (i < 0) return ''; const k = d.slice(0, i).trim().toLowerCase(), v = d.slice(i + 1).trim(); return STYLE_OK[k] && STYLE_OK[k].test(v) && !/url|expression|javascript/i.test(v) ? k + ':' + v : ''; }).filter(Boolean).join(';');
   A.cleanHtml = (html) => {
     const box = document.createElement('div'); box.innerHTML = html;
     box.querySelectorAll('span.tk').forEach((n) => n.replaceWith(document.createTextNode(n.dataset.k ? '{' + n.dataset.k + '}' : n.textContent)));
+    box.querySelectorAll('font').forEach((f) => { const sp = document.createElement('span'); const st = []; if (f.color) st.push('color:' + f.color); if (f.face) st.push('font-family:' + f.face); if (st.length) sp.setAttribute('style', st.join(';')); sp.append(...Array.from(f.childNodes)); f.replaceWith(sp); });
     (function walk(n) {
       Array.from(n.children).forEach((c) => {
         walk(c);
         if (!ALLOWED.has(c.tagName)) { c.replaceWith(...Array.from(c.childNodes)); return; }
+        const st = c.getAttribute('style');
         Array.from(c.attributes).forEach((a) => c.removeAttribute(a.name));
+        if (st) { const cs = cleanStyle(st); if (cs) c.setAttribute('style', cs); }
       });
     })(box);
-    return box.innerHTML.replace(/\u00a0/g, ' ').trim();
+    box.querySelectorAll('span:not([style])').forEach((sp) => sp.replaceWith(...Array.from(sp.childNodes)));
+    return box.innerHTML.replace(/ /g, ' ').trim();
   };
   A.saveEd = (el) => {
     const id = el.dataset.ed, st = A.s.st; st.notes = st.notes || {};
@@ -407,6 +424,7 @@
     A.renderChrome(); A.renderSlide(A.s.slide); A.renderDrawer();
   };
   A.applyLang = () => {
+    if (A.renderFmt) A.renderFmt();
     document.documentElement.lang = A.lang; document.documentElement.dir = A.isAr() ? 'rtl' : 'ltr';
     document.body.classList.toggle('ar', A.isAr());
     if (A.labels) A.labels(); A.buildSide();
@@ -438,7 +456,7 @@
     A.s.M = Z.compute(A.s.st);
     A.s.slide = Math.max(0, Math.min(A.slides.length - 1, slide));
     $('#fQ').value = A.s.f.q || '';
-    bind(); if (A.updateEdbar) A.updateEdbar(); A.fit(); A.syncFull();
+    bind(); if (A.initFmt) A.initFmt(); if (A.updateEdbar) A.updateEdbar(); A.fit(); A.syncFull();
     A.dirty = new Set(A.slides.map((_, i) => i));
     A.renderChrome(); A.go(A.s.slide);
     A.renderDrawer();
