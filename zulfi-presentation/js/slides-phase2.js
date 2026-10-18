@@ -56,7 +56,7 @@
       const p1End = Math.max(...P1.map((a) => a.e)), ovEnd = Math.min(p1End, M.finish), bot = pkTop + ITEMS.length * rowH + 6;
       const q2 = { s: P.start, e: Math.max(...P.list.map((a) => a.e)) };
       const aMonths = (P.start - M.start) / 30.4375, bMonths = (ovEnd + 1 - P.start) / 30.4375;
-      let svg = `<svg viewBox="0 0 ${W} ${bot + 66}" width="100%" style="min-width:760px;touch-action:pan-y" data-rl="1" data-t0="${t0}" data-t1="${t1}" data-w="${W}" data-l="${L}" data-r="${R}" data-bot="${bot}" data-pk="${pkTop}" data-rh="${rowH}" data-n="${ITEMS.length}">`;
+      let svg = `<svg viewBox="0 0 ${W} ${bot + 66}" width="100%" style="min-width:760px" data-rl="1" data-t0="${t0}" data-t1="${t1}" data-w="${W}" data-l="${L}" data-r="${R}" data-bot="${bot}" data-pk="${pkTop}" data-rh="${rowH}" data-n="${ITEMS.length}">`;
       svg += `<rect id="hcol" x="0" y="32" width="10" height="${bot - 32}" fill="var(--brand)" opacity=".12" style="display:none" pointer-events="none"/><rect id="hrow" x="${L}" y="0" width="${W - L - R}" height="20" fill="var(--brand)" opacity=".10" style="display:none" pointer-events="none"/>`;
       svg += `<rect x="${x(P.start)}" y="32" width="${Math.max(0, x(ovEnd + 1) - x(P.start))}" height="${bot - 32}" fill="var(--ph2)" opacity=".06"/>`;
       for (let k = 0; k <= M.N; k += 3) { const d = M.bs[Math.min(k, M.N)]; svg += `<line x1="${x(d)}" x2="${x(d)}" y1="32" y2="${bot}" stroke="#e6ecf0"/><text x="${x(d)}" y="${bot + 14}" text-anchor="middle" style="font-size:10.5px">${dt.fmtMY(d)}</text>`; }
