@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Bundle each deck page + css + js + data (+ images) into ONE self-contained HTML file for offline use.
   presentation.html -> downloads/Zulfi-Presentation-Offline.html          (interactive cost / schedule deck)
-  management.html   -> downloads/Zulfi-Management-Update-Offline.html     (Arabic / English management update)"""
+  management.html   -> downloads/Zulfi-Management-Update-Offline.html     (Arabic / English management update)
+  director.html     -> downloads/Zulfi-Director-Brief-Offline.html        (Project Director brief + financial snapshot)"""
 import re, base64, json, pathlib
 root = pathlib.Path(__file__).parent
 
@@ -25,3 +26,4 @@ def build(page, out_name, assets=False):
 
 build("presentation.html", "Zulfi-Presentation-Offline.html")
 build("management.html", "Zulfi-Management-Update-Offline.html", assets=True)
+build("director.html", "Zulfi-Director-Brief-Offline.html", assets=True)

@@ -1380,7 +1380,7 @@ window.ZULFI_DATA={"groups":[{"code":"1.0","name":"Preliminaries & General Requi
   const Z = G.Z, F = Z.F, dt = Z.dt;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-  const KEY = G.ZMODE ? 'zulfi-mgmt-v1' : 'zulfi-presentation-v1';
+  const KEY = G.ZMODE ? (G.ZMODE.key || 'zulfi-mgmt-v1') : 'zulfi-presentation-v1';
   const W = 1600, H = 900;
 
   const A = (Z.app = {
@@ -3649,7 +3649,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
   const set = (id, h) => { const e = $(id); if (e) e.innerHTML = h; };
   A.labels = () => {
     const L = A.L;
-    $('brandT').textContent = L('Al-Zulfi Railway Station', 'محطة قطار الزلفي'); $('brandS').textContent = L('Management update', 'عرض مستجدات المشروع');
+    $('brandT').textContent = L('Al-Zulfi Railway Station', 'محطة قطار الزلفي'); $('brandS').textContent = G.ZMODE.brandAr ? L(G.ZMODE.brandEn, G.ZMODE.brandAr) : L('Management update', 'عرض مستجدات المشروع');
     document.querySelector('#bar .brand').title = L('Guide', 'الدليل');
     $('lblStart').textContent = L('Project start', 'تاريخ بدء المشروع');
     set('mBack', I.prev + L('Back', 'السابق')); set('mNext', L('Next', 'التالي') + I.next); set('mSide', I.menu + L('Agenda', 'الأجندة'));
@@ -3672,7 +3672,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
   A.actions.resetDefault = () => {
     if (!confirm(A.L('Reset the presentation to its default?\n\nThis restores the start date, all edits, deleted slides and views.', 'إعادة العرض إلى الوضع الافتراضي؟\n\nسيتم استرجاع تاريخ البدء وكل التعديلات والشرائح المحذوفة.'))) return;
     A.s.st = A.freshState(); A.s.ui = {}; A.s.drawer = null; A.hidden.clear(); A.saveHidden();
-    try { localStorage.removeItem('zulfi-mgmt-v1'); } catch (e) { /* ignore */ }
+    try { localStorage.removeItem(G.ZMODE.key || 'zulfi-mgmt-v1'); } catch (e) { /* ignore */ }
     A.updateEdbar(); A.update();
   };
   A.actions.resetAll = A.actions.resetDefault;
