@@ -2,7 +2,8 @@
 """Bundle each deck page + css + js + data (+ images) into ONE self-contained HTML file for offline use.
   presentation.html -> downloads/Zulfi-Presentation-Offline.html          (interactive cost / schedule deck)
   management.html   -> downloads/Zulfi-Management-Update-Offline.html     (Arabic / English management update)
-  director.html     -> downloads/Zulfi-Director-Brief-Offline.html        (Project Director brief + financial snapshot)"""
+  director.html     -> downloads/Zulfi-Director-Brief-Offline.html        (Project Director brief, 4 slides)
+  finance.html      -> downloads/Zulfi-Financial-Snapshot-Offline.html    (financial & cash-flow snapshot, 1 slide)"""
 import re, base64, json, pathlib
 root = pathlib.Path(__file__).parent
 
@@ -27,3 +28,4 @@ def build(page, out_name, assets=False):
 build("presentation.html", "Zulfi-Presentation-Offline.html")
 build("management.html", "Zulfi-Management-Update-Offline.html", assets=True)
 build("director.html", "Zulfi-Director-Brief-Offline.html", assets=True)
+build("finance.html", "Zulfi-Financial-Snapshot-Offline.html", assets=True)

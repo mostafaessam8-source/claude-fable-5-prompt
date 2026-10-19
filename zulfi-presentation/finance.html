@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الملخص المالي والتدفق النقدي – محطة قطار الزلفي – Financial Snapshot</title>
+<meta name="description" content="الملخص المالي والتدفق النقدي – محطة قطار الزلفي (SAR template) – شريحة تفاعلية بالعربية والإنجليزية.">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/mgmt.css">
+<link rel="stylesheet" href="css/director.css">
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <a class="brand" href="index.html" title="Guide" style="color:inherit;text-decoration:none"><div class="logo">SAR</div><div><span id="brandT"></span><small id="brandS"></small></div></a>
+    <span class="grow"></span>
+    <label class="tb-field"><span class="t" id="lblStart"></span> <input type="date" id="startIn"></label>
+    <label class="tb-field" style="display:none"><span class="t">Linking</span><select id="linkSel"><option value="two">Auto-link</option><option value="push">Push only</option><option value="off">Off</option></select></label>
+    <button class="tb-btn" id="scen" style="display:none"></button>
+    <button class="tb-btn" id="bReset"></button>
+    <span class="grow"></span>
+    <button class="tb-btn" id="bEdit"></button>
+    <button class="tb-btn" id="bSide"></button>
+    <button class="tb-btn" id="bBack"></button>
+    <span id="slideNo"></span>
+    <button class="tb-btn" id="bNext"></button>
+    <button class="tb-btn" id="bPptx"></button>
+    <button class="tb-btn" id="bFull"></button>
+    <button class="tb-btn" id="bExit" style="display:none"></button>
+    <button class="tb-btn lang" id="bLang"></button>
+    <a class="tb-btn" data-online id="bGuide" href="index.html#download" style="text-decoration:none"></a>
+    <button class="tb-btn" id="bPrint"></button>
+  </header>
+  <div id="edbar"><span id="edTxt"></span><span style="flex:1"></span><button class="btn sm" data-do="edResetSlide" id="edR1"></button><button class="btn sm" data-do="edResetAll" id="edR2"></button><button class="btn sm danger" data-do="delSlide" id="edDel"></button><button class="btn sm" data-do="restoreSlides" id="edRestore" style="display:none"></button><button class="btn sm primary" id="edDone"></button></div>
+  <div id="filters" style="display:none"><span id="fDyn"></span><input id="fQ" type="hidden"><button id="fReset" style="display:none"></button><span id="fCount"></span></div>
+  <div id="mnav"><button id="mBack"></button><button id="mSide"></button><span id="mNo"></span><button id="mFilt" style="display:none"></button><button id="mNext"></button></div>
+  <div id="body"><nav id="side" aria-label="Sections"></nav><main id="viewport"><div id="stageBox"><div id="stage"><div id="scrim"></div><aside id="drawer" aria-label="Details"></aside><div id="tip"></div></div></div></main></div>
+</div>
+<script>window.ZMODE = {
+  id: 'fin', lang: 'ar', translate: false, noDrawer: true, key: 'zulfi-finance-v1', brandAr: 'الملخص المالي', brandEn: 'Financial snapshot',
+  order: ['d-fin'],
+  sec: [{ ar: 'الملخص المالي', en: 'Financial snapshot', ids: ['d-fin'] }],
+  num: {}, titles: {}
+};</script>
+<script src="data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/fmt.js"></script>
+<script src="js/xlsx.js"></script>
+<script src="js/slides-director.js"></script>
+<script src="js/pptx.js"></script>
+<script src="js/mgmt-shell.js"></script>
+<div id="zbuild" style="position:fixed;left:6px;bottom:3px;font:10px/1 sans-serif;color:#768692;opacity:.7;z-index:5;pointer-events:none" class="noprint">build __BUILD__</div><script>(function(e){if(e.textContent.indexOf('__BUI'+'LD__')>0)e.remove()})(document.getElementById('zbuild'))</script>
+</body>
+</html>

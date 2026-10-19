@@ -52,3 +52,20 @@ html[dir=rtl] .dr-bar { direction: rtl; }
 .dr-cols > div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; font-size: 13px; color: var(--sar-gray); }
 .dr-cols b { font-size: 12.5px; color: var(--sar-black); font-variant-numeric: tabular-nums; }
 .dr-cols i { display: block; width: 100%; border-radius: 3px 3px 0 0; }
+
+@media (max-width: 640px) {
+  .dr-tiles { grid-template-columns: 1fr !important; }
+  .dr .c6-tile .v { font-size: 28px !important; }
+  .dr-card { padding: 14px 14px 14px; }
+  .dr-card h3 { font-size: 18px; }
+  .dr-facts { font-size: 16px; } .dr-facts th, .dr-facts td { padding: 10px 0; }
+  .dr-tbl { font-size: 14.5px; } .dr-tbl td { padding: 9px 8px; }
+  .dr-tl b { font-size: 16px; } .dr-dep li { font-size: 15.5px; } .dr-dep li b { font-size: 16.5px; } .dr-ntp { font-size: 15px; }
+  .dr-cols { gap: 4px; height: 170px; } .dr-cols b { font-size: 10px; }
+}
+@media (max-width: 420px) {
+  #bar { gap: 5px; padding-inline: 8px; }
+  #bar .tb-btn { padding-inline: 8px; }
+  #bar #bFull { display: none; }
+  #bar #startIn { width: 112px; }
+}

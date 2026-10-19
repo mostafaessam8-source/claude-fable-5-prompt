@@ -37,5 +37,7 @@
   $('bLang').onclick = () => A.setLang(A.isAr() ? 'en' : 'ar');
   $('mFilt').onclick = () => A.setLang(A.isAr() ? 'en' : 'ar'); $('mFilt').style.display = '';
   A.boot();
+  // A.boot() binds #mFilt to the (unused) filter toggle – the bottom bar's EN / عربي button must switch the language on phones
+  $('mFilt').onclick = () => A.setLang(A.isAr() ? 'en' : 'ar');
   A.labels(); A.updateEdbar();
 })(window);

@@ -181,3 +181,22 @@ html[dir=rtl] #drawer { transform: translateX(-105%); box-shadow: 10px 0 40px rg
 .mobile .seg[style*="border:0"] { overflow: visible; }
 .mobile .pb:has(svg) { direction: ltr; } .mobile .pb:has(svg) .hint { direction: rtl; text-align: right; }
 html[dir=ltr] .mobile .pb:has(svg) .hint { direction: ltr; text-align: left; }
+
+/* very narrow phones (320–380px): the bottom navigation and top bar must fit */
+@media (max-width: 380px) {
+  #mnav { gap: 5px; padding-inline: 6px; }
+  #mnav button { padding-inline: 8px; font-size: 13px; gap: 4px; }
+  #mnav button svg { width: 14px; height: 14px; }
+  #mnav #mNo { font-size: 13px; }
+}
+@media (max-width: 340px) {
+  #mnav { gap: 3px; padding-inline: 4px; }
+  #mnav button { padding-inline: 6px; font-size: 12px; }
+  #mnav #mNo { font-size: 12px; min-width: 0; }
+}
+@media (max-width: 420px) {
+  #bar { gap: 5px; padding-inline: 8px; }
+  #bar .tb-btn { padding-inline: 8px; }
+  #bar #bFull, #bar #bGuide { display: none; }
+  #bar #startIn { width: 112px; }
+}
