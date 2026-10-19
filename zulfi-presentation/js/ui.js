@@ -3,7 +3,7 @@
   const Z = G.Z, F = Z.F, dt = Z.dt;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-  const KEY = G.ZMODE ? 'zulfi-mgmt-v1' : 'zulfi-presentation-v1';
+  const KEY = G.ZMODE ? (G.ZMODE.key || 'zulfi-mgmt-v1') : 'zulfi-presentation-v1';
   const W = 1600, H = 900;
 
   const A = (Z.app = {
