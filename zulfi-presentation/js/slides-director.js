@@ -1,7 +1,7 @@
 /* Project Director brief (4 slides) + financial & cash-flow snapshot (1 slide): live figures from the schedule / cost model, Arabic with English terms in brackets */
 (function (G) {
   const Z = G.Z, F = Z.F, dt = Z.dt, A = Z.app;
-  if (!G.ZMODE || G.ZMODE.id !== 'dir') return;
+  if (!G.ZMODE || (G.ZMODE.id !== 'dir' && G.ZMODE.id !== 'fin')) return;
   // Latin terms in brackets are isolated so Arabic sentences keep their order
   const iso = (t) => t.replace(/\([^()]*[A-Za-z][^()]*\)/g, (m) => '\u2066' + m.replace(/ /g, '\u00A0') + '\u2069');
   const L = (en, ar) => (A.isAr() ? iso(ar) : en);
@@ -160,7 +160,7 @@
       ];
       return head('d-integ', L('Phase integration', 'خريطة التكامل الزمني بين المرحلتين'), L('Integrated Timeline – why Phase 2 must start early', 'التكامل الزمني (Integrated Timeline) – لماذا تبدأ المرحلة الثانية مبكراً')) +
         `<div class="dr dr-row" style="flex:1;min-height:0">
-          <div class="col" style="flex:1.6;gap:14px;min-width:0">${card(`<h3>${L('Both phases on one timeline', 'المرحلتان على خط زمني واحد')}</h3><div style="overflow-x:auto">${svg}</div>`, '', 'flex:none;overflow:visible')}
+          <div class="col" style="flex:1.6;gap:14px;min-width:0">${card(`<h3>${L('Both phases on one timeline', 'المرحلتان على خط زمني واحد')}</h3><div style="overflow-x:auto;direction:ltr">${svg}</div>`, '', 'flex:none;overflow:visible')}
             ${card(`<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b style="color:var(--ph2)">${L('Test the Phase 2 start', 'جرّب بداية المرحلة الثانية')}:</b>${chip(0, L('Plan', 'الخطة') + ' · ' + DS(plan))}${chip(3, '+3 ' + L('months', 'أشهر'))}${chip(6, '+6 ' + L('months', 'أشهر'))}<span style="flex:1"></span><b style="color:${delay > 0 ? 'var(--bad)' : 'var(--good)'}">${L('Completion', 'الإنجاز')}: ${D(M.finish)}${delay > 0 ? ' (+' + delay + ' ' + L('d', 'يوم') + ')' : ''}</b></div>
               <table class="tbl dr-tbl" style="margin-top:8px"><thead><tr><th>${L('Phase 2 start', 'بداية المرحلة الثانية')}</th><th class="num">${L('Completion', 'الإنجاز')}</th><th class="num">${L('Delay vs plan', 'التأخير عن الخطة')}</th></tr></thead><tbody>${sc.map((r) => `<tr><td>${D(r.start)}</td><td class="num">${D(r.fin)}</td><td class="num">${r.d > 0 ? '<b style="color:var(--bad)">+' + r.d + ' ' + L('d', 'يوم') + '</b>' : L('none', 'لا يوجد')}</td></tr>`).join('')}</tbody></table>`)}
           </div>

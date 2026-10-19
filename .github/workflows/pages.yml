@@ -48,7 +48,7 @@ jobs:
           cp -r zulfi-presentation dist/zulfi-presentation
           # cache-busting: every script/stylesheet URL carries the commit, and the page shows the build stamp
           V="${GITHUB_SHA::7}"; T="$(date -u +'%Y-%m-%d %H:%M UTC')"
-          for f in dist/zulfi-presentation/management.html dist/zulfi-presentation/presentation.html dist/zulfi-presentation/director.html; do
+          for f in dist/zulfi-presentation/management.html dist/zulfi-presentation/presentation.html dist/zulfi-presentation/director.html dist/zulfi-presentation/finance.html; do
             sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+|data\.js)\"#\1=\"\2?v=$V\"#g; s#__BUILD__#$V · $T#" "$f"
           done
       - uses: actions/upload-pages-artifact@v3
