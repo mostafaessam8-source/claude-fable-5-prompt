@@ -2173,7 +2173,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
   Z.registerSlide({
     id: 'miles', title: 'Milestones & key gates', desc: 'Design → permit → procurement → construction', cls: '',
     render(M) {
-      const ms = Z.milestones(M), P2 = Z.phase2(M);
+      const ms = Z.milestones(M), P2 = Z.phase2(M), st0 = M.st;
       const X0 = 245, X1 = 1490, t0 = Math.min(M.start, ...ms.map((m) => m.d)) - 4, T = M.finish - t0 + 1;
       const x = (d) => X0 + ((d - t0) / T) * (X1 - X0);
       const PH = (ph) => M.acts.filter((a) => a.phase === ph && a.code !== Z.AUTO);
@@ -2226,6 +2226,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       svg += `<g id="hdate" style="display:none" pointer-events="none"><line id="hline" x1="0" x2="0" y1="${TOP - 4}" y2="${BOT}" stroke="var(--brand-d)" stroke-width="1"/><rect id="hbox" x="0" y="${BOT + 4}" width="150" height="34" rx="6" fill="var(--brand-d)"/><text id="htxt" x="0" y="${BOT + 19}" text-anchor="middle" style="fill:#fff;font-size:12px;font-weight:800"></text><text id="htxt2" x="0" y="${BOT + 33}" text-anchor="middle" style="fill:#cfeef3;font-size:10px"></text></g>`;
       svg += '</svg>';
 
+      const planDay = A.mode ? Math.max(A.planP2(M.start), M.start) : P2.baseStart, atPlan = P2.start === planDay && st0.ms.g1 === Z.DEFAULT_MS.g1 && st0.ms.g2 === Z.DEFAULT_MS.g2;
       const tab = (A.s.ui.ms = A.s.ui.ms || { tab: 'chart' }).tab;
       const ll = M.acts.filter((a) => a.ll && a.kind === 'a3');
       const llAmt = M.acts.filter((a) => a.ll).reduce((s, a) => s + a.amount, 0);
@@ -2234,7 +2235,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       const tight = M.acts.filter((a) => a.kind === 'b' && a.e >= M.finish - 95);
       return A.head('1b', 'Milestones &amp; key gates', 'How the schedule gates drive the 26-month programme', 'Sheet 3 · Schedule + Sheet 4 · gates') +
         `<div class="s-body"><div class="row" style="align-items:center;gap:12px;flex:none"><span class="seg"><button data-do="msTab" data-t="chart" class="${tab === 'chart' ? 'on' : ''}">Timeline</button><button data-do="msTab" data-t="tables" class="${tab === 'tables' ? 'on' : ''}">Register &amp; insights</button></span><span class="hint">${tab === 'chart' ? 'Hover for the date ruler · drag the Phase 2 diamond (◆) to test scenarios' : 'Milestone register, key figures and schedule insights'}</span></div>
-        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="hint" style="margin-bottom:2px">${A.isAr() ? 'اسحب معلم <b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات.' : 'Drag the <b style="color:var(--ph2)">Phase 2 start</b> milestone to test scenarios.'}</div>${svg}</div></div>` : ''}
+        ${tab === 'chart' ? `<div class="panel"><div class="pb" style="padding-top:6px"><div class="row" style="align-items:center;gap:10px;margin-bottom:2px"><div class="hint" style="flex:1">${A.isAr() ? 'اسحب معلم <b style="color:var(--ph2)">بداية المرحلة الثانية</b> لتجربة السيناريوهات.' : 'Drag the <b style="color:var(--ph2)">Phase 2 start</b> milestone to test scenarios.'}</div><button class="btn sm" data-do="msReset" ${atPlan ? 'disabled' : ''}>↺ ${A.L('Restore original', 'إعادة للوضع الأصلي')}</button></div>${svg}</div></div>` : ''}
         <div class="row grow" ${tab === 'chart' ? 'style="display:none"' : ''}>
           <div class="panel" style="width:830px"><div class="ph"><h3>Milestone register</h3><span class="sub">dates move with the start date and your edits</span></div><div class="pb scroll" style="padding-top:0">
             <table class="tbl"><thead><tr><th>#</th><th>Milestone</th><th>Date</th><th>Baseline</th><th>Variance</th></tr></thead><tbody>
@@ -2259,6 +2260,10 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
     const d = dt.parse(el.value); if (!d) return;
     const M = A.s.M, k = el.dataset.k, base = k === 'g1' ? M.start : Z.phase2(M).start;
     const st = Z.cloneState(A.s.st); st.ms[k] = Math.min(730, Math.max(0, base - d)); A.setState(st);
+  };
+  A.actions.msReset = () => {
+    const M = A.s.M, st = Z.cloneState(A.s.st); st.ms = { ...Z.DEFAULT_MS };
+    A.setState(Z.setPhase2Start(st, A.mode ? A.planP2(M.start) : Z.phase2(M).baseStart));
   };
   A.slides.find((s) => s.id === 'miles').after = (el) => {
     const svg = el.querySelector('svg[data-t0]'); if (!svg) return;
