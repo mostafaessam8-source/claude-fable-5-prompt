@@ -2759,9 +2759,11 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
   A.changes.status = (el) => { A.s.ui.status = dt.parse(el.value) || null; A.refilter(); };
   A.actions.clearStatus = () => { A.s.ui.status = null; A.refilter(); };
   A.actions.cfBasis = (el) => { ui().basis = el.dataset.b; A.refilter(); };
-  A.actions.cfPer = (el) => { ui().per = +el.dataset.p; A.refilter(); };
+  A.actions.cfPer = (el) => { ui().per = +el.dataset.p; ui().sel = null; A.refilter(); };
+  A.actions.cfSel = (el) => { ui().sel = +el.dataset.k; const t = document.querySelector('#tip'); if (t) t.style.display = 'none'; A.refilter(); };
+  A.actions.cfClose = () => { ui().sel = null; A.refilter(); };
   A.actions.cfAdv = (el) => { ui().adv = el.dataset.v === '1'; A.refilter(); };
-  A.actions.cfDim = (el) => { ui().dim = el.dataset.d; A.refilter(); };
+  A.actions.cfDim = (el) => { ui().dim = el.dataset.d; ui().sel = null; A.refilter(); };
   A.actions.mxUnit = (el) => { mxui().unit = el.dataset.u; A.refilter(); };
   A.actions.mxHeat = () => { mxui().heat = !mxui().heat; A.refilter(); };
 
@@ -2919,7 +2921,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       if (adv && ain[k] > 0) { const y1 = Y(acc + ain[k]), y0 = Y(acc); s += `<rect x="${L + k * bw + gap}" y="${y1}" width="${bw - gap * 2}" height="${Math.max(0, y0 - y1 - 1.5)}" fill="#111827" rx="2"/>`; rows.push(['#111827', 'Advance payment received', F.n0(ain[k])]); }
       if (adv && arec[k] > 0) { s += `<rect x="${L + k * bw + gap}" y="${Y(0) + 1}" width="${bw - gap * 2}" height="${Math.max(0, Y(-arec[k]) - Y(0) - 1)}" fill="#e11d48" rx="2"/>`; rows.push(['#e11d48', 'Advance recovery', '− ' + F.n0(arec[k])]); }
       s += `<text x="${L + (k + 0.5) * bw}" y="${h - B + 14}" text-anchor="middle" style="font-size:11px">${pLabel(M, k, per)}</text><text x="${L + (k + 0.5) * bw}" y="${h - B + 27}" text-anchor="middle" style="font-size:9.5px;fill:var(--mute)">${pSub(M, k, per)}</text>`;
-      s += `<rect class="hit" ${per === 1 ? `data-month="${k + 1}"` : ''} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv && !A.mode ? [['', '<b>Net payment</b>', '<b>' + F.sar(tot[k] + ain[k] - arec[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
+      s += `<rect class="hit" ${per === 1 && !A.mode ? `data-month="${k + 1}"` : `data-do="cfSel" data-k="${k}" style="cursor:pointer"`} x="${L + k * bw}" y="${T}" width="${bw}" height="${ph}" fill="transparent" data-tip="${F.tip(pTitle(M, k, per), [...rows.reverse(), ['', '<b>Total work cost</b>', '<b>' + F.sar(tot[k]) + '</b>'], ...(adv && !A.mode ? [['', '<b>Net payment</b>', '<b>' + F.sar(tot[k] + ain[k] - arec[k]) + '</b>']] : []), ['', 'Cumulative cost', F.pct(agg.pct[lastIdx(M, k, per)])]])}"/>`;
     }
     const st = A.s.ui.status;
     if (st && st >= M.start && st < M.bs[M.N]) { const xf = statusX(M, st, per, L, bw); s += `<line x1="${xf}" x2="${xf}" y1="${T}" y2="${T + ph}" stroke="var(--bad)" stroke-width="2"/>`; }
@@ -2994,6 +2996,23 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       const dbtn = (d, t) => `<button data-do="cfDim" data-d="${d}" class="${dim === d ? 'on' : ''}">${t}</button>`;
       const atSt = st ? Z.cumAt(M, agg.cum, st) : null;
       const kp = (k, v, d, extra) => `<div class="dstat" ${extra || ''}><div class="k">${k}</div><div class="v">${v}</div><div class="hint">${d}</div></div>`;
+      // period details: totals for the selected period and cumulative to its end, per series
+      const selK = u.sel != null && u.sel < periods(M, per) ? u.sel : null;
+      const detail = selK == null ? '' : (() => {
+        const last = lastIdx(M, selK, per), n = (x) => F.n0(x);
+        const cumTo = (arr) => { let t = 0; for (let i = 0; i <= last; i++) t += arr[i] || 0; return t; };
+        const lines = keys.map((key) => ({ m: seriesMeta(dim, key), p: sumP(agg.map[key], selK, per), c: cumTo(agg.map[key]) })).filter((r) => r.p > 0 || r.c > 0);
+        const tp = sumP(agg.total, selK, per), tc = agg.cum[last], ap = adv ? sumP(pay.advIn, selK, per) : 0, ac = adv ? cumTo(pay.advIn) : 0;
+        const row = (name, color, a, b, strong) => `<tr style="${strong ? 'font-weight:800;border-top:2px solid var(--line)' : ''}"><td>${color ? `<i class="dot" style="background:${color}"></i>` : ''}${name}</td><td class="num">${n(a)}</td><td class="num">${tot0 ? F.pct(a / tot0) : ''}</td><td class="num">${n(b)}</td><td class="num">${tot0 ? F.pct(b / tot0) : ''}</td></tr>`;
+        const tot0 = agg.sum;
+        const body = lines.map((r) => row(r.m.name, r.m.color, r.p, r.c)).join('') + row(A.L('Total work cost', 'إجمالي تكلفة الأعمال'), '', tp, tc, true)
+          + (adv ? row(A.L('Advance payment', 'الدفعة المقدمة'), '#111827', ap, ac) + row(A.L('Total incl. advance', 'الإجمالي شاملاً الدفعة المقدمة'), '', tp + ap, tc + ac, true) : '');
+        return `<div style="position:absolute;inset:0;z-index:40;display:flex;align-items:flex-start;justify-content:center;padding:84px 24px 24px;overflow:auto"><div data-do="cfClose" style="position:fixed;inset:0;background:rgba(20,30,36,.45)"></div><div style="position:relative;background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:880px;width:100%;padding:18px 22px 20px">
+          <div class="row" style="align-items:center;gap:12px;margin-bottom:10px"><h3 style="margin:0;flex:1;font-size:18px;color:var(--brand-d)">${pTitle(M, selK, per)}</h3><button class="btn sm" data-do="cfClose">✕ ${A.L('Close', 'إغلاق')}</button></div>
+          <div style="overflow-x:auto"><table class="tbl" style="width:100%;font-size:13px"><thead><tr><th>${A.L('Item', 'البند')}</th><th class="num" colspan="2">${A.L('Period total', 'إجمالي الفترة')}</th><th class="num" colspan="2">${A.L('Total to date', 'الإجمالي حتى تاريخه')}</th></tr>
+          <tr><th></th><th class="num">${A.L('SAR', 'ريال')}</th><th class="num">${A.L('% of project', '% من المشروع')}</th><th class="num">${A.L('SAR', 'ريال')}</th><th class="num">${A.L('% of project', '% من المشروع')}</th></tr></thead><tbody>${body}</tbody></table></div>
+        </div></div>`;
+      })();
       return A.head('3b', 'Cash flow &amp; S-curve', 'Monthly cost-loaded spend and cumulative progress against the baseline plan', 'Sheet 3 · 26-Month Schedule (rows 80–86 + charts)') +
         `<div class="s-body" style="gap:12px">
           <div class="row" style="align-items:center;gap:14px;flex:none">
@@ -3026,7 +3045,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
               ${kp('Planned progress at status date', st ? F.pct(tot ? atSt / tot : 0) : '–', st ? `${dt.fmt(st)} · ${F.sar(atSt)}` : 'choose a status date above', st ? 'style="border-color:var(--bad)"' : '')}
               <div class="note info" style="margin-top:auto">${A.ed('note:cf', 'Baseline = the original Excel plan re-based on the current start date. Move activities or change assumptions and the gap shows here.')}</div>
             </div>
-          </div></div>`;
+          </div></div>` + detail;
     },
   });
 
