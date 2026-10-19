@@ -102,3 +102,11 @@ html[dir=rtl] .dr-md { direction: rtl; text-align: right; }
   .dr-mh h3 { font-size: 16.5px; } .dr-mb .dr-tbl { font-size: 13px; } .dr-mb .dr-tbl td, .dr-mb .dr-tbl th { padding: 7px 6px; }
   .dr-kv { font-size: 14px; } .dr-p, .dr-a { font-size: 14.5px; } .dr-hint { font-size: 13px; flex-wrap: wrap; }
 }
+
+.dr-tabs { display: flex; gap: 0; margin: 4px 0 14px; border-bottom: 2px solid var(--line); }
+.dr-tabs button { border: 0; background: none; padding: 10px 20px; font: inherit; font-size: 16px; font-weight: 700; color: var(--sar-gray); cursor: pointer; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+.dr-tabs button.on { color: var(--sar); border-bottom-color: var(--sar); }
+.dr-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.dr-mb-bar { display: block; width: 120px; height: 12px; background: #eef3f5; border-radius: 3px; overflow: hidden; direction: ltr; }
+.dr-mb-bar i { display: block; height: 100%; background: var(--sar); }
+@media (max-width: 640px) { .dr-tabs button { padding: 8px 12px; font-size: 14.5px; } .dr-mb-bar { width: 60px; } }

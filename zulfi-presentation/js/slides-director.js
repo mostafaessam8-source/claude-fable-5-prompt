@@ -9,8 +9,9 @@
   // drill-down: every number / row / bar opens a details card (Z.dirDetails in director-details.js)
   const UI = () => (A.s.ui.dr = A.s.ui.dr || { k: null, h: [] });
   const dd = (k) => `data-do="drOpen" data-k="${k}"`;
-  A.actions.drOpen = (el) => { const u = UI(); if (u.k) u.h.push(u.k); u.k = el.dataset.k; A.refilter(); };
-  A.actions.drBack = () => { const u = UI(); u.k = u.h.pop() || null; A.refilter(); };
+  A.actions.drOpen = (el) => { const u = UI(); if (u.k) u.h.push({ k: u.k, tab: u.tab, per: u.per }); u.k = el.dataset.k; u.tab = 'info'; A.refilter(); };
+  A.actions.drTab = (el) => { const u = UI(); u.tab = el.dataset.t; if (el.dataset.p) u.per = +el.dataset.p; A.refilter(); };
+  A.actions.drBack = () => { const u = UI(), h = u.h.pop(); u.k = h ? h.k : null; if (h) { u.tab = h.tab; u.per = h.per; } A.refilter(); };
   A.actions.drClose = () => { const u = UI(); u.k = null; u.h = []; A.refilter(); };
   const hint = () => `<div class="dr-hint"><span>👆 ${L('Tap any number, row or bar for details', 'اضغط على أي رقم أو صف أو شريط لعرض التفاصيل')}</span><button class="chip" ${dd('faq|all')}>❓ ${L('Likely questions', 'أسئلة متوقعة')}</button></div>`;
   const mk = (def) => {

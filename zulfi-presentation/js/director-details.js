@@ -9,7 +9,7 @@
   const n0 = (v) => F.n0(v);
   const pct = (v, d) => F.pct(v, d == null ? 1 : d);
   const lk = (k, t) => `<a class="dr-lk" ${dd(k)}>${t}</a>`;
-  const tb = (heads, rows, nums) => `<div class="dr-sc"><table class="tbl dr-tbl"><thead><tr>${heads.map((h, i) => `<th class="${(nums || []).includes(i) ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr${r.cls ? ` class="${r.cls}"` : ''}>${(r.c || r).map((c, i) => `<td class="${(nums || []).includes(i) ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const tb = (heads, rows, nums) => `<div class="dr-sc"><table class="tbl dr-tbl"><thead><tr>${heads.map((h, i) => `<th class="${(nums || []).includes(i) ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr${r.cls || r.k ? ` class="${(r.cls || '') + (r.k ? ' dd' : '')}"` : ''}${r.k ? ' ' + dd(r.k) : ''}>${(r.c || r).map((c, i) => `<td class="${(nums || []).includes(i) ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   const sec = (t, h) => `<h4>${t}</h4>${h}`;
   const kv = (rows) => `<table class="dr-facts dr-kv">${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>`;
   const note = (t) => `<div class="dr-note">${t}</div>`;
@@ -35,16 +35,32 @@
   /* ------------------------------------------------------------ renderers: { title, body } */
   const DET = {};
 
+  // "total spend" tab of the budget card: monthly / quarterly / half-yearly / yearly
+  const spendTab = (M) => {
+    const u = UI(), per = u.per || 3, ph = Z.aggregate(M, () => true, 'phase').map, P1 = ph['Phase 1'] || [], P2 = ph['Phase 2'] || [];
+    const names = { 1: L('Month', 'شهر'), 3: L('Quarter', 'ربع'), 6: L('Half-year', 'نصف سنة'), 12: L('Year', 'سنة') }, abbr = { 1: L('M', 'ش'), 3: L('Q', 'ر'), 6: L('H', 'ن'), 12: L('Y', 'س') };
+    const n = Math.ceil(M.N / per), mx = Math.max(...Array.from({ length: n }, (_, k) => sum(M.totalM, k * per, Math.min(M.N, (k + 1) * per))), 1), rows = [];
+    for (let k = 0; k < n; k++) {
+      const a = k * per, b = Math.min(M.N, a + per), w = sum(M.totalM, a, b);
+      rows.push({ k: 'period|' + a + '-' + b, c: [abbr[per] + (k + 1), per === 1 ? MY(M, a) : MY(M, a) + ' → ' + MY(M, b - 1), n0(w), `<span class="dr-mb-bar"><i style="width:${(w / mx) * 100}%"></i></span>`, n0(sum(P1, a, b)), n0(sum(P2, a, b)), n0(sum(M.totalM, 0, b)), pct(sum(M.totalM, 0, b) / M.total)] });
+    }
+    rows.push({ cls: 'dr-tot', c: [L('Total', 'الإجمالي'), L(`${M.N} months`, `${M.N} شهراً`), n0(sum(M.totalM, 0, M.N)), '', n0(sum(P1, 0, M.N)), n0(sum(P2, 0, M.N)), n0(sum(M.totalM, 0, M.N)), pct(1)] });
+    const chip = (v) => `<button class="chip ${per === v ? 'on' : ''}" data-do="drTab" data-t="spend" data-p="${v}">${{ 1: L('Monthly', 'شهري'), 3: L('Quarterly', 'ربع سنوي'), 6: L('Half-yearly', 'نصف سنوي'), 12: L('Yearly', 'سنوي') }[v]}</button>`;
+    return `<div class="dr-chips">${[1, 3, 6, 12].map(chip).join('')}</div>` + tb([names[per], L('Months', 'الأشهر'), L('Total spend (SAR)', 'إجمالي الصرف (ريال)'), '', L('Phase 1', 'الأولى'), L('Phase 2', 'الثانية'), L('Cumulative', 'التراكمي'), L('Cum. %', 'التراكمي %')], rows, [2, 4, 5, 6, 7]) + note(L('Total spend = work value per period (excl. VAT). Tap a row for its month-by-month detail.', 'إجمالي الصرف = قيمة الأعمال في كل فترة (قبل الضريبة). اضغط على أي صف لتفصيله شهراً بشهر.'));
+  };
+
   DET.budget = (M) => {
     const p2 = P2_ITEMS.reduce((s, k) => s + itemTot(k), 0), p1 = M.total - p2;
     const epc = {}; M.acts.forEach((a) => (epc[a.epc] = (epc[a.epc] || 0) + a.amount));
+    const u = UI(), tab = u.tab || 'info';
+    const tabs = `<div class="dr-tabs"><button class="${tab === 'info' ? 'on' : ''}" data-do="drTab" data-t="info">${L('Breakdown', 'التفصيل')}</button><button class="${tab === 'spend' ? 'on' : ''}" data-do="drTab" data-t="spend">${L('Total spend', 'إجمالي الصرف')}</button></div>`;
     return {
-      title: L('Total budget – breakdown', 'إجمالي الميزانية – التفصيل'),
-      body: kv([[L('Total budget', 'إجمالي الميزانية'), sar(M.total)], [L('VAT', 'ضريبة القيمة المضافة (VAT)'), L('excluded', 'غير شاملة')], [L('Duration', 'المدة'), mon(M.finish - M.start + 1) + ' · ' + D(M.start) + ' → ' + D(M.finish)]]) +
+      title: L('Total budget', 'إجمالي الميزانية') + ' · ' + mil(M.total, 3),
+      body: tabs + (tab === 'spend' ? spendTab(M) : kv([[L('Total budget', 'إجمالي الميزانية'), sar(M.total)], [L('VAT', 'ضريبة القيمة المضافة (VAT)'), L('excluded', 'غير شاملة')], [L('Duration', 'المدة'), mon(M.finish - M.start + 1) + ' · ' + D(M.start) + ' → ' + D(M.finish)]]) +
         sec(L('By phase', 'حسب المرحلة'), tb([L('Phase', 'المرحلة'), L('SAR', 'ريال'), '%'], [[lk('phase|Phase 1', L('Phase 1', 'المرحلة الأولى (Phase 1)')), n0(p1), pct(p1 / M.total)], [lk('phase|Phase 2', L('Phase 2', 'المرحلة الثانية (Phase 2)')), n0(p2), pct(p2 / M.total)]], [1, 2])) +
         sec(L('By work package (WBS group)', 'حسب حزم الأعمال (WBS)'), tb([L('Code', 'الرمز'), L('Package', 'الحزمة'), L('SAR', 'ريال'), '%'], Z.GROUPS.map((g) => [lk('group|' + g.code, g.code.replace('.0', '')), tr(g.name), n0(g.amount), pct(g.amount / M.total)]), [2, 3])) +
         sec(L('By work category (EPC)', 'حسب فئة العمل (EPC)'), tb([L('Category', 'الفئة'), L('SAR', 'ريال'), '%'], Z.EPC.map((e) => [tr(e.name), n0(epc[e.key] || 0), pct((epc[e.key] || 0) / M.total)]), [1, 2])) +
-        note(L('Phase 1 includes the preliminaries & general requirements, design and all packages other than the four Phase 2 packages.', 'تشمل المرحلة الأولى التمهيديات والمتطلبات العامة والتصميم وكل الحزم عدا حزم المرحلة الثانية الأربع.')),
+        note(L('Phase 1 includes the preliminaries & general requirements, design and all packages other than the four Phase 2 packages.', 'تشمل المرحلة الأولى التمهيديات والمتطلبات العامة والتصميم وكل الحزم عدا حزم المرحلة الثانية الأربع.'))),
     };
   };
 
