@@ -3167,7 +3167,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       return A.mhead('m-about', L('About the project', 'نبذة عن المشروع'), L('Al-Zulfi Railway Station', 'محطة قطار الزلفي')) +
         split('photo-platform.jpg', ED('ab:body', L('A passenger station in Al-Zulfi Governorate on the Northern Railway network, to strengthen passenger transport services and connect Al-Zulfi with the railway network.', 'مشروع إنشاء محطة ركاب بمحافظة الزلفي ضمن شبكة قطار الشمال، بهدف تعزيز خدمات نقل الركاب وربط مدينة الزلفي بشبكة الخطوط الحديدية.'), null, { tag: 'p', style: 'font-size:30px;line-height:1.7;margin:0 0 26px' }) +
           row(1, L('Project owner', 'مالك المشروع'), L('Saudi Arabia Railways – SAR', 'الخطوط الحديدية السعودية – سار')) +
-          row(2, L('Funding entity', 'الجهة الممولة'), L('Riyadh Logistics Services Cooperative Association', 'الجمعية التعاونية للخدمات اللوجستية بمنطقة الرياض')) +
+          row(2, L('Funding entity', 'الجهة الممولة'), L('Al-Zulfi Logistics Services Cooperative Association', 'الجمعية التعاونية للخدمات اللوجستية بمحافظة الزلفي')) +
           row(3, L('Contractor', 'المقاول'), L('Awj International Contracting Company', 'شركة أوج الدولية للمقاولات')));
     },
   });
@@ -3222,7 +3222,7 @@ ${A.mode ? '' : `<p style="margin:0 0 8px"><b>Advance payment:</b> {advAmt} ({ad
       const dl = A.isAr() ? Z.i18n.tr(dt.fmtMY(M.bs[Math.min(6, M.N)]).replace('-', ' 20')) : (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][dt.parts(M.bs[Math.min(6, M.N)]).m] + ' ' + dt.parts(M.bs[Math.min(6, M.N)]).y);
       const it = [
         [L('Install the main board of the project.', 'تركيب اللوحة الأساسية للمشروع.'), ''],
-        [L('Provide the remaining part of the guarantees by the Riyadh Logistics Services Cooperative Association.', 'توفير الجزء المتبقي من الضمانات من قبل الجمعية التعاونية للخدمات اللوجستية بمنطقة الرياض.'), ''],
+        [L('Provide the remaining part of the guarantees by the Al-Zulfi Logistics Services Cooperative Association.', 'توفير الجزء المتبقي من الضمانات من قبل الجمعية التعاونية للخدمات اللوجستية بمحافظة الزلفي.'), ''],
         [L(`Provide the liquidity needed to cover the cash flows of the first six months, including the ${M.pay.pct}% advance payment.`, `توفير السيولة المالية اللازمة لتغطية التدفقات النقدية للأشهر الستة الأولى، شاملةً الدفعة المقدمة بنسبة ${M.pay.pct}%.`), ''],
         [L('Complete the remaining preparations to start the project.', 'استكمال التجهيزات والتحضيرات المتبقية لبدء المشروع.'), ''],
         [L('Issue the Notice to Proceed letter.', 'إصدار خطاب الإشعار ببدء التنفيذ.'), ''],

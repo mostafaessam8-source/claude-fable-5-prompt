@@ -62,7 +62,7 @@
       const facts = [
         ['proj', L('Project', 'المشروع'), L('Al-Zulfi railway station – Northern Railway network', 'محطة قطار الزلفي ضمن شبكة قطار الشمال')],
         ['owner', L('Owner', 'المالك (Owner)'), L('Saudi Arabia Railways – SAR', 'الخطوط الحديدية السعودية – سار')],
-        ['funder', L('Funder', 'الجهة الممولة (Funder)'), L('Riyadh Logistics Services Cooperative Association', 'الجمعية التعاونية للخدمات اللوجستية بمنطقة الرياض')],
+        ['funder', L('Funder', 'الجهة الممولة (Funder)'), L('Al-Zulfi Logistics Services Cooperative Association', 'الجمعية التعاونية للخدمات اللوجستية بمحافظة الزلفي')],
         ['contractor', L('Contractor', 'المقاول (Contractor)'), L('Awj International Contracting', 'شركة أوج الدولية للمقاولات')],
         ['start', L('Start (NTP)', 'بداية المشروع (NTP)'), D(M.start)],
         ['finish', L('Completion', 'الإنجاز (Completion)'), D(M.finish)],
