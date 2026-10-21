@@ -158,6 +158,11 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pedit select,.pedit .pnum{height:28px;border:1.5px solid #8fb0b9;border-radius:6px;font:700 13px inherit;font-family:inherit;background:#fff;padding:0 1px;color:#222}.pedit select{width:44px}.pedit .pnum{width:54px;text-align:center;font-size:15px}.pedit .plag{width:36px;font-size:13px}
 .pfix{border:0;background:none;cursor:pointer;font-size:14px;padding:0 2px}
 body.pedit .pgantt .rdel,.pedit .rdel{display:inline-block;position:absolute;inset-inline-end:4px;top:50%;margin-top:-13px}
+.prl{position:absolute;top:0;bottom:0;background:#00778b26;border-inline:1.5px solid var(--accent);display:none;z-index:4}
+.pvb{position:absolute;top:0;bottom:0;display:none;background:var(--c,var(--accent));opacity:.13;border-inline:2px solid var(--c,var(--accent));z-index:1}
+.prt{position:absolute;top:-25px;transform:translateX(-50%);background:var(--dark);color:#fff;font-size:13px;font-weight:700;padding:2px 10px;border-radius:12px;white-space:nowrap;display:none;z-index:8;box-shadow:0 2px 8px #0005}
+.ptask.pin,.ptask.pin .pinfo{background:#d4ebf0!important}.ptask.pin .pinfo{box-shadow:inset 5px 0 0 var(--c)}
+.plan .pgantt{cursor:crosshair}.pedit,.pedit *{cursor:auto}
 /* slide 3 */
 .pbd{position:absolute;top:150px;bottom:56px;inset-inline:0;padding:26px 60px 14px;display:flex;flex-direction:column;gap:20px}
 .pbd h3{margin:0 0 8px;font-size:29px;font-weight:800;color:var(--dark);display:flex;align-items:center;gap:12px}.pbd h3:before{content:"";width:7px;height:28px;border-radius:4px;background:var(--accent)}
@@ -497,7 +502,7 @@ const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"
  ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",tot:"المدة الإجمالية للمشروع",assume:"مدد وعلاقات الأنشطة الخمسة الفرعية مقترحة لتقع ضمن 6 أيام عمل للنشاط A (قابلة للتعديل).",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
 const isW=d=>dd(d).getUTCDay()!==5;
 const wdBetween=(a,b)=>{let n=0;for(let x=a;x<=b;x++)if(isW(x))n++;return n};
-let planEdit=false;
+let planEdit=false,PG=null,planPin=null;
 const addW=(d,n)=>{while(n>0){d++;if(isW(d))n--}return d};
 function planOrder(P){const by=Object.fromEntries(P.tasks.map(x=>[x.id,x])),out=[];
  const walk=(parent,pre,depth)=>{P.tasks.filter(x=>(x.parent&&by[x.parent]?x.parent:null)===parent).forEach((x,i)=>{const code=depth?pre+"."+(i+1):x.id;out.push({t:x,depth,code});walk(x.id,code,depth+1)})};
@@ -534,6 +539,7 @@ function planSlides(u,startIdx){
  const pu=PUI[L],P=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),leaf=C.rows.filter(x=>!x.sum),pe=planEdit||editMode;
  const dcell=(d,attr,id)=>pe?`<span class="pdt">${fS(iso(d))}<input type="date" data-pf="${attr}" ${id?`data-t="${id}"`:""} value="${iso(d)}"></span>`:fS(iso(d));
  const d0=C.st-3,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
+ PG={d0,N,CHW};
  const OV=50,MH=84,rh=Math.max(32,Math.min(72,Math.floor(492/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
  /* header */
  let mons=[],wk="",wl="",dy="",shade="",last=-1;
@@ -559,7 +565,7 @@ function planSlides(u,startIdx){
   const dur=r.ef-r.es+1,w=(r.f-r.s+1)*dw,sub=r.depth>0,cls=`${i%2?"z":""} ${r.sum?"sumrow":""} ${sub?"subrow":""}`;
   const bar=r.sum?`<div class="pbar sum ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;top:${(rh-14)/2}px"></div><span class="psl" style="inset-inline-start:${xp(r.f+1)+8}px;top:${(rh-20)/2}px"><bdi>${dur}</bdi> ${pu.d}</span>`
    :`<div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${w>38?`<bdi>${dur}</bdi> ${pu.d}`:""}</em></div>`;
-  return `<div class="prow ptask ${cls}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${pe?pcell(t):lk}</span><span class="c4">${pe&&!r.sum?`<input class="pnum" type="number" min="1" data-pf="dur" data-t="${t.id}" value="${+t.dur||1}">`:`<bdi>${dur}</bdi>`}</span><span class="c5">${dcell(r.s,"start",t.id)}${pe&&t.fix?`<button class="pfix" data-pf="unfix" data-t="${t.id}" title="Remove fixed start / إلغاء تثبيت البداية">📌</button>`:""}</span><span class="c6">${pe&&!r.sum?dcell(r.f,"finish",t.id):fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
+  return `<div class="prow ptask ${cls}" data-t="${t.id}" data-s="${r.s}" data-e="${r.f}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${pe?pcell(t):lk}</span><span class="c4">${pe&&!r.sum?`<input class="pnum" type="number" min="1" data-pf="dur" data-t="${t.id}" value="${+t.dur||1}">`:`<bdi>${dur}</bdi>`}</span><span class="c5">${dcell(r.s,"start",t.id)}${pe&&t.fix?`<button class="pfix" data-pf="unfix" data-t="${t.id}" title="Remove fixed start / إلغاء تثبيت البداية">📌</button>`:""}</span><span class="c6">${pe&&!r.sum?dcell(r.f,"finish",t.id):fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
    <div class="pch" style="width:${CHW}px">${bar}</div></div>`}).join("");
  /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
  const rowTop=i=>OV+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
@@ -567,7 +573,7 @@ function planSlides(u,startIdx){
   if(t.link==="SS"){const x0=xp(p.s)+8;svg+=`<path d="M${x0} ${yP+bh/2} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}
   else{const xe=xp(p.f+1),xm=Math.min(xs-6,xe+dw*.5);svg+=`<path d="M${xe} ${yP} H${xm} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}});
  const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b style="top:${OV+2}px">${pu.status} · ${fS(iso(sd))}</b></div>`:"";
- const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""} ${pe?"pedit":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
+ const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""} ${pe?"pedit":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<div class="pvb"></div><div class="prl"></div><div class="prt"></div><svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
  /* key cards */
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
@@ -589,6 +595,23 @@ function planSlides(u,startIdx){
  return s2}
 
 
+/* ---- ruler for the remaining-works Gantt ---- */
+function planRuler(e,down){const A=AP();if(!A||A.dataset.kind!=="plan"||!PG)return;const ov=A.querySelector(".pov");if(!ov)return;
+ const rect=ov.getBoundingClientRect(),rtl=L==="ar",vl=A.querySelector(".prl"),tg=A.querySelector(".prt"),vb=A.querySelector(".pvb");
+ const row=e.target.closest(".ptask");
+ if(down&&row&&!e.target.closest("input,select,button,[data-b]")&&!(planEdit||editMode)){planPin=planPin===row.dataset.t?null:row.dataset.t;A.querySelectorAll(".ptask.pin").forEach(x=>x.classList.remove("pin"));if(planPin)row.classList.add("pin")}
+ const inC=e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom;
+ const act=row||(planPin&&A.querySelector(`.ptask[data-t="${planPin}"]`));
+ const dw=PG.CHW/PG.N;
+ if(act){const s=+act.dataset.s,f=+act.dataset.e;vb.style.display="block";vb.style.setProperty("--c",act.style.getPropertyValue("--c"));vb.style.insetInlineStart=((s-PG.d0)*dw)+"px";vb.style.width=((f-s+1)*dw)+"px"}else vb.style.display="none";
+ if(inC){const fr=rtl?(rect.right-e.clientX)/rect.width:(e.clientX-rect.left)/rect.width,idx=Math.min(PG.N-1,Math.max(0,Math.floor(fr*PG.N)));
+  vl.style.display="block";vl.style.insetInlineStart=(idx*dw)+"px";vl.style.width=dw+"px";
+  let txt=fDay(PG.d0+idx);if(act&&PG.d0+idx>=+act.dataset.s&&PG.d0+idx<=+act.dataset.e)txt+=" ✓";
+  tg.style.display="block";tg.textContent=txt;const cx=(idx+.5)/PG.N,k=ov.offsetWidth/rect.width;tg.style.left=Math.min(PG.CHW-70,Math.max(70,(rtl?1-cx:cx)*PG.CHW))+"px"}
+ else{vl.style.display="none";tg.style.display="none"}}
+$("#vp").addEventListener("pointermove",e=>{if(e.pointerType!=="touch")planRuler(e,false)});
+$("#vp").addEventListener("pointerdown",e=>planRuler(e,true));
+$("#vp").addEventListener("pointerleave",()=>{const A=AP();if(!A||A.dataset.kind!=="plan")return;A.querySelectorAll(".prl,.prt").forEach(x=>x.style.display="none");const vb=A.querySelector(".pvb");const act=planPin&&A.querySelector(`.ptask[data-t="${planPin}"]`);if(act){vb.style.display="block";vb.style.setProperty("--c",act.style.getPropertyValue("--c"));vb.style.insetInlineStart=((+act.dataset.s-PG.d0)*PG.CHW/PG.N)+"px";vb.style.width=((+act.dataset.e-+act.dataset.s+1)*PG.CHW/PG.N)+"px"}else if(vb)vb.style.display="none"});
 /* ---- inline schedule editing (also in full-screen) ---- */
 function peLabel(){const b=$("#fsPE");b.classList.toggle("on",planEdit);b.querySelector("span").textContent=L==="en"?(planEdit?"Done":"Edit schedule"):(planEdit?"تم":"تعديل الجدول");document.body.classList.toggle("pedit",planEdit)}
 $("#fsPE").onclick=()=>{planEdit=!planEdit;peLabel();render();const i=[...document.querySelectorAll("#deck .gs")].findIndex(s=>s.dataset.kind==="plan");if(planEdit&&i>=0)goPage(i)};
@@ -661,7 +684,7 @@ $("#deck").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest("
 let G=null,pinned=null;
 const fDay=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]}`};
 const AP=()=>$("#deck .gs.on");
-function showPage(){document.querySelectorAll("#deck .gs").forEach((s,i)=>s.classList.toggle("on",i===curPage));
+function showPage(){const _pp=planPin&&document.querySelector(`#deck .ptask[data-t="${planPin}"]`);if(_pp)_pp.classList.add("pin");document.querySelectorAll("#deck .gs").forEach((s,i)=>s.classList.toggle("on",i===curPage));
  $("#pager").style.display=pageCount>1?"flex":"none";$("#pNum").style.display="";$("#pNum").textContent=(curPage+1)+" / "+pageCount;applyPin()}
 function goPage(i){curPage=Math.max(0,Math.min(pageCount-1,i));showPage()}
 function goRow(id){if(S.view==="tl"){goRow2(id);return}const s=document.querySelector(`#deck .row.ms[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
@@ -976,7 +999,7 @@ async function exportPPTX(){
    C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF",sub=r.depth>0,dur=r.ef-r.es+1;
     s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y,w:W-.8,h:rh,fill:{color:bg},line:{color:"DFE6EA",width:.5}});
     let x=.4;const vals=[null,strip(t.n[L]),t.pred?`${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?" +"+(+t.lag||0):""}`:pu.none,dur,fS(iso(r.s)),fS(iso(r.f))];
-    cols.forEach((w,j)=>{if(j===0){const bw_=sub?.36:.26,bh_=sub?.17:.26;s1.addShape(sub?P.ShapeType.roundRect:P.ShapeType.ellipse,{x:mx(x+(w-bw_)/2+(sub?.03:0),bw_),y:y+(rh-bh_)/2,w:bw_,h:bh_,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.5:.5},rectRadius:.085});tx(s1,sub?r.code:t.id,x+(sub?.03:0),y,w,rh,{fontSize:sub?6.5:8.5,bold:true,color:"FFFFFF",align:"center"})}
+    cols.forEach((w,j)=>{if(j===0){const bw_=sub?.36:.26,bh_=sub?.17:.26;s1.addShape(sub?P.ShapeType.roundRect:P.ShapeType.ellipse,{x:mx(x+(w-bw_)/2+(sub?.03:0),bw_),y:y+(rh-bh_)/2,w:bw_,h:bh_,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.5:.5},...(sub?{rectRadius:.085}:{})});tx(s1,sub?r.code:t.id,x+(sub?.03:0),y,w,rh,{fontSize:sub?6.5:8.5,bold:true,color:"FFFFFF",align:"center"})}
      else tx(s1,vals[j],x+(j===1?.08+(sub?.18:0):0),y,w-(j===1?.1+(sub?.18:0):0),rh,{fontSize:j===1?(sub?fz-.5:fz):j===3?fz+1.5:fz-.5,bold:j===1?!sub:(j!==2),color:j===2?"444444":"222222",align:j===1?"left":"center"});x+=w});
     const bw=(r.f-r.s+1)*dw;
     if(r.sum){const sh_=.07;s1.addShape(P.ShapeType.rect,{x:mx(xp(r.s),bw),y:y+(rh-sh_)/2-.03,w:bw,h:sh_,fill:{color:c},line:{color:c}});
