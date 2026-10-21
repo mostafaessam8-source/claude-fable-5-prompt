@@ -31,10 +31,10 @@ body.fs #app{position:fixed;inset:0;z-index:100;background:#14171a}
 #xfs{display:none;position:fixed;top:10px;inset-inline-end:10px;z-index:200;opacity:.0;transition:.3s}
 body.fs #xfs{display:flex}body.fs.show #xfs{opacity:1}
 /* dates dialog */
-#dlg,#adlg{display:none;position:fixed;inset:0;background:#000a;z-index:300;align-items:center;justify-content:center;padding:12px}
-#dlg.open,#adlg.open{display:flex}
-#dbox,#abox{background:#fff;border-radius:14px;width:min(720px,100%);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;color:#222;font-family:inherit}
-#dbox h3,#abox h3{margin:0;padding:14px 18px;background:var(--dark);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:18px}
+#dlg,#adlg,#sdlg{display:none;position:fixed;inset:0;background:#000a;z-index:300;align-items:center;justify-content:center;padding:12px}
+#dlg.open,#adlg.open,#sdlg.open{display:flex}
+#dbox,#abox,#sbox{background:#fff;border-radius:14px;width:min(720px,100%);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;color:#222;font-family:inherit}
+#dbox h3,#abox h3,#sbox h3{margin:0;padding:14px 18px;background:var(--dark);color:#fff;display:flex;justify-content:space-between;align-items:center;font-size:18px}
 #dbox .tools{padding:10px 16px;background:#f2f6f7;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
 #dbox .tools input{width:70px;height:36px;border:1px solid #bcc7cd;border-radius:6px;padding:0 6px;font:inherit}
 #dbox .tools button{height:36px;border:0;border-radius:6px;background:var(--accent);color:#fff;padding:0 14px;font:700 14px inherit;font-family:inherit;cursor:pointer}
@@ -96,6 +96,9 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .rdel{display:none;flex:none;width:26px;height:26px;border:1px solid #e0b4ad;background:#fff;color:#c0392b;border-radius:7px;cursor:pointer;font:700 14px/1 inherit;padding:0;z-index:60}
 body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .cp .rdel,.tn .rdel{width:22px;height:22px;font-size:12px}
+#sbox{width:min(1100px,100%)}#sbox .tools{padding:10px 16px;background:#f2f6f7;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}#sbox .tools input{height:36px;border:1px solid #bcc7cd;border-radius:6px;padding:0 6px;font:inherit}#sbox .tools button,#sbox .af button{height:38px;border:0;border-radius:8px;background:var(--accent);color:#fff;padding:0 16px;font:700 14px inherit;font-family:inherit;cursor:pointer}#sbox .af{padding:10px 16px;background:#f2f6f7;display:flex;justify-content:flex-end}#sbox .af button.sec{background:#dfe7ea;color:#333}
+#sl{overflow:auto;padding:6px 14px}.sr_{display:grid;grid-template-columns:34px 1.4fr 1.4fr 80px 70px 62px 62px 44px 36px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #e6ecef}.sr_ input,.sr_ select{height:36px;border:1px solid #bcc7cd;border-radius:7px;padding:0 6px;font:inherit;font-size:14px;width:100%;min-width:0}.sr_.h{font-size:12px;font-weight:800;color:#556;border:0;position:sticky;top:0;background:#fff}.sr_ i{width:30px;height:30px;border-radius:50%;color:#fff;font:800 14px/30px inherit;text-align:center;font-style:normal}.sr_ input[type=color]{padding:1px;height:36px}.sr_ .del{height:34px;border:1px solid #e0b4ad;background:#fff;color:#b33;border-radius:7px;cursor:pointer}
+@media(max-width:800px){.sr_{grid-template-columns:30px 1fr 1fr;}.sr_.h{display:none}}
 /* add dialog */
 #abox .ab{padding:14px 18px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 #abox .full{grid-column:1/-1}
@@ -111,6 +114,53 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr.ph{background:#f2f6f7;font-weight:800}.dr .cd{font-size:12px;color:#667;font-weight:700;min-width:40px}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
+/* ===== plan (remaining works) ===== */
+.plan .pgantt{position:absolute;top:136px;inset-inline-start:40px;width:var(--gw);border:1px solid var(--line);background:#fff}
+.prow{display:flex;border-bottom:1px solid var(--line);position:relative}
+.pinfo{flex:none;width:800px;display:flex;align-items:center;border-inline-end:2px solid #c3ced4;background:inherit;position:relative;z-index:3}
+.pinfo>.c1{width:52px;text-align:center;display:flex;justify-content:center}.pinfo>.c2{width:332px;padding:0 10px;font-size:17px;line-height:1.2}.pinfo>.c3{width:112px;text-align:center;font-size:16px;font-weight:700;color:#444}.pinfo>.c4{width:64px;text-align:center;font-size:20px;font-weight:800}.pinfo>.c5,.pinfo>.c6{width:118px;text-align:center;font-size:17px;font-weight:700;color:var(--dark)}
+.pch{position:relative;flex:none}
+.phead .pinfo{background:var(--dark);color:#fff;height:94px}.phead .pinfo>b{font-size:15px;font-weight:700;line-height:1.15;color:#fff!important}.phead .pinfo .c2{text-align:start}
+.phead .pch{height:94px;background:#f4f7f8}
+.pm,.pw,.pl,.pd{position:relative;display:block}
+.pm{height:26px;border-bottom:1px solid var(--line)}.pw{height:22px}.pl{height:20px}.pd{height:26px}
+.pm span,.pw span,.pl span,.pd span{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
+.pm span{background:#e3edf0;font-weight:800;font-size:14px;color:var(--dark);border-inline-end:2px solid #fff}
+.pw span{background:#d5e6ea;font-weight:800;font-size:12.5px;color:#34505a;border-inline-end:2px solid #fff}.pw span.alt{background:#e4f0f3}
+.pl span{font-size:11px;font-weight:700;color:#5a6a73}.pd span{font-size:12.5px;font-weight:800;color:#222}
+.pl span.nw,.pd span.nw{background:#dbe3e6;color:#8a959c}
+.ptask.z,.ptask.z .pinfo{background:#f6f9fa}.ptask .pinfo{background:#fff}.ptask:hover,.ptask:hover .pinfo{background:#e4f1f4}
+.pbadge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-style:normal;font-weight:800;font-size:17px}
+.pbadge.crit{box-shadow:0 0 0 3px #fff,0 0 0 5px #222}
+.pbar{position:absolute;background:var(--c);border-radius:7px;z-index:3;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #0003}
+.pbar.crit{outline:3px solid #222;outline-offset:1px}.pbar em{font-style:normal;color:#fff;font-weight:800;font-size:15px}
+.pov{position:absolute;pointer-events:none;z-index:2}
+.pov svg{position:absolute;inset:0;overflow:visible}.pov svg path{fill:none;stroke:#2d3338;stroke-width:1.8px;opacity:.75}.pov svg path.ah{fill:#2d3338;stroke:none;opacity:.9}
+.plnw{position:absolute;top:0;bottom:0;background:#0000000c}.plwk{position:absolute;top:0;bottom:0;width:0;border-inline-start:1.5px solid #9db2bb;text-decoration:none}
+.pmrow{background:#fbfdfd}.pmrow .pinfo{background:#fbfdfd}
+.pkd{position:absolute;top:14px;width:22px;height:22px;background:var(--dark);transform:rotate(45deg);border:3px solid #fff;box-shadow:0 0 0 1.5px var(--dark);z-index:4}
+.pkl{position:absolute;top:40px;width:140px;text-align:center;line-height:1.15;z-index:4}.pkl span{display:block;font-size:12px;color:#556}.pkl b{font-size:15px;color:var(--dark)}
+.pstat{position:absolute;top:-2px;bottom:0;width:0;border-inline-start:3px dashed #C8503F;z-index:5}.pstat b{position:absolute;top:2px;inset-inline-start:6px;background:#C8503F;color:#fff;font-size:12px;font-weight:800;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.plleg{gap:26px;font-size:15px}.plleg .lbar{display:inline-block;width:30px;height:12px;border-radius:4px;background:#00778B;margin-inline-end:7px;vertical-align:middle}.plleg .lbar.crit{outline:2px solid #222;outline-offset:1px}.plleg .lnw{display:inline-block;width:18px;height:14px;background:#cfd8dc;margin-inline-end:7px;vertical-align:middle}.plleg .lst{display:inline-block;width:0;height:16px;border-inline-start:3px dashed #C8503F;margin-inline-end:9px;vertical-align:middle}
+.pkeys{position:absolute;inset-inline:40px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.pkc{background:#fff;border-radius:14px;box-shadow:0 5px 18px #1b2a3318;border-top:7px solid var(--c);padding:10px 16px 10px;display:flex;flex-direction:column;gap:2px}
+.pkc span{font-size:15px;font-weight:700;color:var(--muted)}.pkc b{font-size:23px;font-weight:800;color:var(--dark);line-height:1.15}.pkc small{font-size:14px;color:var(--muted);font-weight:600}.pkc.fin{background:var(--dark)}.pkc.fin span,.pkc.fin small{color:#cfd8dc}.pkc.fin b{color:#fff}
+/* slide 3 */
+.pbd{position:absolute;top:150px;bottom:56px;inset-inline:0;padding:26px 60px 14px;display:flex;flex-direction:column;gap:20px}
+.pbd h3{margin:0 0 8px;font-size:29px;font-weight:800;color:var(--dark);display:flex;align-items:center;gap:12px}.pbd h3:before{content:"";width:7px;height:28px;border-radius:4px;background:var(--accent)}
+.pfsub{font-size:20px;font-weight:700;color:#C8503F;margin:-2px 0 12px}
+.pflow{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.pfl{position:relative;height:170px;background:color-mix(in srgb,var(--c) 13%,#fff);padding:14px 38px 10px 52px;display:flex;align-items:center;font-size:24px;font-weight:700;color:var(--dark);line-height:1.2;clip-path:polygon(0 0,calc(100% - 28px) 0,100% 50%,calc(100% - 28px) 100%,0 100%,28px 50%);margin-inline-end:-10px}
+[dir=rtl] .pfl{clip-path:polygon(28px 0,100% 0,calc(100% - 28px) 50%,100% 100%,28px 100%,0 50%);padding:14px 52px 10px 38px}
+.pfl i{position:absolute;inset-inline-start:30px;top:16px;width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-weight:800;text-align:center;line-height:30px;font-size:16px}
+.pfl span{margin-top:18px;display:block}
+.pcols{flex:1;display:grid;grid-template-columns:.9fr 1.3fr;gap:36px;min-height:0}
+.pkt{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line);font-size:21px;background:#fff}.pkt:nth-child(even){background:#f6f9fa}.pkt span{color:#4a555d;font-weight:600}.pkt b{color:var(--dark);font-weight:800}
+.pwhat{margin-top:14px;background:#fff6e5;border:2px solid #f0c36d;border-radius:12px;padding:10px 16px}.pwhat h4{margin:0 0 4px;font-size:17px;color:#9a6a00;font-weight:800}.pwhat p{margin:0;font-size:20px;line-height:1.35;color:#3d3935}
+.pncol ol{margin:0;padding-inline-start:30px;font-size:22px;line-height:1.4;color:#333}.pncol li{margin:0 0 13px;padding-inline-start:4px}
+.psrc{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+body.edit .pgantt .rdel{display:inline-block;position:absolute;inset-inline-end:4px;top:50%;margin-top:-13px}
+
 /* timeline view */
 .trow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-inline-end:30px}.tdate{position:relative;font-weight:800;font-size:26px;color:var(--dark);line-height:1.1;border-bottom:3px solid var(--c);padding-bottom:1px;white-space:nowrap}.tdate small{font-size:.55em;color:var(--muted);font-weight:700}.tevn{font-size:15px;font-weight:800;color:#fff;background:var(--c);border-radius:12px;padding:2px 11px;white-space:nowrap}.lgn{width:22px!important;height:22px!important;border-radius:50%!important;background:#555;color:#fff;font-style:normal;font-size:12px;font-weight:800;text-align:center;line-height:22px}
 .dense .tdate{font-size:19px}.dense .tdate small{font-size:.62em}.dense .tevn{font-size:11.5px;padding:1px 8px}.dense .trow{padding-inline-end:22px}
@@ -188,6 +238,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
    <button class="b" id="bDesc" title="Show / hide description / إظهار أو إخفاء الوصف">📝 <span>Description</span></button>
    <button class="b on" id="bAuto" title="Auto-translate EN ⇄ AR / ترجمة تلقائية">🌐 <span>Auto</span></button>
    <button class="b" id="bView" title="Switch view / تبديل العرض">⇄ <span>Timeline</span></button>
+   <button class="b" id="bPlan" title="Edit remaining-works schedule / تعديل جدول الأعمال المتبقية">🗓 <span>Schedule</span></button>
    <button class="b" id="bDates" title="Edit dates / تعديل التواريخ">📅 <span>Dates</span></button>
    <button class="b" id="bFs" title="Full screen / ملء الشاشة">⛶ <span>Full screen</span></button>
    <button class="b" id="bPrint" title="Print / طباعة">🖶 <span>Print</span></button>
@@ -214,6 +265,9 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
 <div id="dlg"><div id="dbox" class="dbx"><h3><span id="dTitle"></span><button class="b" id="dClose">✕</button></h3>
  <div class="tools"><span id="dShiftL"></span><input type="number" id="dShift" value="1"><button id="dShiftB"></button></div><div id="dl"></div></div></div>
 
+<div id="sdlg"><div id="sbox"><h3><span id="sTitle"></span><button class="b" id="sClose">✕</button></h3>
+ <div class="tools"><label id="sCL"></label><input type="date" id="sStart" style="width:150px"><button id="sAlign"></button></div>
+ <div id="sl"></div><div class="af"><button class="sec" id="sAddB"></button></div></div></div>
 <div id="adlg"><div id="abox"><h3><span id="aTitle"></span><button class="b" id="aClose">✕</button></h3>
  <div class="ab">
   <div class="full"><label id="aLvlL"></label><div class="seg" id="aLvl"></div></div>
@@ -269,8 +323,8 @@ const UI={en:{days:"days",day1:"day",same:"Same day",evn:"Event No.",act:"Activi
  ar:{days:"يوم",day1:"يوم",same:"نفس اليوم",evn:"حدث رقم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
-function defaults(){return{v:2,lang:"en",view:"gantt",auto:true,ts:0,
- tx:{title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
+function defaults(){return{v:2,lang:"en",view:"gantt",auto:true,plan:defPlan(),ts:0,
+ tx:{planTitle:T("Remaining Works – Shoring & Pit Works Programme","الأعمال المتبقية – برنامج أعمال الدعم والحفرة"),planSub:T("RYDN-WLB pit works · Proposed by Gulf Development Company for Contracting · Rev 01 · 12 Oct 2026","أعمال حفرة RYDN-WLB · مقترح شركة الخليج للتطوير للمقاولات · المراجعة 01 · 12 أكتوبر 2026"),flowTitle:T("Shoring Activities & Planning Basis","أنشطة الدعم (Shoring) وأسس الجدول"),flowSub:T("Sequence of shoring works, key dates and conditions of the proposed programme","تسلسل أعمال الدعم والتواريخ الرئيسية وشروط البرنامج المقترح"),title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
 const PAL=["#8E5BB5","#D68A00","#1F6FB2","#B5446E","#4B8B3B"];
@@ -278,7 +332,7 @@ let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
- c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan()}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -287,9 +341,9 @@ const fS=s=>{const[,m,d]=s.split("-").map(Number);return `${d} ${SH[L][m-1]}`};
 const fL=s=>{const[y,m,d]=s.split("-").map(Number);return `${d} ${MON[L][m-1]} ${y}`};
 const strip=h=>{const e=document.createElement("div");e.innerHTML=h;return e.textContent};
 const B=(p,tag,cls,html)=>`<${tag} class="${cls||""}" data-b="${p}">${html}</${tag}>`;
-function getB(p){const a=p.split("|");if(a[0]==="x")return S.tx[a[1]][L];if(a[0]==="p")return S.ph[a[1]].n[L];return S.ms.find(m=>m.id==a[1])[a[2]][L]}
-function setBL(p,v,lg){const a=p.split("|");if(a[0]==="x")S.tx[a[1]][lg]=v;else if(a[0]==="p")S.ph[a[1]].n[lg]=v;else{const o=S.ms.find(m=>m.id==a[1]);if(o)o[a[2]][lg]=v}}
-function setB(p,v){const a=p.split("|");if(a[0]==="x")S.tx[a[1]][L]=v;else if(a[0]==="p")S.ph[a[1]].n[L]=v;else S.ms.find(m=>m.id==a[1])[a[2]][L]=v}
+function getB(p){const a=p.split("|");if(a[0]==="a")return S.plan.tasks.find(x=>x.id===a[1]).n[L];if(a[0]==="pn")return S.plan.notes[+a[1]][L];if(a[0]==="pf")return S.plan.flow[+a[1]][L];if(a[0]==="x")return S.tx[a[1]][L];if(a[0]==="p")return S.ph[a[1]].n[L];return S.ms.find(m=>m.id==a[1])[a[2]][L]}
+function setBL(p,v,lg){const a=p.split("|");if(a[0]==="a"){const o=S.plan.tasks.find(x=>x.id===a[1]);if(o)o.n[lg]=v}else if(a[0]==="pn")S.plan.notes[+a[1]][lg]=v;else if(a[0]==="pf")S.plan.flow[+a[1]][lg]=v;else if(a[0]==="x")S.tx[a[1]][lg]=v;else if(a[0]==="p")S.ph[a[1]].n[lg]=v;else{const o=S.ms.find(m=>m.id==a[1]);if(o)o[a[2]][lg]=v}}
+function setB(p,v){setBL(p,v,L);return;const a=p.split("|");if(a[0]==="x")S.tx[a[1]][L]=v;else if(a[0]==="p")S.ph[a[1]].n[L]=v;else S.ms.find(m=>m.id==a[1])[a[2]][L]=v}
 
 const sdc=(a,b)=>dn(a.date)-dn(b.date)||a.id-b.id;
 const endOf=m=>m.end&&dn(m.end)>=dn(m.date)?dn(m.end):null;
@@ -299,7 +353,7 @@ function tree(){const out=[];Object.keys(S.ph).forEach((pid,pi)=>{
  walk(its.filter(m=>m.par==null),String(pi+1),0);
  out.push({pid,code:String(pi+1),items:list})});return out}
 function render(){
- const M=S.ms;M.sort(sdc);const TR=tree(),u=UI[L];
+ const keepPage=curPage;const M=S.ms;M.sort(sdc);const TR=tree(),u=UI[L];
  const legacy=M.filter(m=>endOf(m)===null);
  const e0=Math.min(...M.map(m=>dn(m.date))),d0=e0-4,d1=Math.max(...M.map(m=>endOf(m)??dn(m.date))),N=d1+3-d0+1,w=100/N;
  const x=d=>((d-d0)*w).toFixed(3)+"%",xc=d=>((d-d0+.5)*w).toFixed(3)+"%";
@@ -349,13 +403,14 @@ function render(){
  <div class="gantt ${rh<38?"cp":""} ${rh<27?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb"></div><div class="vl"></div><div class="tg"></div></div></div>
  <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}${pages.length>1?` · <bdi>${pi+1}/${pages.length}</bdi>`:""}</span></div></section>`}).join("");
  }
+ {const k0=deck.querySelectorAll(".gs").length;deck.insertAdjacentHTML("beforeend",planSlides(u,k0));pageCount=deck.querySelectorAll(".gs").length;curPage=Math.min(keepPage,pageCount-1)}
  deck.querySelectorAll("[data-b]").forEach(e=>{e.contentEditable=editMode;e.spellcheck=false});
  G={d0,N,w};showPage();
  document.body.dir="ltr";
  $("#bLang").textContent=L==="en"?"عربي":"English";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
  $("#bAdd span").textContent=L==="en"?"Activity":"نشاط";
- $("#bDesc").classList.toggle("on",S.desc===true);$("#bDesc span").textContent=L==="en"?"Description":"الوصف";$("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
+ $("#bPlan span").textContent=L==="en"?"Schedule":"الجدول";$("#bDesc").classList.toggle("on",S.desc===true);$("#bDesc span").textContent=L==="en"?"Description":"الوصف";$("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
  $("#dTitle").textContent=u.dTitle;$("#dShiftL").textContent=u.shift;$("#dShiftB").textContent=u.shiftB;
  $("#dbox").dir=L==="ar"?"rtl":"ltr";
 }
@@ -404,6 +459,123 @@ function goRow2(id){}
  d.addEventListener("mouseleave",()=>set(null));
  d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
+/* ================= REMAINING WORKS PLAN (CPM-style Gantt) ================= */
+function defPlan(){const T_=T;return{start:"2026-10-13",
+ tasks:[
+  {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:6},
+  {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:6,dur:2},
+  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:4},
+  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:10},
+  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:6},
+  {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"D",link:"FS",lag:0,dur:12},
+  {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:5}],
+ keys:[{t:T_("Commencement","بدء الأعمال"),task:"*",w:"s"},{t:T_("Shoring installation complete","اكتمال تركيب نظام الدعم"),task:"A",w:"f"},{t:T_("Pit works complete (pit wall)","اكتمال أعمال الحفرة (جدار الحفرة)"),task:"E",w:"f"},{t:T_("Building foundation complete","اكتمال أساسات المبنى"),task:"F",w:"f"},{t:T_("Overall completion","الإنجاز الكلي"),task:"*",w:"f"}],
+ flow:[T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),T_("Installation of H-Beam","تركيب أعمدة H-Beam"),T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)")],
+ notes:[T_("Commencement of each activity is subject to issuance of the work permit and timely approval of Work Inspection Requests (WIRs) and Material Inspection Requests (MIRs). Any delay in permit issuance or WIR / MIR approval will shift the affected activity and all succeeding activities accordingly.","بدء كل نشاط مشروط بإصدار تصريح العمل والموافقة في الوقت المناسب على طلبات فحص الأعمال (WIR) وطلبات فحص المواد (MIR). أي تأخير في إصدار التصريح أو اعتماد الطلبات يزيح النشاط المتأثر وكل الأنشطة اللاحقة له."),
+  T_("Working week is Saturday to Thursday. Fridays are non-working.","أسبوع العمل من السبت إلى الخميس، والجمعة إجازة."),
+  T_("Lean concrete runs parallel to shoring (SS link) and is placed only in bays where shoring is installed.","الخرسانة العادية تسير بالتوازي مع الدعم (علاقة SS) وتُصب فقط في الأجزاء التي تم تركيب الدعم فيها."),
+  T_("Building foundation is linked to completion of the pit slab / raft (FS link) and runs parallel to the pit wall. Change its predecessor to E if it must follow the pit wall.","أساسات المبنى مرتبطة بإنجاز بلاطة / لبشة الحفرة (علاقة FS) وتسير بالتوازي مع جدار الحفرة. يمكن تغيير سابقها إلى E إذا لزم أن تلي جدار الحفرة.")]}}
+const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
+ ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
+const isW=d=>dd(d).getUTCDay()!==5;
+const addW=(d,n)=>{while(n>0){d++;if(isW(d))n--}return d};
+function planCalc(P){P=P||S.plan;const by=Object.fromEntries(P.tasks.map(t=>[t.id,t])),res={};
+ let st0=dn(P.start);while(!isW(st0))st0++;
+ const calc=(t,dep=0)=>{if(res[t.id])return res[t.id];if(dep>30)return{s:st0,f:st0};
+  let s=st0;const pt=t.pred&&by[t.pred];
+  if(pt&&pt!==t){const p=calc(pt,dep+1);s=t.link==="SS"?addW(p.s,+t.lag||0):addW(p.f,1+(+t.lag||0))}
+  while(!isW(s))s++;const f=addW(s,Math.max(1,+t.dur||1)-1);return res[t.id]={s,f}};
+ P.tasks.forEach(t=>calc(t));
+ const wi=d=>{let n=0;for(let x=st0;x<d;x++)if(isW(x+1))n++;return n};
+ const rows=P.tasks.map(t=>({t,s:res[t.id].s,f:res[t.id].f,es:wi(res[t.id].s),ef:wi(res[t.id].f)}));
+ const R=Object.fromEntries(rows.map(r=>[r.t.id,r]));const end=Math.max(...rows.map(r=>r.ef));
+ const memo={};const LS=r=>{if(memo[r.t.id]!==undefined)return memo[r.t.id];memo[r.t.id]=r.es;let lf=end;const dur=r.ef-r.es+1;
+  rows.filter(x=>x.t.pred===r.t.id&&x.t!==r.t).forEach(x=>{const ls=LS(x),lg=+x.t.lag||0;
+   lf=Math.min(lf,x.t.link==="SS"?ls-lg+dur-1:ls-1-lg)});
+  return memo[r.t.id]=lf-dur+1};
+ rows.forEach(r=>{r.ls=LS(r);r.flt=r.ls-r.es;r.crit=r.flt<=0});
+ return{rows,R,st:Math.min(...rows.map(r=>r.s)),en:Math.max(...rows.map(r=>r.f)),tot:end+1}}
+function planKeys(C){return S.plan.keys.map(k=>{let d=null;
+  if(k.task==="*")d=k.w==="s"?C.st:C.en;else{const r=C.R[k.task];if(r)d=k.w==="s"?r.s:r.f}
+  return d===null?null:{k,d}}).filter(Boolean)}
+const wdIdxOf=(C,d)=>{let n=0;for(let x=C.st;x<d;x++)if(isW(x+1))n++;return n};
+function statusDay(){return Math.max(...S.ms.map(m=>endOf(m)??dn(m.date)))}
+function planSlides(u,startIdx){
+ const pu=PUI[L],P=S.plan,C=planCalc(),n=P.tasks.length,keys=planKeys(C);
+ const d0=C.st-3,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
+ const MH=84,rh=Math.max(40,Math.min(72,Math.floor(520/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.5));
+ /* header */
+ let mons=[],wk="",wl="",dy="",shade="",last=-1;
+ for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth(),x=xp(d),w2=D.getUTCDay()===5;
+  if(k!==last){mons.push({m:D.getUTCMonth(),y:D.getUTCFullYear(),a:d,b:d});last=k}else mons[mons.length-1].b=d;
+  wl+=`<span class="${w2?"nw":""}" style="inset-inline-start:${x}px;width:${dw}px">${D1[L][D.getUTCDay()]}</span>`;
+  dy+=`<span class="${w2?"nw":""}" style="inset-inline-start:${x}px;width:${dw}px">${D.getUTCDate()}</span>`;
+  if(w2)shade+=`<i class="plnw" style="inset-inline-start:${x}px;width:${dw}px"></i>`;
+  if(D.getUTCDay()===6)shade+=`<s class="plwk" style="inset-inline-start:${x}px"></s>`}
+ const monH=mons.map(m=>`<span style="inset-inline-start:${xp(m.a)}px;width:${(m.b-m.a+1)*dw}px">${(m.b-m.a)<6?SH[L][m.m]:MON[L][m.m]+" "+m.y}</span>`).join("");
+ /* week bands: Sat..Fri, week 1 contains commencement */
+ let wks="",wi=1;for(let a=d0;a<=d1;){let b=a;while(b<d1&&dd(b).getUTCDay()!==5)b++;if(b>d1)b=d1;const c=(b-a+1)*dw>60;wks+=`<span class="${wi%2?"":"alt"}" style="inset-inline-start:${xp(a)}px;width:${(b-a+1)*dw}px">${c?pu.wk+" "+wi:""}</span>`;a=b+1;wi++}
+ const head=`<div class="prow phead"><div class="pinfo"><b class="c1">${pu.sr}</b><b class="c2">${pu.act}</b><b class="c3">${pu.pred}</b><b class="c4">${pu.dur}</b><b class="c5">${pu.start}</b><b class="c6">${pu.fin}</b></div><div class="pch" style="width:${CHW}px"><div class="pm">${monH}</div><div class="pw">${wks}</div><div class="pl">${wl}</div><div class="pd">${dy}</div></div></div>`;
+ /* milestone row */
+ const dia=keys.map(({k,d})=>`<div class="pkd" style="inset-inline-start:${xc(d)-11}px"></div><div class="pkl" style="inset-inline-start:${xc(d)-70}px"><span>${strip(k.t[L])}</span><b>${fS(iso(d))}</b></div>`).join("");
+ const mrow=`<div class="prow pmrow" style="height:${MH}px"><div class="pinfo"><b class="c1">◆</b><b class="c2" style="font-weight:800">${pu.ms}</b></div><div class="pch" style="width:${CHW}px">${dia}</div></div>`;
+ /* task rows */
+ const rowsH=C.rows.map((r,i)=>{const t=r.t,c=t.c,pt=t.pred?C.R[t.pred]:null,lk=pt?`<span dir="ltr">${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?` +${+t.lag||0}`:""}</span>`:pu.none;
+  return `<div class="prow ptask ${i%2?"z":""}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${r.crit?"crit":""}" style="background:${c}">${t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${lk}</span><span class="c4"><bdi>${t.dur}</bdi></span><span class="c5">${fS(iso(r.s))}</span><span class="c6">${fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
+   <div class="pch" style="width:${CHW}px"><div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${(r.f-r.s+1)*dw}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${(r.f-r.s+1)*dw>70?`<bdi>${t.dur}</bdi> ${pu.d}`:""}</em></div></div></div>`}).join("");
+ /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
+ const rowTop=i=>MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
+ let svg="";C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=cy(i),yP=cy(pi);
+  if(t.link==="SS"){const x0=xp(p.s)+8;svg+=`<path d="M${x0} ${yP+bh/2} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}
+  else{const xe=xp(p.f+1),xm=Math.min(xs-6,xe+dw*.5);svg+=`<path d="M${xe} ${yP} H${xm} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}});
+ const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b>${pu.status} · ${fS(iso(sd))}</b></div>`:"";
+ const gh=HH+MH+n*rh,gantt=`<div class="pgantt" style="--gw:${INFO+CHW+2}px">${head}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${MH+n*rh}px">${shade}<svg width="${CHW}" height="${MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
+ /* key cards */
+ const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
+ const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
+ const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${n}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${C.rows.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
+ const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span></div>`;
+ const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+22}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+2))}</section>`;
+ /* slide 3 : flow + key notes + what-if */
+ const A=C.R.A,sh=A?`${fL(iso(A.s))} → ${fL(iso(A.f))} · <bdi>${A.ef-A.es+1}</bdi> ${pu.wd}`:"";
+ const flow=P.flow.map((f,i)=>`<div class="pfl" style="--c:#C8503F"><i>${i+1}</i>${B("pf|"+i,"span","",f[L])}</div>`).join("");
+ const notes=P.notes.map((q,i)=>`<li>${B("pn|"+i,"span","",q[L])}</li>`).join("");
+ const kt=keys.map(({k,d})=>`<div class="pkt"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b></div>`).join("");
+ const alt=planCalc({...P,start:iso(statusDay())}),delta=alt.en-C.en;
+ const wh=`<div class="pwhat"><h4>${pu.secW}</h4><p>${pu.whatif} <b>${fL(iso(alt.st))}</b> (${pu.perm}) → ${pu.shift} <b>${fL(iso(alt.en))}</b> (<bdi>+${delta}</bdi> ${pu.sh2}).</p></div>`;
+ const s3=`<section class="gs plan3" data-pg="${startIdx+1}" data-kind="plan3">${hd("flowTitle","flowSub")}
+  <div class="pbd"><div class="psec"><h3>${pu.secF}</h3><div class="pfsub">${sh}</div><div class="pflow">${flow}</div></div>
+   <div class="pcols"><div class="pkcol"><h3>${pu.secK}</h3>${kt}${wh}</div><div class="pncol"><h3>${pu.secN}</h3><ol>${notes}</ol></div></div>
+   <div class="psrc">${pu.src}</div></div>${ftr(" · "+(startIdx+2)+"/"+(startIdx+2))}</section>`;
+ return s2+s3}
+
+
+/* ---- schedule dialog ---- */
+const SD={en:{title:"Schedule – remaining works",cs:"Commencement date:",al:"Align to permit-ready date",add:"＋ Add activity",h:["","Activity (EN)","النشاط (AR)","Pred.","Link","Lag","Dur.","",""],del:"Delete this activity?",newN:"New activity",newA:"نشاط جديد"},
+ ar:{title:"الجدول – الأعمال المتبقية",cs:"تاريخ البدء:",al:"المطابقة مع تاريخ جاهزية التصريح",add:"＋ إضافة نشاط",h:["","Activity (EN)","النشاط (AR)","السابق","العلاقة","التأخير","المدة","",""],del:"حذف هذا النشاط؟",newN:"New activity",newA:"نشاط جديد"}};
+function nextTaskId(){const ids=S.plan.tasks.map(t=>t.id);for(let i=0;i<26;i++){const c=String.fromCharCode(65+i);if(!ids.includes(c))return c}return"T"+Date.now().toString(36)}
+function planDlg(){const D=SD[L],sl=$("#sl");$("#sTitle").textContent=D.title;$("#sCL").textContent=D.cs;$("#sAlign").textContent=D.al;$("#sAddB").textContent=D.add;$("#sStart").value=S.plan.start;$("#sbox").dir=L==="ar"?"rtl":"ltr";
+ sl.innerHTML=`<div class="sr_ h">${D.h.map(x=>`<span>${x}</span>`).join("")}</div>`;
+ S.plan.tasks.forEach(t=>{const r=document.createElement("div");r.className="sr_";
+  r.innerHTML=`<i style="background:${t.c}">${t.id}</i><input class="en" dir="ltr" value="${esc2(strip(t.n.en))}"><input class="ar" dir="rtl" value="${esc2(strip(t.n.ar))}">
+   <select class="pr"><option value="">—</option>${S.plan.tasks.filter(x=>x.id!==t.id).map(x=>`<option ${x.id===t.pred?"selected":""}>${x.id}</option>`).join("")}</select>
+   <select class="lk"><option ${t.link==="FS"?"selected":""}>FS</option><option ${t.link==="SS"?"selected":""}>SS</option></select>
+   <input class="lg" type="number" min="0" value="${+t.lag||0}"><input class="du" type="number" min="1" value="${+t.dur||1}"><input class="cl" type="color" value="${t.c}"><button class="del">✕</button>`;
+  const upd=()=>{save();render()};
+  r.querySelector(".en").onchange=async e=>{t.n.en=e.target.value;if(S.auto){const x=await tr(e.target.value,"en","ar");if(x.how!=="partial"&&x.text){t.n.ar=x.text;r.querySelector(".ar").value=x.text}}upd()};
+  r.querySelector(".ar").onchange=async e=>{t.n.ar=e.target.value;if(S.auto){const x=await tr(e.target.value,"ar","en");if(x.how!=="partial"&&x.text){t.n.en=x.text;r.querySelector(".en").value=x.text}}upd()};
+  r.querySelector(".pr").onchange=e=>{t.pred=e.target.value||null;upd()};r.querySelector(".lk").onchange=e=>{t.link=e.target.value;upd()};
+  r.querySelector(".lg").onchange=e=>{t.lag=Math.max(0,+e.target.value||0);upd()};r.querySelector(".du").onchange=e=>{t.dur=Math.max(1,+e.target.value||1);upd()};
+  r.querySelector(".cl").oninput=e=>{t.c=e.target.value;r.querySelector("i").style.background=t.c;upd()};
+  r.querySelector(".del").onclick=()=>{if(confirm(D.del)){delTask(t.id);planDlg()}};sl.appendChild(r)})}
+function delTask(id){S.plan.tasks=S.plan.tasks.filter(t=>t.id!==id);S.plan.tasks.forEach(t=>{if(t.pred===id)t.pred=null});save();render()}
+$("#bPlan").onclick=()=>{planDlg();$("#sdlg").classList.add("open")};
+$("#sClose").onclick=()=>$("#sdlg").classList.remove("open");$("#sdlg").onclick=e=>{if(e.target.id==="sdlg")$("#sdlg").classList.remove("open")};
+$("#sStart").onchange=e=>{if(e.target.value){S.plan.start=e.target.value;save();render()}};
+$("#sAlign").onclick=()=>{S.plan.start=iso(statusDay());$("#sStart").value=S.plan.start;save();render()};
+$("#sAddB").onclick=()=>{const D=SD[L],last=S.plan.tasks[S.plan.tasks.length-1];S.plan.tasks.push({id:nextTaskId(),n:{en:D.newN,ar:D.newA},c:"#7A8791",pred:last?last.id:null,link:"FS",lag:0,dur:5});save();render();planDlg();$("#sl").scrollTop=1e5};
+$("#deck").addEventListener("click",e=>{const b=e.target.closest("[data-delt]");if(!b)return;if(confirm(SD[L].del))delTask(b.dataset.delt)});
+
 /* scale to fit */
 function fit(){const v=$("#vp"),r=v.getBoundingClientRect(),k=Math.min(r.width/1920,r.height/1080),s=$("#stage");
  s.style.transform=`scale(${k})`;s.style.left=(r.width-1920*k)/2+"px";s.style.top=(r.height-1080*k)/2+"px";
@@ -590,7 +762,7 @@ async function exportPPTX(){
   const mx=(x,w=0)=>rtl?W-x-w:x,al=a=>rtl?(a==="left"?"right":a==="right"?"left":a):a;
   const T=(txt,o)=>({text:txt,options:Object.assign({fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",margin:0,valign:"middle"},o)});
   const tx=(sl,txt,x,y,w,h,o={})=>sl.addText(String(txt),Object.assign({fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",x:mx(x,w),y,w,h,margin:0,valign:"middle",fit:"shrink"},o,{align:al(o.align||"left")}));
-  const foot=strip(S.tx.sub[L]);
+  const foot=strip(S.tx.title[L]).split(/\s[–-]\s/)[0]+" – "+(L==="en"?"Site Suspension & Remaining Works":"إيقاف الموقع والأعمال المتبقية");
   P.defineSlideMaster({title:"SAR",background:{color:"F6F9FA"},objects:[
    {rect:{x:0,y:0,w:W,h:.95,fill:{color:"FFFFFF"}}},
    {rect:{x:0,y:.95,w:W,h:.05,fill:{color:ACC}}},
@@ -701,6 +873,91 @@ async function exportPPTX(){
    sl.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hh+bodyH,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
   });
 
+  }
+  /* ===== remaining works: Gantt + shoring/notes slides ===== */
+  {
+   const pu=PUI[L],PL=S.plan,C=planCalc(),n=PL.tasks.length,keys=planKeys(C);
+   const s1=P.addSlide({masterName:"SAR"});head(s1,strip(S.tx.planTitle[L]),strip(S.tx.planSub[L]));
+   /* legend */
+   let lx=.4;[["crit",pu.crit],["bar",L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"],["ms",pu.ms],["nw",pu.nw],["st",pu.status],["dep","→ "+pu.dep+" (FS / SS)"]].forEach(([k,txt])=>{
+    const w=.4+txt.length*.058;
+    if(k==="crit")s1.addShape(P.ShapeType.roundRect,{x:mx(lx,.3),y:1.17,w:.3,h:.12,fill:{color:ACC},line:{color:"222222",width:1.5},rectRadius:.03});
+    else if(k==="bar")s1.addShape(P.ShapeType.roundRect,{x:mx(lx,.3),y:1.17,w:.3,h:.12,fill:{color:ACC},line:{color:ACC},rectRadius:.03});
+    else if(k==="ms")s1.addShape(P.ShapeType.diamond,{x:mx(lx,.14),y:1.16,w:.14,h:.14,fill:{color:DARK},line:{color:DARK}});
+    else if(k==="nw")s1.addShape(P.ShapeType.rect,{x:mx(lx,.2),y:1.16,w:.2,h:.14,fill:{color:"CFD8DC"},line:{color:"CFD8DC"}});
+    else if(k==="st")s1.addShape(P.ShapeType.line,{x:mx(lx+.05,0),y:1.14,w:0,h:.18,line:{color:"C8503F",width:1.75,dashType:"dash"}});
+    tx(s1,txt,lx+(k==="dep"?0:.36),1.1,w,.26,{fontSize:9,color:"333333"});lx+=w+.3});
+   const cols=[.42,2.95,.85,.55,.72,.72],INFO=cols.reduce((a,b)=>a+b,0),cx0=.4+INFO,cW=W-.4-cx0,top=1.45;
+   const d0=C.st-3,d1=C.en+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
+   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,MH=.66,rh=Math.min(.46,(5.9-top-hH-MH)/Math.max(1,n)),y0=top+hH,bodyY=y0,bodyH=MH+n*rh;
+   /* header */
+   const ch=[pu.sr,pu.act,pu.pred,pu.dur,pu.start,pu.fin];let ax=.4;
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:top,w:INFO,h:hH,fill:{color:DARK},line:{color:DARK}});
+   cols.forEach((w,i)=>{tx(s1,ch[i],ax+(i===1?.08:0),top,w-(i===1?.1:0),hH,{fontSize:i===3?7.5:9,bold:true,color:"FFFFFF",align:i===1?"left":"center"});ax+=w});
+   let last=-1,ms_=[];for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth();if(k!==last){ms_.push({m:D.getUTCMonth(),y:D.getUTCFullYear(),a:d,b:d});last=k}else ms_[ms_.length-1].b=d}
+   ms_.forEach(m=>{const w=(m.b-m.a+1)*dw;s1.addShape(P.ShapeType.rect,{x:mx(xp(m.a),w),y:top,w,h:hM,fill:{color:"DCE8EC"},line:{color:"FFFFFF",width:1}});tx(s1,(m.b-m.a)<6?SH[L][m.m]:`${MON[L][m.m]} ${m.y}`,xp(m.a),top,w,hM,{fontSize:8.5,bold:true,color:DARK,align:"center"})});
+   let wi=1;for(let a=d0;a<=d1;){let b=a;while(b<d1&&dd(b).getUTCDay()!==5)b++;const w=(b-a+1)*dw;s1.addShape(P.ShapeType.rect,{x:mx(xp(a),w),y:top+hM,w,h:hW,fill:{color:wi%2?"D5E6EA":"E4F0F3"},line:{color:"FFFFFF",width:1}});if(w>.45)tx(s1,`${pu.wk} ${wi}`,xp(a),top+hM,w,hW,{fontSize:6.5,bold:true,color:"34505A",align:"center"});a=b+1;wi++}
+   for(let d=d0;d<=d1;d++){const D=dd(d),fr=D.getUTCDay()===5,x=xp(d);
+    s1.addShape(P.ShapeType.rect,{x:mx(x,dw),y:top+hM+hW,w:dw,h:hL+hD,fill:{color:fr?"DBE3E6":"F4F7F8"},line:{color:"FFFFFF",width:.5}});
+    tx(s1,D1[L][D.getUTCDay()],x,top+hM+hW,dw,hL,{fontSize:5,bold:true,color:fr?"8A959C":"5A6A73",align:"center"});
+    tx(s1,D.getUTCDate(),x,top+hM+hW+hL,dw,hD,{fontSize:5.5,bold:true,color:fr?"8A959C":"222222",align:"center"});
+    if(fr)s1.addShape(P.ShapeType.rect,{x:mx(x,dw),y:bodyY,w:dw,h:bodyH,fill:{color:"000000",transparency:94},line:{color:"000000",transparency:100}});
+    if(D.getUTCDay()===6)s1.addShape(P.ShapeType.line,{x:mx(x,0),y:bodyY,w:0,h:bodyH,line:{color:"9DB2BB",width:.5}})}
+   /* milestone row */
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:y0,w:INFO,h:MH,fill:{color:"FBFDFD"},line:{color:"DFE6EA",width:.5}});
+   tx(s1,"◆  "+pu.ms,.5,y0,INFO-.2,MH,{fontSize:10,bold:true,color:DARK});
+   keys.forEach(({k,d},i)=>{const x=xc(d);
+    s1.addShape(P.ShapeType.diamond,{x:mx(x-.09,.18),y:y0+.08,w:.18,h:.18,fill:{color:DARK},line:{color:"FFFFFF",width:1.5}});
+    tx(s1,strip(k.t[L]),x-.47,y0+.27,.94,.2,{fontSize:5.5,color:"556070",align:"center",valign:"top"});
+    tx(s1,fS(iso(d)),x-.62,y0+.44,1.24,.18,{fontSize:7.5,bold:true,color:DARK,align:"center"})});
+   /* rows */
+   const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>y0+MH+r*rh,bh=Math.min(.26,rh*.55);
+   C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF";
+    s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y,w:W-.8,h:rh,fill:{color:bg},line:{color:"DFE6EA",width:.5}});
+    let x=.4;const vals=[null,strip(t.n[L]),t.pred?`${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?" +"+(+t.lag||0):""}`:pu.none,t.dur,fS(iso(r.s)),fS(iso(r.f))];
+    cols.forEach((w,j)=>{if(j===0){s1.addShape(P.ShapeType.ellipse,{x:mx(x+(w-.3)/2,.3),y:y+(rh-.3)/2,w:.3,h:.3,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?2:.5}});tx(s1,t.id,x,y,w,rh,{fontSize:9,bold:true,color:"FFFFFF",align:"center"})}
+     else tx(s1,vals[j],x+(j===1?.08:0),y,w-(j===1?.1:0),rh,{fontSize:j===1?9:j===3?11:8.5,bold:j!==1&&j!==2,color:j===2?"444444":"222222",align:j===1?"left":"center"});x+=w});
+    const bw=(r.f-r.s+1)*dw;
+    s1.addShape(P.ShapeType.roundRect,{x:mx(xp(r.s),bw),y:y+(rh-bh)/2,w:bw,h:bh,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.75:.5},rectRadius:.05,shadow:{type:"outer",color:"000000",opacity:.2,blur:3,offset:1,angle:90}});
+    if(bw>.55)tx(s1,`${t.dur} ${pu.d}`,xp(r.s),y+(rh-bh)/2,bw,bh,{fontSize:8,bold:true,color:"FFFFFF",align:"center"})});
+   /* dependency arrows */
+   C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=by(i)+rh/2,yP=by(pi)+rh/2,ln={color:"2D3338",width:1.1};
+    const seg=(x1,y1,x2,y2,arrow)=>{const o={x:mx(Math.min(x1,x2),Math.abs(x2-x1)),y:Math.min(y1,y2),w:Math.abs(x2-x1),h:Math.abs(y2-y1),line:Object.assign({},ln)};
+     if(arrow){o.line.endArrowType="triangle";o.flipH=rtl}
+     if(x2<x1&&!rtl||(rtl&&x2>x1)){} s1.addShape(P.ShapeType.line,o)};
+    if(t.link==="SS"){const x0=xp(p.s)+.06;seg(x0,yP+bh/2,x0,yS);seg(x0,yS,xs-.01,yS,true)}
+    else{const xe=xp(p.f+1),xm=Math.min(xs-.05,xe+dw*.5);seg(xe,yP,xm,yP);seg(xm,yP,xm,yS);seg(xm,yS,xs-.01,yS,true)}});
+   /* status line */
+   const sdy=statusDay();if(sdy>=d0&&sdy<=d1){const x=xc(sdy);s1.addShape(P.ShapeType.line,{x:mx(x,0),y:y0-.02,w:0,h:MH+n*rh+.02,line:{color:"C8503F",width:1.75,dashType:"dash"}});
+    s1.addShape(P.ShapeType.roundRect,{x:mx(x-.05,1.25),y:y0-.01,w:1.25,h:.17,fill:{color:"C8503F"},line:{color:"C8503F"},rectRadius:.08});tx(s1,`${pu.status} · ${fS(iso(sdy))}`,x-.05,y0-.01,1.25,.17,{fontSize:6.5,bold:true,color:"FFFFFF",align:"center"})}
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hH+MH+n*rh,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
+   /* key cards */
+   const cw=(W-.8-4*.12)/5,ky=Math.max(6.0,top+hH+MH+n*rh+.14);
+   keys.forEach(({k,d},i)=>{const x=.4+i*(cw+.12),colr=["3D3935","C8503F","00778B","2E9E6B","D68A00"][i%5],fin=i===keys.length-1;
+    s1.addShape(P.ShapeType.roundRect,{x:mx(x,cw),y:ky,w:cw,h:.9,fill:{color:fin?DARK:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.07,shadow:{type:"outer",color:"000000",opacity:.12,blur:5,offset:2,angle:90}});
+    s1.addShape(P.ShapeType.rect,{x:mx(x+.06,cw-.12),y:ky,w:cw-.12,h:.06,fill:{color:colr},line:{color:colr}});
+    tx(s1,strip(k.t[L]),x+.12,ky+.1,cw-.24,.22,{fontSize:8.5,bold:true,color:fin?"CFD8DC":"66707A"});
+    tx(s1,fDayY(d),x+.12,ky+.32,cw-.24,.32,{fontSize:13,bold:true,color:fin?"FFFFFF":DARK});
+    tx(s1,`${pu.wdn} ${wdIdxOf(C,d)+1} / ${C.tot}`,x+.12,ky+.64,cw-.24,.2,{fontSize:7.5,bold:true,color:fin?"CFD8DC":"66707A"})});
+   /* slide 2: shoring sequence, key dates, notes */
+   const s2=P.addSlide({masterName:"SAR"});head(s2,strip(S.tx.flowTitle[L]),strip(S.tx.flowSub[L]));
+   const sec=(txt,x,y,w)=>{s2.addShape(P.ShapeType.rect,{x:mx(x,.06),y:y+.04,w:.06,h:.28,fill:{color:ACC},line:{color:ACC}});tx(s2,txt,x+.16,y,w,.36,{fontSize:15,bold:true,color:DARK})};
+   sec(pu.secF,.4,1.2,8);const A=C.R.A;
+   if(A)tx(s2,`${fL(iso(A.s))} → ${fL(iso(A.f))} · ${A.ef-A.es+1} ${pu.wd}`,.56,1.55,9,.28,{fontSize:11,bold:true,color:"C8503F"});
+   const fw=(W-.8)/5;PL.flow.forEach((f,i)=>{const x=.4+i*fw;
+    s2.addShape(P.ShapeType.chevron,{x:mx(x,fw+.08),y:1.95,w:fw+.08,h:1.15,fill:{color:"F4DAD6"},line:{color:"F4DAD6"},flipH:rtl});
+    s2.addShape(P.ShapeType.ellipse,{x:mx(x+.4,.3),y:2.05,w:.3,h:.3,fill:{color:"C8503F"},line:{color:"C8503F"}});tx(s2,i+1,x+.4,2.05,.3,.3,{fontSize:10,bold:true,color:"FFFFFF",align:"center"});
+    tx(s2,strip(f[L]),x+.42,2.38,fw-.75,.68,{fontSize:11,bold:true,color:DARK,valign:"top"})});
+   sec(pu.secK,.4,3.35,4);
+   keys.forEach(({k,d},i)=>{const y=3.82+i*.34;s2.addShape(P.ShapeType.rect,{x:mx(.4,4.6),y,w:4.6,h:.34,fill:{color:i%2?"F6F9FA":"FFFFFF"},line:{color:"DFE6EA",width:.5}});
+    tx(s2,strip(k.t[L]),.5,y,2.5,.34,{fontSize:9.5,color:"4A555D"});tx(s2,fDayY(d),2.9,y,2.0,.34,{fontSize:9.5,bold:true,color:DARK,align:"right"})});
+   const alt=planCalc({...PL,start:iso(statusDay())}),delta=alt.en-C.en;
+   s2.addShape(P.ShapeType.roundRect,{x:mx(.4,4.6),y:5.65,w:4.6,h:1.05,fill:{color:"FFF6E5"},line:{color:"F0C36D",width:1},rectRadius:.08});
+   tx(s2,pu.secW,.55,5.7,4.3,.25,{fontSize:9.5,bold:true,color:"9A6A00"});
+   tx(s2,`${pu.whatif} ${fL(iso(alt.st))} (${pu.perm}) → ${pu.shift} ${fL(iso(alt.en))} (+${delta} ${pu.sh2}).`,.55,5.95,4.3,.72,{fontSize:9.5,color:"3D3935",valign:"top"});
+   sec(pu.secN,5.4,3.35,6);
+   s2.addText(PL.notes.map((q,i)=>({text:strip(q[L]),options:{bullet:{type:"number"},fontSize:10.5,color:"333333",breakLine:true,paraSpaceAfter:6}})),{x:mx(5.5,7.4),y:3.8,w:7.4,h:2.95,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink"});
+   tx(s2,pu.src,.4,6.78,W-.8,.25,{fontSize:7.5,color:"66707A"});
   }
   await P.writeFile({fileName:`UFWL_Gantt_${L.toUpperCase()}.pptx`});
  }catch(e){console.error(e);alert((L==="en"?"Could not create PowerPoint: ":"تعذر إنشاء ملف PowerPoint: ")+e.message)}
