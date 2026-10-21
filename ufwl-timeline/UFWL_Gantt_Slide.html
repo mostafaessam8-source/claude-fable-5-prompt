@@ -28,8 +28,9 @@ body.edit #fmt{display:flex}
 /* fullscreen */
 body.fs #tb{display:none}
 body.fs #app{position:fixed;inset:0;z-index:100;background:#14171a}
-#xfs{display:none;position:fixed;top:10px;inset-inline-end:10px;z-index:200;opacity:.0;transition:.3s}
-body.fs #xfs{display:flex}body.fs.show #xfs{opacity:1}
+#fsbar{display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:200;gap:6px;opacity:0;transition:.3s;background:#000c;padding:5px;border-radius:12px}
+body.fs #fsbar{display:flex}body.fs.show #fsbar,body.fs.pedit #fsbar{opacity:1}
+#fsPE.on{background:#fff;color:var(--dark)}
 /* dates dialog */
 #dlg,#adlg,#sdlg{display:none;position:fixed;inset:0;background:#000a;z-index:300;align-items:center;justify-content:center;padding:12px}
 #dlg.open,#adlg.open,#sdlg.open{display:flex}
@@ -152,6 +153,11 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pov0 .pinfo{background:#fff}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
 .pfl small{display:block;font-size:15px;font-weight:700;color:#7a3a30;margin-top:6px}.pfl>div span{margin-top:0}
 .passume{font-size:16px;color:var(--muted);margin-top:10px;font-style:italic}
+.pdt{position:relative;display:inline-block;border-bottom:2px dashed var(--accent);cursor:pointer;padding:0 2px}.pdt input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.pedit .pinfo>.c2{width:326px}.pedit .pinfo>.c3{width:134px;display:flex;gap:3px;justify-content:center;align-items:center}.pedit .pinfo>.c5,.pedit .pinfo>.c6{width:112px}
+.pedit select,.pedit .pnum{height:28px;border:1.5px solid #8fb0b9;border-radius:6px;font:700 13px inherit;font-family:inherit;background:#fff;padding:0 1px;color:#222}.pedit select{width:44px}.pedit .pnum{width:54px;text-align:center;font-size:15px}.pedit .plag{width:36px;font-size:13px}
+.pfix{border:0;background:none;cursor:pointer;font-size:14px;padding:0 2px}
+body.pedit .pgantt .rdel,.pedit .rdel{display:inline-block;position:absolute;inset-inline-end:4px;top:50%;margin-top:-13px}
 /* slide 3 */
 .pbd{position:absolute;top:150px;bottom:56px;inset-inline:0;padding:26px 60px 14px;display:flex;flex-direction:column;gap:20px}
 .pbd h3{margin:0 0 8px;font-size:29px;font-weight:800;color:var(--dark);display:flex;align-items:center;gap:12px}.pbd h3:before{content:"";width:7px;height:28px;border-radius:4px;background:var(--accent)}
@@ -228,7 +234,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
 .tx b[data-b]:focus,.tx small[data-b]:focus{box-shadow:0 4px 18px #0004}
 @page{size:1920px 1080px;margin:0}
 @media print{
- html,body{height:auto;overflow:visible;background:#fff}#tb,#xfs,#dlg,#hint{display:none!important}
+ html,body{height:auto;overflow:visible;background:#fff}#tb,#fsbar,#dlg,#hint{display:none!important}
  #app,#vp{display:block;height:auto;overflow:visible}#stage{position:static;transform:none!important;box-shadow:none;height:auto!important}#deck{position:static!important}#pager{display:none!important}
 .gs.strip{display:none!important}.gp{display:block!important;position:relative!important;width:1920px;height:1080px;overflow:hidden;break-after:page;page-break-after:always}.gp:last-child{break-after:auto;page-break-after:auto}
  .gs{display:block!important;position:relative!important;width:1920px;height:1080px;overflow:hidden;break-after:page;page-break-after:always;animation:none!important}.gs:last-child{break-after:auto;page-break-after:auto}
@@ -268,7 +274,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
  </div>
  <div id="vp"><div id="stage"><div id="deck"></div></div><div id="toast"></div><div id="pager"><button id="pPrev" title="Previous / السابق">‹</button><span id="pNum"></span><button id="pNext" title="Next / التالي">›</button></div><div id="hint">↻ Rotate your phone for a bigger view · دوّر الموبايل</div></div>
 </div>
-<button class="b pri" id="xfs">✕</button>
+<div id="fsbar"><button class="b" id="fsPE" title="Edit schedule on the slide / تعديل الجدول على السليد">✎ <span></span></button><button class="b" id="fsPD" title="Schedule dialog / نافذة الجدول">🗓</button><button class="b pri" id="xfs">✕</button></div>
 <div id="dlg"><div id="dbox" class="dbx"><h3><span id="dTitle"></span><button class="b" id="dClose">✕</button></h3>
  <div class="tools"><span id="dShiftL"></span><input type="number" id="dShift" value="1"><button id="dShiftB"></button></div><div id="dl"></div></div></div>
 
@@ -417,7 +423,7 @@ function render(){
  $("#bLang").textContent=L==="en"?"عربي":"English";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
  $("#bAdd span").textContent=L==="en"?"Activity":"نشاط";
- $("#bPlan span").textContent=L==="en"?"Schedule":"الجدول";$("#bDesc").classList.toggle("on",S.desc===true);$("#bDesc span").textContent=L==="en"?"Description":"الوصف";$("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
+ $("#bPlan span").textContent=L==="en"?"Schedule":"الجدول";peLabel();$("#bDesc").classList.toggle("on",S.desc===true);$("#bDesc span").textContent=L==="en"?"Description":"الوصف";$("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
  $("#dTitle").textContent=u.dTitle;$("#dShiftL").textContent=u.shift;$("#dShiftB").textContent=u.shiftB;
  $("#dbox").dir=L==="ar"?"rtl":"ltr";
 }
@@ -490,6 +496,8 @@ function defPlan(){const T_=T;return{ver:2,start:"2026-10-13",
 const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",tot:"Overall project duration",assume:"Durations and links of the five sub-activities are proposed to fit within the 6 working days of Activity A (editable).",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
  ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",tot:"المدة الإجمالية للمشروع",assume:"مدد وعلاقات الأنشطة الخمسة الفرعية مقترحة لتقع ضمن 6 أيام عمل للنشاط A (قابلة للتعديل).",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
 const isW=d=>dd(d).getUTCDay()!==5;
+const wdBetween=(a,b)=>{let n=0;for(let x=a;x<=b;x++)if(isW(x))n++;return n};
+let planEdit=false;
 const addW=(d,n)=>{while(n>0){d++;if(isW(d))n--}return d};
 function planOrder(P){const by=Object.fromEntries(P.tasks.map(x=>[x.id,x])),out=[];
  const walk=(parent,pre,depth)=>{P.tasks.filter(x=>(x.parent&&by[x.parent]?x.parent:null)===parent).forEach((x,i)=>{const code=depth?pre+"."+(i+1):x.id;out.push({t:x,depth,code});walk(x.id,code,depth+1)})};
@@ -498,7 +506,8 @@ function planCalc(P){P=P||S.plan;const ord=planOrder(P),by=Object.fromEntries(P.
  let st0=dn(P.start);while(!isW(st0))st0++;
  const kids=id=>P.tasks.filter(x=>x.parent===id&&by[id]);
  const base=(t,dep)=>{let s;const pt=t.pred&&by[t.pred];
-  if(pt&&pt!==t&&pt.id!==t.parent){const p=calc(pt,dep+1);s=t.link==="SS"?addW(p.s,+t.lag||0):addW(p.f,1+(+t.lag||0))}
+  if(t.fix)s=dn(t.fix);
+  else if(pt&&pt!==t&&pt.id!==t.parent){const p=calc(pt,dep+1);s=t.link==="SS"?addW(p.s,+t.lag||0):addW(p.f,1+(+t.lag||0))}
   else if(t.parent&&by[t.parent]&&dep<30)s=base(by[t.parent],dep+1);else s=st0;
   while(!isW(s))s++;return s};
  const calc=(t,dep=0)=>{if(res[t.id])return res[t.id];if(dep>30)return{s:st0,f:st0};
@@ -522,7 +531,8 @@ function planKeys(C){return S.plan.keys.map(k=>{let d=null;
 const wdIdxOf=(C,d)=>{let n=0;for(let x=C.st;x<d;x++)if(isW(x+1))n++;return n};
 function statusDay(){return Math.max(...S.ms.map(m=>endOf(m)??dn(m.date)))}
 function planSlides(u,startIdx){
- const pu=PUI[L],P=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),leaf=C.rows.filter(x=>!x.sum);
+ const pu=PUI[L],P=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),leaf=C.rows.filter(x=>!x.sum),pe=planEdit||editMode;
+ const dcell=(d,attr,id)=>pe?`<span class="pdt">${fS(iso(d))}<input type="date" data-pf="${attr}" ${id?`data-t="${id}"`:""} value="${iso(d)}"></span>`:fS(iso(d));
  const d0=C.st-3,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
  const OV=50,MH=84,rh=Math.max(32,Math.min(72,Math.floor(492/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
  /* header */
@@ -541,13 +551,15 @@ function planSlides(u,startIdx){
  const dia=keys.map(({k,d})=>`<div class="pkd" style="inset-inline-start:${xc(d)-11}px"></div><div class="pkl" style="inset-inline-start:${xc(d)-70}px"><span>${strip(k.t[L])}</span><b>${fS(iso(d))}</b></div>`).join("");
  const mrow=`<div class="prow pmrow" style="height:${MH}px"><div class="pinfo"><b class="c1">◆</b><b class="c2" style="font-weight:800">${pu.ms}</b></div><div class="pch" style="width:${CHW}px">${dia}</div></div>`;
  /* overall duration row (top) */
- const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${fS(iso(C.st))}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}</em></div></div></div>`;
+ const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${dcell(C.st,"cstart")}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}</em></div></div></div>`;
+ /* inline schedule editing cells */
+ const pcell=t=>`<select data-pf="pred" data-t="${t.id}"><option value="">—</option>${P.tasks.filter(x=>x.id!==t.id&&x.id!==t.parent).map(x=>`<option ${x.id===t.pred?"selected":""}>${x.id}</option>`).join("")}</select><select data-pf="link" data-t="${t.id}"><option ${t.link==="FS"?"selected":""}>FS</option><option ${t.link==="SS"?"selected":""}>SS</option></select><input class="pnum plag" type="number" min="0" data-pf="lag" data-t="${t.id}" value="${+t.lag||0}" title="Lag">`;
  /* task rows */
  const rowsH=C.rows.map((r,i)=>{const t=r.t,c=t.c,pt=t.pred?C.R[t.pred]:null,lk=pt?`<span dir="ltr">${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?` +${+t.lag||0}`:""}</span>`:pu.none;
   const dur=r.ef-r.es+1,w=(r.f-r.s+1)*dw,sub=r.depth>0,cls=`${i%2?"z":""} ${r.sum?"sumrow":""} ${sub?"subrow":""}`;
   const bar=r.sum?`<div class="pbar sum ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;top:${(rh-14)/2}px"></div><span class="psl" style="inset-inline-start:${xp(r.f+1)+8}px;top:${(rh-20)/2}px"><bdi>${dur}</bdi> ${pu.d}</span>`
    :`<div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${w>38?`<bdi>${dur}</bdi> ${pu.d}`:""}</em></div>`;
-  return `<div class="prow ptask ${cls}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${lk}</span><span class="c4"><bdi>${dur}</bdi></span><span class="c5">${fS(iso(r.s))}</span><span class="c6">${fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
+  return `<div class="prow ptask ${cls}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${pe?pcell(t):lk}</span><span class="c4">${pe&&!r.sum?`<input class="pnum" type="number" min="1" data-pf="dur" data-t="${t.id}" value="${+t.dur||1}">`:`<bdi>${dur}</bdi>`}</span><span class="c5">${dcell(r.s,"start",t.id)}${pe&&t.fix?`<button class="pfix" data-pf="unfix" data-t="${t.id}" title="Remove fixed start / إلغاء تثبيت البداية">📌</button>`:""}</span><span class="c6">${pe&&!r.sum?dcell(r.f,"finish",t.id):fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
    <div class="pch" style="width:${CHW}px">${bar}</div></div>`}).join("");
  /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
  const rowTop=i=>OV+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
@@ -555,7 +567,7 @@ function planSlides(u,startIdx){
   if(t.link==="SS"){const x0=xp(p.s)+8;svg+=`<path d="M${x0} ${yP+bh/2} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}
   else{const xe=xp(p.f+1),xm=Math.min(xs-6,xe+dw*.5);svg+=`<path d="M${xe} ${yP} H${xm} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}});
  const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b style="top:${OV+2}px">${pu.status} · ${fS(iso(sd))}</b></div>`:"";
- const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
+ const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""} ${pe?"pedit":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
  /* key cards */
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
@@ -577,6 +589,18 @@ function planSlides(u,startIdx){
  return s2}
 
 
+/* ---- inline schedule editing (also in full-screen) ---- */
+function peLabel(){const b=$("#fsPE");b.classList.toggle("on",planEdit);b.querySelector("span").textContent=L==="en"?(planEdit?"Done":"Edit schedule"):(planEdit?"تم":"تعديل الجدول");document.body.classList.toggle("pedit",planEdit)}
+$("#fsPE").onclick=()=>{planEdit=!planEdit;peLabel();render();const i=[...document.querySelectorAll("#deck .gs")].findIndex(s=>s.dataset.kind==="plan");if(planEdit&&i>=0)goPage(i)};
+$("#fsPD").onclick=()=>{planDlg();$("#sdlg").classList.add("open")};
+$("#deck").addEventListener("change",e=>{const el=e.target.closest("[data-pf]");if(!el)return;const f=el.dataset.pf,t=S.plan.tasks.find(x=>x.id===el.dataset.t);
+ if(f==="cstart"){if(el.value)S.plan.start=el.value}
+ else if(t){if(f==="pred")t.pred=el.value||null;else if(f==="link")t.link=el.value;else if(f==="lag")t.lag=Math.max(0,+el.value||0);else if(f==="dur")t.dur=Math.max(1,+el.value||1);
+  else if(f==="start"){if(el.value)t.fix=el.value}
+  else if(f==="finish"&&el.value){const C=planCalc(),r=C.R[t.id];if(r)t.dur=Math.max(1,wdBetween(r.s,dn(el.value)))}}
+ save();render()});
+$("#deck").addEventListener("click",e=>{const b=e.target.closest("button[data-pf=unfix]");if(b){const t=S.plan.tasks.find(x=>x.id===b.dataset.t);if(t){delete t.fix;save();render()}return}
+ const i=e.target.closest(".pdt input");if(i){try{i.showPicker()}catch(_){}}});
 /* ---- schedule dialog ---- */
 const SD={en:{title:"Schedule – remaining works",cs:"Commencement date:",al:"Align to permit-ready date",add:"＋ Add activity",h:["","Activity (EN)","النشاط (AR)","Parent","Pred.","Link","Lag","Dur.","",""],del:"Delete this activity?",newN:"New activity",newA:"نشاط جديد"},
  ar:{title:"الجدول – الأعمال المتبقية",cs:"تاريخ البدء:",al:"المطابقة مع تاريخ جاهزية التصريح",add:"＋ إضافة نشاط",h:["","Activity (EN)","النشاط (AR)","الأب","السابق","العلاقة","التأخير","المدة","",""],del:"حذف هذا النشاط؟",newN:"New activity",newA:"نشاط جديد"}};
