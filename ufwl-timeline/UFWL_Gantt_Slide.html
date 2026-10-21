@@ -119,6 +119,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .tl.hov .tcard,.tl.hov .tmk,.tl.hov .tstem,.tl.hov .tdt{opacity:.25}
 .tl .tcard,.tl .tmk,.tl .tstem,.tl .tdt{transition:opacity .15s,transform .15s,box-shadow .15s}
 .tl.hov .hl2{opacity:1}
+body.edit .tl.hov .tcard,body.edit .tl.hov .tmk,body.edit .tl.hov .tstem,body.edit .tl.hov .tdt{opacity:1}
 .tl .tmk.hl2{transform:scale(1.45);box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 30%,transparent),0 6px 18px #0006;z-index:12}
 .tl .tstem.hl2{width:6px;margin-inline-start:-1px;z-index:11}
 .tl .tcard.hl2{transform:translateY(-4px) scale(1.04);box-shadow:0 0 0 3px var(--c),0 16px 36px #0005;z-index:11}
@@ -144,6 +145,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .tcard [data-b]:focus{-webkit-line-clamp:unset!important;display:block!important}
 .tcard .rdel{position:absolute;top:14px;inset-inline-end:14px}
 .tdinp+*{}
+#toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#000d;color:#fff;padding:7px 18px;border-radius:20px;font-size:14px;font-weight:700;z-index:30;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}#toast.show{opacity:1}
 /* pages */
 .gs{position:absolute;inset:0;display:none}.gs.on{display:block;animation:pgin .35s ease}@keyframes pgin{from{opacity:0}to{opacity:1}}
 #pager{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#000c;color:#fff;border-radius:24px;padding:4px 6px;z-index:8;font:700 14px inherit;font-family:inherit}
@@ -183,6 +185,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
   <div class="g">
    <button class="b" id="bEdit" title="Edit text / تعديل النص">✎ <span>Edit</span></button>
    <button class="b pri" id="bAdd" title="Add activity / إضافة نشاط">＋ <span>Activity</span></button>
+   <button class="b on" id="bAuto" title="Auto-translate EN ⇄ AR / ترجمة تلقائية">🌐 <span>Auto</span></button>
    <button class="b" id="bView" title="Switch view / تبديل العرض">⇄ <span>Timeline</span></button>
    <button class="b" id="bDates" title="Edit dates / تعديل التواريخ">📅 <span>Dates</span></button>
    <button class="b" id="bFs" title="Full screen / ملء الشاشة">⛶ <span>Full screen</span></button>
@@ -204,7 +207,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
    <button class="b" data-c="removeFormat">Tx</button><button class="b" data-c="undo">↶</button><button class="b" data-c="redo">↷</button>
   </div>
  </div>
- <div id="vp"><div id="stage"><div id="deck"></div></div><div id="pager"><button id="pPrev" title="Previous / السابق">‹</button><span id="pNum"></span><button id="pNext" title="Next / التالي">›</button></div><div id="hint">↻ Rotate your phone for a bigger view · دوّر الموبايل</div></div>
+ <div id="vp"><div id="stage"><div id="deck"></div></div><div id="toast"></div><div id="pager"><button id="pPrev" title="Previous / السابق">‹</button><span id="pNum"></span><button id="pNext" title="Next / التالي">›</button></div><div id="hint">↻ Rotate your phone for a bigger view · دوّر الموبايل</div></div>
 </div>
 <button class="b pri" id="xfs">✕</button>
 <div id="dlg"><div id="dbox" class="dbx"><h3><span id="dTitle"></span><button class="b" id="dClose">✕</button></h3>
@@ -265,7 +268,7 @@ const UI={en:{days:"days",day1:"day",same:"Same day",evn:"Event No.",act:"Activi
  ar:{days:"يوم",day1:"يوم",same:"نفس اليوم",evn:"حدث رقم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
-function defaults(){return{v:2,lang:"en",view:"gantt",ts:0,
+function defaults(){return{v:2,lang:"en",view:"gantt",auto:true,ts:0,
  tx:{title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
@@ -274,7 +277,7 @@ let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
- c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt"}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -284,6 +287,7 @@ const fL=s=>{const[y,m,d]=s.split("-").map(Number);return `${d} ${MON[L][m-1]} $
 const strip=h=>{const e=document.createElement("div");e.innerHTML=h;return e.textContent};
 const B=(p,tag,cls,html)=>`<${tag} class="${cls||""}" data-b="${p}">${html}</${tag}>`;
 function getB(p){const a=p.split("|");if(a[0]==="x")return S.tx[a[1]][L];if(a[0]==="p")return S.ph[a[1]].n[L];return S.ms.find(m=>m.id==a[1])[a[2]][L]}
+function setBL(p,v,lg){const a=p.split("|");if(a[0]==="x")S.tx[a[1]][lg]=v;else if(a[0]==="p")S.ph[a[1]].n[lg]=v;else{const o=S.ms.find(m=>m.id==a[1]);if(o)o[a[2]][lg]=v}}
 function setB(p,v){const a=p.split("|");if(a[0]==="x")S.tx[a[1]][L]=v;else if(a[0]==="p")S.ph[a[1]].n[L]=v;else S.ms.find(m=>m.id==a[1])[a[2]][L]=v}
 
 const sdc=(a,b)=>dn(a.date)-dn(b.date)||a.id-b.id;
@@ -425,7 +429,7 @@ $("#fFont").onchange=e=>withSel(()=>document.execCommand("fontName",false,e.targ
 $("#fSize").onchange=e=>size(+e.target.value);
 $("#fCol").oninput=e=>withSel(()=>document.execCommand("foreColor",false,e.target.value));
 $("#fHi").oninput=e=>withSel(()=>document.execCommand("hiliteColor",false,e.target.value));
-$("#deck").addEventListener("input",e=>{const el=e.target.closest("[data-b]");if(!el)return;setB(el.dataset.b,el.innerHTML);document.querySelectorAll(`#deck [data-b="${el.dataset.b}"]`).forEach(o=>{if(o!==el)o.innerHTML=el.innerHTML});save()});
+$("#deck").addEventListener("input",e=>{const el=e.target.closest("[data-b]");if(!el)return;setB(el.dataset.b,el.innerHTML);document.querySelectorAll(`#deck [data-b="${el.dataset.b}"]`).forEach(o=>{if(o!==el)o.innerHTML=el.innerHTML});save();autoTr(el.dataset.b,el.textContent)});
 $("#deck").addEventListener("paste",e=>{if(e.target.closest("[data-b]")){e.preventDefault();document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text/plain"))}});
 $("#deck").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest("[data-b]")){e.preventDefault();e.target.blur()}});
 /* ruler */
@@ -475,6 +479,19 @@ $("#deck").addEventListener("click",e=>{const b=e.target.closest(".rdel");if(!b)
  else if(b.dataset.delp){const k=b.dataset.delp;if(confirm(L==="en"?"Delete this phase with all its activities?":"حذف هذه المرحلة بكل أنشطتها؟")){S.ms=S.ms.filter(x=>x.ph!==k);delete S.ph[k];pinned=null;save();render()}}
 });
 $("#vp").addEventListener("pointerleave",()=>{const A=AP();if(A){const v=A.querySelector(".vl"),g=A.querySelector(".tg");if(v)v.style.display="none";if(g)g.style.display="none"}document.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));applyPin()});
+/* live auto-translation of edited text into the other language */
+const trTimers={};
+function toast(m){const e=$("#toast");e.textContent=m;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2600)}
+function autoTr(path,text){if(!S.auto)return;text=(text||"").trim();const from=L,to=L==="en"?"ar":"en";
+ clearTimeout(trTimers[path]);if(!text)return;
+ trTimers[path]=setTimeout(async()=>{
+  if(!/[A-Za-z\u0600-\u06FF]/.test(text))return;
+  const r=await tr(text,from,to);
+  if(r.how==="partial"||!r.text){toast(from==="en"?"Offline – Arabic not updated / الترجمة تحتاج إنترنت":"Offline – English not updated / الترجمة تحتاج إنترنت");return}
+  setBL(path,r.text.replace(/&/g,"&amp;").replace(/</g,"&lt;"),to);save();
+  toast(to==="ar"?"✓ تم تحديث العربي تلقائياً / Arabic updated":"✓ English updated / تم تحديث الإنجليزي")},800)}
+$("#bAuto").onclick=()=>{S.auto=!S.auto;$("#bAuto").classList.toggle("on",S.auto);save();toast(S.auto?"Auto-translate ON / الترجمة التلقائية شغالة":"Auto-translate OFF / الترجمة التلقائية متوقفة")};
+$("#bAuto").classList.toggle("on",S.auto!==false);
 /* language */
 $("#bLang").onclick=()=>{S.lang=L=L==="en"?"ar":"en";save();render()};
 /* dates dialog */
