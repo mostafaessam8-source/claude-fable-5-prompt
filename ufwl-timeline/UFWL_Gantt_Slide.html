@@ -112,21 +112,21 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
 /* timeline view */
-.tl .tin,.tin{position:relative;height:100%}
+.dense .tmk{width:56px;height:56px;font-size:16px;border-width:4px}.dense .tcard{padding:8px 12px 6px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:11px;padding-inline-end:24px}.dense .tt{font-size:17px;margin-top:2px;line-height:1.15}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:13px;line-height:1.28;margin-top:3px;-webkit-line-clamp:3}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
 .gp{display:none}
 .tscroll{position:absolute;top:150px;bottom:56px;inset-inline:0;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:thin;scrollbar-color:#9db2bb #eef3f5}
 .tscroll.drag{cursor:grabbing}.tscroll::-webkit-scrollbar{height:14px}.tscroll::-webkit-scrollbar-thumb{background:#9db2bb;border-radius:8px}.tscroll::-webkit-scrollbar-track{background:#eef3f5}
 .tin{--oy:0px}
-.tl .taxis{position:absolute;inset-inline:0;top:calc(540px + var(--oy));height:10px}
-.tseg{position:absolute;top:0;height:10px;background:var(--c);border-radius:5px}.tseg.arrow{background:repeating-linear-gradient(90deg,#c9d3d8 0 14px,transparent 14px 24px)}
-.tmk{position:absolute;top:calc(507px + var(--oy));width:76px;height:76px;border-radius:50%;background:var(--c);color:#fff;border:6px solid #fff;box-shadow:0 4px 14px #0004;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:21px;z-index:3}
-.tstem{position:absolute;width:4px;background:var(--c);opacity:.6;z-index:1}.tstem.u{top:calc(465px + var(--oy));height:44px}.tstem.d{top:calc(583px + var(--oy));height:44px}
+.tl .taxis{position:absolute;inset:0;pointer-events:none}
+.tseg{position:absolute;height:10px;background:var(--c);border-radius:5px}.tseg.arrow{background:repeating-linear-gradient(90deg,#c9d3d8 0 14px,transparent 14px 24px)}
+.tmk{position:absolute;width:76px;height:76px;border-radius:50%;background:var(--c);color:#fff;border:6px solid #fff;box-shadow:0 4px 14px #0004;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:21px;z-index:3}
+.tstem{position:absolute;width:4px;background:var(--c);opacity:.6;z-index:1}
 .tdt{position:absolute;width:190px;height:34px;line-height:30px;text-align:center;font-weight:800;font-size:19px;color:var(--c);background:#fff;border:2px solid var(--c);border-radius:20px;z-index:3}
-.tdt.b{top:calc(598px + var(--oy))}.tdt.a{top:calc(470px + var(--oy))}
+
 .tdinp{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;cursor:pointer}body.edit .tdinp{pointer-events:auto}body.edit .tdt:hover{background:#e8f3f5}
-.tgap{position:absolute;top:calc(529px + var(--oy));width:110px;height:32px;line-height:32px;text-align:center;background:#eef3f5;border:1px solid #cfd9de;border-radius:16px;font-weight:700;font-size:16px;color:#556;z-index:2}
-.tcard{position:absolute;height:300px;background:#fff;border-radius:18px;box-shadow:0 8px 26px #1b2a3322;border-top:10px solid var(--c);padding:14px 24px 12px;display:flex;flex-direction:column;overflow:hidden;z-index:2}
-.tcard.u{top:calc(165px + var(--oy))}.tcard.d{top:calc(627px + var(--oy))}
+.tgap{position:absolute;width:110px;height:32px;line-height:32px;text-align:center;background:#eef3f5;border:1px solid #cfd9de;border-radius:16px;font-weight:700;font-size:16px;color:#556;z-index:2}
+.tcard{position:absolute;background:#fff;border-radius:18px;box-shadow:0 8px 26px #1b2a3322;border-top:10px solid var(--c);padding:14px 24px 12px;display:flex;flex-direction:column;overflow:hidden;z-index:2}
+
 .ttag{font-size:16px;font-weight:800;color:var(--c);text-transform:uppercase;letter-spacing:.04em;padding-inline-end:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [dir=rtl] .ttag{letter-spacing:0}
 .tt{font-size:30px;font-weight:800;color:var(--dark);line-height:1.2;margin-top:6px}
@@ -134,6 +134,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .tdsc{font-size:23px;line-height:1.4;color:#444d55;margin-top:8px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
 .tcard [data-b]:focus{-webkit-line-clamp:unset!important;display:block!important}
 .tcard .rdel{position:absolute;top:14px;inset-inline-end:14px}
+.tdinp+*{}
 /* pages */
 .gs{position:absolute;inset:0;display:none}.gs.on{display:block;animation:pgin .35s ease}@keyframes pgin{from{opacity:0}to{opacity:1}}
 #pager{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#000c;color:#fff;border-radius:24px;padding:4px 6px;z-index:8;font:700 14px inherit;font-family:inherit}
@@ -345,36 +346,35 @@ function render(){
  $("#dbox").dir=L==="ar"?"rtl":"ltr";
 }
 function tlPages(TR){const items=TR.flatMap(P=>P.items.map(o=>({...o,P})));const per=6,np=Math.max(1,Math.ceil(items.length/per)),sz=Math.ceil(items.length/np)||1,pg=[];for(let i=0;i<items.length;i+=sz)pg.push(items.slice(i,i+sz));return {pages:pg.length?pg:[[]],all:items}}
-function tlBuild(pg,all,u,geo){
- let segs="",chips="",cards="",marks="",px=geo.X0;const n=pg.length;
- pg.forEach((o,i)=>{const m=o.m,c=S.ph[o.P.pid].c,cx=geo.X0+(i+.5)*geo.sp,up=i%2===0,E=endOf(m),s0=dn(m.date),gi=all.findIndex(a=>a.m===m),prev=gi>0?all[gi-1].m:null;
-  segs+=`<i class="tseg" style="--c:${c};inset-inline-start:${px}px;width:${cx-px}px"></i>`;px=cx;
-  if(prev&&i>0){const gp=s0-dn(prev.date);chips+=`<span class="tgap" style="inset-inline-start:${cx-geo.sp/2-55}px">${gp===0?u.same:`<bdi>+${gp}</bdi> ${gp===1?u.day1:u.days}`}</span>`}
-  const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${fL(m.date)} → ${fL(m.end)} · <bdi>${days}</bdi> ${u.days}`:fL(m.date);
-  marks+=`<i class="tstem ${up?"u":"d"}" style="--c:${c};inset-inline-start:${cx-2}px"></i><div class="tmk" style="--c:${c};inset-inline-start:${cx-38}px">${o.code}</div>
-   <div class="tdt ${up?"b":"a"}" style="--c:${c};inset-inline-start:${cx-95}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
-  cards+=`<div class="tcard ${up?"u":"d"}" data-i="${m.id}" style="--c:${c};width:${geo.cw}px;inset-inline-start:${Math.max(geo.min,Math.min(geo.max-geo.cw,cx-geo.cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
-   <div class="ttag"><bdi>${o.code}</bdi> · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
- if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${geo.X0+geo.XW-px}px"></i>`;
+/* lane layouts: few milestones -> 2 big lanes; many -> 4 staggered lanes so everything fits on ONE slide */
+function tlLayout(n){const dense=n>7;
+ return dense?{dense:true,AY:586,MD:56,H:175,lanes:[{up:1,y:353},{up:0,y:644},{up:1,y:165},{up:0,y:832}]}
+  :{dense:false,AY:545,MD:76,H:300,lanes:[{up:1,y:165},{up:0,y:627}]}}
+function tlBuild(all,u){
+ const n=all.length,lay=tlLayout(n),X0=90,XW=1740,sp=XW/Math.max(n,1),L_=lay.lanes.length,cw=lay.dense?Math.min(400,sp*(L_-.7)):Math.min(520,sp*1.7);
+ let segs="",chips="",cards="",marks="",px=X0;
+ all.forEach((o,i)=>{const m=o.m,c=S.ph[o.P.pid].c,cx=X0+(i+.5)*sp,ln=lay.lanes[i%L_],up=!!ln.up,E=endOf(m),s0=dn(m.date),prev=i>0?all[i-1].m:null;
+  segs+=`<i class="tseg" style="--c:${c};inset-inline-start:${px}px;width:${cx-px}px;top:${lay.AY-5}px"></i>`;px=cx;
+  if(prev&&sp>=200){const gp=s0-dn(prev.date);chips+=`<span class="tgap" style="inset-inline-start:${cx-sp/2-55}px;top:${lay.AY-16}px">${gp===0?u.same:`<bdi>+${gp}</bdi> ${gp===1?u.day1:u.days}`}</span>`}
+  const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${lay.dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · <bdi>${days}</bdi> ${u.days}`:(lay.dense?fDay(s0):fL(m.date));
+  const stemTop=up?ln.y+lay.H:lay.AY+lay.MD/2,stemH=up?lay.AY-lay.MD/2-(ln.y+lay.H):ln.y-(lay.AY+lay.MD/2);
+  marks+=`<i class="tstem" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${o.code}</div>`;
+  if(!lay.dense)marks+=`<div class="tdt" style="--c:${c};inset-inline-start:${cx-95}px;top:${up?lay.AY+53:lay.AY-75}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
+  cards+=`<div class="tcard" data-i="${m.id}" style="--c:${c};width:${cw}px;height:${lay.H}px;top:${ln.y}px;inset-inline-start:${Math.max(30,Math.min(1890-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
+   <div class="ttag"><bdi>${o.code}</bdi> · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}${lay.dense?`<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}">`:""}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
+ if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px;top:${lay.AY-5}px"></i>`;
  return `<div class="taxis">${segs}</div>${chips}${marks}${cards}`}
 function tlRender(deck,TR,u,M,d1,e0){
- const {pages,all}=tlPages(TR);const n=all.length;
+ const {all}=tlPages(TR);const dense=all.length>7;
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
  const legend=`<div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}</div>`;
- const hd=`<div class="hd"><div>${B("x|titleTl","h1","",S.tx.titleTl[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>`;
- const ft=(extra)=>`<div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}${extra||""}</span></div>`;
- /* screen: ONE continuous horizontal timeline, all milestones side by side (scrolls sideways) */
- const SP=300,X0=130,W_=n*SP+X0*2,geo={X0,XW:n*SP,sp:SP,cw:520,min:20,max:99999};
- const strip_=`<section class="gs strip tl on" data-pg="0">${hd}${legend}<div class="tscroll" id="tscroll"><div class="tin" style="width:${W_}px;--oy:-150px">${tlBuild(all,all,u,geo)}</div></div>${ft("")}</section>`;
- /* print: same milestones split into pages */
  pageCount=1;curPage=0;
- const print_=pages.map((pg,pi)=>{const N=Math.max(1,pg.length),XW=1740,sp=XW/N;
-  return `<section class="gp tl" data-pg="${pi}">${hd}${legend}<div class="tin" style="--oy:0px">${tlBuild(pg,all,u,{X0:90,XW,sp,cw:Math.min(520,sp*1.7),min:40,max:1880})}</div>${ft(pages.length>1?` · <bdi>${pi+1}/${pages.length}</bdi>`:"")}</section>`}).join("");
- deck.innerHTML=strip_+print_;
+ deck.innerHTML=`<section class="gs tl on ${dense?"dense":""}" data-pg="0"><div class="hd"><div>${B("x|titleTl","h1","",S.tx.titleTl[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}${tlBuild(all,u)}
+  <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div></section>`;
 }
 $("#deck").addEventListener("change",e=>{const i=e.target.closest(".tdinp");if(!i||!i.value)return;const m=S.ms.find(x=>x.id==i.dataset.id);m.date=i.value;save();render();goRow2(m.id)});
 $("#deck").addEventListener("click",e=>{const i=e.target.closest(".tdinp");if(i&&editMode){try{i.showPicker()}catch(_){}}});
-function goRow2(id){const s=document.querySelector(`#deck .strip .tcard[data-i="${id}"]`);if(s)s.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"})}
+function goRow2(id){}
 (()=>{let d=null;const vp=$("#vp");
  vp.addEventListener("pointerdown",e=>{const s=e.target.closest("#tscroll");if(!s||e.target.closest("button,input,[data-b]")||e.pointerType==="touch")return;d={s,x:e.clientX,l:s.scrollLeft}});
  addEventListener("pointermove",e=>{if(!d)return;const k=1920/$("#stage").getBoundingClientRect().width;d.s.scrollLeft=d.l-(e.clientX-d.x)*k;d.s.classList.add("drag")});
@@ -415,7 +415,7 @@ let G=null,pinned=null;
 const fDay=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]}`};
 const AP=()=>$("#deck .gs.on");
 function showPage(){document.querySelectorAll("#deck .gs").forEach((s,i)=>s.classList.toggle("on",i===curPage));
- const tl=S.view==="tl";$("#pager").style.display=(pageCount>1||tl)?"flex":"none";$("#pNum").style.display=tl?"none":"";$("#pNum").textContent=(curPage+1)+" / "+pageCount;applyPin()}
+ $("#pager").style.display=pageCount>1?"flex":"none";$("#pNum").style.display="";$("#pNum").textContent=(curPage+1)+" / "+pageCount;applyPin()}
 function goPage(i){if(S.view==="tl"){const sc=$("#tscroll");if(sc)sc.scrollBy({left:(i>curPage?1:-1)*(L==="ar"?-1:1)*1100,behavior:"smooth"});return}curPage=Math.max(0,Math.min(pageCount-1,i));showPage()}
 function goRow(id){if(S.view==="tl"){goRow2(id);return}const s=document.querySelector(`#deck .row.ms[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
 $("#pPrev").onclick=()=>goPage(S.view==="tl"?-1:curPage-1);$("#pNext").onclick=()=>goPage(S.view==="tl"?1e9:curPage+1);
@@ -571,36 +571,35 @@ async function exportPPTX(){
   const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
 
   if(S.view==="tl"){
-   const {pages,all}=tlPages(TR);
-   pages.forEach((pg,pi)=>{const sl=P.addSlide({masterName:"SAR"});
-    head(sl,strip(S.tx.titleTl[L])+(pages.length>1?` (${pi+1}/${pages.length})`:""),strip(S.tx.sub[L]));
-    let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]).replace(/ –.*/,"");const w=.45+nm.length*.075;
-     sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.2,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
-     tx(sl,nm,lx+.34,1.13,w,.26,{fontSize:9.5,color:"333333"});lx+=w+.35});
-    const n=Math.max(1,pg.length),X0=.6,XW=12.1,sp=XW/n,cw=Math.min(3.5,sp*1.7),AY=4.0,MD=.56;let px=X0;
-    const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
-    pg.forEach((o,i)=>{const cx=X0+(i+.5)*sp;seg(px,cx,hexOf(S.ph[o.P.pid].c));px=cx});
-    if(pg.length)seg(px,X0+XW,"C9D3D8");
-    pg.forEach((o,i)=>{const m=o.m,c=hexOf(S.ph[o.P.pid].c),cx=X0+(i+.5)*sp,up=i%2===0,E=endOf(m),s0=dn(m.date),gi=all.findIndex(a=>a.m===m),prev=gi>0?all[gi-1].m:null;
-     const cardY=up?1.5:4.7,cardH=1.85,cxl=Math.max(.4,Math.min(W-.4-cw,cx-cw/2));
-     sl.addShape(P.ShapeType.line,{x:mx(cx,0),y:up?cardY+cardH:AY+MD/2,w:0,h:up?(AY-MD/2)-(cardY+cardH):cardY-(AY+MD/2),line:{color:c,width:2.25,transparency:35}});
-     if(prev&&i>0){const gp=s0-dn(prev.date),mid=cx-sp/2;
-      sl.addShape(P.ShapeType.roundRect,{x:mx(mid-.42,.84),y:AY-.14,w:.84,h:.28,fill:{color:"EEF3F5"},line:{color:"CFD9DE",width:.75},rectRadius:.14});
-      tx(sl,gp===0?u.same:`+${gp} ${gp===1?u.day1:u.days}`,mid-.42,AY-.14,.84,.28,{fontSize:8.5,bold:true,color:"556070",align:"center"})}
-     sl.addShape(P.ShapeType.ellipse,{x:mx(cx-MD/2,MD),y:AY-MD/2,w:MD,h:MD,fill:{color:c},line:{color:"FFFFFF",width:3},shadow:{type:"outer",color:"000000",opacity:.25,blur:5,offset:2,angle:90}});
-     tx(sl,o.code,cx-MD/2,AY-MD/2,MD,MD,{fontSize:12,bold:true,color:"FFFFFF",align:"center"});
-     const dy=up?AY+.34:AY-.64;
+   const {all}=tlPages(TR),n=all.length,dense=n>7,sl=P.addSlide({masterName:"SAR"});
+   head(sl,strip(S.tx.titleTl[L]),strip(S.tx.sub[L]));
+   let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]).replace(/ –.*/,"");const w=.45+nm.length*.075;
+    sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.17,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
+    tx(sl,nm,lx+.34,1.1,w,.26,{fontSize:9.5,color:"333333"});lx+=w+.35});
+   const lanes=dense?[{up:1,y:2.62,h:1.15},{up:0,y:4.63,h:1.15},{up:1,y:1.42,h:1.15},{up:0,y:5.85,h:1.15}]:[{up:1,y:1.5,h:1.85},{up:0,y:4.7,h:1.85}];
+   const AY=dense?4.2:4.0,MD=dense?.5:.56,X0=.6,XW=12.1,sp=XW/Math.max(n,1),cw=dense?Math.min(3.3,sp*(lanes.length-.7)):Math.min(3.5,sp*1.7);let px=X0;
+   const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
+   all.forEach((o,i)=>{const cx=X0+(i+.5)*sp;seg(px,cx,hexOf(S.ph[o.P.pid].c));px=cx});seg(px,X0+XW,"C9D3D8");
+   all.forEach((o,i)=>{const m=o.m,c=hexOf(S.ph[o.P.pid].c),cx=X0+(i+.5)*sp,ln=lanes[i%lanes.length],up=!!ln.up,E=endOf(m),s0=dn(m.date),prev=i>0?all[i-1].m:null;
+    const cxl=Math.max(.3,Math.min(W-.3-cw,cx-cw/2)),y1=up?ln.y+ln.h:AY+MD/2,y2=up?AY-MD/2:ln.y;
+    sl.addShape(P.ShapeType.line,{x:mx(cx,0),y:Math.min(y1,y2),w:0,h:Math.abs(y2-y1),line:{color:c,width:dense?1.5:2.25,transparency:35}});
+    if(prev&&sp>=1.4){const gp=s0-dn(prev.date),mid=cx-sp/2;
+     sl.addShape(P.ShapeType.roundRect,{x:mx(mid-.42,.84),y:AY-.14,w:.84,h:.28,fill:{color:"EEF3F5"},line:{color:"CFD9DE",width:.75},rectRadius:.14});
+     tx(sl,gp===0?u.same:`+${gp} ${gp===1?u.day1:u.days}`,mid-.42,AY-.14,.84,.28,{fontSize:8.5,bold:true,color:"556070",align:"center"})}
+    sl.addShape(P.ShapeType.ellipse,{x:mx(cx-MD/2,MD),y:AY-MD/2,w:MD,h:MD,fill:{color:c},line:{color:"FFFFFF",width:2.5},shadow:{type:"outer",color:"000000",opacity:.25,blur:4,offset:1.5,angle:90}});
+    tx(sl,o.code,cx-MD/2,AY-MD/2,MD,MD,{fontSize:dense?9:12,bold:true,color:"FFFFFF",align:"center"});
+    if(!dense){const dy=up?AY+.34:AY-.64;
      sl.addShape(P.ShapeType.roundRect,{x:mx(cx-.7,1.4),y:dy,w:1.4,h:.3,fill:{color:"FFFFFF"},line:{color:c,width:1.25},rectRadius:.15});
-     tx(sl,fDay(s0),cx-.7,dy,1.4,.3,{fontSize:10,bold:true,color:c,align:"center"});
-     sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:cardY,w:cw,h:cardH,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.1,shadow:{type:"outer",color:"000000",opacity:.14,blur:7,offset:2,angle:90}});
-     sl.addShape(P.ShapeType.rect,{x:mx(cxl+.1,cw-.2),y:cardY,w:cw-.2,h:.08,fill:{color:c},line:{color:c}});
-     const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${fL(m.date)} → ${fL(m.end)} · ${days} ${u.days}`:fL(m.date);
-     sl.addText([{text:`${o.code} · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}`.toUpperCase(),options:{fontSize:8.5,bold:true,color:c,breakLine:true}},
-      {text:strip(m.t[L]),options:{fontSize:15,bold:true,color:"3D3935",breakLine:true}},
-      {text:meta,options:{fontSize:9.5,bold:true,color:"66707A",breakLine:true}},
-      {text:strip(m.d[L]),options:{fontSize:11.5,color:"444D55"}}],
-      {x:mx(cxl+.18,cw-.36),y:cardY+.14,w:cw-.36,h:cardH-.22,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:3})});
-   });
+     tx(sl,fDay(s0),cx-.7,dy,1.4,.3,{fontSize:10,bold:true,color:c,align:"center"})}
+    sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:ln.y,w:cw,h:ln.h,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.08,shadow:{type:"outer",color:"000000",opacity:.14,blur:6,offset:2,angle:90}});
+    sl.addShape(P.ShapeType.rect,{x:mx(cxl+.08,cw-.16),y:ln.y,w:cw-.16,h:.06,fill:{color:c},line:{color:c}});
+    const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · ${days} ${u.days}`:(dense?fDay(s0):fL(m.date));
+    const f=dense?{tag:6.5,t:9.5,m:7.5,d:7.5}:{tag:8.5,t:15,m:9.5,d:11.5};
+    sl.addText([{text:`${o.code} · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}`.toUpperCase(),options:{fontSize:f.tag,bold:true,color:c,breakLine:true}},
+     {text:strip(m.t[L]),options:{fontSize:f.t,bold:true,color:"3D3935",breakLine:true}},
+     {text:meta,options:{fontSize:f.m,bold:true,color:"66707A",breakLine:true}},
+     {text:strip(m.d[L]),options:{fontSize:f.d,color:"444D55"}}],
+     {x:mx(cxl+.1,cw-.2),y:ln.y+.1,w:cw-.2,h:ln.h-.14,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:dense?1:3})});
   }else{
   /* 3 – gantt pages */
   const rowsAll=[];TR.forEach(p=>{rowsAll.push({g:p});p.items.forEach(o=>rowsAll.push({o,p}))});
