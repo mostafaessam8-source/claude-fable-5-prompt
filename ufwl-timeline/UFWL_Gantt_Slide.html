@@ -143,7 +143,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pkl{position:absolute;width:180px;text-align:center;line-height:1.15;z-index:4;white-space:nowrap}.pkl.dn{top:64px}.pkl.up{top:2px;height:32px;display:flex;flex-direction:column;justify-content:flex-end}.pkl span{display:block;font-size:12px;color:#556}.pkl b{font-size:15px;color:var(--dark)}
 .pstat{position:absolute;top:-2px;bottom:0;width:0;border-inline-start:3px dashed #C8503F;z-index:5}.pstat b{position:absolute;top:2px;inset-inline-start:6px;background:#C8503F;color:#fff;font-size:12px;font-weight:800;padding:1px 8px;border-radius:10px;white-space:nowrap}
 .plleg{gap:26px;font-size:15px}.plleg .lbar{display:inline-block;width:30px;height:12px;border-radius:4px;background:#00778B;margin-inline-end:7px;vertical-align:middle}.plleg .lbar.crit{outline:2px solid #222;outline-offset:1px}.plleg .lnw{display:inline-block;width:18px;height:14px;background:#cfd8dc;margin-inline-end:7px;vertical-align:middle}.plleg .lst{display:inline-block;width:0;height:16px;border-inline-start:3px dashed #C8503F;margin-inline-end:9px;vertical-align:middle}
-.pkeys{position:absolute;inset-inline:40px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.pkeys{position:absolute;inset-inline:40px;display:grid;grid-template-columns:repeat(var(--kn,5),1fr);gap:16px}
 .pkc{background:#fff;border-radius:14px;box-shadow:0 5px 18px #1b2a3318;border-top:7px solid var(--c);padding:10px 16px 10px;display:flex;flex-direction:column;gap:2px}
 .pkc span{font-size:15px;font-weight:700;color:var(--muted)}.pkc b{font-size:23px;font-weight:800;color:var(--dark);line-height:1.15}.pkc small{font-size:14px;color:var(--muted);font-weight:600}.pkc.fin{background:var(--dark)}.pkc.fin span,.pkc.fin small{color:#cfd8dc}.pkc.fin b{color:#fff}
 .sumrow .c2 b{font-weight:800;font-size:17px}.subrow .c2{padding-inline-start:26px;font-size:15.5px}.subrow .c1{padding-inline-start:20px}
@@ -342,7 +342,7 @@ const UI={en:{days:"days",day1:"day",same:"Same day",evn:"Event No.",act:"Activi
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
 function defaults(){return{v:2,lang:"en",view:"gantt",auto:true,plan:defPlan(),ts:0,
- tx:{planSpanA:T("Shoring works – total time required","أعمال الشورينج – إجمالي الوقت المطلوب"),planSpan:T("Concrete works to backfilling – total time required","أعمال الخرسانة حتى الردم – إجمالي الوقت المطلوب"),planTitle:T("Remaining Works – Shoring & Pit Works Programme","الأعمال المتبقية – برنامج أعمال الدعم والحفرة"),planSub:T("RYDN-WLB pit works · Initial re-plan based on the contractor programme (Rev 01) · Commencement 22 Oct 2026","أعمال حفرة RYDN-WLB · التصور الأولي المعاد تخطيطه بناءً على برنامج المقاول (Rev 01) · البدء 22 أكتوبر 2026"),flowTitle:T("Shoring Activities & Planning Basis","أنشطة الدعم (Shoring) وأسس الجدول"),flowSub:T("Sequence of shoring works, key dates and conditions of the proposed programme","تسلسل أعمال الدعم والتواريخ الرئيسية وشروط البرنامج المقترح"),title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
+ tx:{planSpanA:T("Shoring works – total time required","أعمال الشورينج – إجمالي الوقت المطلوب"),planSpan:T("Concrete works to backfilling – total time required","أعمال الخرسانة حتى الردم – إجمالي الوقت المطلوب"),planTitle:T("Mitigation plan – Shoring, Concrete & Backfilling Schedule","خطة التخفيف – جدول الشورينج والخرسانة والردم"),planSub:T("RYDN-WLB pit works · Initial re-plan based on the contractor programme (Rev 01) · Commencement 22 Oct 2026","أعمال حفرة RYDN-WLB · التصور الأولي المعاد تخطيطه بناءً على برنامج المقاول (Rev 01) · البدء 22 أكتوبر 2026"),flowTitle:T("Shoring Activities & Planning Basis","أنشطة الدعم (Shoring) وأسس الجدول"),flowSub:T("Sequence of shoring works, key dates and conditions of the proposed programme","تسلسل أعمال الدعم والتواريخ الرئيسية وشروط البرنامج المقترح"),title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
 const PAL=["#8E5BB5","#D68A00","#1F6FB2","#B5446E","#4B8B3B"];
@@ -353,7 +353,8 @@ const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
  c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan();else if(S.plan.ver!==3){const d=defPlan(),has=S.plan.tasks.some(x=>x.parent);if(!has&&S.plan.tasks.some(x=>x.id==="A")){const i=S.plan.tasks.findIndex(x=>x.id==="A");S.plan.tasks.splice(i+1,0,...d.tasks.filter(x=>x.parent==="A"))}
   d.tasks.filter(x=>["A","A1","A2","A3","A4","A5","B","C","D","E"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o){o.dur=x.dur;o.pred=x.pred;o.link=x.link;o.lag=x.lag;delete o.fix}});S.plan.ver=3}
  if(S.plan.ver===3){S.plan.start="2026-10-22";S.plan.ver=4;S.tx.planSub=defaults().tx.planSub}
- if(S.plan.ver===4){const d=defPlan();d.tasks.filter(x=>["C","D","E","F","G"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o)o.dur=x.dur});S.plan.span=d.span;S.plan.ver=5}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ if(S.plan.ver===4){const d=defPlan();d.tasks.filter(x=>["C","D","E","F","G"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o)o.dur=x.dur});S.plan.span=d.span;S.plan.ver=5}
+ if(S.plan.ver===5){const d=defaults();S.plan.tasks=d.plan.tasks;S.plan.keys=d.plan.keys;delete S.plan.span;S.tx.planTitle=d.tx.planTitle;S.plan.ver=6}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -481,22 +482,12 @@ function goRow2(id){}
  d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* ================= REMAINING WORKS PLAN (CPM-style Gantt) ================= */
-function defPlan(){const T_=T;return{ver:5,start:"2026-10-22",
+function defPlan(){const T_=T;return{ver:6,start:"2026-10-22",
  tasks:[
   {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:4},
-  {id:"A1",parent:"A",n:T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),c:"#D9695A",pred:null,link:"FS",lag:0,dur:2},
-  {id:"A2",parent:"A",n:T_("Installation of H-Beam","تركيب أعمدة H-Beam"),c:"#D9695A",pred:"A1",link:"SS",lag:1,dur:2},
-  {id:"A3",parent:"A",n:T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),c:"#D9695A",pred:"A2",link:"SS",lag:1,dur:2},
-  {id:"A4",parent:"A",n:T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),c:"#D9695A",pred:"A3",link:"SS",lag:1,dur:1},
-  {id:"A5",parent:"A",n:T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)"),c:"#D9695A",pred:"A4",link:"SS",lag:0,dur:1},
-  {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:4,dur:1},
-  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:2},
-  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:5},
-  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:3},
-  {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"D",link:"FS",lag:0,dur:6},
-  {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:3}],
- span:{from:"C",to:"G"},
- keys:[{t:T_("Commencement","بدء الأعمال"),task:"*",w:"s"},{t:T_("Shoring installation complete","اكتمال تركيب نظام الدعم"),task:"A",w:"f"},{t:T_("Pit works complete (pit wall)","اكتمال أعمال الحفرة (جدار الحفرة)"),task:"E",w:"f"},{t:T_("Building foundation complete","اكتمال أساسات المبنى"),task:"F",w:"f"},{t:T_("Overall completion","الإنجاز الكلي"),task:"*",w:"f"}],
+  {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"A",link:"FS",lag:0,dur:14},
+  {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:2}],
+ keys:[{t:T_("Commencement","بدء الأعمال"),task:"*",w:"s"},{t:T_("Shoring installation complete","اكتمال تركيب نظام الدعم"),task:"A",w:"f"},{t:T_("Building foundation complete","اكتمال أساسات المبنى"),task:"F",w:"f"},{t:T_("Overall completion","الإنجاز الكلي"),task:"*",w:"f"}],
  flow:[T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),T_("Installation of H-Beam","تركيب أعمدة H-Beam"),T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)")],
  notes:[T_("Commencement of each activity is subject to issuance of the work permit and timely approval of Work Inspection Requests (WIRs) and Material Inspection Requests (MIRs). Any delay in permit issuance or WIR / MIR approval will shift the affected activity and all succeeding activities accordingly.","بدء كل نشاط مشروط بإصدار تصريح العمل والموافقة في الوقت المناسب على طلبات فحص الأعمال (WIR) وطلبات فحص المواد (MIR). أي تأخير في إصدار التصريح أو اعتماد الطلبات يزيح النشاط المتأثر وكل الأنشطة اللاحقة له."),
   T_("Working week is Saturday to Thursday. Fridays are non-working.","أسبوع العمل من السبت إلى الخميس، والجمعة إجازة."),
@@ -548,7 +539,7 @@ function planSlides(u,startIdx){
  const dcell=(d,attr,id)=>pe?`<span class="pdt">${fS(iso(d))}<input type="date" data-pf="${attr}" ${id?`data-t="${id}"`:""} value="${iso(d)}"></span>`:fS(iso(d));
  const d0=C.st-7,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
  PG={d0,N,CHW};
- const SPS=planSpans(C),OV2=SPS.length*42,OV=50,MH=0,rh=Math.max(32,Math.min(72,Math.floor((572-OV2)/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
+ const SPS=planSpans(C),OV2=SPS.length*42,OV=50,MH=0,rh=Math.max(32,Math.min(104,Math.floor((572-OV2)/Math.max(1,n)))),HH=94,bh=Math.min(46,Math.round(rh*.5));
  /* header */
  let mons=[],wk="",wl="",dy="",shade="",last=-1;
  for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth(),x=xp(d),w2=D.getUTCDay()===5;
@@ -587,8 +578,8 @@ function planSlides(u,startIdx){
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
  const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${leaf.length}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${leaf.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
- const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span><span class="pnote">${L==="en"?"A.1–A.5: proposed durations / links within the 4 working days":"A.1–A.5: مدد وعلاقات مقترحة ضمن 4 أيام عمل"}</span></div>`;
- const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+1))}</section>`;
+ const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span></div>`;
+ const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="--kn:${keys.length};top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+1))}</section>`;
  /* slide 3 : flow + key notes + what-if */
  const A=C.R.A,sh=A?`${fL(iso(A.s))} → ${fL(iso(A.f))} · <bdi>${A.ef-A.es+1}</bdi> ${pu.wd}`:"";
  const kidsA=C.rows.filter(x=>x.t.parent==="A");
@@ -973,7 +964,7 @@ async function exportPPTX(){
     tx(s1,txt,lx+(k==="dep"?0:.36),1.1,w,.26,{fontSize:9,color:"333333"});lx+=w+.3});
    const cols=[.42,2.95,.85,.55,.72,.72],INFO=cols.reduce((a,b)=>a+b,0),cx0=.4+INFO,cW=W-.4-cx0,top=1.45;
    const d0=C.st-8,d1=C.en+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
-   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,SPS=planSpans(C),OV2=SPS.length*.3,MH=0,rh=Math.min(.46,(5.98-top-hH-OV-OV2)/Math.max(1,n)),y0=top+hH,yS=y0+OV,yM=yS+OV2,yR=yM+MH,bodyY=y0,bodyH=OV+OV2+MH+n*rh;
+   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,SPS=planSpans(C),OV2=SPS.length*.3,MH=0,rh=Math.min(.7,(5.98-top-hH-OV-OV2)/Math.max(1,n)),y0=top+hH,yS=y0+OV,yM=yS+OV2,yR=yM+MH,bodyY=y0,bodyH=OV+OV2+MH+n*rh;
    /* header */
    const ch=[pu.sr,pu.act,pu.pred,pu.dur,pu.start,pu.fin];let ax=.4;
    s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:top,w:INFO,h:hH,fill:{color:DARK},line:{color:DARK}});
@@ -1007,7 +998,7 @@ async function exportPPTX(){
     const w=(SP.f-SP.s+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(SP.s),w),y:yy+.04,w,h:h-.08,fill:{color:cc},line:{color:cc},rectRadius:.04});
     tx(s1,`${SP.dur} ${pu.wd}`,xp(SP.s),yy+.04,w,h-.08,{fontSize:8,bold:true,color:"FFFFFF",align:"center"})});
    /* rows */
-   const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>yR+r*rh,bh=Math.min(.26,rh*.58),fz=rh>=.4?9:rh>=.3?8.5:7.5;
+   const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>yR+r*rh,bh=Math.min(.34,rh*.5),fz=rh>=.4?9:rh>=.3?8.5:7.5;
    C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF",sub=r.depth>0,dur=r.ef-r.es+1;
     s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y,w:W-.8,h:rh,fill:{color:bg},line:{color:"DFE6EA",width:.5}});
     let x=.4;const vals=[null,strip(t.n[L]),t.pred?`${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?" +"+(+t.lag||0):""}`:pu.none,dur,fS(iso(r.s)),fS(iso(r.f))];
@@ -1031,7 +1022,7 @@ async function exportPPTX(){
     s1.addShape(P.ShapeType.roundRect,{x:mx(x-.95,.92),y:y0+.06,w:.92,h:.17,fill:{color:"C8503F"},line:{color:"C8503F"},rectRadius:.08});tx(s1,`${pu.status} · ${fS(iso(sdy))}`,x-.95,y0+.06,.92,.17,{fontSize:6.5,bold:true,color:"FFFFFF",align:"center"})}
    s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hH+bodyH,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
    /* key cards */
-   const cw=(W-.8-4*.12)/5,ky=Math.max(6.0,top+hH+bodyH+.12);
+   const cw=(W-.8-(keys.length-1)*.12)/keys.length,ky=Math.max(6.0,top+hH+bodyH+.12);
    keys.forEach(({k,d},i)=>{const x=.4+i*(cw+.12),colr=["3D3935","C8503F","00778B","2E9E6B","D68A00"][i%5],fin=i===keys.length-1;
     s1.addShape(P.ShapeType.roundRect,{x:mx(x,cw),y:ky,w:cw,h:.9,fill:{color:fin?DARK:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.07,shadow:{type:"outer",color:"000000",opacity:.12,blur:5,offset:2,angle:90}});
     s1.addShape(P.ShapeType.rect,{x:mx(x+.06,cw-.12),y:ky,w:cw-.12,h:.06,fill:{color:colr},line:{color:colr}});
