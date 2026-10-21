@@ -112,7 +112,9 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
 /* timeline view */
-.dense .tmk{width:56px;height:56px;font-size:16px;border-width:4px}.dense .tcard{padding:8px 12px 6px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:12.5px;padding-inline-end:24px;line-height:1.1}.dense .tt{font-size:17px;margin-top:2px;line-height:1.15}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:13px;line-height:1.28;margin-top:3px;-webkit-line-clamp:3}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
+.trow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-inline-end:30px}.tdate{position:relative;font-weight:800;font-size:26px;color:var(--dark);line-height:1.1;border-bottom:3px solid var(--c);padding-bottom:1px;white-space:nowrap}.tdate small{font-size:.55em;color:var(--muted);font-weight:700}.tevn{font-size:15px;font-weight:800;color:#fff;background:var(--c);border-radius:12px;padding:2px 11px;white-space:nowrap}.lgn{width:22px!important;height:22px!important;border-radius:50%!important;background:#555;color:#fff;font-style:normal;font-size:12px;font-weight:800;text-align:center;line-height:22px}
+.dense .tdate{font-size:19px}.dense .tdate small{font-size:.62em}.dense .tevn{font-size:11.5px;padding:1px 8px}.dense .trow{padding-inline-end:22px}
+.dense .tmk{width:52px;height:52px;font-size:17px;border-width:4px}.dense .tcard{padding:7px 11px 5px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:11.5px;padding-inline-end:0;line-height:1.08;margin-top:3px}.dense .tt{font-size:16.5px;margin-top:1px;line-height:1.12;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:12.5px;line-height:1.25;margin-top:2px;-webkit-line-clamp:2}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
 .gp{display:none}
 .tl.hov .tcard,.tl.hov .tmk,.tl.hov .tstem,.tl.hov .tdt{opacity:.25}
 .tl .tcard,.tl .tmk,.tl .tstem,.tl .tdt{transition:opacity .15s,transform .15s,box-shadow .15s}
@@ -134,9 +136,9 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .tgap{position:absolute;width:110px;height:32px;line-height:32px;text-align:center;background:#eef3f5;border:1px solid #cfd9de;border-radius:16px;font-weight:700;font-size:16px;color:#556;z-index:2}
 .tcard{position:absolute;background:#fff;border-radius:18px;box-shadow:0 8px 26px #1b2a3322;border-top:10px solid var(--c);padding:14px 24px 12px;display:flex;flex-direction:column;overflow:hidden;z-index:2}
 
-.ttag{font-size:17px;font-weight:800;color:var(--c);padding-inline-end:34px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ttag{font-size:16px;font-weight:800;color:var(--c);margin-top:6px;padding-inline-end:0;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 [dir=rtl] .ttag{letter-spacing:0}
-.tt{font-size:30px;font-weight:800;color:var(--dark);line-height:1.2;margin-top:6px}
+.tt{font-size:28px;font-weight:800;color:var(--dark);line-height:1.2;margin-top:4px}
 .tmeta{font-size:18px;font-weight:700;color:var(--muted);margin-top:6px}
 .tdsc{font-size:23px;line-height:1.4;color:#444d55;margin-top:8px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
 .tcard [data-b]:focus{-webkit-line-clamp:unset!important;display:block!important}
@@ -257,10 +259,10 @@ const SH={en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov",
 const DN={en:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],ar:["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]};
 const DS={en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],ar:["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"]};
 const D1={en:["S","M","T","W","T","F","S"],ar:["ح","ن","ث","ر","خ","ج","س"]};
-const UI={en:{days:"days",day1:"day",same:"Same day",act:"Activity / Milestone",lm:"Milestone",lp:"Phase span",la:"Duration until next step",
+const UI={en:{days:"days",day1:"day",same:"Same day",evn:"Event No.",act:"Activity / Milestone",lm:"Milestone",lp:"Phase span",la:"Duration until next step",
   total:"days · permit request → permit ready",susp:"days · suspension → permit ready",cnt:"milestones",
   dTitle:"Edit milestone dates",shift:"Shift all dates by (days):",shiftB:"Apply",pn:"UFWL Project"},
- ar:{days:"يوم",day1:"يوم",same:"نفس اليوم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
+ ar:{days:"يوم",day1:"يوم",same:"نفس اليوم",evn:"حدث رقم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
 function defaults(){return{v:2,lang:"en",view:"gantt",ts:0,
@@ -355,27 +357,28 @@ function render(){
 function tlPages(TR){const items=TR.flatMap(P=>P.items.map(o=>({...o,P})));const per=6,np=Math.max(1,Math.ceil(items.length/per)),sz=Math.ceil(items.length/np)||1,pg=[];for(let i=0;i<items.length;i+=sz)pg.push(items.slice(i,i+sz));return {pages:pg.length?pg:[[]],all:items}}
 /* lane layouts: few milestones -> 2 big lanes; many -> 4 staggered lanes so everything fits on ONE slide */
 function tlLayout(n){const dense=n>7;
- return dense?{dense:true,AY:586,MD:56,H:175,lanes:[{up:1,y:353},{up:0,y:644},{up:1,y:165},{up:0,y:832}]}
-  :{dense:false,AY:545,MD:76,H:300,lanes:[{up:1,y:165},{up:0,y:627}]}}
+ return dense?{dense:true,AY:586,MD:52,H:150,lanes:[{up:1,y:378},{up:0,y:644},{up:1,y:216},{up:0,y:806}]}
+  :{dense:false,AY:545,MD:72,H:240,lanes:[{up:1,y:225},{up:0,y:627}]}}
 const esc2=s=>String(s).replace(/"/g,"&quot;");
+const fDayY=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]} ${D.getUTCFullYear()}`};
 function tlBuild(all,u){
- const n=all.length,lay=tlLayout(n),X0=90,XW=1740,sp=XW/Math.max(n,1),L_=lay.lanes.length,cw=lay.dense?Math.min(400,sp*(L_-.7)):Math.min(520,sp*1.7);
+ const n=all.length,lay=tlLayout(n),X0=90,XW=1740,sp=XW/Math.max(n,1),L_=lay.lanes.length,cw=lay.dense?Math.min(330,sp*(L_-.9)):Math.min(470,sp*1.6);
  let segs="",chips="",cards="",marks="",px=X0;
  all.forEach((o,i)=>{const m=o.m,c=S.ph[o.P.pid].c,cx=X0+(i+.5)*sp,ln=lay.lanes[i%L_],up=!!ln.up,E=endOf(m),s0=dn(m.date),prev=i>0?all[i-1].m:null;
   segs+=`<i class="tseg" style="--c:${c};inset-inline-start:${px}px;width:${cx-px}px;top:${lay.AY-5}px"></i>`;px=cx;
   if(prev&&sp>=200){const gp=s0-dn(prev.date);chips+=`<span class="tgap" style="inset-inline-start:${cx-sp/2-55}px;top:${lay.AY-16}px">${gp===0?u.same:`<bdi>+${gp}</bdi> ${gp===1?u.day1:u.days}`}</span>`}
-  const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${lay.dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · <bdi>${days}</bdi> ${u.days}`:(lay.dense?fDay(s0):fL(m.date));
+  const days=E!==null?E-s0+1:0,dtxt=E!==null&&E!==s0?`${fDay(s0)} → ${fS(m.end)} <small>(<bdi>${days}</bdi> ${u.days})</small>`:fDayY(s0);
   const stemTop=up?ln.y+lay.H:lay.AY+lay.MD/2,stemH=up?lay.AY-lay.MD/2-(ln.y+lay.H):ln.y-(lay.AY+lay.MD/2);
-  marks+=`<i class="tstem" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${o.code}</div>`;
-  if(!lay.dense)marks+=`<div class="tdt" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-95}px;top:${up?lay.AY+53:lay.AY-75}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
+  marks+=`<i class="tstem" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" data-i="${m.id}" title="${u.evn} ${i+1}" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${i+1}</div>`;
   cards+=`<div class="tcard" data-i="${m.id}" style="--c:${c};width:${cw}px;height:${lay.H}px;top:${ln.y}px;inset-inline-start:${Math.max(30,Math.min(1890-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
-   <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}${lay.dense?`<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}">`:""}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
+   <div class="trow"><span class="tdate">${dtxt}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></span><span class="tevn">${u.evn} <bdi>${i+1}</bdi></span></div>
+   <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
  if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px;top:${lay.AY-5}px"></i>`;
  return `<div class="taxis">${segs}</div>${chips}${marks}${cards}`}
 function tlRender(deck,TR,u,M,d1,e0){
  const {all}=tlPages(TR);const dense=all.length>7;
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
- const legend=`<div class="legend" style="font-size:18px;font-weight:600;gap:34px">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L])}</span>`).join("")}</div>`;
+ const legend=`<div class="legend" style="font-size:18px;font-weight:600;gap:34px">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L])}</span>`).join("")}<span><i class="lgn">N</i>${u.evn}</span></div>`;
  pageCount=1;curPage=0;
  deck.innerHTML=`<section class="gs tl on ${dense?"dense":""}" data-pg="0"><div class="hd"><div>${B("x|titleTl","h1","",S.tx.titleTl[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}${tlBuild(all,u)}
   <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div></section>`;
@@ -591,8 +594,8 @@ async function exportPPTX(){
    let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]);const w=.3+nm.length*.058;
     sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.17,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
     tx(sl,nm,lx+.34,1.1,w,.26,{fontSize:9,bold:true,color:"333333"});lx+=w+.4});
-   const lanes=dense?[{up:1,y:2.62,h:1.15},{up:0,y:4.63,h:1.15},{up:1,y:1.42,h:1.15},{up:0,y:5.85,h:1.15}]:[{up:1,y:1.5,h:1.85},{up:0,y:4.7,h:1.85}];
-   const AY=dense?4.2:4.0,MD=dense?.5:.56,X0=.6,XW=12.1,sp=XW/Math.max(n,1),cw=dense?Math.min(3.3,sp*(lanes.length-.7)):Math.min(3.5,sp*1.7);let px=X0;
+   const lanes=dense?[{up:1,y:2.77,h:1.0},{up:0,y:4.63,h:1.0},{up:1,y:1.65,h:1.0},{up:0,y:5.75,h:1.0}]:[{up:1,y:1.9,h:1.6},{up:0,y:4.5,h:1.6}];
+   const AY=dense?4.2:4.0,MD=dense?.46:.56,X0=.6,XW=12.1,sp=XW/Math.max(n,1),cw=dense?Math.min(2.9,sp*(lanes.length-.9)):Math.min(3.4,sp*1.6);let px=X0;
    const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
    all.forEach((o,i)=>{const cx=X0+(i+.5)*sp;seg(px,cx,hexOf(S.ph[o.P.pid].c));px=cx});seg(px,X0+XW,"C9D3D8");
    all.forEach((o,i)=>{const m=o.m,c=hexOf(S.ph[o.P.pid].c),cx=X0+(i+.5)*sp,ln=lanes[i%lanes.length],up=!!ln.up,E=endOf(m),s0=dn(m.date),prev=i>0?all[i-1].m:null;
@@ -602,19 +605,19 @@ async function exportPPTX(){
      sl.addShape(P.ShapeType.roundRect,{x:mx(mid-.42,.84),y:AY-.14,w:.84,h:.28,fill:{color:"EEF3F5"},line:{color:"CFD9DE",width:.75},rectRadius:.14});
      tx(sl,gp===0?u.same:`+${gp} ${gp===1?u.day1:u.days}`,mid-.42,AY-.14,.84,.28,{fontSize:8.5,bold:true,color:"556070",align:"center"})}
     sl.addShape(P.ShapeType.ellipse,{x:mx(cx-MD/2,MD),y:AY-MD/2,w:MD,h:MD,fill:{color:c},line:{color:"FFFFFF",width:2.5},shadow:{type:"outer",color:"000000",opacity:.25,blur:4,offset:1.5,angle:90}});
-    tx(sl,o.code,cx-MD/2,AY-MD/2,MD,MD,{fontSize:dense?9:12,bold:true,color:"FFFFFF",align:"center"});
-    if(!dense){const dy=up?AY+.34:AY-.64;
-     sl.addShape(P.ShapeType.roundRect,{x:mx(cx-.7,1.4),y:dy,w:1.4,h:.3,fill:{color:"FFFFFF"},line:{color:c,width:1.25},rectRadius:.15});
-     tx(sl,fDay(s0),cx-.7,dy,1.4,.3,{fontSize:10,bold:true,color:c,align:"center"})}
+    tx(sl,i+1,cx-MD/2,AY-MD/2,MD,MD,{fontSize:dense?11:14,bold:true,color:"FFFFFF",align:"center"});
     sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:ln.y,w:cw,h:ln.h,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.08,shadow:{type:"outer",color:"000000",opacity:.14,blur:6,offset:2,angle:90}});
     sl.addShape(P.ShapeType.rect,{x:mx(cxl+.08,cw-.16),y:ln.y,w:cw-.16,h:.06,fill:{color:c},line:{color:c}});
-    const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · ${days} ${u.days}`:(dense?fDay(s0):fL(m.date));
-    const f=dense?{tag:7.5,t:9.5,m:7.5,d:7.5}:{tag:10,t:15,m:9.5,d:11.5};
+    const days=E!==null?E-s0+1:0,dtxt=E!==null&&E!==s0?`${fDay(s0)} → ${fS(m.end)} (${days} ${u.days})`:fDayY(s0);
+    const chW=dense?.82:1.05,chH=dense?.19:.24;
+    sl.addShape(P.ShapeType.roundRect,{x:mx(cxl+cw-.1-chW,chW),y:ln.y+.1,w:chW,h:chH,fill:{color:c},line:{color:c},rectRadius:chH/2});
+    tx(sl,`${u.evn} ${i+1}`,cxl+cw-.1-chW,ln.y+.1,chW,chH,{fontSize:dense?6.5:8.5,bold:true,color:"FFFFFF",align:"center"});
+    tx(sl,dtxt,cxl+.1,ln.y+.08,cw-.2-chW-.05,chH+.04,{fontSize:dense?9:13,bold:true,color:"3D3935"});
+    const f=dense?{tag:6.5,t:9,d:7}:{tag:9,t:14,d:11};
     sl.addText([{text:strip(S.ph[o.P.pid].n[L]),options:{fontSize:f.tag,bold:true,color:c,breakLine:true}},
      {text:strip(m.t[L]),options:{fontSize:f.t,bold:true,color:"3D3935",breakLine:true}},
-     {text:meta,options:{fontSize:f.m,bold:true,color:"66707A",breakLine:true}},
      {text:strip(m.d[L]),options:{fontSize:f.d,color:"444D55"}}],
-     {x:mx(cxl+.1,cw-.2),y:ln.y+.1,w:cw-.2,h:ln.h-.14,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:dense?1:3})});
+     {x:mx(cxl+.1,cw-.2),y:ln.y+chH+.16,w:cw-.2,h:ln.h-chH-.22,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:dense?1:3})});
   }else{
   /* 3 – gantt pages */
   const rowsAll=[];TR.forEach(p=>{rowsAll.push({g:p});p.items.forEach(o=>rowsAll.push({o,p}))});
