@@ -148,7 +148,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .sumrow .c2 b{font-weight:800;font-size:17px}.subrow .c2{padding-inline-start:26px;font-size:15.5px}.subrow .c1{padding-inline-start:20px}
 .pgantt.cp .ptask .c2{font-size:14.5px;line-height:1.1}.pgantt.cp .subrow .c2{font-size:14px}.pgantt.cp .pbadge{width:28px;height:28px;font-size:14px}.pgantt.cp .pbadge.sub{width:auto;height:22px;font-size:12px}.pgantt.cp .c4{font-size:17px}.pgantt.cp .c5,.pgantt.cp .c6,.pgantt.cp .c3{font-size:15px}
 .pbar.sum{border-radius:2px;box-shadow:none;height:14px}.pbar.sum:before,.pbar.sum:after{content:"";position:absolute;top:100%;border-style:solid;border-width:7px 6px 0 6px;border-color:var(--c) transparent transparent transparent}.pbar.sum:before{inset-inline-start:0}.pbar.sum:after{inset-inline-end:0}
-.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
+.plleg .pnote{margin-inline-start:auto;font-size:14px;font-style:italic;color:var(--muted)}.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
 .pov0 .pinfo{background:#fff}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
 .pfl small{display:block;font-size:15px;font-weight:700;color:#7a3a30;margin-top:6px}.pfl>div span{margin-top:0}
 .passume{font-size:16px;color:var(--muted);margin-top:10px;font-style:italic}
@@ -560,8 +560,8 @@ function planSlides(u,startIdx){
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
  const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${leaf.length}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${leaf.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
- const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span></div>`;
- const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+2))}</section>`;
+ const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span><span class="pnote">${L==="en"?"A.1–A.5: proposed durations / links within the 6 working days":"A.1–A.5: مدد وعلاقات مقترحة ضمن 6 أيام عمل"}</span></div>`;
+ const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+1))}</section>`;
  /* slide 3 : flow + key notes + what-if */
  const A=C.R.A,sh=A?`${fL(iso(A.s))} → ${fL(iso(A.f))} · <bdi>${A.ef-A.es+1}</bdi> ${pu.wd}`:"";
  const kidsA=C.rows.filter(x=>x.t.parent==="A");
@@ -574,7 +574,7 @@ function planSlides(u,startIdx){
   <div class="pbd"><div class="psec"><h3>${pu.secF}</h3><div class="pfsub">${sh}</div><div class="pflow">${flow}</div><div class="passume">${pu.assume}</div></div>
    <div class="pcols"><div class="pkcol"><h3>${pu.secK}</h3>${kt}${wh}</div><div class="pncol"><h3>${pu.secN}</h3><ol>${notes}</ol></div></div>
    <div class="psrc">${pu.src}</div></div>${ftr(" · "+(startIdx+2)+"/"+(startIdx+2))}</section>`;
- return s2+s3}
+ return s2}
 
 
 /* ---- schedule dialog ---- */
@@ -979,28 +979,6 @@ async function exportPPTX(){
     tx(s1,strip(k.t[L]),x+.12,ky+.1,cw-.24,.22,{fontSize:8.5,bold:true,color:fin?"CFD8DC":"66707A"});
     tx(s1,fDayY(d),x+.12,ky+.32,cw-.24,.32,{fontSize:13,bold:true,color:fin?"FFFFFF":DARK});
     tx(s1,`${pu.wdn} ${wdIdxOf(C,d)+1} / ${C.tot}`,x+.12,ky+.64,cw-.24,.2,{fontSize:7.5,bold:true,color:fin?"CFD8DC":"66707A"})});
-   /* slide 2: shoring sequence, key dates, notes */
-   const s2=P.addSlide({masterName:"SAR"});head(s2,strip(S.tx.flowTitle[L]),strip(S.tx.flowSub[L]));
-   const sec=(txt,x,y,w)=>{s2.addShape(P.ShapeType.rect,{x:mx(x,.06),y:y+.04,w:.06,h:.28,fill:{color:ACC},line:{color:ACC}});tx(s2,txt,x+.16,y,w,.36,{fontSize:15,bold:true,color:DARK})};
-   sec(pu.secF,.4,1.2,8);const A=C.R.A;
-   if(A)tx(s2,`${fL(iso(A.s))} → ${fL(iso(A.f))} · ${A.ef-A.es+1} ${pu.wd}`,.56,1.55,9,.28,{fontSize:11,bold:true,color:"C8503F"});
-   const fw=(W-.8)/5;PL.flow.forEach((f,i)=>{const x=.4+i*fw;
-    s2.addShape(P.ShapeType.chevron,{x:mx(x,fw+.08),y:1.95,w:fw+.08,h:1.15,fill:{color:"F4DAD6"},line:{color:"F4DAD6"},flipH:rtl});
-    s2.addShape(P.ShapeType.ellipse,{x:mx(x+.4,.3),y:2.05,w:.3,h:.3,fill:{color:"C8503F"},line:{color:"C8503F"}});tx(s2,i+1,x+.4,2.05,.3,.3,{fontSize:10,bold:true,color:"FFFFFF",align:"center"});
-    const kd=C.rows.filter(q=>q.t.parent==="A")[i];
-    tx(s2,strip(f[L]),x+.42,2.36,fw-.75,.45,{fontSize:11,bold:true,color:DARK,valign:"top"});
-    if(kd)tx(s2,`${fS(iso(kd.s))} → ${fS(iso(kd.f))} · ${kd.ef-kd.es+1} ${pu.d}${kd.t.pred?` · ${kd.t.pred} ${kd.t.link}${kd.t.link==="SS"?" +"+(+kd.t.lag||0):""}`:""}`,x+.42,2.78,fw-.75,.25,{fontSize:7.5,bold:true,color:"7A3A30",valign:"top"})});
-   tx(s2,pu.assume,.4,3.12,W-.8,.2,{fontSize:7.5,color:"66707A"});
-   sec(pu.secK,.4,3.35,4);
-   keys.forEach(({k,d},i)=>{const y=3.82+i*.34;s2.addShape(P.ShapeType.rect,{x:mx(.4,4.6),y,w:4.6,h:.34,fill:{color:i%2?"F6F9FA":"FFFFFF"},line:{color:"DFE6EA",width:.5}});
-    tx(s2,strip(k.t[L]),.5,y,2.5,.34,{fontSize:9.5,color:"4A555D"});tx(s2,fDayY(d),2.9,y,2.0,.34,{fontSize:9.5,bold:true,color:DARK,align:"right"})});
-   const alt=planCalc({...PL,start:iso(statusDay())}),delta=alt.en-C.en;
-   s2.addShape(P.ShapeType.roundRect,{x:mx(.4,4.6),y:5.65,w:4.6,h:1.05,fill:{color:"FFF6E5"},line:{color:"F0C36D",width:1},rectRadius:.08});
-   tx(s2,pu.secW,.55,5.7,4.3,.25,{fontSize:9.5,bold:true,color:"9A6A00"});
-   tx(s2,`${pu.whatif} ${fL(iso(alt.st))} (${pu.perm}) → ${pu.shift} ${fL(iso(alt.en))} (+${delta} ${pu.sh2}).`,.55,5.95,4.3,.72,{fontSize:9.5,color:"3D3935",valign:"top"});
-   sec(pu.secN,5.4,3.35,6);
-   s2.addText(PL.notes.map((q,i)=>({text:strip(q[L]),options:{bullet:{type:"number"},fontSize:10.5,color:"333333",breakLine:true,paraSpaceAfter:6}})),{x:mx(5.5,7.4),y:3.8,w:7.4,h:2.95,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink"});
-   tx(s2,pu.src,.4,6.78,W-.8,.25,{fontSize:7.5,color:"66707A"});
   }
   await P.writeFile({fileName:`UFWL_Gantt_${L.toUpperCase()}.pptx`});
  }catch(e){console.error(e);alert((L==="en"?"Could not create PowerPoint: ":"تعذر إنشاء ملف PowerPoint: ")+e.message)}
