@@ -150,7 +150,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pgantt.cp .ptask .c2{font-size:14.5px;line-height:1.1}.pgantt.cp .subrow .c2{font-size:14px}.pgantt.cp .pbadge{width:28px;height:28px;font-size:14px}.pgantt.cp .pbadge.sub{width:auto;height:22px;font-size:12px}.pgantt.cp .c4{font-size:17px}.pgantt.cp .c5,.pgantt.cp .c6,.pgantt.cp .c3{font-size:15px}
 .pbar.sum{border-radius:2px;box-shadow:none;height:14px}.pbar.sum:before,.pbar.sum:after{content:"";position:absolute;top:100%;border-style:solid;border-width:7px 6px 0 6px;border-color:var(--c) transparent transparent transparent}.pbar.sum:before{inset-inline-start:0}.pbar.sum:after{inset-inline-end:0}
 .pbase{position:absolute;height:6px;border-radius:3px;background:#8a959c;opacity:.85;z-index:2}.plleg .lbase{display:inline-block;width:30px;height:6px;border-radius:3px;background:#8a959c;margin-inline-end:7px;vertical-align:middle}.plleg .pnote{margin-inline-start:auto;font-size:14px;font-style:italic;color:var(--muted)}.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
-.pov0 .pinfo{background:#fff}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
+.pov0 .pinfo{background:#fff}.pbar.spn{background:#6C4AB6;border-radius:6px;box-shadow:none}.pbar.spn em{font-size:15px}.psp .pinfo{background:#faf8ff}.psp .c2 b{font-weight:800;font-size:15.5px;color:#4a3a86}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
 .pfl small{display:block;font-size:15px;font-weight:700;color:#7a3a30;margin-top:6px}.pfl>div span{margin-top:0}
 .passume{font-size:16px;color:var(--muted);margin-top:10px;font-style:italic}
 .pdt{position:relative;display:inline-block;border-bottom:2px dashed var(--accent);cursor:pointer;padding:0 2px}.pdt input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
@@ -342,7 +342,7 @@ const UI={en:{days:"days",day1:"day",same:"Same day",evn:"Event No.",act:"Activi
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
 function defaults(){return{v:2,lang:"en",view:"gantt",auto:true,plan:defPlan(),ts:0,
- tx:{planTitle:T("Remaining Works – Shoring & Pit Works Programme","الأعمال المتبقية – برنامج أعمال الدعم والحفرة"),planSub:T("RYDN-WLB pit works · Initial re-plan based on the contractor programme (Rev 01) · Commencement 22 Oct 2026","أعمال حفرة RYDN-WLB · التصور الأولي المعاد تخطيطه بناءً على برنامج المقاول (Rev 01) · البدء 22 أكتوبر 2026"),flowTitle:T("Shoring Activities & Planning Basis","أنشطة الدعم (Shoring) وأسس الجدول"),flowSub:T("Sequence of shoring works, key dates and conditions of the proposed programme","تسلسل أعمال الدعم والتواريخ الرئيسية وشروط البرنامج المقترح"),title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
+ tx:{planSpan:T("Concrete works to backfilling – total time required","أعمال الخرسانة حتى الردم – إجمالي الوقت المطلوب"),planTitle:T("Remaining Works – Shoring & Pit Works Programme","الأعمال المتبقية – برنامج أعمال الدعم والحفرة"),planSub:T("RYDN-WLB pit works · Initial re-plan based on the contractor programme (Rev 01) · Commencement 22 Oct 2026","أعمال حفرة RYDN-WLB · التصور الأولي المعاد تخطيطه بناءً على برنامج المقاول (Rev 01) · البدء 22 أكتوبر 2026"),flowTitle:T("Shoring Activities & Planning Basis","أنشطة الدعم (Shoring) وأسس الجدول"),flowSub:T("Sequence of shoring works, key dates and conditions of the proposed programme","تسلسل أعمال الدعم والتواريخ الرئيسية وشروط البرنامج المقترح"),title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
 const PAL=["#8E5BB5","#D68A00","#1F6FB2","#B5446E","#4B8B3B"];
@@ -352,7 +352,8 @@ const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
  c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan();else if(S.plan.ver!==3){const d=defPlan(),has=S.plan.tasks.some(x=>x.parent);if(!has&&S.plan.tasks.some(x=>x.id==="A")){const i=S.plan.tasks.findIndex(x=>x.id==="A");S.plan.tasks.splice(i+1,0,...d.tasks.filter(x=>x.parent==="A"))}
   d.tasks.filter(x=>["A","A1","A2","A3","A4","A5","B","C","D","E"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o){o.dur=x.dur;o.pred=x.pred;o.link=x.link;o.lag=x.lag;delete o.fix}});S.plan.ver=3}
- if(S.plan.ver===3){S.plan.start="2026-10-22";S.plan.ver=4;S.tx.planSub=defaults().tx.planSub}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ if(S.plan.ver===3){S.plan.start="2026-10-22";S.plan.ver=4;S.tx.planSub=defaults().tx.planSub}
+ if(S.plan.ver===4){const d=defPlan();d.tasks.filter(x=>["C","D","E","F","G"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o)o.dur=x.dur});S.plan.span=d.span;S.plan.ver=5}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -480,7 +481,7 @@ function goRow2(id){}
  d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* ================= REMAINING WORKS PLAN (CPM-style Gantt) ================= */
-function defPlan(){const T_=T;return{ver:4,start:"2026-10-22",
+function defPlan(){const T_=T;return{ver:5,start:"2026-10-22",
  tasks:[
   {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:4},
   {id:"A1",parent:"A",n:T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),c:"#D9695A",pred:null,link:"FS",lag:0,dur:2},
@@ -489,11 +490,12 @@ function defPlan(){const T_=T;return{ver:4,start:"2026-10-22",
   {id:"A4",parent:"A",n:T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),c:"#D9695A",pred:"A3",link:"SS",lag:1,dur:1},
   {id:"A5",parent:"A",n:T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)"),c:"#D9695A",pred:"A4",link:"SS",lag:0,dur:1},
   {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:4,dur:1},
-  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:3},
-  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:9},
-  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:5},
-  {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"D",link:"FS",lag:0,dur:12},
-  {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:5}],
+  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:2},
+  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:5},
+  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:3},
+  {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"D",link:"FS",lag:0,dur:6},
+  {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:3}],
+ span:{from:"C",to:"G"},
  keys:[{t:T_("Commencement","بدء الأعمال"),task:"*",w:"s"},{t:T_("Shoring installation complete","اكتمال تركيب نظام الدعم"),task:"A",w:"f"},{t:T_("Pit works complete (pit wall)","اكتمال أعمال الحفرة (جدار الحفرة)"),task:"E",w:"f"},{t:T_("Building foundation complete","اكتمال أساسات المبنى"),task:"F",w:"f"},{t:T_("Overall completion","الإنجاز الكلي"),task:"*",w:"f"}],
  flow:[T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),T_("Installation of H-Beam","تركيب أعمدة H-Beam"),T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)")],
  notes:[T_("Commencement of each activity is subject to issuance of the work permit and timely approval of Work Inspection Requests (WIRs) and Material Inspection Requests (MIRs). Any delay in permit issuance or WIR / MIR approval will shift the affected activity and all succeeding activities accordingly.","بدء كل نشاط مشروط بإصدار تصريح العمل والموافقة في الوقت المناسب على طلبات فحص الأعمال (WIR) وطلبات فحص المواد (MIR). أي تأخير في إصدار التصريح أو اعتماد الطلبات يزيح النشاط المتأثر وكل الأنشطة اللاحقة له."),
@@ -534,6 +536,7 @@ function planCalc(P){P=P||S.plan;const ord=planOrder(P),by=Object.fromEntries(P.
  return{rows,R,st:Math.min(...rows.map(x=>x.s)),en:Math.max(...rows.map(x=>x.f)),tot:end+1}}
 const BASE_ADJ={A:{dur:6},A1:{pred:null,link:"FS",lag:0,dur:2},A2:{pred:"A1",link:"SS",lag:1,dur:3},A3:{pred:"A2",link:"SS",lag:1,dur:3},A4:{pred:"A3",link:"SS",lag:1,dur:3},A5:{pred:"A4",link:"SS",lag:1,dur:2},B:{pred:"A",link:"SS",lag:6,dur:2},C:{pred:"A",link:"FS",lag:0,dur:4},D:{pred:"C",link:"FS",lag:0,dur:10},E:{pred:"D",link:"FS",lag:0,dur:6}};
 function planBase(){const P=S.plan;return planCalc({...P,tasks:P.tasks.map(t=>BASE_ADJ[t.id]?{...t,...BASE_ADJ[t.id],fix:undefined}:{...t})})}
+function planSpan(C){const sp=S.plan.span;if(!sp)return null;const a=C.R[sp.from],b=C.R[sp.to];if(!a||!b)return null;return{s:Math.min(a.s,b.s),f:Math.max(a.f,b.f),dur:Math.max(a.ef,b.ef)-Math.min(a.es,b.es)+1}}
 function planKeys(C){return S.plan.keys.map(k=>{let d=null;
   if(k.task==="*")d=k.w==="s"?C.st:C.en;else{const r=C.R[k.task];if(r)d=k.w==="s"?r.s:r.f}
   return d===null?null:{k,d}}).filter(Boolean)}
@@ -544,7 +547,7 @@ function planSlides(u,startIdx){
  const dcell=(d,attr,id)=>pe?`<span class="pdt">${fS(iso(d))}<input type="date" data-pf="${attr}" ${id?`data-t="${id}"`:""} value="${iso(d)}"></span>`:fS(iso(d));
  const d0=C.st-7,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
  PG={d0,N,CHW};
- const OV=50,MH=96,rh=Math.max(32,Math.min(72,Math.floor(480/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
+ const SPN=planSpan(C),OV2=SPN?42:0,OV=50,MH=96,rh=Math.max(32,Math.min(72,Math.floor((480-OV2)/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
  /* header */
  let mons=[],wk="",wl="",dy="",shade="",last=-1;
  for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth(),x=xp(d),w2=D.getUTCDay()===5;
@@ -564,6 +567,7 @@ function planSlides(u,startIdx){
  const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${dcell(C.st,"cstart")}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}</em></div></div></div>`;
  /* inline schedule editing cells */
  const pcell=t=>`<select data-pf="pred" data-t="${t.id}"><option value="">—</option>${P.tasks.filter(x=>x.id!==t.id&&x.id!==t.parent).map(x=>`<option ${x.id===t.pred?"selected":""}>${x.id}</option>`).join("")}</select><select data-pf="link" data-t="${t.id}"><option ${t.link==="FS"?"selected":""}>FS</option><option ${t.link==="SS"?"selected":""}>SS</option></select><input class="pnum plag" type="number" min="0" data-pf="lag" data-t="${t.id}" value="${+t.lag||0}" title="Lag">`;
+ const srow=SPN?`<div class="prow psp" style="height:${OV2}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#6C4AB6">⟷</i></span><span class="c2">${B("x|planSpan","b","",S.tx.planSpan[L])}</span><span class="c3">${pu.none}</span><span class="c4"><bdi>${SPN.dur}</bdi></span><span class="c5">${fS(iso(SPN.s))}</span><span class="c6">${fS(iso(SPN.f))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar spn" style="inset-inline-start:${xp(SPN.s)}px;width:${(SPN.f-SPN.s+1)*dw}px;height:26px;top:8px"><em><bdi>${SPN.dur}</bdi> ${pu.wd}</em></div></div></div>`:"";
  /* task rows */
  const rowsH=C.rows.map((r,i)=>{const t=r.t,c=t.c,pt=t.pred?C.R[t.pred]:null,lk=pt?`<span dir="ltr">${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?` +${+t.lag||0}`:""}</span>`:pu.none;
   const dur=r.ef-r.es+1,w=(r.f-r.s+1)*dw,sub=r.depth>0,cls=`${i%2?"z":""} ${r.sum?"sumrow":""} ${sub?"subrow":""}`;
@@ -572,12 +576,12 @@ function planSlides(u,startIdx){
   return `<div class="prow ptask ${cls}" data-t="${t.id}" data-s="${r.s}" data-e="${r.f}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${pe?pcell(t):lk}</span><span class="c4">${pe&&!r.sum?`<input class="pnum" type="number" min="1" data-pf="dur" data-t="${t.id}" value="${+t.dur||1}">`:`<bdi>${dur}</bdi>`}</span><span class="c5">${dcell(r.s,"start",t.id)}${pe&&t.fix?`<button class="pfix" data-pf="unfix" data-t="${t.id}" title="Remove fixed start / إلغاء تثبيت البداية">📌</button>`:""}</span><span class="c6">${pe&&!r.sum?dcell(r.f,"finish",t.id):fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
    <div class="pch" style="width:${CHW}px">${bar}</div></div>`}).join("");
  /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
- const rowTop=i=>OV+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
+ const rowTop=i=>OV+OV2+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
  let svg="";C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=cy(i),yP=cy(pi);
   if(t.link==="SS"){const x0=xp(p.s)+8;svg+=`<path d="M${x0} ${yP+bh/2} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}
   else{const xe=xp(p.f+1),xm=Math.min(xs-6,xe+dw*.5);svg+=`<path d="M${xe} ${yP} H${xm} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}});
  const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b style="top:15px;inset-inline-start:auto;inset-inline-end:6px">${pu.status} · ${fS(iso(sd))}</b></div>`:"";
- const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""} ${pe?"pedit":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<div class="pvb"></div><div class="prl"></div><div class="prt"></div><svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
+ const gh=HH+OV+OV2+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""} ${pe?"pedit":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${srow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+OV2+MH+n*rh}px">${shade}<div class="pvb"></div><div class="prl"></div><div class="prt"></div><svg width="${CHW}" height="${OV+OV2+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
  /* key cards */
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
@@ -968,7 +972,7 @@ async function exportPPTX(){
     tx(s1,txt,lx+(k==="dep"?0:.36),1.1,w,.26,{fontSize:9,color:"333333"});lx+=w+.3});
    const cols=[.42,2.95,.85,.55,.72,.72],INFO=cols.reduce((a,b)=>a+b,0),cx0=.4+INFO,cW=W-.4-cx0,top=1.45;
    const d0=C.st-8,d1=C.en+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
-   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,MH=.7,rh=Math.min(.46,(5.98-top-hH-OV-MH)/Math.max(1,n)),y0=top+hH,yM=y0+OV,yR=yM+MH,bodyY=y0,bodyH=OV+MH+n*rh;
+   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,SPN=planSpan(C),OV2=SPN?.3:0,MH=.7,rh=Math.min(.46,(5.98-top-hH-OV-OV2-MH)/Math.max(1,n)),y0=top+hH,yS=y0+OV,yM=yS+OV2,yR=yM+MH,bodyY=y0,bodyH=OV+OV2+MH+n*rh;
    /* header */
    const ch=[pu.sr,pu.act,pu.pred,pu.dur,pu.start,pu.fin];let ax=.4;
    s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:top,w:INFO,h:hH,fill:{color:DARK},line:{color:DARK}});
@@ -991,6 +995,15 @@ async function exportPPTX(){
    tx(s1,fS(iso(C.en)),.4+cols[0]+cols[1]+cols[2]+cols[3]+cols[4],y0,cols[5],OV,{fontSize:8.5,bold:true,color:"222222",align:"center"});
    {const w=(C.en-C.st+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(C.st),w),y:y0+.05,w,h:OV-.1,fill:{color:DARK},line:{color:DARK},rectRadius:.05});
     tx(s1,`${C.tot} ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}`,xp(C.st),y0+.05,w,OV-.1,{fontSize:8.5,bold:true,color:"FFFFFF",align:"center"})}
+   /* concrete -> backfilling span row */
+   if(SPN){s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:yS,w:W-.8,h:OV2,fill:{color:"FAF8FF"},line:{color:"DFE6EA",width:.5}});
+    s1.addShape(P.ShapeType.ellipse,{x:mx(.4+(cols[0]-.26)/2,.26),y:yS+(OV2-.26)/2,w:.26,h:.26,fill:{color:"6C4AB6"},line:{color:"6C4AB6"}});tx(s1,"⟷",.4,yS,cols[0],OV2,{fontSize:9,bold:true,color:"FFFFFF",align:"center"});
+    tx(s1,strip(S.tx.planSpan[L]),.4+cols[0]+.08,yS,cols[1]-.1,OV2,{fontSize:8.5,bold:true,color:"4A3A86"});
+    tx(s1,SPN.dur,.4+cols[0]+cols[1]+cols[2],yS,cols[3],OV2,{fontSize:11,bold:true,color:"222222",align:"center"});
+    tx(s1,fS(iso(SPN.s)),.4+cols[0]+cols[1]+cols[2]+cols[3],yS,cols[4],OV2,{fontSize:8.5,bold:true,color:"222222",align:"center"});
+    tx(s1,fS(iso(SPN.f)),.4+cols[0]+cols[1]+cols[2]+cols[3]+cols[4],yS,cols[5],OV2,{fontSize:8.5,bold:true,color:"222222",align:"center"});
+    const w=(SPN.f-SPN.s+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(SPN.s),w),y:yS+.05,w,h:OV2-.1,fill:{color:"6C4AB6"},line:{color:"6C4AB6"},rectRadius:.04});
+    tx(s1,`${SPN.dur} ${pu.wd}`,xp(SPN.s),yS+.05,w,OV2-.1,{fontSize:8,bold:true,color:"FFFFFF",align:"center"})}
    /* milestone row */
    s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:yM,w:INFO,h:MH,fill:{color:"FBFDFD"},line:{color:"DFE6EA",width:.5}});
    tx(s1,"◆  "+pu.ms,.5,yM,INFO-.2,MH,{fontSize:10,bold:true,color:DARK});
