@@ -111,6 +111,12 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr.ph{background:#f2f6f7;font-weight:800}.dr .cd{font-size:12px;color:#667;font-weight:700;min-width:40px}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
+/* pages */
+.gs{position:absolute;inset:0;display:none}.gs.on{display:block;animation:pgin .35s ease}@keyframes pgin{from{opacity:0}to{opacity:1}}
+#pager{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#000c;color:#fff;border-radius:24px;padding:4px 6px;z-index:8;font:700 14px inherit;font-family:inherit}
+#pager button{width:38px;height:34px;border:0;border-radius:18px;background:#ffffff26;color:#fff;font-size:20px;cursor:pointer}#pager button:active{background:#ffffff55}#pNum{min-width:56px;text-align:center}
+body.fs #pager{opacity:0;transition:.3s}body.fs.show #pager{opacity:1}
+.ct{margin-inline-start:8px;font-size:13px;opacity:.85;font-weight:600}
 /* ruler */
 .row.z,.row.z .info{background:#f6f9fa}
 .row.hl,.row.hl .info{background:#e4f1f4!important}
@@ -131,7 +137,8 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
 @page{size:1920px 1080px;margin:0}
 @media print{
  html,body{height:auto;overflow:visible;background:#fff}#tb,#xfs,#dlg,#hint{display:none!important}
- #app,#vp{display:block;height:auto;overflow:visible}#stage{position:static;transform:none!important;box-shadow:none}
+ #app,#vp{display:block;height:auto;overflow:visible}#stage{position:static;transform:none!important;box-shadow:none;height:auto!important}#deck{position:static!important}#pager{display:none!important}
+ .gs{display:block!important;position:relative!important;width:1920px;height:1080px;overflow:hidden;break-after:page;page-break-after:always;animation:none!important}.gs:last-child{break-after:auto;page-break-after:auto}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}[data-b]{outline:none!important}
 }
 </style>
@@ -162,7 +169,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
    <button class="b" data-c="removeFormat">Tx</button><button class="b" data-c="undo">↶</button><button class="b" data-c="redo">↷</button>
   </div>
  </div>
- <div id="vp"><div id="stage"><div id="deck"></div></div><div id="hint">↻ Rotate your phone for a bigger view · دوّر الموبايل</div></div>
+ <div id="vp"><div id="stage"><div id="deck"></div></div><div id="pager"><button id="pPrev" title="Previous / السابق">‹</button><span id="pNum"></span><button id="pNext" title="Next / التالي">›</button></div><div id="hint">↻ Rotate your phone for a bigger view · دوّر الموبايل</div></div>
 </div>
 <button class="b pri" id="xfs">✕</button>
 <div id="dlg"><div id="dbox" class="dbx"><h3><span id="dTitle"></span><button class="b" id="dClose">✕</button></h3>
@@ -228,7 +235,7 @@ function defaults(){return{v:2,lang:"en",ts:0,
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
 const PAL=["#8E5BB5","#D68A00","#1F6FB2","#B5446E","#4B8B3B"];
-let S=defaults(),L="en",editMode=false;
+let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
@@ -256,7 +263,6 @@ function render(){
  const legacy=M.filter(m=>endOf(m)===null);
  const e0=Math.min(...M.map(m=>dn(m.date))),d0=e0-4,d1=Math.max(...M.map(m=>endOf(m)??dn(m.date))),N=d1+3-d0+1,w=100/N;
  const x=d=>((d-d0)*w).toFixed(3)+"%",xc=d=>((d-d0+.5)*w).toFixed(3)+"%";
- const nRows=TR.reduce((a,p)=>a+p.items.length,0),rh=Math.max(19,Math.min(39,Math.floor((1022-134-76-TR.length*34)/Math.max(1,nRows))));
  const deck=$("#deck");deck.dir=L==="ar"?"rtl":"ltr";deck.lang=L;
  let dayc="",wkc="",ov="",mons=[],last=-1;
  for(let i=0;i<N;i++){const D=dd(d0+i),k=D.getUTCFullYear()*12+D.getUTCMonth();
@@ -267,12 +273,11 @@ function render(){
   if(D.getUTCDay()===0)ov+=`<s style="inset-inline-start:${(i*w).toFixed(3)}%"></s>`;
   if(wk)ov+=`<i style="inset-inline-start:${(i*w).toFixed(3)}%;width:${w}%"></i>`}
  const mon=mons.map(m=>`<span style="inset-inline-start:${(m.a*w).toFixed(3)}%;width:${((m.b-m.a+1)*w).toFixed(3)}%">${(m.b-m.a)<8?MON[L][m.m]:MON[L][m.m]+" "+m.y}</span>`).join("");
- let rows=`<div class="row head" style="height:auto"><div class="info">${u.act}</div><div class="ch"><div class="mrow">${mon}</div><div class="wrow">${wkc}</div><div class="drow">${dayc}</div></div></div>`;
- let zi=0;
- TR.forEach(P=>{const c=S.ph[P.pid].c,it=P.items.map(o=>o.m);
+ const headRow=`<div class="row head" style="height:auto"><div class="info">${u.act}</div><div class="ch"><div class="mrow">${mon}</div><div class="wrow">${wkc}</div><div class="drow">${dayc}</div></div></div>`;
+ const grpRow=(P,cont)=>{const c=S.ph[P.pid].c,it=P.items.map(o=>o.m);
   const a=it.length?Math.min(...it.map(m=>dn(m.date))):null,b=it.length?Math.max(...it.map(m=>endOf(m)??dn(m.date))):null;
-  rows+=`<div class="row grp" style="--c:${c};height:34px"><div class="info"><span class="gc">${P.code}</span>${B("p|"+P.pid,"span","",S.ph[P.pid].n[L])}<em>${a===null?"":fL(iso(a))+" → "+fL(iso(b))}</em>${TR.length>1?`<button class="rdel" data-delp="${P.pid}" title="Delete phase / حذف المرحلة">✕</button>`:""}</div><div class="ch">${a===null?"":`<div class="span" style="inset-inline-start:${x(a)};width:${((b-a+1)*w).toFixed(3)}%"></div>`}</div></div>`;
-  P.items.forEach(({m,code,depth})=>{const cur=dn(m.date),E=endOf(m);let bar="",lbl="",dia="",s=cur,e=cur;
+  return `<div class="row grp" style="--c:${c};height:34px"><div class="info"><span class="gc">${P.code}</span>${B("p|"+P.pid,"span","",S.ph[P.pid].n[L])}${cont?`<span class="ct">(${L==="en"?"cont.":"تابع"})</span>`:""}<em>${a===null?"":fL(iso(a))+" → "+fL(iso(b))}</em>${TR.length>1?`<button class="rdel" data-delp="${P.pid}" title="Delete phase / حذف المرحلة">✕</button>`:""}</div><div class="ch">${a===null?"":`<div class="span" style="inset-inline-start:${x(a)};width:${((b-a+1)*w).toFixed(3)}%"></div>`}</div></div>`};
+ const itemRow=({m,code,depth},P,zi)=>{const c=S.ph[P.pid].c,cur=dn(m.date),E=endOf(m);let bar="",lbl="",dia="",s=cur,e=cur;
    if(E!==null){e=E;const days=E-cur+1;
     bar=`<div class="act" style="inset-inline-start:${x(cur)};width:${(days*w).toFixed(3)}%">${days>=5?days+" "+u.days:""}</div>`;
     if(days<5)lbl=`<span class="lbl" style="inset-inline-start:calc(${x(E+1)} + 6px)"><bdi>${days}</bdi> ${days===1?u.day1:u.days}</span>`;
@@ -281,16 +286,29 @@ function render(){
     bar=dur>0?`<div class="act" style="inset-inline-start:${xc(cur)};width:${(dur*w).toFixed(3)}%">${dur>=8?dur+" "+u.days:""}</div>`:"";
     lbl=dur>0&&dur<8?`<span class="lbl" style="inset-inline-start:calc(${xc(nx)} + 8px)"><bdi>+${dur}</bdi> ${dur===1?u.day1:u.days}</span>`:"";
     dia=`<div class="dia ${gi===legacy.length-1?"fin":""}" style="inset-inline-start:${xc(cur)}"></div>`}
-   rows+=`<div class="row ms l${(m.lvl||2)} ${(zi++)%2?"z":""}" data-i="${m.id}" data-s="${s}" data-e="${e}" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${code}</div><div class="dt">${fS(m.date)}</div>
+   return `<div class="row ms l${(m.lvl||2)} ${zi%2?"z":""}" data-i="${m.id}" data-s="${s}" data-e="${e}" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${code}</div><div class="dt">${fS(m.date)}</div>
     <div class="tx" style="padding-inline-start:${depth*18}px">${B(`m|${m.id}|t`,"b","",m.t[L])}${B(`m|${m.id}|d`,"small","",m.d[L])}</div><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button></div>
-    <div class="ch"><div class="lead" style="width:${E!==null?x(cur):xc(cur)}"></div>${bar}${dia}${lbl}</div></div>`})});
+    <div class="ch"><div class="lead" style="width:${E!==null?x(cur):xc(cur)}"></div>${bar}${dia}${lbl}</div></div>`};
+ /* paginate: split automatically into several slides when the activities do not fit */
+ const flat=[];TR.forEach(P=>{flat.push({g:P});P.items.forEach(o=>flat.push({o,P}))});
+ const AV=812,HI=37,HG=34,hOf=q=>q.g?HG:HI,total=flat.reduce((a,q)=>a+hOf(q),0),np=Math.max(1,Math.ceil(total/AV)),target=total/np;
+ const pages=[];let cur_=[],h=0;
+ const brk=()=>{let carry=null;if(cur_.length&&cur_[cur_.length-1].g)carry=cur_.pop();pages.push(cur_);cur_=carry?[carry]:[];h=cur_.reduce((a,q)=>a+hOf(q),0)};
+ flat.forEach(q=>{const need=hOf(q);
+  if(cur_.length&&(h+need>AV||(pages.length<np-1&&h+need>target+12)))brk();
+  if(!q.g&&!cur_.length&&pages.length){const P=q.P;cur_.push({g:P,cont:true});h+=HG}
+  cur_.push(q);h+=need});
+ if(cur_.length)pages.push(cur_);
+ const rh=Math.max(19,Math.min(39,Math.min(...pages.map(pg=>{const it=pg.filter(q=>!q.g).length,gr=pg.length-it;return Math.floor((AV-gr*HG)/Math.max(1,it))}))));
+ pageCount=pages.length;curPage=Math.min(curPage,pageCount-1);
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
- deck.innerHTML=`<div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>
- <div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}<span><b></b>${u.lm}</span><span><i style="background:#888;opacity:.85"></i>${u.la}</span></div>
- <div class="gantt ${rh<38?"cp":""} ${rh<27?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb" id="vb"></div><div class="vl" id="vl"></div><div class="tg" id="tg"></div></div></div>
- <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div>`;
+ const legend=`<div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}<span><b></b>${u.lm}</span><span><i style="background:#888;opacity:.85"></i>${u.la}</span></div>`;
+ deck.innerHTML=pages.map((pg,pi)=>{let zi=0,rows=headRow;pg.forEach(q=>{rows+=q.g?grpRow(q.g,q.cont):itemRow(q.o,q.P,zi++)});
+  return `<section class="gs ${pi===curPage?"on":""}" data-pg="${pi}"><div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}
+ <div class="gantt ${rh<38?"cp":""} ${rh<27?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb"></div><div class="vl"></div><div class="tg"></div></div></div>
+ <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}${pages.length>1?` · <bdi>${pi+1}/${pages.length}</bdi>`:""}</span></div></section>`}).join("");
  deck.querySelectorAll("[data-b]").forEach(e=>{e.contentEditable=editMode;e.spellcheck=false});
- G={d0,N,w};applyPin();
+ G={d0,N,w};showPage();
  document.body.dir="ltr";
  $("#bLang").textContent=L==="en"?"عربي":"English";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
@@ -325,17 +343,27 @@ $("#fFont").onchange=e=>withSel(()=>document.execCommand("fontName",false,e.targ
 $("#fSize").onchange=e=>size(+e.target.value);
 $("#fCol").oninput=e=>withSel(()=>document.execCommand("foreColor",false,e.target.value));
 $("#fHi").oninput=e=>withSel(()=>document.execCommand("hiliteColor",false,e.target.value));
-$("#deck").addEventListener("input",e=>{const el=e.target.closest("[data-b]");if(!el)return;setB(el.dataset.b,el.innerHTML);save()});
+$("#deck").addEventListener("input",e=>{const el=e.target.closest("[data-b]");if(!el)return;setB(el.dataset.b,el.innerHTML);document.querySelectorAll(`#deck [data-b="${el.dataset.b}"]`).forEach(o=>{if(o!==el)o.innerHTML=el.innerHTML});save()});
 $("#deck").addEventListener("paste",e=>{if(e.target.closest("[data-b]")){e.preventDefault();document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text/plain"))}});
 $("#deck").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest("[data-b]")){e.preventDefault();e.target.blur()}});
 /* ruler */
 let G=null,pinned=null;
 const fDay=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]}`};
+const AP=()=>$("#deck .gs.on");
+function showPage(){document.querySelectorAll("#deck .gs").forEach((s,i)=>s.classList.toggle("on",i===curPage));
+ $("#pager").style.display=pageCount>1?"flex":"none";$("#pNum").textContent=(curPage+1)+" / "+pageCount;applyPin()}
+function goPage(i){curPage=Math.max(0,Math.min(pageCount-1,i));showPage()}
+function goRow(id){const s=document.querySelector(`#deck .row.ms[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
+$("#pPrev").onclick=()=>goPage(curPage-1);$("#pNext").onclick=()=>goPage(curPage+1);
+document.addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,select,textarea,[contenteditable=true]"))return;if(document.querySelector("#dlg.open,#adlg.open"))return;
+ if(["ArrowRight","PageDown"].includes(e.key))goPage(curPage+1);else if(["ArrowLeft","PageUp"].includes(e.key))goPage(curPage-1)});
+let tx0=null;$("#vp").addEventListener("touchstart",e=>{tx0=e.touches[0].clientX},{passive:true});
+$("#vp").addEventListener("touchend",e=>{if(tx0===null||pageCount<2)return;const dx=e.changedTouches[0].clientX-tx0;tx0=null;if(Math.abs(dx)>70)goPage(curPage+(dx<0?1:-1))},{passive:true});
 function ruler(e,down){
- if(!G)return;const g=$(".gantt"),ov=$(".ov");if(!g||!ov)return;
+ if(!G)return;const A=AP();if(!A)return;const g=A.querySelector(".gantt"),ov=A.querySelector(".ov");if(!g||!ov)return;
  const rect=ov.getBoundingClientRect(),rtl=L==="ar";
  const row=e.target.closest(".row.ms"),inChart=e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom;
- const vl=$("#vl"),tg=$("#tg");
+ const vl=A.querySelector(".vl"),tg=A.querySelector(".tg");
  g.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));
  if(row&&!row.classList.contains("pin"))row.classList.add("hl");
  if(down&&row&&!(editMode&&e.target.closest("[data-b]"))){pinned=pinned===row.dataset.i?null:row.dataset.i;applyPin();}
@@ -351,10 +379,10 @@ function ruler(e,down){
  if(txt){tg.style.display="block";tg.textContent=txt;const px=Math.min(rect.width-70,Math.max(70,(rtl?1-cx:cx)*rect.width))/ (rect.width/ov.offsetWidth);tg.style.left=px+"px";}
  else tg.style.display="none";
 }
-function span(row){const vb=$("#vb");if(!vb)return;if(!row){vb.style.display="none";return}
+function span(row){const A=AP(),vb=A&&A.querySelector(".vb");if(!vb)return;if(!row||row.closest(".gs")!==A){vb.style.display="none";return}
  const s=+row.dataset.s,en=+row.dataset.e;vb.style.display="block";vb.style.setProperty("--c",row.style.getPropertyValue("--c"));
  vb.style.insetInlineStart=((s-G.d0)*G.w)+"%";vb.style.width=((en-s+1)*G.w)+"%";}
-function applyPin(){const g=$(".gantt");if(!g)return;g.querySelectorAll(".row.pin").forEach(r=>r.classList.remove("pin"));
+function applyPin(){const g=$("#deck");g.querySelectorAll(".row.pin").forEach(r=>r.classList.remove("pin"));
  const r=pinned!==null&&g.querySelector(`.row.ms[data-i="${pinned}"]`);if(r){r.classList.add("pin");span(r);}else span(null);}
 $("#vp").addEventListener("pointermove",e=>{if(e.pointerType!=="touch")ruler(e,false)});
 $("#vp").addEventListener("pointerdown",e=>{if(e.target.closest(".rdel"))return;if(e.target.closest(".gantt"))ruler(e,true)});
@@ -364,7 +392,7 @@ $("#deck").addEventListener("click",e=>{const b=e.target.closest(".rdel");if(!b)
   if(confirm((L==="en"?"Delete this activity":"حذف هذا النشاط")+` "${strip(m.t[L])}"`+(S.ms.some(x=>x.par===id)?(L==="en"?" and its sub-activities?":" وأنشطته الفرعية؟"):"؟"))){removeIds(id);if(pinned===String(id))pinned=null;save();render()}}
  else if(b.dataset.delp){const k=b.dataset.delp;if(confirm(L==="en"?"Delete this phase with all its activities?":"حذف هذه المرحلة بكل أنشطتها؟")){S.ms=S.ms.filter(x=>x.ph!==k);delete S.ph[k];pinned=null;save();render()}}
 });
-$("#vp").addEventListener("pointerleave",()=>{$("#vl")&&($("#vl").style.display="none");$("#tg")&&($("#tg").style.display="none");document.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));applyPin()});
+$("#vp").addEventListener("pointerleave",()=>{const A=AP();if(A){const v=A.querySelector(".vl"),g=A.querySelector(".tg");if(v)v.style.display="none";if(g)g.style.display="none"}document.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));applyPin()});
 /* language */
 $("#bLang").onclick=()=>{S.lang=L=L==="en"?"ar":"en";save();render()};
 /* dates dialog */
@@ -448,7 +476,7 @@ $("#aAddB").onclick=()=>{const a=AT[L],en=$("#aEn").value.trim(),ar=$("#aAr").va
  let s=$("#aS").value,e=$("#aE").value||s;if(!s){msg.textContent=a.dateReq;return}if(e<s)[s,e]=[e,s];
  const id=Math.max(...S.ms.map(m=>m.id))+1;let ph,par=null;
  if(aLvl===2)ph=pv;else{const pm=S.ms.find(m=>m.id==pv);ph=pm.ph;par=pm.id}
- S.ms.push({id,date:s,end:e,ph,lvl:aLvl,par,t:N,d:D});pinned=String(id);save();render();$("#adlg").classList.remove("open")};
+ S.ms.push({id,date:s,end:e,ph,lvl:aLvl,par,t:N,d:D});pinned=String(id);save();render();goRow(id);$("#adlg").classList.remove("open")};
 /* ---------- PowerPoint export ---------- */
 function hexOf(c){c=(c||"").trim();if(c.startsWith("var(")){const n=c.slice(4,-1);c=getComputedStyle(document.documentElement).getPropertyValue(n).trim()}return c.replace("#","").toUpperCase()}
 async function exportPPTX(){
