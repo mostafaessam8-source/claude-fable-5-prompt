@@ -97,7 +97,7 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .cp .rdel,.tn .rdel{width:22px;height:22px;font-size:12px}
 #sbox{width:min(1100px,100%)}#sbox .tools{padding:10px 16px;background:#f2f6f7;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}#sbox .tools input{height:36px;border:1px solid #bcc7cd;border-radius:6px;padding:0 6px;font:inherit}#sbox .tools button,#sbox .af button{height:38px;border:0;border-radius:8px;background:var(--accent);color:#fff;padding:0 16px;font:700 14px inherit;font-family:inherit;cursor:pointer}#sbox .af{padding:10px 16px;background:#f2f6f7;display:flex;justify-content:flex-end}#sbox .af button.sec{background:#dfe7ea;color:#333}
-#sl{overflow:auto;padding:6px 14px}.sr_{display:grid;grid-template-columns:34px 1.4fr 1.4fr 80px 70px 62px 62px 44px 36px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #e6ecef}.sr_ input,.sr_ select{height:36px;border:1px solid #bcc7cd;border-radius:7px;padding:0 6px;font:inherit;font-size:14px;width:100%;min-width:0}.sr_.h{font-size:12px;font-weight:800;color:#556;border:0;position:sticky;top:0;background:#fff}.sr_ i{width:30px;height:30px;border-radius:50%;color:#fff;font:800 14px/30px inherit;text-align:center;font-style:normal}.sr_ input[type=color]{padding:1px;height:36px}.sr_ .del{height:34px;border:1px solid #e0b4ad;background:#fff;color:#b33;border-radius:7px;cursor:pointer}
+#sl{overflow:auto;padding:6px 14px}.sr_{display:grid;grid-template-columns:40px 1.3fr 1.3fr 66px 66px 62px 56px 56px 44px 36px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #e6ecef}.sr_ input,.sr_ select{height:36px;border:1px solid #bcc7cd;border-radius:7px;padding:0 6px;font:inherit;font-size:14px;width:100%;min-width:0}.sr_.h{font-size:12px;font-weight:800;color:#556;border:0;position:sticky;top:0;background:#fff}.sr_ i{width:30px;height:30px;border-radius:50%;color:#fff;font:800 14px/30px inherit;text-align:center;font-style:normal}.sr_ input[type=color]{padding:1px;height:36px}.sr_ .del{height:34px;border:1px solid #e0b4ad;background:#fff;color:#b33;border-radius:7px;cursor:pointer}
 @media(max-width:800px){.sr_{grid-template-columns:30px 1fr 1fr;}.sr_.h{display:none}}
 /* add dialog */
 #abox .ab{padding:14px 18px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
@@ -118,7 +118,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .plan .pgantt{position:absolute;top:136px;inset-inline-start:40px;width:var(--gw);border:1px solid var(--line);background:#fff}
 .prow{display:flex;border-bottom:1px solid var(--line);position:relative}
 .pinfo{flex:none;width:800px;display:flex;align-items:center;border-inline-end:2px solid #c3ced4;background:inherit;position:relative;z-index:3}
-.pinfo>.c1{width:52px;text-align:center;display:flex;justify-content:center}.pinfo>.c2{width:332px;padding:0 10px;font-size:17px;line-height:1.2}.pinfo>.c3{width:112px;text-align:center;font-size:16px;font-weight:700;color:#444}.pinfo>.c4{width:64px;text-align:center;font-size:20px;font-weight:800}.pinfo>.c5,.pinfo>.c6{width:118px;text-align:center;font-size:17px;font-weight:700;color:var(--dark)}
+.pinfo>.c1{width:52px;text-align:center;display:flex;justify-content:center}.pinfo>.c2{width:360px;padding:0 10px;font-size:17px;line-height:1.2}.pinfo>.c3{width:100px;text-align:center;font-size:16px;font-weight:700;color:#444}.pinfo>.c4{width:64px;text-align:center;font-size:20px;font-weight:800}.pinfo>.c5,.pinfo>.c6{width:110px;text-align:center;font-size:17px;font-weight:700;color:var(--dark)}
 .pch{position:relative;flex:none}
 .phead .pinfo{background:var(--dark);color:#fff;height:94px}.phead .pinfo>b{font-size:15px;font-weight:700;line-height:1.15;color:#fff!important}.phead .pinfo .c2{text-align:start}
 .phead .pch{height:94px;background:#f4f7f8}
@@ -131,7 +131,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pl span.nw,.pd span.nw{background:#dbe3e6;color:#8a959c}
 .ptask.z,.ptask.z .pinfo{background:#f6f9fa}.ptask .pinfo{background:#fff}.ptask:hover,.ptask:hover .pinfo{background:#e4f1f4}
 .pbadge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-style:normal;font-weight:800;font-size:17px}
-.pbadge.crit{box-shadow:0 0 0 3px #fff,0 0 0 5px #222}
+.pbadge.sub{width:auto;min-width:40px;height:24px;border-radius:12px;font-size:13px;padding:0 8px}.pbadge.crit{box-shadow:0 0 0 3px #fff,0 0 0 5px #222}
 .pbar{position:absolute;background:var(--c);border-radius:7px;z-index:3;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #0003}
 .pbar.crit{outline:3px solid #222;outline-offset:1px}.pbar em{font-style:normal;color:#fff;font-weight:800;font-size:15px}
 .pov{position:absolute;pointer-events:none;z-index:2}
@@ -145,6 +145,13 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pkeys{position:absolute;inset-inline:40px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
 .pkc{background:#fff;border-radius:14px;box-shadow:0 5px 18px #1b2a3318;border-top:7px solid var(--c);padding:10px 16px 10px;display:flex;flex-direction:column;gap:2px}
 .pkc span{font-size:15px;font-weight:700;color:var(--muted)}.pkc b{font-size:23px;font-weight:800;color:var(--dark);line-height:1.15}.pkc small{font-size:14px;color:var(--muted);font-weight:600}.pkc.fin{background:var(--dark)}.pkc.fin span,.pkc.fin small{color:#cfd8dc}.pkc.fin b{color:#fff}
+.sumrow .c2 b{font-weight:800;font-size:17px}.subrow .c2{padding-inline-start:26px;font-size:15.5px}.subrow .c1{padding-inline-start:20px}
+.pgantt.cp .ptask .c2{font-size:14.5px;line-height:1.1}.pgantt.cp .subrow .c2{font-size:14px}.pgantt.cp .pbadge{width:28px;height:28px;font-size:14px}.pgantt.cp .pbadge.sub{width:auto;height:22px;font-size:12px}.pgantt.cp .c4{font-size:17px}.pgantt.cp .c5,.pgantt.cp .c6,.pgantt.cp .c3{font-size:15px}
+.pbar.sum{border-radius:2px;box-shadow:none;height:14px}.pbar.sum:before,.pbar.sum:after{content:"";position:absolute;top:100%;border-style:solid;border-width:7px 6px 0 6px;border-color:var(--c) transparent transparent transparent}.pbar.sum:before{inset-inline-start:0}.pbar.sum:after{inset-inline-end:0}
+.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
+.pov0 .pinfo{background:#fff}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
+.pfl small{display:block;font-size:15px;font-weight:700;color:#7a3a30;margin-top:6px}.pfl>div span{margin-top:0}
+.passume{font-size:16px;color:var(--muted);margin-top:10px;font-style:italic}
 /* slide 3 */
 .pbd{position:absolute;top:150px;bottom:56px;inset-inline:0;padding:26px 60px 14px;display:flex;flex-direction:column;gap:20px}
 .pbd h3{margin:0 0 8px;font-size:29px;font-weight:800;color:var(--dark);display:flex;align-items:center;gap:12px}.pbd h3:before{content:"";width:7px;height:28px;border-radius:4px;background:var(--accent)}
@@ -332,7 +339,7 @@ let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
- c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan()}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan();else if(S.plan.ver!==2){const d=defPlan(),has=S.plan.tasks.some(x=>x.parent);if(!has&&S.plan.tasks.some(x=>x.id==="A")){const i=S.plan.tasks.findIndex(x=>x.id==="A");S.plan.tasks.splice(i+1,0,...d.tasks.filter(x=>x.parent==="A"))}S.plan.ver=2}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -460,9 +467,14 @@ function goRow2(id){}
  d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* ================= REMAINING WORKS PLAN (CPM-style Gantt) ================= */
-function defPlan(){const T_=T;return{start:"2026-10-13",
+function defPlan(){const T_=T;return{ver:2,start:"2026-10-13",
  tasks:[
   {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:6},
+  {id:"A1",parent:"A",n:T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),c:"#D9695A",pred:null,link:"FS",lag:0,dur:2},
+  {id:"A2",parent:"A",n:T_("Installation of H-Beam","تركيب أعمدة H-Beam"),c:"#D9695A",pred:"A1",link:"SS",lag:1,dur:3},
+  {id:"A3",parent:"A",n:T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),c:"#D9695A",pred:"A2",link:"SS",lag:1,dur:3},
+  {id:"A4",parent:"A",n:T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),c:"#D9695A",pred:"A3",link:"SS",lag:1,dur:3},
+  {id:"A5",parent:"A",n:T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)"),c:"#D9695A",pred:"A4",link:"SS",lag:1,dur:2},
   {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:6,dur:2},
   {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:4},
   {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:10},
@@ -475,35 +487,44 @@ function defPlan(){const T_=T;return{start:"2026-10-13",
   T_("Working week is Saturday to Thursday. Fridays are non-working.","أسبوع العمل من السبت إلى الخميس، والجمعة إجازة."),
   T_("Lean concrete runs parallel to shoring (SS link) and is placed only in bays where shoring is installed.","الخرسانة العادية تسير بالتوازي مع الدعم (علاقة SS) وتُصب فقط في الأجزاء التي تم تركيب الدعم فيها."),
   T_("Building foundation is linked to completion of the pit slab / raft (FS link) and runs parallel to the pit wall. Change its predecessor to E if it must follow the pit wall.","أساسات المبنى مرتبطة بإنجاز بلاطة / لبشة الحفرة (علاقة FS) وتسير بالتوازي مع جدار الحفرة. يمكن تغيير سابقها إلى E إذا لزم أن تلي جدار الحفرة.")]}}
-const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
- ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
+const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",tot:"Overall project duration",assume:"Durations and links of the five sub-activities are proposed to fit within the 6 working days of Activity A (editable).",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
+ ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",tot:"المدة الإجمالية للمشروع",assume:"مدد وعلاقات الأنشطة الخمسة الفرعية مقترحة لتقع ضمن 6 أيام عمل للنشاط A (قابلة للتعديل).",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
 const isW=d=>dd(d).getUTCDay()!==5;
 const addW=(d,n)=>{while(n>0){d++;if(isW(d))n--}return d};
-function planCalc(P){P=P||S.plan;const by=Object.fromEntries(P.tasks.map(t=>[t.id,t])),res={};
+function planOrder(P){const by=Object.fromEntries(P.tasks.map(x=>[x.id,x])),out=[];
+ const walk=(parent,pre,depth)=>{P.tasks.filter(x=>(x.parent&&by[x.parent]?x.parent:null)===parent).forEach((x,i)=>{const code=depth?pre+"."+(i+1):x.id;out.push({t:x,depth,code});walk(x.id,code,depth+1)})};
+ walk(null,"",0);return out}
+function planCalc(P){P=P||S.plan;const ord=planOrder(P),by=Object.fromEntries(P.tasks.map(x=>[x.id,x])),res={};
  let st0=dn(P.start);while(!isW(st0))st0++;
+ const kids=id=>P.tasks.filter(x=>x.parent===id&&by[id]);
+ const base=(t,dep)=>{let s;const pt=t.pred&&by[t.pred];
+  if(pt&&pt!==t&&pt.id!==t.parent){const p=calc(pt,dep+1);s=t.link==="SS"?addW(p.s,+t.lag||0):addW(p.f,1+(+t.lag||0))}
+  else if(t.parent&&by[t.parent]&&dep<30)s=base(by[t.parent],dep+1);else s=st0;
+  while(!isW(s))s++;return s};
  const calc=(t,dep=0)=>{if(res[t.id])return res[t.id];if(dep>30)return{s:st0,f:st0};
-  let s=st0;const pt=t.pred&&by[t.pred];
-  if(pt&&pt!==t){const p=calc(pt,dep+1);s=t.link==="SS"?addW(p.s,+t.lag||0):addW(p.f,1+(+t.lag||0))}
-  while(!isW(s))s++;const f=addW(s,Math.max(1,+t.dur||1)-1);return res[t.id]={s,f}};
- P.tasks.forEach(t=>calc(t));
+  const ks=kids(t.id);
+  if(ks.length){ks.forEach(k=>calc(k,dep+1));return res[t.id]={s:Math.min(...ks.map(k=>res[k.id].s)),f:Math.max(...ks.map(k=>res[k.id].f))}}
+  const s=base(t,dep),f=addW(s,Math.max(1,+t.dur||1)-1);return res[t.id]={s,f}};
+ P.tasks.forEach(x=>calc(x));
  const wi=d=>{let n=0;for(let x=st0;x<d;x++)if(isW(x+1))n++;return n};
- const rows=P.tasks.map(t=>({t,s:res[t.id].s,f:res[t.id].f,es:wi(res[t.id].s),ef:wi(res[t.id].f)}));
- const R=Object.fromEntries(rows.map(r=>[r.t.id,r]));const end=Math.max(...rows.map(r=>r.ef));
- const memo={};const LS=r=>{if(memo[r.t.id]!==undefined)return memo[r.t.id];memo[r.t.id]=r.es;let lf=end;const dur=r.ef-r.es+1;
-  rows.filter(x=>x.t.pred===r.t.id&&x.t!==r.t).forEach(x=>{const ls=LS(x),lg=+x.t.lag||0;
+ const rows=ord.map(o=>({t:o.t,depth:o.depth,code:o.code,sum:kids(o.t.id).length>0,s:res[o.t.id].s,f:res[o.t.id].f,es:wi(res[o.t.id].s),ef:wi(res[o.t.id].f)}));
+ const R=Object.fromEntries(rows.map(x=>[x.t.id,x]));const end=Math.max(...rows.map(x=>x.ef));
+ const memo={},mlf={};const LS=r=>{if(memo[r.t.id]!==undefined)return memo[r.t.id];memo[r.t.id]=r.es;let lf=end;const dur=r.ef-r.es+1;
+  rows.filter(x=>x.t.pred===r.t.id&&x.t!==r.t&&x.t.id!==r.t.parent).forEach(x=>{const ls=LS(x),lg=+x.t.lag||0;
    lf=Math.min(lf,x.t.link==="SS"?ls-lg+dur-1:ls-1-lg)});
-  return memo[r.t.id]=lf-dur+1};
- rows.forEach(r=>{r.ls=LS(r);r.flt=r.ls-r.es;r.crit=r.flt<=0});
- return{rows,R,st:Math.min(...rows.map(r=>r.s)),en:Math.max(...rows.map(r=>r.f)),tot:end+1}}
+  const par=r.t.parent&&R[r.t.parent];if(par){LS(par);lf=Math.min(lf,mlf[par.t.id])}
+  mlf[r.t.id]=lf;return memo[r.t.id]=lf-dur+1};
+ rows.forEach(x=>{x.ls=LS(x);x.flt=x.ls-x.es;x.crit=x.flt<=0});
+ return{rows,R,st:Math.min(...rows.map(x=>x.s)),en:Math.max(...rows.map(x=>x.f)),tot:end+1}}
 function planKeys(C){return S.plan.keys.map(k=>{let d=null;
   if(k.task==="*")d=k.w==="s"?C.st:C.en;else{const r=C.R[k.task];if(r)d=k.w==="s"?r.s:r.f}
   return d===null?null:{k,d}}).filter(Boolean)}
 const wdIdxOf=(C,d)=>{let n=0;for(let x=C.st;x<d;x++)if(isW(x+1))n++;return n};
 function statusDay(){return Math.max(...S.ms.map(m=>endOf(m)??dn(m.date)))}
 function planSlides(u,startIdx){
- const pu=PUI[L],P=S.plan,C=planCalc(),n=P.tasks.length,keys=planKeys(C);
+ const pu=PUI[L],P=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),leaf=C.rows.filter(x=>!x.sum);
  const d0=C.st-3,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
- const MH=84,rh=Math.max(40,Math.min(72,Math.floor(520/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.5));
+ const OV=50,MH=84,rh=Math.max(32,Math.min(72,Math.floor(492/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
  /* header */
  let mons=[],wk="",wl="",dy="",shade="",last=-1;
  for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth(),x=xp(d),w2=D.getUTCDay()===5;
@@ -519,56 +540,63 @@ function planSlides(u,startIdx){
  /* milestone row */
  const dia=keys.map(({k,d})=>`<div class="pkd" style="inset-inline-start:${xc(d)-11}px"></div><div class="pkl" style="inset-inline-start:${xc(d)-70}px"><span>${strip(k.t[L])}</span><b>${fS(iso(d))}</b></div>`).join("");
  const mrow=`<div class="prow pmrow" style="height:${MH}px"><div class="pinfo"><b class="c1">◆</b><b class="c2" style="font-weight:800">${pu.ms}</b></div><div class="pch" style="width:${CHW}px">${dia}</div></div>`;
+ /* overall duration row (top) */
+ const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${fS(iso(C.st))}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}</em></div></div></div>`;
  /* task rows */
  const rowsH=C.rows.map((r,i)=>{const t=r.t,c=t.c,pt=t.pred?C.R[t.pred]:null,lk=pt?`<span dir="ltr">${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?` +${+t.lag||0}`:""}</span>`:pu.none;
-  return `<div class="prow ptask ${i%2?"z":""}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${r.crit?"crit":""}" style="background:${c}">${t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${lk}</span><span class="c4"><bdi>${t.dur}</bdi></span><span class="c5">${fS(iso(r.s))}</span><span class="c6">${fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
-   <div class="pch" style="width:${CHW}px"><div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${(r.f-r.s+1)*dw}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${(r.f-r.s+1)*dw>70?`<bdi>${t.dur}</bdi> ${pu.d}`:""}</em></div></div></div>`}).join("");
+  const dur=r.ef-r.es+1,w=(r.f-r.s+1)*dw,sub=r.depth>0,cls=`${i%2?"z":""} ${r.sum?"sumrow":""} ${sub?"subrow":""}`;
+  const bar=r.sum?`<div class="pbar sum ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;top:${(rh-14)/2}px"></div><span class="psl" style="inset-inline-start:${xp(r.f+1)+8}px;top:${(rh-20)/2}px"><bdi>${dur}</bdi> ${pu.d}</span>`
+   :`<div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${w>38?`<bdi>${dur}</bdi> ${pu.d}`:""}</em></div>`;
+  return `<div class="prow ptask ${cls}" data-t="${t.id}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${lk}</span><span class="c4"><bdi>${dur}</bdi></span><span class="c5">${fS(iso(r.s))}</span><span class="c6">${fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
+   <div class="pch" style="width:${CHW}px">${bar}</div></div>`}).join("");
  /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
- const rowTop=i=>MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
+ const rowTop=i=>OV+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
  let svg="";C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=cy(i),yP=cy(pi);
   if(t.link==="SS"){const x0=xp(p.s)+8;svg+=`<path d="M${x0} ${yP+bh/2} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}
   else{const xe=xp(p.f+1),xm=Math.min(xs-6,xe+dw*.5);svg+=`<path d="M${xe} ${yP} H${xm} V${yS} H${xs-1}" /><path class="ah" d="M${xs} ${yS} l-7 -4 v8z"/>`}});
- const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b>${pu.status} · ${fS(iso(sd))}</b></div>`:"";
- const gh=HH+MH+n*rh,gantt=`<div class="pgantt" style="--gw:${INFO+CHW+2}px">${head}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${MH+n*rh}px">${shade}<svg width="${CHW}" height="${MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
+ const sd=statusDay(),sline=sd>=d0&&sd<=d1?`<div class="pstat" style="inset-inline-start:${xc(sd)}px"><b style="top:${OV+2}px">${pu.status} · ${fS(iso(sd))}</b></div>`:"";
+ const gh=HH+OV+MH+n*rh,gantt=`<div class="pgantt ${rh<52?"cp":""}" style="--gw:${INFO+CHW+2}px">${head}${orow}${mrow}${rowsH}<div class="pov" style="inset-inline-start:${INFO}px;width:${CHW}px;top:${HH}px;height:${OV+MH+n*rh}px">${shade}<svg width="${CHW}" height="${OV+MH+n*rh}" ${L==="ar"?'style="transform:scaleX(-1)"':""}>${svg}</svg>${sline}</div></div>`;
  /* key cards */
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
- const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${n}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${C.rows.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
+ const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${leaf.length}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${leaf.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
  const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span></div>`;
- const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+22}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+2))}</section>`;
+ const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+2))}</section>`;
  /* slide 3 : flow + key notes + what-if */
  const A=C.R.A,sh=A?`${fL(iso(A.s))} → ${fL(iso(A.f))} · <bdi>${A.ef-A.es+1}</bdi> ${pu.wd}`:"";
- const flow=P.flow.map((f,i)=>`<div class="pfl" style="--c:#C8503F"><i>${i+1}</i>${B("pf|"+i,"span","",f[L])}</div>`).join("");
+ const kidsA=C.rows.filter(x=>x.t.parent==="A");
+ const flow=P.flow.map((f,i)=>{const k=kidsA[i];return `<div class="pfl" style="--c:#C8503F"><i>${i+1}</i><div>${B("pf|"+i,"span","",f[L])}${k?`<small>${fS(iso(k.s))} → ${fS(iso(k.f))} · <bdi>${k.ef-k.es+1}</bdi> ${pu.d}${k.t.pred?` · <bdi dir="ltr">${k.t.pred} ${k.t.link}${k.t.link==="SS"?" +"+(+k.t.lag||0):""}</bdi>`:""}</small>`:""}</div></div>`}).join("");
  const notes=P.notes.map((q,i)=>`<li>${B("pn|"+i,"span","",q[L])}</li>`).join("");
  const kt=keys.map(({k,d})=>`<div class="pkt"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b></div>`).join("");
  const alt=planCalc({...P,start:iso(statusDay())}),delta=alt.en-C.en;
  const wh=`<div class="pwhat"><h4>${pu.secW}</h4><p>${pu.whatif} <b>${fL(iso(alt.st))}</b> (${pu.perm}) → ${pu.shift} <b>${fL(iso(alt.en))}</b> (<bdi>+${delta}</bdi> ${pu.sh2}).</p></div>`;
  const s3=`<section class="gs plan3" data-pg="${startIdx+1}" data-kind="plan3">${hd("flowTitle","flowSub")}
-  <div class="pbd"><div class="psec"><h3>${pu.secF}</h3><div class="pfsub">${sh}</div><div class="pflow">${flow}</div></div>
+  <div class="pbd"><div class="psec"><h3>${pu.secF}</h3><div class="pfsub">${sh}</div><div class="pflow">${flow}</div><div class="passume">${pu.assume}</div></div>
    <div class="pcols"><div class="pkcol"><h3>${pu.secK}</h3>${kt}${wh}</div><div class="pncol"><h3>${pu.secN}</h3><ol>${notes}</ol></div></div>
    <div class="psrc">${pu.src}</div></div>${ftr(" · "+(startIdx+2)+"/"+(startIdx+2))}</section>`;
  return s2+s3}
 
 
 /* ---- schedule dialog ---- */
-const SD={en:{title:"Schedule – remaining works",cs:"Commencement date:",al:"Align to permit-ready date",add:"＋ Add activity",h:["","Activity (EN)","النشاط (AR)","Pred.","Link","Lag","Dur.","",""],del:"Delete this activity?",newN:"New activity",newA:"نشاط جديد"},
- ar:{title:"الجدول – الأعمال المتبقية",cs:"تاريخ البدء:",al:"المطابقة مع تاريخ جاهزية التصريح",add:"＋ إضافة نشاط",h:["","Activity (EN)","النشاط (AR)","السابق","العلاقة","التأخير","المدة","",""],del:"حذف هذا النشاط؟",newN:"New activity",newA:"نشاط جديد"}};
+const SD={en:{title:"Schedule – remaining works",cs:"Commencement date:",al:"Align to permit-ready date",add:"＋ Add activity",h:["","Activity (EN)","النشاط (AR)","Parent","Pred.","Link","Lag","Dur.","",""],del:"Delete this activity?",newN:"New activity",newA:"نشاط جديد"},
+ ar:{title:"الجدول – الأعمال المتبقية",cs:"تاريخ البدء:",al:"المطابقة مع تاريخ جاهزية التصريح",add:"＋ إضافة نشاط",h:["","Activity (EN)","النشاط (AR)","الأب","السابق","العلاقة","التأخير","المدة","",""],del:"حذف هذا النشاط؟",newN:"New activity",newA:"نشاط جديد"}};
 function nextTaskId(){const ids=S.plan.tasks.map(t=>t.id);for(let i=0;i<26;i++){const c=String.fromCharCode(65+i);if(!ids.includes(c))return c}return"T"+Date.now().toString(36)}
 function planDlg(){const D=SD[L],sl=$("#sl");$("#sTitle").textContent=D.title;$("#sCL").textContent=D.cs;$("#sAlign").textContent=D.al;$("#sAddB").textContent=D.add;$("#sStart").value=S.plan.start;$("#sbox").dir=L==="ar"?"rtl":"ltr";
  sl.innerHTML=`<div class="sr_ h">${D.h.map(x=>`<span>${x}</span>`).join("")}</div>`;
- S.plan.tasks.forEach(t=>{const r=document.createElement("div");r.className="sr_";
-  r.innerHTML=`<i style="background:${t.c}">${t.id}</i><input class="en" dir="ltr" value="${esc2(strip(t.n.en))}"><input class="ar" dir="rtl" value="${esc2(strip(t.n.ar))}">
+ planOrder(S.plan).forEach(({t,depth,code})=>{const r=document.createElement("div");r.className="sr_";r.style.paddingInlineStart=(depth*14)+"px";const hasKids=S.plan.tasks.some(x=>x.parent===t.id);
+  r.innerHTML=`<i style="background:${t.c};width:auto;min-width:30px;padding:0 6px;border-radius:15px">${depth?code:t.id}</i><input class="en" dir="ltr" value="${esc2(strip(t.n.en))}"><input class="ar" dir="rtl" value="${esc2(strip(t.n.ar))}">
+   <select class="pa"><option value="">—</option>${S.plan.tasks.filter(x=>x.id!==t.id&&x.parent!==t.id).map(x=>`<option ${x.id===t.parent?"selected":""}>${x.id}</option>`).join("")}</select>
    <select class="pr"><option value="">—</option>${S.plan.tasks.filter(x=>x.id!==t.id).map(x=>`<option ${x.id===t.pred?"selected":""}>${x.id}</option>`).join("")}</select>
    <select class="lk"><option ${t.link==="FS"?"selected":""}>FS</option><option ${t.link==="SS"?"selected":""}>SS</option></select>
-   <input class="lg" type="number" min="0" value="${+t.lag||0}"><input class="du" type="number" min="1" value="${+t.dur||1}"><input class="cl" type="color" value="${t.c}"><button class="del">✕</button>`;
+   <input class="lg" type="number" min="0" value="${+t.lag||0}"><input class="du" type="number" min="1" value="${+t.dur||1}" ${hasKids?"disabled title=\"computed from sub-activities\"":""}><input class="cl" type="color" value="${t.c}"><button class="del">✕</button>`;
   const upd=()=>{save();render()};
   r.querySelector(".en").onchange=async e=>{t.n.en=e.target.value;if(S.auto){const x=await tr(e.target.value,"en","ar");if(x.how!=="partial"&&x.text){t.n.ar=x.text;r.querySelector(".ar").value=x.text}}upd()};
   r.querySelector(".ar").onchange=async e=>{t.n.ar=e.target.value;if(S.auto){const x=await tr(e.target.value,"ar","en");if(x.how!=="partial"&&x.text){t.n.en=x.text;r.querySelector(".en").value=x.text}}upd()};
-  r.querySelector(".pr").onchange=e=>{t.pred=e.target.value||null;upd()};r.querySelector(".lk").onchange=e=>{t.link=e.target.value;upd()};
+  r.querySelector(".pa").onchange=e=>{t.parent=e.target.value||null;if(!t.parent)delete t.parent;upd();planDlg()};r.querySelector(".pr").onchange=e=>{t.pred=e.target.value||null;upd()};r.querySelector(".lk").onchange=e=>{t.link=e.target.value;upd()};
   r.querySelector(".lg").onchange=e=>{t.lag=Math.max(0,+e.target.value||0);upd()};r.querySelector(".du").onchange=e=>{t.dur=Math.max(1,+e.target.value||1);upd()};
   r.querySelector(".cl").oninput=e=>{t.c=e.target.value;r.querySelector("i").style.background=t.c;upd()};
   r.querySelector(".del").onclick=()=>{if(confirm(D.del)){delTask(t.id);planDlg()}};sl.appendChild(r)})}
-function delTask(id){S.plan.tasks=S.plan.tasks.filter(t=>t.id!==id);S.plan.tasks.forEach(t=>{if(t.pred===id)t.pred=null});save();render()}
+function delTask(id){const ids=[id];for(let i=0;i<ids.length;i++)S.plan.tasks.filter(t=>t.parent===ids[i]).forEach(t=>ids.push(t.id));S.plan.tasks=S.plan.tasks.filter(t=>!ids.includes(t.id));S.plan.tasks.forEach(t=>{if(t.pred===id)t.pred=null});save();render()}
 $("#bPlan").onclick=()=>{planDlg();$("#sdlg").classList.add("open")};
 $("#sClose").onclick=()=>$("#sdlg").classList.remove("open");$("#sdlg").onclick=e=>{if(e.target.id==="sdlg")$("#sdlg").classList.remove("open")};
 $("#sStart").onchange=e=>{if(e.target.value){S.plan.start=e.target.value;save();render()}};
@@ -876,7 +904,7 @@ async function exportPPTX(){
   }
   /* ===== remaining works: Gantt + shoring/notes slides ===== */
   {
-   const pu=PUI[L],PL=S.plan,C=planCalc(),n=PL.tasks.length,keys=planKeys(C);
+   const pu=PUI[L],PL=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C);
    const s1=P.addSlide({masterName:"SAR"});head(s1,strip(S.tx.planTitle[L]),strip(S.tx.planSub[L]));
    /* legend */
    let lx=.4;[["crit",pu.crit],["bar",L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"],["ms",pu.ms],["nw",pu.nw],["st",pu.status],["dep","→ "+pu.dep+" (FS / SS)"]].forEach(([k,txt])=>{
@@ -889,7 +917,7 @@ async function exportPPTX(){
     tx(s1,txt,lx+(k==="dep"?0:.36),1.1,w,.26,{fontSize:9,color:"333333"});lx+=w+.3});
    const cols=[.42,2.95,.85,.55,.72,.72],INFO=cols.reduce((a,b)=>a+b,0),cx0=.4+INFO,cW=W-.4-cx0,top=1.45;
    const d0=C.st-3,d1=C.en+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
-   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,MH=.66,rh=Math.min(.46,(5.9-top-hH-MH)/Math.max(1,n)),y0=top+hH,bodyY=y0,bodyH=MH+n*rh;
+   const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,MH=.7,rh=Math.min(.46,(5.98-top-hH-OV-MH)/Math.max(1,n)),y0=top+hH,yM=y0+OV,yR=yM+MH,bodyY=y0,bodyH=OV+MH+n*rh;
    /* header */
    const ch=[pu.sr,pu.act,pu.pred,pu.dur,pu.start,pu.fin];let ax=.4;
    s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:top,w:INFO,h:hH,fill:{color:DARK},line:{color:DARK}});
@@ -903,23 +931,35 @@ async function exportPPTX(){
     tx(s1,D.getUTCDate(),x,top+hM+hW+hL,dw,hD,{fontSize:5.5,bold:true,color:fr?"8A959C":"222222",align:"center"});
     if(fr)s1.addShape(P.ShapeType.rect,{x:mx(x,dw),y:bodyY,w:dw,h:bodyH,fill:{color:"000000",transparency:94},line:{color:"000000",transparency:100}});
     if(D.getUTCDay()===6)s1.addShape(P.ShapeType.line,{x:mx(x,0),y:bodyY,w:0,h:bodyH,line:{color:"9DB2BB",width:.5}})}
+   /* overall duration row (top) */
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:y0,w:W-.8,h:OV,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.5}});
+   s1.addShape(P.ShapeType.ellipse,{x:mx(.4+(cols[0]-.26)/2,.26),y:y0+(OV-.26)/2,w:.26,h:.26,fill:{color:DARK},line:{color:DARK}});tx(s1,"Σ",.4,y0,cols[0],OV,{fontSize:9,bold:true,color:"FFFFFF",align:"center"});
+   tx(s1,pu.tot,.4+cols[0]+.08,y0,cols[1]-.1,OV,{fontSize:10,bold:true,color:DARK});
+   tx(s1,C.tot,.4+cols[0]+cols[1]+cols[2],y0,cols[3],OV,{fontSize:11,bold:true,color:"222222",align:"center"});
+   tx(s1,fS(iso(C.st)),.4+cols[0]+cols[1]+cols[2]+cols[3],y0,cols[4],OV,{fontSize:8.5,bold:true,color:"222222",align:"center"});
+   tx(s1,fS(iso(C.en)),.4+cols[0]+cols[1]+cols[2]+cols[3]+cols[4],y0,cols[5],OV,{fontSize:8.5,bold:true,color:"222222",align:"center"});
+   {const w=(C.en-C.st+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(C.st),w),y:y0+.05,w,h:OV-.1,fill:{color:DARK},line:{color:DARK},rectRadius:.05});
+    tx(s1,`${C.tot} ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}`,xp(C.st),y0+.05,w,OV-.1,{fontSize:8.5,bold:true,color:"FFFFFF",align:"center"})}
    /* milestone row */
-   s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:y0,w:INFO,h:MH,fill:{color:"FBFDFD"},line:{color:"DFE6EA",width:.5}});
-   tx(s1,"◆  "+pu.ms,.5,y0,INFO-.2,MH,{fontSize:10,bold:true,color:DARK});
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:yM,w:INFO,h:MH,fill:{color:"FBFDFD"},line:{color:"DFE6EA",width:.5}});
+   tx(s1,"◆  "+pu.ms,.5,yM,INFO-.2,MH,{fontSize:10,bold:true,color:DARK});
    keys.forEach(({k,d},i)=>{const x=xc(d);
-    s1.addShape(P.ShapeType.diamond,{x:mx(x-.09,.18),y:y0+.08,w:.18,h:.18,fill:{color:DARK},line:{color:"FFFFFF",width:1.5}});
-    tx(s1,strip(k.t[L]),x-.47,y0+.27,.94,.2,{fontSize:5.5,color:"556070",align:"center",valign:"top"});
-    tx(s1,fS(iso(d)),x-.62,y0+.44,1.24,.18,{fontSize:7.5,bold:true,color:DARK,align:"center"})});
+    s1.addShape(P.ShapeType.diamond,{x:mx(x-.09,.18),y:yM+.08,w:.18,h:.18,fill:{color:DARK},line:{color:"FFFFFF",width:1.5}});
+    tx(s1,strip(k.t[L]),x-.47,yM+.27,.94,.22,{fontSize:5.5,color:"556070",align:"center",valign:"top"});
+    tx(s1,fS(iso(d)),x-.62,yM+.5,1.24,.18,{fontSize:7.5,bold:true,color:DARK,align:"center"})});
    /* rows */
-   const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>y0+MH+r*rh,bh=Math.min(.26,rh*.55);
-   C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF";
+   const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>yR+r*rh,bh=Math.min(.26,rh*.58),fz=rh>=.4?9:rh>=.3?8.5:7.5;
+   C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF",sub=r.depth>0,dur=r.ef-r.es+1;
     s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y,w:W-.8,h:rh,fill:{color:bg},line:{color:"DFE6EA",width:.5}});
-    let x=.4;const vals=[null,strip(t.n[L]),t.pred?`${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?" +"+(+t.lag||0):""}`:pu.none,t.dur,fS(iso(r.s)),fS(iso(r.f))];
-    cols.forEach((w,j)=>{if(j===0){s1.addShape(P.ShapeType.ellipse,{x:mx(x+(w-.3)/2,.3),y:y+(rh-.3)/2,w:.3,h:.3,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?2:.5}});tx(s1,t.id,x,y,w,rh,{fontSize:9,bold:true,color:"FFFFFF",align:"center"})}
-     else tx(s1,vals[j],x+(j===1?.08:0),y,w-(j===1?.1:0),rh,{fontSize:j===1?9:j===3?11:8.5,bold:j!==1&&j!==2,color:j===2?"444444":"222222",align:j===1?"left":"center"});x+=w});
+    let x=.4;const vals=[null,strip(t.n[L]),t.pred?`${t.pred} · ${t.link}${t.link==="SS"||(+t.lag)?" +"+(+t.lag||0):""}`:pu.none,dur,fS(iso(r.s)),fS(iso(r.f))];
+    cols.forEach((w,j)=>{if(j===0){const bw_=sub?.36:.26,bh_=sub?.17:.26;s1.addShape(sub?P.ShapeType.roundRect:P.ShapeType.ellipse,{x:mx(x+(w-bw_)/2+(sub?.03:0),bw_),y:y+(rh-bh_)/2,w:bw_,h:bh_,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.5:.5},rectRadius:.085});tx(s1,sub?r.code:t.id,x+(sub?.03:0),y,w,rh,{fontSize:sub?6.5:8.5,bold:true,color:"FFFFFF",align:"center"})}
+     else tx(s1,vals[j],x+(j===1?.08+(sub?.18:0):0),y,w-(j===1?.1+(sub?.18:0):0),rh,{fontSize:j===1?(sub?fz-.5:fz):j===3?fz+1.5:fz-.5,bold:j===1?!sub:(j!==2),color:j===2?"444444":"222222",align:j===1?"left":"center"});x+=w});
     const bw=(r.f-r.s+1)*dw;
-    s1.addShape(P.ShapeType.roundRect,{x:mx(xp(r.s),bw),y:y+(rh-bh)/2,w:bw,h:bh,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.75:.5},rectRadius:.05,shadow:{type:"outer",color:"000000",opacity:.2,blur:3,offset:1,angle:90}});
-    if(bw>.55)tx(s1,`${t.dur} ${pu.d}`,xp(r.s),y+(rh-bh)/2,bw,bh,{fontSize:8,bold:true,color:"FFFFFF",align:"center"})});
+    if(r.sum){const sh_=.07;s1.addShape(P.ShapeType.rect,{x:mx(xp(r.s),bw),y:y+(rh-sh_)/2-.03,w:bw,h:sh_,fill:{color:c},line:{color:c}});
+     [xp(r.s),xp(r.f+1)-.07].forEach(xx=>s1.addShape(P.ShapeType.triangle,{x:mx(xx,.07),y:y+(rh-sh_)/2-.03+sh_,w:.07,h:.06,fill:{color:c},line:{color:c},flipV:true}));
+     tx(s1,`${dur} ${pu.d}`,xp(r.f+1)+.05,y,.6,rh,{fontSize:7.5,bold:true,color:DARK})}
+    else{s1.addShape(P.ShapeType.roundRect,{x:mx(xp(r.s),bw),y:y+(rh-bh)/2,w:bw,h:bh,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.5:.5},rectRadius:.04,shadow:{type:"outer",color:"000000",opacity:.2,blur:3,offset:1,angle:90}});
+     if(bw>.3)tx(s1,`${dur} ${pu.d}`,xp(r.s),y+(rh-bh)/2,bw,bh,{fontSize:7,bold:true,color:"FFFFFF",align:"center"})}});
    /* dependency arrows */
    C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=by(i)+rh/2,yP=by(pi)+rh/2,ln={color:"2D3338",width:1.1};
     const seg=(x1,y1,x2,y2,arrow)=>{const o={x:mx(Math.min(x1,x2),Math.abs(x2-x1)),y:Math.min(y1,y2),w:Math.abs(x2-x1),h:Math.abs(y2-y1),line:Object.assign({},ln)};
@@ -928,11 +968,11 @@ async function exportPPTX(){
     if(t.link==="SS"){const x0=xp(p.s)+.06;seg(x0,yP+bh/2,x0,yS);seg(x0,yS,xs-.01,yS,true)}
     else{const xe=xp(p.f+1),xm=Math.min(xs-.05,xe+dw*.5);seg(xe,yP,xm,yP);seg(xm,yP,xm,yS);seg(xm,yS,xs-.01,yS,true)}});
    /* status line */
-   const sdy=statusDay();if(sdy>=d0&&sdy<=d1){const x=xc(sdy);s1.addShape(P.ShapeType.line,{x:mx(x,0),y:y0-.02,w:0,h:MH+n*rh+.02,line:{color:"C8503F",width:1.75,dashType:"dash"}});
-    s1.addShape(P.ShapeType.roundRect,{x:mx(x-.05,1.25),y:y0-.01,w:1.25,h:.17,fill:{color:"C8503F"},line:{color:"C8503F"},rectRadius:.08});tx(s1,`${pu.status} · ${fS(iso(sdy))}`,x-.05,y0-.01,1.25,.17,{fontSize:6.5,bold:true,color:"FFFFFF",align:"center"})}
-   s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hH+MH+n*rh,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
+   const sdy=statusDay();if(sdy>=d0&&sdy<=d1){const x=xc(sdy);s1.addShape(P.ShapeType.line,{x:mx(x,0),y:y0-.02,w:0,h:bodyH+.02,line:{color:"C8503F",width:1.75,dashType:"dash"}});
+    s1.addShape(P.ShapeType.roundRect,{x:mx(x-.05,1.25),y:yM+.0,w:1.25,h:.17,fill:{color:"C8503F"},line:{color:"C8503F"},rectRadius:.08});tx(s1,`${pu.status} · ${fS(iso(sdy))}`,x-.05,yM+.0,1.25,.17,{fontSize:6.5,bold:true,color:"FFFFFF",align:"center"})}
+   s1.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hH+bodyH,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
    /* key cards */
-   const cw=(W-.8-4*.12)/5,ky=Math.max(6.0,top+hH+MH+n*rh+.14);
+   const cw=(W-.8-4*.12)/5,ky=Math.max(6.0,top+hH+bodyH+.12);
    keys.forEach(({k,d},i)=>{const x=.4+i*(cw+.12),colr=["3D3935","C8503F","00778B","2E9E6B","D68A00"][i%5],fin=i===keys.length-1;
     s1.addShape(P.ShapeType.roundRect,{x:mx(x,cw),y:ky,w:cw,h:.9,fill:{color:fin?DARK:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.07,shadow:{type:"outer",color:"000000",opacity:.12,blur:5,offset:2,angle:90}});
     s1.addShape(P.ShapeType.rect,{x:mx(x+.06,cw-.12),y:ky,w:cw-.12,h:.06,fill:{color:colr},line:{color:colr}});
@@ -947,7 +987,10 @@ async function exportPPTX(){
    const fw=(W-.8)/5;PL.flow.forEach((f,i)=>{const x=.4+i*fw;
     s2.addShape(P.ShapeType.chevron,{x:mx(x,fw+.08),y:1.95,w:fw+.08,h:1.15,fill:{color:"F4DAD6"},line:{color:"F4DAD6"},flipH:rtl});
     s2.addShape(P.ShapeType.ellipse,{x:mx(x+.4,.3),y:2.05,w:.3,h:.3,fill:{color:"C8503F"},line:{color:"C8503F"}});tx(s2,i+1,x+.4,2.05,.3,.3,{fontSize:10,bold:true,color:"FFFFFF",align:"center"});
-    tx(s2,strip(f[L]),x+.42,2.38,fw-.75,.68,{fontSize:11,bold:true,color:DARK,valign:"top"})});
+    const kd=C.rows.filter(q=>q.t.parent==="A")[i];
+    tx(s2,strip(f[L]),x+.42,2.36,fw-.75,.45,{fontSize:11,bold:true,color:DARK,valign:"top"});
+    if(kd)tx(s2,`${fS(iso(kd.s))} → ${fS(iso(kd.f))} · ${kd.ef-kd.es+1} ${pu.d}${kd.t.pred?` · ${kd.t.pred} ${kd.t.link}${kd.t.link==="SS"?" +"+(+kd.t.lag||0):""}`:""}`,x+.42,2.78,fw-.75,.25,{fontSize:7.5,bold:true,color:"7A3A30",valign:"top"})});
+   tx(s2,pu.assume,.4,3.12,W-.8,.2,{fontSize:7.5,color:"66707A"});
    sec(pu.secK,.4,3.35,4);
    keys.forEach(({k,d},i)=>{const y=3.82+i*.34;s2.addShape(P.ShapeType.rect,{x:mx(.4,4.6),y,w:4.6,h:.34,fill:{color:i%2?"F6F9FA":"FFFFFF"},line:{color:"DFE6EA",width:.5}});
     tx(s2,strip(k.t[L]),.5,y,2.5,.34,{fontSize:9.5,color:"4A555D"});tx(s2,fDayY(d),2.9,y,2.0,.34,{fontSize:9.5,bold:true,color:DARK,align:"right"})});
