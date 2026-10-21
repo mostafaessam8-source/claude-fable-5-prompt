@@ -537,7 +537,7 @@ function planCalc(P){P=P||S.plan;const ord=planOrder(P),by=Object.fromEntries(P.
 const BASE_ADJ={A:{dur:6},A1:{pred:null,link:"FS",lag:0,dur:2},A2:{pred:"A1",link:"SS",lag:1,dur:3},A3:{pred:"A2",link:"SS",lag:1,dur:3},A4:{pred:"A3",link:"SS",lag:1,dur:3},A5:{pred:"A4",link:"SS",lag:1,dur:2},B:{pred:"A",link:"SS",lag:6,dur:2},C:{pred:"A",link:"FS",lag:0,dur:4},D:{pred:"C",link:"FS",lag:0,dur:10},E:{pred:"D",link:"FS",lag:0,dur:6}};
 function planBase(){const P=S.plan;return planCalc({...P,tasks:P.tasks.map(t=>BASE_ADJ[t.id]?{...t,...BASE_ADJ[t.id],fix:undefined}:{...t})})}
 function planSpan(C){const sp=S.plan.span;if(!sp)return null;const a=C.R[sp.from],b=C.R[sp.to];if(!a||!b)return null;return{s:Math.min(a.s,b.s),f:Math.max(a.f,b.f),dur:Math.max(a.ef,b.ef)-Math.min(a.es,b.es)+1}}
-function planSpans(C){const out=[],A=C.R.A;if(A)out.push({k:"planSpanA",c:"#C8503F",s:A.s,f:A.f,dur:A.ef-A.es+1});const q=planSpan(C);if(q)out.push({k:"planSpan",c:"#6C4AB6",...q});return out}
+function planSpans(C){return[];const out=[],A=C.R.A;if(A)out.push({k:"planSpanA",c:"#C8503F",s:A.s,f:A.f,dur:A.ef-A.es+1});const q=planSpan(C);if(q)out.push({k:"planSpan",c:"#6C4AB6",...q});return out}
 function planKeys(C){return S.plan.keys.map(k=>{let d=null;
   if(k.task==="*")d=k.w==="s"?C.st:C.en;else{const r=C.R[k.task];if(r)d=k.w==="s"?r.s:r.f}
   return d===null?null:{k,d}}).filter(Boolean)}
