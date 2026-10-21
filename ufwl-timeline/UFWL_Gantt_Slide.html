@@ -469,47 +469,12 @@ async function exportPPTX(){
   const legacy=M.filter(m=>endOf(m)===null);
   const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
 
-  /* 1 – title */
-  let sl=P.addSlide();sl.background={color:ACC};
-  [[7.2,0,6.6,7.5,88],[9.6,0,4.4,7.5,86],[5.6,0,1.1,7.5,80]].forEach(b=>sl.addShape(P.ShapeType.parallelogram,{x:mx(b[0],b[2]),y:b[1],w:b[2],h:b[3],fill:{color:"FFFFFF",transparency:b[4]},line:{color:"FFFFFF",transparency:100},flipH:rtl,rotate:0}));
-  sl.addShape(P.ShapeType.roundRect,{x:mx(.8,2.5),y:.6,w:2.5,h:1.5,fill:{color:"FFFFFF"},line:{color:"FFFFFF"},rectRadius:.12});
-  sl.addImage({data:logo,x:mx(.8+.2,2.1),y:.6+(1.5-2.1*102/184)/2,w:2.1,h:2.1*102/184});
-  tx(sl,strip(S.tx.sub[L]).split("·")[0].trim().toUpperCase(),.8,2.7,8,.4,{fontSize:15,color:"D6EEF2",bold:true,charSpacing:rtl?0:5});
-  tx(sl,strip(S.tx.title[L]).split(/\s[–-]\s/)[0],.8,3.1,9.2,1.5,{fontSize:54,bold:true,color:"FFFFFF",valign:"top"});
-  sl.addShape(P.ShapeType.rect,{x:mx(.8,1.6),y:4.7,w:1.6,h:.07,fill:{color:"FFFFFF"},line:{color:"FFFFFF"}});
-  tx(sl,(strip(S.tx.sub[L]).split("·")[1]||strip(S.tx.sub[L])).trim(),.8,4.95,9.2,.9,{fontSize:24,color:"FFFFFF",valign:"top"});
-  tx(sl,`${fL(iso(e0))}  →  ${fL(iso(d1))}`,.8,6.35,9,.4,{fontSize:15,color:"D6EEF2",bold:true});
-
-  /* 2 – summary */
-  sl=P.addSlide({masterName:"SAR"});head(sl,L==="en"?"Executive Summary":"الملخص التنفيذي",strip(S.tx.title[L]));
-  const kp=[[d1-e0,u.total,ACC],[sd,u.susp,"C8503F"],[M.length,u.cnt,DARK],[TR.length,L==="en"?"phases / WBS level 1":"مراحل (مستوى WBS 1)","2E9E6B"]];
-  const cw=2.95,gap=.2,kx=(W-(cw*4+gap*3))/2;
-  kp.forEach((k,i)=>{const x=kx+i*(cw+gap);
-   sl.addShape(P.ShapeType.roundRect,{x:mx(x,cw),y:1.35,w:cw,h:1.95,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.08,shadow:{type:"outer",color:"000000",opacity:.12,blur:6,offset:2,angle:90}});
-   sl.addShape(P.ShapeType.rect,{x:mx(x,cw),y:3.2,w:cw,h:.1,fill:{color:k[2]},line:{color:k[2]}});
-   tx(sl,k[0],x+.2,1.45,cw-.4,.95,{fontSize:48,bold:true,color:k[2]});
-   tx(sl,k[1],x+.2,2.4,cw-.4,.7,{fontSize:12,color:MUT,valign:"top"})});
-  tx(sl,L==="en"?"Elapsed days per phase":"الأيام المنقضية لكل مرحلة",kx,3.6,8,.4,{fontSize:16,bold:true,color:DARK});
-  const sp=TR.map((p,i)=>{const it=p.items.map(o=>o.m);if(!it.length)return null;const st=Math.min(...it.map(m=>dn(m.date)));
-    const nx=TR.slice(i+1).map(q=>q.items.length?Math.min(...q.items.map(o=>dn(o.m.date))):null).find(v=>v!==null);
-    return {p,days:Math.max(0,(nx??d1)-st)}}).filter(Boolean);
-  const tot=sp.reduce((a,x)=>a+Math.max(x.days,3),0),bw=W-2*kx;let cx=0;
-  sp.forEach(x=>{const w=bw*Math.max(x.days,3)/tot;
-   sl.addShape(P.ShapeType.rect,{x:mx(kx+cx,w),y:4.1,w:w-.04,h:.7,fill:{color:phaseHex(x.p.pid)},line:{color:"FFFFFF",width:1}});
-   tx(sl,x.days,kx+cx,4.1,w-.04,.7,{fontSize:20,bold:true,color:"FFFFFF",align:"center"});
-   tx(sl,strip(S.ph[x.p.pid].n[L]),kx+cx+.03,4.85,w-.12,.6,{fontSize:10.5,color:DARK,bold:true,valign:"top"});
-   tx(sl,`${x.days} ${x.days===1?u.day1:u.days}`,kx+cx+.03,5.4,w-.12,.25,{fontSize:10,color:MUT,valign:"top"});cx+=w});
-  sl.addShape(P.ShapeType.roundRect,{x:mx(kx,bw),y:6.05,w:bw,h:.8,fill:{color:DARK},line:{color:DARK},rectRadius:.08});
-  sl.addShape(P.ShapeType.ellipse,{x:mx(kx+.3,.26),y:6.32,w:.26,h:.26,fill:{color:"2E9E6B"},line:{color:"FFFFFF",width:1.5}});
-  tx(sl,L==="en"?"Latest milestone":"آخر ميل ستون",kx+.8,6.08,bw-1,.3,{fontSize:10,color:"B8C4CA",bold:true});
-  const lastM=M[M.length-1];tx(sl,`${fS(lastM.date)} – ${strip(lastM.t[L])}`,kx+.8,6.36,bw-1,.45,{fontSize:17,bold:true,color:"FFFFFF"});
-
   /* 3 – gantt pages */
   const rowsAll=[];TR.forEach(p=>{rowsAll.push({g:p});p.items.forEach(o=>rowsAll.push({o,p}))});
   const cap=22,pages=[];let cur=[];
   rowsAll.forEach(r=>{if(cur.length>=cap){pages.push(cur);cur=r.g?[]:[{g:r.p,cont:true}]}cur.push(r)});if(cur.length)pages.push(cur);
   pages.forEach((rows,pi)=>{
-   sl=P.addSlide({masterName:"SAR"});
+   const sl=P.addSlide({masterName:"SAR"});
    head(sl,(L==="en"?"Gantt Chart":"مخطط جانت")+(pages.length>1?` (${pi+1}/${pages.length})`:""),strip(S.tx.sub[L]));
    /* legend */
    let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]).replace(/ –.*/,"");const w=.45+nm.length*.075;
@@ -566,33 +531,6 @@ async function exportPPTX(){
    });
    sl.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hh+bodyH,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
   });
-
-  /* 4 – details tables */
-  const dcap=10.5,dpages=[];cur=[];let wgt=0;
-  rowsAll.forEach(r=>{const wt=r.g?.7:1;if(wgt+wt>dcap){dpages.push(cur);cur=r.g?[]:[{g:r.p,cont:true}];wgt=cur.length?.7:0}cur.push(r);wgt+=wt});if(cur.length)dpages.push(cur);
-  dpages.forEach((rows,pi)=>{
-   sl=P.addSlide({masterName:"SAR"});
-   head(sl,(L==="en"?"Activity Details":"تفاصيل الأنشطة")+(dpages.length>1?` (${pi+1}/${dpages.length})`:""),L==="en"?"WBS · dates · description":"WBS · التواريخ · الوصف");
-   const hdr=L==="en"?["WBS","Dates","Activity","Description"]:["WBS","التواريخ","النشاط","الوصف"];
-   const ord=a=>rtl?a.slice().reverse():a;
-   const cell=(t,o={})=>({text:String(t),options:Object.assign({fontFace:FONT,fontSize:10,color:"222222",valign:"middle",align:rtl?"right":"left",rtlMode:rtl,lang:rtl?"ar-SA":"en-US",margin:[.03,.1,.03,.1],border:{type:"solid",pt:.5,color:"DFE6EA"}},o)});
-   const tb=[ord(hdr.map(h=>cell(h,{bold:true,color:"FFFFFF",fill:{color:DARK},fontSize:11})))],rh=[.32];
-   let z=0;
-   rows.forEach(r=>{
-    if(r.g){const c=phaseHex(r.g.pid);tb.push(rtl?[cell(`${r.g.code}   ${strip(S.ph[r.g.pid].n[L])}${r.cont?" ("+(L==="en"?"cont.":"تابع")+")":""}`,{bold:true,color:"FFFFFF",fill:{color:c},fontSize:11,colspan:4})]:[cell(`${r.g.code}   ${strip(S.ph[r.g.pid].n[L])}${r.cont?" (cont.)":""}`,{bold:true,color:"FFFFFF",fill:{color:c},fontSize:11,colspan:4})]);rh.push(.32);return}
-    const {o,p}=r,m=o.m,c=phaseHex(p.pid),E=endOf(m),f=z++%2?"F6F9FA":"FFFFFF";
-    const dates=E!==null&&E!==dn(m.date)?`${fS(m.date)} → ${fS(m.end)}`:fS(m.date);
-    tb.push(ord([cell(o.code,{bold:true,color:c,fill:{color:f},align:"center"}),cell(dates,{bold:true,fill:{color:f}}),cell((" ".repeat(0))+strip(m.t[L]),{bold:true,fill:{color:f},margin:[.03,.1,.03,.1+o.depth*.15]}),cell(strip(m.d[L]),{color:"4A555D",fill:{color:f},fontSize:10.5})]));rh.push(.5)});
-   sl.addTable(tb,{x:.4,y:1.2,w:W-.8,colW:ord([.8,1.9,3.6,6.03]),rowH:rh,autoPage:false});
-  });
-
-  /* 5 – closing */
-  sl=P.addSlide();sl.background={color:ACC};
-  [[7.2,0,6.6,7.5,88],[9.6,0,4.4,7.5,86]].forEach(b=>sl.addShape(P.ShapeType.parallelogram,{x:mx(b[0],b[2]),y:b[1],w:b[2],h:b[3],fill:{color:"FFFFFF",transparency:b[4]},line:{color:"FFFFFF",transparency:100},flipH:rtl}));
-  tx(sl,L==="en"?"Thank You":"شكراً لكم",0,2.6,W,1.4,{fontSize:60,bold:true,color:"FFFFFF",align:"center"});
-  tx(sl,strip(S.tx.title[L]),0,4,W,.6,{fontSize:20,color:"D6EEF2",align:"center"});
-  sl.addShape(P.ShapeType.roundRect,{x:(W-2.5)/2,y:5.1,w:2.5,h:1.5,fill:{color:"FFFFFF"},line:{color:"FFFFFF"},rectRadius:.12});
-  sl.addImage({data:logo,x:(W-2.1)/2,y:5.1+(1.5-2.1*102/184)/2,w:2.1,h:2.1*102/184});
 
   await P.writeFile({fileName:`UFWL_Gantt_${L.toUpperCase()}.pptx`});
  }catch(e){console.error(e);alert((L==="en"?"Could not create PowerPoint: ":"تعذر إنشاء ملف PowerPoint: ")+e.message)}
