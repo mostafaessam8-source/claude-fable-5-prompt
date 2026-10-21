@@ -185,6 +185,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
   <div class="g">
    <button class="b" id="bEdit" title="Edit text / تعديل النص">✎ <span>Edit</span></button>
    <button class="b pri" id="bAdd" title="Add activity / إضافة نشاط">＋ <span>Activity</span></button>
+   <button class="b" id="bDesc" title="Show / hide description / إظهار أو إخفاء الوصف">📝 <span>Description</span></button>
    <button class="b on" id="bAuto" title="Auto-translate EN ⇄ AR / ترجمة تلقائية">🌐 <span>Auto</span></button>
    <button class="b" id="bView" title="Switch view / تبديل العرض">⇄ <span>Timeline</span></button>
    <button class="b" id="bDates" title="Edit dates / تعديل التواريخ">📅 <span>Dates</span></button>
@@ -354,15 +355,15 @@ function render(){
  $("#bLang").textContent=L==="en"?"عربي":"English";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
  $("#bAdd span").textContent=L==="en"?"Activity":"نشاط";
- $("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
+ $("#bDesc").classList.toggle("on",S.desc===true);$("#bDesc span").textContent=L==="en"?"Description":"الوصف";$("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
  $("#dTitle").textContent=u.dTitle;$("#dShiftL").textContent=u.shift;$("#dShiftB").textContent=u.shiftB;
  $("#dbox").dir=L==="ar"?"rtl":"ltr";
 }
 function tlPages(TR){const items=TR.flatMap(P=>P.items.map(o=>({...o,P})));const per=6,np=Math.max(1,Math.ceil(items.length/per)),sz=Math.ceil(items.length/np)||1,pg=[];for(let i=0;i<items.length;i+=sz)pg.push(items.slice(i,i+sz));return {pages:pg.length?pg:[[]],all:items}}
 /* lane layouts: few milestones -> 2 big lanes; many -> 4 staggered lanes so everything fits on ONE slide */
-function tlLayout(n){const dense=n>7;
- return dense?{dense:true,AY:586,MD:52,H:150,lanes:[{up:1,y:378},{up:0,y:644},{up:1,y:216},{up:0,y:806}]}
-  :{dense:false,AY:545,MD:72,H:240,lanes:[{up:1,y:225},{up:0,y:627}]}}
+function tlLayout(n){const dense=n>7,d=S.desc===true;
+ if(dense){const H=d?150:112;return {dense:true,AY:586,MD:52,H,lanes:[{up:1,y:528-H},{up:0,y:644},{up:1,y:528-H-H-12},{up:0,y:644+H+12}]}}
+ const H=d?240:180;return {dense:false,AY:545,MD:72,H,lanes:[{up:1,y:465-H},{up:0,y:627}]}}
 const esc2=s=>String(s).replace(/"/g,"&quot;");
 const fDayY=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]} ${D.getUTCFullYear()}`};
 function tlBuild(all,u){
@@ -375,8 +376,8 @@ function tlBuild(all,u){
   const stemTop=up?ln.y+lay.H:lay.AY+lay.MD/2,stemH=up?lay.AY-lay.MD/2-(ln.y+lay.H):ln.y-(lay.AY+lay.MD/2);
   marks+=`<i class="tstem" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" data-i="${m.id}" title="${u.evn} ${i+1}" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${i+1}</div>`;
   cards+=`<div class="tcard" data-i="${m.id}" style="--c:${c};width:${cw}px;height:${lay.H}px;top:${ln.y}px;inset-inline-start:${Math.max(30,Math.min(1890-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
-   <div class="trow"><span class="tdate">${dtxt}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></span><span class="tevn">${u.evn} <bdi>${i+1}</bdi></span></div>
-   <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
+   <div class="trow"><span class="tdate">${dtxt}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></span></div>
+   <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}${S.desc===true?B(`m|${m.id}|d`,"div","tdsc",m.d[L]):""}</div>`});
  if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px;top:${lay.AY-5}px"></i>`;
  return `<div class="taxis">${segs}</div>${chips}${marks}${cards}`}
 function tlRender(deck,TR,u,M,d1,e0){
@@ -490,6 +491,7 @@ function autoTr(path,text){if(!S.auto)return;text=(text||"").trim();const from=L
   if(r.how==="partial"||!r.text){toast(from==="en"?"Offline – Arabic not updated / الترجمة تحتاج إنترنت":"Offline – English not updated / الترجمة تحتاج إنترنت");return}
   setBL(path,r.text.replace(/&/g,"&amp;").replace(/</g,"&lt;"),to);save();
   toast(to==="ar"?"✓ تم تحديث العربي تلقائياً / Arabic updated":"✓ English updated / تم تحديث الإنجليزي")},800)}
+$("#bDesc").onclick=()=>{S.desc=!S.desc;save();render();toast(S.desc?(L==="en"?"Description shown":"تم إظهار الوصف"):(L==="en"?"Description hidden":"تم إخفاء الوصف"))};
 $("#bAuto").onclick=()=>{S.auto=!S.auto;$("#bAuto").classList.toggle("on",S.auto);save();toast(S.auto?"Auto-translate ON / الترجمة التلقائية شغالة":"Auto-translate OFF / الترجمة التلقائية متوقفة")};
 $("#bAuto").classList.toggle("on",S.auto!==false);
 /* language */
@@ -611,7 +613,7 @@ async function exportPPTX(){
    let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]);const w=.3+nm.length*.058;
     sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.17,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
     tx(sl,nm,lx+.34,1.1,w,.26,{fontSize:9,bold:true,color:"333333"});lx+=w+.4});
-   const lanes=dense?[{up:1,y:2.77,h:1.0},{up:0,y:4.63,h:1.0},{up:1,y:1.65,h:1.0},{up:0,y:5.75,h:1.0}]:[{up:1,y:1.9,h:1.6},{up:0,y:4.5,h:1.6}];
+   const dsc=S.desc===true,hD=dense?(dsc?1.0:.78):(dsc?1.6:1.2);const lanes=dense?[{up:1,y:3.77-hD,h:hD},{up:0,y:4.63,h:hD},{up:1,y:3.77-hD-hD-.12,h:hD},{up:0,y:4.63+hD+.12,h:hD}]:[{up:1,y:3.5-hD,h:hD},{up:0,y:4.5,h:hD}];
    const AY=dense?4.2:4.0,MD=dense?.46:.56,X0=.6,XW=12.1,sp=XW/Math.max(n,1),cw=dense?Math.min(2.9,sp*(lanes.length-.9)):Math.min(3.4,sp*1.6);let px=X0;
    const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
    all.forEach((o,i)=>{const cx=X0+(i+.5)*sp;seg(px,cx,hexOf(S.ph[o.P.pid].c));px=cx});seg(px,X0+XW,"C9D3D8");
@@ -626,14 +628,12 @@ async function exportPPTX(){
     sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:ln.y,w:cw,h:ln.h,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.08,shadow:{type:"outer",color:"000000",opacity:.14,blur:6,offset:2,angle:90}});
     sl.addShape(P.ShapeType.rect,{x:mx(cxl+.08,cw-.16),y:ln.y,w:cw-.16,h:.06,fill:{color:c},line:{color:c}});
     const days=E!==null?E-s0+1:0,dtxt=E!==null&&E!==s0?`${fDay(s0)} → ${fS(m.end)} (${days} ${u.days})`:fDayY(s0);
-    const chW=dense?.82:1.05,chH=dense?.19:.24;
-    sl.addShape(P.ShapeType.roundRect,{x:mx(cxl+cw-.1-chW,chW),y:ln.y+.1,w:chW,h:chH,fill:{color:c},line:{color:c},rectRadius:chH/2});
-    tx(sl,`${u.evn} ${i+1}`,cxl+cw-.1-chW,ln.y+.1,chW,chH,{fontSize:dense?6.5:8.5,bold:true,color:"FFFFFF",align:"center"});
-    tx(sl,dtxt,cxl+.1,ln.y+.08,cw-.2-chW-.05,chH+.04,{fontSize:dense?9:13,bold:true,color:"3D3935"});
+    const chH=dense?.19:.24;
+    tx(sl,dtxt,cxl+.1,ln.y+.08,cw-.2,chH+.04,{fontSize:dense?9.5:13,bold:true,color:"3D3935"});
     const f=dense?{tag:6.5,t:9,d:7}:{tag:9,t:14,d:11};
     sl.addText([{text:strip(S.ph[o.P.pid].n[L]),options:{fontSize:f.tag,bold:true,color:c,breakLine:true}},
      {text:strip(m.t[L]),options:{fontSize:f.t,bold:true,color:"3D3935",breakLine:true}},
-     {text:strip(m.d[L]),options:{fontSize:f.d,color:"444D55"}}],
+     ...(dsc?[{text:strip(m.d[L]),options:{fontSize:f.d,color:"444D55"}}]:[])],
      {x:mx(cxl+.1,cw-.2),y:ln.y+chH+.16,w:cw-.2,h:ln.h-chH-.22,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:dense?1:3})});
   }else{
   /* 3 – gantt pages */
