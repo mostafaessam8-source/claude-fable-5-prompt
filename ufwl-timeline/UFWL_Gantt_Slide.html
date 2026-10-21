@@ -8,7 +8,7 @@
 <style>
 :root{--accent:#00778B;--dark:#3D3935;--muted:#66707a;--line:#dfe6ea;--c0:#7A8791;--c1:#C8503F;--c2:#00778B;--c3:#2E9E6B}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:#14171a;font-family:'Inter','Segoe UI',Arial,sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;touch-action:manipulation;background:#14171a;font-family:'Inter','Segoe UI',Arial,sans-serif;overflow:hidden}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 /* toolbar */
 #tb{background:var(--dark);color:#fff;padding:6px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:10}
@@ -54,8 +54,8 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .legend{position:absolute;top:96px;inset-inline:40px;height:34px;display:flex;gap:26px;align-items:center;font-size:16px;color:#333}
 .legend i{display:inline-block;width:28px;height:12px;border-radius:3px;vertical-align:middle;margin-inline-end:7px}
 .legend b{display:inline-block;width:12px;height:12px;transform:rotate(45deg);background:var(--dark);margin-inline-end:8px;vertical-align:middle}
-.gantt{position:absolute;top:134px;inset-inline:40px;border:1px solid var(--line);--lw:850px}
-.row{display:flex;border-bottom:1px solid var(--line);height:40px}
+.gantt{position:absolute;top:134px;inset-inline:40px;border:1px solid var(--line);--lw:780px;user-select:none}
+.row{display:flex;border-bottom:1px solid var(--line);height:39px}
 .info{flex:none;width:var(--lw);display:flex;gap:10px;padding:0 10px;align-items:center;border-inline-end:2px solid #c3ced4;background:#fff;position:relative;z-index:2}
 .n{flex:none;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
 .dt{flex:none;width:92px;font-weight:800;font-size:16px;color:var(--dark);white-space:nowrap}
@@ -67,10 +67,14 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .head .ch{background:#f4f7f8}
 .mrow{height:24px;position:relative;border-bottom:1px solid var(--line)}
 .mrow span{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;white-space:nowrap;background:#e3edf0;border-inline-end:2px solid #fff;color:var(--dark);overflow:hidden}
-.drow{height:26px;position:relative}
+.wrow{height:19px;position:relative;border-bottom:1px solid #fff}
+.wrow span{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#5a6a73;background:#eaf0f2}
+.wrow span.wk{background:#dbe3e6;color:#8a959c}
+.drow{height:24px;position:relative}
 .drow span{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#444;font-weight:700}
 .drow span.wk{background:#e9eef0;color:#999}
 .ov{position:absolute;top:0;bottom:0;inset-inline-start:var(--lw);inset-inline-end:0;z-index:1;pointer-events:none}
+.ov s{position:absolute;top:0;bottom:0;width:0;border-inline-start:1.5px solid #9db2bb;text-decoration:none}
 .ov i{position:absolute;top:0;bottom:0;background:#0000000b;border-inline-start:1px solid #00000010}
 .grp{height:34px}
 .grp .info{background:var(--c);color:#fff;font-weight:800;font-size:17px}
@@ -86,6 +90,18 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .ft div{display:flex;align-items:center;gap:9px}.ft b{font-size:28px;color:#fff}
 .ft .s{width:1px;height:30px;background:#fff4}
 .ft .pn{margin-inline-start:auto;opacity:.7}
+/* ruler */
+.row.z,.row.z .info{background:#f6f9fa}
+.row.hl,.row.hl .info{background:#e4f1f4!important}
+.row.pin,.row.pin .info{background:#d4ebf0!important}
+.row.pin .info{box-shadow:inset 5px 0 0 var(--c)}
+[dir=rtl] .row.pin .info{box-shadow:inset -5px 0 0 var(--c)}
+.lead{position:absolute;top:50%;inset-inline-start:0;border-top:2px dotted var(--c);opacity:.55;z-index:1}
+.vb{position:absolute;top:0;bottom:0;background:var(--c,var(--accent));opacity:.14;display:none;border-inline:2px solid var(--c,var(--accent))}
+.vl{position:absolute;top:0;bottom:0;background:#00778b26;border-inline:1.5px solid var(--accent);display:none;z-index:2}
+.tg{position:absolute;top:1px;transform:translateX(-50%);background:var(--dark);color:#fff;font-size:13px;font-weight:700;padding:2px 10px;border-radius:12px;white-space:nowrap;display:none;z-index:6;box-shadow:0 2px 8px #0005}
+.tg b{color:#ffd54a}
+.gantt{cursor:crosshair}body.edit .gantt{cursor:default}
 /* editing */
 body.edit [data-b]{cursor:text}
 body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
@@ -158,6 +174,9 @@ const DEF_M=[
 const MON={en:["January","February","March","April","May","June","July","August","September","October","November","December"],
  ar:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]};
 const SH={en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],ar:MON.ar};
+const DN={en:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],ar:["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]};
+const DS={en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],ar:["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"]};
+const D1={en:["S","M","T","W","T","F","S"],ar:["ح","ن","ث","ر","خ","ج","س"]};
 const UI={en:{days:"days",day1:"day",act:"Activity / Milestone",lm:"Milestone",lp:"Phase span",la:"Duration until next step",
   total:"days · permit request → permit ready",susp:"days · suspension → permit ready",cnt:"milestones",
   dTitle:"Edit milestone dates",shift:"Shift all dates by (days):",shiftB:"Apply",pn:"UFWL Project"},
@@ -188,29 +207,32 @@ function render(){
  const e0=dn(M[0].date),d0=e0-4,d1=dn(M[M.length-1].date),N=d1+3-d0+1,w=100/N,u=UI[L];
  const x=d=>((d-d0)*w).toFixed(3)+"%",xc=d=>((d-d0+.5)*w).toFixed(3)+"%";
  const deck=$("#deck");deck.dir=L==="ar"?"rtl":"ltr";deck.lang=L;
- let dayc="",ov="",mons=[],last=-1;
+ let dayc="",wkc="",ov="",mons=[],last=-1;
  for(let i=0;i<N;i++){const D=dd(d0+i),k=D.getUTCFullYear()*12+D.getUTCMonth();
   if(k!==last){mons.push({m:D.getUTCMonth(),y:D.getUTCFullYear(),a:i,b:i});last=k}else mons[mons.length-1].b=i;
   const wk=[5,6].includes(D.getUTCDay());
   dayc+=`<span class="${wk?"wk":""}" style="inset-inline-start:${(i*w).toFixed(3)}%;width:${w}%">${D.getUTCDate()}</span>`;
+  wkc+=`<span class="${wk?"wk":""}" style="inset-inline-start:${(i*w).toFixed(3)}%;width:${w}%">${D1[L][D.getUTCDay()]}</span>`;
+  if(D.getUTCDay()===0)ov+=`<s style="inset-inline-start:${(i*w).toFixed(3)}%"></s>`;
   if(wk)ov+=`<i style="inset-inline-start:${(i*w).toFixed(3)}%;width:${w}%"></i>`}
  const mon=mons.map(m=>`<span style="inset-inline-start:${(m.a*w).toFixed(3)}%;width:${((m.b-m.a+1)*w).toFixed(3)}%">${(m.b-m.a)<8?MON[L][m.m]:MON[L][m.m]+" "+m.y}</span>`).join("");
- let rows=`<div class="row head"><div class="info">${u.act}</div><div class="ch"><div class="mrow">${mon}</div><div class="drow">${dayc}</div></div></div>`;
+ let rows=`<div class="row head"><div class="info">${u.act}</div><div class="ch"><div class="mrow">${mon}</div><div class="wrow">${wkc}</div><div class="drow">${dayc}</div></div></div>`;
  Object.keys(PH).forEach(pid=>{const it=M.filter(m=>m.ph===pid);if(!it.length)return;const c=PH[pid].c,a=dn(it[0].date),b=dn(it[it.length-1].date);
   rows+=`<div class="row grp" style="--c:${c}"><div class="info">${B("p|"+pid,"span","",S.ph[pid].n[L])}<em>${fL(it[0].date)} → ${fL(it[it.length-1].date)}</em></div><div class="ch"><div class="span" style="inset-inline-start:${x(a)};width:${((b-a+1)*w).toFixed(3)}%"></div></div></div>`;
   it.forEach(m=>{const gi=M.indexOf(m),cur=dn(m.date),nx=M[gi+1]?dn(M[gi+1].date):null,fin=gi===M.length-1,dur=nx!==null?nx-cur:0;
    const bar=dur>0?`<div class="act" style="inset-inline-start:${xc(cur)};width:${(dur*w).toFixed(3)}%">${dur>=8?dur+" "+u.days:""}</div>`:"";
    const lbl=dur>0&&dur<8?`<span class="lbl" style="inset-inline-start:calc(${xc(nx)} + 8px)"><bdi>+${dur}</bdi> ${dur===1?u.day1:u.days}</span>`:"";
-   rows+=`<div class="row" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${gi+1}</div><div class="dt">${fS(m.date)}</div>
+   rows+=`<div class="row ms ${gi%2?"z":""}" data-i="${m.id}" data-s="${cur}" data-e="${nx===null?cur:nx}" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${gi+1}</div><div class="dt">${fS(m.date)}</div>
     <div class="tx">${B(`m|${m.id}|t`,"b","",m.t[L])}${B(`m|${m.id}|d`,"small","",m.d[L])}</div></div>
-    <div class="ch">${bar}<div class="dia ${fin?"fin":""}" style="inset-inline-start:${xc(cur)}"></div>${lbl}</div></div>`})});
+    <div class="ch"><div class="lead" style="width:${xc(cur)}"></div>${bar}<div class="dia ${fin?"fin":""}" style="inset-inline-start:${xc(cur)}"></div>${lbl}</div></div>`})});
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
  deck.innerHTML=`<div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>
  <div class="legend">${Object.entries(PH).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(S.ph[k].n[L]).replace(/ –.*/,"")}</span>`).join("")}<span><b></b>${u.lm}</span><span><i style="background:#888;opacity:.85"></i>${u.la}</span></div>
- <div class="gantt">${rows}<div class="ov">${ov}</div></div>
+ <div class="gantt">${rows}<div class="ov">${ov}<div class="vb" id="vb"></div><div class="vl" id="vl"></div><div class="tg" id="tg"></div></div></div>
  <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div>`;
  deck.querySelectorAll("[data-b]").forEach(e=>{e.contentEditable=editMode;e.spellcheck=false});
  $("#bLang").textContent=L==="en"?"عربي":"English";
+ G={d0,N,w};applyPin();
  document.body.dir="ltr";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
  $("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";
@@ -245,6 +267,37 @@ $("#fHi").oninput=e=>withSel(()=>document.execCommand("hiliteColor",false,e.targ
 $("#deck").addEventListener("input",e=>{const el=e.target.closest("[data-b]");if(!el)return;setB(el.dataset.b,el.innerHTML);save()});
 $("#deck").addEventListener("paste",e=>{if(e.target.closest("[data-b]")){e.preventDefault();document.execCommand("insertText",false,(e.clipboardData||window.clipboardData).getData("text/plain"))}});
 $("#deck").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest("[data-b]")){e.preventDefault();e.target.blur()}});
+/* ruler */
+let G=null,pinned=null;
+const fDay=n=>{const D=dd(n);return `${DS[L][D.getUTCDay()]} ${D.getUTCDate()} ${SH[L][D.getUTCMonth()]}`};
+function ruler(e,down){
+ if(!G)return;const g=$(".gantt"),ov=$(".ov");if(!g||!ov)return;
+ const rect=ov.getBoundingClientRect(),rtl=L==="ar";
+ const row=e.target.closest(".row.ms"),inChart=e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom;
+ const vl=$("#vl"),tg=$("#tg");
+ g.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));
+ if(row&&!row.classList.contains("pin"))row.classList.add("hl");
+ if(down&&row&&!(editMode&&e.target.closest("[data-b]"))){pinned=pinned===row.dataset.i?null:row.dataset.i;applyPin();}
+ let idx=null;
+ if(inChart){const f=rtl?(rect.right-e.clientX)/rect.width:(e.clientX-rect.left)/rect.width;idx=Math.min(G.N-1,Math.max(0,Math.floor(f*G.N)));}
+ const act=row||g.querySelector(".row.pin");
+ span(act);
+ let txt="",cx=null;
+ if(idx!==null){vl.style.display="block";vl.style.insetInlineStart=(idx*G.w)+"%";vl.style.width=G.w+"%";
+  txt=fDay(G.d0+idx);cx=(idx+.5)/G.N;}
+ else{vl.style.display="none";if(act){const s=+act.dataset.s;txt=fDay(s);cx=(s-G.d0+.5)/G.N;}}
+ if(act&&idx!==null){const s=+act.dataset.s,en=+act.dataset.e;if(idx>=s-G.d0&&idx<=en-G.d0)txt+=" ✓";}
+ if(txt){tg.style.display="block";tg.textContent=txt;const px=Math.min(rect.width-70,Math.max(70,(rtl?1-cx:cx)*rect.width))/ (rect.width/ov.offsetWidth);tg.style.left=px+"px";}
+ else tg.style.display="none";
+}
+function span(row){const vb=$("#vb");if(!vb)return;if(!row){vb.style.display="none";return}
+ const s=+row.dataset.s,en=+row.dataset.e;vb.style.display="block";vb.style.setProperty("--c",row.style.getPropertyValue("--c"));
+ vb.style.insetInlineStart=((s-G.d0)*G.w)+"%";vb.style.width=((en-s+1)*G.w)+"%";}
+function applyPin(){const g=$(".gantt");if(!g)return;g.querySelectorAll(".row.pin").forEach(r=>r.classList.remove("pin"));
+ const r=pinned!==null&&g.querySelector(`.row.ms[data-i="${pinned}"]`);if(r){r.classList.add("pin");span(r);}else span(null);}
+$("#vp").addEventListener("pointermove",e=>{if(e.pointerType!=="touch")ruler(e,false)});
+$("#vp").addEventListener("pointerdown",e=>{if(e.target.closest(".gantt"))ruler(e,true)});
+$("#vp").addEventListener("pointerleave",()=>{$("#vl")&&($("#vl").style.display="none");$("#tg")&&($("#tg").style.display="none");document.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));applyPin()});
 /* language */
 $("#bLang").onclick=()=>{S.lang=L=L==="en"?"ar":"en";save();render()};
 /* dates dialog */
