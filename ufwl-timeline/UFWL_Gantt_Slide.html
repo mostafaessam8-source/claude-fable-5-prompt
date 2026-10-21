@@ -93,6 +93,9 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .ft div{display:flex;align-items:center;gap:9px}.ft b{font-size:28px;color:#fff}
 .ft .s{width:1px;height:30px;background:#fff4}
 .ft .pn{margin-inline-start:auto;opacity:.7}
+.rdel{display:none;flex:none;width:26px;height:26px;border:1px solid #e0b4ad;background:#fff;color:#c0392b;border-radius:7px;cursor:pointer;font:700 14px/1 inherit;padding:0;z-index:60}
+body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
+.cp .rdel,.tn .rdel{width:22px;height:22px;font-size:12px}
 /* add dialog */
 #abox .ab{padding:14px 18px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 #abox .full{grid-column:1/-1}
@@ -268,7 +271,7 @@ function render(){
  let zi=0;
  TR.forEach(P=>{const c=S.ph[P.pid].c,it=P.items.map(o=>o.m);
   const a=it.length?Math.min(...it.map(m=>dn(m.date))):null,b=it.length?Math.max(...it.map(m=>endOf(m)??dn(m.date))):null;
-  rows+=`<div class="row grp" style="--c:${c};height:34px"><div class="info"><span class="gc">${P.code}</span>${B("p|"+P.pid,"span","",S.ph[P.pid].n[L])}<em>${a===null?"":fL(iso(a))+" → "+fL(iso(b))}</em></div><div class="ch">${a===null?"":`<div class="span" style="inset-inline-start:${x(a)};width:${((b-a+1)*w).toFixed(3)}%"></div>`}</div></div>`;
+  rows+=`<div class="row grp" style="--c:${c};height:34px"><div class="info"><span class="gc">${P.code}</span>${B("p|"+P.pid,"span","",S.ph[P.pid].n[L])}<em>${a===null?"":fL(iso(a))+" → "+fL(iso(b))}</em>${TR.length>1?`<button class="rdel" data-delp="${P.pid}" title="Delete phase / حذف المرحلة">✕</button>`:""}</div><div class="ch">${a===null?"":`<div class="span" style="inset-inline-start:${x(a)};width:${((b-a+1)*w).toFixed(3)}%"></div>`}</div></div>`;
   P.items.forEach(({m,code,depth})=>{const cur=dn(m.date),E=endOf(m);let bar="",lbl="",dia="",s=cur,e=cur;
    if(E!==null){e=E;const days=E-cur+1;
     bar=`<div class="act" style="inset-inline-start:${x(cur)};width:${(days*w).toFixed(3)}%">${days>=5?days+" "+u.days:""}</div>`;
@@ -279,7 +282,7 @@ function render(){
     lbl=dur>0&&dur<8?`<span class="lbl" style="inset-inline-start:calc(${xc(nx)} + 8px)"><bdi>+${dur}</bdi> ${dur===1?u.day1:u.days}</span>`:"";
     dia=`<div class="dia ${gi===legacy.length-1?"fin":""}" style="inset-inline-start:${xc(cur)}"></div>`}
    rows+=`<div class="row ms l${(m.lvl||2)} ${(zi++)%2?"z":""}" data-i="${m.id}" data-s="${s}" data-e="${e}" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${code}</div><div class="dt">${fS(m.date)}</div>
-    <div class="tx" style="padding-inline-start:${depth*18}px">${B(`m|${m.id}|t`,"b","",m.t[L])}${B(`m|${m.id}|d`,"small","",m.d[L])}</div></div>
+    <div class="tx" style="padding-inline-start:${depth*18}px">${B(`m|${m.id}|t`,"b","",m.t[L])}${B(`m|${m.id}|d`,"small","",m.d[L])}</div><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button></div>
     <div class="ch"><div class="lead" style="width:${E!==null?x(cur):xc(cur)}"></div>${bar}${dia}${lbl}</div></div>`})});
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
  deck.innerHTML=`<div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>
@@ -354,7 +357,13 @@ function span(row){const vb=$("#vb");if(!vb)return;if(!row){vb.style.display="no
 function applyPin(){const g=$(".gantt");if(!g)return;g.querySelectorAll(".row.pin").forEach(r=>r.classList.remove("pin"));
  const r=pinned!==null&&g.querySelector(`.row.ms[data-i="${pinned}"]`);if(r){r.classList.add("pin");span(r);}else span(null);}
 $("#vp").addEventListener("pointermove",e=>{if(e.pointerType!=="touch")ruler(e,false)});
-$("#vp").addEventListener("pointerdown",e=>{if(e.target.closest(".gantt"))ruler(e,true)});
+$("#vp").addEventListener("pointerdown",e=>{if(e.target.closest(".rdel"))return;if(e.target.closest(".gantt"))ruler(e,true)});
+$("#deck").addEventListener("click",e=>{const b=e.target.closest(".rdel");if(!b)return;
+ if(b.dataset.del!==undefined){const id=+b.dataset.del,m=S.ms.find(x=>x.id===id);if(!m)return;
+  const n=1+S.ms.filter(x=>x.par===id).length;
+  if(confirm((L==="en"?"Delete this activity":"حذف هذا النشاط")+` "${strip(m.t[L])}"`+(S.ms.some(x=>x.par===id)?(L==="en"?" and its sub-activities?":" وأنشطته الفرعية؟"):"؟"))){removeIds(id);if(pinned===String(id))pinned=null;save();render()}}
+ else if(b.dataset.delp){const k=b.dataset.delp;if(confirm(L==="en"?"Delete this phase with all its activities?":"حذف هذه المرحلة بكل أنشطتها؟")){S.ms=S.ms.filter(x=>x.ph!==k);delete S.ph[k];pinned=null;save();render()}}
+});
 $("#vp").addEventListener("pointerleave",()=>{$("#vl")&&($("#vl").style.display="none");$("#tg")&&($("#tg").style.display="none");document.querySelectorAll(".row.hl").forEach(r=>r.classList.remove("hl"));applyPin()});
 /* language */
 $("#bLang").onclick=()=>{S.lang=L=L==="en"?"ar":"en";save();render()};
