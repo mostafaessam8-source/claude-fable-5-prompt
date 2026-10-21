@@ -139,8 +139,8 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .pov svg{position:absolute;inset:0;overflow:visible}.pov svg path{fill:none;stroke:#2d3338;stroke-width:1.8px;opacity:.75}.pov svg path.ah{fill:#2d3338;stroke:none;opacity:.9}
 .plnw{position:absolute;top:0;bottom:0;background:#0000000c}.plwk{position:absolute;top:0;bottom:0;width:0;border-inline-start:1.5px solid #9db2bb;text-decoration:none}
 .pmrow{background:#fbfdfd}.pmrow .pinfo{background:#fbfdfd}
-.pkd{position:absolute;top:14px;width:22px;height:22px;background:var(--dark);transform:rotate(45deg);border:3px solid #fff;box-shadow:0 0 0 1.5px var(--dark);z-index:4}
-.pkl{position:absolute;top:40px;width:140px;text-align:center;line-height:1.15;z-index:4}.pkl span{display:block;font-size:12px;color:#556}.pkl b{font-size:15px;color:var(--dark)}
+.pkd{position:absolute;top:38px;width:22px;height:22px;background:var(--dark);transform:rotate(45deg);border:3px solid #fff;box-shadow:0 0 0 1.5px var(--dark);z-index:4}
+.pkl{position:absolute;width:180px;text-align:center;line-height:1.15;z-index:4;white-space:nowrap}.pkl.dn{top:64px}.pkl.up{top:2px;height:32px;display:flex;flex-direction:column;justify-content:flex-end}.pkl span{display:block;font-size:12px;color:#556}.pkl b{font-size:15px;color:var(--dark)}
 .pstat{position:absolute;top:-2px;bottom:0;width:0;border-inline-start:3px dashed #C8503F;z-index:5}.pstat b{position:absolute;top:2px;inset-inline-start:6px;background:#C8503F;color:#fff;font-size:12px;font-weight:800;padding:1px 8px;border-radius:10px;white-space:nowrap}
 .plleg{gap:26px;font-size:15px}.plleg .lbar{display:inline-block;width:30px;height:12px;border-radius:4px;background:#00778B;margin-inline-end:7px;vertical-align:middle}.plleg .lbar.crit{outline:2px solid #222;outline-offset:1px}.plleg .lnw{display:inline-block;width:18px;height:14px;background:#cfd8dc;margin-inline-end:7px;vertical-align:middle}.plleg .lst{display:inline-block;width:0;height:16px;border-inline-start:3px dashed #C8503F;margin-inline-end:9px;vertical-align:middle}
 .pkeys{position:absolute;inset-inline:40px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
@@ -149,7 +149,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .sumrow .c2 b{font-weight:800;font-size:17px}.subrow .c2{padding-inline-start:26px;font-size:15.5px}.subrow .c1{padding-inline-start:20px}
 .pgantt.cp .ptask .c2{font-size:14.5px;line-height:1.1}.pgantt.cp .subrow .c2{font-size:14px}.pgantt.cp .pbadge{width:28px;height:28px;font-size:14px}.pgantt.cp .pbadge.sub{width:auto;height:22px;font-size:12px}.pgantt.cp .c4{font-size:17px}.pgantt.cp .c5,.pgantt.cp .c6,.pgantt.cp .c3{font-size:15px}
 .pbar.sum{border-radius:2px;box-shadow:none;height:14px}.pbar.sum:before,.pbar.sum:after{content:"";position:absolute;top:100%;border-style:solid;border-width:7px 6px 0 6px;border-color:var(--c) transparent transparent transparent}.pbar.sum:before{inset-inline-start:0}.pbar.sum:after{inset-inline-end:0}
-.plleg .pnote{margin-inline-start:auto;font-size:14px;font-style:italic;color:var(--muted)}.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
+.pbase{position:absolute;height:6px;border-radius:3px;background:#8a959c;opacity:.85;z-index:2}.plleg .lbase{display:inline-block;width:30px;height:6px;border-radius:3px;background:#8a959c;margin-inline-end:7px;vertical-align:middle}.plleg .pnote{margin-inline-start:auto;font-size:14px;font-style:italic;color:var(--muted)}.psl{position:absolute;font-size:14px;font-weight:800;color:var(--dark);z-index:3;white-space:nowrap}
 .pov0 .pinfo{background:#fff}.pbar.tot{background:var(--dark);border-radius:6px;box-shadow:none}.pbar.tot em{font-size:15px;letter-spacing:.02em}
 .pfl small{display:block;font-size:15px;font-weight:700;color:#7a3a30;margin-top:6px}.pfl>div span{margin-top:0}
 .passume{font-size:16px;color:var(--muted);margin-top:10px;font-style:italic}
@@ -350,7 +350,8 @@ let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
- c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan();else if(S.plan.ver!==2){const d=defPlan(),has=S.plan.tasks.some(x=>x.parent);if(!has&&S.plan.tasks.some(x=>x.id==="A")){const i=S.plan.tasks.findIndex(x=>x.id==="A");S.plan.tasks.splice(i+1,0,...d.tasks.filter(x=>x.parent==="A"))}S.plan.ver=2}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults(),dt=d.tx;S=Object.assign(d,c[0]);S.tx=Object.assign(dt,c[0].tx||{});S.view=S.view||"gantt";if(S.auto===undefined)S.auto=true;if(!S.plan)S.plan=defPlan();else if(S.plan.ver!==3){const d=defPlan(),has=S.plan.tasks.some(x=>x.parent);if(!has&&S.plan.tasks.some(x=>x.id==="A")){const i=S.plan.tasks.findIndex(x=>x.id==="A");S.plan.tasks.splice(i+1,0,...d.tasks.filter(x=>x.parent==="A"))}
+  d.tasks.filter(x=>["A","A1","A2","A3","A4","A5","B","C","D","E"].includes(x.id)).forEach(x=>{const o=S.plan.tasks.find(y=>y.id===x.id);if(o){o.dur=x.dur;o.pred=x.pred;o.link=x.link;o.lag=x.lag;delete o.fix}});S.plan.ver=3}}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -478,18 +479,18 @@ function goRow2(id){}
  d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* ================= REMAINING WORKS PLAN (CPM-style Gantt) ================= */
-function defPlan(){const T_=T;return{ver:2,start:"2026-10-13",
+function defPlan(){const T_=T;return{ver:3,start:"2026-10-13",
  tasks:[
-  {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:6},
+  {id:"A",n:T_("Shoring system installation","تركيب نظام الدعم (Shoring)"),c:"#C8503F",pred:null,link:"FS",lag:0,dur:4},
   {id:"A1",parent:"A",n:T_("Excavation / digging for H-Beam","الحفر لأعمدة H-Beam"),c:"#D9695A",pred:null,link:"FS",lag:0,dur:2},
-  {id:"A2",parent:"A",n:T_("Installation of H-Beam","تركيب أعمدة H-Beam"),c:"#D9695A",pred:"A1",link:"SS",lag:1,dur:3},
-  {id:"A3",parent:"A",n:T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),c:"#D9695A",pred:"A2",link:"SS",lag:1,dur:3},
-  {id:"A4",parent:"A",n:T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),c:"#D9695A",pred:"A3",link:"SS",lag:1,dur:3},
-  {id:"A5",parent:"A",n:T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)"),c:"#D9695A",pred:"A4",link:"SS",lag:1,dur:2},
-  {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:6,dur:2},
-  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:4},
-  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:10},
-  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:6},
+  {id:"A2",parent:"A",n:T_("Installation of H-Beam","تركيب أعمدة H-Beam"),c:"#D9695A",pred:"A1",link:"SS",lag:1,dur:2},
+  {id:"A3",parent:"A",n:T_("Concrete work for H-Beam","أعمال الخرسانة لأعمدة H-Beam"),c:"#D9695A",pred:"A2",link:"SS",lag:1,dur:2},
+  {id:"A4",parent:"A",n:T_("Bracing for shoring","التدعيم (Bracing) لنظام الدعم"),c:"#D9695A",pred:"A3",link:"SS",lag:1,dur:1},
+  {id:"A5",parent:"A",n:T_("Corrugated sheets installation / insertion","تركيب / إدخال الألواح المضلعة (Corrugated sheets)"),c:"#D9695A",pred:"A4",link:"SS",lag:0,dur:1},
+  {id:"B",n:T_("Lean concrete","الخرسانة العادية (Lean concrete)"),c:"#00778B",pred:"A",link:"SS",lag:4,dur:1},
+  {id:"C",n:T_("Pit trench – reinforcement, formwork & concrete","خندق الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"A",link:"FS",lag:0,dur:3},
+  {id:"D",n:T_("Pit slab / raft – reinforcement, formwork & concrete","بلاطة / لبشة الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"C",link:"FS",lag:0,dur:9},
+  {id:"E",n:T_("Pit wall – reinforcement, formwork & concrete","جدار الحفرة – حديد التسليح والشدات والخرسانة"),c:"#00778B",pred:"D",link:"FS",lag:0,dur:5},
   {id:"F",n:T_("Building foundation – excavation, compaction / testing, reinforcement & concrete","أساسات المبنى – حفر ودمك / اختبار وحديد تسليح وخرسانة"),c:"#2E9E6B",pred:"D",link:"FS",lag:0,dur:12},
   {id:"G",n:T_("Backfilling works for the building","أعمال الردم للمبنى"),c:"#D68A00",pred:"F",link:"FS",lag:0,dur:5}],
  keys:[{t:T_("Commencement","بدء الأعمال"),task:"*",w:"s"},{t:T_("Shoring installation complete","اكتمال تركيب نظام الدعم"),task:"A",w:"f"},{t:T_("Pit works complete (pit wall)","اكتمال أعمال الحفرة (جدار الحفرة)"),task:"E",w:"f"},{t:T_("Building foundation complete","اكتمال أساسات المبنى"),task:"F",w:"f"},{t:T_("Overall completion","الإنجاز الكلي"),task:"*",w:"f"}],
@@ -498,8 +499,8 @@ function defPlan(){const T_=T;return{ver:2,start:"2026-10-13",
   T_("Working week is Saturday to Thursday. Fridays are non-working.","أسبوع العمل من السبت إلى الخميس، والجمعة إجازة."),
   T_("Lean concrete runs parallel to shoring (SS link) and is placed only in bays where shoring is installed.","الخرسانة العادية تسير بالتوازي مع الدعم (علاقة SS) وتُصب فقط في الأجزاء التي تم تركيب الدعم فيها."),
   T_("Building foundation is linked to completion of the pit slab / raft (FS link) and runs parallel to the pit wall. Change its predecessor to E if it must follow the pit wall.","أساسات المبنى مرتبطة بإنجاز بلاطة / لبشة الحفرة (علاقة FS) وتسير بالتوازي مع جدار الحفرة. يمكن تغيير سابقها إلى E إذا لزم أن تلي جدار الحفرة.")]}}
-const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",tot:"Overall project duration",assume:"Durations and links of the five sub-activities are proposed to fit within the 6 working days of Activity A (editable).",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
- ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",tot:"المدة الإجمالية للمشروع",assume:"مدد وعلاقات الأنشطة الخمسة الفرعية مقترحة لتقع ضمن 6 أيام عمل للنشاط A (قابلة للتعديل).",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
+const PUI={en:{sr:"Sr",act:"Activity",pred:"Predecessor",dur:"Dur. (wd)",start:"Start",fin:"Finish",none:"—",status:"Status date",crit:"Critical path",ms:"Milestone",wk:"Week",nw:"Non-working day",dep:"Dependency",wd:"working days",wdn:"Working day",ovr:"Overall completion",act2:"activities",critN:"critical",whatif:"If works start on",shift:"overall completion would be",sh2:"calendar days later than proposed",src:"Source: Gulf Development Company for Contracting – Programme Rev 01 (12 Oct 2026), forwarded by SAR Construction Manager",secF:"Shoring works sequence (Activity A)",tot:"Overall project duration",base:"baseline",bl:"Baseline (contractor programme Rev 01)",assume:"Durations and links of the five sub-activities are proposed to fit within the 6 working days of Activity A (editable).",secK:"Key dates (automatic)",secN:"Notes & conditions",secW:"What-if scenario",perm:"permit-ready date",d:"d"},
+ ar:{sr:"م",act:"النشاط",pred:"السابق",dur:"المدة (أيام عمل)",start:"البداية",fin:"النهاية",none:"—",status:"تاريخ الموقف",crit:"المسار الحرج",ms:"ميل ستون",wk:"أسبوع",nw:"يوم غير عمل",dep:"علاقة ارتباط",wd:"يوم عمل",wdn:"يوم العمل",ovr:"الإنجاز الكلي",act2:"أنشطة",critN:"حرجة",whatif:"إذا بدأت الأعمال في",shift:"فسيكون الإنجاز الكلي",sh2:"يوماً (تقويمياً) بعد المقترح",src:"المصدر: برنامج شركة الخليج للتطوير للمقاولات – المراجعة 01 (12 أكتوبر 2026)، مُحال من مدير الإنشاءات في SAR",secF:"تسلسل أعمال الدعم (النشاط A)",tot:"المدة الإجمالية للمشروع",base:"الأساس",bl:"الأساس (برنامج المقاول Rev 01)",assume:"مدد وعلاقات الأنشطة الخمسة الفرعية مقترحة لتقع ضمن 6 أيام عمل للنشاط A (قابلة للتعديل).",secK:"التواريخ الرئيسية (تلقائية)",secN:"ملاحظات وشروط",secW:"سيناريو افتراضي",perm:"تاريخ جاهزية التصريح",d:"يوم"}};
 const isW=d=>dd(d).getUTCDay()!==5;
 const wdBetween=(a,b)=>{let n=0;for(let x=a;x<=b;x++)if(isW(x))n++;return n};
 let planEdit=false,PG=null,planPin=null;
@@ -530,6 +531,8 @@ function planCalc(P){P=P||S.plan;const ord=planOrder(P),by=Object.fromEntries(P.
   mlf[r.t.id]=lf;return memo[r.t.id]=lf-dur+1};
  rows.forEach(x=>{x.ls=LS(x);x.flt=x.ls-x.es;x.crit=x.flt<=0});
  return{rows,R,st:Math.min(...rows.map(x=>x.s)),en:Math.max(...rows.map(x=>x.f)),tot:end+1}}
+const BASE_ADJ={A:{dur:6},A1:{pred:null,link:"FS",lag:0,dur:2},A2:{pred:"A1",link:"SS",lag:1,dur:3},A3:{pred:"A2",link:"SS",lag:1,dur:3},A4:{pred:"A3",link:"SS",lag:1,dur:3},A5:{pred:"A4",link:"SS",lag:1,dur:2},B:{pred:"A",link:"SS",lag:6,dur:2},C:{pred:"A",link:"FS",lag:0,dur:4},D:{pred:"C",link:"FS",lag:0,dur:10},E:{pred:"D",link:"FS",lag:0,dur:6}};
+function planBase(){const P=S.plan;return planCalc({...P,tasks:P.tasks.map(t=>BASE_ADJ[t.id]?{...t,...BASE_ADJ[t.id],fix:undefined}:{...t})})}
 function planKeys(C){return S.plan.keys.map(k=>{let d=null;
   if(k.task==="*")d=k.w==="s"?C.st:C.en;else{const r=C.R[k.task];if(r)d=k.w==="s"?r.s:r.f}
   return d===null?null:{k,d}}).filter(Boolean)}
@@ -538,9 +541,9 @@ function statusDay(){return Math.max(...S.ms.map(m=>endOf(m)??dn(m.date)))}
 function planSlides(u,startIdx){
  const pu=PUI[L],P=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),leaf=C.rows.filter(x=>!x.sum),pe=planEdit||editMode;
  const dcell=(d,attr,id)=>pe?`<span class="pdt">${fS(iso(d))}<input type="date" data-pf="${attr}" ${id?`data-t="${id}"`:""} value="${iso(d)}"></span>`:fS(iso(d));
- const d0=C.st-3,d1=C.en+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
+ const BS=planBase(),d0=Math.min(C.st,BS.st)-3,d1=Math.max(C.en,BS.en)+2,N=d1-d0+1,INFO=800,CHW=1040,dw=CHW/N,xp=d=>(d-d0)*dw,xc=d=>(d-d0+.5)*dw;
  PG={d0,N,CHW};
- const OV=50,MH=84,rh=Math.max(32,Math.min(72,Math.floor(492/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
+ const OV=50,MH=96,rh=Math.max(32,Math.min(72,Math.floor(480/Math.max(1,n)))),HH=94,bh=Math.min(34,Math.round(rh*.58));
  /* header */
  let mons=[],wk="",wl="",dy="",shade="",last=-1;
  for(let d=d0;d<=d1;d++){const D=dd(d),k=D.getUTCFullYear()*12+D.getUTCMonth(),x=xp(d),w2=D.getUTCDay()===5;
@@ -554,10 +557,10 @@ function planSlides(u,startIdx){
  let wks="",wi=1;for(let a=d0;a<=d1;){let b=a;while(b<d1&&dd(b).getUTCDay()!==5)b++;if(b>d1)b=d1;const c=(b-a+1)*dw>60;wks+=`<span class="${wi%2?"":"alt"}" style="inset-inline-start:${xp(a)}px;width:${(b-a+1)*dw}px">${c?pu.wk+" "+wi:""}</span>`;a=b+1;wi++}
  const head=`<div class="prow phead"><div class="pinfo"><b class="c1">${pu.sr}</b><b class="c2">${pu.act}</b><b class="c3">${pu.pred}</b><b class="c4">${pu.dur}</b><b class="c5">${pu.start}</b><b class="c6">${pu.fin}</b></div><div class="pch" style="width:${CHW}px"><div class="pm">${monH}</div><div class="pw">${wks}</div><div class="pl">${wl}</div><div class="pd">${dy}</div></div></div>`;
  /* milestone row */
- const dia=keys.map(({k,d})=>`<div class="pkd" style="inset-inline-start:${xc(d)-11}px"></div><div class="pkl" style="inset-inline-start:${xc(d)-70}px"><span>${strip(k.t[L])}</span><b>${fS(iso(d))}</b></div>`).join("");
+ const dia=keys.map(({k,d},i)=>`<div class="pkd" style="inset-inline-start:${xc(d)-11}px"></div><div class="pkl ${i%2?"up":"dn"}" style="inset-inline-start:${xc(d)-90}px"><span>${strip(k.t[L])}</span><b>${fS(iso(d))}</b></div>`).join("");
  const mrow=`<div class="prow pmrow" style="height:${MH}px"><div class="pinfo"><b class="c1">◆</b><b class="c2" style="font-weight:800">${pu.ms}</b></div><div class="pch" style="width:${CHW}px">${dia}</div></div>`;
  /* overall duration row (top) */
- const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${dcell(C.st,"cstart")}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}</em></div></div></div>`;
+ const wTot=(C.en-C.st+1)*dw,orow=`<div class="prow pov0" style="height:${OV}px"><div class="pinfo"><span class="c1"><i class="pbadge" style="background:#3D3935">Σ</i></span><span class="c2"><b>${pu.tot}</b></span><span class="c3">${pu.none}</span><span class="c4"><bdi>${C.tot}</bdi></span><span class="c5">${dcell(C.st,"cstart")}</span><span class="c6">${fS(iso(C.en))}</span></div><div class="pch" style="width:${CHW}px"><div class="pbar tot" style="inset-inline-start:${xp(C.st)}px;width:${wTot}px;height:30px;top:10px"><em><bdi>${C.tot}</bdi> ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}${BS.tot!==C.tot?` · ${pu.base} <bdi>${BS.tot}</bdi> (<bdi dir="ltr">${C.tot-BS.tot>0?"+":"−"}${Math.abs(C.tot-BS.tot)}</bdi>)`:""}</em></div></div></div>`;
  /* inline schedule editing cells */
  const pcell=t=>`<select data-pf="pred" data-t="${t.id}"><option value="">—</option>${P.tasks.filter(x=>x.id!==t.id&&x.id!==t.parent).map(x=>`<option ${x.id===t.pred?"selected":""}>${x.id}</option>`).join("")}</select><select data-pf="link" data-t="${t.id}"><option ${t.link==="FS"?"selected":""}>FS</option><option ${t.link==="SS"?"selected":""}>SS</option></select><input class="pnum plag" type="number" min="0" data-pf="lag" data-t="${t.id}" value="${+t.lag||0}" title="Lag">`;
  /* task rows */
@@ -566,7 +569,7 @@ function planSlides(u,startIdx){
   const bar=r.sum?`<div class="pbar sum ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;top:${(rh-14)/2}px"></div><span class="psl" style="inset-inline-start:${xp(r.f+1)+8}px;top:${(rh-20)/2}px"><bdi>${dur}</bdi> ${pu.d}</span>`
    :`<div class="pbar ${r.crit?"crit":""}" style="--c:${c};inset-inline-start:${xp(r.s)}px;width:${w}px;height:${bh}px;top:${(rh-bh)/2}px"><em>${w>38?`<bdi>${dur}</bdi> ${pu.d}`:""}</em></div>`;
   return `<div class="prow ptask ${cls}" data-t="${t.id}" data-s="${r.s}" data-e="${r.f}" style="height:${rh}px;--c:${c}"><div class="pinfo"><span class="c1"><i class="pbadge ${sub?"sub":""} ${r.crit?"crit":""}" style="background:${c}">${sub?r.code:t.id}</i></span><span class="c2">${B(`a|${t.id}`,"b","",t.n[L])}</span><span class="c3">${pe?pcell(t):lk}</span><span class="c4">${pe&&!r.sum?`<input class="pnum" type="number" min="1" data-pf="dur" data-t="${t.id}" value="${+t.dur||1}">`:`<bdi>${dur}</bdi>`}</span><span class="c5">${dcell(r.s,"start",t.id)}${pe&&t.fix?`<button class="pfix" data-pf="unfix" data-t="${t.id}" title="Remove fixed start / إلغاء تثبيت البداية">📌</button>`:""}</span><span class="c6">${pe&&!r.sum?dcell(r.f,"finish",t.id):fS(iso(r.f))}</span><button class="rdel" data-delt="${t.id}" title="Delete / حذف">✕</button></div>
-   <div class="pch" style="width:${CHW}px">${bar}</div></div>`}).join("");
+   <div class="pch" style="width:${CHW}px">${(()=>{const b=BS.R[t.id];return b&&(b.s!==r.s||b.f!==r.f)?`<div class="pbase" style="inset-inline-start:${xp(b.s)}px;width:${(b.f-b.s+1)*dw}px;top:${rh-9}px"></div>`:""})()}${bar}</div></div>`}).join("");
  /* dependency arrows (svg, drawn LTR then mirrored in RTL) */
  const rowTop=i=>OV+MH+i*rh,cy=i=>rowTop(i)+rh/2,idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i]));
  let svg="";C.rows.forEach((r,i)=>{const t=r.t;if(!t.pred||!C.R[t.pred])return;const p=C.R[t.pred],pi=idx[t.pred],xs=xp(r.s),yS=cy(i),yP=cy(pi);
@@ -578,7 +581,7 @@ function planSlides(u,startIdx){
  const cards=keys.map(({k,d},i)=>{const wd=wdIdxOf(C,d)+1,last=i===keys.length-1;return `<div class="pkc ${last?"fin":""}" style="--c:${i===0?"#3D3935":i===1?"#C8503F":i===2?"#00778B":i===3?"#2E9E6B":"#D68A00"}"><span>${strip(k.t[L])}</span><b>${fDayY(d)}</b><small>${pu.wdn} <bdi>${wd}</bdi> / <bdi>${C.tot}</bdi></small></div>`}).join("");
  const hd=(t1,t2)=>`<div class="hd"><div>${B("x|"+t1,"h1","",S.tx[t1][L])}${B("x|"+t2,"div","sub",S.tx[t2][L])}</div><img src="${LOGO}" alt="SAR"></div>`;
  const ftr=(pn)=>`<div class="ft"><div><b>${C.tot}</b>${pu.wd}</div><span class="s"></span><div><b>${fS(iso(C.en))}</b>${pu.ovr}</div><span class="s"></span><div><b>${leaf.length}</b>${pu.act2} · <b style="font-size:22px;margin-inline:6px">${leaf.filter(r=>r.crit).length}</b>${pu.critN}</div><span class="pn">${u.pn}${pn}</span></div>`;
- const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span>→ ${pu.dep} (FS / SS)</span><span class="pnote">${L==="en"?"A.1–A.5: proposed durations / links within the 6 working days":"A.1–A.5: مدد وعلاقات مقترحة ضمن 6 أيام عمل"}</span></div>`;
+ const leg=`<div class="legend plleg"><span><i class="lbar crit"></i>${pu.crit}</span><span><i class="lbar"></i>${L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"}</span><span><b></b>${pu.ms}</span><span><i class="lnw"></i>${pu.nw}</span><span><i class="lst"></i>${pu.status}</span><span><i class="lbase"></i>${pu.bl}</span><span>→ ${pu.dep} (FS / SS)</span><span class="pnote">${L==="en"?"A.1–A.5: proposed durations / links (compressed to 4 working days)":"A.1–A.5: مدد وعلاقات مقترحة (مضغوطة إلى 4 أيام عمل)"}</span></div>`;
  const s2=`<section class="gs plan" data-pg="${startIdx}" data-kind="plan">${hd("planTitle","planSub")}${leg}${gantt}<div class="pkeys" style="top:${136+gh+16}px">${cards}</div>${ftr(" · "+(startIdx+1)+"/"+(startIdx+1))}</section>`;
  /* slide 3 : flow + key notes + what-if */
  const A=C.R.A,sh=A?`${fL(iso(A.s))} → ${fL(iso(A.f))} · <bdi>${A.ef-A.es+1}</bdi> ${pu.wd}`:"";
@@ -951,19 +954,20 @@ async function exportPPTX(){
   }
   /* ===== remaining works: Gantt + shoring/notes slides ===== */
   {
-   const pu=PUI[L],PL=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C);
+   const pu=PUI[L],PL=S.plan,C=planCalc(),n=C.rows.length,keys=planKeys(C),BSp=planBase();
    const s1=P.addSlide({masterName:"SAR"});head(s1,strip(S.tx.planTitle[L]),strip(S.tx.planSub[L]));
    /* legend */
-   let lx=.4;[["crit",pu.crit],["bar",L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"],["ms",pu.ms],["nw",pu.nw],["st",pu.status],["dep","→ "+pu.dep+" (FS / SS)"]].forEach(([k,txt])=>{
+   let lx=.4;[["crit",pu.crit],["bar",L==="en"?"Activity (colour = work group)":"نشاط (اللون = مجموعة العمل)"],["ms",pu.ms],["nw",pu.nw],["st",pu.status],["base",pu.bl],["dep","→ "+pu.dep+" (FS / SS)"]].forEach(([k,txt])=>{
     const w=.4+txt.length*.058;
     if(k==="crit")s1.addShape(P.ShapeType.roundRect,{x:mx(lx,.3),y:1.17,w:.3,h:.12,fill:{color:ACC},line:{color:"222222",width:1.5},rectRadius:.03});
     else if(k==="bar")s1.addShape(P.ShapeType.roundRect,{x:mx(lx,.3),y:1.17,w:.3,h:.12,fill:{color:ACC},line:{color:ACC},rectRadius:.03});
     else if(k==="ms")s1.addShape(P.ShapeType.diamond,{x:mx(lx,.14),y:1.16,w:.14,h:.14,fill:{color:DARK},line:{color:DARK}});
+    else if(k==="base")s1.addShape(P.ShapeType.roundRect,{x:mx(lx,.3),y:1.2,w:.3,h:.05,fill:{color:"8A959C"},line:{color:"8A959C"},rectRadius:.02});
     else if(k==="nw")s1.addShape(P.ShapeType.rect,{x:mx(lx,.2),y:1.16,w:.2,h:.14,fill:{color:"CFD8DC"},line:{color:"CFD8DC"}});
     else if(k==="st")s1.addShape(P.ShapeType.line,{x:mx(lx+.05,0),y:1.14,w:0,h:.18,line:{color:"C8503F",width:1.75,dashType:"dash"}});
     tx(s1,txt,lx+(k==="dep"?0:.36),1.1,w,.26,{fontSize:9,color:"333333"});lx+=w+.3});
    const cols=[.42,2.95,.85,.55,.72,.72],INFO=cols.reduce((a,b)=>a+b,0),cx0=.4+INFO,cW=W-.4-cx0,top=1.45;
-   const d0=C.st-3,d1=C.en+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
+   const d0=Math.min(C.st,BSp.st)-3,d1=Math.max(C.en,BSp.en)+2,N=d1-d0+1,dw=cW/N,xp=d=>cx0+(d-d0)*dw,xc=d=>cx0+(d-d0+.5)*dw;
    const hM=.2,hW=.17,hL=.15,hD=.18,hH=hM+hW+hL+hD,OV=.3,MH=.7,rh=Math.min(.46,(5.98-top-hH-OV-MH)/Math.max(1,n)),y0=top+hH,yM=y0+OV,yR=yM+MH,bodyY=y0,bodyH=OV+MH+n*rh;
    /* header */
    const ch=[pu.sr,pu.act,pu.pred,pu.dur,pu.start,pu.fin];let ax=.4;
@@ -986,14 +990,14 @@ async function exportPPTX(){
    tx(s1,fS(iso(C.st)),.4+cols[0]+cols[1]+cols[2]+cols[3],y0,cols[4],OV,{fontSize:8.5,bold:true,color:"222222",align:"center"});
    tx(s1,fS(iso(C.en)),.4+cols[0]+cols[1]+cols[2]+cols[3]+cols[4],y0,cols[5],OV,{fontSize:8.5,bold:true,color:"222222",align:"center"});
    {const w=(C.en-C.st+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(C.st),w),y:y0+.05,w,h:OV-.1,fill:{color:DARK},line:{color:DARK},rectRadius:.05});
-    tx(s1,`${C.tot} ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}`,xp(C.st),y0+.05,w,OV-.1,{fontSize:8.5,bold:true,color:"FFFFFF",align:"center"})}
+    tx(s1,`${C.tot} ${pu.wd} · ${fS(iso(C.st))} → ${fS(iso(C.en))}${BSp.tot!==C.tot?` · ${pu.base} ${BSp.tot} (${C.tot-BSp.tot>0?"+":"−"}${Math.abs(C.tot-BSp.tot)})`:""}`,xp(C.st),y0+.05,w,OV-.1,{fontSize:8.5,bold:true,color:"FFFFFF",align:"center"})}
    /* milestone row */
    s1.addShape(P.ShapeType.rect,{x:mx(.4,INFO),y:yM,w:INFO,h:MH,fill:{color:"FBFDFD"},line:{color:"DFE6EA",width:.5}});
    tx(s1,"◆  "+pu.ms,.5,yM,INFO-.2,MH,{fontSize:10,bold:true,color:DARK});
-   keys.forEach(({k,d},i)=>{const x=xc(d);
-    s1.addShape(P.ShapeType.diamond,{x:mx(x-.09,.18),y:yM+.08,w:.18,h:.18,fill:{color:DARK},line:{color:"FFFFFF",width:1.5}});
-    tx(s1,strip(k.t[L]),x-.47,yM+.27,.94,.22,{fontSize:5.5,color:"556070",align:"center",valign:"top"});
-    tx(s1,fS(iso(d)),x-.62,yM+.5,1.24,.18,{fontSize:7.5,bold:true,color:DARK,align:"center"})});
+   keys.forEach(({k,d},i)=>{const x=xc(d),up=i%2===1;
+    s1.addShape(P.ShapeType.diamond,{x:mx(x-.09,.18),y:yM+.26,w:.18,h:.18,fill:{color:DARK},line:{color:"FFFFFF",width:1.5}});
+    if(up){tx(s1,strip(k.t[L]),x-.9,yM+.0,1.8,.12,{fontSize:5.5,color:"556070",align:"center",valign:"bottom"});tx(s1,fS(iso(d)),x-.9,yM+.12,1.8,.13,{fontSize:7.5,bold:true,color:DARK,align:"center"})}
+    else{tx(s1,strip(k.t[L]),x-.9,yM+.45,1.8,.11,{fontSize:5.5,color:"556070",align:"center",valign:"top"});tx(s1,fS(iso(d)),x-.9,yM+.55,1.8,.14,{fontSize:7.5,bold:true,color:DARK,align:"center"})}});
    /* rows */
    const idx=Object.fromEntries(C.rows.map((r,i)=>[r.t.id,i])),by=r=>yR+r*rh,bh=Math.min(.26,rh*.58),fz=rh>=.4?9:rh>=.3?8.5:7.5;
    C.rows.forEach((r,i)=>{const t=r.t,c=hexOf(t.c),y=by(i),bg=i%2?"F6F9FA":"FFFFFF",sub=r.depth>0,dur=r.ef-r.es+1;
@@ -1002,6 +1006,7 @@ async function exportPPTX(){
     cols.forEach((w,j)=>{if(j===0){const bw_=sub?.36:.26,bh_=sub?.17:.26;s1.addShape(sub?P.ShapeType.roundRect:P.ShapeType.ellipse,{x:mx(x+(w-bw_)/2+(sub?.03:0),bw_),y:y+(rh-bh_)/2,w:bw_,h:bh_,fill:{color:c},line:{color:r.crit?"222222":c,width:r.crit?1.5:.5},...(sub?{rectRadius:.085}:{})});tx(s1,sub?r.code:t.id,x+(sub?.03:0),y,w,rh,{fontSize:sub?6.5:8.5,bold:true,color:"FFFFFF",align:"center"})}
      else tx(s1,vals[j],x+(j===1?.08+(sub?.18:0):0),y,w-(j===1?.1+(sub?.18:0):0),rh,{fontSize:j===1?(sub?fz-.5:fz):j===3?fz+1.5:fz-.5,bold:j===1?!sub:(j!==2),color:j===2?"444444":"222222",align:j===1?"left":"center"});x+=w});
     const bw=(r.f-r.s+1)*dw;
+    {const b=BSp.R[t.id];if(b&&(b.s!==r.s||b.f!==r.f)){const bb=(b.f-b.s+1)*dw;s1.addShape(P.ShapeType.roundRect,{x:mx(xp(b.s),bb),y:y+rh-.06,w:bb,h:.035,fill:{color:"8A959C"},line:{color:"8A959C"},rectRadius:.015})}}
     if(r.sum){const sh_=.07;s1.addShape(P.ShapeType.rect,{x:mx(xp(r.s),bw),y:y+(rh-sh_)/2-.03,w:bw,h:sh_,fill:{color:c},line:{color:c}});
      [xp(r.s),xp(r.f+1)-.07].forEach(xx=>s1.addShape(P.ShapeType.triangle,{x:mx(xx,.07),y:y+(rh-sh_)/2-.03+sh_,w:.07,h:.06,fill:{color:c},line:{color:c},flipV:true}));
      tx(s1,`${dur} ${pu.d}`,xp(r.f+1)+.05,y,.6,rh,{fontSize:7.5,bold:true,color:DARK})}
