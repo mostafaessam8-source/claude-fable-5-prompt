@@ -112,7 +112,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
 /* timeline view */
-.dense .tmk{width:56px;height:56px;font-size:16px;border-width:4px}.dense .tcard{padding:8px 12px 6px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:11px;padding-inline-end:24px}.dense .tt{font-size:17px;margin-top:2px;line-height:1.15}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:13px;line-height:1.28;margin-top:3px;-webkit-line-clamp:3}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
+.dense .tmk{width:56px;height:56px;font-size:16px;border-width:4px}.dense .tcard{padding:8px 12px 6px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:12.5px;padding-inline-end:24px;line-height:1.1}.dense .tt{font-size:17px;margin-top:2px;line-height:1.15}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:13px;line-height:1.28;margin-top:3px;-webkit-line-clamp:3}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
 .gp{display:none}
 .tscroll{position:absolute;top:150px;bottom:56px;inset-inline:0;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:thin;scrollbar-color:#9db2bb #eef3f5}
 .tscroll.drag{cursor:grabbing}.tscroll::-webkit-scrollbar{height:14px}.tscroll::-webkit-scrollbar-thumb{background:#9db2bb;border-radius:8px}.tscroll::-webkit-scrollbar-track{background:#eef3f5}
@@ -127,7 +127,7 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .tgap{position:absolute;width:110px;height:32px;line-height:32px;text-align:center;background:#eef3f5;border:1px solid #cfd9de;border-radius:16px;font-weight:700;font-size:16px;color:#556;z-index:2}
 .tcard{position:absolute;background:#fff;border-radius:18px;box-shadow:0 8px 26px #1b2a3322;border-top:10px solid var(--c);padding:14px 24px 12px;display:flex;flex-direction:column;overflow:hidden;z-index:2}
 
-.ttag{font-size:16px;font-weight:800;color:var(--c);text-transform:uppercase;letter-spacing:.04em;padding-inline-end:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttag{font-size:17px;font-weight:800;color:var(--c);padding-inline-end:34px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 [dir=rtl] .ttag{letter-spacing:0}
 .tt{font-size:30px;font-weight:800;color:var(--dark);line-height:1.2;margin-top:6px}
 .tmeta{font-size:18px;font-weight:700;color:var(--muted);margin-top:6px}
@@ -350,6 +350,7 @@ function tlPages(TR){const items=TR.flatMap(P=>P.items.map(o=>({...o,P})));const
 function tlLayout(n){const dense=n>7;
  return dense?{dense:true,AY:586,MD:56,H:175,lanes:[{up:1,y:353},{up:0,y:644},{up:1,y:165},{up:0,y:832}]}
   :{dense:false,AY:545,MD:76,H:300,lanes:[{up:1,y:165},{up:0,y:627}]}}
+const esc2=s=>String(s).replace(/"/g,"&quot;");
 function tlBuild(all,u){
  const n=all.length,lay=tlLayout(n),X0=90,XW=1740,sp=XW/Math.max(n,1),L_=lay.lanes.length,cw=lay.dense?Math.min(400,sp*(L_-.7)):Math.min(520,sp*1.7);
  let segs="",chips="",cards="",marks="",px=X0;
@@ -361,13 +362,13 @@ function tlBuild(all,u){
   marks+=`<i class="tstem" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${o.code}</div>`;
   if(!lay.dense)marks+=`<div class="tdt" style="--c:${c};inset-inline-start:${cx-95}px;top:${up?lay.AY+53:lay.AY-75}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
   cards+=`<div class="tcard" data-i="${m.id}" style="--c:${c};width:${cw}px;height:${lay.H}px;top:${ln.y}px;inset-inline-start:${Math.max(30,Math.min(1890-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
-   <div class="ttag"><bdi>${o.code}</bdi> · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}${lay.dense?`<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}">`:""}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
+   <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}${lay.dense?`<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}">`:""}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
  if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px;top:${lay.AY-5}px"></i>`;
  return `<div class="taxis">${segs}</div>${chips}${marks}${cards}`}
 function tlRender(deck,TR,u,M,d1,e0){
  const {all}=tlPages(TR);const dense=all.length>7;
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
- const legend=`<div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}</div>`;
+ const legend=`<div class="legend" style="font-size:18px;font-weight:600;gap:34px">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L])}</span>`).join("")}</div>`;
  pageCount=1;curPage=0;
  deck.innerHTML=`<section class="gs tl on ${dense?"dense":""}" data-pg="0"><div class="hd"><div>${B("x|titleTl","h1","",S.tx.titleTl[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}${tlBuild(all,u)}
   <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div></section>`;
@@ -573,9 +574,9 @@ async function exportPPTX(){
   if(S.view==="tl"){
    const {all}=tlPages(TR),n=all.length,dense=n>7,sl=P.addSlide({masterName:"SAR"});
    head(sl,strip(S.tx.titleTl[L]),strip(S.tx.sub[L]));
-   let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]).replace(/ –.*/,"");const w=.45+nm.length*.075;
+   let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]);const w=.3+nm.length*.058;
     sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.17,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
-    tx(sl,nm,lx+.34,1.1,w,.26,{fontSize:9.5,color:"333333"});lx+=w+.35});
+    tx(sl,nm,lx+.34,1.1,w,.26,{fontSize:9,bold:true,color:"333333"});lx+=w+.4});
    const lanes=dense?[{up:1,y:2.62,h:1.15},{up:0,y:4.63,h:1.15},{up:1,y:1.42,h:1.15},{up:0,y:5.85,h:1.15}]:[{up:1,y:1.5,h:1.85},{up:0,y:4.7,h:1.85}];
    const AY=dense?4.2:4.0,MD=dense?.5:.56,X0=.6,XW=12.1,sp=XW/Math.max(n,1),cw=dense?Math.min(3.3,sp*(lanes.length-.7)):Math.min(3.5,sp*1.7);let px=X0;
    const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
@@ -594,8 +595,8 @@ async function exportPPTX(){
     sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:ln.y,w:cw,h:ln.h,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.08,shadow:{type:"outer",color:"000000",opacity:.14,blur:6,offset:2,angle:90}});
     sl.addShape(P.ShapeType.rect,{x:mx(cxl+.08,cw-.16),y:ln.y,w:cw-.16,h:.06,fill:{color:c},line:{color:c}});
     const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · ${days} ${u.days}`:(dense?fDay(s0):fL(m.date));
-    const f=dense?{tag:6.5,t:9.5,m:7.5,d:7.5}:{tag:8.5,t:15,m:9.5,d:11.5};
-    sl.addText([{text:`${o.code} · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}`.toUpperCase(),options:{fontSize:f.tag,bold:true,color:c,breakLine:true}},
+    const f=dense?{tag:7.5,t:9.5,m:7.5,d:7.5}:{tag:10,t:15,m:9.5,d:11.5};
+    sl.addText([{text:strip(S.ph[o.P.pid].n[L]),options:{fontSize:f.tag,bold:true,color:c,breakLine:true}},
      {text:strip(m.t[L]),options:{fontSize:f.t,bold:true,color:"3D3935",breakLine:true}},
      {text:meta,options:{fontSize:f.m,bold:true,color:"66707A",breakLine:true}},
      {text:strip(m.d[L]),options:{fontSize:f.d,color:"444D55"}}],
