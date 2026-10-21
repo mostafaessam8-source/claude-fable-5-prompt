@@ -59,8 +59,8 @@ h1{margin:0;font-size:36px;line-height:1.1;color:var(--dark);font-weight:800}
 .info{flex:none;width:var(--lw);display:flex;gap:10px;padding:0 10px;align-items:center;border-inline-end:2px solid #c3ced4;background:#fff;position:relative;z-index:2}
 .n{flex:none;min-width:46px;height:24px;padding:0 8px;border-radius:12px;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
 .gc{background:#fff3;border-radius:12px;padding:1px 9px;margin-inline-end:8px;font-size:14px}
-.l3 .tx b{font-size:17px;font-weight:700}.l4 .tx b{font-size:16px;font-weight:600}.l3 .tx small,.l4 .tx small{font-size:12.5px}
-.cp .tx small{display:none}.cp .tx b{font-size:15px}.cp .dt{font-size:14px}.cp .n{height:20px;font-size:12px}.tn .tx b{font-size:13px}.tn .dt{font-size:12px}.tn .n{height:17px;font-size:11px;min-width:40px}
+.l3 .tx b{font-size:17px;font-weight:700}.l4 .tx b{font-size:16px;font-weight:600}.l3 .tx small,.l4 .tx small{font-size:12.5px}.cp.l3 .tx small{font-size:10px}
+.cp .tx{line-height:1.05}.cp .tx small{font-size:10.5px;margin-top:1px}.cp .tx b{font-size:14.5px}.cp .dt{font-size:14px}.cp .n{height:20px;font-size:12px}.tn .tx small{display:none}.tn .tx b{font-size:13px}.tn .dt{font-size:12px}.tn .n{height:17px;font-size:11px;min-width:40px}
 .dt{flex:none;width:92px;font-weight:800;font-size:16px;color:var(--dark);white-space:nowrap}
 .tx{flex:1;min-width:0;line-height:1.15}
 .tx b,.tx small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -253,7 +253,7 @@ function render(){
  const legacy=M.filter(m=>endOf(m)===null);
  const e0=Math.min(...M.map(m=>dn(m.date))),d0=e0-4,d1=Math.max(...M.map(m=>endOf(m)??dn(m.date))),N=d1+3-d0+1,w=100/N;
  const x=d=>((d-d0)*w).toFixed(3)+"%",xc=d=>((d-d0+.5)*w).toFixed(3)+"%";
- const nRows=TR.reduce((a,p)=>a+p.items.length,0),rh=Math.max(19,Math.min(39,Math.floor((1022-134-82-TR.length*34)/Math.max(1,nRows))));
+ const nRows=TR.reduce((a,p)=>a+p.items.length,0),rh=Math.max(19,Math.min(39,Math.floor((1022-134-76-TR.length*34)/Math.max(1,nRows))));
  const deck=$("#deck");deck.dir=L==="ar"?"rtl":"ltr";deck.lang=L;
  let dayc="",wkc="",ov="",mons=[],last=-1;
  for(let i=0;i<N;i++){const D=dd(d0+i),k=D.getUTCFullYear()*12+D.getUTCMonth();
@@ -284,7 +284,7 @@ function render(){
  const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
  deck.innerHTML=`<div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>
  <div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}<span><b></b>${u.lm}</span><span><i style="background:#888;opacity:.85"></i>${u.la}</span></div>
- <div class="gantt ${rh<38?"cp":""} ${rh<26?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb" id="vb"></div><div class="vl" id="vl"></div><div class="tg" id="tg"></div></div></div>
+ <div class="gantt ${rh<38?"cp":""} ${rh<27?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb" id="vb"></div><div class="vl" id="vl"></div><div class="tg" id="tg"></div></div></div>
  <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}</span></div>`;
  deck.querySelectorAll("[data-b]").forEach(e=>{e.contentEditable=editMode;e.spellcheck=false});
  G={d0,N,w};applyPin();
@@ -513,7 +513,9 @@ async function exportPPTX(){
     const pw=.5;sl.addShape(P.ShapeType.roundRect,{x:mx(.48,pw),y:y+rh*.16,w:pw,h:rh*.68,fill:{color:c},line:{color:c},rectRadius:.08});
     tx(sl,o.code,.48,y+rh*.16,pw,rh*.68,{fontSize:fs-1.5,bold:true,color:"FFFFFF",align:"center"});
     tx(sl,fS(m.date),1.05,y,.7,rh,{fontSize:fs,bold:true,color:DARK});
-    const ind=o.depth*.14;tx(sl,strip(m.t[L]),1.8+ind,y,LWc-1.5-ind-.1,rh,{fontSize:fs+(o.depth?-.5:0),bold:o.depth<2,color:"1D2226"});
+    const ind=o.depth*.14,ds=strip(m.d[L]),showD=rh>=.215&&ds;
+    if(showD){const tf=Math.min(fs,rh>=.26?9.5:8.5);sl.addText([{text:strip(m.t[L]),options:{fontSize:tf,bold:o.depth<2,color:"1D2226",breakLine:true}},{text:ds,options:{fontSize:Math.max(5.5,tf-2.5),color:"66707A"}}],{x:mx(1.8+ind,LWc-1.5-ind-.1),y,w:LWc-1.5-ind-.1,h:rh,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"middle",margin:0,fit:"shrink",lineSpacingMultiple:.85})}
+    else tx(sl,strip(m.t[L]),1.8+ind,y,LWc-1.5-ind-.1,rh,{fontSize:fs+(o.depth?-.5:0),bold:o.depth<2,color:"1D2226"});
     const dh_=rh*.62;let s_,e_;
     if(E!==null){const days=E-cur+1,w=days*dW;
      sl.addShape(P.ShapeType.line,{x:mx(cx0,X(cur)-cx0),y:y+rh/2,w:X(cur)-cx0,h:0,line:{color:c,width:.75,dashType:"sysDot",transparency:40}});
