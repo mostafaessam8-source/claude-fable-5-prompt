@@ -111,6 +111,24 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 .dr.ph{background:#f2f6f7;font-weight:800}.dr .cd{font-size:12px;color:#667;font-weight:700;min-width:40px}
 .dr input{width:140px}
 @media(max-width:600px){#abox .ab{grid-template-columns:1fr}.dr{flex-wrap:wrap}.dr input{width:calc(50% - 24px)}}
+/* timeline view */
+.tl .taxis{position:absolute;inset-inline:0;top:540px;height:10px}
+.tseg{position:absolute;top:0;height:10px;background:var(--c);border-radius:5px}.tseg.arrow{background:repeating-linear-gradient(90deg,#c9d3d8 0 14px,transparent 14px 24px)}
+.tmk{position:absolute;top:507px;width:76px;height:76px;border-radius:50%;background:var(--c);color:#fff;border:6px solid #fff;box-shadow:0 4px 14px #0004;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:21px;z-index:3}
+.tstem{position:absolute;width:4px;background:var(--c);opacity:.6;z-index:1}.tstem.u{top:465px;height:44px}.tstem.d{top:583px;height:44px}
+.tdt{position:absolute;width:190px;height:34px;line-height:30px;text-align:center;font-weight:800;font-size:19px;color:var(--c);background:#fff;border:2px solid var(--c);border-radius:20px;z-index:3}
+.tdt.b{top:598px}.tdt.a{top:470px}
+.tdinp{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;cursor:pointer}body.edit .tdinp{pointer-events:auto}body.edit .tdt:hover{background:#e8f3f5}
+.tgap{position:absolute;top:529px;width:110px;height:32px;line-height:32px;text-align:center;background:#eef3f5;border:1px solid #cfd9de;border-radius:16px;font-weight:700;font-size:16px;color:#556;z-index:2}
+.tcard{position:absolute;height:300px;background:#fff;border-radius:18px;box-shadow:0 8px 26px #1b2a3322;border-top:10px solid var(--c);padding:14px 24px 12px;display:flex;flex-direction:column;overflow:hidden;z-index:2}
+.tcard.u{top:165px}.tcard.d{top:627px}
+.ttag{font-size:16px;font-weight:800;color:var(--c);text-transform:uppercase;letter-spacing:.04em;padding-inline-end:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[dir=rtl] .ttag{letter-spacing:0}
+.tt{font-size:30px;font-weight:800;color:var(--dark);line-height:1.2;margin-top:6px}
+.tmeta{font-size:18px;font-weight:700;color:var(--muted);margin-top:6px}
+.tdsc{font-size:23px;line-height:1.4;color:#444d55;margin-top:8px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
+.tcard [data-b]:focus{-webkit-line-clamp:unset!important;display:block!important}
+.tcard .rdel{position:absolute;top:14px;inset-inline-end:14px}
 /* pages */
 .gs{position:absolute;inset:0;display:none}.gs.on{display:block;animation:pgin .35s ease}@keyframes pgin{from{opacity:0}to{opacity:1}}
 #pager{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:#000c;color:#fff;border-radius:24px;padding:4px 6px;z-index:8;font:700 14px inherit;font-family:inherit}
@@ -149,6 +167,7 @@ body.edit [data-b]:hover{outline:2px dashed #00778b88;outline-offset:1px}
   <div class="g">
    <button class="b" id="bEdit" title="Edit text / تعديل النص">✎ <span>Edit</span></button>
    <button class="b pri" id="bAdd" title="Add activity / إضافة نشاط">＋ <span>Activity</span></button>
+   <button class="b" id="bView" title="Switch view / تبديل العرض">⇄ <span>Timeline</span></button>
    <button class="b" id="bDates" title="Edit dates / تعديل التواريخ">📅 <span>Dates</span></button>
    <button class="b" id="bFs" title="Full screen / ملء الشاشة">⛶ <span>Full screen</span></button>
    <button class="b" id="bPrint" title="Print / طباعة">🖶 <span>Print</span></button>
@@ -224,14 +243,14 @@ const SH={en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov",
 const DN={en:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],ar:["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"]};
 const DS={en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],ar:["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"]};
 const D1={en:["S","M","T","W","T","F","S"],ar:["ح","ن","ث","ر","خ","ج","س"]};
-const UI={en:{days:"days",day1:"day",act:"Activity / Milestone",lm:"Milestone",lp:"Phase span",la:"Duration until next step",
+const UI={en:{days:"days",day1:"day",same:"Same day",act:"Activity / Milestone",lm:"Milestone",lp:"Phase span",la:"Duration until next step",
   total:"days · permit request → permit ready",susp:"days · suspension → permit ready",cnt:"milestones",
   dTitle:"Edit milestone dates",shift:"Shift all dates by (days):",shiftB:"Apply",pn:"UFWL Project"},
- ar:{days:"يوم",day1:"يوم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
+ ar:{days:"يوم",day1:"يوم",same:"نفس اليوم",act:"النشاط / الميل ستون",lm:"ميل ستون",lp:"مدة المرحلة",la:"المدة حتى الخطوة التالية",
   total:"يوم · من طلب التصريح حتى جاهزيته",susp:"يوم · من الإيقاف حتى جاهزية التصريح",cnt:"ميل ستون",
   dTitle:"تعديل تواريخ الميل ستون",shift:"إزاحة كل التواريخ بعدد أيام:",shiftB:"تطبيق",pn:"مشروع UFWL"}};
-function defaults(){return{v:2,lang:"en",ts:0,
- tx:{title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
+function defaults(){return{v:2,lang:"en",view:"gantt",ts:0,
+ tx:{title:T("UFWL Project – Gantt Chart","مشروع UFWL – مخطط جانت"),titleTl:T("UFWL Project – Timeline","مشروع UFWL – الخط الزمني"),sub:T("Project Activity Timeline · Site Suspension and Shoring Works","الجدول الزمني لأنشطة المشروع · إيقاف الموقع وأعمال الدعم")},
  ph:Object.fromEntries(Object.entries(PH).map(([k,v])=>[k,{n:{...v.n},c:v.c}])),
  ms:DEF_M.map((a,i)=>({id:i,date:a[0],ph:a[1],t:T(a[2],a[3]),d:T(a[4],a[5])}))}}
 const PAL=["#8E5BB5","#D68A00","#1F6FB2","#B5446E","#4B8B3B"];
@@ -239,7 +258,7 @@ let S=defaults(),L="en",editMode=false,curPage=0,pageCount=1;
 const KEY="ufwl-gantt-slide-v2",$=q=>document.querySelector(q);
 (function load(){let c=[];try{const e=$("#saved-state").textContent.trim();if(e)c.push(JSON.parse(e))}catch(_){}
  try{const l=localStorage.getItem(KEY);if(l)c.push(JSON.parse(l))}catch(_){}
- c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0])S=Object.assign(defaults(),c[0]);L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
+ c=c.filter(x=>x&&x.v===2).sort((a,b)=>b.ts-a.ts);if(c[0]){const d=defaults();S=Object.assign(d,c[0]);S.tx=Object.assign(d.tx,c[0].tx||{})}L=S.lang;Object.keys(S.ph).forEach((k,i)=>{if(!S.ph[k].c)S.ph[k].c=(PH[k]||{}).c||PAL[i%PAL.length]})})();
 let st;const save=()=>{S.ts=Date.now();clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}},250)};
 const dn=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const dd=n=>new Date(n*864e5);
@@ -289,6 +308,7 @@ function render(){
    return `<div class="row ms l${(m.lvl||2)} ${zi%2?"z":""}" data-i="${m.id}" data-s="${s}" data-e="${e}" style="--c:${c}"><div class="info"><div class="n" style="background:${c}">${code}</div><div class="dt">${fS(m.date)}</div>
     <div class="tx" style="padding-inline-start:${depth*18}px">${B(`m|${m.id}|t`,"b","",m.t[L])}${B(`m|${m.id}|d`,"small","",m.d[L])}</div><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button></div>
     <div class="ch"><div class="lead" style="width:${E!==null?x(cur):xc(cur)}"></div>${bar}${dia}${lbl}</div></div>`};
+ if(S.view==="tl"){tlRender(deck,TR,u,M,d1,e0)}else{
  /* paginate: split automatically into several slides when the activities do not fit */
  const flat=[];TR.forEach(P=>{flat.push({g:P});P.items.forEach(o=>flat.push({o,P}))});
  const AV=812,HI=37,HG=34,hOf=q=>q.g?HG:HI,total=flat.reduce((a,q)=>a+hOf(q),0),np=Math.max(1,Math.ceil(total/AV)),target=total/np;
@@ -307,16 +327,42 @@ function render(){
   return `<section class="gs ${pi===curPage?"on":""}" data-pg="${pi}"><div class="hd"><div>${B("x|title","h1","",S.tx.title[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}
  <div class="gantt ${rh<38?"cp":""} ${rh<27?"tn":""}" style="--rh:${rh}px">${rows}<div class="ov">${ov}<div class="vb"></div><div class="vl"></div><div class="tg"></div></div></div>
  <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}${pages.length>1?` · <bdi>${pi+1}/${pages.length}</bdi>`:""}</span></div></section>`}).join("");
+ }
  deck.querySelectorAll("[data-b]").forEach(e=>{e.contentEditable=editMode;e.spellcheck=false});
  G={d0,N,w};showPage();
  document.body.dir="ltr";
  $("#bLang").textContent=L==="en"?"عربي":"English";
  $("#bEdit span").textContent=L==="en"?(editMode?"Done":"Edit"):(editMode?"تم":"تعديل");
  $("#bAdd span").textContent=L==="en"?"Activity":"نشاط";
- $("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
+ $("#bView span").textContent=S.view==="tl"?(L==="en"?"Gantt":"جانت"):(L==="en"?"Timeline":"تايم لاين");$("#bDates span").textContent=L==="en"?"Dates":"التواريخ";$("#bFs span").textContent=L==="en"?"Full screen":"ملء الشاشة";$("#bPrint span").textContent=L==="en"?"Print":"طباعة";$("#bPptx span").textContent=L==="en"?"PowerPoint":"بوربوينت";
  $("#dTitle").textContent=u.dTitle;$("#dShiftL").textContent=u.shift;$("#dShiftB").textContent=u.shiftB;
  $("#dbox").dir=L==="ar"?"rtl":"ltr";
 }
+function tlPages(TR){const items=TR.flatMap(P=>P.items.map(o=>({...o,P})));const per=6,np=Math.max(1,Math.ceil(items.length/per)),sz=Math.ceil(items.length/np)||1,pg=[];for(let i=0;i<items.length;i+=sz)pg.push(items.slice(i,i+sz));return {pages:pg.length?pg:[[]],all:items}}
+function tlRender(deck,TR,u,M,d1,e0){
+ const {pages,all}=tlPages(TR);pageCount=pages.length;curPage=Math.min(curPage,pageCount-1);
+ const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
+ const legend=`<div class="legend">${Object.entries(S.ph).map(([k,p])=>`<span><i style="background:${p.c}"></i>${strip(p.n[L]).replace(/ –.*/,"")}</span>`).join("")}</div>`;
+ deck.innerHTML=pages.map((pg,pi)=>{
+  const n=pg.length,X0=90,XW=1740,sp=XW/Math.max(n,1),cw=Math.min(520,sp*1.7);let segs="",chips="",cards="",marks="",px=X0;
+  pg.forEach((o,i)=>{const m=o.m,c=S.ph[o.P.pid].c,cx=X0+(i+.5)*sp,up=i%2===0,E=endOf(m),s0=dn(m.date),gi=all.findIndex(a=>a.m===m),prev=gi>0?all[gi-1].m:null;
+   segs+=`<i class="tseg" style="--c:${c};inset-inline-start:${px}px;width:${cx-px}px"></i>`;px=cx;
+   if(prev){const gp=s0-dn(prev.date),mid=pi===0||i>0?cx-sp/2:X0-0;
+    if(i>0)chips+=`<span class="tgap" style="inset-inline-start:${cx-sp/2-55}px">${gp===0?u.same:`<bdi>+${gp}</bdi> ${gp===1?u.day1:u.days}`}</span>`}
+   const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${fL(m.date)} → ${fL(m.end)} · <bdi>${days}</bdi> ${u.days}`:fL(m.date);
+   marks+=`<i class="tstem ${up?"u":"d"}" style="--c:${c};inset-inline-start:${cx-2}px"></i><div class="tmk" style="--c:${c};inset-inline-start:${cx-38}px">${o.code}</div>
+    <div class="tdt ${up?"b":"a"}" style="--c:${c};inset-inline-start:${cx-95}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
+   cards+=`<div class="tcard ${up?"u":"d"}" data-i="${m.id}" style="--c:${c};width:${cw}px;inset-inline-start:${Math.max(40,Math.min(1880-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
+    <div class="ttag"><bdi>${o.code}</bdi> · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
+  if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px"></i>`;
+  return `<section class="gs tl ${pi===curPage?"on":""}" data-pg="${pi}"><div class="hd"><div>${B("x|titleTl","h1","",S.tx.titleTl[L])}${B("x|sub","div","sub",S.tx.sub[L])}</div><img src="${LOGO}" alt="SAR"></div>${legend}
+   <div class="taxis">${segs}</div>${chips}${marks}${cards}
+   <div class="ft"><div><b>${d1-e0}</b>${u.total}</div><span class="s"></span><div><b>${sd}</b>${u.susp}</div><span class="s"></span><div><b>${M.length}</b>${u.cnt}</div><span class="pn">${u.pn}${pages.length>1?` · <bdi>${pi+1}/${pages.length}</bdi>`:""}</span></div></section>`}).join("");
+}
+$("#deck").addEventListener("change",e=>{const i=e.target.closest(".tdinp");if(!i||!i.value)return;const m=S.ms.find(x=>x.id==i.dataset.id);m.date=i.value;save();render();goRow2(m.id)});
+$("#deck").addEventListener("click",e=>{const i=e.target.closest(".tdinp");if(i&&editMode){try{i.showPicker()}catch(_){}}});
+function goRow2(id){const s=document.querySelector(`#deck .tcard[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
+$("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* scale to fit */
 function fit(){const v=$("#vp"),r=v.getBoundingClientRect(),k=Math.min(r.width/1920,r.height/1080),s=$("#stage");
  s.style.transform=`scale(${k})`;s.style.left=(r.width-1920*k)/2+"px";s.style.top=(r.height-1080*k)/2+"px";
@@ -353,7 +399,7 @@ const AP=()=>$("#deck .gs.on");
 function showPage(){document.querySelectorAll("#deck .gs").forEach((s,i)=>s.classList.toggle("on",i===curPage));
  $("#pager").style.display=pageCount>1?"flex":"none";$("#pNum").textContent=(curPage+1)+" / "+pageCount;applyPin()}
 function goPage(i){curPage=Math.max(0,Math.min(pageCount-1,i));showPage()}
-function goRow(id){const s=document.querySelector(`#deck .row.ms[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
+function goRow(id){const s=document.querySelector(`#deck .row.ms[data-i="${id}"], #deck .tcard[data-i="${id}"]`);if(s){curPage=+s.closest(".gs").dataset.pg;showPage()}}
 $("#pPrev").onclick=()=>goPage(curPage-1);$("#pNext").onclick=()=>goPage(curPage+1);
 document.addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,select,textarea,[contenteditable=true]"))return;if(document.querySelector("#dlg.open,#adlg.open"))return;
  if(["ArrowRight","PageDown"].includes(e.key))goPage(curPage+1);else if(["ArrowLeft","PageUp"].includes(e.key))goPage(curPage-1)});
@@ -506,6 +552,38 @@ async function exportPPTX(){
   const legacy=M.filter(m=>endOf(m)===null);
   const sus=M.find(m=>m.ph==="p1"),sd=sus?d1-dn(sus.date):0;
 
+  if(S.view==="tl"){
+   const {pages,all}=tlPages(TR);
+   pages.forEach((pg,pi)=>{const sl=P.addSlide({masterName:"SAR"});
+    head(sl,strip(S.tx.titleTl[L])+(pages.length>1?` (${pi+1}/${pages.length})`:""),strip(S.tx.sub[L]));
+    let lx=.4;Object.entries(S.ph).forEach(([k,p])=>{const nm=strip(p.n[L]).replace(/ –.*/,"");const w=.45+nm.length*.075;
+     sl.addShape(P.ShapeType.roundRect,{x:mx(lx,.28),y:1.2,w:.28,h:.12,fill:{color:hexOf(p.c)},line:{color:hexOf(p.c)},rectRadius:.03});
+     tx(sl,nm,lx+.34,1.13,w,.26,{fontSize:9.5,color:"333333"});lx+=w+.35});
+    const n=Math.max(1,pg.length),X0=.6,XW=12.1,sp=XW/n,cw=Math.min(3.5,sp*1.7),AY=4.0,MD=.56;let px=X0;
+    const seg=(a,b,c)=>sl.addShape(P.ShapeType.roundRect,{x:mx(a,b-a),y:AY-.04,w:Math.max(.01,b-a),h:.08,fill:{color:c},line:{color:c},rectRadius:.04});
+    pg.forEach((o,i)=>{const cx=X0+(i+.5)*sp;seg(px,cx,hexOf(S.ph[o.P.pid].c));px=cx});
+    if(pg.length)seg(px,X0+XW,"C9D3D8");
+    pg.forEach((o,i)=>{const m=o.m,c=hexOf(S.ph[o.P.pid].c),cx=X0+(i+.5)*sp,up=i%2===0,E=endOf(m),s0=dn(m.date),gi=all.findIndex(a=>a.m===m),prev=gi>0?all[gi-1].m:null;
+     const cardY=up?1.5:4.7,cardH=1.85,cxl=Math.max(.4,Math.min(W-.4-cw,cx-cw/2));
+     sl.addShape(P.ShapeType.line,{x:mx(cx,0),y:up?cardY+cardH:AY+MD/2,w:0,h:up?(AY-MD/2)-(cardY+cardH):cardY-(AY+MD/2),line:{color:c,width:2.25,transparency:35}});
+     if(prev&&i>0){const gp=s0-dn(prev.date),mid=cx-sp/2;
+      sl.addShape(P.ShapeType.roundRect,{x:mx(mid-.42,.84),y:AY-.14,w:.84,h:.28,fill:{color:"EEF3F5"},line:{color:"CFD9DE",width:.75},rectRadius:.14});
+      tx(sl,gp===0?u.same:`+${gp} ${gp===1?u.day1:u.days}`,mid-.42,AY-.14,.84,.28,{fontSize:8.5,bold:true,color:"556070",align:"center"})}
+     sl.addShape(P.ShapeType.ellipse,{x:mx(cx-MD/2,MD),y:AY-MD/2,w:MD,h:MD,fill:{color:c},line:{color:"FFFFFF",width:3},shadow:{type:"outer",color:"000000",opacity:.25,blur:5,offset:2,angle:90}});
+     tx(sl,o.code,cx-MD/2,AY-MD/2,MD,MD,{fontSize:12,bold:true,color:"FFFFFF",align:"center"});
+     const dy=up?AY+.34:AY-.64;
+     sl.addShape(P.ShapeType.roundRect,{x:mx(cx-.7,1.4),y:dy,w:1.4,h:.3,fill:{color:"FFFFFF"},line:{color:c,width:1.25},rectRadius:.15});
+     tx(sl,fDay(s0),cx-.7,dy,1.4,.3,{fontSize:10,bold:true,color:c,align:"center"});
+     sl.addShape(P.ShapeType.roundRect,{x:mx(cxl,cw),y:cardY,w:cw,h:cardH,fill:{color:"FFFFFF"},line:{color:"DFE6EA",width:.75},rectRadius:.1,shadow:{type:"outer",color:"000000",opacity:.14,blur:7,offset:2,angle:90}});
+     sl.addShape(P.ShapeType.rect,{x:mx(cxl+.1,cw-.2),y:cardY,w:cw-.2,h:.08,fill:{color:c},line:{color:c}});
+     const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${fL(m.date)} → ${fL(m.end)} · ${days} ${u.days}`:fL(m.date);
+     sl.addText([{text:`${o.code} · ${strip(S.ph[o.P.pid].n[L]).replace(/ –.*/,"")}`.toUpperCase(),options:{fontSize:8.5,bold:true,color:c,breakLine:true}},
+      {text:strip(m.t[L]),options:{fontSize:15,bold:true,color:"3D3935",breakLine:true}},
+      {text:meta,options:{fontSize:9.5,bold:true,color:"66707A",breakLine:true}},
+      {text:strip(m.d[L]),options:{fontSize:11.5,color:"444D55"}}],
+      {x:mx(cxl+.18,cw-.36),y:cardY+.14,w:cw-.36,h:cardH-.22,fontFace:FONT,rtlMode:rtl,lang:rtl?"ar-SA":"en-US",align:al("left"),valign:"top",margin:0,fit:"shrink",paraSpaceAfter:3})});
+   });
+  }else{
   /* 3 – gantt pages */
   const rowsAll=[];TR.forEach(p=>{rowsAll.push({g:p});p.items.forEach(o=>rowsAll.push({o,p}))});
   const cap=22,pages=[];let cur=[];
@@ -571,6 +649,7 @@ async function exportPPTX(){
    sl.addShape(P.ShapeType.rect,{x:mx(.4,W-.8),y:top,w:W-.8,h:hh+bodyH,fill:{color:"FFFFFF",transparency:100},line:{color:"B9C6CC",width:.75}});
   });
 
+  }
   await P.writeFile({fileName:`UFWL_Gantt_${L.toUpperCase()}.pptx`});
  }catch(e){console.error(e);alert((L==="en"?"Could not create PowerPoint: ":"تعذر إنشاء ملف PowerPoint: ")+e.message)}
  btn.disabled=false;btn.innerHTML=old;
