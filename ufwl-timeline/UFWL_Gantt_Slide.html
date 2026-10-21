@@ -114,6 +114,13 @@ body.edit .rdel{display:inline-block}.rdel:hover{background:#c0392b;color:#fff}
 /* timeline view */
 .dense .tmk{width:56px;height:56px;font-size:16px;border-width:4px}.dense .tcard{padding:8px 12px 6px;border-top-width:7px;border-radius:12px}.dense .ttag{font-size:12.5px;padding-inline-end:24px;line-height:1.1}.dense .tt{font-size:17px;margin-top:2px;line-height:1.15}.dense .tmeta{font-size:12px;margin-top:2px;position:relative}.dense .tdsc{font-size:13px;line-height:1.28;margin-top:3px;-webkit-line-clamp:3}.dense .tcard .rdel{width:20px;height:20px;font-size:11px;top:8px;inset-inline-end:8px}.dense .tstem{width:3px}
 .gp{display:none}
+.tl.hov .tcard,.tl.hov .tmk,.tl.hov .tstem,.tl.hov .tdt{opacity:.25}
+.tl .tcard,.tl .tmk,.tl .tstem,.tl .tdt{transition:opacity .15s,transform .15s,box-shadow .15s}
+.tl.hov .hl2{opacity:1}
+.tl .tmk.hl2{transform:scale(1.45);box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 30%,transparent),0 6px 18px #0006;z-index:12}
+.tl .tstem.hl2{width:6px;margin-inline-start:-1px;z-index:11}
+.tl .tcard.hl2{transform:translateY(-4px) scale(1.04);box-shadow:0 0 0 3px var(--c),0 16px 36px #0005;z-index:11}
+.tl .tdt.hl2{transform:scale(1.12);z-index:12}
 .tscroll{position:absolute;top:150px;bottom:56px;inset-inline:0;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:thin;scrollbar-color:#9db2bb #eef3f5}
 .tscroll.drag{cursor:grabbing}.tscroll::-webkit-scrollbar{height:14px}.tscroll::-webkit-scrollbar-thumb{background:#9db2bb;border-radius:8px}.tscroll::-webkit-scrollbar-track{background:#eef3f5}
 .tin{--oy:0px}
@@ -359,8 +366,8 @@ function tlBuild(all,u){
   if(prev&&sp>=200){const gp=s0-dn(prev.date);chips+=`<span class="tgap" style="inset-inline-start:${cx-sp/2-55}px;top:${lay.AY-16}px">${gp===0?u.same:`<bdi>+${gp}</bdi> ${gp===1?u.day1:u.days}`}</span>`}
   const days=E!==null?E-s0+1:0,meta=E!==null&&E!==s0?`${lay.dense?fS(m.date)+" → "+fS(m.end):fL(m.date)+" → "+fL(m.end)} · <bdi>${days}</bdi> ${u.days}`:(lay.dense?fDay(s0):fL(m.date));
   const stemTop=up?ln.y+lay.H:lay.AY+lay.MD/2,stemH=up?lay.AY-lay.MD/2-(ln.y+lay.H):ln.y-(lay.AY+lay.MD/2);
-  marks+=`<i class="tstem" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${o.code}</div>`;
-  if(!lay.dense)marks+=`<div class="tdt" style="--c:${c};inset-inline-start:${cx-95}px;top:${up?lay.AY+53:lay.AY-75}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
+  marks+=`<i class="tstem" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-2}px;top:${stemTop}px;height:${Math.max(0,stemH)}px"></i><div class="tmk" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-lay.MD/2}px;top:${lay.AY-lay.MD/2}px">${o.code}</div>`;
+  if(!lay.dense)marks+=`<div class="tdt" data-i="${m.id}" style="--c:${c};inset-inline-start:${cx-95}px;top:${up?lay.AY+53:lay.AY-75}px">${fDay(s0)}<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}"></div>`;
   cards+=`<div class="tcard" data-i="${m.id}" style="--c:${c};width:${cw}px;height:${lay.H}px;top:${ln.y}px;inset-inline-start:${Math.max(30,Math.min(1890-cw,cx-cw/2))}px"><button class="rdel" data-del="${m.id}" title="Delete / حذف">✕</button>
    <div class="ttag" title="${esc2(strip(S.ph[o.P.pid].n[L]))}">${strip(S.ph[o.P.pid].n[L])}</div>${B(`m|${m.id}|t`,"div","tt",m.t[L])}<div class="tmeta">${meta}${lay.dense?`<input type="date" class="tdinp" data-id="${m.id}" value="${m.date}">`:""}</div>${B(`m|${m.id}|d`,"div","tdsc",m.d[L])}</div>`});
  if(n)segs+=`<i class="tseg arrow" style="--c:#b9c4ca;inset-inline-start:${px}px;width:${X0+XW-px}px;top:${lay.AY-5}px"></i>`;
@@ -381,6 +388,13 @@ function goRow2(id){}
  addEventListener("pointermove",e=>{if(!d)return;const k=1920/$("#stage").getBoundingClientRect().width;d.s.scrollLeft=d.l-(e.clientX-d.x)*k;d.s.classList.add("drag")});
  addEventListener("pointerup",()=>{if(d){d.s.classList.remove("drag");d=null}});
  vp.addEventListener("wheel",e=>{const s=e.target.closest("#tscroll");if(!s||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;s.scrollLeft+=e.deltaY;e.preventDefault()},{passive:false})})();
+(()=>{const d=$("#deck");let cur=null;
+ const set=id=>{const s=d.querySelector(".gs.tl");if(!s)return;
+  if(id==null){s.classList.remove("hov");s.querySelectorAll(".hl2").forEach(e=>e.classList.remove("hl2"));cur=null;return}
+  if(cur===id&&s.classList.contains("hov"))return;set(null);cur=id;s.classList.add("hov");s.querySelectorAll(`[data-i="${id}"]`).forEach(e=>e.classList.add("hl2"))};
+ d.addEventListener("mouseover",e=>{const el=e.target.closest(".tcard,.tmk,.tstem,.tdt");set(el?el.dataset.i:null)});
+ d.addEventListener("mouseleave",()=>set(null));
+ d.addEventListener("touchstart",e=>{const el=e.target.closest(".tcard,.tmk");set(el?el.dataset.i:null)},{passive:true})})();
 $("#bView").onclick=()=>{S.view=S.view==="tl"?"gantt":"tl";save();render()};
 /* scale to fit */
 function fit(){const v=$("#vp"),r=v.getBoundingClientRect(),k=Math.min(r.width/1920,r.height/1080),s=$("#stage");
