@@ -6,7 +6,9 @@
   const esc = P6.esc;
   const t = (k, ...a) => P6.t(k, ...a);
 
-  const ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4, 0.2, 0.1, 0.05];
+  const OLD_ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4];
+  const ZOOMS = (() => { const z = []; for (let v = 60; v >= 0.05; v *= 0.8) z.push(+v.toPrecision(3)); return z; })(); // fine steps so zooming out does not jump between header units
+  const nearZ = (px) => ZOOMS.reduce((b, v, i) => (Math.abs(Math.log(v / px)) < Math.abs(Math.log(ZOOMS[b] / px)) ? i : b), 0);
   const ALL_COLS = P6.ALL_COLS;
   const DEF_COLS = ['code', 'name', 'dur', 'es', 'ef', 'tf'];
   const TYPES = ['TT_Task', 'TT_Mile', 'TT_FinMile', 'TT_LOE'];
@@ -28,6 +30,7 @@
       const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
       if (c) { Object.assign(S.cfg, c); S.cfg.show = Object.assign({ base: true, crit: true, rels: true, labels: true, float: false, today: true, spot: false }, c.show); S.cfg.filter = Object.assign({ text: '', mode: 'all' }, c.filter); }
     } catch (e) { /* ignore */ }
+    if (S.cfg.zv !== 2) { S.cfg.pxIdx = nearZ(OLD_ZOOMS[S.cfg.pxIdx] || 12); Object.values(S.cfg.layouts || {}).forEach((l) => { if (l.pxIdx != null) l.pxIdx = nearZ(OLD_ZOOMS[l.pxIdx] || 12); }); S.cfg.zv = 2; }
     if (!S.cfg.cols.every((c) => ALL_COLS[c.k])) S.cfg.cols = DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w }));
   }
   function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(S.cfg)); } catch (e) { /* ignore */ } }
@@ -1185,7 +1188,7 @@
     saveCfg(); refresh(); buildMenus(); buildLayoutBar();
   }
   API.applyLayout = applyLayout; API.buildLayoutBar = () => buildLayoutBar();
-  const TS = [['day', 1], ['week', 3], ['month', 5], ['quarter', 7], ['year', 8]];
+  const TS = [['day', 36], ['week', 12], ['month', 3], ['quarter', 0.8], ['year', 0.4]].map(([k, v]) => [k, nearZ(v)]);
   function setTimescale(i) { const gs = $('#gScroll'); const old = ZOOMS[S.cfg.pxIdx]; const c = S.minDay + (gs.scrollLeft + gs.clientWidth / 2) / old; S.cfg.pxIdx = i; saveCfg(); pushGantt(); gs.scrollLeft = (c - S.minDay) * ZOOMS[i] - gs.clientWidth / 2; buildLayoutBar(); }
   const BARS = [['base', 'show_baseline'], ['crit', 'show_critical'], ['rels', 'show_rels'], ['labels', 'show_labels'], ['float', 'show_float'], ['today', 'show_today'], ['spot', 'spotlight']];
   function buildLayoutBar() { if (API.drawLayoutBar) API.drawLayoutBar(); }
