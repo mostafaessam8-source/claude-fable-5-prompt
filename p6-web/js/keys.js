@@ -14,34 +14,28 @@
     if (!all && sel.length) rows = sel;
     const clean = (s) => String(s == null ? '' : s).replace(/[\t\r\n]+/g, ' ');
     const head = cols.map((c) => clean(c.title || P6.t('col_' + c.k)));
-    const lines = rows.map((row) => cols.map((c, i) => { const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name; return clean(v); }).join('\t'));
+    const lines = rows.map((row) => cols.map((c, i) => { const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name; return (i === 0 ? '  '.repeat(Math.max(0, row.level || 0)) : '') + clean(v); }).join('\t'));
     return { text: [head.join('\t'), ...lines].join('\r\n'), n: rows.length };
   };
-  // same colours as the on-screen WBS bands: pasted into Excel the rows keep their fill, font colour and bold
-  const WCOL = [['#0000ff', '#ffffff'], ['#66ff66', '#000000'], ['#ffff00', '#000000'], ['#0000ff', '#ffffff'], ['#ff0000', '#ffffff']];
+  // Same result as copying from P6: WBS rows get a light-green fill in the first column only, no borders,
+  // and the first column is indented by WBS level (activities one level deeper than their WBS).
   const hx = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const WBS_FILL = '#c6efce';
   App.tableHTML = function (all) {
-    const ctx = App.getCtx(), cols = F().cols, wpal = (F().grp && F().grp.wbsColors) || null;
+    const ctx = App.getCtx(), cols = F().cols;
     let rows = App.rows; const sel = rows.filter((r) => App.sel.has(r.kind + r.id));
     if (!all && sel.length) rows = sel;
-    const num = /^(dur|rem|pct|tf|ff|cost|units|bc|ac|bl|sp|cp|eac|etc|vac)/;
     const tr = rows.map((row) => {
-      let bg = '', fg = '', bold = '';
-      if (row.kind !== 't') {
-        const lv = row.level % WCOL.length;
-        bg = row.kind === 'g' ? row.color : wpal ? wpal[row.level % wpal.length] : WCOL[lv][0];
-        fg = row.kind === 'w' && !wpal ? WCOL[lv][1] : P6.contrast ? P6.contrast(bg) : '#000000'; bold = 'font-weight:bold;';
-      }
-      const st = `style="${bg ? 'background:' + bg + ';' : ''}${fg ? 'color:' + fg + ';' : ''}${bold}border:1px solid #bfbfbf"`;
+      const fill = row.kind === 'w' ? WBS_FILL : row.kind === 'g' ? (row.color || WBS_FILL) : '';
       return '<tr>' + cols.map((c, i) => {
         const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name;
-        const ind = i === 0 ? '&nbsp;&nbsp;&nbsp;'.repeat(Math.max(0, row.level || 0)) : '';
-        const right = (r && r.cls && / r\b|^r\b/.test(' ' + r.cls)) || num.test(c.k);
-        return `<td ${st.replace('style="', 'style="' + (right ? 'text-align:right;' : ''))}>${ind}${hx(v)}</td>`;
+        const ind = i === 0 ? '&nbsp;&nbsp;'.repeat(Math.max(0, row.level || 0)) : '';
+        const st = (i === 0 && fill ? `background:${fill};` : '') + (i === 0 ? 'text-align:left;' : '');
+        return `<td${st ? ` style="${st}"` : ''}>${ind}${hx(v)}</td>`;
       }).join('') + '</tr>';
     }).join('');
-    const head = '<tr>' + cols.map((c) => `<th style="background:#d9d9d9;border:1px solid #808080;font-weight:bold">${hx(c.title || P6.t('col_' + c.k))}</th>`).join('') + '</tr>';
-    return `<table border="1" style="border-collapse:collapse;font-family:Arial;font-size:10pt">${head}${tr}</table>`;
+    const head = '<tr>' + cols.map((c, i) => `<td${i === 0 ? ` style="background:${WBS_FILL}"` : ''}>${hx(c.title || P6.t('col_' + c.k))}</td>`).join('') + '</tr>';
+    return `<table style="font-family:Calibri,Arial;font-size:11pt">${head}${tr}</table>`;
   };
   App.copyTable = function (all) {
     const { text, n } = App.tableTSV(all), html = App.tableHTML(all);
