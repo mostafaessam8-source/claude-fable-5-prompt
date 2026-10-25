@@ -469,9 +469,15 @@
       for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${(S.cfg.lineNo ? LNW : 0) + L * SW}px;width:${SW}px;background:${(S.levelColors && S.levelColors[L]) || WCOL[L % WCOL.length][0]}"></i>`;
       s += stripes;
       if (S.cfg.lineNo) s += `<div class="td r ro" style="width:${LNW}px;position:relative;z-index:2;background:#f3f3f3;color:#555">${i + 1}</div>`;
-      for (const c of S.cfg.cols) {
+      let mergeNext = false;
+      for (let cix = 0; cix < S.cfg.cols.length; cix++) {
+        const c = S.cfg.cols[cix];
+        if (mergeNext) { mergeNext = false; continue; }
         const ci = cellOf(c.k, row);
         const cur = S.cell && S.cell.key === key && S.cell.k === c.k;
+        // band rows (WBS / groups): the title spans the ID and Name columns like P6
+        let cw = c.w;
+        if (row.kind !== 't' && c.k === tk) { const nx = S.cfg.cols[cix + 1]; if (nx && nx.k === 'name') { cw = c.w + nx.w; mergeNext = true; } }
         let inner;
         if (c.k === tk) {
           const pad = row.kind !== 't' ? row.level * SW0() + 4 : G + 4;
@@ -482,7 +488,7 @@
         } else inner = `<span style="unicode-bidi:plaintext">${esc(ci.text)}</span>`;
         const rc = ci.cls.split(' ').filter((x) => x && x !== 'r' && x !== 'lft' && x !== 'c');
         if (c.align ? c.align === 'right' : ci.cls.split(' ').includes('r')) rc.push('r'); else if (c.align === 'center') rc.push('c'); else if (c.align === 'left') rc.push('lft');
-        s += `<div class="td ${rc.join(' ')}${ci.ro ? ' ro' : ''}${cur ? ' cur' : ''}" style="width:${c.w}px" data-k="${c.k}">${inner}</div>`;
+        s += `<div class="td ${rc.join(' ')}${ci.ro ? ' ro' : ''}${cur ? ' cur' : ''}" style="width:${cw}px" data-k="${c.k}">${inner}</div>`;
       }
       s += '</div>';
     }
