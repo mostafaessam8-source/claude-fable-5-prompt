@@ -171,7 +171,7 @@
     const rs = T('RSRC');
     const usedR = new Set();
     for (const a of T('TASKRSRC')) if (taskIds.has(a.task_id)) { usedR.add(a.rsrc_id); p.asg.push({ id: +a.taskrsrc_id || ++p.nid, task: +a.task_id, rsrc: +a.rsrc_id, qty: r2(num(a.target_qty)) }); }
-    for (const r of rs) if (usedR.has(r.rsrc_id)) p.rsrc.push({ id: +r.rsrc_id, name: r.rsrc_name, short: r.rsrc_short_name, type: r.rsrc_type || 'RT_Labor' });
+    for (const r of rs) if (usedR.has(r.rsrc_id)) p.rsrc.push({ id: +r.rsrc_id, name: r.rsrc_name, short: r.rsrc_short_name, role: r.rsrc_title_name || '', units: r2(num(r.def_qty_per_hr) * 8) || 8, type: r.rsrc_type || 'RT_Labor' });
     for (const w of p.wbs) p.nid = Math.max(p.nid, w.id);
     for (const r of p.rels) p.nid = Math.max(p.nid, r.id);
     for (const r of p.rsrc) p.nid = Math.max(p.nid, r.id);
@@ -289,7 +289,7 @@
         pushAll(lines, tableOut(name, fields, rows));
       } else if (name === 'RSRC') {
         const rawBy = new Map(rt ? rt.rows.map((r) => [r.rsrc_id, r]) : []);
-        const rows = p.rsrc.map((r) => Object.assign({ active_flag: 'Y', auto_compute_act_flag: 'Y', def_cost_qty_link_flag: 'Y', ot_flag: 'N', curr_id: 1, def_qty_per_hr: 1, load_tasks_flag: 'N', level_flag: 'N' }, rawBy.get(String(r.id)) || {}, { rsrc_id: r.id, rsrc_name: r.name, rsrc_short_name: r.short || r.name, rsrc_type: r.type }));
+        const rows = p.rsrc.map((r) => Object.assign({ active_flag: 'Y', auto_compute_act_flag: 'Y', def_cost_qty_link_flag: 'Y', ot_flag: 'N', curr_id: 1, def_qty_per_hr: 1, load_tasks_flag: 'N', level_flag: 'N' }, rawBy.get(String(r.id)) || {}, { rsrc_id: r.id, rsrc_name: r.name, rsrc_short_name: r.short || r.name, rsrc_title_name: r.role || '', def_qty_per_hr: (r.units || 8) / 8, rsrc_type: r.type }));
         pushAll(lines, tableOut(name, fields, rows));
       } else if (name === 'TASKRSRC') {
         const rawBy = new Map(rt ? rt.rows.map((r) => [r.taskrsrc_id, r]) : []);

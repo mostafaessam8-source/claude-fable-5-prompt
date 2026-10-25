@@ -64,6 +64,12 @@
       const t = p.tasks.find((x) => x.code === a[1]);
       for (const r of P6.parsePreds(p, a[4].replace('A2020FS', 'A2020'), t).rels) p.rels.push({ id: P6.nextId(p), p: r.p, s: t.id, type: r.type, lag: r.lag });
     }
+    const R = {};
+    [['FRM', 'Foreman', 'Site Foreman'], ['MSN', 'Mason', 'Mason'], ['HLP', 'Helper', 'Laborer'], ['ELC', 'Electrician', 'Electrician'], ['ENG', 'Site Engineer', 'Engineer'], ['EXC', 'Excavator', 'Equipment']].forEach(([s, n, r], i) => { const o = { id: P6.nextId(p), name: n, short: s, role: r, units: 8, type: i === 5 ? 'RT_Equip' : 'RT_Labor' }; R[s] = o.id; p.rsrc.push(o); });
+    const assign = (code, ...rs) => { const tk = p.tasks.find((x) => x.code === code); if (tk) rs.forEach((s) => p.asg.push({ id: P6.nextId(p), task: tk.id, rsrc: R[s], qty: Math.max(1, tk.dur) * 8 })); };
+    ['A2000', 'A2010', 'A2070'].forEach((c) => assign(c, 'EXC', 'HLP')); ['A2020', 'A2030', 'A2040', 'A2050', 'A2060'].forEach((c) => assign(c, 'MSN', 'HLP'));
+    ['A3000', 'A3010', 'A3020', 'A3030', 'A3040'].forEach((c) => assign(c, 'MSN', 'FRM')); ['A4000', 'A4010', 'A4030', 'A4040', 'A4050'].forEach((c) => assign(c, 'ELC', 'HLP'));
+    ['A5000', 'A5010', 'A5030', 'A5050'].forEach((c) => assign(c, 'MSN', 'HLP')); ['A1010', 'A6000', 'A6010', 'A6030'].forEach((c) => assign(c, 'ENG'));
     P6.schedule(p);
     for (const t of p.tasks) { t.bs = t.es; t.bf = t.ef; t.bdur = t.dur; }
     // progress up to the data date

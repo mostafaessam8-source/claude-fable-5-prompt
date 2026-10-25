@@ -19,20 +19,27 @@
     <button id="themeBtn" class="tbtn" title="Theme"></button>
   </header>
   <div id="toolbar"></div>
-  <div id="layoutbar"></div>
-  <main id="main">
-    <section id="tablePane">
-      <div id="tHead"></div>
-      <div id="tBody"><div id="tRows"></div></div>
-    </section>
-    <div id="vsplit" title="⇆"></div>
-    <section id="ganttPane">
-      <div id="gHead"></div>
-      <div id="gScroll"></div>
-    </section>
-  </main>
-  <div id="hsplit" title="⇅"></div>
-  <section id="details"></section>
+  <div id="work">
+    <aside id="sideL" class="side"></aside>
+    <div id="center">
+      <div id="winhead"></div>
+      <div id="layoutbar"></div>
+      <main id="main">
+        <section id="tablePane">
+          <div id="tHead"></div>
+          <div id="tBody"><div id="tRows"></div></div>
+        </section>
+        <div id="vsplit" title="⇆"></div>
+        <section id="ganttPane">
+          <div id="gHead"></div>
+          <div id="gScroll"></div>
+        </section>
+      </main>
+      <div id="hsplit" title="⇅"></div>
+      <section id="details"></section>
+    </div>
+    <aside id="sideR" class="side"></aside>
+  </div>
   <footer id="statusbar"></footer>
   <div id="tip" hidden></div>
   <div id="ctx" hidden></div>
@@ -47,6 +54,7 @@
 <script src="js/gantt.js"></script>
 <script src="js/app.js"></script>
 <script src="js/dialogs.js"></script>
+<script src="js/p6ui.js"></script>
 <script>App.boot();</script>
 </body>
 </html>
