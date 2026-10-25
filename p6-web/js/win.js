@@ -85,6 +85,7 @@
 
   // ======================= Projects =======================
   async function renderProjects(el) {
+    if (App.renderProjectsDB) return App.renderProjectsDB(el);
     const list = (await App.listProjects()).sort((a, b) => b.updated - a.updated);
     const cur = App.p.id, sel = wsel.projects || cur;
     const cols = [{ k: 'name', l: 'f_name', w: 280, get: (r) => r.name }, { k: 'tasks', l: 'activities', w: 90, r: 1, get: (r) => r.tasks }, { k: 'start', l: 'col_es', w: 100, get: (r) => fmtD(r.start) }, { k: 'finish', l: 'col_ef', w: 100, get: (r) => fmtD(r.finish) }, { k: 'upd', l: 'last_saved', w: 170, get: (r) => new Date(r.updated).toLocaleString() }];
