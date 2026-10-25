@@ -7,6 +7,23 @@
   const typing = () => /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') || (document.activeElement || {}).isContentEditable;
   const modalOpen = () => !!document.querySelector('.modal-bg, .mback');
 
+  // Cell text as P6 puts it on the clipboard: dd-Mon-yyyy dates (* on constraint dates, no start on finish milestones), 2-decimal durations / floats
+  const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const START_CT = ['SNET', 'SNLT', 'MSO'], FIN_CT = ['FNET', 'FNLT', 'MFO'];
+  function cellStr(c, i, row, ctx) {
+    const r = P6.regCell(c.k, row, ctx), d = (P6.colDefs || {})[c.k] || {};
+    let v = r ? r.text : '';
+    if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name;
+    const tk = row.kind === 't' ? row.t : null;
+    if (d.kind === 'date' && r && typeof r.v === 'number') {
+      const isStart = c.k === 'es', isFin = c.k === 'ef';
+      if (tk && ((isStart && tk.type === 'TT_FinMile') || (isFin && P6.isMile(tk) && tk.type !== 'TT_FinMile'))) return '';
+      const y = P6.ymd(r.v); v = String(y.d).padStart(2, '0') + '-' + MONS[y.m] + '-' + y.y;
+      if (tk && ((isStart && START_CT.includes(tk.ct)) || (isFin && FIN_CT.includes(tk.ct)))) v += '*';
+    } else if ((d.kind === 'days' || d.kind === 'num') && r && typeof r.v === 'number' && (d.group === 'dur' || c.k === 'tf' || c.k === 'ff')) v = r.v.toFixed(2);
+    return v;
+  }
+
   // ---- table → clipboard as tab-separated text (pastes straight into Excel) ----
   App.tableTSV = function (all) {
     const ctx = App.getCtx(), cols = F().cols;
@@ -14,7 +31,7 @@
     if (!all && sel.length) rows = sel;
     const clean = (s) => String(s == null ? '' : s).replace(/[\t\r\n]+/g, ' ');
     const head = cols.map((c) => clean(c.title || P6.t('col_' + c.k)));
-    const lines = rows.map((row) => cols.map((c, i) => { const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name; return (i === 0 ? '  '.repeat(Math.max(0, row.level || 0)) : '') + clean(v); }).join('\t'));
+    const lines = rows.map((row) => cols.map((c, i) => (i === 0 ? '  '.repeat(Math.max(0, row.level || 0)) : '') + clean(cellStr(c, i, row, ctx))).join('\t'));
     return { text: [head.join('\t'), ...lines].join('\r\n'), n: rows.length };
   };
   // Same result as copying from P6: WBS rows get a light-green fill in the first column only, no borders,
@@ -35,7 +52,7 @@
         else { const lv = row.level % WCOL.length; bg = row.kind === 'g' ? row.color : wpal ? wpal[row.level % wpal.length] : WCOL[lv][0]; fg = row.kind === 'w' && !wpal ? WCOL[lv][1] : (P6.contrast ? P6.contrast(bg) : '#000000'); bold = true; }
       }
       return '<tr>' + cols.map((c, i) => {
-        const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name;
+        const v = cellStr(c, i, row, ctx);
         const ind = i === 0 ? '&nbsp;&nbsp;'.repeat(Math.max(0, row.level || 0)) : '';
         const paint = bg && (!firstOnly || i === 0);
         const st = (paint ? `background:${bg};` : '') + (paint && fg ? `color:${fg};` : '') + (paint && bold ? 'font-weight:bold;' : '') + (i === 0 ? 'text-align:left;' : '');
