@@ -168,6 +168,32 @@
     });
   };
 
+  // ---------- custom filter ----------
+  D.filter = function () {
+    const F = App.cfg.filter;
+    const conds = (F.custom && F.custom.conds && F.custom.conds.length ? F.custom.conds : [{ f: 'name', op: 'has', v: '' }]).map((c) => ({ ...c }));
+    let join = (F.custom && F.custom.join) || 'and';
+    const fields = ['code', 'name', 'status', 'dur', 'rem', 'pct', 'es', 'ef', 'tf', 'ff', 'wbs'], ops = ['has', 'eq', 'ne', 'gt', 'lt', 'ge', 'le'];
+    const body = document.createElement('div');
+    const draw = () => {
+      body.innerHTML = `<div class="fld" style="max-width:260px;margin-bottom:10px"><label>${esc(t('cf_match'))}</label><select id="cf_join"><option value="and"${join === 'and' ? ' selected' : ''}>${esc(t('cf_all'))}</option><option value="or"${join === 'or' ? ' selected' : ''}>${esc(t('cf_any'))}</option></select></div>
+        <table class="mini"><tbody>${conds.map((c, i) => `<tr data-i="${i}"><td><select data-k="f">${fields.map((f) => `<option value="${f}"${c.f === f ? ' selected' : ''}>${esc(t('col_' + f))}</option>`).join('')}</select></td><td><select data-k="op">${ops.map((o) => `<option value="${o}"${c.op === o ? ' selected' : ''}>${esc(t('op_' + o))}</option>`).join('')}</select></td><td><input data-k="v" dir="auto" value="${esc(c.v)}" placeholder="${c.f === 'status' ? 'NS / IP / C' : ''}"></td><td><button class="ib" data-rm="${i}">×</button></td></tr>`).join('')}</tbody></table>
+        <div style="margin-top:8px"><button class="btn sm" id="cf_add">+ ${esc(t('add'))}</button></div>`;
+    };
+    draw();
+    modal({
+      title: t('cf_title'), cls: 'mid', body, buttons: [
+        { label: t('cf_clear'), fn: () => { F.mode = 'all'; F.custom = null; App.refresh(); App.buildLayoutBar && App.buildLayoutBar(); } },
+        { label: t('cf_apply'), cls: 'pri', fn: () => { F.custom = { conds: conds.filter((c) => String(c.v).trim() !== ''), join }; F.mode = F.custom.conds.length ? 'custom' : 'all'; try { localStorage.setItem('p6web.cfg', JSON.stringify(App.cfg)); } catch (e) { /* */ } App.refresh(); } }
+      ]
+    });
+    body.addEventListener('change', (e) => { const x = e.target; if (x.id === 'cf_join') join = x.value; else if (x.dataset.k) { conds[+x.closest('tr').dataset.i][x.dataset.k] = x.value; } });
+    body.addEventListener('click', (e) => {
+      if (e.target.id === 'cf_add') { conds.push({ f: 'name', op: 'has', v: '' }); draw(); }
+      const r = e.target.closest('[data-rm]'); if (r && conds.length > 1) { conds.splice(+r.dataset.rm, 1); draw(); }
+    });
+  };
+
   // ---------- columns ----------
   D.columns = function () {
     const S0 = App;

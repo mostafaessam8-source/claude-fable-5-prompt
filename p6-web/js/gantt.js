@@ -130,6 +130,7 @@
       for (let i = r0; i <= r1; i++) {
         const r = rows[i], y = i * rh - sy;
         if (r.kind === 'w') s += `<rect class="row-wbs" x="0" y="${y}" width="${W}" height="${rh}"/>`;
+        if (o.spot && r.kind === 't' && o.spot.has(r.id)) s += `<rect class="row-spot" x="0" y="${y}" width="${W}" height="${rh}"/>`;
         if (o.sel.has(r.kind + r.id)) s += `<rect class="row-sel2" x="0" y="${y}" width="${W}" height="${rh}"/>`;
         s += `<line class="gl" x1="0" x2="${W}" y1="${y + rh}" y2="${y + rh}"/>`;
       }
@@ -145,14 +146,14 @@
       for (let i = r0; i <= r1; i++) {
         const r = rows[i], y = rowY(i);
         const base = sh.base ? 1 : 0;
-        const by = y + (base ? 4 : 7), bh = 12;
+        const by = y + (base ? 3 : 6), bh = 12;
         if (r.kind === 'w') {
           const ru = o.ru.get(r.id);
           if (!ru || ru.es == null) continue;
           const x1 = X(ru.es), x2 = X(ru.ef + 1);
           if (x2 < -50 || x1 > W + 50) continue;
           bars += `<g class="bargrp" data-id="${r.id}" data-k="w"><path d="M${x1} ${y + 6}H${x2}V${y + 14}L${x2 - 4} ${y + 17}H${x2 - 6}L${x2 - 8} ${y + 14}H${x1 + 8}L${x1 + 6} ${y + 17}H${x1 + 4}L${x1} ${y + 14}Z" fill="var(--sum)"/></g>`;
-          if (base && ru.bs != null) bars += `<rect class="bar-base" x="${X(ru.bs)}" y="${y + 19}" width="${Math.max(2, (ru.bf - ru.bs + 1) * px)}" height="3"/>`;
+          if (base && ru.bs != null) bars += `<rect class="bar-base" x="${X(ru.bs)}" y="${y + 18}" width="${Math.max(2, (ru.bf - ru.bs + 1) * px)}" height="3"/>`;
           continue;
         }
         const t = r.t;
@@ -184,7 +185,7 @@
           if (sh.float && t.tf > 0 && t.lf != null) { const xf = X(t.lf + 1); if (xf > x2) bars += `<line class="fl" x1="${x2}" x2="${xf}" y1="${by + bh / 2}" y2="${by + bh / 2}"/>`; }
           if (sh.labels) bars += `<text class="lbl" x="${Math.max(x2, X(t.lf != null && sh.float && t.tf > 0 ? t.lf + 1 : t.ef + 1)) + 14}" y="${by + 10}">${esc(t.name)}</text>`;
         }
-        if (base && t.bs != null) bars += `<rect class="bar-base" x="${X(t.bs)}" y="${y + 19}" width="${Math.max(mile ? 4 : 2, (t.bf - t.bs + 1) * px)}" height="4" rx="1"/>`;
+        if (base && t.bs != null) bars += `<rect class="bar-base" x="${X(t.bs)}" y="${y + 17}" width="${Math.max(mile ? 4 : 2, (t.bf - t.bs + 1) * px)}" height="4" rx="1"/>`;
       }
 
       // relationship lines
@@ -198,7 +199,7 @@
           if (ia == null || ib == null) return;
           const a = rows[ia].t, b = rows[ib].t;
           if (a.es == null || b.es == null) return;
-          const ya = rowY(ia) + (sh.base ? 10 : 13), yb = rowY(ib) + (sh.base ? 10 : 13);
+          const ya = rowY(ia) + (sh.base ? 9 : 12), yb = rowY(ib) + (sh.base ? 9 : 12);
           const aS = X(a.es) - (P6.isMile(a) ? 8 : 0) + 0, aF = P6.isFinMile(a) ? X(a.ef + 1) + 8 : P6.isMile(a) ? X(a.es) + 8 : X(a.ef + 1);
           const bS = P6.isFinMile(b) ? X(b.ef + 1) - 8 : P6.isMile(b) ? X(b.es) - 8 : X(b.es), bF = P6.isFinMile(b) ? X(b.ef + 1) + 8 : P6.isMile(b) ? X(b.es) + 8 : X(b.ef + 1);
           const crit = a.crit && b.crit && sh.crit !== false;
