@@ -6,7 +6,7 @@
   const esc = P6.esc;
   const t = (k, ...a) => P6.t(k, ...a);
 
-  const ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4];
+  const ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4, 0.2, 0.1, 0.05];
   const ALL_COLS = P6.ALL_COLS;
   const DEF_COLS = ['code', 'name', 'dur', 'es', 'ef', 'tf'];
   const TYPES = ['TT_Task', 'TT_Mile', 'TT_FinMile', 'TT_LOE'];
@@ -793,7 +793,7 @@
   function pushGantt(full) {
     if (!gantt) return;
     const px = ZOOMS[S.cfg.pxIdx];
-    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: Object.assign({}, S.cfg.show, { pline: S.cfg.pline, labelMode: S.cfg.labelMode || 'name' }), p: S.p, rels: true, spot: S.cfg.show.spot ? S.spot : null };
+    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: Object.assign({}, S.cfg.show, { pline: S.cfg.pline, labelMode: S.cfg.labelMode || 'name', barSize: S.cfg.barSize || 3 }), p: S.p, rels: true, spot: S.cfg.show.spot ? S.spot : null };
     gantt.set(o);
   }
   function ganttCb() {
@@ -1190,7 +1190,7 @@
   const BARS = [['base', 'show_baseline'], ['crit', 'show_critical'], ['rels', 'show_rels'], ['labels', 'show_labels'], ['float', 'show_float'], ['today', 'show_today'], ['spot', 'spotlight']];
   function buildLayoutBar() { if (API.drawLayoutBar) API.drawLayoutBar(); }
   const nearestTs = () => TS.reduce((b, x) => (Math.abs(x[1] - S.cfg.pxIdx) < Math.abs(b[1] - S.cfg.pxIdx) ? x : b), TS[0])[1];
-  Object.assign(API, { LAYOUTS, TS, BARS, setTimescale, nearestTs, toggleShow, saveCfg, layoutDetails, renderDetails, setSel(keys) { S.sel = new Set(keys); S.focus = keys[0] || null; S.anchor = S.focus; selChanged(); } });
+  Object.assign(API, { LAYOUTS, TS, zoomLevels: () => ZOOMS.slice(), BARS, setTimescale, nearestTs, toggleShow, saveCfg, layoutDetails, renderDetails, setSel(keys) { S.sel = new Set(keys); S.focus = keys[0] || null; S.anchor = S.focus; selChanged(); } });
   // ---------- File menu features ----------
   API.commit = async function () { await saveNow(); toast(t('committed')); updateStatus(); };
   API.refreshData = async function () {
