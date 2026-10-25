@@ -17,7 +17,7 @@
     const m = document.createElement('div');
     m.className = 'pmenu'; m.dir = P6.dir(); m.dataset.level = level;
     const act = items.filter(Boolean);
-    m.innerHTML = act.map((it, i) => (it === '-' ? '<hr>' : `<div class="pi${it.dis ? ' dis' : ''}" data-i="${i}"><span class="ck">${it.ck ? '✓' : ''}</span>${esc(it.l)}${it.sub ? '<span class="ar">▸</span>' : it.k ? `<span class="k">${esc(it.k)}</span>` : ''}</div>`)).join('');
+    m.innerHTML = act.map((it, i) => (it === '-' ? '<hr>' : `<div class="pi${it.dis ? ' dis' : ''}" data-i="${i}"><span class="ico2">${it.i && P6.hasIcon(it.i) ? P6.icon(it.i) : it.ck ? '✓' : ''}</span>${esc(it.l)}${it.sub ? '<span class="ar">▸</span>' : it.k ? `<span class="k">${esc(it.k)}</span>` : ''}</div>`)).join('');
     document.body.appendChild(m);
     const w = m.offsetWidth, h = m.offsetHeight;
     m.style.left = Math.max(2, Math.min(x, innerWidth - w - 4)) + 'px';
@@ -136,20 +136,20 @@
   function actionItems() {
     const ts = App.selTasks(), ws = App.selWbs(), has = ts.length > 0, one = ts.length === 1;
     return [
-      { l: t('add_activity'), k: 'Ins', fn: () => App.addTask() }, { l: t('add_milestone'), fn: () => App.addMilestone() }, { l: t('add_wbs'), fn: () => App.addWbs() }, '-',
-      { l: t('cut'), k: 'Ctrl+X', dis: !has, fn: cutSel }, { l: t('copy'), k: 'Ctrl+C', dis: !has, fn: () => copySel() }, { l: t('paste'), k: 'Ctrl+V', dis: !clip, fn: pasteSel },
-      { l: t('duplicate'), k: 'Ctrl+D', dis: !has, fn: () => App.duplicate() }, { l: t('delete'), k: 'Del', dis: !has && !ws.length, fn: () => App.del() }, '-',
-      { l: t('indent'), dis: !ws.length, fn: () => App.indent() }, { l: t('outdent'), dis: !ws.length, fn: () => App.outdent() }, { l: t('rename_wbs'), dis: ws.length !== 1, fn: renameWbs }, '-',
-      { l: t('assign'), dis: !has, sub: [
+      { i: 'add', l: t('add_activity'), k: 'Ins', fn: () => App.addTask() }, { i: 'mile', l: t('add_milestone'), fn: () => App.addMilestone() }, { i: 'wbsadd', l: t('add_wbs'), fn: () => App.addWbs() }, '-',
+      { i: 'cut', l: t('cut'), k: 'Ctrl+X', dis: !has, fn: cutSel }, { i: 'copy', l: t('copy'), k: 'Ctrl+C', dis: !has, fn: () => copySel() }, { i: 'paste', l: t('paste'), k: 'Ctrl+V', dis: !clip, fn: pasteSel },
+      { i: 'copy', l: t('duplicate'), k: 'Ctrl+D', dis: !has, fn: () => App.duplicate() }, { i: 'del', l: t('delete'), k: 'Del', dis: !has && !ws.length, fn: () => App.del() }, '-',
+      { i: 'indent', l: t('indent'), dis: !ws.length, fn: () => App.indent() }, { i: 'outdent', l: t('outdent'), dis: !ws.length, fn: () => App.outdent() }, { l: t('rename_wbs'), dis: ws.length !== 1, fn: renameWbs }, '-',
+      { i: 'assign', l: t('assign'), dis: !has, sub: [
         { l: dots(t('predecessors')), dis: !one, fn: () => assignRel('p') }, { l: dots(t('successors')), dis: !one, fn: () => assignRel('s') }, { l: dots(t('resources')), fn: assignResources },
         { l: t('col_cal'), sub: calendarMenu(ts) }, { l: dots(t('constraint')), fn: constraintDialog }, { l: dots(t('move_to_wbs')), fn: moveToWbsDialog }] },
-      { l: t('progress'), dis: !has, sub: [
+      { i: 'update', l: t('progress'), dis: !has, sub: [
         { l: t('st_NS'), fn: () => setProgress('NS') }, { l: t('st_IP'), fn: () => setProgress('IP') }, { l: t('st_C'), fn: () => setProgress('C') }, '-',
         ...[25, 50, 75, 100].map((n) => ({ l: n + '%', fn: () => setProgress(n) })), '-', { l: dots(t('update_progress')), fn: () => D.updateProgress() }] },
-      { l: t('link'), dis: ts.length < 2, fn: () => App.link() }, { l: t('unlink'), dis: !has, fn: () => App.unlink() },
-      { l: t('select'), dis: !has, sub: [{ l: t('sel_succ'), fn: () => relatives(1) }, { l: t('sel_pred'), fn: () => relatives(-1) },
+      { i: 'link', l: t('link'), dis: ts.length < 2, fn: () => App.link() }, { i: 'unlink', l: t('unlink'), dis: !has, fn: () => App.unlink() },
+      { i: 'trace', l: t('select'), dis: !has, sub: [{ l: t('sel_succ'), fn: () => relatives(1) }, { l: t('sel_pred'), fn: () => relatives(-1) },
         { l: t('sel_crit'), fn: () => App.setSel(App.p.tasks.filter((x) => x.crit && App.rowIdx.has('t' + x.id)).map((x) => 't' + x.id)) }] }, '-',
-      { l: t('expand_all'), fn: () => App.expandAll() }, { l: t('collapse_all'), fn: () => App.collapseAll() }, { l: t('details'), dis: !App.focus, fn: () => { App.S.cfg.dock = 'details'; App.showDetails(); } }
+      { l: t('expand_all'), fn: () => App.expandAll() }, { l: t('collapse_all'), fn: () => App.collapseAll() }, { i: 'details', l: t('details'), dis: !App.focus, fn: () => { App.S.cfg.dock = 'details'; App.showDetails(); } }
     ];
   }
   App.showCtx = (x, y) => popMenu(actionItems(), x, y);
@@ -247,10 +247,11 @@
     const F = App.cfg;
     const body = `<div class="grid2"><div class="fld"><label>${esc(t('language'))}</label><select id="pf_l"><option value="ar"${F.lang === 'ar' ? ' selected' : ''}>العربية</option><option value="en"${F.lang === 'en' ? ' selected' : ''}>English</option></select></div>
       <div class="fld"><label>${esc(t('theme'))}</label><select id="pf_t"><option value="p6"${F.theme === 'p6' ? ' selected' : ''}>P6 Classic</option><option value="light"${F.theme === 'light' ? ' selected' : ''}>${esc(t('th_light'))}</option><option value="dark"${F.theme === 'dark' ? ' selected' : ''}>${esc(t('th_dark'))}</option></select></div></div>
+      <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('user'))}</label><input id="pf_u" dir="auto" value="${esc(F.user || 'USER')}"></div>
       <label class="chk" style="margin-top:10px"><input type="checkbox" id="pf_a"${F.auto ? ' checked' : ''}> ${esc(t('auto_schedule'))}</label>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="pf_reset">${esc(t('reset_layout'))}</button><button class="btn sm dng" id="pf_wipe">${esc(t('wipe_data'))}</button></div>`;
     const m = modal({ title: t('prefs'), cls: 'mid', body, buttons: [{ label: t('cancel'), fn: () => {} }, { label: t('save'), cls: 'pri', fn: (c, el) => {
-      F.auto = $('#pf_a', el).checked; F.theme = $('#pf_t', el).value; const l = $('#pf_l', el).value; App.saveCfg(); App.setLang(l);
+      F.auto = $('#pf_a', el).checked; F.user = $('#pf_u', el).value.trim() || 'USER'; F.theme = $('#pf_t', el).value; const l = $('#pf_l', el).value; App.saveCfg(); App.setLang(l);
     } }] });
     m.el.addEventListener('click', async (e) => {
       if (e.target.id === 'pf_reset') { App.applyLayout('classic'); App.cfg.show.spot = false; App.saveCfg(); m.close(); }
@@ -309,16 +310,18 @@
     indent: 'M3 6h18M11 12h10M11 18h10M3 9l4 3-4 3z', outdent: 'M3 6h18M11 12h10M11 18h10M7 9l-4 3 4 3z', link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', unlink: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1M3 3l18 18'
   };
   const svg = (n) => `<svg viewBox="0 0 24 24"><path d="${IC[n]}"/></svg>`;
-  const SIDE_L = [['folder', 'projects', () => D.projects()], ['list', 'win_activities', () => { App.cfg.dock = 'details'; App.showDetails(); $('#gScroll').scrollTop = 0; }], ['people', 'resource_usage', () => App.setDock('usage')], '-',
-    ['flag', 'baselines', () => D.baselines()], ['cal', 'calendars', () => D.calendars()], ['chart', 'reports', () => D.reports()], '-', ['upd', 'update_progress', () => D.updateProgress()], ['play', 'schedule', () => App.schedule()], '-', ['gear', 'project_settings', () => D.settings()], ['help', 'guide', () => D.help()]];
-  const SIDE_R = [['plus', 'add_activity', () => App.addTask()], ['wbs', 'add_wbs', () => App.addWbs()], ['trash', 'delete', () => App.del()], '-', ['cut', 'cut', cutSel], ['copy', 'copy', () => copySel()], ['paste', 'paste', pasteSel], '-',
-    ['indent', 'indent', () => App.indent()], ['outdent', 'outdent', () => App.outdent()], '-', ['link', 'link', () => App.link()], ['unlink', 'unlink', () => App.unlink()]];
+  const SIDE_L = [['newproj', 'new_project', () => D.newProject()], ['open', 'projects', () => D.projects()], ['hand', 'refresh_data', () => App.refreshData()], '-',
+    ['projects', 'recent', () => App.popMenu(App.recent.map((r) => ({ l: r.name, i: 'projects', fn: () => App.loadProject(r.id).then((p) => p && App.openProject(p)) })), 40, 120)], ['people', 'resource_usage', () => App.setDock('usage')], ['notebook', 'tab_notes', () => { App.cfg.dock = 'details'; App.S.tab = 'notes'; App.showDetails(); }], ['report', 'reports', () => D.reports()], '-',
+    ['activities', 'win_activities', () => { App.cfg.dock = 'details'; App.showDetails(); $('#gScroll').scrollTop = 0; }], ['assign', 'resources', () => D.resources()], ['ganttTable', 'view_both', () => App.setView('both')], ['calendar', 'calendars', () => D.calendars()], ['update', 'update_progress', () => D.updateProgress()], ['calc', 'schedule', () => App.schedule()], '-',
+    ['wbstree', 'wbs_tree', () => D.wbs()], ['codes', 'act_codes_global', () => D.codes('acg')], ['udf', 'udf_manage', () => D.udf()], ['baseline', 'baselines', () => D.baselines()], ['flagfolder', 'select_portfolio', (e) => { const r = e.currentTarget.getBoundingClientRect(); App.popMenu([{ l: t('all_projects'), ck: !App.cfg.portfolio, fn: () => { App.cfg.portfolio = ''; App.saveCfg(); App.refresh(); } }, ...Object.keys(App.cfg.portfolios || {}).map((n) => ({ l: n, ck: App.cfg.portfolio === n, fn: () => { App.cfg.portfolio = n; App.saveCfg(); App.refresh(); } })), '-', { l: t('manage_portfolios') + '…', fn: () => D.portfolios() }], r.right, r.top); }], '-', ['gear', 'project_settings', () => D.settings()], ['help', 'guide', () => D.help()]];
+  const SIDE_R = [['add', 'add_activity', () => App.addTask()], ['wbsadd', 'add_wbs', () => App.addWbs()], ['del', 'delete', () => App.del()], '-', ['cut', 'cut', cutSel], ['copy', 'copy', () => copySel()], ['paste', 'paste', pasteSel], '-',
+    ['indent', 'indent', () => App.indent()], ['outdent', 'outdent', () => App.outdent()], '-', ['link', 'link', () => App.link()], ['unlink', 'unlink', () => App.unlink()], '-', ['preview', 'print_preview', () => D.printPreview()]];
   function buildSides() {
     for (const [id, list] of [['#sideL', SIDE_L], ['#sideR', SIDE_R]]) {
       const el = $(id); el.innerHTML = '';
       for (const it of list) {
         if (it === '-') { el.appendChild(document.createElement('hr')); continue; }
-        const b = document.createElement('button'); b.className = 'ib'; b.title = t(it[1]); b.innerHTML = svg(it[0]); b.onclick = it[2]; el.appendChild(b);
+        const b = document.createElement('button'); b.className = 'ib'; b.title = t(it[1]); b.innerHTML = P6.icon(it[0]); b.onclick = (ev) => it[2](ev); el.appendChild(b);
       }
     }
   }

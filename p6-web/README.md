@@ -9,6 +9,14 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 
 ![screenshot](docs/screenshot.png)
 
+## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
+
+* أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
+* قائمة **File** كاملة: New / Open / Close All / Page Setup / Print Setup / Print Preview / Print / Import ▸ / Export ▸ / Send Project / Select Project Portfolio / Commit Changes (F10) / Refresh Data (F5) / Recent Projects ▸ / Exit. الطباعة بمعاينة حقيقية للجدول + Gantt.
+* **Activity Details** بـ16 تبويباً: General, Status, Resources, Predecessors, Successors, Codes, Notebook, Steps, Feedback, WPs & Docs, Expenses, Summary, Relationships, Risks, User Defined Fields, Discussion — مع نافذة **Customize** (Available Tabs / Display Tabs) بالنقر يمين على شريط التبويبات.
+* شريط الحالة: Portfolio / Access Mode / Data Date / Baseline / User / DB.
+* الدفتر (Notebook) والمصروفات (Expenses) تُصدَّر إلى XER؛ أما WPs & Docs وRisks وDiscussion فتُحفظ في المتصفح وملف JSON الاحتياطي فقط.
+
 ## نافذة Columns وكل أعمدة P6 / Columns dialog
 
 نافذة **Columns** بنفس تصميم P6 (Available Options شجرة بفئات + Selected Options + ▶ ⏩ ◀ ⏪ + ▲▼ + OK / Cancel / Apply / Copy From / Default / Edit Column / Help) مع **أكثر من 120 عموداً** حقيقياً: Activity Codes (Global/Project)، Activity Steps، Costs، Dates، Durations، Earned Value (PV / EV / AC / SV / CV / SPI / CPI / EAC / ETC / VAC / TCPI)، Feedback، General، Lists، Multiple Float Paths، Number of Activities، Percent Completes (Duration / Physical / Units / Cost / Schedule / Performance)، Project Codes، Units، User Defined.

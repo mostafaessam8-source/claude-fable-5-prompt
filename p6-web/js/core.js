@@ -145,7 +145,7 @@
       as: null, af: null, ct: '', cd: null,
       es: null, ef: null, ls: null, lf: null, rs: null, tf: null, ff: null, crit: false,
       bs: null, bf: null, bdur: null, seq: id,
-      steps: [], exp: 0, dtype: 'DT_FixedDUR2', phys: 0, feedback: '', rev: false, codes: {}, udf: {}, bcost: null, bunits: null, fp: null, fpo: null
+      steps: [], topics: [], docs: [], expenses: [], risks: [], discuss: [], exp: 0, dtype: 'DT_FixedDUR2', phys: 0, feedback: '', rev: false, codes: {}, udf: {}, bcost: null, bunits: null, fp: null, fpo: null
     };
     Object.assign(t, over || {});
     if (!t.code) t.code = autoCode(p);

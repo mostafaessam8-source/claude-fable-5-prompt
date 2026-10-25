@@ -347,3 +347,50 @@ svg{display:block}
 :root[data-theme=dark] .ck2,:root[data-theme=dark] .cg{color:#000}
 :root[data-theme=dark] .ck2{color:#e5eaf3}
 .mini tr.rsel td{background:var(--sel)}
+/* details strip / summary / wide tables / colored icons */
+.dstrip{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.dstrip label{font-size:12px;color:var(--text)}
+.dstrip input{border:1px solid var(--line);background:#fff;padding:2px 6px;min-width:0;height:22px;color:#000}
+.dstrip .spin{display:inline-flex;flex-direction:column;border:1px solid var(--line);background:#fff}
+.dstrip .spin button{border:0;background:linear-gradient(#fafafa,#ddd);font-size:8px;line-height:10px;height:12px;width:30px;cursor:pointer;padding:0}
+.dstrip .spin button:hover{background:#cfe0f5}
+.mini.wide{min-width:1500px}
+.mini.wide th{white-space:nowrap}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.sumgrid fieldset{border:1px solid var(--line);margin:0;padding:4px 10px 8px;background:var(--panel)}
+.sumgrid legend{font-weight:700;padding:0 6px;font-size:12px}
+.sumgrid .srow{display:flex;justify-content:space-between;gap:10px;padding:2px 0;border-bottom:1px dotted var(--line2)}
+.sumgrid .srow span{color:var(--muted)} .sumgrid .srow b.neg{color:var(--danger)}
+svg.pi{width:18px;height:18px;flex:none;stroke:none;stroke-width:0;fill:none}
+.ib svg.pi{width:18px;height:18px;stroke:none;fill:none;stroke-width:0}
+.ib:disabled svg.pi,.pmenu .pi.dis svg.pi{filter:grayscale(1);opacity:.5}
+.ib.pri svg.pi{filter:none}
+.side .ib svg.pi{width:20px;height:20px}
+.pmenu .pi svg.pi,.dd .it svg.pi{width:16px;height:16px}
+.pmenu .pi .ico2,.dd .it .ico2{width:18px;display:inline-flex;justify-content:center;flex:none}
+.pmenu .pi .ck{display:none}
+#statusbar .seg{border:1px inset #ccc;padding:0 8px;height:18px;display:inline-flex;align-items:center;background:#f1f1f1;color:#000;white-space:nowrap}
+#main.v-table #vsplit,#main.v-table #ganttPane{display:none}
+#main.v-table #tablePane{width:100%!important;flex:1}
+#main.v-gantt #vsplit,#main.v-gantt #tablePane{display:none}
+/* print preview */
+.pvmodal{width:min(1200px,96vw)!important}
+.pvwrap{background:#9aa0a8;padding:16px;overflow:auto;max-height:68vh;direction:ltr}
+.pv-paper{background:#fff;color:#000;box-shadow:0 2px 10px #0006;margin:0 auto;box-sizing:border-box;font:11px Tahoma,Arial,sans-serif;overflow:hidden}
+.pvhead{display:flex;gap:18px;align-items:baseline;border-bottom:1px solid #000;padding-bottom:4px;margin-bottom:6px;font-size:13px}
+.pvfoot{display:flex;justify-content:space-between;border-top:1px solid #999;margin-top:8px;padding-top:3px;color:#444;font-size:10px}
+.pvthead{background:linear-gradient(#fdfdfd,#d7d7d7);border-bottom:1px solid #888;font-weight:700}
+.pvh{padding:0 4px;display:flex;align-items:flex-end;border-right:1px solid #bbb;height:100%;box-sizing:border-box;font-size:11px}
+.pvr{display:flex;border-bottom:1px solid #e5e5e5;box-sizing:border-box}
+.pvc{padding:0 4px;display:flex;align-items:center;overflow:hidden;white-space:nowrap;border-right:1px solid #eee;box-sizing:border-box;font-size:11px}
+.pv-paper svg text{font:10px Tahoma,Arial,sans-serif;fill:#000}
+@media print{
+  body.printing-pv #app,body.printing-pv .modal-bg,body.printing-pv #toasts,body.printing-pv .pmenu{display:none!important}
+  body.printing-pv #pvprint{display:block!important;background:#fff;padding:0;overflow:visible;max-height:none}
+  body.printing-pv{overflow:visible!important;background:#fff}
+  .pv-paper{box-shadow:none;margin:0;overflow:visible}
+}
+#pvprint{display:none}
+.dtab{white-space:nowrap}
+.dtabs{overflow-x:auto;overflow-y:hidden}
+.dtitle{flex:none}

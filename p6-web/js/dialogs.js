@@ -40,7 +40,9 @@
 
   // ---------- projects ----------
   D.projects = async function () {
-    const list = (await App.listProjects()).sort((a, b) => b.updated - a.updated);
+    let list = (await App.listProjects()).sort((a, b) => b.updated - a.updated);
+    const pf = App.cfg.portfolio && (App.cfg.portfolios || {})[App.cfg.portfolio];
+    if (pf) list = list.filter((x) => pf.includes(x.id));
     const cur = App.p && App.p.id;
     const body = document.createElement('div');
     body.innerHTML = `<div class="hint">${esc(t('projects_hint'))}</div><div class="plist">${list.map((p) => `<div class="pitem${p.id === cur ? ' cur' : ''}" data-id="${esc(p.id)}"><div style="flex:1"><div class="nm" dir="auto">${esc(p.name)}</div><div class="sub">${esc(t('activities'))}: ${p.tasks} · ${p.start != null ? bd(p.start) + ' → ' + bd(p.finish) : ''} · ${new Date(p.updated).toLocaleString()}</div></div><button class="btn sm dng" data-del="${esc(p.id)}">${esc(t('delete'))}</button></div>`).join('') || `<div class="empty">${esc(t('no_projects'))}</div>`}</div>`;
@@ -369,10 +371,10 @@
       const a = it.dataset.a;
       if (a === 'save') {
         if (!confirm(t('bl_confirm'))) return;
-        App.mutate(t('bl_save'), () => { const M = P6.metrics(p); for (const tk of p.tasks) { const mm = M.T.get(tk.id); tk.bcost = mm.bc; tk.bunits = mm.bu_L; tk.bs = tk.status === 'C' && tk.as != null ? tk.as : tk.es; tk.bf = tk.status === 'C' && tk.af != null ? tk.af : tk.ef; tk.bdur = tk.dur; } }, { noSched: true });
+        App.mutate(t('bl_save'), () => { const M = P6.metrics(p); p.blName = 'BL ' + P6.fmtDate(P6.todayDay()); p.asg.forEach((x) => { x.bq = x.qty; }); for (const tk of p.tasks) { const mm = M.T.get(tk.id); tk.bcost = mm.bc; tk.bunits = mm.bu_L; tk.bs = tk.status === 'C' && tk.as != null ? tk.as : tk.es; tk.bf = tk.status === 'C' && tk.af != null ? tk.af : tk.ef; tk.bdur = tk.dur; } }, { noSched: true });
         App.cfg.show.base = true; toast(t('bl_saved'));
       } else if (a === 'import') App.openFile('baseline');
-      else if (a === 'clear') { if (confirm(t('confirm_generic'))) App.mutate(t('bl_clear'), () => { for (const tk of p.tasks) { tk.bs = null; tk.bf = null; tk.bdur = null; tk.bcost = null; tk.bunits = null; } }, { noSched: true }); }
+      else if (a === 'clear') { if (confirm(t('confirm_generic'))) App.mutate(t('bl_clear'), () => { for (const tk of p.tasks) { tk.bs = null; tk.bf = null; tk.bdur = null; tk.bcost = null; tk.bunits = null; } p.blName = ''; p.asg.forEach((x) => { delete x.bq; }); }, { noSched: true }); }
       m.close();
     });
   };
