@@ -427,3 +427,33 @@ table.pw thead th{position:sticky;top:0;z-index:2;background:linear-gradient(#fd
 :root{--tfs:12px}
 .tr,.td{font-size:var(--tfs)}
 .nobold .tr.wbs{font-weight:400}
+
+/* ===== split toolbar buttons, Schedule / Filters / Group and Sort dialogs ===== */
+#toolbar .split{display:inline-flex;align-items:center;flex:none}
+#toolbar .split .ib.arr{width:12px;min-width:12px;padding:0;font-size:9px;margin-inline-start:-3px}
+#toolbar .split .ib svg.pi{width:18px;height:18px}
+.schmodal .modal-body,.fltmodal .modal-body,.grpmodal .modal-body{padding:0}
+.schdlg{min-width:440px;padding:12px 14px}
+.schdlg .sd-form{display:flex;flex-direction:column;gap:9px}
+.schdlg .sd-row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.schdlg .sd-box{width:150px;padding:3px 6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.schdlg .sd-path{width:100%;padding:4px 6px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.schdlg hr{border:0;border-top:1px solid var(--line);margin:2px 0}
+.cd-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.grpdlg{min-width:640px;padding:12px 14px}
+.grpdlg fieldset{border:1px solid var(--line);margin:0 0 10px;padding:6px 10px}
+.grpdlg legend{font-weight:600;padding:0 4px}
+.grpdlg .gd-tbl{max-height:260px;overflow:auto;border:1px solid var(--line)}
+.grpdlg table.mini{width:100%;border-collapse:collapse}
+.grpdlg table.mini th,.grpdlg table.mini td{border:1px solid var(--line);padding:2px 5px;text-align:start}
+.grpdlg table.mini tr.on td{background:var(--sel,#cfe3ff)}
+.fltdlg{min-width:560px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.fltdlg .fl-top{display:flex;gap:16px;align-items:center}
+.fltdlg .fl-list{border:1px solid var(--line);max-height:300px;overflow:auto}
+.fltdlg .fg{background:var(--panel2);font-weight:600;padding:3px 8px}
+.fltdlg .fr{display:flex;align-items:center;gap:8px;padding:3px 8px;cursor:pointer}
+.fltdlg .fr.on{background:var(--sel,#cfe3ff)}
+.cd-btns .btn{width:auto!important;display:inline-flex!important;align-items:center;gap:4px;white-space:nowrap}
+.grpdlg fieldset label.chk,.schdlg label.chk{display:inline-flex;align-items:center;gap:6px;margin-inline-end:18px}
+.grpdlg fieldset{min-width:0}
+.pmenu .ico2 svg.pi{width:18px;height:18px;display:block;padding:0;margin:0;background:none;border:0}

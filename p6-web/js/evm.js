@@ -120,5 +120,6 @@
     return path;
   };
   P6.asgSplit = asgSplit;
+  P6.deriveMetrics = derive; P6.METRIC_BASE = BASE; P6.blankMetrics = blank;
   if (typeof module !== 'undefined' && module.exports) module.exports = P6;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

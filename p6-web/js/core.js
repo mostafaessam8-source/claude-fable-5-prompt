@@ -234,6 +234,9 @@
       for (const n of N.values()) if (!seen.has(n)) { order.push(n); p.loops.push(n.t.code); }
     }
 
+    const so = (p.schedOpts = Object.assign({ logic: p.retained === false ? 'override' : 'retained', crit: 'tf', critFloat: p.critFloat || 0, lagCal: 'pred', tfMode: 'finish', openCrit: false }, p.schedOpts));
+    const cal24 = { id: -24, name: '24h', hrs: 24, work: [true, true, true, true, true, true, true], exc: {} };
+    const lagCalFor = (pn, sn) => (so.lagCal === 'succ' ? sn.cal : so.lagCal === '24h' ? cal24 : so.lagCal === 'proj' ? defCal : pn.cal);
     const PS = p.planStart != null ? p.planStart : todayDay();
     const DD = Math.max(p.dataDate != null ? p.dataDate : PS, PS);
 
@@ -253,10 +256,10 @@
       const ip = t.status === 'IP';
       const len = mile ? 0 : (ip ? Math.max(0, t.rem) : Math.max(0, t.dur));
       let sLB = ip ? DD : Math.max(PS, DD), fLB = -Infinity;
-      if (!(ip && !p.retained)) {
+      if (!(ip && so.logic === 'override')) {
         for (const { r, n: pn } of n.preds) {
           if (!pn.done) continue;
-          const pc = pn.cal, pt = pn.t;
+          const pc = lagCalFor(pn, n), pt = pn.t;
           const predFin = isMile(pt) && !isFinMile(pt) ? prevWork(pc, pt.es - 1) : pt.ef;
           const predStart = pt.es;
           const lag = r.lag || 0;
@@ -316,15 +319,15 @@
       for (const { r, n: sn } of n.succs) {
         if (sn.t.status === 'C') continue;
         hasSucc = true;
-        const st = sn.t, lag = r.lag || 0;
+        const st = sn.t, lag = r.lag || 0, lc = lagCalFor(n, sn);
         const sStartEff = isFinMile(st) ? st.lf : prevWork(cal, st.ls - 1);
         const sFinEff = isMile(st) && !isFinMile(st) ? prevWork(cal, st.ls - 1) : st.lf;
-        if (r.type === 'FS') lfB = Math.min(lfB, shift(cal, sStartEff, -lag));
-        else if (r.type === 'SS') lsB = Math.min(lsB, shift(cal, isFinMile(st) ? st.lf : st.ls, -lag));
-        else if (r.type === 'FF') lfB = Math.min(lfB, shift(cal, sFinEff, -lag));
-        else lsB = Math.min(lsB, shift(cal, sFinEff, -lag));
+        if (r.type === 'FS') lfB = Math.min(lfB, shift(lc, sStartEff, -lag));
+        else if (r.type === 'SS') lsB = Math.min(lsB, shift(lc, isFinMile(st) ? st.lf : st.ls, -lag));
+        else if (r.type === 'FF') lfB = Math.min(lfB, shift(lc, sFinEff, -lag));
+        else lsB = Math.min(lsB, shift(lc, sFinEff, -lag));
       }
-      if (!hasSucc) { if (mile && !fm) lsB = Math.min(lsB, projEnd); else lfB = Math.min(lfB, projEnd); }
+      if (!hasSucc) { const endv = so.openCrit ? t.ef : projEnd; if (mile && !fm) lsB = Math.min(lsB, endv); else lfB = Math.min(lfB, endv); }
       if (t.cd != null) {
         if (t.ct === 'SNLT' || t.ct === 'MSO') lsB = Math.min(lsB, t.cd);
         if (t.ct === 'FNLT' || t.ct === 'MFO') lfB = Math.min(lfB, t.cd);
@@ -341,7 +344,8 @@
       }
       t.ls = ls; t.lf = lf;
       t.tf = signedWork(cal, t.ef, lf);
-      t.crit = t.tf <= (p.critFloat || 0);
+      if (so.tfMode !== 'finish') { const tfS = signedWork(cal, t.status === 'IP' && t.rs != null ? t.rs : t.es, ls); t.tf = so.tfMode === 'start' ? tfS : Math.min(t.tf, tfS); }
+      t.crit = t.tf <= (so.critFloat || 0);
       // free float
       let ff = Infinity;
       for (const { r, n: sn } of n.succs) {
@@ -370,6 +374,16 @@
         t.es = t.ls; t.rs = t.ls; t.ef = t.lf; t.tf = 0; t.ff = 0;
       }
     }
+    if (so.crit === 'longest') {
+      const open = [...N.values()].filter((n) => n.t.status !== 'C' && !isHammock(n.t));
+      const endEf = Math.max(...open.map((n) => n.t.ef), -Infinity), set = new Set(), st = [];
+      for (const n of open) if (n.t.ef === endEf) { set.add(n.t.id); st.push(n); }
+      while (st.length) { const n = st.pop(); for (const { r, n: pn } of n.preds) if (pn.t.status !== 'C' && r.rf != null && r.rf <= 0 && !set.has(pn.t.id)) { set.add(pn.t.id); st.push(pn); } }
+      for (const n of open) n.t.crit = set.has(n.t.id);
+    }
+    let nOpen = 0, nNeg = 0, nCrit = 0;
+    for (const n of N.values()) { if (n.t.status === 'C' || isHammock(n.t)) continue; if (!n.succs.length) nOpen++; if (n.t.tf != null && n.t.tf < 0) nNeg++; if (n.t.crit) nCrit++; }
+    p.schedStats = { open: nOpen, neg: nNeg, crit: nCrit, count: N.size };
     for (const { t } of N.values()) {
       if (isHammock(t)) continue;
       if (t.steps && t.steps.length) { const w = t.steps.reduce((a, s) => a + (+s.wt || 1), 0); t.phys = w ? Math.round(t.steps.reduce((a, s) => a + (s.done ? (+s.wt || 1) : 0), 0) / w * 100) : 0; if (t.pctType === 'phys' && t.status !== 'C') { t.pct = t.phys; } }

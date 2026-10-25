@@ -252,7 +252,7 @@
     const p = App.p, mode = F().acts2 || 'all';
     let list = p.tasks.slice();
     const fr = App.rows[App.rowIdx.get(App.focus)];
-    if (mode === 'wbs' && fr) { const w = fr.kind === 'w' ? fr.id : fr.t.wbs; const ids = new Set([w]); let ch = true; while (ch) { ch = false; for (const x of p.wbs) if (ids.has(x.parent) && !ids.has(x.id)) { ids.add(x.id); ch = true; } } list = list.filter((x) => ids.has(x.wbs)); }
+    if (mode === 'wbs' && fr) { const w = App.wbsOfRow(fr); const ids = new Set([w]); let ch = true; while (ch) { ch = false; for (const x of p.wbs) if (ids.has(x.parent) && !ids.has(x.id)) { ids.add(x.id); ch = true; } } list = list.filter((x) => ids.has(x.wbs)); }
     else if (mode === 'crit') list = list.filter((x) => x.crit && x.status !== 'C'); else if (mode === 'ip') list = list.filter((x) => x.status === 'IP');
     list.sort((a, b) => (a.es || 0) - (b.es || 0)); list = list.slice(0, 500);
     el.innerHTML = `<div class="dockhead">▽ ${esc(t('mi_addactview'))}: <select id="a2_m" class="inp" style="height:20px">${[['all', 'f_all'], ['wbs', 'a2_wbs'], ['crit', 'f_critical'], ['ip', 'f_IP']].map(([k, l]) => `<option value="${k}"${mode === k ? ' selected' : ''}>${esc(t(l))}</option>`).join('')}</select><span style="margin-inline-start:auto"><button class="btn sm" data-n="hide">▾</button></span></div><div style="flex:1;overflow:auto"><table class="mini"><thead><tr><th>${esc(t('col_code'))}</th><th>${esc(t('col_name'))}</th><th>${esc(t('col_es'))}</th><th>${esc(t('col_ef'))}</th><th>${esc(t('col_tf'))}</th><th>${esc(t('col_pct'))}</th></tr></thead><tbody>${list.map((x) => `<tr data-id="${x.id}" style="cursor:pointer${App.focus === 't' + x.id ? ';background:var(--sel)' : ''}"><td>${esc(x.code)}</td><td dir="auto">${esc(x.name)}</td><td>${fmtD(x.es)}</td><td>${fmtD(x.ef)}</td><td${x.tf != null && x.tf < 0 ? ' style="color:var(--danger)"' : ''}>${x.tf == null ? '' : fmtN(x.tf)}</td><td>${x.pct}%</td></tr>`).join('')}</tbody></table></div>`;
@@ -267,7 +267,6 @@
   App.menuDefs = function () {
     const ready = !!App.p, selT = ready ? App.selTasks() : [], selW = ready ? App.selWbs() : [];
     const sh = F().show, hasSel = selT.length > 0, wbsSel = selW.length > 0, act = App.win === 'activities';
-    const filt = F().filter, mode = filt.mode;
     const common = [['nm_status', 'status'], ['nm_cal', 'cal']];
     void common;
     const colQuick = [['code', 'col_code'], ['name', 'col_name'], ['dur', 'col_dur'], ['es', 'col_es'], ['ef', 'col_ef'], ['pct', 'col_pct'], ['tf', 'col_tf'], ['pred', 'col_pred'], ['succ', 'col_succ'], ['bs', 'col_bs'], ['bf', 'col_bf']];
@@ -302,7 +301,7 @@
       ['mi_bars', () => D.barsDialog(), '', false, null, !act],
       ['columns', null, '', false, [sub(t('mi_customize'), 'columns', () => D.columns()), sub(t('default'), 'columns', () => { F().cols = App.DEF_COLS.map((k) => ({ k, w: App.ALL_COLS[k].w })); App.saveCfg(); App.refresh(); }), '-', ...colQuick.map(([k, l]) => sub(t(l), '', () => { const has = F().cols.some((c) => c.k === k); if (has && F().cols.length > 1) F().cols = F().cols.filter((c) => c.k !== k); else if (!has) F().cols.push({ k, w: App.ALL_COLS[k].w }); App.saveCfg(); App.refresh(); }, { ck: F().cols.some((c) => c.k === k) }))], !act],
       ['mi_timescale', () => D.timescaleDialog(), '', false, null, !act],
-      ['mi_filterby', null, '', false, [...['all', 'critical', 'IP', 'NS', 'C', 'late', 'neg'].map((m) => sub(t('f_' + m), 'filter', () => { filt.mode = m; App.saveCfg(); App.refresh(); }, { ck: mode === m })), '-', sub(t('filter_custom'), 'filter', () => D.filter(), { ck: mode === 'custom' })], !act],
+      ['mi_filterby', null, '', false, App.filterMenuItems(), !act],
       ['group_sort', () => D.groupSort(), '', false, null, !act], '-',
       ['spotlight', () => App.toggleShow('spot'), '', !!sh.spot, null, !act],
       ['mi_progressline', () => { F().pline = !F().pline; App.saveCfg(); App.refresh(); App.buildMenus(); }, '', !!F().pline, null, !act],
@@ -322,7 +321,7 @@
       ['win_projects', () => App.openWin('projects')], ['win_resources', () => App.openWin('resources')], ['resource_usage', () => App.setDock('usage')], ['calendars', () => D.calendars()], ['act_codes_global', () => D.codes('acg')], ['act_codes_project', () => D.codes('acp')], ['act_pcodes', () => D.codes('pc')], ['udf_manage', () => D.udf()], ['mi_roles', () => App.rolesDialog()], ['mi_accounts', () => App.accountsDialog()]
     ];
     const tools = [
-      ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.schedule(); }, '', !!F().auto], '-',
+      ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], '-',
       ['update_progress', () => D.updateProgress()], ['mi_checksched', () => D.checkSchedule()], ['fp_title', () => D.floatPaths()], ['monitor_thresholds', () => App.monitorThresholds()], '-', ['reports', () => D.reports()]
     ];
     const admin = [['prefs', () => D.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => D.prefs()]];

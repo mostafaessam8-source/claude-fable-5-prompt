@@ -137,4 +137,5 @@
   Object.assign(I, more);
   P6.icon = (name, cls) => `<svg class="pi${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${I[name] || ''}</svg>`;
   P6.hasIcon = (n) => !!I[n];
+  P6.addIcons = (o) => Object.assign(I, o);
 })(window);
