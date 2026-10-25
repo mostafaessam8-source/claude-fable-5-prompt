@@ -156,6 +156,7 @@
       t.bs = toDay(r.target_start_date); t.bf = toDay(r.target_end_date); t.bdur = t.dur;
       t.ct = CSTR[r.cstr_type] || ''; t.cd = t.ct ? toDay(r.cstr_date) : null;
       t.pct = status === 'C' ? 100 : t.pctType === 'phys' ? num(r.phys_complete_pct) : status === 'NS' || !(t.dur > 0) ? 0 : Math.round(((t.dur - t.rem) / t.dur) * 100);
+      t.dtype = r.duration_type || 'DT_FixedDUR2'; t.rev = r.rev_fdbk_flag === 'Y'; t.phys = num(r.phys_complete_pct);
       t.raw = undefined; delete t.raw;
       p.tasks.push(t);
       taskIds.add(String(r.task_id));
@@ -172,10 +173,47 @@
     const usedR = new Set();
     for (const a of T('TASKRSRC')) if (taskIds.has(a.task_id)) { usedR.add(a.rsrc_id); p.asg.push({ id: +a.taskrsrc_id || ++p.nid, task: +a.task_id, rsrc: +a.rsrc_id, qty: r2(num(a.target_qty)) }); }
     for (const r of rs) if (usedR.has(r.rsrc_id)) p.rsrc.push({ id: +r.rsrc_id, name: r.rsrc_name, short: r.rsrc_short_name, role: r.rsrc_title_name || '', units: r2(num(r.def_qty_per_hr) * 8) || 8, type: r.rsrc_type || 'RT_Labor' });
+    // resource prices
+    const rate = new Map();
+    for (const r of T('RSRCRATE')) { const c = num(r.cost_per_qty); const d = r.start_date || ''; const cur = rate.get(r.rsrc_id); if (!cur || d < cur.d) rate.set(r.rsrc_id, { d, c }); }
+    for (const r of p.rsrc) { const x = rate.get(String(r.id)); r.price = x ? x.c : 0; }
+    // assignments: actual / remaining units
+    const taskPct = new Map(p.tasks.map((x) => [x.id, x]));
+    for (const a of T('TASKRSRC')) {
+      if (!taskIds.has(a.task_id)) continue;
+      const mine = p.asg.find((q) => q.id === (+a.taskrsrc_id)); if (!mine) continue;
+      const act = num(a.act_reg_qty) + num(a.act_ot_qty), rem = num(a.remain_qty), tk = taskPct.get(+a.task_id);
+      const auto = mine.qty * (tk.status === 'C' ? 1 : (tk.pct || 0) / 100);
+      if (Math.abs(act - auto) > Math.max(0.5, mine.qty * 0.01)) { mine.manual = true; mine.act = r2(act); mine.rem = r2(rem); }
+    }
+    // expenses
+    for (const r of T('PROJCOST')) { const tk = taskPct.get(+r.task_id); if (tk && r.proj_id === projId) tk.exp = r2((tk.exp || 0) + num(r.target_cost)); }
+    // steps
+    for (const r of T('TASKPROC')) { const tk = taskPct.get(+r.task_id); if (tk && r.proj_id === projId) tk.steps.push({ id: +r.proc_id || ++p.nid, name: r.proc_name, wt: num(r.proc_wt) || 1, done: r.complete_flag === 'Y' }); }
+    for (const tk of p.tasks) tk.steps.sort((a, b) => a.id - b.id);
+    // activity codes (global + project)
+    const ctypes = T('ACTVTYPE').filter((r) => !r.proj_id || r.proj_id === projId);
+    for (const r of ctypes) p.codeTypes.push({ id: +r.actv_code_type_id, name: r.actv_code_type, scope: r.proj_id ? 'project' : 'global', len: +r.actv_short_len || 20 });
+    const ctIds = new Set(p.codeTypes.map((x) => x.id));
+    for (const r of T('ACTVCODE')) if (ctIds.has(+r.actv_code_type_id)) p.codeVals.push({ id: +r.actv_code_id, type: +r.actv_code_type_id, short: r.short_name, name: r.actv_code_name, parent: r.parent_actv_code_id ? +r.parent_actv_code_id : null, color: r.color || '' });
+    for (const r of T('TASKACTV')) { const tk = taskPct.get(+r.task_id); if (tk && ctIds.has(+r.actv_code_type_id)) tk.codes[r.actv_code_type_id] = +r.actv_code_id; }
+    // project codes
+    for (const r of T('PCATTYPE')) p.pcTypes.push({ id: +r.proj_catg_type_id, name: r.proj_catg_type, len: +r.proj_catg_short_len || 20 });
+    const pcIds = new Set(p.pcTypes.map((x) => x.id));
+    for (const r of T('PCATVAL')) if (pcIds.has(+r.proj_catg_type_id)) p.pcVals.push({ id: +r.proj_catg_id, type: +r.proj_catg_type_id, short: r.proj_catg_short_name, name: r.proj_catg_name, parent: r.parent_proj_catg_id ? +r.parent_proj_catg_id : null });
+    for (const r of T('PROJPCAT')) if (r.proj_id === projId) p.pcAssign[r.proj_catg_type_id] = +r.proj_catg_id;
+    // user-defined fields on activities
+    const ud = new Map();
+    for (const r of T('UDFTYPE')) if (r.table_name === 'TASK') {
+      const ty = /INT|DOUBLE|FLOAT/.test(r.logical_data_type) ? 'number' : /MONEY|COST/.test(r.logical_data_type) ? 'cost' : /DATE/.test(r.logical_data_type) ? 'date' : 'text';
+      const u = { id: +r.udf_type_id, name: r.udf_type_label || r.udf_type_name, ty }; p.udfs.push(u); ud.set(r.udf_type_id, u);
+    }
+    for (const r of T('UDFVALUE')) { const u = ud.get(r.udf_type_id), tk = taskPct.get(+r.fk_id); if (!u || !tk) continue; tk.udf[u.id] = u.ty === 'date' ? toDay(r.udf_date) : u.ty === 'text' ? r.udf_text : num(r.udf_number); }
     for (const w of p.wbs) p.nid = Math.max(p.nid, w.id);
     for (const r of p.rels) p.nid = Math.max(p.nid, r.id);
     for (const r of p.rsrc) p.nid = Math.max(p.nid, r.id);
     for (const r of p.asg) p.nid = Math.max(p.nid, r.id);
+    for (const x of [...p.codeTypes, ...p.codeVals, ...p.pcTypes, ...p.pcVals, ...p.udfs]) p.nid = Math.max(p.nid, x.id);
     p.imported = true; // keep file dates until the user edits / reschedules
     return p;
   }
@@ -194,7 +232,21 @@
     RSRC: 'rsrc_id parent_rsrc_id clndr_id role_id shift_id user_id pobs_id guid rsrc_seq_num email_addr employee_code office_phone other_phone rsrc_name rsrc_short_name rsrc_title_name def_qty_per_hr cost_qty_type ot_factor active_flag auto_compute_act_flag def_cost_qty_link_flag ot_flag curr_id unit_id rsrc_type location_id rsrc_notes load_tasks_flag level_flag last_checksum'.split(' '),
     TASKRSRC: 'taskrsrc_id task_id proj_id cost_qty_link_flag role_id acct_id rsrc_id pobs_id skill_level remain_qty target_qty remain_qty_per_hr target_lag_drtn_hr_cnt target_qty_per_hr act_ot_qty act_reg_qty relag_drtn_hr_cnt ot_factor cost_per_qty target_cost act_reg_cost act_ot_cost remain_cost act_start_date act_end_date restart_date reend_date target_start_date target_end_date rem_late_start_date rem_late_end_date rollup_dates_flag target_crv remain_crv actual_crv ts_pend_act_end_flag guid rsrc_type'.split(' ')
   };
-  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC']);
+  Object.assign(F, {
+    RSRCRATE: 'rsrc_rate_id rsrc_id max_qty_per_hr cost_per_qty cost_per_qty2 cost_per_qty3 cost_per_qty4 cost_per_qty5 start_date shift_period_id'.split(' '),
+    PROJCOST: 'cost_item_id proj_id task_id cost_name po_number vendor_name act_this_per_cost target_cost act_cost remain_cost'.split(' '),
+    TASKPROC: 'proc_id task_id proj_id seq_num proc_name complete_flag proc_wt complete_pct proc_descr'.split(' '),
+    ACTVTYPE: 'actv_code_type_id actv_short_len seq_num actv_code_type proj_id wbs_id actv_code_type_scope super_flag'.split(' '),
+    ACTVCODE: 'actv_code_id parent_actv_code_id actv_code_type_id actv_code_name short_name seq_num color total_assignments'.split(' '),
+    TASKACTV: 'task_id actv_code_type_id actv_code_id proj_id'.split(' '),
+    PCATTYPE: 'proj_catg_type_id proj_catg_short_len seq_num proj_catg_type export_flag super_flag'.split(' '),
+    PCATVAL: 'proj_catg_id proj_catg_type_id proj_catg_short_name proj_catg_name parent_proj_catg_id seq_num'.split(' '),
+    PROJPCAT: 'proj_id proj_catg_type_id proj_catg_id'.split(' '),
+    UDFTYPE: 'udf_type_id table_name udf_type_name udf_type_label logical_data_type super_flag indicator_expression summary_indicator_expression export_flag'.split(' '),
+    UDFVALUE: 'udf_type_id fk_id proj_id udf_date udf_number udf_text udf_code_id'.split(' ')
+  });
+  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC', 'RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE']);
+  const OPTIONAL = new Set(['RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE']);
 
   function pushAll(a, b) { for (let i = 0; i < b.length; i++) a.push(b[i]); }
   function tableOut(name, fields, rows) {
@@ -203,6 +255,24 @@
     return L;
   }
 
+  function optionalRows(name, p, projId, rt) {
+    const rows = [], tk = p.tasks;
+    switch (name) {
+      case 'RSRCRATE': for (const r of p.rsrc) if (r.price) rows.push({ rsrc_rate_id: r.id, rsrc_id: r.id, max_qty_per_hr: (r.units || 8) / 8, cost_per_qty: r.price, start_date: dstr(p.planStart) }); break;
+      case 'PROJCOST': for (const t of tk) if (t.exp) rows.push({ cost_item_id: t.id, proj_id: projId, task_id: t.id, cost_name: 'Expense', target_cost: t.exp, act_cost: lagFmt(t.exp * (t.status === 'C' ? 1 : (t.pct || 0) / 100)), remain_cost: lagFmt(t.exp * (t.status === 'C' ? 0 : 1 - (t.pct || 0) / 100)) }); break;
+      case 'TASKPROC': for (const t of tk) t.steps.forEach((s, i) => rows.push({ proc_id: s.id, task_id: t.id, proj_id: projId, seq_num: i + 1, proc_name: s.name, complete_flag: s.done ? 'Y' : 'N', proc_wt: s.wt, complete_pct: s.done ? 100 : 0 })); break;
+      case 'ACTVTYPE': p.codeTypes.forEach((c, i) => rows.push({ actv_code_type_id: c.id, actv_short_len: c.len || 20, seq_num: i + 1, actv_code_type: c.name, proj_id: c.scope === 'project' ? projId : '', actv_code_type_scope: c.scope === 'project' ? 'AS_Project' : 'AS_Global', super_flag: 'N' })); break;
+      case 'ACTVCODE': p.codeVals.forEach((v, i) => rows.push({ actv_code_id: v.id, parent_actv_code_id: v.parent == null ? '' : v.parent, actv_code_type_id: v.type, actv_code_name: v.name, short_name: v.short, seq_num: i + 1, color: v.color || '' })); break;
+      case 'TASKACTV': for (const t of tk) for (const k of Object.keys(t.codes || {})) if (t.codes[k] != null && p.codeVals.some((v) => v.id === t.codes[k])) rows.push({ task_id: t.id, actv_code_type_id: k, actv_code_id: t.codes[k], proj_id: projId }); break;
+      case 'PCATTYPE': p.pcTypes.forEach((c, i) => rows.push({ proj_catg_type_id: c.id, proj_catg_short_len: c.len || 20, seq_num: i + 1, proj_catg_type: c.name, export_flag: 'Y', super_flag: 'N' })); break;
+      case 'PCATVAL': p.pcVals.forEach((v, i) => rows.push({ proj_catg_id: v.id, proj_catg_type_id: v.type, proj_catg_short_name: v.short, proj_catg_name: v.name, parent_proj_catg_id: v.parent == null ? '' : v.parent, seq_num: i + 1 })); break;
+      case 'PROJPCAT': for (const k of Object.keys(p.pcAssign || {})) if (p.pcAssign[k] != null) rows.push({ proj_id: projId, proj_catg_type_id: k, proj_catg_id: p.pcAssign[k] }); break;
+      case 'UDFTYPE': p.udfs.forEach((u) => rows.push({ udf_type_id: u.id, table_name: 'TASK', udf_type_name: u.name.replace(/\s+/g, '_'), udf_type_label: u.name, logical_data_type: u.ty === 'number' ? 'FT_FLOAT' : u.ty === 'cost' ? 'FT_MONEY' : u.ty === 'date' ? 'FT_START_DATE' : 'FT_TEXT', super_flag: 'N', export_flag: 'Y' })); break;
+      case 'UDFVALUE': for (const t of tk) for (const u of p.udfs) { const v = (t.udf || {})[u.id]; if (v == null || v === '') continue; rows.push({ udf_type_id: u.id, fk_id: t.id, proj_id: projId, udf_date: u.ty === 'date' ? dstr(v) : '', udf_number: u.ty === 'number' || u.ty === 'cost' ? v : '', udf_text: u.ty === 'text' ? v : '' }); } break;
+      default: break;
+    }
+    return rows;
+  }
   function toXER(p) {
     const raw = p.xer ? p.xer.x : null;
     const projId = p.xer ? p.xer.projId : '1';
@@ -263,8 +333,8 @@
           const cal = calBy.get(t.cal) || defCal, h = cal.hrs || 8;
           const ip = t.status === 'IP', c = t.status === 'C';
           return Object.assign({ rev_fdbk_flag: 'N', est_wt: 1, lock_plan_flag: 'N', auto_compute_act_flag: 'Y', duration_type: 'DT_FixedDUR2', priority_type: 'PT_Normal', driving_path_flag: 'N' }, rawBy.get(String(t.id)) || {}, {
-            task_id: t.id, proj_id: projId, wbs_id: t.wbs, clndr_id: cal.id,
-            phys_complete_pct: t.pctType === 'phys' ? t.pct : 0,
+            task_id: t.id, proj_id: projId, wbs_id: t.wbs, clndr_id: cal.id, duration_type: t.dtype || 'DT_FixedDUR2', rev_fdbk_flag: t.rev ? 'Y' : 'N',
+            phys_complete_pct: t.pctType === 'phys' ? t.pct : (t.phys || 0),
             complete_pct_type: t.pctType === 'phys' ? 'CP_Phys' : t.pctType === 'units' ? 'CP_Units' : 'CP_Drtn',
             task_type: t.type, status_code: STAT_REV[t.status], task_code: t.code, task_name: t.name,
             total_float_hr_cnt: c || t.tf == null ? '' : lagFmt(t.tf * h), free_float_hr_cnt: c || t.ff == null ? '' : lagFmt(t.ff * h),
@@ -291,9 +361,16 @@
         const rawBy = new Map(rt ? rt.rows.map((r) => [r.rsrc_id, r]) : []);
         const rows = p.rsrc.map((r) => Object.assign({ active_flag: 'Y', auto_compute_act_flag: 'Y', def_cost_qty_link_flag: 'Y', ot_flag: 'N', curr_id: 1, def_qty_per_hr: 1, load_tasks_flag: 'N', level_flag: 'N' }, rawBy.get(String(r.id)) || {}, { rsrc_id: r.id, rsrc_name: r.name, rsrc_short_name: r.short || r.name, rsrc_title_name: r.role || '', def_qty_per_hr: (r.units || 8) / 8, rsrc_type: r.type }));
         pushAll(lines, tableOut(name, fields, rows));
+      } else if (OPTIONAL.has(name)) {
+        const rows = optionalRows(name, p, projId, rt);
+        if (rows.length || rt) pushAll(lines, tableOut(name, fields, rows));
       } else if (name === 'TASKRSRC') {
         const rawBy = new Map(rt ? rt.rows.map((r) => [r.taskrsrc_id, r]) : []);
-        const rows = p.asg.filter((a) => taskIds.has(String(a.task))).map((a) => Object.assign({ cost_qty_link_flag: 'Y', rollup_dates_flag: 'Y' }, rawBy.get(String(a.id)) || {}, { taskrsrc_id: a.id, task_id: a.task, proj_id: projId, rsrc_id: a.rsrc, target_qty: a.qty, remain_qty: a.qty }));
+        const tmap = new Map(p.tasks.map((x) => [x.id, x])), rmap = new Map(p.rsrc.map((x) => [x.id, x]));
+        const rows = p.asg.filter((a) => taskIds.has(String(a.task))).map((a) => {
+          const sp = P6.asgSplit(a, tmap.get(a.task)), price = (rmap.get(a.rsrc) || {}).price || 0;
+          return Object.assign({ cost_qty_link_flag: 'Y', rollup_dates_flag: 'Y' }, rawBy.get(String(a.id)) || {}, { taskrsrc_id: a.id, task_id: a.task, proj_id: projId, rsrc_id: a.rsrc, target_qty: a.qty, remain_qty: lagFmt(sp.rem), act_reg_qty: lagFmt(sp.act), cost_per_qty: price, target_cost: lagFmt(a.qty * price), act_reg_cost: lagFmt(sp.act * price), remain_cost: lagFmt(sp.rem * price) });
+        });
         pushAll(lines, tableOut(name, fields, rows));
       }
     }

@@ -128,6 +128,7 @@
       rels: [],
       rsrc: [],
       asg: [],
+      codeTypes: [], codeVals: [], pcTypes: [], pcVals: [], pcAssign: {}, udfs: [], floatPathMax: 10,
       nid: 100,
       loops: [],
       xer: null
@@ -143,7 +144,8 @@
       dur: 5, rem: 5, pct: 0, pctType: 'dur', status: 'NS',
       as: null, af: null, ct: '', cd: null,
       es: null, ef: null, ls: null, lf: null, rs: null, tf: null, ff: null, crit: false,
-      bs: null, bf: null, bdur: null, seq: id
+      bs: null, bf: null, bdur: null, seq: id,
+      steps: [], exp: 0, dtype: 'DT_FixedDUR2', phys: 0, feedback: '', rev: false, codes: {}, udf: {}, bcost: null, bunits: null, fp: null, fpo: null
     };
     Object.assign(t, over || {});
     if (!t.code) t.code = autoCode(p);
@@ -319,13 +321,25 @@
         ff = Math.min(ff, g - lag);
       }
       t.ff = isFinite(ff) ? Math.max(0, Math.min(ff, t.tf)) : Math.max(0, t.tf);
+      for (const { r, n: sn } of n.succs) {
+        const st = sn.t, lag = r.lag || 0;
+        const sStart = st.status === 'IP' ? st.rs : st.es;
+        let g;
+        if (r.type === 'FS') g = isFinMile(st) ? signedWork(cal, t.ef, st.ef) : signedWork(cal, t.ef, sStart) - 1;
+        else if (r.type === 'SS') g = signedWork(cal, t.es, isFinMile(st) ? st.es : sStart);
+        else if (r.type === 'FF') g = signedWork(cal, t.ef, st.ef);
+        else g = signedWork(cal, t.es, st.ef);
+        r.rf = g - lag;
+      }
       if (t.ct === 'ALAP' && t.status === 'NS' && t.tf > 0) {
         t.es = t.ls; t.rs = t.ls; t.ef = t.lf; t.tf = 0; t.ff = 0;
       }
     }
     for (const { t } of N.values()) {
       if (isHammock(t)) continue;
+      if (t.steps && t.steps.length) { const w = t.steps.reduce((a, s) => a + (+s.wt || 1), 0); t.phys = w ? Math.round(t.steps.reduce((a, s) => a + (s.done ? (+s.wt || 1) : 0), 0) / w * 100) : 0; if (t.pctType === 'phys' && t.status !== 'C') { t.pct = t.phys; } }
       if (t.status === 'C') t.pct = 100;
+      else if (t.pctType === 'phys' && t.steps && t.steps.length) { /* pct set from steps */ }
       else if (t.pctType === 'dur') t.pct = t.status === 'NS' || !(t.dur > 0) ? 0 : Math.max(0, Math.min(99, Math.round(((t.dur - t.rem) / t.dur) * 100)));
     }
     p.start = pStart; p.finish = pEnd;
@@ -344,7 +358,7 @@
     }
     const out = new Map();
     const calc = (id) => {
-      const r = { es: Infinity, ef: -Infinity, bs: Infinity, bf: -Infinity, dur: 0, done: 0, crit: false, count: 0, tf: Infinity, as: Infinity, af: -Infinity, allC: true };
+      const r = { es: Infinity, ef: -Infinity, bs: Infinity, bf: -Infinity, dur: 0, done: 0, crit: false, count: 0, tf: Infinity, as: Infinity, af: -Infinity, allC: true, nNS: 0, nIP: 0, nC: 0, nCrit: 0, rem: 0, ls: Infinity, lf: -Infinity };
       for (const t of tasksBy.get(id) || []) {
         if (t.es != null) { r.es = Math.min(r.es, t.es); r.ef = Math.max(r.ef, t.ef); }
         if (t.bs != null) { r.bs = Math.min(r.bs, t.bs); r.bf = Math.max(r.bf, t.bf); }
@@ -356,6 +370,10 @@
         if (t.tf != null) r.tf = Math.min(r.tf, t.tf);
         if (t.status !== 'C') r.allC = false;
         r.count++;
+        if (t.status === 'NS') r.nNS++; else if (t.status === 'IP') r.nIP++; else r.nC++;
+        if (t.crit) r.nCrit++;
+        r.rem += t.status === 'C' ? 0 : (t.rem || 0);
+        if (t.ls != null && t.status !== 'C') { r.ls = Math.min(r.ls, t.ls); r.lf = Math.max(r.lf, t.lf); }
       }
       for (const k of kids.get(id) || []) {
         const c = calc(k);
@@ -363,12 +381,14 @@
         r.bs = Math.min(r.bs, c.bs); r.bf = Math.max(r.bf, c.bf);
         r.as = Math.min(r.as, c.as); r.af = Math.max(r.af, c.af);
         r.dur += c.dur; r.done += c.done; r.crit = r.crit || c.crit; r.count += c.count;
+        r.nNS += c.nNS; r.nIP += c.nIP; r.nC += c.nC; r.nCrit += c.nCrit; r.rem += c.rem; r.ls = Math.min(r.ls, c.ls); r.lf = Math.max(r.lf, c.lf);
         r.tf = Math.min(r.tf, c.tf);
         if (!c.allC || !c.count) r.allC = r.allC && c.allC;
       }
       r.pct = r.dur > 0 ? Math.round((r.done / r.dur) * 100) : 0;
       if (!isFinite(r.es)) { r.es = null; r.ef = null; }
       if (!isFinite(r.bs)) { r.bs = null; r.bf = null; }
+      if (!isFinite(r.ls)) { r.ls = null; r.lf = null; }
       if (!isFinite(r.tf)) r.tf = null;
       out.set(id, r);
       return r;

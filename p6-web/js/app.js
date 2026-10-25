@@ -7,20 +7,10 @@
   const t = (k, ...a) => P6.t(k, ...a);
 
   const ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4];
-  const ALL_COLS = {
-    code: { w: 230, ed: 'text', sort: 1 }, name: { w: 320, ed: 'text', sort: 1 },
-    type: { w: 100, ed: 'sel' }, wbs: { w: 90 }, status: { w: 96, ed: 'sel' },
-    dur: { w: 72, ed: 'num', r: 1, sort: 1 }, rem: { w: 72, ed: 'num', r: 1 }, pct: { w: 82, ed: 'num', r: 1, sort: 1 },
-    es: { w: 90, ed: 'date', r: 1, sort: 1 }, ef: { w: 90, ed: 'date', r: 1, sort: 1 },
-    as: { w: 90, ed: 'date', r: 1 }, af: { w: 90, ed: 'date', r: 1 },
-    ls: { w: 90, r: 1 }, lf: { w: 90, r: 1 },
-    tf: { w: 92, r: 1, sort: 1 }, ff: { w: 84, r: 1 },
-    pred: { w: 160, ed: 'text' }, succ: { w: 140 },
-    cal: { w: 130, ed: 'sel' }, cstr: { w: 110, ed: 'sel' }, cdate: { w: 90, ed: 'date', r: 1 },
-    bs: { w: 90, r: 1 }, bf: { w: 90, r: 1 }, vs: { w: 66, r: 1 }, vf: { w: 66, r: 1 }, res: { w: 130 }
-  };
+  const ALL_COLS = P6.ALL_COLS;
   const DEF_COLS = ['code', 'name', 'dur', 'es', 'ef', 'tf'];
   const TYPES = ['TT_Task', 'TT_Mile', 'TT_FinMile', 'TT_LOE'];
+  const DTYPES = ['DT_FixedDUR2', 'DT_FixedQty', 'DT_FixedQty2', 'DT_FixedDrtn'];
   const CSTRS = ['', 'SNET', 'SNLT', 'FNET', 'FNLT', 'MSO', 'MFO', 'ALAP'];
 
   const S = (g.App = {
@@ -184,12 +174,15 @@
   function sortVal(tk, k) {
     switch (k) {
       case 'code': return tk.code; case 'name': return tk.name; case 'es': return tk.es; case 'ef': return tk.ef;
-      case 'tf': return tk.tf == null ? 1e9 : tk.tf; case 'dur': return tk.dur; case 'pct': return tk.pct; default: return tk.seq;
+      case 'tf': return tk.tf == null ? 1e9 : tk.tf; case 'dur': return tk.dur; case 'pct': return tk.pct; default: { if (ALL_COLS[k]) { const v = P6.colSortVal(k, tk, S.ctx); return v == null ? 1e12 : v; } return tk.seq; }
     }
   }
   function buildView() {
     const p = S.p;
     S.ru = P6.rollup(p);
+    P6.rebuildDynCols(p);
+    if (S.cfg.cols.some((c) => c.k === 'fp' || c.k === 'fpo')) P6.floatPaths(p, p.floatPathMax || 10);
+    S.ctx = P6.makeCtx(p, S.ru);
     const filtering = !!(S.cfg.filter.text || S.cfg.filter.mode !== 'all');
     const cmp = (a, b) => {
       const va = sortVal(a, S.cfg.sort), vb = sortVal(b, S.cfg.sort);
@@ -259,7 +252,7 @@
         case 'tf': out.text = ru.tf == null ? '' : fmtN(ru.tf); if (ru.tf != null && ru.tf < 0) out.cls += ' neg'; break;
         case 'vs': if (ru.bs != null && ru.es != null) out.text = fmtN(ru.es - ru.bs); break;
         case 'vf': if (ru.bf != null && ru.ef != null) { out.text = fmtN(ru.ef - ru.bf); if (ru.ef > ru.bf) out.cls += ' neg'; } break;
-        default: break;
+        default: { const rc = P6.regCell(k, row, S.ctx); if (rc) { out.text = rc.text; out.cls = rc.cls; } break; }
       }
       return out;
     }
@@ -287,7 +280,7 @@
       case 'vs': if (tk.bs != null && tk.es != null) out.text = fmtN(tk.es - tk.bs); if (tk.es > tk.bs) out.cls += ' neg'; break;
       case 'vf': if (tk.bf != null && tk.ef != null) out.text = fmtN(tk.ef - tk.bf); if (tk.ef > tk.bf) out.cls += ' neg'; break;
       case 'res': out.text = S.p.asg.filter((a) => a.task === tk.id).map((a) => (S.p.rsrc.find((r) => r.id === a.rsrc) || {}).name).filter(Boolean).join(', '); break;
-      default: break;
+      default: { const rc = P6.regCell(k, row, S.ctx); if (rc) { out.text = rc.text; out.cls = rc.cls; } break; }
     }
     if (P6.isMile(tk) && (k === 'dur' || k === 'rem') && false) out.text = '';
     return out;
@@ -298,6 +291,10 @@
     if (k === 'cal') return S.p.cals.map((c) => [String(c.id), c.name]);
     if (k === 'cstr') return CSTRS.map((x) => [x, x ? t('cs_' + x) : '—']);
     if (k === 'wbs') return S.p.wbs.map((w) => [String(w.id), w.code + ' – ' + w.name]);
+    if (k === 'dtype') return DTYPES.map((x) => [x, t('dt_' + x)]);
+    if (k === 'pctType') return [['dur', t('pt_dur')], ['phys', t('pt_phys')], ['units', t('pt_units')]];
+    if (k === 'rev') return [['0', t('no')], ['1', t('yes')]];
+    if (/^ac:/.test(k)) return [['', '—'], ...S.p.codeVals.filter((v) => v.type === +k.slice(3)).map((v) => [String(v.id), v.short + (v.name ? ' – ' + v.name : '')])];
     return [];
   }
   function rawValue(k, row) {
@@ -306,8 +303,14 @@
     switch (k) {
       case 'dur': return fmtN(tk.dur); case 'rem': return fmtN(tk.status === 'C' ? 0 : tk.rem); case 'pct': return String(tk.pct);
       case 'es': return fmtD(tk.es); case 'ef': return fmtD(tk.ef); case 'as': return fmtD(tk.as); case 'af': return fmtD(tk.af); case 'cdate': return fmtD(tk.cd);
+      case 'dtype': return tk.dtype || 'DT_FixedDUR2'; case 'pctType': return tk.pctType; case 'rev': return tk.rev ? '1' : '0'; case 'phys': return String(tk.pctType === 'phys' ? tk.pct : tk.phys || 0);
+      case 'notes': return tk.notes || ''; case 'feedback': return tk.feedback || ''; case 'bc_E': return String(tk.exp || 0);
       case 'type': return tk.type; case 'status': return tk.status; case 'cal': return String(tk.cal); case 'cstr': return tk.ct || ''; case 'wbs': return String(tk.wbs);
-      default: return cellOf(k, row).text;
+      default: {
+        if (/^ac:/.test(k)) return String((tk.codes || {})[k.slice(3)] || '');
+        if (/^udf:/.test(k)) { const v = (tk.udf || {})[k.slice(4)]; const u = S.p.udfs.find((x) => x.id === +k.slice(4)); return v == null ? '' : u && u.ty === 'date' ? fmtD(v) : String(v); }
+        return cellOf(k, row).text;
+      }
     }
   }
 
@@ -331,7 +334,7 @@
     if (v >= 100) return setStatus(tk, 'C');
     if (v <= 0 && tk.pctType === 'dur') return setStatus(tk, 'NS');
     if (tk.status !== 'IP') setStatus(tk, 'IP');
-    tk.pct = v;
+    tk.pct = v; if (tk.pctType === 'phys') tk.phys = v;
     if (tk.pctType === 'dur') tk.rem = Math.round(tk.dur * (1 - v / 100) * 100) / 100;
   }
   // returns error text or undefined
@@ -400,6 +403,13 @@
       }
       case 'cstr': tk.ct = raw; if (!raw) tk.cd = null; else if (tk.cd == null) tk.cd = tk.es != null ? tk.es : S.p.planStart; return;
       case 'cdate': { const d = date(); if (d === undefined || d == null) return t('err_date'); tk.cd = d; return; }
+      case 'dtype': tk.dtype = raw; return;
+      case 'pctType': tk.pctType = raw; return;
+      case 'rev': tk.rev = raw === '1' || raw === true; return;
+      case 'phys': { const v = num(); if (isNaN(v)) return t('err_num'); tk.phys = Math.max(0, Math.min(100, v)); if (tk.pctType === 'phys') setPct(tk, tk.phys); return; }
+      case 'notes': tk.notes = String(raw); return;
+      case 'feedback': tk.feedback = String(raw); return;
+      case 'bc_E': { const v = num(); if (isNaN(v) || v < 0) return t('err_num'); tk.exp = v; return; }
       case 'pred': {
         const { rels, bad } = P6.parsePreds(S.p, raw, tk);
         S.p.rels = S.p.rels.filter((r) => r.s !== tk.id);
@@ -411,7 +421,18 @@
         if (bad.length) return t('err_pred', bad.join(', '));
         return;
       }
-      default: return;
+      default: {
+        if (/^ac:/.test(k)) { tk.codes = tk.codes || {}; if (raw === '') delete tk.codes[k.slice(3)]; else tk.codes[k.slice(3)] = +raw; return; }
+        if (/^udf:/.test(k)) {
+          const u = S.p.udfs.find((x) => x.id === +k.slice(4)); if (!u) return;
+          tk.udf = tk.udf || {};
+          if (String(raw).trim() === '') { delete tk.udf[u.id]; return; }
+          if (u.ty === 'date') { const d = P6.parseDate(raw); if (d == null) return t('err_date'); tk.udf[u.id] = d; }
+          else if (u.ty === 'text') tk.udf[u.id] = String(raw);
+          else { const v = parseFloat(String(raw).replace(',', '.')); if (isNaN(v)) return t('err_num'); tk.udf[u.id] = v; }
+        }
+        return;
+      }
     }
   }
   function editCell(row, k, raw) {
@@ -432,7 +453,8 @@
     for (const c of S.cfg.cols) {
       const d = ALL_COLS[c.k];
       const sorted = S.cfg.sort === c.k ? (S.cfg.sortDir > 0 ? ' ▲' : ' ▼') : '';
-      s += `<div class="th${d.r ? ' r' : ''}" style="width:${c.w}px" data-k="${c.k}" title="${esc(t('col_' + c.k))}">${esc(t('col_' + c.k))}${sorted}<i class="rz" data-k="${c.k}"></i></div>`;
+      const lab = c.title || t('col_' + c.k), al = c.align || (d.r ? 'right' : 'left');
+      s += `<div class="th${al === 'right' ? ' r' : al === 'center' ? ' c' : ''}" style="width:${c.w}px" data-k="${c.k}" title="${esc(lab)}">${esc(lab)}${sorted}<i class="rz" data-k="${c.k}"></i></div>`;
     }
     h.innerHTML = s + '</div>';
     $('#tRows').style.width = totalColsW() + 'px';
@@ -467,7 +489,9 @@
           else lead = `<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.crit && row.t.status !== 'C' ? 'crit' : row.t.status === 'C' ? 'done' : row.t.status === 'IP' ? 'ip' : 'task'}"></i>`;
           inner = `<span style="padding-inline-start:${pad}px;display:inline-flex;align-items:center;min-width:0;width:100%">${lead}<span style="unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis">${esc(ci.text)}</span></span>`;
         } else inner = `<span style="unicode-bidi:plaintext">${esc(ci.text)}</span>`;
-        s += `<div class="td ${ci.cls}${ci.ro ? ' ro' : ''}${cur ? ' cur' : ''}" style="width:${c.w}px" data-k="${c.k}">${inner}</div>`;
+        const rc = ci.cls.split(' ').filter((x) => x && x !== 'r' && x !== 'lft' && x !== 'c');
+        if (c.align ? c.align === 'right' : ci.cls.split(' ').includes('r')) rc.push('r'); else if (c.align === 'center') rc.push('c'); else if (c.align === 'left') rc.push('lft');
+        s += `<div class="td ${rc.join(' ')}${ci.ro ? ' ro' : ''}${cur ? ' cur' : ''}" style="width:${c.w}px" data-k="${c.k}">${inner}</div>`;
       }
       s += '</div>';
     }
@@ -828,7 +852,7 @@
   function renderDetails() {
     const el = $('#details');
     if (S.cfg.dock === 'usage' && S.cfg.detOpen) { el.classList.remove('collapsed'); return App.renderUsage(el); }
-    const tabs = ['general', 'status', 'res', 'rels', 'notes'];
+    const tabs = ['general', 'status', 'res', 'rels', 'codes', 'notes', 'steps', 'feedback', 'udf'];
     const fr = focusRow();
     const title = fr ? (fr.kind === 't' ? fr.t.code + ' · ' + fr.t.name : fr.w.code + ' · ' + fr.w.name) : '';
     let head = `<div class="dtabs">${tabs.map((k) => `<button class="dtab${S.tab === k ? ' on' : ''}" data-tab="${k}">${esc(t('tab_' + k))}</button>`).join('')}<span class="dtitle" dir="auto">${esc(title)}</span><button class="ib" data-act="toggle" title="${esc(t('toggle_details'))}"><svg viewBox="0 0 24 24"><path d="${S.cfg.detOpen ? 'M6 9l6 6 6-6' : 'M6 15l6-6 6 6'}"/></svg></button></div>`;
@@ -867,9 +891,19 @@
       }).join('')}<tr><td colspan="5"><input data-radd="${isPred ? 'p' : 's'}" list="codes" placeholder="+ ${esc(t('add_rel_ph'))}" style="border-color:var(--line)"></td></tr></tbody></table>`;
       body += `<datalist id="codes">${S.p.tasks.map((x) => `<option value="${esc(x.code)}">${esc(x.name)}</option>`).join('')}</datalist><div class="two"><div><b>${esc(t('predecessors'))}</b>${tbl(preds, true)}</div><div><b>${esc(t('successors'))}</b>${tbl(succs, false)}</div></div>`;
     } else if (S.tab === 'res') {
-      const as = S.p.asg.filter((a) => a.task === tk.id);
-      body += `<table class="mini"><thead><tr><th>${esc(t('resource'))}</th><th style="width:110px">${esc(t('qty'))}</th><th style="width:30px"></th></tr></thead><tbody>${as.map((a) => `<tr data-asg="${a.id}"><td>${sel2('rsrc', a.rsrc, S.p.rsrc.map((r) => [r.id, r.name]), true)}</td><td><input data-af="qty" value="${fmtN(a.qty)}"></td><td><button class="ib" data-adel="${a.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`).join('')}</tbody></table>
+      const as = S.p.asg.filter((a) => a.task === tk.id), rmap = new Map(S.p.rsrc.map((r) => [r.id, r]));
+      body += `<table class="mini"><thead><tr><th>${esc(t('resource'))}</th><th style="width:100px">${esc(t('col_bu'))}</th><th style="width:100px">${esc(t('col_au'))}</th><th style="width:100px">${esc(t('col_ru'))}</th><th style="width:90px">${esc(t('price_unit'))}</th><th style="width:110px">${esc(t('col_bc'))}</th><th style="width:30px"></th></tr></thead><tbody>${as.map((a) => { const sp = P6.asgSplit(a, tk), r = rmap.get(a.rsrc) || {}; return `<tr data-asg="${a.id}"><td>${sel2('rsrc', a.rsrc, S.p.rsrc.map((x) => [x.id, x.name]), true)}</td><td><input data-af="qty" value="${fmtN(a.qty)}"></td><td><input data-af="act" value="${fmtN(sp.act)}"></td><td><input data-af="rem" value="${fmtN(sp.rem)}"></td><td><input value="${fmtN(r.price || 0)}" readonly></td><td><input value="${fmtN(a.qty * (r.price || 0))}" readonly></td><td><button class="ib" data-adel="${a.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`; }).join('')}</tbody></table>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><select class="inp" id="newAsg">${[['', '— ' + t('resource') + ' —'], ...S.p.rsrc.map((r) => [r.id, r.name])].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select><button class="btn sm" data-act="addasg">${esc(t('assign'))}</button><button class="btn sm" data-act="newrsrc">${esc(t('new_resource'))}</button></div>`;
+    } else if (S.tab === 'codes') {
+      body += S.p.codeTypes.length ? `<div class="grid2">${S.p.codeTypes.map((ct) => fld(ct.name + (ct.scope === 'project' ? ' (' + t('scope_project') + ')' : ''), `<select data-cd="${ct.id}"><option value="">—</option>${S.p.codeVals.filter((v) => v.type === ct.id).map((v) => `<option value="${v.id}"${(tk.codes || {})[ct.id] === v.id ? ' selected' : ''}>${esc(v.short + (v.name ? ' – ' + v.name : ''))}</option>`).join('')}</select>`)).join('')}</div>` : `<div class="empty">${esc(t('no_codes'))}<br><button class="btn sm" data-act="codes">${esc(t('act_codes_global'))}…</button></div>`;
+    } else if (S.tab === 'udf') {
+      body += S.p.udfs.length ? `<div class="grid2">${S.p.udfs.map((u) => fld(u.name, `<input data-uf="${u.id}" dir="auto" value="${esc(u.ty === 'date' ? fmtD((tk.udf || {})[u.id]) : (tk.udf || {})[u.id] == null ? '' : (tk.udf || {})[u.id])}"${u.ty === 'date' ? ' placeholder="dd-Mon-yy"' : ''}>`)).join('')}</div>` : `<div class="empty">${esc(t('no_udf'))}<br><button class="btn sm" data-act="udf">${esc(t('udf_manage'))}…</button></div>`;
+    } else if (S.tab === 'steps') {
+      const w = tk.steps.reduce((x, s) => x + (+s.wt || 1), 0);
+      body += `<table class="mini"><thead><tr><th style="width:40px">✓</th><th>${esc(t('step_name'))}</th><th style="width:90px">${esc(t('weight'))}</th><th style="width:90px">%</th><th style="width:30px"></th></tr></thead><tbody>${tk.steps.map((s) => `<tr data-st="${s.id}"><td><input type="checkbox" data-sf="done"${s.done ? ' checked' : ''}></td><td><input data-sf="name" dir="auto" value="${esc(s.name)}"></td><td><input data-sf="wt" value="${fmtN(s.wt)}"></td><td style="color:var(--muted)">${w ? Math.round(((+s.wt || 1) / w) * 100) : 0}%</td><td><button class="ib" data-stdel="${s.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`).join('') || `<tr><td colspan="5" class="empty">${esc(t('no_steps'))}</td></tr>`}</tbody></table>
+        <div style="margin-top:10px;display:flex;gap:12px;align-items:center"><button class="btn sm" data-act="addstep">+ ${esc(t('add_step'))}</button><span class="hint" style="margin:0">${esc(t('steps_pct'))}: <b>${tk.steps.length ? tk.phys + '%' : '—'}</b> · ${esc(t('steps_hint'))}</span></div>`;
+    } else if (S.tab === 'feedback') {
+      body += `<div class="fld"><label>${esc(t('col_feedback'))}</label><textarea data-f="feedback" rows="5" dir="auto">${esc(tk.feedback || '')}</textarea></div><label class="chk" style="margin-top:8px"><input type="checkbox" data-f="rev"${tk.rev ? ' checked' : ''}> ${esc(t('col_rev'))}</label>`;
     } else if (S.tab === 'notes') {
       body += `<div class="fld"><label>${esc(t('tab_notes'))}</label><textarea data-f="notes" rows="6" dir="auto">${esc(tk.notes || '')}</textarea></div>`;
     }
@@ -885,7 +919,7 @@
     if (!fr) return 'none|' + S.tab;
     if (fr.kind === 'w') return 'w' + fr.id + '|' + S.p.wbs.length;
     const tk = fr.t;
-    return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
+    return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, tk.steps.map((s) => s.id + (s.done ? 1 : 0)).join('.'), S.p.codeTypes.length, S.p.udfs.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
   }
   function syncDetails() {
     if (S.cfg.dock === 'usage' && S.cfg.detOpen) return;
@@ -909,6 +943,10 @@
       if (b.dataset.rdel) { const id = +b.dataset.rdel; mutate(t('unlink'), () => { S.p.rels = S.p.rels.filter((r) => r.id !== id); }); }
       else if (b.dataset.adel) { const id = +b.dataset.adel; mutate(t('delete'), () => { S.p.asg = S.p.asg.filter((a) => a.id !== id); }, { noSched: true }); }
       else if (b.dataset.act === 'addasg') { const v = +$('#newAsg').value; if (v) mutate(t('assign'), () => { S.p.asg.push({ id: P6.nextId(S.p), task: tk.id, rsrc: v, qty: 8 }); }, { noSched: true }); }
+      else if (b.dataset.act === 'codes') App.dialogs.codes('acg');
+      else if (b.dataset.act === 'udf') App.dialogs.udf();
+      else if (b.dataset.act === 'addstep') mutate(t('add_step'), () => { tk.steps.push({ id: P6.nextId(S.p), name: t('new_step'), wt: 1, done: false }); });
+      else if (b.dataset.stdel) { const id = +b.dataset.stdel; mutate(t('delete'), () => { tk.steps = tk.steps.filter((s) => s.id !== id); }); }
       else if (b.dataset.act === 'newrsrc') { const n = prompt(t('resource_name')); if (n) mutate(t('new_resource'), () => { S.p.rsrc.push({ id: P6.nextId(S.p), name: n, short: n.slice(0, 8), type: 'RT_Labor' }); }, { noSched: true }); }
     });
     el.addEventListener('change', (e) => {
@@ -920,8 +958,12 @@
         return;
       }
       const tk = fr.t;
+      if (x.dataset.cd) return mutate(t('edit'), () => { tk.codes = tk.codes || {}; if (x.value === '') delete tk.codes[x.dataset.cd]; else tk.codes[x.dataset.cd] = +x.value; }, { noSched: true });
+      if (x.dataset.uf) return editCell({ kind: 't', t: tk }, 'udf:' + x.dataset.uf, x.value);
+      if (x.dataset.sf) { const s = tk.steps.find((q) => q.id === +x.closest('tr').dataset.st); if (!s) return; return mutate(t('edit'), () => { const f = x.dataset.sf; if (f === 'done') s.done = x.checked; else if (f === 'wt') s.wt = Math.max(0.01, parseFloat(x.value.replace(',', '.')) || 1); else s.name = x.value; }); }
       if (x.dataset.f) {
         const f = x.dataset.f;
+        if (f === 'rev') return mutate(t('edit'), () => { tk.rev = x.checked; }, { noSched: true });
         if (f === 'notes') return mutate(t('edit'), () => { tk.notes = x.value; }, { noSched: true });
         if (f === 'pctType') return mutate(t('edit'), () => { tk.pctType = x.value; });
         if (f === 'bs' || f === 'bf') {
@@ -953,7 +995,10 @@
         mutate(t('link'), () => { S.p.rels.push({ id: P6.nextId(S.p), p: np, s: ns, type: 'FS', lag: 0 }); });
       } else if (x.dataset.af) {
         const tr = x.closest('tr'); const a = S.p.asg.find((q) => q.id === +tr.dataset.asg); if (!a) return;
-        mutate(t('edit'), () => { if (x.dataset.af === 'qty') a.qty = parseFloat(x.value) || 0; else a.rsrc = +x.value; }, { noSched: true });
+        mutate(t('edit'), () => {
+          const f = x.dataset.af, v = parseFloat(String(x.value).replace(',', '.')) || 0;
+          if (f === 'qty') { a.qty = v; if (a.manual) a.rem = Math.max(0, v - (a.act || 0)); } else if (f === 'act') { a.manual = true; a.act = v; a.rem = Math.max(0, a.qty - v); } else if (f === 'rem') { const sp = P6.asgSplit(a, tk); a.manual = true; a.act = sp.act; a.rem = v; } else a.rsrc = +x.value;
+        }, { noSched: true });
       }
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur(); e.stopPropagation(); });
@@ -1156,9 +1201,9 @@
       ]],
       ['tools', [
         ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.schedule(); }, '', F.auto], '-',
-        ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
+        ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['fp_title', () => App.dialogs.floatPaths()], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
-      ['admin', [['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],
+      ['admin', [['act_codes_global', () => App.dialogs.codes('acg')], ['act_codes_project', () => App.dialogs.codes('acp')], ['act_pcodes', () => App.dialogs.codes('pc')], ['udf_manage', () => App.dialogs.udf()], '-', ['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],
       ['help', [['guide', () => App.dialogs.help()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
     ];
   }
@@ -1205,8 +1250,9 @@
   function applyBaselineFrom(q) {
     const by = new Map(q.tasks.map((x) => [x.code.toLowerCase(), x]));
     let n = 0;
+    const QM = P6.metrics(q);
     mutate(t('import_baseline'), () => {
-      for (const tk of S.p.tasks) { const o = by.get(tk.code.toLowerCase()); if (o) { tk.bs = o.status === 'C' && o.as != null ? o.as : o.es; tk.bf = o.status === 'C' && o.af != null ? o.af : o.ef; tk.bdur = o.dur; n++; } }
+      for (const tk of S.p.tasks) { const o = by.get(tk.code.toLowerCase()); if (o) { const mm = QM.T.get(o.id); tk.bcost = mm.bc; tk.bunits = mm.bu_L; tk.bs = o.status === 'C' && o.as != null ? o.as : o.es; tk.bf = o.status === 'C' && o.af != null ? o.af : o.ef; tk.bdur = o.dur; n++; } }
     }, { noSched: true });
     S.cfg.show.base = true; pushGantt(); toast(t('baseline_applied', n));
   }
@@ -1300,6 +1346,6 @@
     document.body.dataset.ready = '1';
   };
 
-  Object.assign(API, { mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
+  Object.assign(API, { getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
   g.App.dialogs = {};
 })(window);

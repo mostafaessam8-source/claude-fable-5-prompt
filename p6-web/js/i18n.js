@@ -36,6 +36,19 @@
     actual_units: ['Actual Units', 'الوحدات الفعلية'], remaining_units: ['Remaining Early Units', 'الوحدات المتبقية'], overalloc: ['Overallocated Early Units', 'وحدات زائدة عن الحد'], limit: ['Limit', 'الحد الأقصى'],
     bottom_details: ['Bottom: Activity Details', 'الأسفل: تفاصيل النشاط'], bottom_usage: ['Bottom: Resource Usage', 'الأسفل: استخدام الموارد'], bottom_none: ['Bottom: hide', 'الأسفل: إخفاء'], resource_usage: ['Resource Usage Profile', 'استخدام الموارد (Histogram)'],
     m_enterprise: ['Enterprise', 'Enterprise'], m_admin: ['Admin', 'Admin'],
+    yes: ['Yes', 'نعم'], no: ['No', 'لا'],
+    dt_DT_FixedDUR2: ['Fixed Duration & Units/Time', 'مدة ثابتة ووحدات/وقت'], dt_DT_FixedQty: ['Fixed Units', 'وحدات ثابتة'], dt_DT_FixedQty2: ['Fixed Units/Time', 'وحدات/وقت ثابتة'], dt_DT_FixedDrtn: ['Fixed Duration & Units', 'مدة ووحدات ثابتة'],
+    tab_codes: ['Codes', 'الأكواد'], tab_steps: ['Steps', 'الخطوات'], tab_feedback: ['Feedback', 'الملاحظات الراجعة'], tab_udf: ['User Defined', 'حقول المستخدم'],
+    price_unit: ['Price / Unit', 'السعر / وحدة'], scope_project: ['Project', 'مشروع'], no_codes: ['No activity codes defined yet.', 'لا توجد أكواد أنشطة معرّفة بعد.'], act_codes_global: ['Activity Codes', 'أكواد الأنشطة'],
+    no_udf: ['No user-defined fields yet.', 'لا توجد حقول مستخدم بعد.'], udf_manage: ['User Defined Fields', 'حقول المستخدم'], step_name: ['Step', 'الخطوة'], weight: ['Weight', 'الوزن'], add_step: ['Add step', 'إضافة خطوة'], new_step: ['New step', 'خطوة جديدة'],
+    no_steps: ['No steps', 'لا توجد خطوات'], steps_pct: ['Steps % complete', 'نسبة إنجاز الخطوات'], steps_hint: ['Set "% Complete Type" to Physical to drive progress from steps', 'اضبط "نوع نسبة الإنجاز" على Physical ليتحكم بالتقدم من الخطوات'],
+    available_opts: ['Available Options', 'الخيارات المتاحة'], selected_opts: ['Selected Options', 'الخيارات المحددة'], ok: ['OK', 'موافق'], apply: ['Apply', 'تطبيق'], copy_from: ['Copy From…', 'نسخ من…'], default: ['Default', 'افتراضي'], edit_column: ['Edit Column…', 'تعديل العمود…'], help: ['Help', 'مساعدة'],
+    err_no_cols: ['Select at least one column', 'اختر عموداً واحداً على الأقل'], col_title: ['Column title', 'عنوان العمود'], col_width: ['Width (px)', 'العرض (px)'], col_align: ['Alignment', 'المحاذاة'], align_auto: ['Automatic', 'تلقائي'], align_left: ['Left', 'يسار'], align_center: ['Center', 'وسط'], align_right: ['Right', 'يمين'],
+    cols_help_html: ['<p>Pick a category on the left and press <b>▶</b> to add one column (or the whole category). <b>⏩</b> adds everything, <b>◀</b> removes the selected column(s) (Ctrl+click for several). Use <b>▲ ▼</b> to reorder, <b>Edit Column</b> to change title / width / alignment, <b>Copy From</b> to load the columns of another layout, <b>Default</b> to restore the standard columns. Double-click a column to add / remove it.</p>', '<p>اختر فئة من اليسار واضغط <b>▶</b> لإضافة عمود (أو الفئة كاملة). <b>⏩</b> يضيف الكل، <b>◀</b> يحذف المحدد (Ctrl+نقر لتحديد أكثر من عمود). استخدم <b>▲ ▼</b> للترتيب، و<b>Edit Column</b> لتغيير العنوان والعرض والمحاذاة، و<b>Copy From</b> لنسخ أعمدة تخطيط آخر، و<b>Default</b> للعودة للأعمدة القياسية. النقر المزدوج على عمود يضيفه أو يحذفه.</p>'],
+    code_types: ['Code types', 'أنواع الأكواد'], code_values: ['Code values', 'قيم الكود'], code_short: ['Code', 'الكود'], add_code_type: ['Add code type', 'إضافة نوع كود'], add_code_value: ['Add code value', 'إضافة قيمة كود'], code_type_name: ['Code type name', 'اسم نوع الكود'], max_len: ['Max length', 'أقصى طول'], pc_assigned: ['Value assigned to this project', 'القيمة المعيّنة لهذا المشروع'],
+    act_codes_project: ['Activity Codes – Project…', 'أكواد الأنشطة – المشروع…'], act_pcodes: ['Project Codes…', 'أكواد المشروع…'], udf_title: ['Field title', 'عنوان الحقل'], udf_type: ['Data type', 'نوع البيانات'], ut_text: ['Text', 'نص'], ut_number: ['Number', 'رقم'], ut_cost: ['Cost', 'تكلفة'], ut_date: ['Date', 'تاريخ'],
+    fp_title: ['Multiple Float Paths…', 'مسارات الفلوت المتعددة…'], fp_hint: ['Groups unfinished activities into paths of driving relationships ending at the activity with the lowest float, then the next-lowest, and so on (an approximation of P6 Multiple Float Paths).', 'يجمّع الأنشطة غير المكتملة في مسارات من العلاقات المسيطرة (Driving) تنتهي عند النشاط ذي أقل فلوت ثم الذي يليه وهكذا (تقريب لخاصية Multiple Float Paths في P6).'],
+    fp_max: ['Max paths to calculate', 'أقصى عدد مسارات'], fp_calc: ['Calculate', 'احسب'], fp_cols: ['Show Float Path columns', 'إظهار أعمدة المسار'], fp_path: ['Path (first → last activity)', 'المسار (من أول لآخر نشاط)'], fp_cols_added: ['Columns added', 'تمت إضافة الأعمدة'],
     // generic
     close: ['Close', 'إغلاق'], cancel: ['Cancel', 'إلغاء'], save: ['Save', 'حفظ'], create: ['Create', 'إنشاء'], add: ['Add', 'إضافة'], reset: ['Reset', 'إعادة ضبط'], import: ['Import', 'استيراد'], edit: ['Edit', 'تعديل'], search: ['Search…', 'بحث…'], show: ['Show', 'عرض'],
     move: ['Move activity', 'تحريك نشاط'], resize: ['Change duration', 'تغيير المدة'], move_to_wbs: ['Move to WBS', 'نقل إلى WBS'], selected: ['Selected', 'محدد'], activities: ['Activities', 'الأنشطة'],
@@ -115,6 +128,7 @@
   let lang = 'ar';
   P6.setLang = (l) => { lang = l === 'en' ? 'en' : 'ar'; };
   P6.t = (k, ...a) => {
+    if (k.startsWith('col_') && P6.colLabel) { const cl = P6.colLabel(k.slice(4), lang); if (cl) return cl; }
     const e = D[k];
     let s = e ? e[lang === 'ar' ? 1 : 0] : (k && k.startsWith('col_') ? k.slice(4) : k);
     if (s == null) s = e ? e[0] : k;

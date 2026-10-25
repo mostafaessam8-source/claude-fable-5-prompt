@@ -264,11 +264,11 @@
     const p = App.p;
     const body = document.createElement('div');
     const draw = () => {
-      body.innerHTML = `<table class="mini"><thead><tr><th>${esc(t('resource'))}</th><th>${esc(t('res_short'))}</th><th>${esc(t('res_type'))}</th><th>${esc(t('assignments'))}</th><th></th></tr></thead><tbody>${p.rsrc.map((r) => `<tr data-r="${r.id}"><td><input data-f="name" value="${esc(r.name)}" dir="auto"></td><td><input data-f="short" value="${esc(r.short || '')}"></td><td><select data-f="type">${['RT_Labor', 'RT_Equip', 'RT_Mat'].map((x) => `<option value="${x}"${r.type === x ? ' selected' : ''}>${esc(t('rt_' + x))}</option>`).join('')}</select></td><td>${p.asg.filter((a) => a.rsrc === r.id).length}</td><td><button class="ib" data-del="${r.id}">×</button></td></tr>`).join('') || `<tr><td colspan="5" class="empty">${esc(t('no_resources'))}</td></tr>`}</tbody></table><div style="margin-top:10px"><button class="btn sm" id="r_add">${esc(t('new_resource'))}</button></div>`;
+      body.innerHTML = `<table class="mini"><thead><tr><th>${esc(t('resource'))}</th><th>${esc(t('res_short'))}</th><th>${esc(t('res_type'))}</th><th>${esc(t('assignments'))}</th><th></th></tr></thead><tbody>${p.rsrc.map((r) => `<tr data-r="${r.id}"><td><input data-f="name" value="${esc(r.name)}" dir="auto"></td><td><input data-f="short" value="${esc(r.short || '')}"></td><td><select data-f="type">${['RT_Labor', 'RT_Equip', 'RT_Mat'].map((x) => `<option value="${x}"${r.type === x ? ' selected' : ''}>${esc(t('rt_' + x))}</option>`).join('')}</select></td><td>${p.asg.filter((a) => a.rsrc === r.id).length}</td><td><button class="ib" data-del="${r.id}">×</button></td></tr>`).join('') || `<tr><td colspan="8" class="empty">${esc(t('no_resources'))}</td></tr>`}</tbody></table><div style="margin-top:10px"><button class="btn sm" id="r_add">${esc(t('new_resource'))}</button></div>`;
     };
     draw();
     modal({ title: t('resources'), cls: 'mid', body, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }], onClose: () => App.refresh({ details: true }) });
-    body.addEventListener('change', (e) => { const tr = e.target.closest('tr'); const r = p.rsrc.find((q) => q.id === +tr.dataset.r); App.mutate(t('edit'), () => { r[e.target.dataset.f] = e.target.value; }, { noSched: true }); });
+    body.addEventListener('change', (e) => { const tr = e.target.closest('tr'); const r = p.rsrc.find((q) => q.id === +tr.dataset.r); App.mutate(t('edit'), () => { const f = e.target.dataset.f; if (f === 'units' || f === 'price') r[f] = Math.max(0, parseFloat(String(e.target.value).replace(',', '.')) || 0) || (f === 'units' ? 8 : 0); else r[f] = e.target.value; }, { noSched: true }); });
     body.addEventListener('click', (e) => {
       if (e.target.id === 'r_add') { const n = prompt(t('resource_name')); if (n) { App.mutate(t('new_resource'), () => { p.rsrc.push({ id: P6.nextId(p), name: n, short: n.slice(0, 8), type: 'RT_Labor' }); }, { noSched: true }); draw(); } }
       const d = e.target.closest('[data-del]');
@@ -369,10 +369,10 @@
       const a = it.dataset.a;
       if (a === 'save') {
         if (!confirm(t('bl_confirm'))) return;
-        App.mutate(t('bl_save'), () => { for (const tk of p.tasks) { tk.bs = tk.status === 'C' && tk.as != null ? tk.as : tk.es; tk.bf = tk.status === 'C' && tk.af != null ? tk.af : tk.ef; tk.bdur = tk.dur; } }, { noSched: true });
+        App.mutate(t('bl_save'), () => { const M = P6.metrics(p); for (const tk of p.tasks) { const mm = M.T.get(tk.id); tk.bcost = mm.bc; tk.bunits = mm.bu_L; tk.bs = tk.status === 'C' && tk.as != null ? tk.as : tk.es; tk.bf = tk.status === 'C' && tk.af != null ? tk.af : tk.ef; tk.bdur = tk.dur; } }, { noSched: true });
         App.cfg.show.base = true; toast(t('bl_saved'));
       } else if (a === 'import') App.openFile('baseline');
-      else if (a === 'clear') { if (confirm(t('confirm_generic'))) App.mutate(t('bl_clear'), () => { for (const tk of p.tasks) { tk.bs = null; tk.bf = null; tk.bdur = null; } }, { noSched: true }); }
+      else if (a === 'clear') { if (confirm(t('confirm_generic'))) App.mutate(t('bl_clear'), () => { for (const tk of p.tasks) { tk.bs = null; tk.bf = null; tk.bdur = null; tk.bcost = null; tk.bunits = null; } }, { noSched: true }); }
       m.close();
     });
   };
