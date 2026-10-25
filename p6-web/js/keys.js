@@ -21,24 +21,32 @@
   // and the first column is indented by WBS level (activities one level deeper than their WBS).
   const hx = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const WBS_FILL = '#c6efce';
-  App.tableHTML = function (all) {
-    const ctx = App.getCtx(), cols = F().cols;
+  const WCOL = [['#0000ff', '#ffffff'], ['#66ff66', '#000000'], ['#ffff00', '#000000'], ['#0000ff', '#ffffff'], ['#ff0000', '#ffffff']];
+  // style 'screen': WBS rows keep the colours / bold shown on screen (whole row); style 'p6': light-green first cell only, like P6's own export
+  App.tableHTML = function (all, style) {
+    style = style || F().copyStyle || 'screen';
+    const ctx = App.getCtx(), cols = F().cols, wpal = (F().grp && F().grp.wbsColors) || null;
     let rows = App.rows; const sel = rows.filter((r) => App.sel.has(r.kind + r.id));
     if (!all && sel.length) rows = sel;
     const tr = rows.map((row) => {
-      const fill = row.kind === 'w' ? WBS_FILL : row.kind === 'g' ? (row.color || WBS_FILL) : '';
+      let bg = '', fg = '', bold = false, firstOnly = false;
+      if (row.kind !== 't') {
+        if (style === 'p6') { bg = row.kind === 'g' ? (row.color || WBS_FILL) : WBS_FILL; firstOnly = true; }
+        else { const lv = row.level % WCOL.length; bg = row.kind === 'g' ? row.color : wpal ? wpal[row.level % wpal.length] : WCOL[lv][0]; fg = row.kind === 'w' && !wpal ? WCOL[lv][1] : (P6.contrast ? P6.contrast(bg) : '#000000'); bold = true; }
+      }
       return '<tr>' + cols.map((c, i) => {
         const r = P6.regCell(c.k, row, ctx); let v = r ? r.text : ''; if (row.kind !== 't' && i === 0 && row.w && !v) v = row.w.name;
         const ind = i === 0 ? '&nbsp;&nbsp;'.repeat(Math.max(0, row.level || 0)) : '';
-        const st = (i === 0 && fill ? `background:${fill};` : '') + (i === 0 ? 'text-align:left;' : '');
+        const paint = bg && (!firstOnly || i === 0);
+        const st = (paint ? `background:${bg};` : '') + (paint && fg ? `color:${fg};` : '') + (paint && bold ? 'font-weight:bold;' : '') + (i === 0 ? 'text-align:left;' : '');
         return `<td${st ? ` style="${st}"` : ''}>${ind}${hx(v)}</td>`;
       }).join('') + '</tr>';
     }).join('');
-    const head = '<tr>' + cols.map((c, i) => `<td${i === 0 ? ` style="background:${WBS_FILL}"` : ''}>${hx(c.title || P6.t('col_' + c.k))}</td>`).join('') + '</tr>';
+    const head = '<tr>' + cols.map((c, i) => `<td style="${style === 'p6' ? (i === 0 ? 'background:' + WBS_FILL : '') : 'background:#d9d9d9;font-weight:bold'}">${hx(c.title || P6.t('col_' + c.k))}</td>`).join('') + '</tr>';
     return `<table style="font-family:Calibri,Arial;font-size:11pt">${head}${tr}</table>`;
   };
-  App.copyTable = function (all) {
-    const { text, n } = App.tableTSV(all), html = App.tableHTML(all);
+  App.copyTable = function (all, style) {
+    const { text, n } = App.tableTSV(all), html = App.tableHTML(all, style);
     const done = () => App.toast(t('copied_excel', n));
     const fallback = () => {
       const d = document.createElement('div'); d.contentEditable = 'true'; d.style.cssText = 'position:fixed;left:-9999px;top:0;white-space:pre'; d.innerHTML = html; document.body.appendChild(d);
