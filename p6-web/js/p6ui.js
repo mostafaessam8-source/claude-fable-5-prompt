@@ -19,9 +19,10 @@
     const act = items.filter(Boolean);
     m.innerHTML = act.map((it, i) => (it === '-' ? '<hr>' : `<div class="pi${it.dis ? ' dis' : ''}" data-i="${i}"><span class="ico2">${it.i && P6.hasIcon(it.i) ? P6.icon(it.i) : it.ck ? '✓' : ''}</span>${esc(it.l)}${it.sub ? '<span class="ar">▸</span>' : it.k ? `<span class="k">${esc(it.k)}</span>` : ''}</div>`)).join('');
     document.body.appendChild(m);
-    const w = m.offsetWidth, h = m.offsetHeight;
-    m.style.left = Math.max(2, Math.min(x, innerWidth - w - 4)) + 'px';
-    m.style.top = Math.max(2, Math.min(y, innerHeight - h - 4)) + 'px';
+    const zz = P6.uiZoom ? P6.uiZoom() : 1; x /= zz; y /= zz;
+    const w = m.offsetWidth, h = m.offsetHeight, iw = innerWidth / zz, ih = innerHeight / zz;
+    m.style.left = Math.max(2, Math.min(x, iw - w - 4)) + 'px';
+    m.style.top = Math.max(2, Math.min(y, ih - h - 4)) + 'px';
     const killDeeper = () => document.querySelectorAll('.pmenu').forEach((e) => { if (+e.dataset.level > level) e.remove(); });
     m.addEventListener('mouseover', (e) => {
       const pi = e.target.closest('.pi'); if (!pi) return;
@@ -247,11 +248,12 @@
     const F = App.cfg;
     const body = `<div class="grid2"><div class="fld"><label>${esc(t('language'))}</label><select id="pf_l"><option value="ar"${F.lang === 'ar' ? ' selected' : ''}>العربية</option><option value="en"${F.lang === 'en' ? ' selected' : ''}>English</option></select></div>
       <div class="fld"><label>${esc(t('theme'))}</label><select id="pf_t"><option value="p6"${F.theme === 'p6' ? ' selected' : ''}>P6 Classic</option><option value="light"${F.theme === 'light' ? ' selected' : ''}>${esc(t('th_light'))}</option><option value="dark"${F.theme === 'dark' ? ' selected' : ''}>${esc(t('th_dark'))}</option></select></div></div>
+      <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('ui_size'))}</label><select id="pf_z">${['auto', 70, 80, 90, 100, 110, 125, 150].map((z) => `<option value="${z}"${String(F.uiScale == null ? 'auto' : F.uiScale) === String(z) ? ' selected' : ''}>${z === 'auto' ? esc(t('ui_auto')) : z + '%'}</option>`).join('')}</select></div>
       <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('user'))}</label><input id="pf_u" dir="auto" value="${esc(F.user || 'USER')}"></div>
       <label class="chk" style="margin-top:10px"><input type="checkbox" id="pf_a"${F.auto ? ' checked' : ''}> ${esc(t('auto_schedule'))}</label>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="pf_reset">${esc(t('reset_layout'))}</button><button class="btn sm dng" id="pf_wipe">${esc(t('wipe_data'))}</button></div>`;
     const m = modal({ title: t('prefs'), cls: 'mid', body, buttons: [{ label: t('cancel'), fn: () => {} }, { label: t('save'), cls: 'pri', fn: (c, el) => {
-      F.auto = $('#pf_a', el).checked; F.user = $('#pf_u', el).value.trim() || 'USER'; F.theme = $('#pf_t', el).value; const l = $('#pf_l', el).value; App.saveCfg(); App.setLang(l);
+      F.auto = $('#pf_a', el).checked; F.user = $('#pf_u', el).value.trim() || 'USER'; F.theme = $('#pf_t', el).value; F.uiScale = $('#pf_z', el).value; App.applyScale && App.applyScale(); const l = $('#pf_l', el).value; App.saveCfg(); App.setLang(l);
     } }] });
     m.el.addEventListener('click', async (e) => {
       if (e.target.id === 'pf_reset') { App.applyLayout('classic'); App.cfg.show.spot = false; App.saveCfg(); m.close(); }

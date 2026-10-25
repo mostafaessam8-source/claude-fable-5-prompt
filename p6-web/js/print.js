@@ -60,10 +60,11 @@
     if (wantGantt && c.fit) px = Math.max(0.2, (innerW - (wantTable ? Math.min(tableW, innerW * 0.55) : 0) - 8) / span);
     if (wantGantt) { g = ganttSvg(rows, px, RH); ganttW = g.W; }
     const thead = cols.map((x) => `<div class="pvh" style="width:${x.w}px">${esc(x.title || t('col_' + x.k))}</div>`).join('');
-    const trs = rows.map((row) => {
+    const wbsPb = P6.normGrp && P6.normGrp(App.cfg).levels.some((L) => L.by === 'wbs' && L.pbreak);
+    const trs = rows.map((row, ri) => {
       const lvl = row.kind !== 't' ? row.level % 5 : -1;
       const style = row.kind !== 't' ? `background:${WCOL[lvl][0]};color:${WCOL[lvl][1]};font-weight:700` : '';
-      return `<div class="pvr" style="height:${RH}px;${style}">${cols.map((x, i) => `<div class="pvc" style="width:${x.w}px">${i === 0 ? '<span style="display:inline-block;width:' + row.level * 10 + 'px"></span>' : ''}${esc(row.kind !== 't' && i === 0 ? row.w.name : cellText(x.k, row))}</div>`).join('')}</div>`;
+      return `${(row.pb || (row.kind === 'w' && row.level === 0 && wbsPb && ri > 0)) ? '<div class="pvpb" title="Page break"></div>' : ''}<div class="pvr" style="height:${RH}px;${style}">${cols.map((x, i) => `<div class="pvc" style="width:${x.w}px">${i === 0 ? '<span style="display:inline-block;width:' + row.level * 10 + 'px"></span>' : ''}${esc(row.kind !== 't' && i === 0 ? row.w.name : cellText(x.k, row))}</div>`).join('')}</div>`;
     }).join('');
     const sheetW = (wantTable ? tableW : 0) + (wantGantt ? ganttW : 0);
     const scale = c.fit ? Math.min(1, innerW / sheetW) : 1;

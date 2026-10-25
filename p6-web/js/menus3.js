@@ -119,6 +119,19 @@
     });
   };
 
+
+  // ---- UI size / resolution: Auto fits narrow screens, or pick a fixed size (stored in cfg.uiScale) ----
+  P6.uiZoom = () => { const z = parseFloat(document.documentElement.style.zoom); return z > 0 ? z : 1; };
+  App.applyScale = function () {
+    const v = F().uiScale == null ? 'auto' : F().uiScale; let z = 1;
+    if (v === 'auto') z = innerWidth < 1400 ? Math.max(0.7, Math.round((innerWidth / 1400) * 20) / 20) : 1; else z = Math.max(0.6, Math.min(1.6, parseFloat(v) / 100 || 1));
+    document.documentElement.style.zoom = z === 1 ? '' : String(z); document.documentElement.style.setProperty('--uz', String(z));
+    if (App.p && App.refresh) { App.refresh(); App.drawLayoutBar && App.drawLayoutBar(); }
+  };
+  addEventListener('resize', () => { if ((F().uiScale == null || F().uiScale === 'auto') && !App._rz) { App._rz = setTimeout(() => { App._rz = 0; App.applyScale(); }, 250); } });
+
+  document.addEventListener('wheel', (e) => { const d = e.target.closest && e.target.closest('.dtabs'); if (d && d.scrollWidth > d.clientWidth) { d.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); } }, { passive: false });
+
   // ---- Gantt chart right-click menu ----
   App.chartMenu = function (x, y) {
     const sub = (l, i, fn, o) => Object.assign({ l, i, fn }, o || {});
