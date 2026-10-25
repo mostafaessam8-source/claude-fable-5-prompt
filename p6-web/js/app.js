@@ -40,6 +40,8 @@
   S.dbAlias = () => { try { return localStorage.getItem('p6web.db') || 'Default'; } catch (e) { return 'Default'; } };
   S.dbNameOf = (al) => (al === 'Default' ? 'p6web' : 'p6web-' + al);
   S.lastKey = () => (S.dbAlias() === 'Default' ? 'p6web.last' : 'p6web.last.' + S.dbAlias());
+  const spanOf = (p) => { let lo = Infinity, hi = -Infinity; for (const tk of p.tasks) { if (tk.es != null && tk.es < lo) lo = tk.es; if (tk.ef != null && tk.ef > hi) hi = tk.ef; } return [p.start != null ? p.start : lo === Infinity ? null : lo, p.finish != null ? p.finish : hi === -Infinity ? null : hi]; };
+  S.spanOf = spanOf;
   let _db = null;
   function db() {
     if (_db) return _db;
@@ -65,7 +67,7 @@
     try {
       const p = S.p;
       const data = json(p), m = p.meta || {};
-      await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: p.start, finish: p.finish, dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data }));
+      await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: spanOf(p)[0], finish: spanOf(p)[1], dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data }));
       if (p.xer && rawSaved !== p.id) { await idb('raw', 'readwrite', (st) => st.put(p.xer, p.id)); rawSaved = p.id; }
       localStorage.setItem(API.lastKey(), p.id);
       S.dirty = false; loadRecent();
@@ -1081,7 +1083,7 @@
       seg(`${esc(t('portfolio'))}: <b>${esc(S.cfg.portfolio || t('all_projects'))}</b>`), seg(`${esc(t('access_mode'))}: <b>${esc(t('local'))}</b>`),
       seg(`${esc(t('data_date'))}: <b>${fmtD(p.dataDate)}</b>`), seg(`${esc(t('baseline'))}: <b>${esc(bl ? (p.blName || t('saved_baseline')) : t('current_project'))}</b>`),
       seg(`${esc(t('user'))}: <b>${esc(S.cfg.user || 'USER')}</b>`), seg(`${esc(t('db'))}: <b>${esc(API.dbAlias())}</b>`),
-      seg(`${esc(t('start'))}: <b>${fmtD(p.start)}</b>`), seg(`${esc(t('finish'))}: <b>${fmtD(p.finish)}</b>`),
+      seg(`${esc(t('start'))}: <b>${fmtD(spanOf(p)[0])}</b>`), seg(`${esc(t('finish'))}: <b>${fmtD(spanOf(p)[1])}</b>`),
       seg(`${esc(t('progress'))}: <b>${ru.pct || 0}%</b> (${done}/${p.tasks.length})`), seg(`${esc(t('critical'))}: <b style="color:var(--danger)">${crit}</b>`),
       p.loops && p.loops.length ? `<span class="warn">⚠ ${esc(t('loops_found', p.loops.slice(0, 3).join(', ')))}</span>` : '',
       p.imported ? `<span title="${esc(t('imported_hint'))}">ⓘ ${esc(t('file_dates'))}</span>` : '',
