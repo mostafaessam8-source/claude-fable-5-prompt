@@ -84,7 +84,7 @@
     const sh = F().show, act = App.win === 'activities';
     return [
       sub(t('layout'), '', null, { sub: viewSubs }), '-',
-      sub(dt('mi_bars'), 'bars', () => D.barsDialog()), sub(dt('mi_barsopts'), 'bars', () => D.barsDialog()), sub(dt('columns'), 'columns', () => D.columns()), sub(dt('mi_timescale'), 'timescale', () => D.timescaleDialog()),
+      sub(dt('mi_bars'), 'bars', () => D.barsDialog()), sub(dt('mi_barsopts'), 'bars', () => D.barsDialog()), sub(t('show_rels'), 'rel', () => App.toggleShow('rels'), { ck: sh.rels !== false }), sub(dt('columns'), 'columns', () => D.columns()), sub(dt('mi_timescale'), 'timescale', () => D.timescaleDialog()),
       sub(t('spotlight'), '', () => App.toggleShow('spot'), { ck: !!sh.spot }), sub(t('mi_progressline'), '', () => { F().pline = !F().pline; App.saveCfg(); App.refresh(); }, { ck: !!F().pline }),
       sub(t('mi_attach'), '', null, { sub: [sub(t('mi_attach_show'), 'attach', () => { F().attach = !F().attach; App.saveCfg(); App.refresh(); }, { ck: !!F().attach })] }),
       sub(dt('mi_tablefont'), 'font', () => D.tableFont()), sub(t('mi_network'), '', null, { dis: !act, sub: [sub(t('mi_trace'), 'network', () => App.setDock('network'))] }), sub(dt('mi_bottomopts'), '', () => D.bottomOptions()), '-',
@@ -110,6 +110,7 @@
       ['sort', 'group_sort', () => D.groupSort(), () => [sub(t('group_sort'), 'sort', () => D.groupSort()), sub(t('sort_by') + '…', 'sort', () => D.sortDialog()), '-', sub(t('default'), '', () => { F().grp = null; F().sorts = null; F().sort = 'code'; F().sortDir = 1; App.saveCfg(); App.refresh(); })]],
       ['linenum', 'mi_linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, () => [sub(t('mi_linenum'), 'linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, { ck: !!F().lineNo })]]
     ];
+    { const w = document.createElement('span'); w.className = 'split'; w.innerHTML = `<button class="ib rels-tg${F().show.rels !== false ? ' on' : ''}" title="${esc(t('show_rels'))}">${P6.icon('rel')}</button>`; w.firstChild.onclick = () => App.toggleShow('rels'); tb.appendChild(w); }
     defs.push(['xlsx', 'mi_xlsx', () => App.exportXlsx(), () => [sub(t('mi_xlsx_sel'), 'xlsx', () => App.exportXlsx('sel'), { dis: !App.sel.size }), sub(t('mi_xlsx_all'), 'xlsx', () => App.exportXlsx('all'))]]);
     defs.forEach(([icon, label, click, menu]) => {
       const w = document.createElement('span'); w.className = 'split';
@@ -170,7 +171,7 @@
     const sub = (l, i, fn, o) => Object.assign({ l, i, fn }, o || {});
     App.popMenu([
       sub(t('mi_actdetails'), 'actdetails', () => { F().dock = 'details'; App.showDetails && App.showDetails(); }), '-',
-      sub(dt('mi_bars'), 'bars', () => D.barsDialog()), sub(dt('mi_barsopts'), 'bars', () => D.barsDialog()), sub(dt('mi_timescale'), 'timescale', () => D.timescaleDialog()),
+      sub(dt('mi_bars'), 'bars', () => D.barsDialog()), sub(dt('mi_barsopts'), 'bars', () => D.barsDialog()), sub(t('show_rels'), 'rel', () => App.toggleShow('rels'), { ck: F().show.rels !== false }), sub(dt('mi_timescale'), 'timescale', () => D.timescaleDialog()),
       sub(t('mi_attach'), '', null, { sub: [sub(t('mi_attach_show'), 'attach', () => { F().attach = !F().attach; App.saveCfg(); App.refresh(); }, { ck: !!F().attach })] })
     ], x, y);
   };
