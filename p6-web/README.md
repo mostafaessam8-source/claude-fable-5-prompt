@@ -28,6 +28,9 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 ## الاختصارات / Keyboard shortcuts
 Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحددة (بالعناوين) كنص بفواصل Tab يُلصق مباشرة في Excel، وCtrl+Shift+C ينسخ الجدول كله. إضافة لاختصارات P6: F9، Ctrl+Num ±، Home/End، PageUp/Down، وغيرها — القائمة الكاملة في Help ▸ Keyboard Shortcuts.
 
+## تصدير Excel (.xlsx)
+زر Excel في شريط الأدوات (أو Edit ← Export Selection/All to Excel، أو كليك يمين): ينشئ ملف .xlsx حقيقي بتجميع Excel (Outline) حسب مستويات الـ WBS، وألوان الـ WBS، وإزاحة، وتواريخ وأرقام فعلية، وصف عناوين مثبت وفلتر. المحدد أكثر من صف يُصدَّر، وإلا يُصدَّر الكل.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
