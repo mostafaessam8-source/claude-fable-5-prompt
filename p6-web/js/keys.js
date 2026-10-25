@@ -68,6 +68,15 @@
   const wbsRows = () => App.selWbs ? App.selWbs() : [];
   const setCollapsed = (on) => { const ws = wbsRows(); if (!ws.length) return false; ws.forEach((w) => (on ? App.collapsed.add(w.id) : App.collapsed.delete(w.id))); App.refresh(); return true; };
 
+  // Shortcuts must work on any keyboard layout (e.g. Arabic sends "ش" for the A key): re-dispatch Ctrl/Alt+letter by physical key
+  addEventListener('keydown', (e) => {
+    if (!e.isTrusted || !(e.ctrlKey || e.metaKey || e.altKey) || !/^Key[A-Z]$/.test(e.code || '') || /^[a-z]$/i.test(e.key)) return;
+    const ae = document.activeElement || {};
+    if (/INPUT|TEXTAREA|SELECT/.test(ae.tagName || '') || ae.isContentEditable) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    (e.target || document.body).dispatchEvent(new KeyboardEvent('keydown', { key: e.shiftKey ? e.code.slice(3) : e.code.slice(3).toLowerCase(), code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, shiftKey: e.shiftKey, bubbles: true, cancelable: true }));
+  }, true);
+
   addEventListener('keydown', (e) => {
     if (!App.p || modalOpen()) return;
     const k = e.key, mod = e.ctrlKey || e.metaKey, ty = typing();
