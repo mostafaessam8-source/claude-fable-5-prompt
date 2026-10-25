@@ -34,3 +34,9 @@ A bilingual (English/Arabic) 6-month PTE Academic study site with a daily plan, 
 ## 📄 License
 
 Provided for research and reference. The original Fable 5 prompt is the property of Anthropic; the generalized adaptations are offered as-is for your own projects.
+
+## 📊 Also in this repo: P6 Web — Schedule Studio (Primavera P6 viewer / editor)
+
+A static web app (no build) that opens, edits, schedules and exports Primavera P6 files (XER / PMXML) with a P6-style
+Gantt, baseline, progress update, S-curve and Arabic / English UI. See [`p6-web/README.md`](p6-web/README.md);
+published at `/p6-web/` by the Pages workflow.

@@ -1,0 +1,121 @@
+ERMHDR	8.4	2026-10-21	Project	admin	admin	P6Web	Project Management	USD
+%T	CURRTYPE
+%F	curr_id	decimal_digit_cnt	curr_symbol	decimal_symbol	digit_group_symbol	pos_curr_fmt_type	neg_curr_fmt_type	curr_type	curr_short_name	group_digit_cnt	base_exch_rate
+%R	1	2	$	.	,	#1.1	(#1.1)	US Dollar	USD	3	1
+%T	PROJECT
+%F	proj_id	fy_start_month_num	rsrc_self_add_flag	allow_complete_flag	rsrc_multi_assign_flag	checkout_flag	project_flag	step_complete_flag	cost_qty_recalc_flag	batch_sum_flag	name_sep_char	def_complete_pct_type	proj_short_name	clndr_id	task_code_base	task_code_step	priority_num	wbs_max_sum_level	strgy_priority_num	critical_drtn_hr_cnt	def_cost_per_qty	last_recalc_date	plan_start_date	plan_end_date	scd_end_date	add_date	def_duration_type	task_code_prefix	def_qty_type	add_by_name	def_task_type	act_pct_link_flag	critical_path_type	def_rollup_dates_flag	use_project_baseline_flag
+%R	1	1	Y	Y	Y	N	Y	N	N	Y	.	CP_Drtn	Station Building – Sample	1	1000	10	10	0	500	0	0	2026-05-14 08:00	2026-03-01 08:00		2027-01-25 16:00	2026-10-21 00:00	DT_FixedDUR2	A	QT_Hour	admin	TT_Task	Y	CT_TotFloat	Y	N
+%T	CALENDAR
+%F	clndr_id	default_flag	clndr_name	proj_id	base_clndr_id	last_chng_date	clndr_type	day_hr_cnt	week_hr_cnt	month_hr_cnt	year_hr_cnt	rsrc_private	clndr_data
+%R	1	Y	Standard Calendar				CA_Base	8	40	172	2080	N	(0||CalendarData()((0||DaysOfWeek()((0||1()((0||0(s|08:00|f|16:00)())))(0||2()((0||0(s|08:00|f|16:00)())))(0||3()((0||0(s|08:00|f|16:00)())))(0||4()((0||0(s|08:00|f|16:00)())))(0||5()((0||0(s|08:00|f|16:00)())))(0||6()())(0||7()())))(0||VIEW(ShowTotal|Y)())(0||Exceptions()())))
+%T	PROJWBS
+%F	wbs_id	proj_id	obs_id	seq_num	est_wt	proj_node_flag	sum_data_flag	status_code	wbs_short_name	wbs_name	phase_id	parent_wbs_id	ev_user_pct	ev_etc_user_value	orig_cost	indep_remain_total_cost	ann_dscnt_rate_pct	dscnt_period_cd	indep_remain_work_qty	anticip_start_date	anticip_end_date	ev_compute_type	ev_etc_compute_type
+%R	1	1		0	1	Y	Y	WS_Open	STN	Station Building – Sample												EC_Cmp_pct	EE_Rem_hr
+%R	101	1		1	1	N	Y	WS_Open	STN.1	Pre-construction		1										EC_Cmp_pct	EE_Rem_hr
+%R	102	1		2	1	N	Y	WS_Open	STN.2	Civil Works		1										EC_Cmp_pct	EE_Rem_hr
+%R	103	1		3	1	N	Y	WS_Open	STN.2.1	Substructure		102										EC_Cmp_pct	EE_Rem_hr
+%R	104	1		4	1	N	Y	WS_Open	STN.2.2	Superstructure		102										EC_Cmp_pct	EE_Rem_hr
+%R	105	1		5	1	N	Y	WS_Open	STN.3	MEP Works		1										EC_Cmp_pct	EE_Rem_hr
+%R	106	1		6	1	N	Y	WS_Open	STN.4	Finishes		1										EC_Cmp_pct	EE_Rem_hr
+%R	107	1		7	1	N	Y	WS_Open	STN.5	Testing & Handover		1										EC_Cmp_pct	EE_Rem_hr
+%T	TASK
+%F	task_id	proj_id	wbs_id	clndr_id	phys_complete_pct	rev_fdbk_flag	est_wt	lock_plan_flag	auto_compute_act_flag	complete_pct_type	task_type	duration_type	status_code	task_code	task_name	rsrc_id	total_float_hr_cnt	free_float_hr_cnt	remain_drtn_hr_cnt	act_work_qty	remain_work_qty	target_work_qty	target_drtn_hr_cnt	target_equip_qty	act_equip_qty	remain_equip_qty	cstr_date	act_start_date	act_end_date	late_start_date	late_end_date	expect_end_date	early_start_date	early_end_date	restart_date	reend_date	target_start_date	target_end_date	rem_late_start_date	rem_late_end_date	cstr_type	priority_type	suspend_date	resume_date	float_path	float_path_order	cstr_date2	cstr_type2	driving_path_flag
+%R	108	1	101	1	0	N	1	N	Y	CP_Drtn	TT_Mile	DT_FixedDUR2	TK_Complete	A1000	Notice to Proceed				0				0					2026-03-01 08:00	2026-03-01 16:00				2026-03-01 08:00	2026-03-01 16:00			2026-03-01 08:00	2026-03-01 16:00				PT_Normal							N
+%R	109	1	101	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A1010	Mobilization & site setup				0				80					2026-03-01 08:00	2026-03-17 16:00				2026-03-01 08:00	2026-03-17 16:00			2026-03-01 08:00	2026-03-12 16:00				PT_Normal							N
+%R	110	1	101	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A1020	Shop drawings approval				0				160					2026-03-04 08:00	2026-04-01 16:00				2026-03-04 08:00	2026-04-01 16:00			2026-03-01 08:00	2026-03-26 16:00				PT_Normal							N
+%R	111	1	101	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A1030	Procurement – reinforcement steel				0				200					2026-03-29 08:00	2026-05-05 16:00				2026-03-29 08:00	2026-05-05 16:00			2026-03-29 08:00	2026-04-30 16:00				PT_Normal							N
+%R	112	1	101	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Active	A1040	Procurement – MEP long-lead items		416	240	200				480					2026-04-02 08:00		2026-07-27 08:00	2026-08-30 16:00		2026-05-14 08:00	2026-06-17 16:00	2026-05-14 08:00	2026-06-17 16:00	2026-03-29 08:00	2026-06-18 16:00	2026-07-27 08:00	2026-08-30 16:00		PT_Normal							N
+%R	113	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A2000	Site clearing & survey				0				40					2026-03-15 08:00	2026-03-24 16:00				2026-03-15 08:00	2026-03-24 16:00			2026-03-15 08:00	2026-03-19 16:00				PT_Normal							N
+%R	114	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A2010	Excavation				0				96					2026-03-22 08:00	2026-04-10 16:00				2026-03-22 08:00	2026-04-10 16:00			2026-03-22 08:00	2026-04-06 16:00				PT_Normal							N
+%R	115	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A2020	Blinding concrete				0				32					2026-04-07 08:00	2026-04-17 16:00				2026-04-07 08:00	2026-04-17 16:00			2026-04-07 08:00	2026-04-12 16:00				PT_Normal							N
+%R	116	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A2030	Footing reinforcement				0				80					2026-05-03 08:00	2026-05-19 16:00				2026-05-03 08:00	2026-05-19 16:00			2026-05-03 08:00	2026-05-14 16:00				PT_Normal							N
+%R	117	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Complete	A2040	Footing formwork				0				64					2026-04-13 08:00	2026-04-27 16:00				2026-04-13 08:00	2026-04-27 16:00			2026-04-13 08:00	2026-04-22 16:00				PT_Normal							N
+%R	118	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_Active	A2050	Pour footings		0	0	24				48					2026-05-10 08:00		2026-05-20 08:00	2026-05-24 16:00		2026-05-20 08:00	2026-05-24 16:00	2026-05-20 08:00	2026-05-24 16:00	2026-05-17 08:00	2026-05-24 16:00	2026-05-20 08:00	2026-05-24 16:00		PT_Normal							N
+%R	119	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A2060	Curing & strip footings		0	0	56				56							2026-05-25 08:00	2026-06-02 16:00		2026-05-25 08:00	2026-06-02 16:00	2026-05-25 08:00	2026-06-02 16:00	2026-05-25 08:00	2026-06-02 16:00	2026-05-25 08:00	2026-06-02 16:00		PT_Normal							N
+%R	120	1	103	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A2070	Backfilling & compaction		0	0	64				64							2026-06-03 08:00	2026-06-14 16:00		2026-06-03 08:00	2026-06-14 16:00	2026-06-03 08:00	2026-06-14 16:00	2026-06-03 08:00	2026-06-14 16:00	2026-06-03 08:00	2026-06-14 16:00		PT_Normal							N
+%R	121	1	104	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A3000	Columns – ground floor		0	0	120				120							2026-06-15 08:00	2026-07-05 16:00		2026-06-15 08:00	2026-07-05 16:00	2026-06-15 08:00	2026-07-05 16:00	2026-06-15 08:00	2026-07-05 16:00	2026-06-15 08:00	2026-07-05 16:00		PT_Normal							N
+%R	122	1	104	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A3010	Slab – first floor		0	0	144				144							2026-07-06 08:00	2026-07-29 16:00		2026-07-06 08:00	2026-07-29 16:00	2026-07-06 08:00	2026-07-29 16:00	2026-07-06 08:00	2026-07-29 16:00	2026-07-06 08:00	2026-07-29 16:00		PT_Normal							N
+%R	123	1	104	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A3020	Columns – first floor		0	0	96				96							2026-07-30 08:00	2026-08-16 16:00		2026-07-30 08:00	2026-08-16 16:00	2026-07-30 08:00	2026-08-16 16:00	2026-07-30 08:00	2026-08-16 16:00	2026-07-30 08:00	2026-08-16 16:00		PT_Normal							N
+%R	124	1	104	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A3030	Roof slab		168	0	144				144							2026-09-15 08:00	2026-10-08 16:00		2026-08-17 08:00	2026-09-09 16:00	2026-08-17 08:00	2026-09-09 16:00	2026-08-17 08:00	2026-09-09 16:00	2026-09-15 08:00	2026-10-08 16:00		PT_Normal							N
+%R	125	1	104	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A3040	Structural steel – canopy		928	144	160				160							2026-12-29 08:00	2027-01-25 16:00		2026-07-20 08:00	2026-08-16 16:00	2026-07-20 08:00	2026-08-16 16:00	2026-07-20 08:00	2026-08-16 16:00	2026-12-29 08:00	2027-01-25 16:00		PT_Normal							N
+%R	126	1	104	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDUR2	TK_NotStart	A3050	Structure complete		784	784	0				0							2027-01-25 08:00	2027-01-25 16:00		2026-09-09 08:00	2026-09-09 16:00	2026-09-09 08:00	2026-09-09 16:00	2026-09-09 08:00	2026-09-09 16:00	2027-01-25 08:00	2027-01-25 16:00		PT_Normal							N
+%R	127	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4000	MEP first-fix – ground floor		176	160	160				160							2026-08-31 08:00	2026-09-27 16:00		2026-07-30 08:00	2026-08-26 16:00	2026-07-30 08:00	2026-08-26 16:00	2026-07-30 08:00	2026-08-26 16:00	2026-08-31 08:00	2026-09-27 16:00		PT_Normal							N
+%R	128	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4010	MEP first-fix – first floor		168	0	160				160							2026-10-04 08:00	2026-10-29 16:00		2026-09-03 08:00	2026-09-30 16:00	2026-09-03 08:00	2026-09-30 16:00	2026-09-03 08:00	2026-09-30 16:00	2026-10-04 08:00	2026-10-29 16:00		PT_Normal							N
+%R	129	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4020	HVAC equipment installation		424	424	120				120							2026-11-24 08:00	2026-12-14 16:00		2026-09-10 08:00	2026-09-30 16:00	2026-09-10 08:00	2026-09-30 16:00	2026-09-10 08:00	2026-09-30 16:00	2026-11-24 08:00	2026-12-14 16:00		PT_Normal							N
+%R	130	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4030	Electrical panels & cabling		224	0	200				200							2026-11-10 08:00	2026-12-14 16:00		2026-10-01 08:00	2026-11-04 16:00	2026-10-01 08:00	2026-11-04 16:00	2026-10-01 08:00	2026-11-04 16:00	2026-11-10 08:00	2026-12-14 16:00		PT_Normal							N
+%R	131	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4040	Fire fighting system		240	0	144				144							2026-11-12 08:00	2026-12-07 16:00		2026-10-01 08:00	2026-10-26 16:00	2026-10-01 08:00	2026-10-26 16:00	2026-10-01 08:00	2026-10-26 16:00	2026-11-12 08:00	2026-12-07 16:00		PT_Normal							N
+%R	132	1	105	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A4050	Low-current & signage systems		352	352	112				112							2026-12-30 08:00	2027-01-18 16:00		2026-10-29 08:00	2026-11-17 16:00	2026-10-29 08:00	2026-11-17 16:00	2026-10-29 08:00	2026-11-17 16:00	2026-12-30 08:00	2027-01-18 16:00		PT_Normal							N
+%R	133	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5000	Masonry & blockwork		0	0	240				240							2026-08-17 08:00	2026-09-27 16:00		2026-08-17 08:00	2026-09-27 16:00	2026-08-17 08:00	2026-09-27 16:00	2026-08-17 08:00	2026-09-27 16:00	2026-08-17 08:00	2026-09-27 16:00		PT_Normal							N
+%R	134	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5010	Plastering		0	0	192				192							2026-09-28 08:00	2026-10-29 16:00		2026-09-28 08:00	2026-10-29 16:00	2026-09-28 08:00	2026-10-29 16:00	2026-09-28 08:00	2026-10-29 16:00	2026-09-28 08:00	2026-10-29 16:00		PT_Normal							N
+%R	135	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5020	Waterproofing – roof		440	200	64				64							2026-11-26 08:00	2026-12-07 16:00		2026-09-10 08:00	2026-09-21 16:00	2026-09-10 08:00	2026-09-21 16:00	2026-09-10 08:00	2026-09-21 16:00	2026-11-26 08:00	2026-12-07 16:00		PT_Normal							N
+%R	136	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5030	Floor tiling & stone		48	48	192				192							2026-11-09 08:00	2026-12-10 16:00		2026-11-01 08:00	2026-12-02 16:00	2026-11-01 08:00	2026-12-02 16:00	2026-11-01 08:00	2026-12-02 16:00	2026-11-09 08:00	2026-12-10 16:00		PT_Normal							N
+%R	137	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5040	False ceiling		0	0	112				112							2026-11-01 08:00	2026-11-18 16:00		2026-11-01 08:00	2026-11-18 16:00	2026-11-01 08:00	2026-11-18 16:00	2026-11-01 08:00	2026-11-18 16:00	2026-11-01 08:00	2026-11-18 16:00		PT_Normal							N
+%R	138	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5050	Painting		0	0	144				144							2026-11-19 08:00	2026-12-14 16:00		2026-11-19 08:00	2026-12-14 16:00	2026-11-19 08:00	2026-12-14 16:00	2026-11-19 08:00	2026-12-14 16:00	2026-11-19 08:00	2026-12-14 16:00		PT_Normal							N
+%R	139	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5060	Doors, windows & glazing		248	248	128				128							2026-12-14 08:00	2027-01-04 16:00		2026-11-01 08:00	2026-11-22 16:00	2026-11-01 08:00	2026-11-22 16:00	2026-11-01 08:00	2026-11-22 16:00	2026-12-14 08:00	2027-01-04 16:00		PT_Normal							N
+%R	140	1	106	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A5070	External works & landscaping		240	240	160				160							2026-12-08 08:00	2027-01-04 16:00		2026-10-27 08:00	2026-11-23 16:00	2026-10-27 08:00	2026-11-23 16:00	2026-10-27 08:00	2026-11-23 16:00	2026-12-08 08:00	2027-01-04 16:00		PT_Normal							N
+%R	141	1	107	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A6000	Testing & commissioning		0	0	120				120							2026-12-15 08:00	2027-01-04 16:00		2026-12-15 08:00	2027-01-04 16:00	2026-12-15 08:00	2027-01-04 16:00	2026-12-15 08:00	2027-01-04 16:00	2026-12-15 08:00	2027-01-04 16:00		PT_Normal							N
+%R	142	1	107	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A6010	Snagging & punch list		0	0	80				80							2027-01-05 08:00	2027-01-18 16:00		2027-01-05 08:00	2027-01-18 16:00	2027-01-05 08:00	2027-01-18 16:00	2027-01-05 08:00	2027-01-18 16:00	2027-01-05 08:00	2027-01-18 16:00		PT_Normal							N
+%R	143	1	107	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A6020	As-built drawings & O&M manuals		80	80	120				120							2026-12-29 08:00	2027-01-18 16:00		2026-12-15 08:00	2027-01-04 16:00	2026-12-15 08:00	2027-01-04 16:00	2026-12-15 08:00	2027-01-04 16:00	2026-12-29 08:00	2027-01-18 16:00		PT_Normal							N
+%R	144	1	107	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDUR2	TK_NotStart	A6030	Final inspection & handover		0	0	40				40							2027-01-19 08:00	2027-01-25 16:00		2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00		PT_Normal							N
+%R	145	1	107	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDUR2	TK_NotStart	A6040	Project Complete		0	0	0				0							2027-01-25 08:00	2027-01-25 16:00		2027-01-25 08:00	2027-01-25 16:00	2027-01-25 08:00	2027-01-25 16:00	2027-01-25 08:00	2027-01-25 16:00	2027-01-25 08:00	2027-01-25 16:00		PT_Normal							N
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	proj_id	pred_proj_id	pred_type	lag_hr_cnt	comments	float_path	aref	arls
+%R	146	109	108	1	1	PR_FS	0				
+%R	147	110	108	1	1	PR_FS	0				
+%R	148	111	110	1	1	PR_FS	0				
+%R	149	112	110	1	1	PR_FS	0				
+%R	150	113	109	1	1	PR_FS	0				
+%R	151	114	113	1	1	PR_FS	0				
+%R	152	115	114	1	1	PR_FS	0				
+%R	153	116	115	1	1	PR_FS	0				
+%R	154	116	111	1	1	PR_FS	0				
+%R	155	117	115	1	1	PR_FS	0				
+%R	156	118	116	1	1	PR_FS	0				
+%R	157	118	117	1	1	PR_FS	0				
+%R	158	119	118	1	1	PR_FS	0				
+%R	159	120	119	1	1	PR_FS	0				
+%R	160	121	120	1	1	PR_FS	0				
+%R	161	122	121	1	1	PR_FS	0				
+%R	162	123	122	1	1	PR_FS	0				
+%R	163	124	123	1	1	PR_FS	0				
+%R	164	125	122	1	1	PR_SS	80				
+%R	165	126	124	1	1	PR_FS	0				
+%R	166	126	125	1	1	PR_FS	0				
+%R	167	127	122	1	1	PR_FS	0				
+%R	168	127	112	1	1	PR_FS	0				
+%R	169	128	124	1	1	PR_FS	-40				
+%R	170	128	127	1	1	PR_SS	40				
+%R	171	129	124	1	1	PR_FS	0				
+%R	172	129	112	1	1	PR_FS	0				
+%R	173	130	128	1	1	PR_FS	0				
+%R	174	131	128	1	1	PR_FS	0				
+%R	175	132	130	1	1	PR_FS	-40				
+%R	176	133	123	1	1	PR_FS	0				
+%R	177	134	133	1	1	PR_FS	0				
+%R	178	134	127	1	1	PR_FS	0				
+%R	179	135	124	1	1	PR_FS	0				
+%R	180	136	134	1	1	PR_FS	0				
+%R	181	137	128	1	1	PR_FS	0				
+%R	182	137	134	1	1	PR_FS	0				
+%R	183	138	137	1	1	PR_FS	0				
+%R	184	138	136	1	1	PR_SS	64				
+%R	185	139	134	1	1	PR_FS	0				
+%R	186	140	135	1	1	PR_FS	0				
+%R	187	140	131	1	1	PR_FS	0				
+%R	188	141	130	1	1	PR_FS	0				
+%R	189	141	131	1	1	PR_FS	0				
+%R	190	141	129	1	1	PR_FS	0				
+%R	191	141	138	1	1	PR_FS	0				
+%R	192	142	141	1	1	PR_FS	0				
+%R	193	142	139	1	1	PR_FS	0				
+%R	194	142	140	1	1	PR_FS	0				
+%R	195	143	138	1	1	PR_FS	0				
+%R	196	144	142	1	1	PR_FS	0				
+%R	197	144	143	1	1	PR_FS	0				
+%R	198	144	132	1	1	PR_FS	0				
+%R	199	145	144	1	1	PR_FS	0				
+%T	RSRC
+%F	rsrc_id	parent_rsrc_id	clndr_id	role_id	shift_id	user_id	pobs_id	guid	rsrc_seq_num	email_addr	employee_code	office_phone	other_phone	rsrc_name	rsrc_short_name	rsrc_title_name	def_qty_per_hr	cost_qty_type	ot_factor	active_flag	auto_compute_act_flag	def_cost_qty_link_flag	ot_flag	curr_id	unit_id	rsrc_type	location_id	rsrc_notes	load_tasks_flag	level_flag	last_checksum
+%T	TASKRSRC
+%F	taskrsrc_id	task_id	proj_id	cost_qty_link_flag	role_id	acct_id	rsrc_id	pobs_id	skill_level	remain_qty	target_qty	remain_qty_per_hr	target_lag_drtn_hr_cnt	target_qty_per_hr	act_ot_qty	act_reg_qty	relag_drtn_hr_cnt	ot_factor	cost_per_qty	target_cost	act_reg_cost	act_ot_cost	remain_cost	act_start_date	act_end_date	restart_date	reend_date	target_start_date	target_end_date	rem_late_start_date	rem_late_end_date	rollup_dates_flag	target_crv	remain_crv	actual_crv	ts_pend_act_end_flag	guid	rsrc_type
+%E
