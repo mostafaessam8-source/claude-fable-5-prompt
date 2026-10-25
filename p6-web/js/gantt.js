@@ -73,7 +73,7 @@
         walk(monthStart, nextMonth, mLabel, top);
         let d = d0 - P6.dow(d0);
         for (; d <= d1; d += 7) bot.push([d, d + 7, String(P6.ymd(d).d)]);
-      } else if (px >= 2.2) {
+      } else if (px >= 0.9) {
         const qStart = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3), 1); };
         const qNext = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3) + 3, 1); };
         walk(qStart, qNext, (d) => { const y = P6.ymd(d); return 'Qtr ' + (Math.floor(y.m / 3) + 1) + ', ' + y.y; }, top);
