@@ -469,3 +469,7 @@ table.pw thead th{position:sticky;top:0;z-index:2;background:linear-gradient(#fd
 .grpdlg{min-width:760px}
 @media print{.pvpb{break-before:page}}
 .pvpb{border-top:2px dashed #c33;height:0}
+
+/* never let the browser's own select-all paint the whole app blue */
+#app{-webkit-user-select:none;user-select:none}
+#app input,#app textarea,#app select,#app [contenteditable=true],#details .selectable{-webkit-user-select:text;user-select:text}
