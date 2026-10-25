@@ -131,7 +131,7 @@
       // rows
       for (let i = r0; i <= r1; i++) {
         const r = rows[i], y = i * rh - sy;
-        if (r.kind === 'w') s += `<rect class="row-wbs" x="0" y="${y}" width="${W}" height="${rh}"/>`;
+        if (r.kind !== 't') s += `<rect class="row-wbs" x="0" y="${y}" width="${W}" height="${rh}"/>`;
         if (o.spot && r.kind === 't' && o.spot.has(r.id)) s += `<rect class="row-spot" x="0" y="${y}" width="${W}" height="${rh}"/>`;
         if (o.sel.has(r.kind + r.id)) s += `<rect class="row-sel2" x="0" y="${y}" width="${W}" height="${rh}"/>`;
         s += `<line class="gl" x1="0" x2="${W}" y1="${y + rh}" y2="${y + rh}"/>`;
@@ -151,7 +151,7 @@
         const r = rows[i], y = rowY(i);
         const base = sh.base ? 1 : 0;
         const by = y + (base ? 3 : 6), bh = 12;
-        if (r.kind === 'w') {
+        if (r.kind !== 't') {
           const ru = o.ru.get(r.id);
           if (!ru || ru.es == null) continue;
           const x1 = X(ru.es), x2 = X(ru.ef + 1);
@@ -257,7 +257,7 @@
         const row = this.o.rows[i];
         if (!grp) { if (row) cb().onSelect && cb().onSelect(row, e); return; }
         const id = +grp.dataset.id;
-        const rr = grp.dataset.k === 'w' ? this.o.rows.find((r) => r.kind === 'w' && r.id === id) : this.o.rows[this.rowIdx.get(id)];
+        const rr = grp.dataset.k === 'w' ? this.o.rows.find((r) => r.kind !== 't' && String(r.id) === grp.dataset.id) : this.o.rows[this.rowIdx.get(id)];
         if (rr && cb().onSelect) cb().onSelect(rr, e);
         const act = e.target.dataset.act;
         if (!act || grp.dataset.k === 'w') return;

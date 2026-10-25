@@ -128,6 +128,7 @@
   const fmtN = (n) => (n == null || !isFinite(n) ? '' : (Math.round(n * 100) / 100).toString());
   const selTasks = () => [...S.sel].filter((k) => k[0] === 't').map((k) => taskById(+k.slice(1))).filter(Boolean);
   const selWbs = () => [...S.sel].filter((k) => k[0] === 'w').map((k) => wbsById(+k.slice(1))).filter(Boolean);
+  const wbsOfRow = (r) => (r ? (r.kind === 't' ? r.t.wbs : r.kind === 'w' ? r.id : null) : null);
   const focusRow = () => (S.focus ? S.rows[S.rowIdx.get(S.focus)] : null);
   const focusTask = () => { const r = focusRow(); return r && r.kind === 't' ? r.t : null; };
   function toast(msg, err) {
@@ -148,6 +149,7 @@
   // ================= view model =================
   function matchesFilter(tk) {
     const f = S.cfg.filter;
+    if (!P6.filterMatch(tk, S.cfg, S.p)) return false;
     if (f.mode === 'critical' && !tk.crit) return false;
     if (f.mode === 'IP' && tk.status !== 'IP') return false;
     if (f.mode === 'NS' && tk.status !== 'NS') return false;
@@ -183,35 +185,18 @@
     P6.rebuildDynCols(p);
     if (S.cfg.cols.some((c) => c.k === 'fp' || c.k === 'fpo')) P6.floatPaths(p, p.floatPathMax || 10);
     S.ctx = P6.makeCtx(p, S.ru);
-    const filtering = !!(S.cfg.filter.text || S.cfg.filter.mode !== 'all');
+    const filtering = !!(S.cfg.filter.text || S.cfg.filter.mode !== 'all' || (S.cfg.fsel && S.cfg.fsel.length));
+    const sorts = P6.normSorts(S.cfg);
     const cmp = (a, b) => {
-      const va = sortVal(a, S.cfg.sort), vb = sortVal(b, S.cfg.sort);
-      const c = typeof va === 'string' || typeof vb === 'string' ? nat(va, vb) : (va == null ? 1e12 : va) - (vb == null ? 1e12 : vb);
-      return (c || nat(a.code, b.code)) * S.cfg.sortDir;
+      for (const s of sorts) {
+        const va = sortVal(a, s.k), vb = sortVal(b, s.k);
+        const c = typeof va === 'string' || typeof vb === 'string' ? nat(va, vb) : (va == null ? 1e12 : va) - (vb == null ? 1e12 : vb);
+        if (c) return c * s.dir;
+      }
+      return nat(a.code, b.code);
     };
-    const rows = [];
-    if (S.cfg.group === 'none') {
-      for (const tk of p.tasks.filter(matchesFilter).sort(cmp)) rows.push({ kind: 't', id: tk.id, level: 0, t: tk });
-    } else {
-      const kids = new Map(); p.wbs.forEach((w) => kids.set(w.id, []));
-      const roots = [];
-      for (const w of p.wbs) { if (w.parent != null && kids.has(w.parent)) kids.get(w.parent).push(w); else roots.push(w); }
-      const ws = (a, b) => (a.seq - b.seq) || nat(a.code, b.code);
-      const tby = new Map();
-      for (const tk of p.tasks) if (matchesFilter(tk)) { if (!tby.has(tk.wbs)) tby.set(tk.wbs, []); tby.get(tk.wbs).push(tk); }
-      const cnt = new Map();
-      const count = (w) => { let n = (tby.get(w.id) || []).length; for (const k of kids.get(w.id)) n += count(k); cnt.set(w.id, n); return n; };
-      roots.forEach(count);
-      const walk = (w, lv) => {
-        if (filtering && !cnt.get(w.id)) return;
-        const ks = kids.get(w.id).sort(ws), ts = (tby.get(w.id) || []).sort(cmp);
-        rows.push({ kind: 'w', id: w.id, level: lv, w, hasKids: ks.length + ts.length > 0 });
-        if (S.collapsed.has(w.id) && !filtering) return;
-        for (const k of ks) walk(k, lv + 1);
-        for (const tk of ts) rows.push({ kind: 't', id: tk.id, level: lv + 1, t: tk });
-      };
-      roots.sort(ws).forEach((w) => walk(w, 0));
-    }
+    const G = P6.normGrp(S.cfg);
+    const rows = P6.buildRows(p, G, S, { cmp, matches: matchesFilter, filtering, nat });
     S.depth = Math.max(1, ...rows.map((r) => r.level));
     S.spot = new Set();
     if (S.cfg.show.spot) for (const tk of p.tasks) if (tk.status !== 'C' && tk.es != null && tk.es <= p.dataDate + 14 && tk.ef >= p.dataDate) S.spot.add(tk.id);
@@ -237,8 +222,9 @@
   function cellOf(k, row) {
     const r = ALL_COLS[k] || {};
     const out = { text: '', cls: r.r ? 'r' : '', ro: !r.ed };
-    if (row.kind === 'w') {
+    if (row.kind !== 't') {
       const ru = S.ru.get(row.id) || {};
+      if (S.cfg.grp && S.cfg.grp.totals === false && k !== 'code' && k !== 'name' && k !== treeKey()) return out;
       out.ro = true;
       switch (k) {
         case 'code': out.text = treeKey() === 'code' ? row.w.name : row.w.code; out.ro = false; break;
@@ -462,6 +448,7 @@
     syncHScroll();
   }
   function syncHScroll() { const hin = $('#tHead .hin'); if (hin) hin.style.transform = `translateX(${-$('#tBody').scrollLeft}px)`; }
+  const SW0 = () => (S.cfg.grp && S.cfg.grp.shrink ? 6 : 12);
   const WCOL = [['#0000ff', '#fff'], ['#66ff66', '#000'], ['#ffff00', '#000'], ['#0000ff', '#fff'], ['#ff0000', '#fff']];
   function renderRows() {
     const body = $('#tBody'), box = $('#tRows');
@@ -473,11 +460,13 @@
     let s = '';
     for (let i = r0; i <= r1; i++) {
       const row = S.rows[i], key = row.kind + row.id;
-      const cls = 'tr' + (row.kind === 'w' ? ' wbs wl' + (row.level % WCOL.length) : '') + (row.kind === 't' && S.spot && S.spot.has(row.id) ? ' spot' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
-      s += `<div class="${cls}" style="top:${i * RH}px;width:${totalColsW()}px" data-i="${i}" data-key="${key}"${row.kind === 't' ? ' draggable="true"' : ''}>`;
-      const tk = treeKey(), G = (S.depth || 1) * 12;
+      const wpal = (S.cfg.grp && S.cfg.grp.wbsColors) || null, gcol = row.kind === 'g' ? row.color : row.kind === 'w' ? (wpal ? wpal[row.level % wpal.length] : WCOL[row.level % WCOL.length][0]) : null;
+      const cls = 'tr' + (row.kind !== 't' ? ' wbs wl' + (row.level % WCOL.length) : '') + (row.kind === 't' && S.spot && S.spot.has(row.id) ? ' spot' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
+      s += `<div class="${cls}" style="top:${i * RH}px;width:${totalColsW()}px${gcol ? ';background:' + gcol + ';color:' + P6.contrast(gcol) : ''}" data-i="${i}" data-key="${key}"${row.kind === 't' ? ' draggable="true"' : ''}>`;
+      const tk = treeKey(), G = (S.depth || 1) * SW0();
       let stripes = '';
-      for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${(S.cfg.lineNo ? LNW : 0) + L * 12}px;background:${WCOL[L % WCOL.length][0]}"></i>`;
+      const SW = S.cfg.grp && S.cfg.grp.shrink ? 6 : 12;
+      for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${(S.cfg.lineNo ? LNW : 0) + L * SW}px;width:${SW}px;background:${(S.levelColors && S.levelColors[L]) || WCOL[L % WCOL.length][0]}"></i>`;
       s += stripes;
       if (S.cfg.lineNo) s += `<div class="td r ro" style="width:${LNW}px;position:relative;z-index:2;background:#f3f3f3;color:#555">${i + 1}</div>`;
       for (const c of S.cfg.cols) {
@@ -485,9 +474,9 @@
         const cur = S.cell && S.cell.key === key && S.cell.k === c.k;
         let inner;
         if (c.k === tk) {
-          const pad = row.kind === 'w' ? row.level * 12 + 4 : G + 4;
+          const pad = row.kind !== 't' ? row.level * SW0() + 4 : G + 4;
           let lead = '';
-          if (row.kind === 'w') lead = `<span class="tw" data-tw="${row.id}">${row.hasKids ? (S.collapsed.has(row.id) ? '+' : '−') : ''}</span><i class="ico wbs"></i>`;
+          if (row.kind !== 't') lead = `<span class="tw" data-tw="${row.id}">${row.hasKids ? (S.collapsed.has(row.id) ? '+' : '−') : ''}</span><i class="ico wbs"></i>`;
           else lead = `${S.cfg.attach && (row.t.docs || []).length ? '<span class="clip" title="' + esc(t('tab_docs')) + '">📎</span>' : ''}<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.crit && row.t.status !== 'C' ? 'crit' : row.t.status === 'C' ? 'done' : row.t.status === 'IP' ? 'ip' : 'task'}"></i>`;
           inner = `<span style="padding-inline-start:${pad}px;display:inline-flex;align-items:center;min-width:0;width:100%">${lead}<span style="unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis">${esc(ci.text)}</span></span>`;
         } else inner = `<span style="unicode-bidi:plaintext">${esc(ci.text)}</span>`;
@@ -542,6 +531,7 @@
     const col = ALL_COLS[k];
     const ci = cellOf(k, row);
     if (!col || !col.ed || ci.ro) return;
+    if (row.kind === 'g') return;
     if (row.kind === 'w' && ((k !== 'code' && k !== 'name') || (k === 'name' && treeKey() !== 'name'))) return;
     if (row.kind === 't' && row.t.status === 'C' && (k === 'rem')) return;
     ensureVisible(i);
@@ -597,7 +587,7 @@
     body.tabIndex = 0;
     body.addEventListener('mousedown', (e) => {
       const tw = e.target.closest('[data-tw]');
-      if (tw) { const id = +tw.dataset.tw; if (S.collapsed.has(id)) S.collapsed.delete(id); else S.collapsed.add(id); refresh(); e.preventDefault(); return; }
+      if (tw) { const raw = tw.dataset.tw, id = /^\d+$/.test(raw) ? +raw : raw; if (S.collapsed.has(id)) S.collapsed.delete(id); else S.collapsed.add(id); refresh(); e.preventDefault(); return; }
       const tr = e.target.closest('.tr'); if (!tr) return;
       if (e.target.closest('input,select')) return;
       const row = S.rows[+tr.dataset.i]; if (!row) return;
@@ -648,7 +638,7 @@
       if (e.target.classList.contains('rz')) return;
       const th = e.target.closest('.th'); if (!th) return;
       const k = th.dataset.k; if (!ALL_COLS[k].sort) return;
-      if (S.cfg.sort === k) S.cfg.sortDir *= -1; else { S.cfg.sort = k; S.cfg.sortDir = 1; }
+      S.cfg.sorts = null; if (S.cfg.sort === k) S.cfg.sortDir *= -1; else { S.cfg.sort = k; S.cfg.sortDir = 1; }
       saveCfg(); refresh();
     });
     head.addEventListener('mousedown', (e) => {
@@ -671,7 +661,7 @@
     body.addEventListener('drop', (e) => {
       if (!dragKeys) return;
       const tr = e.target.closest('.tr'); if (!tr) return; e.preventDefault();
-      const row = S.rows[+tr.dataset.i]; const w = row.kind === 'w' ? row.id : row.t.wbs;
+      const row = S.rows[+tr.dataset.i]; const w = wbsOfRow(row); if (w == null) return;
       const ids = dragKeys; dragKeys = null;
       mutate(t('move_to_wbs'), () => { S.p.tasks.forEach((x) => { if (ids.includes(x.id)) x.wbs = w; }); }, { noSched: true });
     });
@@ -683,7 +673,7 @@
   Object.assign(API, {
     addTask() {
       const fr = focusRow();
-      let wbs = fr ? (fr.kind === 'w' ? fr.id : fr.t.wbs) : (S.p.wbs.find((w) => w.parent == null) || S.p.wbs[0]).id;
+      let wbs = (wbsOfRow(fr) != null ? wbsOfRow(fr) : (S.p.wbs.find((w) => w.parent == null) || S.p.wbs[0]).id);
       let id = null;
       mutate(t('add_activity'), () => {
         const tk = P6.newTask(S.p, wbs, { name: t('new_activity'), dur: 5, rem: 5, seq: S.p.tasks.length + 1 });
@@ -693,13 +683,13 @@
       if (id != null) { S.collapsed.delete(wbs); refresh(); const key = 't' + id; S.sel = new Set([key]); S.focus = key; S.anchor = key; S.cell = { key, k: 'name' }; selChanged(); ensureVisible(S.rowIdx.get(key)); startEdit(key, 'name'); }
     },
     addMilestone() {
-      const fr = focusRow(); let wbs = fr ? (fr.kind === 'w' ? fr.id : fr.t.wbs) : S.p.wbs[0].id; let id;
+      const fr = focusRow(); let wbs = wbsOfRow(fr) != null ? wbsOfRow(fr) : S.p.wbs[0].id; let id;
       mutate(t('add_milestone'), () => { const tk = P6.newTask(S.p, wbs, { name: t('new_milestone'), type: 'TT_Mile', dur: 0, rem: 0 }); tk.seq = Math.max(0, ...S.p.tasks.map((x) => x.seq)) + 1; S.p.tasks.push(tk); id = tk.id; });
       if (id != null) { const key = 't' + id; S.sel = new Set([key]); S.focus = key; selChanged(); startEdit(key, 'name'); }
     },
     addWbs() {
       const fr = focusRow();
-      let parent = fr ? (fr.kind === 'w' ? fr.id : fr.t.wbs) : S.p.wbs[0].id;
+      let parent = wbsOfRow(fr) != null ? wbsOfRow(fr) : S.p.wbs[0].id;
       let id;
       mutate(t('add_wbs'), () => {
         const par = wbsById(parent);
@@ -770,10 +760,11 @@
     indent() { wbsMove(1); }, outdent() { wbsMove(-1); },
     collapseAll() { S.p.wbs.forEach((w) => { if (w.parent != null) S.collapsed.add(w.id); }); refresh(); },
     expandAll() { S.collapsed.clear(); refresh(); },
-    schedule() {
+    runSchedule() {
       if (S.p.imported) { const trial = JSON.parse(snapshot()); P6.schedule(trial); let n = 0; const m = new Map(S.p.tasks.map((x) => [x.id, x])); for (const x of trial.tasks) { const b = m.get(x.id); if (b && (b.es !== x.es || b.ef !== x.ef)) n++; } if (n) toast(t('resched_diff', n, S.p.tasks.length), true); }
       S.undo.push({ label: t('schedule'), snap: snapshot() }); S.redo = [];
       P6.schedule(S.p); S.p.imported = false; scheduleSave(); refresh(); toast(t('scheduled') + (S.p.loops.length ? ' ⚠ ' + t('loops_found', S.p.loops.join(', ')) : '')); },
+    schedule() { if (API.dialogs && API.dialogs.schedule) API.dialogs.schedule(); else API.runSchedule(); },
     doUndo: undo, doRedo: redo
   });
   function wbsMove(dir) {
@@ -803,7 +794,7 @@
     return {
       onSelect(row, e) { selectRow(row, e); S.cell = { key: row.kind + row.id, k: 'name' }; },
       onOpen(row) { selectRow(row, null); App.showDetails(); },
-      onCtx(row, e) { if (!S.sel.has(row.kind + row.id)) selectRow(row, null); showCtx(e.clientX, e.clientY); },
+      onCtx(row, e) { if (!e.target.closest('.bargrp') && App.chartMenu) return App.chartMenu(e.clientX, e.clientY); if (!S.sel.has(row.kind + row.id)) selectRow(row, null); showCtx(e.clientX, e.clientY); },
       onMove(tk, dDay) {
         if (tk.status === 'C') return;
         const cal = calOf(tk);
@@ -866,7 +857,7 @@
     let body = '<div class="dbody">';
     const tk = fr && fr.kind === 't' ? fr.t : null;
     const strip = tk ? `<div class="dstrip"><span class="spin"><button data-act="prev" title="${esc(t('prev_act'))}">▲</button><button data-act="next" title="${esc(t('next_act'))}">▼</button></span><label>${esc(t('activity'))}</label><input readonly value="${esc(tk.code)}" style="width:130px" dir="auto"><input readonly value="${esc(tk.name)}" style="flex:1" dir="auto"><label>${esc(t('project'))}</label><input readonly value="${esc(S.p.name)}" style="width:220px" dir="auto"></div>` : '';
-    if (!fr) body += `<div class="empty">${esc(t('select_hint'))}</div>`;
+    if (!fr || fr.kind === 'g') body += `<div class="empty">${esc(t('select_hint'))}</div>`;
     else if (fr.kind === 'w') {
       body += `<div class="grid2">${fld(t('col_code'), inp('w.code', fr.w.code))}${fld(t('col_name'), inp('w.name', fr.w.name), 'w2')}${fld(t('parent_wbs'), sel('w.parent', fr.w.parent == null ? '' : fr.w.parent, [['', '—'], ...S.p.wbs.filter((x) => x.id !== fr.w.id).map((x) => [x.id, x.code + ' – ' + x.name])]))}</div>`;
     } else if (S.tab === 'general') {
@@ -925,7 +916,7 @@
   function detailsFocused() { const a = document.activeElement; return a && $('#details').contains(a) && /INPUT|SELECT|TEXTAREA/.test(a.tagName); }
   function detSignature() {
     const fr = focusRow();
-    if (!fr) return 'none|' + S.tab;
+    if (!fr || fr.kind === 'g') return 'none|' + S.tab;
     if (fr.kind === 'w') return 'w' + fr.id + '|' + S.p.wbs.length;
     const tk = fr.t;
     return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, tk.steps.map((s) => s.id + (s.done ? 1 : 0)).join('.'), ['topics', 'docs', 'expenses', 'risks', 'discuss'].map((k) => (tk[k] || []).length).join('.'), S.p.codeTypes.length, S.p.udfs.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
@@ -962,7 +953,7 @@
     el.addEventListener('contextmenu', (e) => { if (e.target.closest('.dtabs')) { e.preventDefault(); App.popMenu([{ l: t('customize_details') + '…', i: 'details', fn: () => App.dialogs.detTabs() }, { l: t('default'), fn: () => { S.cfg.detTabs = null; saveCfg(); renderDetails(); } }], e.clientX, e.clientY); } });
     el.addEventListener('change', (e) => {
       const x = e.target;
-      const fr = focusRow(); if (!fr) return;
+      const fr = focusRow(); if (!fr || fr.kind === 'g') return;
       if (fr.kind === 'w') {
         const f = x.dataset.f;
         mutate(t('edit'), () => { if (f === 'w.code') fr.w.code = x.value; else if (f === 'w.name') fr.w.name = x.value; else if (f === 'w.parent') { const np = x.value === '' ? null : +x.value; const desc = (id) => [id, ...S.p.wbs.filter((q) => q.parent === id).flatMap((q) => desc(q.id))]; if (np != null && desc(fr.w.id).includes(np)) return t('err_loop'); fr.w.parent = np; } }, { noSched: true });
@@ -1136,6 +1127,7 @@
       b.onclick = it[2];
       tb.appendChild(b);
     });
+    if (App.addSplitTools) App.addSplitTools(tb);
   }
   function updateToolbarState() {
     const tb = $('#toolbar'); if (!tb) return;
@@ -1183,7 +1175,7 @@
   };
   function applyLayout(k) {
     const L = LAYOUTS[k]; if (!L) return;
-    S.cfg.layout = k; S.cfg.cols = L.cols.map((c) => ({ k: c, w: ALL_COLS[c].w })); S.cfg.group = L.group; S.cfg.sort = L.sort; S.cfg.sortDir = 1; S.cfg.filter.mode = L.mode;
+    S.cfg.layout = k; S.cfg.grp = null; S.cfg.sorts = null; S.cfg.cols = L.cols.map((c) => ({ k: c, w: ALL_COLS[c].w })); S.cfg.group = L.group; S.cfg.sort = L.sort; S.cfg.sortDir = 1; S.cfg.filter.mode = 'all'; S.cfg.fsel = L.mode === 'critical' ? ['crit'] : L.mode === 'late' ? ['bvar'] : []; S.cfg.fany = false;
     saveCfg(); refresh(); buildMenus(); buildLayoutBar();
   }
   API.applyLayout = applyLayout; API.buildLayoutBar = () => buildLayoutBar();
@@ -1267,7 +1259,7 @@
         ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
       ['tools', [
-        ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.schedule(); }, '', F.auto], '-',
+        ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.runSchedule(); }, '', F.auto], '-',
         ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['fp_title', () => App.dialogs.floatPaths()], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
       ['admin', [['act_codes_global', () => App.dialogs.codes('acg')], ['act_codes_project', () => App.dialogs.codes('acp')], ['act_pcodes', () => App.dialogs.codes('pc')], ['udf_manage', () => App.dialogs.udf()], '-', ['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],

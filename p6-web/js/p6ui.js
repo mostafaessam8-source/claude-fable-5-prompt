@@ -69,7 +69,7 @@
   function pasteSel() {
     if (!clip || !clip.tasks.length) return App.toast(t('clip_empty'), true);
     const fr = App.rows[App.rowIdx.get(App.focus)];
-    const wbs = fr ? (fr.kind === 'w' ? fr.id : fr.t.wbs) : App.p.wbs[0].id;
+    const wbs = App.wbsOfRow(fr) != null ? App.wbsOfRow(fr) : App.p.wbs[0].id;
     const map = new Map(); let keys = [];
     App.mutate(t('paste'), () => {
       const p = App.p;
@@ -243,7 +243,6 @@
       <div class="fld"><label>${esc(t('order'))}</label><select id="gs_d">${o(1, t('sort_asc'), F.sortDir)}${o(-1, t('sort_desc'), F.sortDir)}</select></div></div>`;
     modal({ title: t('group_sort'), body, buttons: [{ label: t('cancel'), fn: () => {} }, { label: t('save'), cls: 'pri', fn: (c, el) => { F.group = $('#gs_g', el).value; F.sort = $('#gs_s', el).value; F.sortDir = +$('#gs_d', el).value; App.saveCfg(); App.refresh(); } }] });
   }
-  D.groupSort = groupSortDialog;
   D.prefs = function () {
     const F = App.cfg;
     const body = `<div class="grid2"><div class="fld"><label>${esc(t('language'))}</label><select id="pf_l"><option value="ar"${F.lang === 'ar' ? ' selected' : ''}>العربية</option><option value="en"${F.lang === 'en' ? ' selected' : ''}>English</option></select></div>
@@ -262,37 +261,29 @@
 
   // ================= layouts / filters strip =================
   function layoutName() { return App.cfg.layoutName || t('lay_' + App.cfg.layout); }
-  function filterName() { const m = App.cfg.filter.mode; return m === 'custom' ? t('filter_custom').replace('…', '') : t('f_' + m); }
+  function filterName() { return App.filterLabel ? App.filterLabel() : t('f_all'); }
   function layoutMenu(x, y) {
     const F = App.cfg, saved = F.layouts || {};
-    popMenu([
+    const views = [
       ...Object.keys(App.LAYOUTS).map((k) => ({ l: t('lay_' + k), ck: !F.layoutName && F.layout === k, fn: () => { F.layoutName = ''; App.applyLayout(k); } })),
       ...(Object.keys(saved).length ? ['-', ...Object.keys(saved).map((n) => ({ l: n, ck: F.layoutName === n, fn: () => applySaved(n) }))] : []), '-',
       { l: dots(t('save_layout')), fn: saveLayoutAs },
-      { l: t('delete_layout'), dis: !Object.keys(saved).length, sub: Object.keys(saved).map((n) => ({ l: n, fn: () => { delete F.layouts[n]; if (F.layoutName === n) F.layoutName = ''; App.saveCfg(); App.drawLayoutBar(); } })) }, '-',
-      { l: dots(t('group_sort')), fn: groupSortDialog }, { l: dots(t('columns')), fn: () => D.columns() },
-      { l: t('bars'), sub: App.BARS.map(([k, l]) => ({ l: t(l), ck: !!F.show[k], fn: () => App.toggleShow(k) })) },
-      { l: t('timescale'), sub: App.TS.map(([k, v]) => ({ l: t('ts_' + k), ck: App.nearestTs() === v, fn: () => App.setTimescale(v) })) }
-    ], x, y);
+      { l: t('delete_layout'), dis: !Object.keys(saved).length, sub: Object.keys(saved).map((n) => ({ l: n, fn: () => { delete F.layouts[n]; if (F.layoutName === n) F.layoutName = ''; App.saveCfg(); App.drawLayoutBar(); } })) }
+    ];
+    popMenu(App.layoutMenuItems(views), x, y);
   }
   function saveLayoutAs() {
     const n = prompt(t('layout_name'), layoutName()); if (!n) return;
     const F = App.cfg; F.layouts = F.layouts || {};
-    F.layouts[n] = { cols: clone(F.cols), group: F.group, sort: F.sort, sortDir: F.sortDir, mode: F.filter.mode, custom: F.filter.custom || null, pxIdx: F.pxIdx, show: clone(F.show) };
+    F.layouts[n] = { cols: clone(F.cols), group: F.group, grp: clone(F.grp || null), sorts: clone(F.sorts || null), sort: F.sort, sortDir: F.sortDir, mode: F.filter.mode, fsel: clone(F.fsel || []), fany: !!F.fany, custom: F.filter.custom || null, pxIdx: F.pxIdx, show: clone(F.show) };
     F.layoutName = n; App.saveCfg(); App.drawLayoutBar(); App.toast(t('layout_saved'));
   }
   function applySaved(n) {
     const F = App.cfg, L = (F.layouts || {})[n]; if (!L) return;
-    F.cols = clone(L.cols); F.group = L.group; F.sort = L.sort; F.sortDir = L.sortDir; F.filter.mode = L.mode; F.filter.custom = L.custom; F.pxIdx = L.pxIdx; F.show = Object.assign(F.show, L.show); F.layoutName = n;
+    F.cols = clone(L.cols); F.group = L.group; if (L.grp) F.grp = clone(L.grp); if (L.sorts) F.sorts = clone(L.sorts); F.sort = L.sort; F.sortDir = L.sortDir; F.filter.mode = L.mode; F.fsel = clone(L.fsel || []); F.fany = !!L.fany; F.filter.custom = L.custom; F.pxIdx = L.pxIdx; F.show = Object.assign(F.show, L.show); F.layoutName = n;
     App.saveCfg(); App.refresh(); App.buildMenus();
   }
-  function filterMenu(x, y) {
-    const F = App.cfg.filter;
-    popMenu([
-      ...['all', 'critical', 'IP', 'NS', 'C', 'late', 'neg'].map((m) => ({ l: t('f_' + m), ck: F.mode === m, fn: () => { F.mode = m; App.saveCfg(); App.refresh(); } })), '-',
-      { l: t('filter_custom'), ck: F.mode === 'custom', fn: () => D.filter() }
-    ], x, y);
-  }
+  function filterMenu(x, y) { popMenu(App.filterMenuItems(), x, y); }
   App.drawLayoutBar = function () {
     const lb = $('#layoutbar'); if (!lb) return;
     const tw = $('#tablePane').offsetWidth + 5;

@@ -91,3 +91,19 @@ function mk(week) {
   assert.equal(F(p.tasks[1].es), '2026-01-12');
 }
 console.log('engine tests passed');
+{ // schedule options
+  const { p, add, link } = mk();
+  const A = add('A', 5), B = add('B', 3), C = add('C', 4), Dd = add('D', 2);
+  link(A, B); link(A, C); link(B, Dd); link(C, Dd);
+  p.schedOpts = { crit: 'longest' }; P6.schedule(p);
+  assert.deepEqual([A, B, C, Dd].map((t) => t.crit), [true, false, true, true]);
+  p.schedOpts = { tfMode: 'smallest', crit: 'tf' }; P6.schedule(p);
+  assert.equal(B.tf, 1);
+  const E = add('E', 1); link(Dd, E, 'FS', 2); p.schedOpts = { lagCal: '24h' }; P6.schedule(p);
+  p.schedOpts = { lagCal: 'pred' }; P6.schedule(p); const e1 = E.es;
+  p.schedOpts = { lagCal: '24h' }; P6.schedule(p);
+  assert.ok(E.es <= e1);
+  p.schedOpts = { openCrit: true }; const F2 = add('F', 3); P6.schedule(p); assert.equal(F2.tf, 0);
+  assert.ok(p.schedStats && p.schedStats.count === 6);
+}
+console.log('schedule options ok');

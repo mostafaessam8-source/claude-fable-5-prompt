@@ -18,6 +18,13 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 * **View**: Layout ▸ (Open / Save / Save As)، Show on Top/Bottom، Bottom Layout Options، Bars، Columns، Time Scale، Filter By، Group and Sort، Progress Spotlight، **Progress Line**، Attachments، Line Numbers، Critical Path (driving)، **Check Schedule**، Table Font and Row، **Trace Logic** (Activity Network)، Hint Help، Status Bar، Zoom، Expand/Collapse/Collapse To، Toolbars.
 * لا يوجد: Launch (تطبيقات P6 الأخرى)، Lock Toolbars، قاعدة بيانات مشتركة/Access Mode (التطبيق محلي بالكامل). بيزلاين متعدد، Issues، Thresholds، Risks، Docs وDiscussion تُحفظ في المتصفح/JSON فقط وليس في XER.
 
+## Schedule / Filters / Group and Sort / قوائم Tools-Enterprise-Admin
+- **Schedule (F9)**: نافذة P6 (Data Date، Forecast start، Log to file/HTML، Overwrite/Append، View Log، **Options**: Retained Logic / Progress Override، Critical = Total Float أو Longest Path، Lag calendar، Total Float from).
+- **Filters**: Default / Global / User Defined، اختيار أكثر من فلتر مع All / Any، New/Modify لبناء فلتر بشروط، Make Global.
+- **Group and Sort**: حتى 8 مستويات (WBS بمستوياته، Status، Float، Activity Codes…)، ألوان وإزاحة وإجماليات، وSort متعدد. (خيار Page Break غير موجود عمداً.)
+- أزرار شريط الأدوات بأسهم منسدلة (Bars, Columns▾, Timescale, Filter▾, Group&Sort▾, #▾) وقوائم Layout وزر الفأرة الأيمن على الـ Gantt.
+- قوائم Tools / Enterprise / Admin بنفس ترتيب P6. الميزات الفعلية: Schedule, Check Schedule, Apply Actuals, Update Progress, Recalculate Costs, Global Change, Thresholds, Issues, Reports, Calendars, Codes, UDF, Roles, Cost Accounts. أما Level Resources وSummarize وVisualizer وPublish وEPS/OBS وغيرها فمعروضة في القائمة لكنها تظهر رسالة أنها غير متاحة في النسخة الثابتة.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).

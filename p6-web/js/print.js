@@ -61,9 +61,9 @@
     if (wantGantt) { g = ganttSvg(rows, px, RH); ganttW = g.W; }
     const thead = cols.map((x) => `<div class="pvh" style="width:${x.w}px">${esc(x.title || t('col_' + x.k))}</div>`).join('');
     const trs = rows.map((row) => {
-      const lvl = row.kind === 'w' ? row.level % 5 : -1;
-      const style = row.kind === 'w' ? `background:${WCOL[lvl][0]};color:${WCOL[lvl][1]};font-weight:700` : '';
-      return `<div class="pvr" style="height:${RH}px;${style}">${cols.map((x, i) => `<div class="pvc" style="width:${x.w}px">${i === 0 ? '<span style="display:inline-block;width:' + row.level * 10 + 'px"></span>' : ''}${esc(row.kind === 'w' && i === 0 ? row.w.name : cellText(x.k, row))}</div>`).join('')}</div>`;
+      const lvl = row.kind !== 't' ? row.level % 5 : -1;
+      const style = row.kind !== 't' ? `background:${WCOL[lvl][0]};color:${WCOL[lvl][1]};font-weight:700` : '';
+      return `<div class="pvr" style="height:${RH}px;${style}">${cols.map((x, i) => `<div class="pvc" style="width:${x.w}px">${i === 0 ? '<span style="display:inline-block;width:' + row.level * 10 + 'px"></span>' : ''}${esc(row.kind !== 't' && i === 0 ? row.w.name : cellText(x.k, row))}</div>`).join('')}</div>`;
     }).join('');
     const sheetW = (wantTable ? tableW : 0) + (wantGantt ? ganttW : 0);
     const scale = c.fit ? Math.min(1, innerW / sheetW) : 1;

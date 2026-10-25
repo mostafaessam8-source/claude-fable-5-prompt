@@ -192,7 +192,7 @@
   P6.regCell = function (k, row, c) {
     const d = D[k]; if (!d) return null;
     let v;
-    if (row.kind === 'w') {
+    if (row.kind !== 't') {
       if (k === 'wbsname') v = row.w.name; else if (k === 'wbs') v = row.w.code; else if (!d.vw) return { text: '', cls: '', v: null };
       else v = d.vw(c, row.w);
     } else v = d.v(c, row.t);
