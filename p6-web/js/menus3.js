@@ -110,6 +110,7 @@
       ['sort', 'group_sort', () => D.groupSort(), () => [sub(t('group_sort'), 'sort', () => D.groupSort()), sub(t('sort_by') + '…', 'sort', () => D.sortDialog()), '-', sub(t('default'), '', () => { F().grp = null; F().sorts = null; F().sort = 'code'; F().sortDir = 1; App.saveCfg(); App.refresh(); })]],
       ['linenum', 'mi_linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, () => [sub(t('mi_linenum'), 'linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, { ck: !!F().lineNo })]]
     ];
+    defs.push(['xlsx', 'mi_xlsx', () => App.exportXlsx(), () => [sub(t('mi_xlsx_sel'), 'xlsx', () => App.exportXlsx('sel'), { dis: !App.sel.size }), sub(t('mi_xlsx_all'), 'xlsx', () => App.exportXlsx('all'))]]);
     defs.forEach(([icon, label, click, menu]) => {
       const w = document.createElement('span'); w.className = 'split';
       w.innerHTML = `<button class="ib" title="${esc(t(label))}">${P6.icon(icon)}</button>${menu ? '<button class="ib arr" title="▾">▾</button>' : ''}`;

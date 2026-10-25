@@ -139,7 +139,7 @@
     const ts = App.selTasks(), ws = App.selWbs(), has = ts.length > 0, one = ts.length === 1;
     return [
       { i: 'add', l: t('add_activity'), k: 'Ins', fn: () => App.addTask() }, { i: 'mile', l: t('add_milestone'), fn: () => App.addMilestone() }, { i: 'wbsadd', l: t('add_wbs'), fn: () => App.addWbs() }, '-',
-      { i: 'cut', l: t('cut'), k: 'Ctrl+X', dis: !has, fn: cutSel }, { i: 'copy', l: t('copy'), k: 'Ctrl+C', dis: !has && !ws.length, fn: () => App.copySel() }, { i: 'copy', l: t('mi_copytable'), k: 'Ctrl+Shift+C', fn: () => App.copyTable(true) }, { i: 'paste', l: t('paste'), k: 'Ctrl+V', dis: !clip, fn: pasteSel },
+      { i: 'cut', l: t('cut'), k: 'Ctrl+X', dis: !has, fn: cutSel }, { i: 'copy', l: t('copy'), k: 'Ctrl+C', dis: !has && !ws.length, fn: () => App.copySel() }, { i: 'copy', l: t('mi_copytable'), k: 'Ctrl+Shift+C', fn: () => App.copyTable(true) }, { i: 'xlsx', l: t('mi_xlsx_sel'), dis: !App.sel.size, fn: () => App.exportXlsx('sel') }, { i: 'xlsx', l: t('mi_xlsx_all'), fn: () => App.exportXlsx('all') }, { i: 'paste', l: t('paste'), k: 'Ctrl+V', dis: !clip, fn: pasteSel },
       { i: 'copy', l: t('duplicate'), k: 'Ctrl+D', dis: !has, fn: () => App.duplicate() }, { i: 'del', l: t('delete'), k: 'Del', dis: !has && !ws.length, fn: () => App.del() }, '-',
       { i: 'indent', l: t('indent'), dis: !ws.length, fn: () => App.indent() }, { i: 'outdent', l: t('outdent'), dis: !ws.length, fn: () => App.outdent() }, { l: t('rename_wbs'), dis: ws.length !== 1, fn: renameWbs }, '-',
       { i: 'assign', l: t('assign'), dis: !has, sub: [
