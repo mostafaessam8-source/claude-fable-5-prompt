@@ -279,7 +279,7 @@
         sub(t('predecessors') + '…', 'pred', () => App.assignRel('p'), { dis: selT.length !== 1 }), sub(t('successors') + '…', 'succ', () => App.assignRel('s'), { dis: selT.length !== 1 }), sub(t('resources').replace('…', '') + '…', 'resources', () => App.assignResources(), { dis: !hasSel }),
         sub(t('col_cal'), 'calendar', null, { sub: (ready ? App.calendarMenu(selT) : []), dis: !hasSel }), sub(t('constraint') + '…', 'critical', () => App.constraintDialog(), { dis: !hasSel }), sub(t('move_to_wbs') + '…', 'wbs', () => App.moveToWbsDialog(), { dis: !hasSel })], false, !hasSel],
       ['link', () => App.link(), '', false, null, selT.length < 2], ['unlink', () => App.unlink(), '', false, null, !hasSel], '-',
-      ['mi_filldown', () => App.fillDown(), 'Ctrl+E', false, null, selT.length < 2], ['mi_selectall', () => App.selectAll(), 'Ctrl+A'], '-',
+      ['mi_filldown', () => App.fillDown(), 'Ctrl+E', false, null, selT.length < 2], ['mi_selectall', () => App.selectAll(), 'Ctrl+A'], ['mi_copytable', () => App.copyTable(true), 'Ctrl+Shift+C'], '-',
       ['mi_find', () => D.find(), 'Ctrl+F'], ['mi_findnext', () => App.findNext(), 'F3'], ['mi_replace', () => D.replace(), 'Ctrl+R'], ['mi_spell', () => App.toggleSpell(), 'F7', !!F().spell], '-',
       ['prefs', () => D.prefs()]
     ];
@@ -330,7 +330,7 @@
     return [['file', file], ['edit', edit], ['view', view], ['project', project], ['enterprise', enterprise], ['tools', tools], ['admin', admin], ['help', help]];
   };
   Object.assign(App.MENU_ICON || (App.MENU_ICON = {}), {
-    mi_add: 'add', mi_dissolve: 'dissolve', mi_renumber: 'renumber', mi_assign: 'assign', mi_filldown: 'filldown', mi_selectall: 'selectall', mi_find: 'find', mi_findnext: 'findnext', mi_replace: 'replace', mi_spell: 'spell', prefs: 'userprefs',
+    mi_add: 'add', mi_dissolve: 'dissolve', mi_renumber: 'renumber', mi_assign: 'assign', mi_filldown: 'filldown', mi_selectall: 'selectall', mi_copytable: 'copy', mi_find: 'find', mi_findnext: 'findnext', mi_replace: 'replace', mi_spell: 'spell', prefs: 'userprefs',
     win_activities: 'activities', mi_addactview: 'addactview', win_assign: 'resassign', win_wbs: 'wbswin', mi_assignbl: 'assignbl', mi_maintbl: 'maintbl', win_expenses: 'expenses', win_docs: 'docs', win_thresholds: 'thresholds', win_issues: 'issue', win_risks: 'risk', mi_setdefault: 'setdefault',
     mi_layout: 'layout', mi_showtop: 'showtop', mi_showbottom: 'showbottom', mi_bottomopts: 'bottomopts', mi_bars: 'bars', columns: 'columns', mi_timescale: 'timescale', mi_filterby: 'filter', group_sort: 'sort', spotlight: 'spot', mi_progressline: 'progressline', mi_attach: 'attach', mi_linenum: 'linenum', mi_critpath: 'critpath', mi_checksched: 'check', mi_tablefont: 'font', mi_network: 'network', mi_hint: 'hint', mi_statusbar: 'statusbar', mi_zoom: 'zoom', expand_all: 'expandall', collapse_all: 'collapseall', mi_collapseto: 'collapseto', mi_toolbars: 'toolbars', mi_resettb: 'resetbars',
     win_projects: 'projects', win_resources: 'people', mi_roles: 'roleico', mi_accounts: 'acctico', monitor_thresholds: 'thresholds', fp_title: 'trace', reports: 'report', schedule: 'calc', update_progress: 'update'

@@ -121,14 +121,15 @@
     const G = clone(P6.normGrp(App.cfg)); let selI = 0;
     const fields = P6.groupFields(App.p);
     const body = document.createElement('div'); body.className = 'grpdlg';
+    const acOpt = () => (fields.some(([k]) => /^ac:/.test(k)) ? '' : `<option value="__codes">${esc(t('grp_defcodes'))}</option>`);
     const rowsHtml = () => {
       const out = []; const lv = G.levels;
       lv.forEach((L, i) => {
         const wbs = L.by === 'wbs', color = wbs ? (G.wbsColors || WBS_PAL)[0] : (L.color || PAL[i % PAL.length]);
-        out.push(`<tr data-i="${i}" class="${selI === i ? 'on' : ''}"><td><select data-k="by">${fields.map(([k, l]) => `<option value="${esc(k)}"${L.by === k ? ' selected' : ''}>${esc(wbs && k === 'wbs' ? 'WBS ' + t('grp_level') + ' 1' : l)}</option>`).join('')}<option value="">${esc(t('grp_none'))}</option></select></td><td style="text-align:center"><input type="checkbox" data-k="indent"${L.indent !== false ? ' checked' : ''}></td><td><input data-k="toLevel" value="${esc(wbs ? L.toLevel || 'All' : '')}"${wbs ? '' : ' disabled'} style="width:70px"></td><td><input data-k="interval" value="${esc(L.interval || '')}" placeholder="${/^(es|ef)$/.test(L.by) ? 'Month' : /^(pct|tf|dur)$/.test(L.by) ? '10' : ''}" style="width:90px"></td><td style="text-align:center"><input type="checkbox" data-k="pbreak"${L.pbreak ? ' checked' : ''}></td><td><input type="color" data-k="color" value="${color}"> <span style="color:#666;font-size:11px">8 Arial</span></td></tr>`);
+        out.push(`<tr data-i="${i}" class="${selI === i ? 'on' : ''}"><td><select data-k="by">${fields.map(([k, l]) => `<option value="${esc(k)}"${L.by === k ? ' selected' : ''}>${esc(wbs && k === 'wbs' ? 'WBS ' + t('grp_level') + ' 1' : l)}</option>`).join('')}${acOpt()}<option value="">${esc(t('grp_none'))}</option></select></td><td style="text-align:center"><input type="checkbox" data-k="indent"${L.indent !== false ? ' checked' : ''}></td><td><input data-k="toLevel" value="${esc(wbs ? L.toLevel || 'All' : '')}"${wbs ? '' : ' disabled'} style="width:70px"></td><td><input data-k="interval" value="${esc(L.interval || '')}" placeholder="${/^(es|ef)$/.test(L.by) ? 'Month' : /^(pct|tf|dur)$/.test(L.by) ? '10' : ''}" style="width:90px"></td><td style="text-align:center"><input type="checkbox" data-k="pbreak"${L.pbreak ? ' checked' : ''}></td><td><input type="color" data-k="color" value="${color}"> <span style="color:#666;font-size:11px">8 Arial</span></td></tr>`);
         if (wbs) for (let w = 1; w < 5; w++) out.push(`<tr class="wl"><td style="color:#888;padding-inline-start:20px">WBS ${esc(t('grp_level'))} ${w + 1}</td><td></td><td></td><td></td><td></td><td><input type="color" data-w="${w}" value="${(G.wbsColors || WBS_PAL)[w]}"></td></tr>`);
       });
-      if (lv.length < 8) out.push(`<tr data-i="${lv.length}" class="${selI === lv.length ? 'on' : ''}"><td><select data-k="by" data-new="1"><option value="">—</option>${fields.map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('')}</select></td><td></td><td></td><td></td><td></td><td></td></tr>`);
+      if (lv.length < 8) out.push(`<tr data-i="${lv.length}" class="${selI === lv.length ? 'on' : ''}"><td><select data-k="by" data-new="1"><option value="">—</option>${fields.map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('')}${acOpt()}</select></td><td></td><td></td><td></td><td></td><td></td></tr>`);
       return out.join('');
     };
     const draw = () => {
@@ -144,6 +145,7 @@
     const apply = () => { App.cfg.grp = clone(G); App.saveCfg(); App.refresh(); App.drawLayoutBar && App.drawLayoutBar(); };
     body.addEventListener('change', (e) => {
       const x = e.target;
+      if (x.value === '__codes') { m.close(); D.codes('acg'); return; }
       if (x.id === 'gd_tot') G.totals = x.checked; else if (x.id === 'gd_grand') G.grand = x.checked; else if (x.id === 'gd_sum') G.summ = x.checked; else if (x.id === 'gd_shr') G.shrink = x.checked;
       else if (x.id === 'go_he' && G.levels[selI]) G.levels[selI].hideEmpty = x.checked; else if (x.id === 'go_al' && G.levels[selI]) G.levels[selI].alpha = x.checked;
       else if (x.dataset.sh && G.levels[selI]) { G.levels[selI].show = G.levels[selI].show || {}; G.levels[selI].show[x.dataset.sh] = x.checked; }
