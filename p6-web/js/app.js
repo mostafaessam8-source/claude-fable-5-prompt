@@ -27,8 +27,8 @@
     p: null, sel: new Set(), focus: null, anchor: null, cell: null, rows: [], rowIdx: new Map(), ru: new Map(),
     collapsed: new Set(), undo: [], redo: [], dirty: false, minDay: 0, maxDay: 0, tab: 'general',
     cfg: {
-      lang: 'ar', theme: 'light', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 700, detH: 230, detOpen: true,
-      show: { base: true, crit: true, rels: true, labels: true, float: false, today: true }, group: 'wbs', sort: 'code', sortDir: 1,
+      lang: 'ar', theme: 'p6', layout: 'classic', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 820, detH: 230, detOpen: true,
+      show: { base: true, crit: true, rels: true, labels: true, float: false, today: true, spot: false }, group: 'wbs', sort: 'code', sortDir: 1,
       auto: true, filter: { text: '', mode: 'all' }
     }
   });
@@ -36,7 +36,7 @@
   function loadCfg() {
     try {
       const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
-      if (c) { Object.assign(S.cfg, c); S.cfg.show = Object.assign({ base: true, crit: true, rels: true, labels: true, float: false, today: true }, c.show); S.cfg.filter = Object.assign({ text: '', mode: 'all' }, c.filter); }
+      if (c) { Object.assign(S.cfg, c); S.cfg.show = Object.assign({ base: true, crit: true, rels: true, labels: true, float: false, today: true, spot: false }, c.show); S.cfg.filter = Object.assign({ text: '', mode: 'all' }, c.filter); }
     } catch (e) { /* ignore */ }
     if (!S.cfg.cols.every((c) => ALL_COLS[c.k])) S.cfg.cols = DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w }));
   }
@@ -164,6 +164,19 @@
     if (f.mode === 'C' && tk.status !== 'C') return false;
     if (f.mode === 'late' && !(tk.status !== 'C' && tk.bf != null && tk.ef != null && tk.ef > tk.bf)) return false;
     if (f.mode === 'neg' && !(tk.tf != null && tk.tf < 0)) return false;
+    if (f.mode === 'custom' && f.custom && f.custom.conds && f.custom.conds.length) {
+      const test = (c) => {
+        let v = c.f === 'wbs' ? ((wbsById(tk.wbs) || {}).code || '') : c.f === 'es' ? tk.es : c.f === 'ef' ? tk.ef : tk[c.f];
+        let w = c.v;
+        if (c.f === 'es' || c.f === 'ef') w = P6.parseDate(c.v);
+        else if (['dur', 'rem', 'pct', 'tf', 'ff'].includes(c.f)) w = parseFloat(c.v);
+        if (typeof v === 'string' || typeof w === 'string') { v = String(v == null ? '' : v).toLowerCase(); w = String(w == null ? '' : w).toLowerCase(); }
+        if (v == null || w == null || (typeof w === 'number' && isNaN(w))) return false;
+        switch (c.op) { case 'has': return String(v).includes(String(w)); case 'eq': return v == w; case 'ne': return v != w; case 'gt': return v > w; case 'lt': return v < w; case 'ge': return v >= w; case 'le': return v <= w; default: return true; }
+      };
+      const r = f.custom.join === 'or' ? f.custom.conds.some(test) : f.custom.conds.every(test);
+      if (!r) return false;
+    }
     if (f.text) { const q = f.text.toLowerCase(); if (!(tk.code.toLowerCase().includes(q) || tk.name.toLowerCase().includes(q))) return false; }
     return true;
   }
@@ -205,6 +218,8 @@
       };
       roots.sort(ws).forEach((w) => walk(w, 0));
     }
+    S.spot = new Set();
+    if (S.cfg.show.spot) for (const tk of p.tasks) if (tk.status !== 'C' && tk.es != null && tk.es <= p.dataDate + 14 && tk.ef >= p.dataDate) S.spot.add(tk.id);
     S.rows = rows;
     S.rowIdx = new Map(rows.map((r, i) => [r.kind + r.id, i]));
     // timeline
@@ -405,7 +420,7 @@
   }
 
   // ================= table =================
-  const RH = 26;
+  const RH = 24;
   function totalColsW() { return S.cfg.cols.reduce((a, c) => a + c.w, 0); }
   function renderHead() {
     const h = $('#tHead');
@@ -430,7 +445,7 @@
     let s = '';
     for (let i = r0; i <= r1; i++) {
       const row = S.rows[i], key = row.kind + row.id;
-      const cls = 'tr' + (row.kind === 'w' ? ' wbs' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
+      const cls = 'tr' + (row.kind === 'w' ? ' wbs' : '') + (row.kind === 't' && S.spot && S.spot.has(row.id) ? ' spot' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
       s += `<div class="${cls}" style="top:${i * RH}px;width:${totalColsW()}px" data-i="${i}" data-key="${key}"${row.kind === 't' ? ' draggable="true"' : ''}>`;
       for (const c of S.cfg.cols) {
         const ci = cellOf(c.k, row);
@@ -743,7 +758,7 @@
   function pushGantt(full) {
     if (!gantt) return;
     const px = ZOOMS[S.cfg.pxIdx];
-    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: S.cfg.show, p: S.p, rels: true };
+    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: S.cfg.show, p: S.p, rels: true, spot: S.cfg.show.spot ? S.spot : null };
     gantt.set(o);
   }
   function ganttCb() {
@@ -812,7 +827,7 @@
   function sel(f, val, opts) { return `<select data-f="${f}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`; }
   function renderDetails() {
     const el = $('#details');
-    const tabs = ['general', 'status', 'rels', 'res', 'notes'];
+    const tabs = ['general', 'status', 'res', 'rels', 'notes'];
     const fr = focusRow();
     const title = fr ? (fr.kind === 't' ? fr.t.code + ' · ' + fr.t.name : fr.w.code + ' · ' + fr.w.name) : '';
     let head = `<div class="dtabs">${tabs.map((k) => `<button class="dtab${S.tab === k ? ' on' : ''}" data-tab="${k}">${esc(t('tab_' + k))}</button>`).join('')}<span class="dtitle" dir="auto">${esc(title)}</span><button class="ib" data-act="toggle" title="${esc(t('toggle_details'))}"><svg viewBox="0 0 24 24"><path d="${S.cfg.detOpen ? 'M6 9l6 6 6-6' : 'M6 15l6-6 6 6'}"/></svg></button></div>`;
@@ -980,11 +995,13 @@
     pushGantt();
     if (o && o.details) renderDetails(); else syncDetails();
     updateStatus(); updateToolbarState(); updateProjName();
+    if (!document.activeElement || !document.activeElement.closest('#layoutbar')) buildLayoutBar();
   }
   function updateProjName() {
     const b = $('#projBtn'); if (!b || !S.p) return;
     b.textContent = '📁 ' + S.p.name; b.title = t('projects');
     document.title = S.p.name + ' – P6 Web';
+    const tb = $('#titlebar'); if (tb) tb.innerHTML = `<b>P6 Web</b> <span>–</span> ${esc(t('win_activities'))} <span>–</span> <span dir="auto" style="opacity:1">${esc(S.p.name)}</span> <span style="margin-inline-start:auto">${esc(t('data_date'))}: ${fmtD(S.p.dataDate)}</span>`;
   }
   function updateStatus() {
     const p = S.p; if (!p) return;
@@ -1016,17 +1033,19 @@
     today: 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M12 13v3', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5', fire: 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z',
     cols: 'M4 4h16v16H4zM9 4v16M15 4v16', dup: 'M8 8h12v12H8zM16 8V4H4v12h4', down: 'M12 4v12M6 12l6 6 6-6M4 21h16', up: 'M12 20V8M6 12l6-6 6 6M4 3h16', chart: 'M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-8',
     folder: 'M3 6h6l2 2h10v11H3z', cal: 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4', gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19 12l2-1-2-4-2 1-2-1V5h-4v2l-2 1-2-1-2 4 2 1v2l-2 1 2 4 2-1 2 1v2h4v-2l2-1 2 1 2-4-2-1z',
+    spot: 'M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z', res: 'M9 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 21v-3a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v3M17 4a3 3 0 0 1 0 6M21 21v-3a4 4 0 0 0-3-4', filt: 'M3 4h18l-7 8v7l-4 2v-9z', print: 'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',
     expand: 'M6 9l6 6 6-6', collapse: 'M6 15l6-6 6 6', save: 'M5 4h12l3 3v13H5zM8 4v5h8V4M8 20v-6h8v6', help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 4 2c-1 .8-1.5 1.2-1.5 2.5M12 17v.5'
   };
   const ic = (n) => `<svg viewBox="0 0 24 24"><path d="${IC[n] || ''}"/></svg>`;
   P6.ic = ic;
   const TB = [
+    ['folder', 'projects', () => App.dialogs.projects()], ['save', 'export_xer', () => App.exportXER()], ['print', 'print', () => print()], '|',
     ['undo', 'undo', () => App.doUndo()], ['redo', 'redo', () => App.doRedo()], '|',
-    ['plus', 'add_activity', () => App.addTask()], ['mile', 'add_milestone', () => App.addMilestone()], ['wbs', 'add_wbs', () => App.addWbs()], ['trash', 'delete', () => App.del()], ['dup', 'duplicate', () => App.duplicate()], '|',
+    ['plus', 'add_activity', () => App.addTask(), 'Insert'], ['mile', 'add_milestone', () => App.addMilestone()], ['wbs', 'add_wbs', () => App.addWbs()], ['trash', 'delete', () => App.del(), 'Del'], ['dup', 'duplicate', () => App.duplicate()], '|',
     ['indent', 'indent', () => App.indent()], ['outdent', 'outdent', () => App.outdent()], ['link', 'link', () => App.link()], ['unlink', 'unlink', () => App.unlink()], '|',
-    ['play', 'schedule', () => App.schedule(), 'F9', 'pri'], ['upd', 'update_progress', () => App.dialogs.updateProgress()], ['flag', 'baselines', () => App.dialogs.baselines()], ['chart', 'reports', () => App.dialogs.reports()], '|',
-    ['zout', 'zoom_out', () => zoom(1)], ['zin', 'zoom_in', () => zoom(-1)], ['fit', 'zoom_fit', () => zoomFit()], ['today', 'go_datadate', () => goDate(S.p.dataDate)], '|',
-    ['fire', 'show_critical', () => toggleShow('crit'), '', 'crit'], ['cols', 'columns', () => App.dialogs.columns()], 'SEARCH'
+    ['play', 'schedule', () => App.schedule(), 'F9', 'pri'], ['upd', 'update_progress', () => App.dialogs.updateProgress()], ['flag', 'baselines', () => App.dialogs.baselines()], ['spot', 'spotlight', () => toggleShow('spot'), '', 'spot'], ['chart', 'reports', () => App.dialogs.reports()], '|',
+    ['cal', 'calendars', () => App.dialogs.calendars()], ['res', 'resources', () => App.dialogs.resources()], ['cols', 'columns', () => App.dialogs.columns()], ['filt', 'filter_custom', () => App.dialogs.filter()], '|',
+    ['zout', 'zoom_out', () => zoom(1)], ['zin', 'zoom_in', () => zoom(-1)], ['fit', 'zoom_fit', () => zoomFit()], ['today', 'go_datadate', () => goDate(S.p.dataDate)], ['fire', 'show_critical', () => toggleShow('crit'), '', 'crit'], '|', 'SEARCH'
   ];
   function buildToolbar() {
     const tb = $('#toolbar');
@@ -1038,12 +1057,8 @@
         w.innerHTML = `${ic('search')}<input id="q" placeholder="${esc(t('search'))}" value="${esc(S.cfg.filter.text)}">`;
         w.querySelector('svg').style.cssText = 'width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:2';
         tb.appendChild(w);
-        const fs = document.createElement('select'); fs.className = 'sel'; fs.id = 'fmode';
-        fs.innerHTML = ['all', 'critical', 'IP', 'NS', 'C', 'late', 'neg'].map((m) => `<option value="${m}">${esc(t('f_' + m))}</option>`).join('');
-        fs.value = S.cfg.filter.mode; tb.appendChild(fs);
         const q = w.querySelector('input'); let tm;
         q.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { S.cfg.filter.text = q.value; saveCfg(); refresh(); }, 160); });
-        fs.addEventListener('change', () => { S.cfg.filter.mode = fs.value; saveCfg(); refresh(); });
         return;
       }
       const b = document.createElement('button');
@@ -1060,10 +1075,11 @@
     if (q('undo')) q('undo').disabled = !S.undo.length;
     if (q('redo')) q('redo').disabled = !S.redo.length;
     if (q('show_critical')) q('show_critical').classList.toggle('on', S.cfg.show.crit);
+    if (q('spotlight')) q('spotlight').classList.toggle('on', !!S.cfg.show.spot);
     if (q('indent')) q('indent').disabled = !selWbs().length;
     if (q('outdent')) q('outdent').disabled = !selWbs().length;
   }
-  function toggleShow(k) { S.cfg.show[k] = !S.cfg.show[k]; saveCfg(); pushGantt(); updateToolbarState(); buildMenus(); }
+  function toggleShow(k) { S.cfg.show[k] = !S.cfg.show[k]; saveCfg(); if (k === 'spot') refresh(); else pushGantt(); updateToolbarState(); buildMenus(); }
   function zoom(dir) {
     const old = ZOOMS[S.cfg.pxIdx];
     const gs = $('#gScroll');
@@ -1071,6 +1087,7 @@
     S.cfg.pxIdx = Math.max(0, Math.min(ZOOMS.length - 1, S.cfg.pxIdx + dir));
     saveCfg(); pushGantt();
     gs.scrollLeft = (centerDay - S.minDay) * ZOOMS[S.cfg.pxIdx] - gs.clientWidth / 2;
+    buildLayoutBar();
   }
   function zoomFit() {
     const gs = $('#gScroll');
@@ -1081,32 +1098,81 @@
     idx = ZOOMS.findIndex((z) => z <= want); if (idx < 0) idx = ZOOMS.length - 1;
     S.cfg.pxIdx = idx; saveCfg(); pushGantt();
     gs.scrollLeft = Math.max(0, ((S.p.start || S.minDay) - 7 - S.minDay) * ZOOMS[idx]);
+    buildLayoutBar();
   }
   function goDate(d) { if (d != null) gantt.scrollToDay(d, 0.35); }
 
+  const LAYOUTS = {
+    classic: { cols: ['code', 'name', 'dur', 'rem', 'pct', 'es', 'ef', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
+    schedule: { cols: ['code', 'name', 'dur', 'es', 'ef', 'pred', 'succ', 'cstr', 'cdate'], group: 'wbs', sort: 'code', mode: 'all' },
+    tracking: { cols: ['code', 'name', 'status', 'dur', 'rem', 'pct', 'es', 'ef', 'as', 'af', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
+    variance: { cols: ['code', 'name', 'es', 'ef', 'bs', 'bf', 'vs', 'vf', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
+    critical: { cols: ['code', 'name', 'dur', 'es', 'ef', 'tf', 'ff', 'pred', 'succ'], group: 'none', sort: 'es', mode: 'critical' },
+    flat: { cols: ['code', 'name', 'wbs', 'type', 'status', 'dur', 'pct', 'es', 'ef', 'tf'], group: 'none', sort: 'code', mode: 'all' }
+  };
+  function applyLayout(k) {
+    const L = LAYOUTS[k]; if (!L) return;
+    S.cfg.layout = k; S.cfg.cols = L.cols.map((c) => ({ k: c, w: ALL_COLS[c].w })); S.cfg.group = L.group; S.cfg.sort = L.sort; S.cfg.sortDir = 1; S.cfg.filter.mode = L.mode;
+    saveCfg(); refresh(); buildMenus(); buildLayoutBar();
+  }
+  API.applyLayout = applyLayout; API.buildLayoutBar = () => buildLayoutBar();
+  const TS = [['day', 1], ['week', 3], ['month', 5], ['quarter', 7], ['year', 8]];
+  function setTimescale(i) { const gs = $('#gScroll'); const old = ZOOMS[S.cfg.pxIdx]; const c = S.minDay + (gs.scrollLeft + gs.clientWidth / 2) / old; S.cfg.pxIdx = i; saveCfg(); pushGantt(); gs.scrollLeft = (c - S.minDay) * ZOOMS[i] - gs.clientWidth / 2; buildLayoutBar(); }
+  const BARS = [['base', 'show_baseline'], ['crit', 'show_critical'], ['rels', 'show_rels'], ['labels', 'show_labels'], ['float', 'show_float'], ['today', 'show_today'], ['spot', 'spotlight']];
+  function buildLayoutBar() {
+    const lb = $('#layoutbar'); if (!lb) return;
+    const nearest = TS.reduce((b, x) => (Math.abs(x[1] - S.cfg.pxIdx) < Math.abs(b[1] - S.cfg.pxIdx) ? x : b), TS[0])[1];
+    const opt = (v, l, cur) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`;
+    lb.innerHTML = `<label>${esc(t('layout'))}:</label><select class="sel" id="lb_layout">${Object.keys(LAYOUTS).map((k) => opt(k, t('lay_' + k), S.cfg.layout)).join('')}</select>
+      <label>${esc(t('filter'))}:</label><select class="sel" id="lb_filter">${['all', 'critical', 'IP', 'NS', 'C', 'late', 'neg', 'custom'].map((m) => opt(m, m === 'custom' ? t('filter_custom') : t('f_' + m), S.cfg.filter.mode)).join('')}</select>
+      <label>${esc(t('group_by'))}:</label><select class="sel" id="lb_group" style="min-width:90px">${opt('wbs', 'WBS', S.cfg.group)}${opt('none', t('no_group'), S.cfg.group)}</select>
+      <label>${esc(t('sort_by'))}:</label><select class="sel" id="lb_sort" style="min-width:100px">${['code', 'name', 'es', 'ef', 'tf', 'dur'].map((k) => opt(k, t('col_' + k), S.cfg.sort)).join('')}</select>
+      <button class="lb" id="lb_bars">${esc(t('bars'))} ▾</button>
+      <label>${esc(t('timescale'))}:</label><select class="sel" id="lb_ts" style="min-width:90px">${TS.map(([k, v]) => opt(v, t('ts_' + k), nearest)).join('')}</select>`;
+    $('#lb_layout').onchange = (e) => applyLayout(e.target.value);
+    $('#lb_filter').onchange = (e) => { if (e.target.value === 'custom') { App.dialogs.filter(); } else { S.cfg.filter.mode = e.target.value; saveCfg(); refresh(); } };
+    $('#lb_group').onchange = (e) => { S.cfg.group = e.target.value; saveCfg(); refresh(); buildMenus(); };
+    $('#lb_sort').onchange = (e) => { S.cfg.sort = e.target.value; S.cfg.sortDir = 1; saveCfg(); refresh(); };
+    $('#lb_ts').onchange = (e) => setTimescale(+e.target.value);
+    $('#lb_bars').onclick = (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.pop').forEach((x) => x.remove());
+      const r = e.target.getBoundingClientRect(), p = document.createElement('div');
+      p.className = 'pop'; p.dir = P6.dir(); p.style.left = r.left + 'px'; p.style.top = r.bottom + 2 + 'px';
+      p.innerHTML = BARS.map(([k, l]) => `<label><input type="checkbox" data-k="${k}"${S.cfg.show[k] !== false && S.cfg.show[k] ? ' checked' : ''}> ${esc(t(l))}</label>`).join('');
+      p.onclick = (ev) => ev.stopPropagation();
+      p.onchange = (ev) => { toggleShow(ev.target.dataset.k); };
+      document.body.appendChild(p);
+    };
+  }
   function menuDefs() {
     const sh = S.cfg.show, F = S.cfg;
     return [
       ['file', [
-        ['new_project', () => App.dialogs.newProject()], ['projects', () => App.dialogs.projects(), 'Ctrl+O'], ['open_file', () => App.openFile()], ['import_update', () => App.openFile('update')],
-        ['import_baseline', () => App.openFile('baseline')], ['import_csv', () => App.openFile('csv')], ['paste_import', () => App.dialogs.paste()], ['load_sample', () => App.loadSample()], '-',
-        ['export_xer', () => App.exportXER(), 'Ctrl+S'], ['export_csv', () => App.exportCSV()], ['export_json', () => App.exportJSON()], ['print', () => print()]
+        ['new_project', () => App.dialogs.newProject()], ['projects', () => App.dialogs.projects(), 'Ctrl+O'], '-',
+        ['open_file', () => App.openFile()], ['import_update', () => App.openFile('update')], ['import_baseline', () => App.openFile('baseline')], ['import_csv', () => App.openFile('csv')], ['paste_import', () => App.dialogs.paste()], '-',
+        ['export_xer', () => App.exportXER(), 'Ctrl+S'], ['export_csv', () => App.exportCSV()], ['export_json', () => App.exportJSON()], '-', ['print', () => print()], ['load_sample', () => App.loadSample()]
       ]],
       ['edit', [
         ['undo', () => App.doUndo(), 'Ctrl+Z'], ['redo', () => App.doRedo(), 'Ctrl+Y'], '-',
-        ['add_activity', () => App.addTask(), 'Insert'], ['add_milestone', () => App.addMilestone()], ['add_wbs', () => App.addWbs()], ['duplicate', () => App.duplicate()], ['delete', () => App.del(), 'Del'], '-',
+        ['add_activity', () => App.addTask(), 'Insert'], ['add_milestone', () => App.addMilestone()], ['add_wbs', () => App.addWbs()], ['duplicate', () => App.duplicate(), 'Ctrl+D'], ['delete', () => App.del(), 'Del'], '-',
         ['indent', () => App.indent()], ['outdent', () => App.outdent()], ['link', () => App.link()], ['unlink', () => App.unlink()]
       ]],
       ['view', [
+        ...Object.keys(LAYOUTS).map((k) => ['lay_' + k, () => applyLayout(k), '', F.layout === k]), '-',
+        ['filter_custom', () => App.dialogs.filter()], ['columns', () => App.dialogs.columns()],
+        ['group_wbs', () => { F.group = F.group === 'wbs' ? 'none' : 'wbs'; saveCfg(); refresh(); buildMenus(); buildLayoutBar(); }, '', F.group === 'wbs'], ['expand_all', () => App.expandAll()], ['collapse_all', () => App.collapseAll()], '-',
+        ['show_baseline', () => toggleShow('base'), '', sh.base], ['show_critical', () => toggleShow('crit'), '', sh.crit], ['show_rels', () => toggleShow('rels'), '', sh.rels], ['show_labels', () => toggleShow('labels'), '', sh.labels], ['show_float', () => toggleShow('float'), '', sh.float], ['show_today', () => toggleShow('today'), '', sh.today], '-',
         ['zoom_in', () => zoom(-1)], ['zoom_out', () => zoom(1)], ['zoom_fit', () => zoomFit()], ['go_datadate', () => goDate(S.p.dataDate)], ['go_today', () => goDate(P6.todayDay())], '-',
-        ['show_baseline', () => toggleShow('base'), '', sh.base], ['show_critical', () => toggleShow('crit'), '', sh.crit], ['show_rels', () => toggleShow('rels'), '', sh.rels], ['show_labels', () => toggleShow('labels'), '', sh.labels], ['show_float', () => toggleShow('float'), '', sh.float], '-',
-        ['group_wbs', () => { F.group = F.group === 'wbs' ? 'none' : 'wbs'; saveCfg(); refresh(); buildMenus(); }, '', F.group === 'wbs'], ['expand_all', () => App.expandAll()], ['collapse_all', () => App.collapseAll()], '-',
-        ['columns', () => App.dialogs.columns()], ['toggle_details', () => { F.detOpen = !F.detOpen; saveCfg(); layoutDetails(); renderDetails(); }]
+        ['toggle_details', () => { F.detOpen = !F.detOpen; saveCfg(); layoutDetails(); renderDetails(); }]
       ]],
       ['project', [
         ['project_settings', () => App.dialogs.settings()], ['calendars', () => App.dialogs.calendars()], ['wbs_tree', () => App.dialogs.wbs()], ['resources', () => App.dialogs.resources()], '-',
-        ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.schedule(); }, '', F.auto],
-        ['update_progress', () => App.dialogs.updateProgress()], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
+        ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
+      ]],
+      ['tools', [
+        ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.schedule(); }, '', F.auto], '-',
+        ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
       ['help', [['guide', () => App.dialogs.help()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
     ];
@@ -1196,9 +1262,10 @@
     document.documentElement.lang = S.cfg.lang; document.documentElement.dir = P6.dir();
     $('#langBtn').textContent = S.cfg.lang === 'ar' ? 'EN' : 'عربي';
     document.documentElement.dataset.theme = S.cfg.theme;
-    $('#themeBtn').innerHTML = S.cfg.theme === 'dark' ? '☀' : '☾';
+    $('#themeBtn').innerHTML = S.cfg.theme === 'p6' ? 'P6' : S.cfg.theme === 'dark' ? '☀' : '☾';
+    $('#themeBtn').title = t('theme_cycle');
   }
-  API.setLang = (l) => { S.cfg.lang = l; saveCfg(); applyLang(); buildMenus(); buildToolbar(); if (S.p) refresh({ details: true }); };
+  API.setLang = (l) => { S.cfg.lang = l; saveCfg(); applyLang(); buildMenus(); buildToolbar(); buildLayoutBar(); if (S.p) refresh({ details: true }); };
 
   // ================= boot =================
   API.boot = async function () {
@@ -1210,11 +1277,11 @@
     API.gantt = gantt; API.S = S;
     gantt.sc.addEventListener('scroll', () => { renderRows(); }, { passive: true });
     bindTable(); bindDetails(); bindSplitters();
-    buildMenus(); buildToolbar(); layoutDetails();
+    buildMenus(); buildToolbar(); buildLayoutBar(); layoutDetails();
     $('#langBtn').onclick = () => API.setLang(S.cfg.lang === 'ar' ? 'en' : 'ar');
-    $('#themeBtn').onclick = () => { S.cfg.theme = S.cfg.theme === 'dark' ? 'light' : 'dark'; saveCfg(); applyLang(); };
+    $('#themeBtn').onclick = () => { S.cfg.theme = ({ p6: 'light', light: 'dark', dark: 'p6' })[S.cfg.theme] || 'p6'; saveCfg(); applyLang(); };
     $('#projBtn').onclick = () => API.dialogs.projects();
-    document.addEventListener('click', (e) => { if (!e.target.closest('.menu')) document.querySelectorAll('.menu.open').forEach((m) => m.classList.remove('open')); $('#ctx').hidden = true; });
+    document.addEventListener('click', (e) => { document.querySelectorAll('.pop').forEach((x) => x.remove()); if (!e.target.closest('.menu')) document.querySelectorAll('.menu.open').forEach((m) => m.classList.remove('open')); $('#ctx').hidden = true; });
     $('#fileInput').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) handleFile(f, pendingMode); });
     // drag & drop files
     let dc = 0;

@@ -2,7 +2,7 @@
   --bg:#f3f5f9; --panel:#ffffff; --panel2:#f8fafc; --line:#dde3ec; --line2:#eaeef5; --text:#1b2433; --muted:#6b7a90;
   --accent:#2563eb; --accent-soft:#e6efff; --sel:#dbe8ff; --sel2:#eef4ff; --wbs:#eef2f8; --danger:#dc2626; --ok:#16a34a;
   --bar:#4f8df7; --bar-act:#1e40af; --bar-crit:#ef4444; --bar-crit-act:#991b1b; --bar-base:#94a3b8; --sum:#1f2a44; --mile:#7c3aed;
-  --weekend:#00000008; --grid:#e8edf4; --shadow:0 8px 30px rgba(15,23,42,.18); --rowh:26px;
+  --weekend:#00000008; --grid:#e8edf4; --shadow:0 8px 30px rgba(15,23,42,.18); --rowh:24px;
   --font:"Segoe UI",system-ui,-apple-system,"Noto Sans Arabic",Tahoma,Arial,sans-serif;
 }
 :root[data-theme=dark]{
@@ -199,3 +199,63 @@ svg{display:block}
 #tip{direction:ltr;text-align:left}
 #tip div:first-child{unicode-bidi:plaintext}
 .kpi .v bdi{font-size:18px}
+/* ===== Primavera P6 "classic" skin (default) ===== */
+#titlebar,#layoutbar{display:none}
+.gsvg .row-spot{fill:#fff3a0;opacity:.75}
+.tr.spot{background:#fff8c4}
+:root[data-theme=p6]{
+  --bg:#dcdcdc;--panel:#fff;--panel2:#f0f0f0;--line:#9c9c9c;--line2:#dcdcdc;--text:#000;--muted:#3b3b3b;
+  --accent:#0b4a96;--accent-soft:#d6e4f5;--sel:#b8d1ee;--sel2:#e1ecf9;--wbs:#e9e9e9;
+  --bar:#1f55d4;--bar-act:#10308a;--bar-crit:#e00000;--bar-crit-act:#7f0000;--bar-base:#5aa05a;--sum:#000;--mile:#1b1b9a;
+  --grid:#dadada;--weekend:#0000000d;--shadow:0 3px 12px rgba(0,0,0,.35);
+  --font:Tahoma,"Segoe UI","Noto Sans Arabic",Arial,sans-serif;
+}
+:root[data-theme=p6] body{font-size:12px}
+:root[data-theme=p6] #titlebar{display:flex;align-items:center;gap:10px;height:24px;padding:0 10px;color:#fff;font-weight:700;background:linear-gradient(#4f7fb9,#1e4a84);border-bottom:1px solid #0d2b52}
+:root[data-theme=p6] #titlebar span{opacity:.85;font-weight:400}
+:root[data-theme=p6] #topbar{height:26px;background:linear-gradient(#fafafa,#e6e6e6);border-bottom:1px solid var(--line)}
+:root[data-theme=p6] .brand{display:none}
+:root[data-theme=p6] .menu>button,:root[data-theme=p6] .tbtn{padding:3px 10px;border-radius:0}
+:root[data-theme=p6] .menu>button:hover,:root[data-theme=p6] .menu.open>button{background:#316ac5;color:#fff}
+:root[data-theme=p6] .dd{border-radius:0;border:1px solid #707070;padding:2px;box-shadow:3px 3px 6px #0004}
+:root[data-theme=p6] .dd .it{border-radius:0;padding:4px 10px}
+:root[data-theme=p6] .dd .it:hover{background:#316ac5;color:#fff}
+:root[data-theme=p6] .dd .it:hover .k{color:#dde}
+:root[data-theme=p6] .projname{border-radius:0;background:#fff;border-color:var(--line)}
+:root[data-theme=p6] #toolbar{height:32px;background:linear-gradient(#fbfbfb,#e4e4e4);border-bottom:1px solid var(--line)}
+:root[data-theme=p6] .ib{border-radius:2px}
+:root[data-theme=p6] .ib:hover:not(:disabled){background:#fff;border-color:#316ac5}
+:root[data-theme=p6] .ib.pri{background:linear-gradient(#5b8fd3,#2c5fa8);border-color:#1d4985}
+:root[data-theme=p6] .ib svg{stroke-width:1.6}
+:root[data-theme=p6] .sbox,:root[data-theme=p6] .sel,:root[data-theme=p6] .fld input,:root[data-theme=p6] .fld select,:root[data-theme=p6] .fld textarea,:root[data-theme=p6] .btn,:root[data-theme=p6] .inp{border-radius:0}
+:root[data-theme=p6] #layoutbar{display:flex;align-items:center;gap:6px;height:30px;padding:0 8px;background:linear-gradient(#f4f4f4,#dedede);border-bottom:1px solid var(--line);white-space:nowrap;overflow-x:auto;overflow-y:visible}
+:root[data-theme=p6] #layoutbar label{font-weight:700;color:#222;margin-inline-start:6px}
+:root[data-theme=p6] #layoutbar .sel{height:22px;min-width:130px}
+:root[data-theme=p6] #layoutbar .lb{height:22px;border:1px solid var(--line);background:linear-gradient(#fff,#e8e8e8);padding:0 9px;cursor:pointer}
+:root[data-theme=p6] #layoutbar .lb:hover{border-color:#316ac5}
+:root[data-theme=p6] #tHead,:root[data-theme=p6] #gHead{background:linear-gradient(#fdfdfd,#d7d7d7);border-bottom:1px solid var(--line)}
+:root[data-theme=p6] .th{color:#000;font-weight:700;border-inline-end:1px solid #b5b5b5}
+:root[data-theme=p6] .gh text{fill:#000;font-weight:600}
+:root[data-theme=p6] #tablePane{border-right:1px solid var(--line)}
+:root[data-theme=p6] .tr{border-bottom:1px solid #e3e3e3}
+:root[data-theme=p6] .td{border-inline-end:1px solid #ececec}
+:root[data-theme=p6] .tr.wbs{background:#e6e6e6}
+:root[data-theme=p6] .tr.sel{background:#b8d1ee}
+:root[data-theme=p6] .td.cur{background:#fff;box-shadow:inset 0 0 0 2px #000}
+:root[data-theme=p6] #vsplit,:root[data-theme=p6] #hsplit{background:#bdbdbd}
+:root[data-theme=p6] .dtabs{background:linear-gradient(#f4f4f4,#dcdcdc);height:28px;padding-top:3px;border-bottom:1px solid var(--line)}
+:root[data-theme=p6] .dtab{border:1px solid transparent;border-bottom:0;border-radius:3px 3px 0 0;padding:3px 14px;color:#000;font-weight:400}
+:root[data-theme=p6] .dtab.on{background:#fff;border-color:var(--line);color:#000;font-weight:700;position:relative;top:1px}
+:root[data-theme=p6] #details{background:#f4f4f4}
+:root[data-theme=p6] .dbody{background:#f4f4f4}
+:root[data-theme=p6] #statusbar{background:linear-gradient(#f4f4f4,#dcdcdc);color:#222;border-top:1px solid var(--line)}
+:root[data-theme=p6] .modal{border-radius:0;border:2px solid #1e4a84}
+:root[data-theme=p6] .mh{background:linear-gradient(#4f7fb9,#1e4a84);color:#fff;border-radius:0}
+:root[data-theme=p6] .mh .x{color:#fff}
+:root[data-theme=p6] .mf{border-radius:0;background:#e9e9e9}
+:root[data-theme=p6] .pitem,:root[data-theme=p6] .kpi{border-radius:0}
+:root[data-theme=p6] .badge{border-radius:2px}
+/* popovers */
+.pop{position:fixed;z-index:180;background:var(--panel);border:1px solid #707070;box-shadow:var(--shadow);padding:6px 8px;min-width:210px}
+.pop label{display:flex;gap:8px;align-items:center;padding:3px 2px;cursor:pointer}
+.pop hr{border:0;border-top:1px solid var(--line2);margin:4px 0}
