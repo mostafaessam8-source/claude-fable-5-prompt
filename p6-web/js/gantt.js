@@ -74,7 +74,9 @@
         let d = d0 - P6.dow(d0);
         for (; d <= d1; d += 7) bot.push([d, d + 7, String(P6.ymd(d).d)]);
       } else if (px >= 2.2) {
-        walk(yearStart, nextYear, (d) => String(P6.ymd(d).y), top);
+        const qStart = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3), 1); };
+        const qNext = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3) + 3, 1); };
+        walk(qStart, qNext, (d) => { const y = P6.ymd(d); return 'Qtr ' + (Math.floor(y.m / 3) + 1) + ', ' + y.y; }, top);
         walk(monthStart, nextMonth, (d) => (px * 30 >= 56 ? P6.MON[P6.ymd(d).m] : P6.MON[P6.ymd(d).m][0]), bot);
       } else {
         walk(yearStart, nextYear, (d) => String(P6.ymd(d).y), top);
@@ -153,6 +155,7 @@
           const x1 = X(ru.es), x2 = X(ru.ef + 1);
           if (x2 < -50 || x1 > W + 50) continue;
           bars += `<g class="bargrp" data-id="${r.id}" data-k="w"><path d="M${x1} ${y + 6}H${x2}V${y + 14}L${x2 - 4} ${y + 17}H${x2 - 6}L${x2 - 8} ${y + 14}H${x1 + 8}L${x1 + 6} ${y + 17}H${x1 + 4}L${x1} ${y + 14}Z" fill="var(--sum)"/></g>`;
+          if (sh.labels) bars += `<text class="lbl" x="${x2 + 6}" y="${y + 15}">${esc(P6.fmtDate(ru.ef) + ', ' + r.w.name)}</text>`;
           if (base && ru.bs != null) bars += `<rect class="bar-base" x="${X(ru.bs)}" y="${y + 18}" width="${Math.max(2, (ru.bf - ru.bs + 1) * px)}" height="3"/>`;
           continue;
         }
@@ -222,6 +225,7 @@
         }
       }
       this.svg.innerHTML = s + lines + bars + '<g id="gdrag"></g>';
+      if (P6.onGanttDraw) P6.onGanttDraw();
     }
 
     // ---------- interaction ----------

@@ -3,6 +3,12 @@
 A free, static web app (no build, no server, no data upload) that **opens, edits, schedules and exports Primavera P6 files** in the browser — and can be published on GitHub Pages.
 تطبيق ويب ثابت ومجاني (بدون سيرفر وبدون رفع بيانات) **لفتح وتعديل وجدولة وتصدير ملفات Primavera P6** مباشرة من المتصفح، ويُنشر على GitHub Pages.
 
+## الشكل / Look & feel
+
+واجهة على طراز Primavera P6 Professional: شريط عنوان، قوائم File/Edit/View/Enterprise/Project/Tools/Admin/Help، تولبار، شريطا أدوات جانبيان، نافذة Activities مع **Layout / Filter**، صفوف WBS ملوّنة حسب المستوى مع شرائط جانبية، أشرطة Gantt بتسميات P6، ولوحة سفلية **Activity Details** أو **Resource Usage Profile** (جدول الموارد + Histogram). **كليك يمين** على الأنشطة والـ Gantt وعناوين الأعمدة وجدول الموارد (قص/نسخ/لصق، Assign Predecessors/Successors/Resources/Calendar/Constraint، Progress، Select، Indent…).
+
+![screenshot](docs/screenshot.png)
+
 ## ما الذي يقدّمه / Features
 
 | | |

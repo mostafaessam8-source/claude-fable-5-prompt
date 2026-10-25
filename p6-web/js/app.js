@@ -8,7 +8,7 @@
 
   const ZOOMS = [60, 36, 20, 12, 6, 3, 1.6, 0.8, 0.4];
   const ALL_COLS = {
-    code: { w: 90, ed: 'text', sort: 1 }, name: { w: 270, ed: 'text', sort: 1 },
+    code: { w: 230, ed: 'text', sort: 1 }, name: { w: 320, ed: 'text', sort: 1 },
     type: { w: 100, ed: 'sel' }, wbs: { w: 90 }, status: { w: 96, ed: 'sel' },
     dur: { w: 72, ed: 'num', r: 1, sort: 1 }, rem: { w: 72, ed: 'num', r: 1 }, pct: { w: 82, ed: 'num', r: 1, sort: 1 },
     es: { w: 90, ed: 'date', r: 1, sort: 1 }, ef: { w: 90, ed: 'date', r: 1, sort: 1 },
@@ -19,7 +19,7 @@
     cal: { w: 130, ed: 'sel' }, cstr: { w: 110, ed: 'sel' }, cdate: { w: 90, ed: 'date', r: 1 },
     bs: { w: 90, r: 1 }, bf: { w: 90, r: 1 }, vs: { w: 66, r: 1 }, vf: { w: 66, r: 1 }, res: { w: 130 }
   };
-  const DEF_COLS = ['code', 'name', 'dur', 'rem', 'pct', 'es', 'ef', 'tf', 'pred'];
+  const DEF_COLS = ['code', 'name', 'dur', 'es', 'ef', 'tf'];
   const TYPES = ['TT_Task', 'TT_Mile', 'TT_FinMile', 'TT_LOE'];
   const CSTRS = ['', 'SNET', 'SNLT', 'FNET', 'FNLT', 'MSO', 'MFO', 'ALAP'];
 
@@ -27,7 +27,7 @@
     p: null, sel: new Set(), focus: null, anchor: null, cell: null, rows: [], rowIdx: new Map(), ru: new Map(),
     collapsed: new Set(), undo: [], redo: [], dirty: false, minDay: 0, maxDay: 0, tab: 'general',
     cfg: {
-      lang: 'ar', theme: 'p6', layout: 'classic', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 820, detH: 230, detOpen: true,
+      lang: 'ar', theme: 'p6', layout: 'classic', dock: 'details', layouts: {}, layoutName: '', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 900, detH: 230, detOpen: true,
       show: { base: true, crit: true, rels: true, labels: true, float: false, today: true, spot: false }, group: 'wbs', sort: 'code', sortDir: 1,
       auto: true, filter: { text: '', mode: 'all' }
     }
@@ -177,6 +177,7 @@
       const r = f.custom.join === 'or' ? f.custom.conds.some(test) : f.custom.conds.every(test);
       if (!r) return false;
     }
+    if (f.byRes && App.usageSel && App.usageSel() != null && !S.p.asg.some((x) => x.task === tk.id && x.rsrc === App.usageSel())) return false;
     if (f.text) { const q = f.text.toLowerCase(); if (!(tk.code.toLowerCase().includes(q) || tk.name.toLowerCase().includes(q))) return false; }
     return true;
   }
@@ -218,6 +219,7 @@
       };
       roots.sort(ws).forEach((w) => walk(w, 0));
     }
+    S.depth = Math.max(1, ...rows.map((r) => r.level));
     S.spot = new Set();
     if (S.cfg.show.spot) for (const tk of p.tasks) if (tk.status !== 'C' && tk.es != null && tk.es <= p.dataDate + 14 && tk.ef >= p.dataDate) S.spot.add(tk.id);
     S.rows = rows;
@@ -237,6 +239,8 @@
 
   // ================= cell model =================
   const statusLabel = (s) => t('st_' + s);
+  const treeKey = () => (S.cfg.cols[0] || {}).k;
+  const wbsField = (k) => (k === treeKey() ? 'name' : 'code');
   function cellOf(k, row) {
     const r = ALL_COLS[k] || {};
     const out = { text: '', cls: r.r ? 'r' : '', ro: !r.ed };
@@ -244,17 +248,17 @@
       const ru = S.ru.get(row.id) || {};
       out.ro = true;
       switch (k) {
-        case 'code': out.text = row.w.code; out.ro = false; break;
-        case 'name': out.text = row.w.name; out.ro = false; break;
-        case 'dur': out.text = ru.dur ? fmtN(ru.dur) + 'd' : ''; break;
+        case 'code': out.text = treeKey() === 'code' ? row.w.name : row.w.code; out.ro = false; break;
+        case 'name': out.text = treeKey() === 'name' ? row.w.name : ''; out.ro = treeKey() !== 'name'; break;
+        case 'dur': out.text = ru.dur ? fmtN(ru.dur) : ''; break;
         case 'pct': out.text = ru.dur ? ru.pct + '%' : ''; break;
         case 'es': out.text = fmtD(ru.es); break; case 'ef': out.text = fmtD(ru.ef); break;
         case 'as': out.text = isFinite(ru.as) ? fmtD(ru.as) : ''; break;
         case 'af': out.text = ru.allC && isFinite(ru.af) ? fmtD(ru.af) : ''; break;
         case 'bs': out.text = fmtD(ru.bs); break; case 'bf': out.text = fmtD(ru.bf); break;
-        case 'tf': out.text = ru.tf == null ? '' : fmtN(ru.tf) + 'd'; if (ru.tf != null && ru.tf < 0) out.cls += ' neg'; break;
-        case 'vs': if (ru.bs != null && ru.es != null) out.text = fmtN(ru.es - ru.bs) + 'd'; break;
-        case 'vf': if (ru.bf != null && ru.ef != null) { out.text = fmtN(ru.ef - ru.bf) + 'd'; if (ru.ef > ru.bf) out.cls += ' neg'; } break;
+        case 'tf': out.text = ru.tf == null ? '' : fmtN(ru.tf); if (ru.tf != null && ru.tf < 0) out.cls += ' neg'; break;
+        case 'vs': if (ru.bs != null && ru.es != null) out.text = fmtN(ru.es - ru.bs); break;
+        case 'vf': if (ru.bf != null && ru.ef != null) { out.text = fmtN(ru.ef - ru.bf); if (ru.ef > ru.bf) out.cls += ' neg'; } break;
         default: break;
       }
       return out;
@@ -266,22 +270,22 @@
       case 'type': out.text = t('type_' + tk.type); break;
       case 'wbs': out.text = (wbsById(tk.wbs) || {}).code || ''; break;
       case 'status': out.text = statusLabel(tk.status); out.cls += ' st-' + tk.status; break;
-      case 'dur': out.text = fmtN(tk.dur) + 'd'; break;
-      case 'rem': out.text = tk.status === 'C' ? '0d' : fmtN(tk.rem) + 'd'; break;
+      case 'dur': out.text = fmtN(tk.dur); break;
+      case 'rem': out.text = tk.status === 'C' ? '0' : fmtN(tk.rem); break;
       case 'pct': out.text = tk.pct + '%'; break;
       case 'es': out.text = fmtD(tk.es); break; case 'ef': out.text = fmtD(tk.ef); break;
       case 'as': out.text = fmtD(tk.as); break; case 'af': out.text = fmtD(tk.af); break;
       case 'ls': out.text = tk.status === 'C' ? '' : fmtD(tk.ls); break; case 'lf': out.text = tk.status === 'C' ? '' : fmtD(tk.lf); break;
-      case 'tf': out.text = tk.tf == null ? '' : fmtN(tk.tf) + 'd'; if (tk.tf != null && tk.tf < 0) out.cls += ' neg'; else if (tk.crit) out.cls += ' crit'; break;
-      case 'ff': out.text = tk.ff == null ? '' : fmtN(tk.ff) + 'd'; break;
+      case 'tf': out.text = tk.tf == null ? '' : fmtN(tk.tf); if (tk.tf != null && tk.tf < 0) out.cls += ' neg'; else if (tk.crit) out.cls += ' crit'; break;
+      case 'ff': out.text = tk.ff == null ? '' : fmtN(tk.ff); break;
       case 'pred': out.text = P6.relText(S.p, tk); break;
       case 'succ': out.text = S.p.rels.filter((x) => x.p === tk.id).map((x) => { const b = taskById(x.s); return b ? b.code + (x.type !== 'FS' || x.lag ? x.type : '') + (x.lag ? (x.lag > 0 ? '+' : '') + x.lag : '') : ''; }).filter(Boolean).join(', '); break;
       case 'cal': out.text = (calOf(tk) || {}).name || ''; break;
       case 'cstr': out.text = tk.ct ? t('cs_' + tk.ct) : ''; break;
       case 'cdate': out.text = tk.ct ? fmtD(tk.cd) : ''; if (!tk.ct) out.ro = true; break;
       case 'bs': out.text = fmtD(tk.bs); break; case 'bf': out.text = fmtD(tk.bf); break;
-      case 'vs': if (tk.bs != null && tk.es != null) out.text = fmtN(tk.es - tk.bs) + 'd'; if (tk.es > tk.bs) out.cls += ' neg'; break;
-      case 'vf': if (tk.bf != null && tk.ef != null) out.text = fmtN(tk.ef - tk.bf) + 'd'; if (tk.ef > tk.bf) out.cls += ' neg'; break;
+      case 'vs': if (tk.bs != null && tk.es != null) out.text = fmtN(tk.es - tk.bs); if (tk.es > tk.bs) out.cls += ' neg'; break;
+      case 'vf': if (tk.bf != null && tk.ef != null) out.text = fmtN(tk.ef - tk.bf); if (tk.ef > tk.bf) out.cls += ' neg'; break;
       case 'res': out.text = S.p.asg.filter((a) => a.task === tk.id).map((a) => (S.p.rsrc.find((r) => r.id === a.rsrc) || {}).name).filter(Boolean).join(', '); break;
       default: break;
     }
@@ -297,7 +301,7 @@
     return [];
   }
   function rawValue(k, row) {
-    if (row.kind === 'w') return k === 'code' ? row.w.code : row.w.name;
+    if (row.kind === 'w') return row.w[wbsField(k)];
     const tk = row.t;
     switch (k) {
       case 'dur': return fmtN(tk.dur); case 'rem': return fmtN(tk.status === 'C' ? 0 : tk.rem); case 'pct': return String(tk.pct);
@@ -412,7 +416,7 @@
   }
   function editCell(row, k, raw) {
     if (row.kind === 'w') {
-      return mutate(t('edit'), () => { if (k === 'code') row.w.code = String(raw); else row.w.name = String(raw); }, { noSched: true });
+      return mutate(t('edit'), () => { row.w[wbsField(k)] = String(raw); }, { noSched: true });
     }
     const tk = row.t;
     if (k === 'es' && tk.status === 'NS' && String(raw).trim()) toast(t('cstr_set'));
@@ -435,6 +439,7 @@
     syncHScroll();
   }
   function syncHScroll() { const hin = $('#tHead .hin'); if (hin) hin.style.transform = `translateX(${-$('#tBody').scrollLeft}px)`; }
+  const WCOL = [['#0000ff', '#fff'], ['#66ff66', '#000'], ['#ffff00', '#000'], ['#0000ff', '#fff'], ['#ff0000', '#fff']];
   function renderRows() {
     const body = $('#tBody'), box = $('#tRows');
     const gs = $('#gScroll');
@@ -445,18 +450,22 @@
     let s = '';
     for (let i = r0; i <= r1; i++) {
       const row = S.rows[i], key = row.kind + row.id;
-      const cls = 'tr' + (row.kind === 'w' ? ' wbs' : '') + (row.kind === 't' && S.spot && S.spot.has(row.id) ? ' spot' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
+      const cls = 'tr' + (row.kind === 'w' ? ' wbs wl' + (row.level % WCOL.length) : '') + (row.kind === 't' && S.spot && S.spot.has(row.id) ? ' spot' : '') + (S.sel.has(key) ? ' sel' : '') + (S.focus === key ? ' focus' : '');
       s += `<div class="${cls}" style="top:${i * RH}px;width:${totalColsW()}px" data-i="${i}" data-key="${key}"${row.kind === 't' ? ' draggable="true"' : ''}>`;
+      const tk = treeKey(), G = (S.depth || 1) * 12;
+      let stripes = '';
+      for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${L * 12}px;background:${WCOL[L % WCOL.length][0]}"></i>`;
+      s += stripes;
       for (const c of S.cfg.cols) {
         const ci = cellOf(c.k, row);
         const cur = S.cell && S.cell.key === key && S.cell.k === c.k;
         let inner;
-        if (c.k === 'name') {
-          const pad = row.level * 16;
+        if (c.k === tk) {
+          const pad = row.kind === 'w' ? row.level * 12 + 4 : G + 4;
           let lead = '';
-          if (row.kind === 'w') lead = `<span class="tw" data-tw="${row.id}">${row.hasKids ? (S.collapsed.has(row.id) ? '▸' : '▾') : ''}</span><i class="ico wbs"></i>`;
-          else lead = `<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.status === 'C' ? 'done' : row.t.crit ? 'crit' : 'task'}"></i>`;
-          inner = `<span style="padding-inline-start:${pad}px;display:inline-flex;align-items:center;min-width:0">${lead}<span style="unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis">${esc(ci.text)}</span></span>`;
+          if (row.kind === 'w') lead = `<span class="tw" data-tw="${row.id}">${row.hasKids ? (S.collapsed.has(row.id) ? '+' : '−') : ''}</span><i class="ico wbs"></i>`;
+          else lead = `<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.crit && row.t.status !== 'C' ? 'crit' : row.t.status === 'C' ? 'done' : row.t.status === 'IP' ? 'ip' : 'task'}"></i>`;
+          inner = `<span style="padding-inline-start:${pad}px;display:inline-flex;align-items:center;min-width:0;width:100%">${lead}<span style="unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis">${esc(ci.text)}</span></span>`;
         } else inner = `<span style="unicode-bidi:plaintext">${esc(ci.text)}</span>`;
         s += `<div class="td ${ci.cls}${ci.ro ? ' ro' : ''}${cur ? ' cur' : ''}" style="width:${c.w}px" data-k="${c.k}">${inner}</div>`;
       }
@@ -507,7 +516,7 @@
     const col = ALL_COLS[k];
     const ci = cellOf(k, row);
     if (!col || !col.ed || ci.ro) return;
-    if (row.kind === 'w' && k !== 'code' && k !== 'name') return;
+    if (row.kind === 'w' && ((k !== 'code' && k !== 'name') || (k === 'name' && treeKey() !== 'name'))) return;
     if (row.kind === 't' && row.t.status === 'C' && (k === 'rem')) return;
     ensureVisible(i);
     let td = $(`#tRows .tr[data-key="${key}"] .td[data-k="${k}"]`);
@@ -595,6 +604,9 @@
       else if (e.key === 'F2' || e.key === 'Enter') { e.preventDefault(); if (S.cell) startEdit(S.cell.key, S.cell.k); }
       else if (e.key === 'Delete') { e.preventDefault(); App.del(); }
       else if (e.key === 'Insert') { e.preventDefault(); App.addTask(); }
+      else if (mod && e.key.toLowerCase() === 'c') { e.preventDefault(); App.copySel(); }
+      else if (mod && e.key.toLowerCase() === 'x') { e.preventDefault(); App.cutSel(); }
+      else if (mod && e.key.toLowerCase() === 'v') { e.preventDefault(); App.pasteSel(); }
       else if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); S.sel = new Set(S.rows.map((r) => r.kind + r.id)); selChanged(); }
       else if (!mod && !e.altKey && e.key.length === 1 && S.cell) { const col = ALL_COLS[S.cell.k]; if (col && col.ed && col.ed !== 'sel') { e.preventDefault(); startEdit(S.cell.key, S.cell.k, e.key); } }
     });
@@ -803,19 +815,7 @@
   }
 
   // ================= context menu =================
-  function showCtx(x, y) {
-    const c = $('#ctx');
-    const items = [
-      ['add_activity', () => App.addTask()], ['add_milestone', () => App.addMilestone()], ['add_wbs', () => App.addWbs()], '-',
-      ['duplicate', () => App.duplicate()], ['link', () => App.link()], ['unlink', () => App.unlink()], '-',
-      ['details', () => App.showDetails()], ['indent', () => App.indent()], ['outdent', () => App.outdent()], '-', ['delete', () => App.del()]
-    ];
-    c.innerHTML = items.map((it, i) => (it === '-' ? '<hr>' : `<button class="it" data-i="${i}">${esc(t(it[0]))}</button>`)).join('');
-    c.dir = P6.dir();
-    c.hidden = false;
-    c.style.left = Math.min(x, innerWidth - 230) + 'px'; c.style.top = Math.min(y, innerHeight - c.offsetHeight - 10) + 'px';
-    c.onclick = (e) => { const b = e.target.closest('.it'); if (!b) return; c.hidden = true; items[+b.dataset.i][1](); };
-  }
+  function showCtx(x, y) { App.showCtx(x, y); }
 
   // ================= details panel =================
   let detSig = '';
@@ -827,6 +827,7 @@
   function sel(f, val, opts) { return `<select data-f="${f}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`; }
   function renderDetails() {
     const el = $('#details');
+    if (S.cfg.dock === 'usage' && S.cfg.detOpen) { el.classList.remove('collapsed'); return App.renderUsage(el); }
     const tabs = ['general', 'status', 'res', 'rels', 'notes'];
     const fr = focusRow();
     const title = fr ? (fr.kind === 't' ? fr.t.code + ' · ' + fr.t.name : fr.w.code + ' · ' + fr.w.name) : '';
@@ -887,6 +888,7 @@
     return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
   }
   function syncDetails() {
+    if (S.cfg.dock === 'usage' && S.cfg.detOpen) return;
     const sig = detSignature();
     if (sig !== detSig && !(detailsFocused() && sig.split('|').slice(0, 3).join() === detSig.split('|').slice(0, 3).join() && !/rels|res/.test(S.tab))) return renderDetails();
     if (sig !== detSig) return renderDetails();
@@ -992,6 +994,7 @@
     for (const k of [...S.sel]) if (!S.rowIdx.has(k) && false) S.sel.delete(k);
     renderHead(); renderRows();
     if (gantt && prevMin !== S.minDay && prevMin) gantt.sc.scrollLeft += (prevMin - S.minDay) * ZOOMS[S.cfg.pxIdx];
+    if (App.markUsageDirty) App.markUsageDirty();
     pushGantt();
     if (o && o.details) renderDetails(); else syncDetails();
     updateStatus(); updateToolbarState(); updateProjName();
@@ -1001,7 +1004,7 @@
     const b = $('#projBtn'); if (!b || !S.p) return;
     b.textContent = '📁 ' + S.p.name; b.title = t('projects');
     document.title = S.p.name + ' – P6 Web';
-    const tb = $('#titlebar'); if (tb) tb.innerHTML = `<b>P6 Web</b> <span>–</span> ${esc(t('win_activities'))} <span>–</span> <span dir="auto" style="opacity:1">${esc(S.p.name)}</span> <span style="margin-inline-start:auto">${esc(t('data_date'))}: ${fmtD(S.p.dataDate)}</span>`;
+    if (App.buildTitle) App.buildTitle();
   }
   function updateStatus() {
     const p = S.p; if (!p) return;
@@ -1103,7 +1106,7 @@
   function goDate(d) { if (d != null) gantt.scrollToDay(d, 0.35); }
 
   const LAYOUTS = {
-    classic: { cols: ['code', 'name', 'dur', 'rem', 'pct', 'es', 'ef', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
+    classic: { cols: ['code', 'name', 'dur', 'es', 'ef', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
     schedule: { cols: ['code', 'name', 'dur', 'es', 'ef', 'pred', 'succ', 'cstr', 'cdate'], group: 'wbs', sort: 'code', mode: 'all' },
     tracking: { cols: ['code', 'name', 'status', 'dur', 'rem', 'pct', 'es', 'ef', 'as', 'af', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
     variance: { cols: ['code', 'name', 'es', 'ef', 'bs', 'bf', 'vs', 'vf', 'tf'], group: 'wbs', sort: 'code', mode: 'all' },
@@ -1119,32 +1122,9 @@
   const TS = [['day', 1], ['week', 3], ['month', 5], ['quarter', 7], ['year', 8]];
   function setTimescale(i) { const gs = $('#gScroll'); const old = ZOOMS[S.cfg.pxIdx]; const c = S.minDay + (gs.scrollLeft + gs.clientWidth / 2) / old; S.cfg.pxIdx = i; saveCfg(); pushGantt(); gs.scrollLeft = (c - S.minDay) * ZOOMS[i] - gs.clientWidth / 2; buildLayoutBar(); }
   const BARS = [['base', 'show_baseline'], ['crit', 'show_critical'], ['rels', 'show_rels'], ['labels', 'show_labels'], ['float', 'show_float'], ['today', 'show_today'], ['spot', 'spotlight']];
-  function buildLayoutBar() {
-    const lb = $('#layoutbar'); if (!lb) return;
-    const nearest = TS.reduce((b, x) => (Math.abs(x[1] - S.cfg.pxIdx) < Math.abs(b[1] - S.cfg.pxIdx) ? x : b), TS[0])[1];
-    const opt = (v, l, cur) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`;
-    lb.innerHTML = `<label>${esc(t('layout'))}:</label><select class="sel" id="lb_layout">${Object.keys(LAYOUTS).map((k) => opt(k, t('lay_' + k), S.cfg.layout)).join('')}</select>
-      <label>${esc(t('filter'))}:</label><select class="sel" id="lb_filter">${['all', 'critical', 'IP', 'NS', 'C', 'late', 'neg', 'custom'].map((m) => opt(m, m === 'custom' ? t('filter_custom') : t('f_' + m), S.cfg.filter.mode)).join('')}</select>
-      <label>${esc(t('group_by'))}:</label><select class="sel" id="lb_group" style="min-width:90px">${opt('wbs', 'WBS', S.cfg.group)}${opt('none', t('no_group'), S.cfg.group)}</select>
-      <label>${esc(t('sort_by'))}:</label><select class="sel" id="lb_sort" style="min-width:100px">${['code', 'name', 'es', 'ef', 'tf', 'dur'].map((k) => opt(k, t('col_' + k), S.cfg.sort)).join('')}</select>
-      <button class="lb" id="lb_bars">${esc(t('bars'))} ▾</button>
-      <label>${esc(t('timescale'))}:</label><select class="sel" id="lb_ts" style="min-width:90px">${TS.map(([k, v]) => opt(v, t('ts_' + k), nearest)).join('')}</select>`;
-    $('#lb_layout').onchange = (e) => applyLayout(e.target.value);
-    $('#lb_filter').onchange = (e) => { if (e.target.value === 'custom') { App.dialogs.filter(); } else { S.cfg.filter.mode = e.target.value; saveCfg(); refresh(); } };
-    $('#lb_group').onchange = (e) => { S.cfg.group = e.target.value; saveCfg(); refresh(); buildMenus(); };
-    $('#lb_sort').onchange = (e) => { S.cfg.sort = e.target.value; S.cfg.sortDir = 1; saveCfg(); refresh(); };
-    $('#lb_ts').onchange = (e) => setTimescale(+e.target.value);
-    $('#lb_bars').onclick = (e) => {
-      e.stopPropagation();
-      document.querySelectorAll('.pop').forEach((x) => x.remove());
-      const r = e.target.getBoundingClientRect(), p = document.createElement('div');
-      p.className = 'pop'; p.dir = P6.dir(); p.style.left = r.left + 'px'; p.style.top = r.bottom + 2 + 'px';
-      p.innerHTML = BARS.map(([k, l]) => `<label><input type="checkbox" data-k="${k}"${S.cfg.show[k] !== false && S.cfg.show[k] ? ' checked' : ''}> ${esc(t(l))}</label>`).join('');
-      p.onclick = (ev) => ev.stopPropagation();
-      p.onchange = (ev) => { toggleShow(ev.target.dataset.k); };
-      document.body.appendChild(p);
-    };
-  }
+  function buildLayoutBar() { if (API.drawLayoutBar) API.drawLayoutBar(); }
+  const nearestTs = () => TS.reduce((b, x) => (Math.abs(x[1] - S.cfg.pxIdx) < Math.abs(b[1] - S.cfg.pxIdx) ? x : b), TS[0])[1];
+  Object.assign(API, { LAYOUTS, TS, BARS, setTimescale, nearestTs, toggleShow, saveCfg, layoutDetails, renderDetails, setSel(keys) { S.sel = new Set(keys); S.focus = keys[0] || null; S.anchor = S.focus; selChanged(); } });
   function menuDefs() {
     const sh = S.cfg.show, F = S.cfg;
     return [
@@ -1155,16 +1135,20 @@
       ]],
       ['edit', [
         ['undo', () => App.doUndo(), 'Ctrl+Z'], ['redo', () => App.doRedo(), 'Ctrl+Y'], '-',
+        ['cut', () => App.cutSel(), 'Ctrl+X'], ['copy', () => App.copySel(), 'Ctrl+C'], ['paste', () => App.pasteSel(), 'Ctrl+V'], '-',
         ['add_activity', () => App.addTask(), 'Insert'], ['add_milestone', () => App.addMilestone()], ['add_wbs', () => App.addWbs()], ['duplicate', () => App.duplicate(), 'Ctrl+D'], ['delete', () => App.del(), 'Del'], '-',
         ['indent', () => App.indent()], ['outdent', () => App.outdent()], ['link', () => App.link()], ['unlink', () => App.unlink()]
       ]],
       ['view', [
         ...Object.keys(LAYOUTS).map((k) => ['lay_' + k, () => applyLayout(k), '', F.layout === k]), '-',
-        ['filter_custom', () => App.dialogs.filter()], ['columns', () => App.dialogs.columns()],
+        ['filter_custom', () => App.dialogs.filter()], ['columns', () => App.dialogs.columns()], ['group_sort', () => App.dialogs.groupSort()],
         ['group_wbs', () => { F.group = F.group === 'wbs' ? 'none' : 'wbs'; saveCfg(); refresh(); buildMenus(); buildLayoutBar(); }, '', F.group === 'wbs'], ['expand_all', () => App.expandAll()], ['collapse_all', () => App.collapseAll()], '-',
         ['show_baseline', () => toggleShow('base'), '', sh.base], ['show_critical', () => toggleShow('crit'), '', sh.crit], ['show_rels', () => toggleShow('rels'), '', sh.rels], ['show_labels', () => toggleShow('labels'), '', sh.labels], ['show_float', () => toggleShow('float'), '', sh.float], ['show_today', () => toggleShow('today'), '', sh.today], '-',
         ['zoom_in', () => zoom(-1)], ['zoom_out', () => zoom(1)], ['zoom_fit', () => zoomFit()], ['go_datadate', () => goDate(S.p.dataDate)], ['go_today', () => goDate(P6.todayDay())], '-',
-        ['toggle_details', () => { F.detOpen = !F.detOpen; saveCfg(); layoutDetails(); renderDetails(); }]
+        ['bottom_details', () => App.setDock('details'), '', F.dock === 'details' && F.detOpen], ['bottom_usage', () => App.setDock('usage'), '', F.dock === 'usage' && F.detOpen], ['bottom_none', () => App.setDock('none'), '', !F.detOpen]
+      ]],
+      ['enterprise', [
+        ['projects', () => App.dialogs.projects(), 'Ctrl+O'], ['resources', () => App.dialogs.resources()], ['resource_usage', () => App.setDock('usage')], ['calendars', () => App.dialogs.calendars()], ['baselines', () => App.dialogs.baselines()]
       ]],
       ['project', [
         ['project_settings', () => App.dialogs.settings()], ['calendars', () => App.dialogs.calendars()], ['wbs_tree', () => App.dialogs.wbs()], ['resources', () => App.dialogs.resources()], '-',
@@ -1174,6 +1158,7 @@
         ['schedule', () => App.schedule(), 'F9'], ['auto_schedule', () => { F.auto = !F.auto; saveCfg(); updateStatus(); buildMenus(); if (F.auto) App.schedule(); }, '', F.auto], '-',
         ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
+      ['admin', [['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],
       ['help', [['guide', () => App.dialogs.help()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
     ];
   }
@@ -1265,7 +1250,7 @@
     $('#themeBtn').innerHTML = S.cfg.theme === 'p6' ? 'P6' : S.cfg.theme === 'dark' ? '☀' : '☾';
     $('#themeBtn').title = t('theme_cycle');
   }
-  API.setLang = (l) => { S.cfg.lang = l; saveCfg(); applyLang(); buildMenus(); buildToolbar(); buildLayoutBar(); if (S.p) refresh({ details: true }); };
+  API.setLang = (l) => { S.cfg.lang = l; saveCfg(); applyLang(); buildMenus(); buildToolbar(); if (App.buildChrome) App.buildChrome(); if (S.p) refresh({ details: true }); };
 
   // ================= boot =================
   API.boot = async function () {
@@ -1277,7 +1262,7 @@
     API.gantt = gantt; API.S = S;
     gantt.sc.addEventListener('scroll', () => { renderRows(); }, { passive: true });
     bindTable(); bindDetails(); bindSplitters();
-    buildMenus(); buildToolbar(); buildLayoutBar(); layoutDetails();
+    buildMenus(); buildToolbar(); App.initP6UI(); layoutDetails();
     $('#langBtn').onclick = () => API.setLang(S.cfg.lang === 'ar' ? 'en' : 'ar');
     $('#themeBtn').onclick = () => { S.cfg.theme = ({ p6: 'light', light: 'dark', dark: 'p6' })[S.cfg.theme] || 'p6'; saveCfg(); applyLang(); };
     $('#projBtn').onclick = () => API.dialogs.projects();
