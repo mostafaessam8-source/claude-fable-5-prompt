@@ -55,7 +55,7 @@
       const m = blank(); m.n = 1;
       for (const a of byTask.get(tk.id) || []) {
         const r = rs.get(a.rsrc); if (!r) continue;
-        const k = KINDS[r.type] || 'L', price = +r.price || 0, sp = asgSplit(a, tk);
+        const k = KINDS[r.type] || 'L', price = a.price != null ? +a.price : P6.priceAt(r, tk.es), sp = asgSplit(a, tk);
         m['bu_' + k] += a.qty; m['au_' + k] += sp.act; m['ru_' + k] += sp.rem;
         m['bc_' + k] += a.qty * price; m['ac_' + k] += sp.act * price; m['rc_' + k] += sp.rem * price;
       }

@@ -445,11 +445,12 @@
   }
 
   // ================= table =================
-  const RH = 24;
-  function totalColsW() { return S.cfg.cols.reduce((a, c) => a + c.w, 0); }
+  let RH = 24;
+  const LNW = 44;
+  function totalColsW() { return S.cfg.cols.reduce((a, c) => a + c.w, 0) + (S.cfg.lineNo ? LNW : 0); }
   function renderHead() {
     const h = $('#tHead');
-    let s = `<div class="hin" style="width:${totalColsW()}px">`;
+    let s = `<div class="hin" style="width:${totalColsW()}px">${S.cfg.lineNo ? `<div class="th r" style="width:${LNW}px">#</div>` : ''}`;
     for (const c of S.cfg.cols) {
       const d = ALL_COLS[c.k];
       const sorted = S.cfg.sort === c.k ? (S.cfg.sortDir > 0 ? ' ▲' : ' ▼') : '';
@@ -476,8 +477,9 @@
       s += `<div class="${cls}" style="top:${i * RH}px;width:${totalColsW()}px" data-i="${i}" data-key="${key}"${row.kind === 't' ? ' draggable="true"' : ''}>`;
       const tk = treeKey(), G = (S.depth || 1) * 12;
       let stripes = '';
-      for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${L * 12}px;background:${WCOL[L % WCOL.length][0]}"></i>`;
+      for (let L = 0; L < row.level; L++) stripes += `<i class="strp" style="left:${(S.cfg.lineNo ? LNW : 0) + L * 12}px;background:${WCOL[L % WCOL.length][0]}"></i>`;
       s += stripes;
+      if (S.cfg.lineNo) s += `<div class="td r ro" style="width:${LNW}px;position:relative;z-index:2;background:#f3f3f3;color:#555">${i + 1}</div>`;
       for (const c of S.cfg.cols) {
         const ci = cellOf(c.k, row);
         const cur = S.cell && S.cell.key === key && S.cell.k === c.k;
@@ -486,7 +488,7 @@
           const pad = row.kind === 'w' ? row.level * 12 + 4 : G + 4;
           let lead = '';
           if (row.kind === 'w') lead = `<span class="tw" data-tw="${row.id}">${row.hasKids ? (S.collapsed.has(row.id) ? '+' : '−') : ''}</span><i class="ico wbs"></i>`;
-          else lead = `<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.crit && row.t.status !== 'C' ? 'crit' : row.t.status === 'C' ? 'done' : row.t.status === 'IP' ? 'ip' : 'task'}"></i>`;
+          else lead = `${S.cfg.attach && (row.t.docs || []).length ? '<span class="clip" title="' + esc(t('tab_docs')) + '">📎</span>' : ''}<i class="ico ${P6.isMile(row.t) ? 'mile' : row.t.crit && row.t.status !== 'C' ? 'crit' : row.t.status === 'C' ? 'done' : row.t.status === 'IP' ? 'ip' : 'task'}"></i>`;
           inner = `<span style="padding-inline-start:${pad}px;display:inline-flex;align-items:center;min-width:0;width:100%">${lead}<span style="unicode-bidi:plaintext;overflow:hidden;text-overflow:ellipsis">${esc(ci.text)}</span></span>`;
         } else inner = `<span style="unicode-bidi:plaintext">${esc(ci.text)}</span>`;
         const rc = ci.cls.split(' ').filter((x) => x && x !== 'r' && x !== 'lft' && x !== 'c');
@@ -553,7 +555,7 @@
       el.value = rawValue(k, row);
     } else {
       el = document.createElement('input');
-      el.type = 'text'; el.value = initial != null ? initial : rawValue(k, row);
+      el.type = 'text'; el.value = initial != null ? initial : rawValue(k, row); el.spellcheck = !!S.cfg.spell;
       if (col.ed === 'date') el.placeholder = 'dd-Mon-yy';
     }
     td.innerHTML = ''; td.classList.add('cur'); td.appendChild(el);
@@ -794,7 +796,7 @@
   function pushGantt(full) {
     if (!gantt) return;
     const px = ZOOMS[S.cfg.pxIdx];
-    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: S.cfg.show, p: S.p, rels: true, spot: S.cfg.show.spot ? S.spot : null };
+    const o = { rows: S.rows, ru: S.ru, rowH: RH, px, minDay: S.minDay, maxDay: S.maxDay, sel: S.sel, show: Object.assign({}, S.cfg.show, { pline: S.cfg.pline, labelMode: S.cfg.labelMode || 'name' }), p: S.p, rels: true, spot: S.cfg.show.spot ? S.spot : null };
     gantt.set(o);
   }
   function ganttCb() {
@@ -854,7 +856,8 @@
   P6.hasTab = (k) => DEF_TABS.includes(k);
   function renderDetails() {
     const el = $('#details');
-    if (S.cfg.dock === 'usage' && S.cfg.detOpen) { el.classList.remove('collapsed'); return App.renderUsage(el); }
+    const dockFn = { usage: App.renderUsage, network: App.renderNetwork, usagesheet: App.renderUsageSheet, acts2: App.renderActs2 }[S.cfg.dock];
+    if (dockFn && S.cfg.detOpen) { el.classList.remove('collapsed'); return dockFn(el); }
     const tabs = (S.cfg.detTabs && S.cfg.detTabs.length ? S.cfg.detTabs : DEF_TABS).filter((k) => P6.hasTab(k));
     if (!tabs.includes(S.tab)) S.tab = tabs[0];
     const fr = focusRow();
@@ -928,7 +931,7 @@
     return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, tk.steps.map((s) => s.id + (s.done ? 1 : 0)).join('.'), ['topics', 'docs', 'expenses', 'risks', 'discuss'].map((k) => (tk[k] || []).length).join('.'), S.p.codeTypes.length, S.p.udfs.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
   }
   function syncDetails() {
-    if (S.cfg.dock === 'usage' && S.cfg.detOpen) return;
+    if (S.cfg.dock && S.cfg.dock !== 'details' && S.cfg.detOpen) { if (S.cfg.dock === 'network' || S.cfg.dock === 'acts2' || S.cfg.dock === 'usagesheet') { if (App.redrawDock) App.redrawDock(); } return; }
     const sig = detSignature();
     if (sig !== detSig && !(detailsFocused() && sig.split('|').slice(0, 3).join() === detSig.split('|').slice(0, 3).join() && !/rels|res/.test(S.tab))) return renderDetails();
     if (sig !== detSig) return renderDetails();
@@ -1052,6 +1055,7 @@
     pushGantt();
     if (o && o.details) renderDetails(); else syncDetails();
     updateStatus(); updateToolbarState(); updateProjName();
+    if (App.win && App.win !== 'activities' && App.renderWin) App.renderWin();
     if (!document.activeElement || !document.activeElement.closest('#layoutbar')) buildLayoutBar();
   }
   function updateProjName() {
@@ -1270,22 +1274,23 @@
       ['help', [['guide', () => App.dialogs.help()], ['load_sample', () => App.loadSample()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
     ];
   }
-  function buildMenus() {
+  API.baseMenuDefs = () => menuDefs();
+  function buildMenus(forceOpen) {
     S.cfg.__menus = 1;
     const mb = $('#menubar');
     const open = mb.querySelector('.menu.open');
-    const openId = open ? open.dataset.id : null;
+    const openId = forceOpen || (open ? open.dataset.id : null);
     mb.innerHTML = '';
-    for (const [id, items] of menuDefs()) {
+    for (const [id, items] of (API.menuDefs ? API.menuDefs() : menuDefs())) {
       const m = document.createElement('div'); m.className = 'menu' + (openId === id ? ' open' : ''); m.dataset.id = id;
       const ico = (k) => (MENU_ICON[k] && P6.hasIcon(MENU_ICON[k]) ? P6.icon(MENU_ICON[k]) : '');
       m.innerHTML = `<button>${esc(t('m_' + id))}</button><div class="dd" dir="${P6.dir()}">${items.map((it, i) => (it === '-' ? '<hr>' : `<button class="it${it[5] ? ' dis' : ''}" data-i="${i}"><span class="ico2">${ico(it[0])}</span>${it[3] ? '<span class="ck">✓</span>' : ''}${esc(t(it[0]))}${it[4] ? '<span class="k">▸</span>' : `<span class="k">${esc(it[2] || '')}</span>`}</button>`)).join('')}</div>`;
-      m.querySelector('button').onclick = (e) => { e.stopPropagation(); const was = m.classList.contains('open'); mb.querySelectorAll('.menu').forEach((x) => x.classList.remove('open')); if (!was) m.classList.add('open'); };
+      m.querySelector('button').onclick = (e) => { e.stopPropagation(); const was = m.classList.contains('open'); mb.querySelectorAll('.menu').forEach((x) => x.classList.remove('open')); if (!was) { buildMenus(id); } };
       const dd = m.querySelector('.dd');
       const openSub = (b) => { const it = items[+b.dataset.i]; if (!it || !it[4]) return; const r = b.getBoundingClientRect(); App.popMenu(it[4], P6.dir() === 'rtl' ? r.left - 200 : r.right - 2, r.top - 3); };
       dd.onclick = (e) => { const b = e.target.closest('.it'); if (!b || b.classList.contains('dis')) return; const it = items[+b.dataset.i]; if (it[4]) return openSub(b); m.classList.remove('open'); if (it[1]) it[1](); };
       dd.addEventListener('mouseover', (e) => { const b = e.target.closest('.it'); if (!b) return; document.querySelectorAll('.pmenu').forEach((x) => x.remove()); if (items[+b.dataset.i] && items[+b.dataset.i][4]) openSub(b); });
-      m.addEventListener('mouseenter', () => { if (mb.querySelector('.menu.open') && !m.classList.contains('open')) { mb.querySelectorAll('.menu').forEach((x) => x.classList.remove('open')); m.classList.add('open'); } });
+      m.addEventListener('mouseenter', () => { if (mb.querySelector('.menu.open') && !m.classList.contains('open')) { buildMenus(id); } });
       mb.appendChild(m);
     }
   }
@@ -1341,7 +1346,7 @@
   }
   function openProject(p, fname) {
     if (S.p && S.dirty) saveNow();
-    S.p = p; S.sel.clear(); S.focus = null; S.cell = null; S.undo = []; S.redo = []; S.collapsed.clear(); rawSaved = null;
+    P6.ensureBaselines(p); S.p = p; S.sel.clear(); S.focus = null; S.cell = null; S.undo = []; S.redo = []; S.collapsed.clear(); rawSaved = null;
     if (S.cfg.group === 'wbs') for (const w of p.wbs) if (w.parent != null && p.wbs.filter((q) => q.parent == null).length === 1 && p.wbs.length > 60) S.collapsed.add(w.id);
     scheduleSave();
     refresh({ details: true });
@@ -1380,7 +1385,7 @@
     API.gantt = gantt; API.S = S;
     gantt.sc.addEventListener('scroll', () => { renderRows(); }, { passive: true });
     bindTable(); bindDetails(); bindSplitters();
-    applyView(); buildMenus(); buildToolbar(); App.initP6UI(); loadRecent(); if (P6.bindDetExtra) P6.bindDetExtra(); layoutDetails();
+    applyView(); buildMenus(); buildToolbar(); App.initP6UI(); loadRecent(); App.applyFont(); App.applyBars(); App.drawWinTabs(); setTimeout(() => App.applyHint(), 0); if (P6.bindDetExtra) P6.bindDetExtra(); layoutDetails();
     $('#langBtn').onclick = () => API.setLang(S.cfg.lang === 'ar' ? 'en' : 'ar');
     $('#themeBtn').onclick = () => { S.cfg.theme = ({ p6: 'light', light: 'dark', dark: 'p6' })[S.cfg.theme] || 'p6'; saveCfg(); applyLang(); };
     $('#projBtn').onclick = () => API.dialogs.projects();
@@ -1406,7 +1411,12 @@
       else if (e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); API.dialogs.newProject(); }
       else if (e.altKey && e.key.toLowerCase() === 'w') { e.preventDefault(); API.closeAll(); }
       else if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); API.dialogs.projects(); }
-      else if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); const q = $('#q'); if (q) { q.focus(); q.select(); } }
+      else if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); API.dialogs.find(); }
+      else if (e.key === 'F3') { e.preventDefault(); API.findNext(e.shiftKey); }
+      else if (mod && e.key.toLowerCase() === 'r') { e.preventDefault(); API.dialogs.replace(); }
+      else if (mod && e.key.toLowerCase() === 'e') { e.preventDefault(); API.fillDown(); }
+      else if (e.key === 'F7') { e.preventDefault(); API.toggleSpell(); }
+      else if (e.altKey && e.key === 'F1') { e.preventDefault(); S.cfg.hint = S.cfg.hint === false; saveCfg(); API.applyHint(); buildMenus(); }
       else if (mod && e.key.toLowerCase() === 'd' && !typing) { e.preventDefault(); API.duplicate(); }
       else if (e.key === 'Escape') { $('#ctx').hidden = true; }
     });
@@ -1417,12 +1427,12 @@
     let p = null;
     try { const last = localStorage.getItem('p6web.last'); if (last) p = await loadProject(last); } catch (e) { p = null; }
     if (!p) { p = P6.sampleProject(); p.name = t('sample_name'); }
-    S.p = p; refresh({ details: true });
-    setTimeout(() => { zoomFit(); renderRows(); }, 40);
+    P6.ensureBaselines(p); S.p = p; refresh({ details: true });
+    setTimeout(() => { zoomFit(); renderRows(); App.applyHint(); }, 40);
     // PWA-ish: keep an app-ready marker for tests
     document.body.dataset.ready = '1';
   };
 
-  Object.assign(API, { setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
+  Object.assign(API, { rawValue, zoom, zoomFit, setRowH(h) { RH = h; document.documentElement.style.setProperty('--rowh', h + 'px'); }, getRH: () => RH, selectKeys(k) { return API.setSel(k); }, goDate, setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
   g.App.dialogs = {};
 })(window);

@@ -9,6 +9,15 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 
 ![screenshot](docs/screenshot.png)
 
+## نوافذ P6 وقوائمها الكاملة / Windows & full menus
+
+* **نوافذ** بتبويبات علوية مثل P6: Projects, Resources, Activities, Resource Assignments, WBS, Expenses, WPs & Docs, Thresholds, Issues, Risks (من قائمة Project / View ← Show on Top أو الشريط الأيسر).
+* **Resources**: ID / الاسم / النوع / وحدة القياس / الدور / Default Units + تبويبات General / Details / **Units & Prices** (أسعار بتاريخ سريان) / Roles / Notes / UDF. **Resource Assignments**: مجمّعة حسب Cost Account مع جدول زمني للوحدات والتكلفة.
+* **Edit**: Cut/Copy/Paste, Add, Delete, **Dissolve**, **Renumber Activity IDs**, Assign ▸, Link/Unlink, **Fill Down** (Ctrl+E), Select All, **Find / Find Next / Replace** (Ctrl+F / F3 / Ctrl+R), Spell Check (F7), User Preferences.
+* **Project**: Activities, Additional Activities View, Resource Assignments, WBS, **Assign / Maintain Baselines** (عدة بيزلاين ورئيسي)، Expenses, WPs & Docs, Thresholds (مراقبة تنشئ Issues)، Issues, Risks, Set Default Project.
+* **View**: Layout ▸ (Open / Save / Save As)، Show on Top/Bottom، Bottom Layout Options، Bars، Columns، Time Scale، Filter By، Group and Sort، Progress Spotlight، **Progress Line**، Attachments، Line Numbers، Critical Path (driving)، **Check Schedule**، Table Font and Row، **Trace Logic** (Activity Network)، Hint Help، Status Bar، Zoom، Expand/Collapse/Collapse To، Toolbars.
+* لا يوجد: Launch (تطبيقات P6 الأخرى)، Lock Toolbars، قاعدة بيانات مشتركة/Access Mode (التطبيق محلي بالكامل). بيزلاين متعدد، Issues، Thresholds، Risks، Docs وDiscussion تُحفظ في المتصفح/JSON فقط وليس في XER.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
