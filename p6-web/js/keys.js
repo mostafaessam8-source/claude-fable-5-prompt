@@ -53,18 +53,21 @@
       }
       return '<tr>' + cols.map((c, i) => {
         const v = cellStr(c, i, row, ctx);
-        const ind = i === 0 ? '&nbsp;&nbsp;'.repeat(Math.max(0, row.level || 0)) : '';
+        const ind = i === 0 && (row.level || 0) > 0 ? `<span style='mso-spacerun:yes'>${' '.repeat(2 * row.level)}</span>` : '';
         const paint = bg && (!firstOnly || i === 0);
         const st = (paint ? `background:${bg};` : '') + (paint && fg ? `color:${fg};` : '') + (paint && bold ? 'font-weight:bold;' : '') + (i === 0 ? 'text-align:left;' : '');
         return `<td${st ? ` style="${st}"` : ''}>${ind}${hx(v)}</td>`;
       }).join('') + '</tr>';
     }).join('');
     const head = '<tr>' + cols.map((c, i) => `<td style="${style === 'p6' ? (i === 0 ? 'background:' + WBS_FILL : '') : 'background:#d9d9d9;font-weight:bold'}">${hx(c.title || P6.t('col_' + c.k))}</td>`).join('') + '</tr>';
-    return `<table style="font-family:Calibri,Arial;font-size:11pt">${head}${tr}</table>`;
+    return `<table style="font-family:Calibri,Arial;font-size:11pt;white-space:pre">${head}${tr}</table>`;
   };
   App.copyTable = function (all, style) {
-    const { text, n } = App.tableTSV(all), html = App.tableHTML(all, style);
+    const { text, n } = App.tableTSV(all); style = style || F().copyStyle || 'screen';
+    const html = style === 'text' ? null : App.tableHTML(all, style);
     const done = () => App.toast(t('copied_excel', n));
+    const plain = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } ta.remove(); if (ok) done(); else App.toast(t('copy_failed'), true); };
+    if (!html) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, plain); else plain(); return; }
     const fallback = () => {
       const d = document.createElement('div'); d.contentEditable = 'true'; d.style.cssText = 'position:fixed;left:-9999px;top:0;white-space:pre'; d.innerHTML = html; document.body.appendChild(d);
       const rg = document.createRange(); rg.selectNodeContents(d); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(rg);
