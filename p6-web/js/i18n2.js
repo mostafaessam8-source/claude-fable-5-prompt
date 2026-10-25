@@ -60,5 +60,6 @@
     mi_copytable_p6: ['Copy Table for Excel (P6 style)', 'نسخ الجدول لـ Excel (بنمط P6)'], copy_style: ['Copy to Excel style (Ctrl+C)', 'شكل النسخ لـ Excel (Ctrl+C)'], copy_screen: ['Like the screen (WBS colours, bold)', 'زي الشاشة (ألوان WBS وخط عريض)'], copy_p6: ['Like P6 export (light-green first cell)', 'زي تصدير P6 (أخضر فاتح في أول خلية)'],
     copy_text: ['Plain text only (tab separated, like P6 text copy)', 'نص فقط (بفواصل Tab، زي نسخ P6 النصي)'], mi_copytable_text: ['Copy Table as Plain Text', 'نسخ الجدول كنص فقط'],
     mi_xlsx: ['Export to Excel (.xlsx) – selection, or all if nothing selected', 'تصدير إلى Excel (.xlsx) – المحدد أو الكل'], mi_xlsx_sel: ['Export Selection to Excel (.xlsx)', 'تصدير المحدد إلى Excel (.xlsx)'], mi_xlsx_all: ['Export All to Excel (.xlsx)', 'تصدير الكل إلى Excel (.xlsx)'], xlsx_done: ['Excel file created with {0} rows (WBS levels are Excel groups)', 'تم إنشاء ملف Excel بـ {0} صف (مستويات الـ WBS كمجموعات Excel)'],
+    mi_dbconfig: ['Database Configuration…', 'إعدادات قاعدة البيانات…'], mi_chgpw: ['Change Password…', 'تغيير كلمة المرور…'], mi_disconnect: ['Disconnect (Log Out)', 'قطع الاتصال (تسجيل الخروج)'], login_at_start: ['Show the login screen at startup', 'إظهار شاشة تسجيل الدخول عند البدء'],
   });
 })(window);

@@ -99,7 +99,7 @@
       const id = wsel.projects || cur, a = b.dataset.a;
       if (a === 'new') D.newProject(); else if (a === 'settings') D.settings();
       else if (a === 'open') { const q = await App.loadProject(id); if (q) { App.openProject(q); App.showWin('activities'); } }
-      else if (a === 'default') { try { localStorage.setItem('p6web.last', id); } catch (er) { /* */ } App.toast(t('default_set')); }
+      else if (a === 'default') { try { localStorage.setItem(App.lastKey(), id); } catch (er) { /* */ } App.toast(t('default_set')); }
       else if (a === 'del') { if (id === cur) return App.toast(t('err_cur_proj'), true); if (confirm(t('confirm_delete_project'))) { await App.deleteProject(id); renderProjects(el); } }
     };
     el.ondblclick = async (e) => { const tr = e.target.closest('tr[data-rid]'); if (!tr) return; const q = await App.loadProject(tr.dataset.rid); if (q) { App.openProject(q); App.showWin('activities'); } };

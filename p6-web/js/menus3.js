@@ -65,7 +65,7 @@
       ['mi_steptpl', na(t('mi_steptpl'))], ['mi_accounts', () => App.accountsDialog()], ['mi_funding', na(t('mi_funding'))], ['mi_curves', na(t('mi_curves'))], ['mi_extapps', na(t('mi_extapps'))], '-', ['resource_usage', () => App.setDock('usage')], ['act_codes_project', () => D.codes('acp')]
     ];
     const admin = [
-      ['mi_adminprefs', () => D.prefs()], ['mi_admincat', na(t('mi_admincat'))], ['mi_currency', na(t('mi_currency'))], '-', ['mi_finperiod', na(t('mi_finperiod'))], '-', ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => D.prefs()]
+      ['mi_adminprefs', () => D.prefs()], ['mi_dbconfig', () => D.dbConfig()], ['mi_chgpw', () => App.changePassword()], ['mi_disconnect', () => App.disconnect()], ['mi_admincat', na(t('mi_admincat'))], ['mi_currency', na(t('mi_currency'))], '-', ['mi_finperiod', na(t('mi_finperiod'))], '-', ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => D.prefs()]
     ];
     void sel;
     return defs.map((m) => (m[0] === 'tools' ? ['tools', tools] : m[0] === 'enterprise' ? ['enterprise', enterprise] : m[0] === 'admin' ? ['admin', admin] : m));
@@ -75,7 +75,7 @@
     mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_schedopts: 'gear', mi_checksched: 'check',
     win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
     calendars: 'calendars2', mi_shifts: 'shifts', mi_steptpl: 'steptpl', mi_accounts: 'acctico', mi_funding: 'funding', mi_curves: 'curves', mi_extapps: 'extapps', resource_usage: 'people', act_codes_project: 'actcodes',
-    mi_adminprefs: 'adminprefs', mi_admincat: 'admincat', mi_currency: 'currency', mi_finperiod: 'finperiod', reset_layout: 'resetbars', wipe_data: 'del'
+    mi_adminprefs: 'adminprefs', mi_dbconfig: 'gchange', mi_chgpw: 'lock', mi_disconnect: 'exit', mi_admincat: 'admincat', mi_currency: 'currency', mi_finperiod: 'finperiod', reset_layout: 'resetbars', wipe_data: 'del'
   });
 
   // ---- Layout bar menu (the "▽ Layout: …" button) ----

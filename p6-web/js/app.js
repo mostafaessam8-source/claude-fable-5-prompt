@@ -36,12 +36,16 @@
   function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(S.cfg)); } catch (e) { /* ignore */ } }
 
   // ================= persistence (IndexedDB) =================
+  // several databases: alias 'Default' is the original 'p6web' IndexedDB, others are 'p6web-<alias>'
+  S.dbAlias = () => { try { return localStorage.getItem('p6web.db') || 'Default'; } catch (e) { return 'Default'; } };
+  S.dbNameOf = (al) => (al === 'Default' ? 'p6web' : 'p6web-' + al);
+  S.lastKey = () => (S.dbAlias() === 'Default' ? 'p6web.last' : 'p6web.last.' + S.dbAlias());
   let _db = null;
   function db() {
     if (_db) return _db;
     _db = new Promise((res, rej) => {
       let rq;
-      try { rq = indexedDB.open('p6web', 2); } catch (e) { return rej(e); }
+      try { rq = indexedDB.open(API.dbNameOf(API.dbAlias()), 2); } catch (e) { return rej(e); }
       rq.onupgradeneeded = () => { const d = rq.result; if (!d.objectStoreNames.contains('projects')) d.createObjectStore('projects', { keyPath: 'id' }); if (!d.objectStoreNames.contains('raw')) d.createObjectStore('raw'); if (!d.objectStoreNames.contains('eps')) d.createObjectStore('eps', { keyPath: 'id' }); };
       rq.onsuccess = () => res(rq.result);
       rq.onerror = () => rej(rq.error);
@@ -63,7 +67,7 @@
       const data = json(p), m = p.meta || {};
       await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: p.start, finish: p.finish, dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data }));
       if (p.xer && rawSaved !== p.id) { await idb('raw', 'readwrite', (st) => st.put(p.xer, p.id)); rawSaved = p.id; }
-      localStorage.setItem('p6web.last', p.id);
+      localStorage.setItem(API.lastKey(), p.id);
       S.dirty = false; loadRecent();
     } catch (e) { toast(t('save_fail'), true); }
     updateStatus();
@@ -1076,7 +1080,7 @@
       seg(`${esc(t('activities'))}: <b>${p.tasks.length}</b>`), seg(`${esc(t('selected'))}: <b>${S.sel.size}</b>`),
       seg(`${esc(t('portfolio'))}: <b>${esc(S.cfg.portfolio || t('all_projects'))}</b>`), seg(`${esc(t('access_mode'))}: <b>${esc(t('local'))}</b>`),
       seg(`${esc(t('data_date'))}: <b>${fmtD(p.dataDate)}</b>`), seg(`${esc(t('baseline'))}: <b>${esc(bl ? (p.blName || t('saved_baseline')) : t('current_project'))}</b>`),
-      seg(`${esc(t('user'))}: <b>${esc(S.cfg.user || 'USER')}</b>`), seg(`${esc(t('db'))}: <b>${esc(t('db_name'))}</b>`),
+      seg(`${esc(t('user'))}: <b>${esc(S.cfg.user || 'USER')}</b>`), seg(`${esc(t('db'))}: <b>${esc(API.dbAlias())}</b>`),
       seg(`${esc(t('start'))}: <b>${fmtD(p.start)}</b>`), seg(`${esc(t('finish'))}: <b>${fmtD(p.finish)}</b>`),
       seg(`${esc(t('progress'))}: <b>${ru.pct || 0}%</b> (${done}/${p.tasks.length})`), seg(`${esc(t('critical'))}: <b style="color:var(--danger)">${crit}</b>`),
       p.loops && p.loops.length ? `<span class="warn">⚠ ${esc(t('loops_found', p.loops.slice(0, 3).join(', ')))}</span>` : '',
@@ -1428,9 +1432,10 @@
     addEventListener('wheel', (e) => { if (e.ctrlKey && e.target.closest && e.target.closest('#ganttPane')) { e.preventDefault(); zoom(e.deltaY > 0 ? 1 : -1); } }, { passive: false });
     addEventListener('beforeunload', () => { if (S.dirty) saveNow(); });
     addEventListener('resize', () => { renderRows(); gantt.schedule(); });
+    if (App.loginScreen) await App.loginScreen();
     // load project
     let p = null;
-    try { const last = localStorage.getItem('p6web.last'); if (last) p = await loadProject(last); } catch (e) { p = null; }
+    try { const last = localStorage.getItem(API.lastKey()); if (last) p = await loadProject(last); } catch (e) { p = null; }
     if (!p) { p = P6.sampleProject(); p.name = t('sample_name'); }
     P6.ensureBaselines(p); S.p = p; refresh({ details: true });
     setTimeout(() => { zoomFit(); renderRows(); App.applyHint(); }, 40);

@@ -1,0 +1,153 @@
+/* P6 Web – login screen and Database Configuration (several named local databases), modelled on P6 Professional.
+   Each database is a separate IndexedDB in this browser. The login name/password is a local convenience lock, not real security. */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App, D = App.dialogs;
+  const esc = P6.esc, ar = () => App.cfg.lang !== 'en', B = (en, arb) => (ar() ? arb : en);
+  const LS = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }, del: (k) => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } } };
+  const SS = { get: (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) { /* ignore */ } }, del: (k) => { try { sessionStorage.removeItem(k); } catch (e) { /* ignore */ } } };
+
+  // ---------- database list ----------
+  const DRIVER = 'local';
+  const dbList = () => { try { const l = JSON.parse(LS.get('p6web.dbs')); if (Array.isArray(l) && l.length) return l; } catch (e) { /* ignore */ } return [{ alias: 'Default', driver: DRIVER }]; };
+  const saveList = (l) => LS.set('p6web.dbs', JSON.stringify(l));
+  App.dbList = dbList;
+  const validAlias = (s) => /^[A-Za-z0-9 _-]{1,30}$/.test(s);
+  const openNamed = (name) => new Promise((res, rej) => {
+    const rq = indexedDB.open(name, 2);
+    rq.onupgradeneeded = () => { const d = rq.result; ['projects', 'eps'].forEach((s) => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); }); if (!d.objectStoreNames.contains('raw')) d.createObjectStore('raw'); };
+    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+  });
+  const countProjects = async (name) => { const d = await openNamed(name); const n = await new Promise((r) => { const q = d.transaction('projects').objectStore('projects').count(); q.onsuccess = () => r(q.result); q.onerror = () => r(0); }); d.close(); return n; };
+  const all = (d, s) => new Promise((r) => { const q = d.transaction(s).objectStore(s).getAll(); q.onsuccess = () => r(q.result); });
+  const allKeys = (d, s) => new Promise((r) => { const q = d.transaction(s).objectStore(s).getAllKeys(); q.onsuccess = () => r(q.result); });
+  const getOne = (d, s, k) => new Promise((r) => { const q = d.transaction(s).objectStore(s).get(k); q.onsuccess = () => r(q.result); });
+  const putAll = (d, s, items, keys) => new Promise((r) => { const tx = d.transaction(s, 'readwrite'), st = tx.objectStore(s); items.forEach((v, i) => (keys ? st.put(v, keys[i]) : st.put(v))); tx.oncomplete = () => r(); });
+  async function copyDb(src, dst) {
+    const a = await openNamed(src), b = await openNamed(dst);
+    await putAll(b, 'projects', await all(a, 'projects')); await putAll(b, 'eps', await all(a, 'eps'));
+    const keys = await allKeys(a, 'raw'); const vals = []; for (const k of keys) vals.push(await getOne(a, 'raw', k)); await putAll(b, 'raw', vals, keys);
+    a.close(); b.close();
+  }
+  const delDb = (name) => new Promise((res) => { const rq = indexedDB.deleteDatabase(name); rq.onsuccess = rq.onerror = rq.onblocked = () => res(); });
+  async function foundDbs() {
+    try { if (indexedDB.databases) return (await indexedDB.databases()).map((d) => d.name).filter((n) => n === 'p6web' || /^p6web-/.test(n)); } catch (e) { /* ignore */ }
+    return [];
+  }
+
+  // ---------- passwords (local lock) ----------
+  async function hash(s) { try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('p6web:' + s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); } catch (e) { let h = 5381; for (const c of 'p6web:' + s) h = ((h << 5) + h + c.charCodeAt(0)) | 0; return 'x' + h; } }
+  const pwKey = (u) => 'p6web.pw.' + u.toLowerCase();
+
+  // ---------- login screen ----------
+  const logo = '<span class="lg-logo">P6</span>';
+  App.loginScreen = function () {
+    if (SS.get('p6web.sess')) { App.cfg.user = SS.get('p6web.sess'); return Promise.resolve(); }
+    if (App.cfg.loginAtStart === false) { SS.set('p6web.sess', App.cfg.user || 'admin'); return Promise.resolve(); }
+    return new Promise((resolve) => {
+      const ov = document.createElement('div'); ov.id = 'loginov'; ov.dir = ar() ? 'rtl' : 'ltr';
+      const dbs = dbList(), cur = App.dbAlias();
+      ov.innerHTML = `<div class="lg-card"><div class="lg-title">${logo}<span>P6 Web</span><span class="lg-ic" id="lg_help" title="${esc(B('Help', 'مساعدة'))}">?</span></div>
+        <div class="lg-body"><label>${esc(B('Login Name', 'اسم الدخول'))}</label><input id="lg_u" dir="ltr" value="${esc(LS.get('p6web.user') || 'admin')}" autocomplete="off">
+        <label>${esc(B('Password', 'كلمة المرور'))}</label><input id="lg_p" type="password" dir="ltr" autocomplete="off">
+        <div class="lg-adv" id="lg_adv">▶ <span>${esc(B('Advanced', 'متقدم'))}</span></div>
+        <div id="lg_advbox" hidden><label>${esc(B('Database', 'قاعدة البيانات'))}</label><select id="lg_db">${dbs.map((d) => `<option value="${esc(d.alias)}"${d.alias === cur ? ' selected' : ''}>${esc(d.alias)}</option>`).join('')}</select></div>
+        <div class="lg-err" id="lg_err" hidden></div>
+        <div class="lg-btns"><button class="lg-btn pri" id="lg_go">${esc(B('Connect', 'اتصال'))}</button><button class="lg-btn" id="lg_off" disabled>${esc(B('Disconnect', 'قطع الاتصال'))}</button></div><hr>
+        <a class="lg-link" id="lg_cfg">${esc(B('Edit database configuration', 'تعديل إعدادات قاعدة البيانات'))}</a></div>
+        <div class="lg-foot">${esc(B('P6 Web – Schedule Studio. Data is stored in this browser. The login is a local convenience lock, not security.', 'P6 Web – Schedule Studio. البيانات محفوظة في هذا المتصفح. تسجيل الدخول قفل محلي للراحة وليس حماية حقيقية.'))}</div></div>`;
+      document.body.appendChild(ov);
+      const $ = (s) => ov.querySelector(s), err = (m) => { const e = $('#lg_err'); e.textContent = m; e.hidden = !m; };
+      $('#lg_p').focus();
+      $('#lg_adv').onclick = () => { const bx = $('#lg_advbox'); bx.hidden = !bx.hidden; $('#lg_adv').firstChild.textContent = bx.hidden ? '▶ ' : '▼ '; };
+      const go = async () => {
+        const u = $('#lg_u').value.trim(); if (!u) return err(B('Enter a login name', 'أدخل اسم الدخول'));
+        const stored = LS.get(pwKey(u)); if (stored && stored !== await hash($('#lg_p').value)) return err(B('Wrong password', 'كلمة المرور غير صحيحة'));
+        LS.set('p6web.user', u); SS.set('p6web.sess', u); App.cfg.user = u; App.saveCfg();
+        const al = $('#lg_db').value;
+        if (al !== App.dbAlias()) { LS.set('p6web.db', al); location.reload(); return; }
+        ov.remove(); resolve();
+      };
+      $('#lg_go').onclick = go;
+      ov.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+      $('#lg_cfg').onclick = () => App.dialogs.dbConfig(true);
+      $('#lg_help').onclick = () => alert(B('Enter any login name (default: admin, empty password). Use Edit database configuration to add or switch between local databases.', 'أدخل أي اسم دخول (الافتراضي admin وبدون كلمة مرور). استخدم تعديل إعدادات قاعدة البيانات لإضافة قواعد بيانات محلية أو التبديل بينها.'));
+    });
+  };
+  App.disconnect = function () { SS.del('p6web.sess'); location.reload(); };
+  App.changePassword = function () {
+    const u = App.cfg.user || 'admin';
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="grid2"><div class="fld w2"><label>${esc(B('New password for', 'كلمة مرور جديدة لـ'))} ${esc(u)}</label><input id="cp_p" type="password" dir="ltr"></div></div><p class="hint">${esc(B('Leave empty to remove the password. This is a local lock stored in this browser only.', 'اتركها فارغة لإزالة كلمة المرور. هذا قفل محلي مخزن في هذا المتصفح فقط.'))}</p>`;
+    D.modal({ title: B('Change Password', 'تغيير كلمة المرور'), cls: 'mid', body, buttons: [{ label: B('Cancel', 'إلغاء'), fn: () => {} }, { label: B('Save', 'حفظ'), cls: 'pri', fn: async (c, el) => { const v = el.querySelector('#cp_p').value; if (v) LS.set(pwKey(u), await hash(v)); else LS.del(pwKey(u)); App.toast(B('Saved', 'تم الحفظ')); } }] });
+  };
+
+  // ---------- Database Configuration ----------
+  D.dbConfig = function (fromLogin) {
+    let list = dbList(), selA = App.dbAlias(), q = '', step = 1; let draft = null; let found = [];
+    const body = document.createElement('div'); body.className = 'dbcfg';
+    const draw = () => {
+      const rows = list.filter((d) => d.alias.toLowerCase().includes(q.toLowerCase()));
+      const cur = list.find((d) => d.alias === selA); const act = App.dbAlias();
+      const left = `<div class="dc-left"><button class="lg-btn pri" id="dc_add">${esc(B('Add', 'إضافة'))}</button><input id="dc_q" class="dc-q" placeholder="🔍" value="${esc(q)}"><div class="dc-list">${rows.map((d) => `<div class="dc-row${d.alias === selA && !draft ? ' on' : ''}" data-a="${esc(d.alias)}"><span>${esc(d.alias)}${d.alias === act ? ' ●' : ''}</span><span class="dc-ic"><i data-copy="${esc(d.alias)}" title="${esc(B('Duplicate', 'نسخ'))}">⧉</i><i data-del="${esc(d.alias)}" title="${esc(B('Delete', 'حذف'))}">🗑</i></span></div>`).join('')}</div></div>`;
+      let right;
+      if (draft && step === 2) right = `<div class="dc-right"><p>${esc(B('Ready to add the database connection:', 'جاهز لإضافة اتصال قاعدة البيانات:'))}</p><p><b>${esc(draft.alias)}</b> — ${esc(draft.mode === 'new' ? B('new empty database', 'قاعدة جديدة فارغة') : B('existing database', 'قاعدة موجودة'))}</p></div>`;
+      else if (draft) right = `<div class="dc-right"><label>${esc(B('Driver Type', 'نوع المشغّل'))}</label><select id="dc_drv"><option>${esc(B('P6 Web Local Database (IndexedDB)', 'قاعدة P6 Web محلية (IndexedDB)'))}</option><option disabled>Oracle (${esc(B('not available', 'غير متاح'))})</option><option disabled>Microsoft SQL Server (${esc(B('not available', 'غير متاح'))})</option><option disabled>P6 Professional Standalone SQLite (${esc(B('not available', 'غير متاح'))})</option></select>
+        <label>${esc(B('Database Alias', 'اسم القاعدة (Alias)'))}</label><input id="dc_alias" dir="ltr" value="${esc(draft.alias)}"${draft.mode === 'existing' && draft.pick ? ' readonly' : ''}>
+        <label class="chk"><input type="radio" name="dc_m" value="existing"${draft.mode === 'existing' ? ' checked' : ''}> ${esc(B('Add a connection to an existing database', 'إضافة اتصال بقاعدة موجودة'))}</label>
+        ${draft.mode === 'existing' ? `<select id="dc_pick" style="margin-inline-start:24px">${found.length ? found.map((n) => `<option value="${esc(n)}"${draft.pick === n ? ' selected' : ''}>${esc(n === 'p6web' ? 'Default (p6web)' : n.replace(/^p6web-/, ''))}</option>`).join('') : `<option value="">${esc(B('(none found)', '(لا يوجد)'))}</option>`}</select>` : ''}
+        <label class="chk"><input type="radio" name="dc_m" value="new"${draft.mode === 'new' ? ' checked' : ''}> ${esc(B('Add a new database and connection', 'إضافة قاعدة جديدة واتصال'))}</label></div>`;
+      else right = `<div class="dc-right"><label>${esc(B('Driver Type', 'نوع المشغّل'))}</label><select disabled><option>${esc(B('P6 Web Local Database (IndexedDB)', 'قاعدة P6 Web محلية (IndexedDB)'))}</option></select><label>${esc(B('Database Alias', 'اسم القاعدة (Alias)'))}</label><input readonly value="${esc(selA)}"><p class="hint">${esc(cur ? B('Stored in this browser: IndexedDB "', 'مخزنة في هذا المتصفح: IndexedDB "') + App.dbNameOf(selA) + '"' : '')}</p>${selA !== act ? `<button class="lg-btn" id="dc_use">${esc(B('Switch to this database', 'التبديل لهذه القاعدة'))}</button>` : `<p class="hint">${esc(B('This is the active database.', 'هذه هي القاعدة النشطة.'))}</p>`}</div>`;
+      const btns = `<div class="dc-btns"><button class="lg-btn pri" id="dc_test">${esc(B('Test', 'اختبار'))}</button><button class="lg-btn" id="dc_cancel">${esc(B('Cancel', 'إلغاء'))}</button><button class="lg-btn" id="dc_back"${draft && step === 2 ? '' : ' disabled'}>${esc(B('Back', 'رجوع'))}</button><button class="lg-btn pri" id="dc_next"${draft ? '' : ' disabled'}>${esc(draft && step === 2 ? B('Finish', 'إنهاء') : B('Next', 'التالي'))}</button></div>`;
+      body.innerHTML = `<div class="dc-main">${left}${right}</div>${btns}`;
+    };
+    draw();
+    const m = D.modal({ title: B('Database Configuration', 'إعدادات قاعدة البيانات'), cls: 'wide dbmodal', body, buttons: [], sticky: true, onClose: () => { const s = document.getElementById('lg_db'); if (s) { const v = s.value; s.innerHTML = dbList().map((d) => `<option value="${esc(d.alias)}"${d.alias === v ? ' selected' : ''}>${esc(d.alias)}</option>`).join(''); } } });
+    const toast = (s, e) => App.toast(s, e);
+    body.addEventListener('input', (e) => { if (e.target.id === 'dc_q') { q = e.target.value; const pos = e.target.selectionStart; draw(); const i = body.querySelector('#dc_q'); i.focus(); i.setSelectionRange(pos, pos); } else if (e.target.id === 'dc_alias' && draft) draft.alias = e.target.value; });
+    body.addEventListener('change', (e) => {
+      if (e.target.name === 'dc_m') { draft.mode = e.target.value; draft.pick = draft.mode === 'existing' ? (found[0] || '') : ''; if (draft.pick) draft.alias = draft.pick === 'p6web' ? 'Default' : draft.pick.replace(/^p6web-/, ''); draw(); }
+      else if (e.target.id === 'dc_pick') { draft.pick = e.target.value; draft.alias = draft.pick === 'p6web' ? 'Default' : draft.pick.replace(/^p6web-/, ''); draw(); }
+    });
+    body.addEventListener('click', async (e) => {
+      const cp = e.target.closest('[data-copy]'), dl = e.target.closest('[data-del]');
+      if (cp) {
+        e.stopPropagation(); const src = cp.dataset.copy; const nm = prompt(B('Alias for the copy', 'اسم النسخة'), src + ' copy'); if (!nm) return;
+        if (!validAlias(nm) || list.some((d) => d.alias.toLowerCase() === nm.toLowerCase())) return toast(B('Invalid or duplicate alias (letters, digits, space, _ and - only)', 'اسم غير صالح أو مكرر (حروف وأرقام ومسافة و _ و - فقط)'), true);
+        await copyDb(App.dbNameOf(src), App.dbNameOf(nm)); list = list.concat({ alias: nm, driver: DRIVER }); saveList(list); selA = nm; draw(); return toast(B('Database copied', 'تم نسخ القاعدة'));
+      }
+      if (dl) {
+        e.stopPropagation(); const a = dl.dataset.del;
+        if (a === 'Default') return toast(B('The Default database cannot be removed', 'لا يمكن حذف القاعدة الافتراضية'), true);
+        if (a === App.dbAlias()) return toast(B('Switch to another database before deleting the active one', 'بدّل لقاعدة أخرى قبل حذف النشطة'), true);
+        if (!confirm(B(`Delete database "${a}" and ALL its projects? This cannot be undone.`, `حذف القاعدة "${a}" وكل مشاريعها؟ لا يمكن التراجع.`))) return;
+        await delDb(App.dbNameOf(a)); list = list.filter((d) => d.alias !== a); saveList(list); if (selA === a) selA = App.dbAlias(); draw(); return;
+      }
+      const row = e.target.closest('.dc-row'); if (row && !draft) { selA = row.dataset.a; draw(); return; }
+      const id = e.target.id;
+      if (id === 'dc_add') { found = (await foundDbs()).filter((n) => !list.some((d) => App.dbNameOf(d.alias) === n)); draft = { mode: found.length ? 'existing' : 'new', alias: '', pick: found[0] || '' }; if (draft.pick) draft.alias = draft.pick.replace(/^p6web-/, ''); step = 1; draw(); }
+      else if (id === 'dc_cancel') { if (draft) { draft = null; step = 1; draw(); } else m.close(); }
+      else if (id === 'dc_back') { step = 1; draw(); }
+      else if (id === 'dc_use') { LS.set('p6web.db', selA); location.reload(); }
+      else if (id === 'dc_test') {
+        try {
+          if (draft) {
+            const al = (draft.alias || '').trim(); if (!validAlias(al)) return toast(B('Invalid alias (letters, digits, space, _ and - only)', 'اسم غير صالح (حروف وأرقام ومسافة و _ و - فقط)'), true);
+            if (draft.mode === 'existing') toast(B(`Connection OK – ${await countProjects(draft.pick || App.dbNameOf(al))} projects`, `الاتصال سليم – ${await countProjects(draft.pick || App.dbNameOf(al))} مشروع`)); else toast(list.some((d) => d.alias.toLowerCase() === al.toLowerCase()) ? B('Alias already used', 'الاسم مستخدم') : B('Alias is available', 'الاسم متاح'), list.some((d) => d.alias.toLowerCase() === al.toLowerCase()));
+          } else toast(B(`Connection OK – ${await countProjects(App.dbNameOf(selA))} projects`, `الاتصال سليم – ${await countProjects(App.dbNameOf(selA))} مشروع`));
+        } catch (er) { toast(B('Connection failed: ', 'فشل الاتصال: ') + er.message, true); }
+      } else if (id === 'dc_next') {
+        if (step === 1) {
+          const al = (draft.alias || '').trim(); if (!validAlias(al)) return toast(B('Invalid alias (letters, digits, space, _ and - only)', 'اسم غير صالح (حروف وأرقام ومسافة و _ و - فقط)'), true);
+          if (list.some((d) => d.alias.toLowerCase() === al.toLowerCase())) return toast(B('Alias already used', 'الاسم مستخدم'), true);
+          draft.alias = al; step = 2; draw();
+        } else {
+          const nm = App.dbNameOf(draft.alias);
+          try { if (draft.mode === 'existing' && draft.pick && draft.pick !== nm) { await copyDb(draft.pick, nm); } else { (await openNamed(nm)).close(); } } catch (er) { return toast(er.message, true); }
+          list = list.concat({ alias: draft.alias, driver: DRIVER }); saveList(list); selA = draft.alias; draft = null; step = 1; draw(); toast(B('Database connection added', 'تمت إضافة اتصال القاعدة'));
+          if (fromLogin) { m.close(); } 
+        }
+      }
+    });
+  };
+})(window);
