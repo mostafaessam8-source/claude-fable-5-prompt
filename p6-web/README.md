@@ -25,6 +25,9 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 - أزرار شريط الأدوات بأسهم منسدلة (Bars, Columns▾, Timescale, Filter▾, Group&Sort▾, #▾) وقوائم Layout وزر الفأرة الأيمن على الـ Gantt.
 - قوائم Tools / Enterprise / Admin بنفس ترتيب P6. الميزات الفعلية: Schedule, Check Schedule, Apply Actuals, Update Progress, Recalculate Costs, Global Change, Thresholds, Issues, Reports, Calendars, Codes, UDF, Roles, Cost Accounts. أما Level Resources وSummarize وVisualizer وPublish وEPS/OBS وغيرها فمعروضة في القائمة لكنها تظهر رسالة أنها غير متاحة في النسخة الثابتة.
 
+## الاختصارات / Keyboard shortcuts
+Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحددة (بالعناوين) كنص بفواصل Tab يُلصق مباشرة في Excel، وCtrl+Shift+C ينسخ الجدول كله. إضافة لاختصارات P6: F9، Ctrl+Num ±، Home/End، PageUp/Down، وغيرها — القائمة الكاملة في Help ▸ Keyboard Shortcuts.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
