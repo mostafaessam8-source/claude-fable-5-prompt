@@ -41,8 +41,8 @@
     if (_db) return _db;
     _db = new Promise((res, rej) => {
       let rq;
-      try { rq = indexedDB.open('p6web', 1); } catch (e) { return rej(e); }
-      rq.onupgradeneeded = () => { const d = rq.result; d.createObjectStore('projects', { keyPath: 'id' }); d.createObjectStore('raw'); };
+      try { rq = indexedDB.open('p6web', 2); } catch (e) { return rej(e); }
+      rq.onupgradeneeded = () => { const d = rq.result; if (!d.objectStoreNames.contains('projects')) d.createObjectStore('projects', { keyPath: 'id' }); if (!d.objectStoreNames.contains('raw')) d.createObjectStore('raw'); if (!d.objectStoreNames.contains('eps')) d.createObjectStore('eps', { keyPath: 'id' }); };
       rq.onsuccess = () => res(rq.result);
       rq.onerror = () => rej(rq.error);
     });
@@ -60,7 +60,8 @@
     if (!S.p) return;
     try {
       const p = S.p;
-      await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: p.start, finish: p.finish, data: json(p) }));
+      const data = json(p), m = p.meta || {};
+      await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: p.start, finish: p.finish, dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data }));
       if (p.xer && rawSaved !== p.id) { await idb('raw', 'readwrite', (st) => st.put(p.xer, p.id)); rawSaved = p.id; }
       localStorage.setItem('p6web.last', p.id);
       S.dirty = false; loadRecent();
@@ -1347,6 +1348,8 @@
   }
   function openProject(p, fname) {
     if (S.p && S.dirty) saveNow();
+    if (!p.meta) p.meta = { eps: API._pendingEps || 'root', code: API.nextCode(fname || p.name), status: 'Active', manager: '' };
+    API._pendingEps = null;
     P6.ensureBaselines(p); S.p = p; S.sel.clear(); S.focus = null; S.cell = null; S.undo = []; S.redo = []; S.collapsed.clear(); rawSaved = null;
     if (S.cfg.group === 'wbs') for (const w of p.wbs) if (w.parent != null && p.wbs.filter((q) => q.parent == null).length === 1 && p.wbs.length > 60) S.collapsed.add(w.id);
     scheduleSave();
@@ -1354,7 +1357,8 @@
     setTimeout(() => { zoomFit(); }, 30);
     if (fname) toast(t('opened', fname, p.tasks.length));
   }
-  API.openProject = openProject;
+  API.nextCode = (name) => { const b = String(name || '').replace(/\.[a-z0-9]+$/i, '').replace(/[^A-Za-z0-9_]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20); if (b.length >= 2) return b.toUpperCase(); S.cfg.projSeq = (S.cfg.projSeq || 0) + 1; saveCfg(); return 'PRJ-' + String(S.cfg.projSeq).padStart(3, '0'); };
+  API.openProject = openProject; API.idb = idb; API.saveNowP = saveNow; API.download = download;
   API.loadSample = () => { const p = P6.sampleProject(); p.name = t('sample_name'); openProject(p); };
   API.exportXER = () => {
     if (S.cfg.auto === false && S.p) { /* keep */ }

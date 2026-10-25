@@ -31,6 +31,9 @@ Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحدد�
 ## تصدير Excel (.xlsx)
 زر Excel في شريط الأدوات (أو Edit ← Export Selection/All to Excel، أو كليك يمين): ينشئ ملف .xlsx حقيقي بتجميع Excel (Outline) حسب مستويات الـ WBS، وألوان الـ WBS، وإزاحة، وتواريخ وأرقام فعلية، وصف عناوين مثبت وفلتر. المحدد أكثر من صف يُصدَّر، وإلا يُصدَّر الكل.
 
+## قاعدة بيانات المشاريع (Projects / EPS)
+نافذة Projects بشكل P6: شجرة EPS ومشاريع تحتها (Project ID، Status، المدير، الأنشطة، البداية/النهاية، Data Date، آخر حفظ). New EPS / New Project / Open / Properties / Copy / Export XER / Delete، ونسخ احتياطي واستعادة لكل القاعدة في ملف JSON. التخزين داخل متصفحك (IndexedDB) — لا يوجد سيرفر ولا مشاركة بين الأجهزة؛ استخدم Backup لنقلها.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
