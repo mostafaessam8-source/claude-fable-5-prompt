@@ -518,3 +518,4 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 .rl-grid tr.on td{background:#0b6fb8;color:#fff}.rl-grid tr.on td input,.rl-grid tr.on td select{color:#000}
 .rl-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rl-btns svg.pi{width:16px;height:16px;vertical-align:-3px}
 #toolbar .rels-tg.on{background:#cfe3ff;border-color:#7aa7e6}
+.rl-btns{margin:4px 0}.rl-grid{max-height:none!important}
