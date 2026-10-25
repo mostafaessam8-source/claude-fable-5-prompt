@@ -78,6 +78,11 @@
         const qNext = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3) + 3, 1); };
         walk(qStart, qNext, (d) => { const y = P6.ymd(d); return 'Qtr ' + (Math.floor(y.m / 3) + 1) + ', ' + y.y; }, top);
         walk(monthStart, nextMonth, (d) => (px * 30 >= 56 ? P6.MON[P6.ymd(d).m] : P6.MON[P6.ymd(d).m][0]), bot);
+      } else if (px < 0.3) {
+        const decStart = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y - (y.y % 10), 0, 1); };
+        const decNext = (d) => { const y = P6.ymd(d); return P6.mkDay(y.y - (y.y % 10) + 10, 0, 1); };
+        walk(decStart, decNext, (d) => P6.ymd(d).y + 's', top);
+        walk(yearStart, nextYear, (d) => (px * 365 >= 30 ? String(P6.ymd(d).y) : String(P6.ymd(d).y).slice(2)), bot);
       } else {
         walk(yearStart, nextYear, (d) => String(P6.ymd(d).y), top);
         for (let d = monthStart(d0); d <= d1; d = nextMonth(d)) {
@@ -150,7 +155,7 @@
       for (let i = r0; i <= r1; i++) {
         const r = rows[i], y = rowY(i);
         const base = sh.base ? 1 : 0;
-        const by = y + (base ? 3 : 6), bh = 12;
+        const bh = [5, 8, 12, 16, 20][Math.max(1, Math.min(5, sh.barSize || 3)) - 1], by = y + Math.max(1, Math.round((rh - bh) / 2)) - (base ? 3 : 0);
         if (r.kind !== 't') {
           const ru = o.ru.get(r.id);
           if (!ru || ru.es == null) continue;
