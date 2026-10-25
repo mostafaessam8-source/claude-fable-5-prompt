@@ -15,7 +15,7 @@
 html,body{height:100%;margin:0}
 body{font:13px/1.35 var(--font);background:var(--bg);color:var(--text);overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
-#app{display:flex;flex-direction:column;height:100vh}
+#app{display:flex;flex-direction:column;height:calc(100vh / var(--uz,1))}
 .spacer{flex:1}
 svg{display:block}
 /* top bar */
@@ -457,3 +457,15 @@ table.pw thead th{position:sticky;top:0;z-index:2;background:linear-gradient(#fd
 .grpdlg fieldset label.chk,.schdlg label.chk{display:inline-flex;align-items:center;gap:6px;margin-inline-end:18px}
 .grpdlg fieldset{min-width:0}
 .pmenu .ico2 svg.pi{width:18px;height:18px;display:block;padding:0;margin:0;background:none;border:0}
+
+/* details tab strip: no overlay scrollbar that steals clicks; scrolls with wheel / drag */
+.dtabs{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;min-height:28px;height:auto!important;align-items:flex-end}
+.dtabs::-webkit-scrollbar{display:none;height:0}
+.dtab{flex:none;line-height:1.3;padding-block:5px!important}
+
+.grpdlg .gd-wrap{display:flex;gap:12px;align-items:flex-start}.grpdlg .gd-main{flex:1;min-width:0}
+.grpdlg .gd-side{display:flex;flex-direction:column;gap:6px;width:120px}.grpdlg .gd-side hr{border:0;margin:2px 0}
+.grpdlg .gd-side .btn{width:100%!important;justify-content:flex-start;display:flex!important;gap:8px}.grpdlg .gi{font-size:16px;width:18px;text-align:center}
+.grpdlg{min-width:760px}
+@media print{.pvpb{break-before:page}}
+.pvpb{border-top:2px dashed #c33;height:0}

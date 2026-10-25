@@ -1377,7 +1377,7 @@
     API.gantt = gantt; API.S = S;
     gantt.sc.addEventListener('scroll', () => { renderRows(); }, { passive: true });
     bindTable(); bindDetails(); bindSplitters();
-    applyView(); buildMenus(); buildToolbar(); App.initP6UI(); loadRecent(); App.applyFont(); App.applyBars(); App.drawWinTabs(); setTimeout(() => App.applyHint(), 0); if (P6.bindDetExtra) P6.bindDetExtra(); layoutDetails();
+    applyView(); buildMenus(); buildToolbar(); App.initP6UI(); loadRecent(); App.applyFont(); App.applyBars(); App.applyScale && App.applyScale(); App.drawWinTabs(); setTimeout(() => App.applyHint(), 0); if (P6.bindDetExtra) P6.bindDetExtra(); layoutDetails();
     $('#langBtn').onclick = () => API.setLang(S.cfg.lang === 'ar' ? 'en' : 'ar');
     $('#themeBtn').onclick = () => { S.cfg.theme = ({ p6: 'light', light: 'dark', dark: 'p6' })[S.cfg.theme] || 'p6'; saveCfg(); applyLang(); };
     $('#projBtn').onclick = () => API.dialogs.projects();

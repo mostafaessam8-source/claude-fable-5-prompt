@@ -21,7 +21,7 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 ## Schedule / Filters / Group and Sort / قوائم Tools-Enterprise-Admin
 - **Schedule (F9)**: نافذة P6 (Data Date، Forecast start، Log to file/HTML، Overwrite/Append، View Log، **Options**: Retained Logic / Progress Override، Critical = Total Float أو Longest Path، Lag calendar، Total Float from).
 - **Filters**: Default / Global / User Defined، اختيار أكثر من فلتر مع All / Any، New/Modify لبناء فلتر بشروط، Make Global.
-- **Group and Sort**: حتى 8 مستويات (WBS بمستوياته، Status، Float، Activity Codes…)، ألوان وإزاحة وإجماليات، وSort متعدد. (خيار Page Break غير موجود عمداً.)
+- **Group and Sort**: حتى 8 مستويات (WBS بمستوياته، Status، Float، Activity Codes…)، ألوان وإزاحة وإجماليات، وSort متعدد. عمود Page Break موجود (يظهر كخط فاصل في المعاينة وينفّذ فاصل صفحة عند الطباعة من المتصفح).
 - أزرار شريط الأدوات بأسهم منسدلة (Bars, Columns▾, Timescale, Filter▾, Group&Sort▾, #▾) وقوائم Layout وزر الفأرة الأيمن على الـ Gantt.
 - قوائم Tools / Enterprise / Admin بنفس ترتيب P6. الميزات الفعلية: Schedule, Check Schedule, Apply Actuals, Update Progress, Recalculate Costs, Global Change, Thresholds, Issues, Reports, Calendars, Codes, UDF, Roles, Cost Accounts. أما Level Resources وSummarize وVisualizer وPublish وEPS/OBS وغيرها فمعروضة في القائمة لكنها تظهر رسالة أنها غير متاحة في النسخة الثابتة.
 
