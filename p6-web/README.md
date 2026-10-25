@@ -9,6 +9,11 @@ A free, static web app (no build, no server, no data upload) that **opens, edits
 
 ![screenshot](docs/screenshot.png)
 
+## نافذة Columns وكل أعمدة P6 / Columns dialog
+
+نافذة **Columns** بنفس تصميم P6 (Available Options شجرة بفئات + Selected Options + ▶ ⏩ ◀ ⏪ + ▲▼ + OK / Cancel / Apply / Copy From / Default / Edit Column / Help) مع **أكثر من 120 عموداً** حقيقياً: Activity Codes (Global/Project)، Activity Steps، Costs، Dates، Durations، Earned Value (PV / EV / AC / SV / CV / SPI / CPI / EAC / ETC / VAC / TCPI)، Feedback، General، Lists، Multiple Float Paths، Number of Activities، Percent Completes (Duration / Physical / Units / Cost / Schedule / Performance)، Project Codes، Units، User Defined.
+التكاليف تُحسب من **سعر الوحدة** للموارد × الوحدات المعيّنة، والـ PV من بيانات البيزلاين. من قائمة **Admin** تعرّف أكواد الأنشطة والمشروع وحقول المستخدم، وتُعيَّن من تبويبات **Codes / Steps / Feedback / User Defined** في التفاصيل. كل ذلك يُقرأ ويُكتب في ملف XER (ACTVTYPE / ACTVCODE / TASKACTV / PCATTYPE / UDFTYPE / UDFVALUE / TASKPROC / RSRCRATE / PROJCOST…).
+
 ## ما الذي يقدّمه / Features
 
 | | |
