@@ -187,7 +187,11 @@
       if (Math.abs(act - auto) > Math.max(0.5, mine.qty * 0.01)) { mine.manual = true; mine.act = r2(act); mine.rem = r2(rem); }
     }
     // expenses
-    for (const r of T('PROJCOST')) { const tk = taskPct.get(+r.task_id); if (tk && r.proj_id === projId) tk.exp = r2((tk.exp || 0) + num(r.target_cost)); }
+    for (const r of T('PROJCOST')) { const tk = taskPct.get(+r.task_id); if (tk && r.proj_id === projId) { tk.expenses.push({ id: +r.cost_item_id || ++p.nid, name: r.cost_name || 'Expense', vendor: r.vendor_name || '', budget: r2(num(r.target_cost)) }); tk.exp = r2(tk.expenses.reduce((a, x) => a + x.budget, 0)); } }
+    // notebook topics
+    const mt = new Map(T('MEMOTYPE').map((r) => [r.memo_type_id, r.memo_type]));
+    p.memoTypes = [...mt].map(([id, name]) => ({ id: +id, name }));
+    for (const r of T('TASKMEMO')) { const tk = taskPct.get(+r.task_id); if (!tk) continue; const txt = String(r.task_memo || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').trim(); tk.topics.push({ id: +r.memo_id || ++p.nid, topic: mt.get(r.memo_type_id) || 'Notes', text: txt }); }
     // steps
     for (const r of T('TASKPROC')) { const tk = taskPct.get(+r.task_id); if (tk && r.proj_id === projId) tk.steps.push({ id: +r.proc_id || ++p.nid, name: r.proc_name, wt: num(r.proc_wt) || 1, done: r.complete_flag === 'Y' }); }
     for (const tk of p.tasks) tk.steps.sort((a, b) => a.id - b.id);
@@ -243,10 +247,12 @@
     PCATVAL: 'proj_catg_id proj_catg_type_id proj_catg_short_name proj_catg_name parent_proj_catg_id seq_num'.split(' '),
     PROJPCAT: 'proj_id proj_catg_type_id proj_catg_id'.split(' '),
     UDFTYPE: 'udf_type_id table_name udf_type_name udf_type_label logical_data_type super_flag indicator_expression summary_indicator_expression export_flag'.split(' '),
-    UDFVALUE: 'udf_type_id fk_id proj_id udf_date udf_number udf_text udf_code_id'.split(' ')
+    UDFVALUE: 'udf_type_id fk_id proj_id udf_date udf_number udf_text udf_code_id'.split(' '),
+    MEMOTYPE: 'memo_type_id seq_num memo_type eps_flag proj_flag wbs_flag task_flag'.split(' '),
+    TASKMEMO: 'memo_id proj_id wbs_id task_id memo_type_id task_memo'.split(' ')
   });
-  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC', 'RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE']);
-  const OPTIONAL = new Set(['RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE']);
+  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC', 'RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO']);
+  const OPTIONAL = new Set(['RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO']);
 
   function pushAll(a, b) { for (let i = 0; i < b.length; i++) a.push(b[i]); }
   function tableOut(name, fields, rows) {
@@ -255,11 +261,14 @@
     return L;
   }
 
+  function memoNames(p) { const s = new Set(); p.tasks.forEach((t) => (t.topics || []).forEach((m) => s.add(m.topic || 'Notes'))); return [...s]; }
   function optionalRows(name, p, projId, rt) {
     const rows = [], tk = p.tasks;
     switch (name) {
       case 'RSRCRATE': for (const r of p.rsrc) if (r.price) rows.push({ rsrc_rate_id: r.id, rsrc_id: r.id, max_qty_per_hr: (r.units || 8) / 8, cost_per_qty: r.price, start_date: dstr(p.planStart) }); break;
-      case 'PROJCOST': for (const t of tk) if (t.exp) rows.push({ cost_item_id: t.id, proj_id: projId, task_id: t.id, cost_name: 'Expense', target_cost: t.exp, act_cost: lagFmt(t.exp * (t.status === 'C' ? 1 : (t.pct || 0) / 100)), remain_cost: lagFmt(t.exp * (t.status === 'C' ? 0 : 1 - (t.pct || 0) / 100)) }); break;
+      case 'MEMOTYPE': memoNames(p).forEach((n, i) => rows.push({ memo_type_id: i + 1, seq_num: i + 1, memo_type: n, eps_flag: 'N', proj_flag: 'N', wbs_flag: 'N', task_flag: 'Y' })); break;
+      case 'TASKMEMO': { const nm = memoNames(p); for (const t of tk) (t.topics || []).forEach((m) => { if (!m.text) return; rows.push({ memo_id: m.id, proj_id: projId, task_id: t.id, memo_type_id: nm.indexOf(m.topic || 'Notes') + 1, task_memo: '<HTML><BODY>' + String(m.text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n/g, '<BR>') + '</BODY></HTML>' }); }); break; }
+      case 'PROJCOST': for (const t of tk) if (t.expenses && t.expenses.length) { const f = t.status === 'C' ? 1 : (t.pct || 0) / 100; t.expenses.forEach((x) => rows.push({ cost_item_id: x.id, proj_id: projId, task_id: t.id, cost_name: x.name, vendor_name: x.vendor || '', target_cost: x.budget, act_cost: lagFmt(x.budget * f), remain_cost: lagFmt(x.budget * (1 - f)) })); } else if (t.exp) rows.push({ cost_item_id: t.id, proj_id: projId, task_id: t.id, cost_name: 'Expense', target_cost: t.exp, act_cost: lagFmt(t.exp * (t.status === 'C' ? 1 : (t.pct || 0) / 100)), remain_cost: lagFmt(t.exp * (t.status === 'C' ? 0 : 1 - (t.pct || 0) / 100)) }); break;
       case 'TASKPROC': for (const t of tk) t.steps.forEach((s, i) => rows.push({ proc_id: s.id, task_id: t.id, proj_id: projId, seq_num: i + 1, proc_name: s.name, complete_flag: s.done ? 'Y' : 'N', proc_wt: s.wt, complete_pct: s.done ? 100 : 0 })); break;
       case 'ACTVTYPE': p.codeTypes.forEach((c, i) => rows.push({ actv_code_type_id: c.id, actv_short_len: c.len || 20, seq_num: i + 1, actv_code_type: c.name, proj_id: c.scope === 'project' ? projId : '', actv_code_type_scope: c.scope === 'project' ? 'AS_Project' : 'AS_Global', super_flag: 'N' })); break;
       case 'ACTVCODE': p.codeVals.forEach((v, i) => rows.push({ actv_code_id: v.id, parent_actv_code_id: v.parent == null ? '' : v.parent, actv_code_type_id: v.type, actv_code_name: v.name, short_name: v.short, seq_num: i + 1, color: v.color || '' })); break;

@@ -17,7 +17,7 @@
     p: null, sel: new Set(), focus: null, anchor: null, cell: null, rows: [], rowIdx: new Map(), ru: new Map(),
     collapsed: new Set(), undo: [], redo: [], dirty: false, minDay: 0, maxDay: 0, tab: 'general',
     cfg: {
-      lang: 'ar', theme: 'p6', layout: 'classic', dock: 'details', layouts: {}, layoutName: '', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 900, detH: 230, detOpen: true,
+      lang: 'ar', theme: 'p6', view: 'both', user: 'USER', detTabs: null, print: { paper: 'A4', orient: 'landscape', margin: 10, what: 'both', header: true, footer: true, fit: true }, portfolio: '', portfolios: {}, layout: 'classic', dock: 'details', layouts: {}, layoutName: '', cols: DEF_COLS.map((k) => ({ k, w: ALL_COLS[k].w })), pxIdx: 3, tableW: 900, detH: 230, detOpen: true,
       show: { base: true, crit: true, rels: true, labels: true, float: false, today: true, spot: false }, group: 'wbs', sort: 'code', sortDir: 1,
       auto: true, filter: { text: '', mode: 'all' }
     }
@@ -60,7 +60,7 @@
       await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: p.start, finish: p.finish, data: json(p) }));
       if (p.xer && rawSaved !== p.id) { await idb('raw', 'readwrite', (st) => st.put(p.xer, p.id)); rawSaved = p.id; }
       localStorage.setItem('p6web.last', p.id);
-      S.dirty = false;
+      S.dirty = false; loadRecent();
     } catch (e) { toast(t('save_fail'), true); }
     updateStatus();
   }
@@ -849,15 +849,20 @@
     return `<input data-f="${f}" value="${esc(val == null ? '' : val)}"${o.ro ? ' readonly' : ''}${o.ph ? ` placeholder="${o.ph}"` : ''} dir="auto">`;
   }
   function sel(f, val, opts) { return `<select data-f="${f}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`; }
+  const DEF_TABS = ['general', 'status', 'res', 'pred', 'succ', 'codes', 'notes', 'steps', 'feedback', 'docs', 'expenses', 'summary', 'rels', 'risks', 'udf', 'discuss'];
+  P6.DEF_TABS = DEF_TABS;
+  P6.hasTab = (k) => DEF_TABS.includes(k);
   function renderDetails() {
     const el = $('#details');
     if (S.cfg.dock === 'usage' && S.cfg.detOpen) { el.classList.remove('collapsed'); return App.renderUsage(el); }
-    const tabs = ['general', 'status', 'res', 'rels', 'codes', 'notes', 'steps', 'feedback', 'udf'];
+    const tabs = (S.cfg.detTabs && S.cfg.detTabs.length ? S.cfg.detTabs : DEF_TABS).filter((k) => P6.hasTab(k));
+    if (!tabs.includes(S.tab)) S.tab = tabs[0];
     const fr = focusRow();
     const title = fr ? (fr.kind === 't' ? fr.t.code + ' · ' + fr.t.name : fr.w.code + ' · ' + fr.w.name) : '';
     let head = `<div class="dtabs">${tabs.map((k) => `<button class="dtab${S.tab === k ? ' on' : ''}" data-tab="${k}">${esc(t('tab_' + k))}</button>`).join('')}<span class="dtitle" dir="auto">${esc(title)}</span><button class="ib" data-act="toggle" title="${esc(t('toggle_details'))}"><svg viewBox="0 0 24 24"><path d="${S.cfg.detOpen ? 'M6 9l6 6 6-6' : 'M6 15l6-6 6 6'}"/></svg></button></div>`;
     let body = '<div class="dbody">';
     const tk = fr && fr.kind === 't' ? fr.t : null;
+    const strip = tk ? `<div class="dstrip"><span class="spin"><button data-act="prev" title="${esc(t('prev_act'))}">▲</button><button data-act="next" title="${esc(t('next_act'))}">▼</button></span><label>${esc(t('activity'))}</label><input readonly value="${esc(tk.code)}" style="width:130px" dir="auto"><input readonly value="${esc(tk.name)}" style="flex:1" dir="auto"><label>${esc(t('project'))}</label><input readonly value="${esc(S.p.name)}" style="width:220px" dir="auto"></div>` : '';
     if (!fr) body += `<div class="empty">${esc(t('select_hint'))}</div>`;
     else if (fr.kind === 'w') {
       body += `<div class="grid2">${fld(t('col_code'), inp('w.code', fr.w.code))}${fld(t('col_name'), inp('w.name', fr.w.name), 'w2')}${fld(t('parent_wbs'), sel('w.parent', fr.w.parent == null ? '' : fr.w.parent, [['', '—'], ...S.p.wbs.filter((x) => x.id !== fr.w.id).map((x) => [x.id, x.code + ' – ' + x.name])]))}</div>`;
@@ -892,7 +897,8 @@
       body += `<datalist id="codes">${S.p.tasks.map((x) => `<option value="${esc(x.code)}">${esc(x.name)}</option>`).join('')}</datalist><div class="two"><div><b>${esc(t('predecessors'))}</b>${tbl(preds, true)}</div><div><b>${esc(t('successors'))}</b>${tbl(succs, false)}</div></div>`;
     } else if (S.tab === 'res') {
       const as = S.p.asg.filter((a) => a.task === tk.id), rmap = new Map(S.p.rsrc.map((r) => [r.id, r]));
-      body += `<table class="mini"><thead><tr><th>${esc(t('resource'))}</th><th style="width:100px">${esc(t('col_bu'))}</th><th style="width:100px">${esc(t('col_au'))}</th><th style="width:100px">${esc(t('col_ru'))}</th><th style="width:90px">${esc(t('price_unit'))}</th><th style="width:110px">${esc(t('col_bc'))}</th><th style="width:30px"></th></tr></thead><tbody>${as.map((a) => { const sp = P6.asgSplit(a, tk), r = rmap.get(a.rsrc) || {}; return `<tr data-asg="${a.id}"><td>${sel2('rsrc', a.rsrc, S.p.rsrc.map((x) => [x.id, x.name]), true)}</td><td><input data-af="qty" value="${fmtN(a.qty)}"></td><td><input data-af="act" value="${fmtN(sp.act)}"></td><td><input data-af="rem" value="${fmtN(sp.rem)}"></td><td><input value="${fmtN(r.price || 0)}" readonly></td><td><input value="${fmtN(a.qty * (r.price || 0))}" readonly></td><td><button class="ib" data-adel="${a.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`; }).join('')}</tbody></table>
+      const th = (k, w) => `<th style="min-width:${w || 90}px">${esc(t(k))}</th>`;
+      body += `<div style="overflow:auto"><table class="mini wide"><thead><tr>${th('res_role', 120)}${th('res_short', 90)}${th('resource', 150)}${th('col_as', 96)}${th('col_af', 96)}${th('bl_planned_units', 120)}${th('col_bu', 100)}${th('units_time', 120)}${th('col_dur', 100)}${th('bl_planned_cost', 130)}${th('col_bc', 100)}${th('col_au', 90)}${th('col_ru', 100)}${th('col_ac', 90)}${th('col_rc', 100)}<th style="width:28px"></th></tr></thead><tbody>${as.map((a) => { const sp = P6.asgSplit(a, tk), r = rmap.get(a.rsrc) || {}, pr = r.price || 0; return `<tr data-asg="${a.id}"><td dir="auto" style="color:var(--muted)">${esc(r.role || '')}</td><td>${esc(r.short || '')}</td><td>${sel2('rsrc', a.rsrc, S.p.rsrc.map((x) => [x.id, x.name]), true)}</td><td><input data-af="as" dir="ltr" value="${esc(fmtD(a.as))}" placeholder="${esc(fmtD(tk.as))}"></td><td><input data-af="af" dir="ltr" value="${esc(fmtD(a.af))}" placeholder="${esc(fmtD(tk.af))}"></td><td><input value="${a.bq != null ? fmtN(a.bq) + 'h' : ''}" readonly></td><td><input data-af="qty" value="${fmtN(a.qty)}"></td><td><input value="${fmtN(a.qty / Math.max(1, tk.dur))}h/d" readonly></td><td><input value="${fmtN(tk.dur)}" readonly></td><td><input value="${a.bq != null ? fmtN(a.bq * pr) : ''}" readonly></td><td><input value="${fmtN(a.qty * pr)}" readonly></td><td><input data-af="act" value="${fmtN(sp.act)}"></td><td><input data-af="rem" value="${fmtN(sp.rem)}"></td><td><input value="${fmtN(sp.act * pr)}" readonly></td><td><input value="${fmtN(sp.rem * pr)}" readonly></td><td><button class="ib" data-adel="${a.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`; }).join('') || `<tr><td colspan="16" class="empty">${esc(t('no_assignments'))}</td></tr>`}</tbody></table></div>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><select class="inp" id="newAsg">${[['', '— ' + t('resource') + ' —'], ...S.p.rsrc.map((r) => [r.id, r.name])].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select><button class="btn sm" data-act="addasg">${esc(t('assign'))}</button><button class="btn sm" data-act="newrsrc">${esc(t('new_resource'))}</button></div>`;
     } else if (S.tab === 'codes') {
       body += S.p.codeTypes.length ? `<div class="grid2">${S.p.codeTypes.map((ct) => fld(ct.name + (ct.scope === 'project' ? ' (' + t('scope_project') + ')' : ''), `<select data-cd="${ct.id}"><option value="">—</option>${S.p.codeVals.filter((v) => v.type === ct.id).map((v) => `<option value="${v.id}"${(tk.codes || {})[ct.id] === v.id ? ' selected' : ''}>${esc(v.short + (v.name ? ' – ' + v.name : ''))}</option>`).join('')}</select>`)).join('')}</div>` : `<div class="empty">${esc(t('no_codes'))}<br><button class="btn sm" data-act="codes">${esc(t('act_codes_global'))}…</button></div>`;
@@ -904,11 +910,11 @@
         <div style="margin-top:10px;display:flex;gap:12px;align-items:center"><button class="btn sm" data-act="addstep">+ ${esc(t('add_step'))}</button><span class="hint" style="margin:0">${esc(t('steps_pct'))}: <b>${tk.steps.length ? tk.phys + '%' : '—'}</b> · ${esc(t('steps_hint'))}</span></div>`;
     } else if (S.tab === 'feedback') {
       body += `<div class="fld"><label>${esc(t('col_feedback'))}</label><textarea data-f="feedback" rows="5" dir="auto">${esc(tk.feedback || '')}</textarea></div><label class="chk" style="margin-top:8px"><input type="checkbox" data-f="rev"${tk.rev ? ' checked' : ''}> ${esc(t('col_rev'))}</label>`;
-    } else if (S.tab === 'notes') {
-      body += `<div class="fld"><label>${esc(t('tab_notes'))}</label><textarea data-f="notes" rows="6" dir="auto">${esc(tk.notes || '')}</textarea></div>`;
+    } else if (P6.detExtra && P6.detExtra[S.tab]) {
+      body += P6.detExtra[S.tab](tk);
     }
     body += '</div>';
-    el.innerHTML = head + body;
+    el.innerHTML = head + strip + body;
     el.classList.toggle('collapsed', !S.cfg.detOpen);
     detSig = detSignature();
   }
@@ -919,7 +925,7 @@
     if (!fr) return 'none|' + S.tab;
     if (fr.kind === 'w') return 'w' + fr.id + '|' + S.p.wbs.length;
     const tk = fr.t;
-    return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, tk.steps.map((s) => s.id + (s.done ? 1 : 0)).join('.'), S.p.codeTypes.length, S.p.udfs.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
+    return ['t', tk.id, S.tab, S.cfg.detOpen, S.p.rels.filter((r) => r.s === tk.id || r.p === tk.id).map((r) => r.id + r.type + r.lag + r.p + r.s).join(), S.p.asg.filter((a) => a.task === tk.id).length, S.p.rsrc.length, tk.steps.map((s) => s.id + (s.done ? 1 : 0)).join('.'), ['topics', 'docs', 'expenses', 'risks', 'discuss'].map((k) => (tk[k] || []).length).join('.'), S.p.codeTypes.length, S.p.udfs.length, S.p.cals.length, S.p.tasks.length, S.p.wbs.length].join('|');
   }
   function syncDetails() {
     if (S.cfg.dock === 'usage' && S.cfg.detOpen) return;
@@ -937,6 +943,7 @@
     const el = $('#details');
     el.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.act === 'prev' || b.dataset.act === 'next') { const i = S.rowIdx.get(S.focus); let k = i; const d = b.dataset.act === 'next' ? 1 : -1; do { k += d; } while (S.rows[k] && S.rows[k].kind !== 't'); if (S.rows[k]) { selectRow(S.rows[k], null); ensureVisible(k); } return; }
       if (b.dataset.tab) { S.tab = b.dataset.tab; if (!S.cfg.detOpen) S.cfg.detOpen = true; renderDetails(); return; }
       if (b.dataset.act === 'toggle') { S.cfg.detOpen = !S.cfg.detOpen; saveCfg(); layoutDetails(); renderDetails(); return; }
       const tk = focusTask(); if (!tk) return;
@@ -949,6 +956,7 @@
       else if (b.dataset.stdel) { const id = +b.dataset.stdel; mutate(t('delete'), () => { tk.steps = tk.steps.filter((s) => s.id !== id); }); }
       else if (b.dataset.act === 'newrsrc') { const n = prompt(t('resource_name')); if (n) mutate(t('new_resource'), () => { S.p.rsrc.push({ id: P6.nextId(S.p), name: n, short: n.slice(0, 8), type: 'RT_Labor' }); }, { noSched: true }); }
     });
+    el.addEventListener('contextmenu', (e) => { if (e.target.closest('.dtabs')) { e.preventDefault(); App.popMenu([{ l: t('customize_details') + '…', i: 'details', fn: () => App.dialogs.detTabs() }, { l: t('default'), fn: () => { S.cfg.detTabs = null; saveCfg(); renderDetails(); } }], e.clientX, e.clientY); } });
     el.addEventListener('change', (e) => {
       const x = e.target;
       const fr = focusRow(); if (!fr) return;
@@ -997,6 +1005,7 @@
         const tr = x.closest('tr'); const a = S.p.asg.find((q) => q.id === +tr.dataset.asg); if (!a) return;
         mutate(t('edit'), () => {
           const f = x.dataset.af, v = parseFloat(String(x.value).replace(',', '.')) || 0;
+          if (f === 'as' || f === 'af') { const d = P6.parseDate(x.value); a[f] = x.value.trim() ? d : null; return; }
           if (f === 'qty') { a.qty = v; if (a.manual) a.rem = Math.max(0, v - (a.act || 0)); } else if (f === 'act') { a.manual = true; a.act = v; a.rem = Math.max(0, a.qty - v); } else if (f === 'rem') { const sp = P6.asgSplit(a, tk); a.manual = true; a.act = sp.act; a.rem = v; } else a.rsrc = +x.value;
         }, { noSched: true });
       }
@@ -1056,13 +1065,15 @@
     const crit = p.tasks.filter((x) => x.crit).length;
     const done = p.tasks.filter((x) => x.status === 'C').length;
     const ru = S.ru.get((p.wbs.find((w) => w.parent == null) || {}).id) || {};
+    const bl = p.tasks.some((x) => x.bs != null);
+    const seg = (s) => `<span class="seg">${s}</span>`;
     $('#statusbar').innerHTML = [
-      `<span>${esc(t('activities'))}: <b>${p.tasks.length}</b></span>`,
-      `<span>${esc(t('selected'))}: <b>${S.sel.size}</b></span>`,
-      `<span>${esc(t('data_date'))}: <b>${fmtD(p.dataDate)}</b></span>`,
-      `<span>${esc(t('start'))}: <b>${fmtD(p.start)}</b></span><span>${esc(t('finish'))}: <b>${fmtD(p.finish)}</b></span>`,
-      `<span>${esc(t('progress'))}: <b>${ru.pct || 0}%</b> (${done}/${p.tasks.length})</span>`,
-      `<span>${esc(t('critical'))}: <b style="color:var(--danger)">${crit}</b></span>`,
+      seg(`${esc(t('activities'))}: <b>${p.tasks.length}</b>`), seg(`${esc(t('selected'))}: <b>${S.sel.size}</b>`),
+      seg(`${esc(t('portfolio'))}: <b>${esc(S.cfg.portfolio || t('all_projects'))}</b>`), seg(`${esc(t('access_mode'))}: <b>${esc(t('local'))}</b>`),
+      seg(`${esc(t('data_date'))}: <b>${fmtD(p.dataDate)}</b>`), seg(`${esc(t('baseline'))}: <b>${esc(bl ? (p.blName || t('saved_baseline')) : t('current_project'))}</b>`),
+      seg(`${esc(t('user'))}: <b>${esc(S.cfg.user || 'USER')}</b>`), seg(`${esc(t('db'))}: <b>${esc(t('db_name'))}</b>`),
+      seg(`${esc(t('start'))}: <b>${fmtD(p.start)}</b>`), seg(`${esc(t('finish'))}: <b>${fmtD(p.finish)}</b>`),
+      seg(`${esc(t('progress'))}: <b>${ru.pct || 0}%</b> (${done}/${p.tasks.length})`), seg(`${esc(t('critical'))}: <b style="color:var(--danger)">${crit}</b>`),
       p.loops && p.loops.length ? `<span class="warn">⚠ ${esc(t('loops_found', p.loops.slice(0, 3).join(', ')))}</span>` : '',
       p.imported ? `<span title="${esc(t('imported_hint'))}">ⓘ ${esc(t('file_dates'))}</span>` : '',
       '<span class="spacer"></span>',
@@ -1084,16 +1095,20 @@
     spot: 'M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z', res: 'M9 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 21v-3a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v3M17 4a3 3 0 0 1 0 6M21 21v-3a4 4 0 0 0-3-4', filt: 'M3 4h18l-7 8v7l-4 2v-9z', print: 'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',
     expand: 'M6 9l6 6 6-6', collapse: 'M6 15l6-6 6 6', save: 'M5 4h12l3 3v13H5zM8 4v5h8V4M8 20v-6h8v6', help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 4 2c-1 .8-1.5 1.2-1.5 2.5M12 17v.5'
   };
-  const ic = (n) => `<svg viewBox="0 0 24 24"><path d="${IC[n] || ''}"/></svg>`;
+  const ic = (n) => (P6.hasIcon(n) ? P6.icon(n) : `<svg viewBox="0 0 24 24"><path d="${IC[n] || ''}"/></svg>`);
   P6.ic = ic;
+  const setView = (v) => { S.cfg.view = v; saveCfg(); applyView(); updateToolbarState(); if (gantt) gantt.schedule(); renderRows(); };
+  function applyView() { const m = $('#main'); m.classList.toggle('v-table', S.cfg.view === 'table'); m.classList.toggle('v-gantt', S.cfg.view === 'gantt'); }
   const TB = [
-    ['folder', 'projects', () => App.dialogs.projects()], ['save', 'export_xer', () => App.exportXER()], ['print', 'print', () => print()], '|',
+    ['print', 'print', () => App.dialogs.printPreview()], ['preview', 'print_preview', () => App.dialogs.printPreview()], '|',
+    ['table', 'view_table', () => setView('table')], ['ganttTable', 'view_both', () => setView('both')], ['gantt', 'view_gantt', () => setView('gantt')], ['details', 'toggle_details', () => { S.cfg.detOpen = !S.cfg.detOpen; if (S.cfg.detOpen && S.cfg.dock === 'none') S.cfg.dock = 'details'; saveCfg(); layoutDetails(); renderDetails(); updateToolbarState(); }], '|',
+    ['open', 'projects', () => App.dialogs.projects()], ['save', 'commit', () => App.commit()], '|',
     ['undo', 'undo', () => App.doUndo()], ['redo', 'redo', () => App.doRedo()], '|',
-    ['plus', 'add_activity', () => App.addTask(), 'Insert'], ['mile', 'add_milestone', () => App.addMilestone()], ['wbs', 'add_wbs', () => App.addWbs()], ['trash', 'delete', () => App.del(), 'Del'], ['dup', 'duplicate', () => App.duplicate()], '|',
+    ['add', 'add_activity', () => App.addTask(), 'Insert'], ['mile', 'add_milestone', () => App.addMilestone()], ['wbsadd', 'add_wbs', () => App.addWbs()], ['del', 'delete', () => App.del(), 'Del'], ['copy', 'duplicate', () => App.duplicate()], '|',
     ['indent', 'indent', () => App.indent()], ['outdent', 'outdent', () => App.outdent()], ['link', 'link', () => App.link()], ['unlink', 'unlink', () => App.unlink()], '|',
-    ['play', 'schedule', () => App.schedule(), 'F9', 'pri'], ['upd', 'update_progress', () => App.dialogs.updateProgress()], ['flag', 'baselines', () => App.dialogs.baselines()], ['spot', 'spotlight', () => toggleShow('spot'), '', 'spot'], ['chart', 'reports', () => App.dialogs.reports()], '|',
-    ['cal', 'calendars', () => App.dialogs.calendars()], ['res', 'resources', () => App.dialogs.resources()], ['cols', 'columns', () => App.dialogs.columns()], ['filt', 'filter_custom', () => App.dialogs.filter()], '|',
-    ['zout', 'zoom_out', () => zoom(1)], ['zin', 'zoom_in', () => zoom(-1)], ['fit', 'zoom_fit', () => zoomFit()], ['today', 'go_datadate', () => goDate(S.p.dataDate)], ['fire', 'show_critical', () => toggleShow('crit'), '', 'crit'], '|', 'SEARCH'
+    ['calc', 'schedule', () => App.schedule(), 'F9', 'pri'], ['update', 'update_progress', () => App.dialogs.updateProgress()], ['baseline', 'baselines', () => App.dialogs.baselines()], ['spot', 'spotlight', () => toggleShow('spot'), '', 'spot'], ['report', 'reports', () => App.dialogs.reports()], '|',
+    ['calendar', 'calendars', () => App.dialogs.calendars()], ['resources', 'resources', () => App.dialogs.resources()], ['columns', 'columns', () => App.dialogs.columns()], ['filter', 'filter_custom', () => App.dialogs.filter()], '|',
+    ['zout', 'zoom_out', () => zoom(1)], ['zin', 'zoom_in', () => zoom(-1)], ['fit', 'zoom_fit', () => zoomFit()], ['today', 'go_datadate', () => goDate(S.p.dataDate)], ['critical', 'show_critical', () => toggleShow('crit'), '', 'crit'], '|', 'SEARCH'
   ];
   function buildToolbar() {
     const tb = $('#toolbar');
@@ -1113,6 +1128,7 @@
       b.className = 'ib' + (it[4] === 'pri' ? ' pri' : ''); b.dataset.act = it[1]; b.dataset.i = i;
       b.title = t(it[1]) + (it[3] ? ' (' + it[3] + ')' : '');
       b.innerHTML = ic(it[0]) + (it[4] === 'pri' ? `<span>${esc(t(it[1]))}</span>` : '');
+      if (it[4] === 'pri') b.classList.add('pri');
       b.onclick = it[2];
       tb.appendChild(b);
     });
@@ -1123,6 +1139,9 @@
     if (q('undo')) q('undo').disabled = !S.undo.length;
     if (q('redo')) q('redo').disabled = !S.redo.length;
     if (q('show_critical')) q('show_critical').classList.toggle('on', S.cfg.show.crit);
+    ['table', 'both', 'gantt'].forEach((v) => { const b = q('view_' + v); if (b) b.classList.toggle('on', (S.cfg.view || 'both') === v); });
+    if (q('toggle_details')) q('toggle_details').classList.toggle('on', !!S.cfg.detOpen);
+    if (q('commit')) q('commit').disabled = false;
     if (q('spotlight')) q('spotlight').classList.toggle('on', !!S.cfg.show.spot);
     if (q('indent')) q('indent').disabled = !selWbs().length;
     if (q('outdent')) q('outdent').disabled = !selWbs().length;
@@ -1170,13 +1189,57 @@
   function buildLayoutBar() { if (API.drawLayoutBar) API.drawLayoutBar(); }
   const nearestTs = () => TS.reduce((b, x) => (Math.abs(x[1] - S.cfg.pxIdx) < Math.abs(b[1] - S.cfg.pxIdx) ? x : b), TS[0])[1];
   Object.assign(API, { LAYOUTS, TS, BARS, setTimescale, nearestTs, toggleShow, saveCfg, layoutDetails, renderDetails, setSel(keys) { S.sel = new Set(keys); S.focus = keys[0] || null; S.anchor = S.focus; selChanged(); } });
+  // ---------- File menu features ----------
+  API.commit = async function () { await saveNow(); toast(t('committed')); updateStatus(); };
+  API.refreshData = async function () {
+    const rec = await loadProject(S.p.id);
+    if (!rec) return toast(t('nothing_to_refresh'), true);
+    const keep = S.p.xer; if (!rec.xer) rec.xer = keep;
+    S.p = rec; S.undo = []; S.redo = []; fixSel(); refresh({ details: true }); toast(t('data_refreshed'));
+  };
+  API.closeAll = async function () { await saveNow(); App.dialogs.projects(); };
+  API.exitApp = async function () {
+    if (!confirm(t('exit_confirm'))) return;
+    await saveNow();
+    window.close();
+    setTimeout(() => { location.href = '../'; }, 150);
+  };
+  API.sendProject = async function () {
+    const name = (S.p.name || 'project').replace(/[^\w\u0600-\u06ff.-]+/g, '_') + '.xer';
+    const file = new File([P6.toXER(S.p)], name, { type: 'text/plain' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: S.p.name }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    download(name, file, 'text/plain');
+    toast(t('send_fallback'));
+    setTimeout(() => { location.href = 'mailto:?subject=' + encodeURIComponent(S.p.name) + '&body=' + encodeURIComponent(t('send_body', name)); }, 400);
+  };
+  API.recent = [];
+  async function loadRecent() { const l = (await listProjects()).sort((x, y) => y.updated - x.updated).slice(0, 8); API.recent = l.map((x) => ({ id: x.id, name: x.name })); if (S.cfg.__menus) buildMenus(); }
+  API.loadRecent = loadRecent;
+  async function openRecent(id) { const p = await loadProject(id); if (p) openProject(p); }
+  const portfolioSub = () => [{ l: t('all_projects'), ck: !S.cfg.portfolio, fn: () => { S.cfg.portfolio = ''; saveCfg(); updateStatus(); } }, ...Object.keys(S.cfg.portfolios || {}).map((n) => ({ l: n, ck: S.cfg.portfolio === n, fn: () => { S.cfg.portfolio = n; saveCfg(); updateStatus(); } })), '-', { l: t('manage_portfolios') + '…', fn: () => App.dialogs.portfolios() }];
+  const MENU_ICON = { new_project: 'newproj', projects: 'open', close_all: 'closeall', page_setup: 'pagesetup', print_setup: 'printsetup', print_preview: 'preview', print: 'print', import: 'import', export: 'export', send_project: 'send', select_portfolio: 'portfolio', commit: 'commit', refresh_data: 'refresh', recent: 'recent', exit: 'exit',
+    open_file: 'import', import_update: 'import', import_baseline: 'baseline', import_csv: 'import', paste_import: 'paste', load_sample: 'projects', export_xer: 'export', export_csv: 'export', export_json: 'save',
+    undo: 'undo', redo: 'redo', cut: 'cut', copy: 'copy', paste: 'paste', add_activity: 'add', add_milestone: 'mile', add_wbs: 'wbsadd', duplicate: 'copy', delete: 'del', indent: 'indent', outdent: 'outdent', link: 'link', unlink: 'unlink',
+    zoom_in: 'zin', zoom_out: 'zout', zoom_fit: 'fit', go_datadate: 'today', go_today: 'today', show_baseline: 'baseline', show_critical: 'critical', columns: 'columns', filter_custom: 'filter', group_sort: 'sort', customize_details: 'details',
+    project_settings: 'gear', calendars: 'calendar', wbs_tree: 'wbstree', resources: 'resources', resource_usage: 'people', baselines: 'baseline', reports: 'report', schedule: 'calc', update_progress: 'update', spotlight: 'spot', fp_title: 'trace',
+    act_codes_global: 'codes', act_codes_project: 'codes', act_pcodes: 'codes', udf_manage: 'udf', prefs: 'prefs', guide: 'help', shortcuts: 'help', about: 'help', bottom_details: 'details', bottom_usage: 'people', view_table: 'table', view_both: 'ganttTable', view_gantt: 'gantt' };
+  API.MENU_ICON = MENU_ICON;
   function menuDefs() {
     const sh = S.cfg.show, F = S.cfg;
     return [
       ['file', [
-        ['new_project', () => App.dialogs.newProject()], ['projects', () => App.dialogs.projects(), 'Ctrl+O'], '-',
-        ['open_file', () => App.openFile()], ['import_update', () => App.openFile('update')], ['import_baseline', () => App.openFile('baseline')], ['import_csv', () => App.openFile('csv')], ['paste_import', () => App.dialogs.paste()], '-',
-        ['export_xer', () => App.exportXER(), 'Ctrl+S'], ['export_csv', () => App.exportCSV()], ['export_json', () => App.exportJSON()], '-', ['print', () => print()], ['load_sample', () => App.loadSample()]
+        ['new_project', () => App.dialogs.newProject(), 'Alt+N'], ['projects', () => App.dialogs.projects(), 'Ctrl+O'], ['close_all', () => App.closeAll(), 'Alt+W'], '-',
+        ['page_setup', () => App.dialogs.pageSetup()], ['print_setup', () => App.dialogs.printSetup()], ['print_preview', () => App.dialogs.printPreview()], ['print', () => App.dialogs.printPreview(), 'Ctrl+P'], '-',
+        ['import', null, '', false, [
+          { l: t('open_file'), i: 'import', fn: () => App.openFile() }, { l: t('import_update'), i: 'import', fn: () => App.openFile('update') }, { l: t('import_baseline'), i: 'baseline', fn: () => App.openFile('baseline') },
+          { l: t('import_csv'), i: 'import', fn: () => App.openFile('csv') }, { l: t('paste_import'), i: 'paste', fn: () => App.dialogs.paste() }]],
+        ['export', null, '', false, [
+          { l: t('export_xer'), i: 'export', k: 'Ctrl+S', fn: () => App.exportXER() }, { l: t('export_csv'), i: 'export', fn: () => App.exportCSV() }, { l: t('export_json'), i: 'save', fn: () => App.exportJSON() }]],
+        ['send_project', () => App.sendProject()], '-',
+        ['select_portfolio', null, '', false, portfolioSub()], '-',
+        ['commit', () => App.commit(), 'F10'], ['refresh_data', () => App.refreshData(), 'F5'], '-',
+        ['recent', null, '', false, API.recent.length ? API.recent.map((r) => ({ l: r.name, i: 'projects', ck: S.p && r.id === S.p.id, fn: () => openRecent(r.id) })) : [{ l: t('no_projects'), dis: true }]], '-',
+        ['exit', () => App.exitApp()]
       ]],
       ['edit', [
         ['undo', () => App.doUndo(), 'Ctrl+Z'], ['redo', () => App.doRedo(), 'Ctrl+Y'], '-',
@@ -1204,19 +1267,24 @@
         ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['fp_title', () => App.dialogs.floatPaths()], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
       ['admin', [['act_codes_global', () => App.dialogs.codes('acg')], ['act_codes_project', () => App.dialogs.codes('acp')], ['act_pcodes', () => App.dialogs.codes('pc')], ['udf_manage', () => App.dialogs.udf()], '-', ['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],
-      ['help', [['guide', () => App.dialogs.help()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
+      ['help', [['guide', () => App.dialogs.help()], ['load_sample', () => App.loadSample()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
     ];
   }
   function buildMenus() {
+    S.cfg.__menus = 1;
     const mb = $('#menubar');
     const open = mb.querySelector('.menu.open');
     const openId = open ? open.dataset.id : null;
     mb.innerHTML = '';
     for (const [id, items] of menuDefs()) {
       const m = document.createElement('div'); m.className = 'menu' + (openId === id ? ' open' : ''); m.dataset.id = id;
-      m.innerHTML = `<button>${esc(t('m_' + id))}</button><div class="dd" dir="${P6.dir()}">${items.map((it, i) => (it === '-' ? '<hr>' : `<button class="it" data-i="${i}"><span class="ck">${it[3] ? '✓' : ''}</span>${esc(t(it[0]))}<span class="k">${esc(it[2] || '')}</span></button>`)).join('')}</div>`;
+      const ico = (k) => (MENU_ICON[k] && P6.hasIcon(MENU_ICON[k]) ? P6.icon(MENU_ICON[k]) : '');
+      m.innerHTML = `<button>${esc(t('m_' + id))}</button><div class="dd" dir="${P6.dir()}">${items.map((it, i) => (it === '-' ? '<hr>' : `<button class="it${it[5] ? ' dis' : ''}" data-i="${i}"><span class="ico2">${ico(it[0])}</span>${it[3] ? '<span class="ck">✓</span>' : ''}${esc(t(it[0]))}${it[4] ? '<span class="k">▸</span>' : `<span class="k">${esc(it[2] || '')}</span>`}</button>`)).join('')}</div>`;
       m.querySelector('button').onclick = (e) => { e.stopPropagation(); const was = m.classList.contains('open'); mb.querySelectorAll('.menu').forEach((x) => x.classList.remove('open')); if (!was) m.classList.add('open'); };
-      m.querySelector('.dd').onclick = (e) => { const b = e.target.closest('.it'); if (!b) return; m.classList.remove('open'); items[+b.dataset.i][1](); };
+      const dd = m.querySelector('.dd');
+      const openSub = (b) => { const it = items[+b.dataset.i]; if (!it || !it[4]) return; const r = b.getBoundingClientRect(); App.popMenu(it[4], P6.dir() === 'rtl' ? r.left - 200 : r.right - 2, r.top - 3); };
+      dd.onclick = (e) => { const b = e.target.closest('.it'); if (!b || b.classList.contains('dis')) return; const it = items[+b.dataset.i]; if (it[4]) return openSub(b); m.classList.remove('open'); if (it[1]) it[1](); };
+      dd.addEventListener('mouseover', (e) => { const b = e.target.closest('.it'); if (!b) return; document.querySelectorAll('.pmenu').forEach((x) => x.remove()); if (items[+b.dataset.i] && items[+b.dataset.i][4]) openSub(b); });
       m.addEventListener('mouseenter', () => { if (mb.querySelector('.menu.open') && !m.classList.contains('open')) { mb.querySelectorAll('.menu').forEach((x) => x.classList.remove('open')); m.classList.add('open'); } });
       mb.appendChild(m);
     }
@@ -1252,6 +1320,10 @@
     let n = 0;
     const QM = P6.metrics(q);
     mutate(t('import_baseline'), () => {
+      S.p.blName = q.name || 'Imported';
+      const qr = new Map(q.rsrc.map((r) => [r.id, r.short])), qa = new Map(q.asg.map((x) => [x.task + '|' + qr.get(x.rsrc), x.qty])), qt = new Map(q.tasks.map((x) => [x.id, x.code.toLowerCase()])); void qt;
+      const sr = new Map(S.p.rsrc.map((r) => [r.id, r.short]));
+      for (const x of S.p.asg) { const tk0 = S.p.tasks.find((z) => z.id === x.task), o0 = tk0 && by.get(tk0.code.toLowerCase()); if (o0) { const v = qa.get(o0.id + '|' + sr.get(x.rsrc)); if (v != null) x.bq = v; } }
       for (const tk of S.p.tasks) { const o = by.get(tk.code.toLowerCase()); if (o) { const mm = QM.T.get(o.id); tk.bcost = mm.bc; tk.bunits = mm.bu_L; tk.bs = o.status === 'C' && o.as != null ? o.as : o.es; tk.bf = o.status === 'C' && o.af != null ? o.af : o.ef; tk.bdur = o.dur; n++; } }
     }, { noSched: true });
     S.cfg.show.base = true; pushGantt(); toast(t('baseline_applied', n));
@@ -1260,7 +1332,7 @@
     const old = S.p, by = new Map(old.tasks.map((x) => [x.code.toLowerCase(), x]));
     let n = 0;
     q.tasks.forEach((tk) => { const o = by.get(tk.code.toLowerCase()); if (o) { tk.bs = o.bs; tk.bf = o.bf; tk.bdur = o.bdur; n++; } });
-    q.id = old.id; q.name = old.name;
+    q.id = old.id; q.name = old.name; q.blName = old.blName;
     S.undo.push({ label: t('import_update'), snap: snapshot() });
     const keepX = q.xer;
     S.p = q; S.p.xer = keepX || old.xer; rawSaved = null;
@@ -1308,7 +1380,7 @@
     API.gantt = gantt; API.S = S;
     gantt.sc.addEventListener('scroll', () => { renderRows(); }, { passive: true });
     bindTable(); bindDetails(); bindSplitters();
-    buildMenus(); buildToolbar(); App.initP6UI(); layoutDetails();
+    applyView(); buildMenus(); buildToolbar(); App.initP6UI(); loadRecent(); if (P6.bindDetExtra) P6.bindDetExtra(); layoutDetails();
     $('#langBtn').onclick = () => API.setLang(S.cfg.lang === 'ar' ? 'en' : 'ar');
     $('#themeBtn').onclick = () => { S.cfg.theme = ({ p6: 'light', light: 'dark', dark: 'p6' })[S.cfg.theme] || 'p6'; saveCfg(); applyLang(); };
     $('#projBtn').onclick = () => API.dialogs.projects();
@@ -1328,6 +1400,11 @@
       else if (mod && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
       else if (mod && e.key.toLowerCase() === 'y' && !typing) { e.preventDefault(); redo(); }
       else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); API.exportXER(); }
+      else if (mod && e.key.toLowerCase() === 'p') { e.preventDefault(); API.dialogs.printPreview(); }
+      else if (e.key === 'F10') { e.preventDefault(); API.commit(); }
+      else if (e.key === 'F5') { e.preventDefault(); API.refreshData(); }
+      else if (e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); API.dialogs.newProject(); }
+      else if (e.altKey && e.key.toLowerCase() === 'w') { e.preventDefault(); API.closeAll(); }
       else if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); API.dialogs.projects(); }
       else if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); const q = $('#q'); if (q) { q.focus(); q.select(); } }
       else if (mod && e.key.toLowerCase() === 'd' && !typing) { e.preventDefault(); API.duplicate(); }
@@ -1346,6 +1423,6 @@
     document.body.dataset.ready = '1';
   };
 
-  Object.assign(API, { getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
+  Object.assign(API, { setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
   g.App.dialogs = {};
 })(window);
