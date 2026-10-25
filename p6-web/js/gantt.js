@@ -200,7 +200,7 @@
 
       // relationship lines
       let lines = '';
-      if (sh.rels !== false && px >= 1.5) {
+      if (sh.rels !== false && px >= 0.4) {
         const drawn = new Set();
         const lineFor = (rel) => {
           if (drawn.has(rel.id)) return;

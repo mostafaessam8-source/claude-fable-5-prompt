@@ -900,11 +900,15 @@
       </div>`;
     } else if (S.tab === 'rels') {
       const preds = S.p.rels.filter((r) => r.s === tk.id), succs = S.p.rels.filter((r) => r.p === tk.id);
-      const tbl = (list, isPred) => `<table class="mini"><thead><tr><th>${esc(t('col_code'))}</th><th>${esc(t('col_name'))}</th><th style="width:90px">${esc(t('rel_type'))}</th><th style="width:70px">${esc(t('lag'))}</th><th style="width:30px"></th></tr></thead><tbody>${list.map((r) => {
+      const rs = S.relSel = S.relSel || {}, pid = esc((S.p.meta && S.p.meta.code) || S.p.name);
+      const prim = (o) => { const a = S.p.asg.find((q) => q.task === o.id); const r = a && S.p.rsrc.find((x) => x.id === a.rsrc); return r ? r.name : ''; };
+      const wcode = (o) => { const w = S.p.wbs.find((x) => x.id === o.wbs); return w ? w.code : ''; };
+      const th = (k, w) => `<th style="min-width:${w}px">${esc(k)}</th>`;
+      const tbl = (list, isPred, side) => `<div class="rl-grid"><table class="mini wide"><thead><tr>${th('Project ID', 80)}${th('WBS', 80)}${th(t('col_code'), 90)}${th(t('col_name'), 220)}${th(t('rel_type'), 70)}${th(t('lag'), 60)}${th(t('col_status'), 90)}${th(t('col_primname'), 120)}</tr></thead><tbody>${list.map((r) => {
         const o = taskById(isPred ? r.p : r.s); if (!o) return '';
-        return `<tr data-rel="${r.id}"><td><input data-rf="code" value="${esc(o.code)}" list="codes"></td><td dir="auto" style="color:var(--muted)">${esc(o.name)}</td><td>${sel2('type', r.type, ['FS', 'SS', 'FF', 'SF'])}</td><td><input data-rf="lag" value="${fmtN(r.lag)}"></td><td><button class="ib" data-rdel="${r.id}" title="${esc(t('delete'))}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td></tr>`;
-      }).join('')}<tr><td colspan="5"><input data-radd="${isPred ? 'p' : 's'}" list="codes" placeholder="+ ${esc(t('add_rel_ph'))}" style="border-color:var(--line)"></td></tr></tbody></table>`;
-      body += `<datalist id="codes">${S.p.tasks.map((x) => `<option value="${esc(x.code)}">${esc(x.name)}</option>`).join('')}</datalist><div class="two"><div><b>${esc(t('predecessors'))}</b>${tbl(preds, true)}</div><div><b>${esc(t('successors'))}</b>${tbl(succs, false)}</div></div>`;
+        return `<tr data-rel="${r.id}" data-side="${side}" class="${rs[side] === r.id ? 'on' : ''}"><td dir="ltr">${pid}</td><td dir="ltr">${esc(wcode(o))}</td><td><input data-rf="code" value="${esc(o.code)}" list="codes"></td><td dir="auto" style="color:var(--muted)">${esc(o.name)}</td><td>${sel2('type', r.type, ['FS', 'SS', 'FF', 'SF'])}</td><td><input data-rf="lag" value="${fmtN(r.lag)}"></td><td>${esc(statusLabel(o.status))}</td><td dir="auto">${esc(prim(o))}</td></tr>`;
+      }).join('')}</tbody></table></div><div class="rl-btns"><input data-radd="${side}" list="codes" placeholder="+ ${esc(t('add_rel_ph'))}" style="border-color:var(--line);max-width:200px"><button class="btn sm" data-act="rassign" data-side="${side}">${P6.icon('link')} ${esc(t('assign'))}</button><button class="btn sm" data-act="rrem" data-side="${side}">${P6.icon('unlink')} ${esc(t('remove'))}</button><button class="btn sm" data-act="rgoto" data-side="${side}">${P6.icon('today')} GoTo</button></div>`;
+      body += `<datalist id="codes">${S.p.tasks.map((x) => `<option value="${esc(x.code)}">${esc(x.name)}</option>`).join('')}</datalist><div class="two rl-two"><div class="rl-panel"><b>${esc(t('predecessors'))}</b>${tbl(preds, true, 'p')}</div><div class="rl-panel"><b>${esc(t('successors'))}</b>${tbl(succs, false, 's')}</div></div>`;
     } else if (S.tab === 'res') {
       const as = S.p.asg.filter((a) => a.task === tk.id), rmap = new Map(S.p.rsrc.map((r) => [r.id, r]));
       const th = (k, w) => `<th style="min-width:${w || 90}px">${esc(t(k))}</th>`;
@@ -952,12 +956,17 @@
   function bindDetails() {
     const el = $('#details');
     el.addEventListener('click', (e) => {
+      const rrow = e.target.closest('tr[data-rel]');
+      if (rrow && !e.target.closest('button')) { (S.relSel = S.relSel || {})[rrow.dataset.side] = +rrow.dataset.rel; rrow.closest('tbody').querySelectorAll('tr.on').forEach((q) => q.classList.remove('on')); rrow.classList.add('on'); }
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.act === 'prev' || b.dataset.act === 'next') { const i = S.rowIdx.get(S.focus); let k = i; const d = b.dataset.act === 'next' ? 1 : -1; do { k += d; } while (S.rows[k] && S.rows[k].kind !== 't'); if (S.rows[k]) { selectRow(S.rows[k], null); ensureVisible(k); } return; }
       if (b.dataset.tab) { S.tab = b.dataset.tab; if (!S.cfg.detOpen) S.cfg.detOpen = true; renderDetails(); return; }
       if (b.dataset.act === 'toggle') { S.cfg.detOpen = !S.cfg.detOpen; saveCfg(); layoutDetails(); renderDetails(); return; }
       const tk = focusTask(); if (!tk) return;
-      if (b.dataset.rdel) { const id = +b.dataset.rdel; mutate(t('unlink'), () => { S.p.rels = S.p.rels.filter((r) => r.id !== id); }); }
+      if (b.dataset.act === 'rrem') { const id = (S.relSel || {})[b.dataset.side]; if (id) mutate(t('unlink'), () => { S.p.rels = S.p.rels.filter((r) => r.id !== id); }); else toast(t('rel_select_first'), true); }
+      else if (b.dataset.act === 'rgoto') { const id = (S.relSel || {})[b.dataset.side], r = S.p.rels.find((q) => q.id === id), o = r && taskById(b.dataset.side === 'p' ? r.p : r.s); if (o) { if (!S.rowIdx.has('t' + o.id)) toast(t('rel_hidden'), true); else { selectRow(S.rows[S.rowIdx.get('t' + o.id)], null); ensureVisible(S.rowIdx.get('t' + o.id)); } } else toast(t('rel_select_first'), true); }
+      else if (b.dataset.act === 'rassign') { const i = el.querySelector(`input[data-radd="${b.dataset.side}"]`); if (i) i.focus(); }
+      else if (b.dataset.rdel) { const id = +b.dataset.rdel; mutate(t('unlink'), () => { S.p.rels = S.p.rels.filter((r) => r.id !== id); }); }
       else if (b.dataset.adel) { const id = +b.dataset.adel; mutate(t('delete'), () => { S.p.asg = S.p.asg.filter((a) => a.id !== id); }, { noSched: true }); }
       else if (b.dataset.act === 'addasg') { const v = +$('#newAsg').value; if (v) mutate(t('assign'), () => { S.p.asg.push({ id: P6.nextId(S.p), task: tk.id, rsrc: v, qty: 8 }); }, { noSched: true }); }
       else if (b.dataset.act === 'codes') App.dialogs.codes('acg');
@@ -1155,6 +1164,7 @@
     if (q('toggle_details')) q('toggle_details').classList.toggle('on', !!S.cfg.detOpen);
     if (q('commit')) q('commit').disabled = false;
     if (q('spotlight')) q('spotlight').classList.toggle('on', !!S.cfg.show.spot);
+    const rtg = tb.querySelector('.rels-tg'); if (rtg) rtg.classList.toggle('on', S.cfg.show.rels !== false);
     if (q('indent')) q('indent').disabled = !selWbs().length;
     if (q('outdent')) q('outdent').disabled = !selWbs().length;
   }

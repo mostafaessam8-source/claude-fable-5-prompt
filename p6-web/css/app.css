@@ -512,3 +512,9 @@ table.pw thead th{position:sticky;top:0;z-index:2;background:linear-gradient(#fd
 .dc-right{flex:1}.dc-right label{display:block;font-weight:700;margin:10px 0 6px}.dc-right label.chk{font-weight:400;display:flex;gap:8px;align-items:center}.dc-right input[type=radio]{width:auto}
 .dc-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
+
+/* Relationships tab (P6 layout) */
+.rl-two{align-items:start}.rl-panel{min-width:0}.rl-grid{overflow:auto;max-height:260px;border:1px solid var(--line);margin:4px 0}
+.rl-grid tr.on td{background:#0b6fb8;color:#fff}.rl-grid tr.on td input,.rl-grid tr.on td select{color:#000}
+.rl-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rl-btns svg.pi{width:16px;height:16px;vertical-align:-3px}
+#toolbar .rels-tg.on{background:#cfe3ff;border-color:#7aa7e6}
