@@ -88,6 +88,53 @@
     layout: `<rect x="3" y="4" width="18" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="3" y="4" width="8" height="16" fill="${LB}" stroke="${B}"/><rect x="11" y="4" width="10" height="5" fill="${LG}" stroke="${G}"/>`,
     bars: `<rect x="2" y="5" width="12" height="4" fill="${G}"/><rect x="8" y="11" width="13" height="4" fill="${B}"/><rect x="4" y="17" width="10" height="4" fill="${R}"/>`
   };
+
+  const more = {
+    find: `<circle cx="7" cy="12" r="4.2" fill="${LB}" stroke="${DK}" stroke-width="1.5"/><circle cx="17" cy="12" r="4.2" fill="${LB}" stroke="${DK}" stroke-width="1.5"/><path d="M7 7.8h10M3 16l2 4h4l-2-4M17 16l2 4h4l-2-4" fill="${DK}" stroke="${DK}" stroke-width="1"/>`,
+    findnext: `<circle cx="7" cy="12" r="3.6" fill="${LB}" stroke="${DK}" stroke-width="1.4"/><circle cx="14" cy="12" r="3.6" fill="${LB}" stroke="${DK}" stroke-width="1.4"/><path d="M17 20h5M19.5 17.5L22 20l-2.5 2.5" fill="none" stroke="${G}" stroke-width="2"/>`,
+    replace: `<text x="2" y="10" font-size="9" font-weight="700" fill="${DK}" font-family="Arial">ab</text><text x="2" y="21" font-size="9" font-weight="700" fill="${R}" font-family="Arial">cd</text><path d="M14 8h7M18 5l3 3-3 3M21 17h-7M17 14l-3 3 3 3" fill="none" stroke="${B}" stroke-width="1.8"/>`,
+    spell: `<text x="1.5" y="12" font-size="10" font-weight="700" fill="${DK}" font-family="Arial">abc</text><path d="M4 17l4 4 9-9" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round"/>`,
+    renumber: `<text x="2" y="10.5" font-size="9.5" font-weight="700" fill="${B}" font-family="Arial">123</text><path d="M4 15h15M4 19h11" stroke="${GR}" stroke-width="2"/><path d="M19 13l3 3-3 3" fill="none" stroke="${G}" stroke-width="2"/>`,
+    dissolve: `<rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="${GR}" stroke-dasharray="3 2"/><path d="M8 8l8 8M16 8l-8 8" stroke="${R}" stroke-width="2.4"/>`,
+    filldown: `<rect x="4" y="3" width="16" height="5" fill="${W}" stroke="${B}"/><rect x="4" y="9" width="16" height="5" fill="${LB}" stroke="${B}"/><rect x="4" y="15" width="16" height="5" fill="${LB}" stroke="${B}"/><path d="M12 9v9M8.5 15l3.5 4 3.5-4" fill="none" stroke="${G}" stroke-width="2.2"/>`,
+    selectall: `<rect x="3" y="3" width="18" height="18" fill="${LB}" stroke="${B}" stroke-width="1.4"/><path d="M7 8h10M7 12h10M7 16h10" stroke="${B}" stroke-width="1.6"/>`,
+    userprefs: `${person()}<circle cx="18" cy="18" r="4.2" fill="${Y}" stroke="${DY}"/><circle cx="18" cy="18" r="1.4" fill="${W}"/>`,
+    addactview: `${bar(2, 8, 15, G)}<circle cx="18" cy="17" r="3" fill="none" stroke="${Y}" stroke-width="2"/><path d="M15 19l-5 3" stroke="${Y}" stroke-width="2"/>`,
+    assignbl: `${folder(LGR, GR)}<path d="M12 12l3 8 1.5-3.5L20 15z" fill="${Y}" stroke="${DK}" stroke-width="1"/>`,
+    maintbl: `${folder(LGR, GR)}<rect x="13" y="12" width="9" height="9" fill="${Y}" stroke="${DK}" stroke-width="1"/><path d="M15 15h5M15 18h5" stroke="${DK}"/>`,
+    thresholds: `<path d="M5 3v18" stroke="${DK}" stroke-width="1.6"/><path d="M5 4h14l-3 4 3 4H5z" fill="${R}" stroke="${DK}" stroke-width=".8"/><path d="M3 12h4M3 17h4" stroke="${GR}"/>`,
+    setdefault: `${folder(LB, B)}<circle cx="17" cy="17" r="5" fill="${G}"/><path d="M14.5 17l2 2 3-4" fill="none" stroke="${W}" stroke-width="1.8"/>`,
+    layoutopen: `${folder(LB, B)}<rect x="13" y="12" width="9" height="8" fill="${W}" stroke="${B}"/><path d="M13 15h9M17 12v8" stroke="${B}"/>`,
+    layoutsave: `<path d="M4 3h13l3 3v15H4z" fill="${B}" stroke="${DK}" stroke-width=".9"/><rect x="7" y="3" width="9" height="6" fill="${LGR}"/><rect x="7" y="13" width="10" height="8" fill="${W}"/><path d="M9 15h6M9 18h6" stroke="${GR}"/>`,
+    layoutnew: `<rect x="3" y="4" width="16" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="3" y="4" width="7" height="16" fill="${LB}" stroke="${B}"/>${plus(18, 18)}`,
+    showtop: `<rect x="2.5" y="4" width="19" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="2.5" y="4" width="19" height="7" fill="${LB}" stroke="${B}"/><path d="M9 17l3-3 3 3" fill="none" stroke="${B}" stroke-width="1.6"/>`,
+    showbottom: `<rect x="2.5" y="4" width="19" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="2.5" y="13" width="19" height="7" fill="${LB}" stroke="${B}"/><path d="M9 8l3 3 3-3" fill="none" stroke="${B}" stroke-width="1.6"/>`,
+    bottomopts: `<rect x="2.5" y="4" width="19" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="2.5" y="13" width="19" height="7" fill="${LB}" stroke="${B}"/><circle cx="18" cy="9" r="3" fill="${Y}" stroke="${DY}"/>`,
+    timescale: `<circle cx="12" cy="12" r="9" fill="${W}" stroke="${B}" stroke-width="1.8"/><path d="M12 6v6l4 2.5" fill="none" stroke="${DK}" stroke-width="1.8"/><path d="M3 21h18" stroke="${R}" stroke-width="1.4"/>`,
+    progressline: `<path d="M12 2v20" stroke="${GR}" stroke-width="1"/><path d="M12 3l-5 4 6 4-5 4 6 4" fill="none" stroke="${R}" stroke-width="2.2"/>`,
+    attach: `<path d="M17 7l-8.5 8.5a3 3 0 0 0 4.3 4.3L20 12.6a5 5 0 0 0-7-7L5.5 13" fill="none" stroke="${GR}" stroke-width="2.2" stroke-linecap="round"/>`,
+    linenum: `<text x="3" y="17" font-size="15" font-weight="700" fill="${GR}" font-family="Arial">#</text><path d="M14 8h7M14 13h7M14 18h7" stroke="${GR}"/>`,
+    critpath: `<rect x="2" y="3" width="8" height="5" fill="${R}"/><rect x="8" y="10" width="8" height="5" fill="${R}"/><rect x="14" y="17" width="8" height="5" fill="${R}"/><path d="M6 8v4h2M12 15v4h2" fill="none" stroke="${DK}"/>`,
+    check: `<path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" fill="${LG}" stroke="${G}" stroke-width="1.4"/><path d="M8 12l3 3 5-6" fill="none" stroke="${G}" stroke-width="2.4"/>`,
+    font: `<text x="3" y="19" font-size="18" font-weight="700" fill="${B}" font-family="Georgia,serif">A</text><text x="14" y="19" font-size="11" font-weight="700" fill="${R}" font-family="Georgia,serif">a</text>`,
+    arrange: `<rect x="2" y="9" width="7" height="6" fill="${LB}" stroke="${B}"/><rect x="15" y="3" width="7" height="6" fill="${LB}" stroke="${B}"/><rect x="15" y="15" width="7" height="6" fill="${LB}" stroke="${B}"/><path d="M9 12h3V6h3M12 12v6h3" fill="none" stroke="${DK}"/>`,
+    align: `<rect x="3" y="3" width="7" height="5" fill="${LB}" stroke="${B}"/><rect x="3" y="10" width="14" height="5" fill="${LB}" stroke="${B}"/><rect x="3" y="17" width="10" height="5" fill="${LB}" stroke="${B}"/>`,
+    boxtpl: `<rect x="3" y="4" width="18" height="16" fill="${W}" stroke="${B}" stroke-width="1.4"/><path d="M3 9h18M3 14h18M9 9v11" stroke="${B}"/>`,
+    hint: `<path d="M3 4h18v12H11l-5 4v-4H3z" fill="${Y}" stroke="${DY}" stroke-width="1.1"/><text x="9.5" y="13" font-size="9" font-weight="700" fill="${DK}" font-family="Arial">?</text>`,
+    statusbar: `<rect x="2.5" y="4" width="19" height="16" fill="${W}" stroke="${GR}" stroke-width="1.2"/><rect x="2.5" y="16" width="19" height="4" fill="${LB}" stroke="${B}"/>`,
+    zoom: `${mag()}<path d="M7 10h6M10 7v6" stroke="${DK}" stroke-width="1.6"/>`,
+    expandall: `<rect x="3" y="3" width="8" height="8" fill="${W}" stroke="${GR}"/><path d="M5 7h4M7 5v4" stroke="${G}" stroke-width="1.8"/><path d="M14 8h7M14 16h7M7 16h4" stroke="${GR}" stroke-width="1.6"/>`,
+    collapseall: `<rect x="3" y="3" width="8" height="8" fill="${W}" stroke="${GR}"/><path d="M5 7h4" stroke="${R}" stroke-width="1.8"/><path d="M14 8h7M14 16h7M7 16h4" stroke="${GR}" stroke-width="1.6"/>`,
+    collapseto: `<rect x="3" y="3" width="8" height="8" fill="${W}" stroke="${GR}"/><path d="M5 7h4" stroke="${R}" stroke-width="1.8"/><rect x="9" y="14" width="8" height="7" fill="${LB}" stroke="${B}"/>`,
+    toolbars: `<rect x="2.5" y="5" width="19" height="6" fill="${LGR}" stroke="${GR}"/><g fill="${B}"><rect x="4.5" y="6.5" width="3" height="3"/><rect x="9" y="6.5" width="3" height="3"/><rect x="13.5" y="6.5" width="3" height="3"/></g><rect x="2.5" y="13" width="19" height="6" fill="${LGR}" stroke="${GR}"/>`,
+    lock: `<rect x="5" y="11" width="14" height="10" rx="1.5" fill="${Y}" stroke="${DY}" stroke-width="1.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="${GR}" stroke-width="2"/>`,
+    resetbars: `<rect x="2.5" y="5" width="19" height="6" fill="${LGR}" stroke="${GR}"/><path d="M17 20a5 5 0 1 0-4-8" fill="none" stroke="${G}" stroke-width="2.2"/><path d="M13 9v5h5z" fill="${G}"/>`,
+    wbswin: `<rect x="3" y="3" width="8" height="5" fill="${B}"/><rect x="3" y="10" width="8" height="5" fill="${LB}" stroke="${B}"/><rect x="3" y="17" width="8" height="5" fill="${LB}" stroke="${B}"/><path d="M7 8v10M7 12.5h8M7 19.5h8" stroke="${DK}"/><rect x="14" y="10" width="8" height="5" fill="${LG}" stroke="${G}"/><rect x="14" y="17" width="8" height="5" fill="${LG}" stroke="${G}"/>`,
+    resassign: `<g transform="translate(-1 0) scale(.85)">${person(B)}</g>${bar(10, 15, 12, G)}`,
+    acctico: `<circle cx="12" cy="12" r="9.5" fill="${Y}" stroke="${DY}" stroke-width="1.2"/><text x="7.8" y="17" font-size="14" font-weight="700" fill="${DK}" font-family="Arial">$</text>`,
+    roleico: `<g transform="translate(2 1) scale(.85)">${person(G)}</g>`
+  };
+  Object.assign(I, more);
   P6.icon = (name, cls) => `<svg class="pi${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${I[name] || ''}</svg>`;
   P6.hasIcon = (n) => !!I[n];
 })(window);

@@ -128,13 +128,48 @@
       rels: [],
       rsrc: [],
       asg: [],
-      codeTypes: [], codeVals: [], pcTypes: [], pcVals: [], pcAssign: {}, udfs: [], floatPathMax: 10,
+      codeTypes: [], codeVals: [], pcTypes: [], pcVals: [], pcAssign: {}, udfs: [], floatPathMax: 10, roles: [], accounts: [], issues: [], thresholds: [], baselines: [], blPrimary: null,
       nid: 100,
       loops: [],
       xer: null
     };
   }
   const nextId = (p) => ++p.nid;
+  function newRsrc(p, name, short, type) {
+    return { id: nextId(p), name, short: short || String(name).slice(0, 8), type: type || 'RT_Labor', role: '', roles: [], unit: '', units: 8, price: 0, prices: [], notes: '', udf: {} };
+  }
+  // price in force on a given day (effective-dated price list, falls back to the flat price)
+  function priceAt(r, day) {
+    const l = r.prices;
+    if (l && l.length) { let best = null; for (const x of l) if (x.date != null && day != null && x.date <= day && (!best || x.date > best.date)) best = x; if (!best) best = l.slice().sort((a, b) => (a.date || 0) - (b.date || 0))[0]; return +best.price || 0; }
+    return +r.price || 0;
+  }
+  // ----- baselines (several named snapshots; one is the primary)
+  function snapshotBaseline(p, name, M) {
+    const tasks = {}, asg = {};
+    for (const t of p.tasks) {
+      const m = M && M.T.get(t.id);
+      tasks[t.id] = { s: t.status === 'C' && t.as != null ? t.as : t.es, f: t.status === 'C' && t.af != null ? t.af : t.ef, d: t.dur, c: m ? m.bc : 0, u: m ? m.bu_L : 0 };
+    }
+    for (const a of p.asg) asg[a.id] = a.qty;
+    return { id: nextId(p), name, date: todayDay(), tasks, asg };
+  }
+  function assignBaseline(p, id) {
+    const b = p.baselines.find((x) => x.id === id);
+    p.blPrimary = b ? b.id : null; p.blName = b ? b.name : '';
+    for (const t of p.tasks) { const x = b && b.tasks[t.id]; t.bs = x ? x.s : null; t.bf = x ? x.f : null; t.bdur = x ? x.d : null; t.bcost = x ? x.c : null; t.bunits = x ? x.u : null; }
+    for (const a of p.asg) { if (b && b.asg && b.asg[a.id] != null) a.bq = b.asg[a.id]; else delete a.bq; }
+  }
+  function ensureBaselines(p) {
+    p.baselines = p.baselines || [];
+    if (!p.baselines.length && p.tasks.some((t) => t.bs != null)) {
+      const b = { id: nextId(p), name: p.blName || 'Baseline', date: todayDay(), tasks: {}, asg: {} };
+      for (const t of p.tasks) if (t.bs != null) b.tasks[t.id] = { s: t.bs, f: t.bf, d: t.bdur != null ? t.bdur : t.dur, c: t.bcost != null ? t.bcost : 0, u: t.bunits != null ? t.bunits : 0 };
+      for (const a of p.asg) if (a.bq != null) b.asg[a.id] = a.bq;
+      p.baselines.push(b); p.blPrimary = b.id;
+    }
+    return p;
+  }
 
   function newTask(p, wbsId, over) {
     const id = nextId(p);
@@ -449,7 +484,7 @@
   Object.assign(P6, {
     MS, MON, toDay, fromDay, dow, ymd, mkDay, fmtDate, parseDate, todayDay,
     WEEKS, newCal, touchCal, isWork, nextWork, prevWork, shift, finishFromStart, startFromFinish, signedWork, durBetween,
-    newProject, newTask, nextId, autoCode, schedule, rollup, relText, parsePreds, wouldLoop, isMile, isFinMile, isHammock
+    newProject, newTask, nextId, newRsrc, priceAt, snapshotBaseline, assignBaseline, ensureBaselines, autoCode, schedule, rollup, relText, parsePreds, wouldLoop, isMile, isFinMile, isHammock
   });
   if (typeof module !== 'undefined' && module.exports) module.exports = P6;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

@@ -394,3 +394,36 @@ svg.pi{width:18px;height:18px;flex:none;stroke:none;stroke-width:0;fill:none}
 .dtab{white-space:nowrap}
 .dtabs{overflow-x:auto;overflow-y:hidden}
 .dtitle{flex:none}
+/* ===== windows (Projects / Resources / Assignments / WBS …) ===== */
+#wintabs{display:flex;gap:0;padding:4px 6px 0;background:var(--panel2);border:1px solid #8097b8;border-top:0;border-bottom:0}
+#wintabs .wtab{border:1px solid transparent;border-bottom:0;background:none;padding:3px 12px;font-weight:700;font-size:13px;cursor:pointer;color:#000;border-radius:3px 3px 0 0}
+#wintabs .wtab.on{background:#fff;border-color:var(--line)}
+#wintabs .wtab:hover:not(.on){background:#dfe8f5}
+#winhead .x{margin-inline-start:auto;cursor:pointer;background:#c9302c;color:#fff;font-size:10px;padding:1px 5px;line-height:14px}
+#winpane{display:none;flex:1;min-height:0;flex-direction:column;background:var(--panel);border:1px solid var(--line)}
+#center.w-other #winpane{display:flex}
+#center.w-other #main,#center.w-other #hsplit,#center.w-other #details,#center.w-other #layoutbar{display:none}
+.wbox{display:flex;flex-direction:column;flex:1;min-height:0}
+.wtop{flex:1;min-height:100px;display:flex;flex-direction:column;overflow:hidden}
+.wtable{flex:1;overflow:auto}
+.wscroll{overflow:auto}
+.wtabs{display:flex;gap:0;padding:4px 8px 0;border-top:3px solid #bdbdbd;border-bottom:1px solid var(--line);background:linear-gradient(#f4f4f4,#dcdcdc)}
+.wbottom{height:230px;overflow:auto;padding:12px 16px;background:#f4f4f4;flex:none}
+table.pw td,table.pw th{white-space:nowrap}
+table.pw tr.wsel td{background:#316ac5!important;color:#fff!important}
+table.pw tr.wsel td input,table.pw tr.wsel td select{color:#fff}
+table.pw tr.rgreen td{background:#7fff7f;font-weight:700;font-size:14px}
+table.pw tr.curproj td{font-weight:700;color:#0b4a96}
+table.pw tr.bandrow td.grp{background:#0000ff;color:#ff0;font-weight:700;font-size:14px}
+table.pw td.ro{color:inherit}
+table.pw td.r,table.pw input.r{text-align:right}
+table.pw.wideg{min-width:max-content}
+table.pw td input,table.pw td select{background:transparent;border:1px solid transparent;width:100%;min-width:60px}
+table.pw tr:not(.wsel) td input:focus,table.pw tr:not(.wsel) td select:focus{background:#fff;border-color:var(--accent);color:#000}
+table.pw thead th{position:sticky;top:0;z-index:2;background:linear-gradient(#fdfdfd,#d7d7d7);border:1px solid #bbb;color:#000}
+.clip{margin-inline-end:3px;font-size:11px}
+.hide-tool #toolbar,.hide-layout #layoutbar{display:none!important}
+.hide-left #sideL,.hide-right #sideR,.hide-status #statusbar{display:none!important}
+:root{--tfs:12px}
+.tr,.td{font-size:var(--tfs)}
+.nobold .tr.wbs{font-weight:400}

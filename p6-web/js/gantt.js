@@ -145,6 +145,8 @@
       const dd = o.p.dataDate;
       let bars = '';
       const rowY = (i) => i * rh - sy;
+      const lm = sh.labelMode || 'name';
+      const lbl = (t) => (lm === 'id' ? t.code : lm === 'both' ? t.code + ' ' + t.name : t.name);
       for (let i = r0; i <= r1; i++) {
         const r = rows[i], y = rowY(i);
         const base = sh.base ? 1 : 0;
@@ -169,7 +171,7 @@
           if (cx < -30 || cx > W + 300) continue;
           const cy = by + bh / 2;
           bars += `<g class="bargrp bar" data-id="${t.id}" data-k="t"><path data-act="move" d="M${cx} ${cy - 8}l8 8l-8 8l-8 -8z" fill="${t.status === 'C' ? 'var(--bar-act)' : crit ? 'var(--bar-crit)' : 'var(--mile)'}"/>${t.status !== 'C' ? `<circle class="handle" data-act="link" cx="${cx + 14}" cy="${cy}" r="4"/>` : ''}</g>`;
-          if (sh.labels) bars += `<text class="lbl" x="${cx + 22}" y="${cy + 4}">${esc(t.name)}</text>`;
+          if (sh.labels && lm !== 'none') bars += `<text class="lbl" x="${cx + 22}" y="${cy + 4}">${esc(lbl(t))}</text>`;
         } else {
           const lastX = x2;
           if (lastX < -10 || x1 > W + 400) continue;
@@ -186,7 +188,7 @@
           if (t.status !== 'C') inner += `<rect data-act="resize" x="${x2 - 5}" y="${by}" width="6" height="${bh}" fill="transparent" style="cursor:ew-resize"/><circle class="handle" data-act="link" cx="${x2 + 9}" cy="${by + bh / 2}" r="4"/>`;
           bars += `<g class="bargrp bar" data-id="${t.id}" data-k="t">${inner}</g>`;
           if (sh.float && t.tf > 0 && t.lf != null) { const xf = X(t.lf + 1); if (xf > x2) bars += `<line class="fl" x1="${x2}" x2="${xf}" y1="${by + bh / 2}" y2="${by + bh / 2}"/>`; }
-          if (sh.labels) bars += `<text class="lbl" x="${Math.max(x2, X(t.lf != null && sh.float && t.tf > 0 ? t.lf + 1 : t.ef + 1)) + 14}" y="${by + 10}">${esc(t.name)}</text>`;
+          if (sh.labels && lm !== 'none') bars += `<text class="lbl" x="${Math.max(x2, X(t.lf != null && sh.float && t.tf > 0 ? t.lf + 1 : t.ef + 1)) + 14}" y="${by + 10}">${esc(lbl(t))}</text>`;
         }
         if (base && t.bs != null) bars += `<rect class="bar-base" x="${X(t.bs)}" y="${y + 17}" width="${Math.max(mile ? 4 : 2, (t.bf - t.bs + 1) * px)}" height="4" rx="1"/>`;
       }
@@ -224,7 +226,18 @@
           for (const rel of this.succMap.get(r.id) || []) lineFor(rel);
         }
       }
-      this.svg.innerHTML = s + lines + bars + '<g id="gdrag"></g>';
+      let pl = '';
+      if (sh.pline && dd != null) {
+        const pts = [];
+        for (let i = r0; i <= r1; i++) {
+          const r = rows[i], y = rowY(i) + rh / 2; let xx = X(dd + 1);
+          if (r.kind === 't' && r.t.es != null && r.t.status === 'IP') xx = X(r.t.es + (r.t.ef + 1 - r.t.es) * ((r.t.pct || 0) / 100));
+          else if (r.kind === 't' && r.t.status === 'NS' && r.t.ef != null && r.t.ef <= dd) xx = X(r.t.ef + 1);
+          pts.push([xx, y - rh / 2], [xx, y + rh / 2]);
+        }
+        if (pts.length) pl = `<polyline fill="none" stroke="#d00000" stroke-width="1.6" points="${pts.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}"/>`;
+      }
+      this.svg.innerHTML = s + lines + bars + pl + '<g id="gdrag"></g>';
       if (P6.onGanttDraw) P6.onGanttDraw();
     }
 

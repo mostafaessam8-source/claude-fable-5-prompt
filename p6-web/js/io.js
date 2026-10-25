@@ -172,11 +172,24 @@
     const rs = T('RSRC');
     const usedR = new Set();
     for (const a of T('TASKRSRC')) if (taskIds.has(a.task_id)) { usedR.add(a.rsrc_id); p.asg.push({ id: +a.taskrsrc_id || ++p.nid, task: +a.task_id, rsrc: +a.rsrc_id, qty: r2(num(a.target_qty)) }); }
-    for (const r of rs) if (usedR.has(r.rsrc_id)) p.rsrc.push({ id: +r.rsrc_id, name: r.rsrc_name, short: r.rsrc_short_name, role: r.rsrc_title_name || '', units: r2(num(r.def_qty_per_hr) * 8) || 8, type: r.rsrc_type || 'RT_Labor' });
+    for (const r of rs) if (usedR.has(r.rsrc_id)) p.rsrc.push({ id: +r.rsrc_id, name: r.rsrc_name, short: r.rsrc_short_name, role: r.rsrc_title_name || '', roles: [], prices: [], notes: '', udf: {}, unit: '', units: r2(num(r.def_qty_per_hr) * 8) || 8, type: r.rsrc_type || 'RT_Labor' });
     // resource prices
     const rate = new Map();
-    for (const r of T('RSRCRATE')) { const c = num(r.cost_per_qty); const d = r.start_date || ''; const cur = rate.get(r.rsrc_id); if (!cur || d < cur.d) rate.set(r.rsrc_id, { d, c }); }
-    for (const r of p.rsrc) { const x = rate.get(String(r.id)); r.price = x ? x.c : 0; }
+    const unitName = new Map(T('UNIT').map((u) => [u.unit_id, u.unit_short_name || u.unit_name]));
+    const rolesRows = new Map(T('ROLES').map((r) => [r.role_id, r]));
+    const rr = new Map();
+    for (const r of T('RSRCRATE')) { const c = num(r.cost_per_qty); const d = toDay(r.start_date); if (!rr.has(r.rsrc_id)) rr.set(r.rsrc_id, []); rr.get(r.rsrc_id).push({ id: +r.rsrc_rate_id || ++p.nid, date: d, max: r2(num(r.max_qty_per_hr) * 8), price: c }); }
+    const rsrcRaw = new Map(T('RSRC').map((r) => [r.rsrc_id, r]));
+    for (const r of p.rsrc) {
+      const raw = rsrcRaw.get(String(r.id)) || {}, list = (rr.get(String(r.id)) || []).sort((a, b) => (a.date || 0) - (b.date || 0));
+      r.prices = list; r.price = list.length ? list[list.length - 1].price : 0; r.unit = unitName.get(raw.unit_id) || ''; r.notes = raw.rsrc_notes || ''; r.udf = {}; r.roles = [];
+    }
+    const usedRoles = new Set();
+    for (const rl of T('RSRCROLE')) { const r = p.rsrc.find((x) => String(x.id) === rl.rsrc_id); if (r) { r.roles.push(+rl.role_id); usedRoles.add(rl.role_id); } }
+    for (const a of T('TASKRSRC')) if (a.role_id) usedRoles.add(a.role_id);
+    for (const id of usedRoles) { const ro = rolesRows.get(id); if (ro) p.roles.push({ id: +id, name: ro.role_name, short: ro.role_short_name || '' }); }
+    for (const a of T('ACCOUNT')) p.accounts.push({ id: +a.acct_id, code: a.acct_short_name || '', name: a.acct_name || '', parent: a.parent_acct_id ? +a.parent_acct_id : null });
+    for (const a of T('TASKRSRC')) { const mine = p.asg.find((q) => q.id === +a.taskrsrc_id); if (mine) { if (a.acct_id) mine.acct = +a.acct_id; if (a.role_id) mine.role = +a.role_id; } }
     // assignments: actual / remaining units
     const taskPct = new Map(p.tasks.map((x) => [x.id, x]));
     for (const a of T('TASKRSRC')) {
@@ -248,11 +261,15 @@
     PROJPCAT: 'proj_id proj_catg_type_id proj_catg_id'.split(' '),
     UDFTYPE: 'udf_type_id table_name udf_type_name udf_type_label logical_data_type super_flag indicator_expression summary_indicator_expression export_flag'.split(' '),
     UDFVALUE: 'udf_type_id fk_id proj_id udf_date udf_number udf_text udf_code_id'.split(' '),
+    UNIT: 'unit_id seq_num unit_name unit_short_name'.split(' '),
+    ROLES: 'role_id parent_role_id seq_num role_name role_short_name role_descr'.split(' '),
+    RSRCROLE: 'rsrc_id role_id skill_level role_prior'.split(' '),
+    ACCOUNT: 'acct_id parent_acct_id acct_seq_num acct_name acct_short_name acct_descr'.split(' '),
     MEMOTYPE: 'memo_type_id seq_num memo_type eps_flag proj_flag wbs_flag task_flag'.split(' '),
     TASKMEMO: 'memo_id proj_id wbs_id task_id memo_type_id task_memo'.split(' ')
   });
-  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC', 'RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO']);
-  const OPTIONAL = new Set(['RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO']);
+  const HANDLED = new Set(['PROJECT', 'CALENDAR', 'PROJWBS', 'TASK', 'TASKPRED', 'RSRC', 'TASKRSRC', 'RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO', 'UNIT', 'ROLES', 'RSRCROLE', 'ACCOUNT']);
+  const OPTIONAL = new Set(['RSRCRATE', 'PROJCOST', 'TASKPROC', 'ACTVTYPE', 'ACTVCODE', 'TASKACTV', 'PCATTYPE', 'PCATVAL', 'PROJPCAT', 'UDFTYPE', 'UDFVALUE', 'MEMOTYPE', 'TASKMEMO', 'UNIT', 'ROLES', 'RSRCROLE', 'ACCOUNT']);
 
   function pushAll(a, b) { for (let i = 0; i < b.length; i++) a.push(b[i]); }
   function tableOut(name, fields, rows) {
@@ -261,11 +278,16 @@
     return L;
   }
 
+  function unitNames(p) { return [...new Set(p.rsrc.map((r) => r.unit).filter(Boolean))]; }
   function memoNames(p) { const s = new Set(); p.tasks.forEach((t) => (t.topics || []).forEach((m) => s.add(m.topic || 'Notes'))); return [...s]; }
   function optionalRows(name, p, projId, rt) {
     const rows = [], tk = p.tasks;
     switch (name) {
-      case 'RSRCRATE': for (const r of p.rsrc) if (r.price) rows.push({ rsrc_rate_id: r.id, rsrc_id: r.id, max_qty_per_hr: (r.units || 8) / 8, cost_per_qty: r.price, start_date: dstr(p.planStart) }); break;
+      case 'RSRCRATE': for (const r of p.rsrc) { if (r.prices && r.prices.length) r.prices.forEach((x) => rows.push({ rsrc_rate_id: x.id, rsrc_id: r.id, max_qty_per_hr: (x.max || r.units || 8) / 8, cost_per_qty: x.price, start_date: dstr(x.date != null ? x.date : p.planStart) })); else if (r.price) rows.push({ rsrc_rate_id: r.id, rsrc_id: r.id, max_qty_per_hr: (r.units || 8) / 8, cost_per_qty: r.price, start_date: dstr(p.planStart) }); } break;
+      case 'UNIT': unitNames(p).forEach((n, i) => rows.push({ unit_id: i + 1, seq_num: i + 1, unit_name: n, unit_short_name: n })); break;
+      case 'ROLES': p.roles.forEach((r, i) => rows.push({ role_id: r.id, seq_num: i + 1, role_name: r.name, role_short_name: r.short || r.name.slice(0, 20) })); break;
+      case 'RSRCROLE': for (const r of p.rsrc) (r.roles || []).forEach((id) => { if (p.roles.some((x) => x.id === id)) rows.push({ rsrc_id: r.id, role_id: id, skill_level: 0 }); }); break;
+      case 'ACCOUNT': p.accounts.forEach((a, i) => rows.push({ acct_id: a.id, parent_acct_id: a.parent == null ? '' : a.parent, acct_seq_num: i + 1, acct_name: a.name, acct_short_name: a.code })); break;
       case 'MEMOTYPE': memoNames(p).forEach((n, i) => rows.push({ memo_type_id: i + 1, seq_num: i + 1, memo_type: n, eps_flag: 'N', proj_flag: 'N', wbs_flag: 'N', task_flag: 'Y' })); break;
       case 'TASKMEMO': { const nm = memoNames(p); for (const t of tk) (t.topics || []).forEach((m) => { if (!m.text) return; rows.push({ memo_id: m.id, proj_id: projId, task_id: t.id, memo_type_id: nm.indexOf(m.topic || 'Notes') + 1, task_memo: '<HTML><BODY>' + String(m.text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n/g, '<BR>') + '</BODY></HTML>' }); }); break; }
       case 'PROJCOST': for (const t of tk) if (t.expenses && t.expenses.length) { const f = t.status === 'C' ? 1 : (t.pct || 0) / 100; t.expenses.forEach((x) => rows.push({ cost_item_id: x.id, proj_id: projId, task_id: t.id, cost_name: x.name, vendor_name: x.vendor || '', target_cost: x.budget, act_cost: lagFmt(x.budget * f), remain_cost: lagFmt(x.budget * (1 - f)) })); } else if (t.exp) rows.push({ cost_item_id: t.id, proj_id: projId, task_id: t.id, cost_name: 'Expense', target_cost: t.exp, act_cost: lagFmt(t.exp * (t.status === 'C' ? 1 : (t.pct || 0) / 100)), remain_cost: lagFmt(t.exp * (t.status === 'C' ? 0 : 1 - (t.pct || 0) / 100)) }); break;
@@ -368,7 +390,7 @@
         pushAll(lines, tableOut(name, fields, rows));
       } else if (name === 'RSRC') {
         const rawBy = new Map(rt ? rt.rows.map((r) => [r.rsrc_id, r]) : []);
-        const rows = p.rsrc.map((r) => Object.assign({ active_flag: 'Y', auto_compute_act_flag: 'Y', def_cost_qty_link_flag: 'Y', ot_flag: 'N', curr_id: 1, def_qty_per_hr: 1, load_tasks_flag: 'N', level_flag: 'N' }, rawBy.get(String(r.id)) || {}, { rsrc_id: r.id, rsrc_name: r.name, rsrc_short_name: r.short || r.name, rsrc_title_name: r.role || '', def_qty_per_hr: (r.units || 8) / 8, rsrc_type: r.type }));
+        const rows = p.rsrc.map((r) => Object.assign({ active_flag: 'Y', auto_compute_act_flag: 'Y', def_cost_qty_link_flag: 'Y', ot_flag: 'N', curr_id: 1, def_qty_per_hr: 1, load_tasks_flag: 'N', level_flag: 'N' }, rawBy.get(String(r.id)) || {}, { rsrc_id: r.id, rsrc_name: r.name, rsrc_short_name: r.short || r.name, rsrc_title_name: r.role || '', def_qty_per_hr: (r.units || 8) / 8, rsrc_type: r.type, rsrc_notes: r.notes || '', unit_id: r.unit ? unitNames(p).indexOf(r.unit) + 1 : '' }));
         pushAll(lines, tableOut(name, fields, rows));
       } else if (OPTIONAL.has(name)) {
         const rows = optionalRows(name, p, projId, rt);
@@ -378,7 +400,7 @@
         const tmap = new Map(p.tasks.map((x) => [x.id, x])), rmap = new Map(p.rsrc.map((x) => [x.id, x]));
         const rows = p.asg.filter((a) => taskIds.has(String(a.task))).map((a) => {
           const sp = P6.asgSplit(a, tmap.get(a.task)), price = (rmap.get(a.rsrc) || {}).price || 0;
-          return Object.assign({ cost_qty_link_flag: 'Y', rollup_dates_flag: 'Y' }, rawBy.get(String(a.id)) || {}, { taskrsrc_id: a.id, task_id: a.task, proj_id: projId, rsrc_id: a.rsrc, target_qty: a.qty, remain_qty: lagFmt(sp.rem), act_reg_qty: lagFmt(sp.act), cost_per_qty: price, target_cost: lagFmt(a.qty * price), act_reg_cost: lagFmt(sp.act * price), remain_cost: lagFmt(sp.rem * price) });
+          return Object.assign({ cost_qty_link_flag: 'Y', rollup_dates_flag: 'Y' }, rawBy.get(String(a.id)) || {}, { taskrsrc_id: a.id, task_id: a.task, proj_id: projId, rsrc_id: a.rsrc, acct_id: a.acct != null ? a.acct : '', role_id: a.role != null ? a.role : '', target_qty: a.qty, remain_qty: lagFmt(sp.rem), act_reg_qty: lagFmt(sp.act), cost_per_qty: price, target_cost: lagFmt(a.qty * price), act_reg_cost: lagFmt(sp.act * price), remain_cost: lagFmt(sp.rem * price) });
         });
         pushAll(lines, tableOut(name, fields, rows));
       }

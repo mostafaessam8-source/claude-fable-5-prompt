@@ -85,6 +85,7 @@
     App.collapsed.delete(wbs); App.refresh(); App.setSel(keys);
   }
   Object.assign(App, { copySel, cutSel, pasteSel });
+  App.exportsLater = () => Object.assign(App, { assignRel, assignResources, constraintDialog, moveToWbsDialog, calendarMenu, setProgress, applySaved, saveLayoutAs });
 
   function setProgress(kind) {
     const ts = App.selTasks(); if (!ts.length) return;
@@ -298,7 +299,7 @@
     lb.innerHTML = `<div class="lbseg" id="lb_l" style="width:${tw}px">▽ ${esc(t('layout'))}: <b>${esc(layoutName())}</b></div><div class="lbseg" id="lb_f">▽ ${esc(t('filter'))}: <b>${esc(filterName())}</b>${App.cfg.filter.text ? ' · “' + esc(App.cfg.filter.text) + '”' : ''}</div>`;
     $('#lb_l').onclick = (e) => { const r = e.currentTarget.getBoundingClientRect(); layoutMenu(r.left, r.bottom); };
     $('#lb_f').onclick = (e) => { const r = e.currentTarget.getBoundingClientRect(); filterMenu(r.left, r.bottom); };
-    const wh = $('#winhead'); if (wh) wh.innerHTML = `<span>${esc(App.cfg.dock === 'usage' ? t('win_activities') : t('win_activities'))}</span>`;
+    if (App.drawWinTabs) App.drawWinTabs();
   };
 
   // ================= title bar, side bars =================
@@ -311,9 +312,10 @@
   };
   const svg = (n) => `<svg viewBox="0 0 24 24"><path d="${IC[n]}"/></svg>`;
   const SIDE_L = [['newproj', 'new_project', () => D.newProject()], ['open', 'projects', () => D.projects()], ['hand', 'refresh_data', () => App.refreshData()], '-',
-    ['projects', 'recent', () => App.popMenu(App.recent.map((r) => ({ l: r.name, i: 'projects', fn: () => App.loadProject(r.id).then((p) => p && App.openProject(p)) })), 40, 120)], ['people', 'resource_usage', () => App.setDock('usage')], ['notebook', 'tab_notes', () => { App.cfg.dock = 'details'; App.S.tab = 'notes'; App.showDetails(); }], ['report', 'reports', () => D.reports()], '-',
-    ['activities', 'win_activities', () => { App.cfg.dock = 'details'; App.showDetails(); $('#gScroll').scrollTop = 0; }], ['assign', 'resources', () => D.resources()], ['ganttTable', 'view_both', () => App.setView('both')], ['calendar', 'calendars', () => D.calendars()], ['update', 'update_progress', () => D.updateProgress()], ['calc', 'schedule', () => App.schedule()], '-',
-    ['wbstree', 'wbs_tree', () => D.wbs()], ['codes', 'act_codes_global', () => D.codes('acg')], ['udf', 'udf_manage', () => D.udf()], ['baseline', 'baselines', () => D.baselines()], ['flagfolder', 'select_portfolio', (e) => { const r = e.currentTarget.getBoundingClientRect(); App.popMenu([{ l: t('all_projects'), ck: !App.cfg.portfolio, fn: () => { App.cfg.portfolio = ''; App.saveCfg(); App.refresh(); } }, ...Object.keys(App.cfg.portfolios || {}).map((n) => ({ l: n, ck: App.cfg.portfolio === n, fn: () => { App.cfg.portfolio = n; App.saveCfg(); App.refresh(); } })), '-', { l: t('manage_portfolios') + '…', fn: () => D.portfolios() }], r.right, r.top); }], '-', ['gear', 'project_settings', () => D.settings()], ['help', 'guide', () => D.help()]];
+    ['projects', 'win_projects', () => App.openWin('projects')], ['people', 'win_resources', () => App.openWin('resources')], ['notebook', 'tab_notes', () => { App.showWin('activities'); App.cfg.dock = 'details'; App.S ? 0 : 0; App.tab = 'notes'; App.showDetails(); }], ['report', 'reports', () => D.reports()], '-',
+    ['activities', 'win_activities', () => App.openWin('activities')], ['addactview', 'mi_addactview', () => { App.showWin('activities'); App.setDock('acts2'); }], ['resassign', 'win_assign', () => App.openWin('assign')], ['wbswin', 'win_wbs', () => App.openWin('wbs')], ['assignbl', 'mi_assignbl', () => D.assignBaselines()], ['maintbl', 'mi_maintbl', () => D.maintainBaselines()], ['expenses', 'win_expenses', () => App.openWin('expenses')], ['docs', 'win_docs', () => App.openWin('docs')], '-',
+    ['thresholds', 'win_thresholds', () => App.openWin('thresholds')], ['issue', 'win_issues', () => App.openWin('issues')], ['risk', 'win_risks', () => App.openWin('risks')], '-',
+    ['calendar', 'calendars', () => D.calendars()], ['update', 'update_progress', () => D.updateProgress()], ['calc', 'schedule', () => App.schedule()], ['network', 'mi_trace', () => { App.showWin('activities'); App.setDock('network'); }], ['flagfolder', 'select_portfolio', (e) => { const r = e.currentTarget.getBoundingClientRect(); App.popMenu([{ l: t('all_projects'), ck: !App.cfg.portfolio, fn: () => { App.cfg.portfolio = ''; App.saveCfg(); App.refresh(); } }, ...Object.keys(App.cfg.portfolios || {}).map((n) => ({ l: n, ck: App.cfg.portfolio === n, fn: () => { App.cfg.portfolio = n; App.saveCfg(); App.refresh(); } })), '-', { l: t('manage_portfolios') + '…', fn: () => D.portfolios() }], r.right, r.top); }], '-', ['gear', 'project_settings', () => D.settings()], ['help', 'guide', () => D.help()]];
   const SIDE_R = [['add', 'add_activity', () => App.addTask()], ['wbsadd', 'add_wbs', () => App.addWbs()], ['del', 'delete', () => App.del()], '-', ['cut', 'cut', cutSel], ['copy', 'copy', () => copySel()], ['paste', 'paste', pasteSel], '-',
     ['indent', 'indent', () => App.indent()], ['outdent', 'outdent', () => App.outdent()], '-', ['link', 'link', () => App.link()], ['unlink', 'unlink', () => App.unlink()], '-', ['preview', 'print_preview', () => D.printPreview()]];
   function buildSides() {
@@ -327,16 +329,20 @@
   }
   function buildTitle() {
     const tb = $('#titlebar'); if (!tb || !App.p) return;
-    tb.innerHTML = `<span class="tcenter"><b>P6 Web</b> : <span dir="auto">${esc(App.p.name)}</span> (<span dir="auto">${esc(App.p.name)}</span>)</span><span class="wb"><button id="fsBtn" title="F11">⛶</button></span>`;
+    tb.innerHTML = `<span class="tcenter"><b>P6 Web</b> : <span dir="auto">${esc(App.p.name)}</span> (<span dir="auto">${esc(App.p.name)}${App.p.blName ? ' - ' + esc(App.p.blName) : ''}</span>)</span><span class="wb"><button id="fsBtn" title="F11">⛶</button></span>`;
     $('#fsBtn').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); };
   }
   App.buildTitle = buildTitle;
+  App.exportsLater();
+  App.saveLayoutCurrent = () => { const n = App.cfg.layoutName; if (!n) return saveLayoutAs(); const F = App.cfg; F.layouts[n] = { cols: clone(F.cols), group: F.group, sort: F.sort, sortDir: F.sortDir, mode: F.filter.mode, custom: F.filter.custom || null, pxIdx: F.pxIdx, show: clone(F.show) }; App.saveCfg(); App.toast(t('layout_saved')); };
+  App.openLayoutDialog = () => { const F = App.cfg, saved = F.layouts || {}; const body = `<div class="plist">${Object.keys(App.LAYOUTS).map((k) => `<div class="pitem" data-b="${k}"><div class="nm">${esc(t('lay_' + k))}</div></div>`).join('')}${Object.keys(saved).map((n) => `<div class="pitem" data-s="${esc(n)}"><div class="nm" dir="auto">${esc(n)}</div></div>`).join('')}</div>`; const m = D.modal({ title: t('mi_openlayout'), cls: 'mid', body, buttons: [{ label: t('close'), fn: () => {} }] }); m.el.addEventListener('click', (e) => { const it = e.target.closest('.pitem'); if (!it) return; m.close(); if (it.dataset.b) { F.layoutName = ''; App.applyLayout(it.dataset.b); } else applySaved(it.dataset.s); }); };
   App.buildChrome = function () { buildSides(); buildTitle(); App.drawLayoutBar(); };
 
   // ================= bottom dock: resource usage =================
   App.setDock = function (mode) { App.cfg.dock = mode; App.cfg.detOpen = mode !== 'none'; App.saveCfg(); App.layoutDetails(); App.renderDetails(); App.buildMenus(); };
   let usageSel = null, usageCache = null;
   function computeUsage(rid) {
+    const uo = Object.assign({ m: 'units', cum: true, limit: true }, App.cfg.usage), costMode = uo.m === 'cost';
     const p = App.p, o = App.gantt.o, minD = o.minDay, n = o.maxDay - o.minDay + 1;
     const act = new Float64Array(n), rem = new Float64Array(n), lim = new Float64Array(n);
     const tasks = new Map(p.tasks.map((x) => [x.id, x]));
@@ -352,10 +358,10 @@
       const cal = cals.get(tk.cal) || dcal, days = [];
       for (let d = tk.es; d <= tk.ef; d++) if (P6.isWork(cal, d)) days.push(d);
       if (!days.length) days.push(tk.es);
-      const per = a.qty / days.length;
+      const rr0 = p.rsrc.find((x) => x.id === a.rsrc) || {}; const per = (a.qty * (costMode ? (a.price != null ? +a.price : P6.priceAt(rr0, tk.es)) : 1)) / days.length;
       for (const d of days) { const i = d - minD; if (i < 0 || i >= n) continue; if (d <= dd) act[i] += per; else rem[i] += per; }
     }
-    for (const r of rs) { if (rid == null && !used.has(r.id)) continue; for (let i = 0; i < n; i++) if (P6.isWork(dcal, minD + i)) lim[i] += r.units || 8; }
+    if (!costMode) for (const r of rs) { if (rid == null && !used.has(r.id)) continue; for (let i = 0; i < n; i++) if (P6.isWork(dcal, minD + i)) lim[i] += r.units || 8; }
     return { act, rem, lim, minD, n };
   }
   function drawUsage() {
@@ -363,7 +369,7 @@
     const box = sv.parentNode, W = box.clientWidth, H = box.clientHeight; if (!W || !H) return;
     sv.setAttribute('width', W); sv.setAttribute('height', H);
     const gt = App.gantt, o = gt.o, px = o.px, sx = gt.sc.scrollLeft;
-    if (!usageCache || usageCache.dirty || usageCache.sel !== usageSel) { usageCache = computeUsage(usageSel); usageCache.sel = usageSel; }
+    const ukey = JSON.stringify(App.cfg.usage || {}); if (!usageCache || usageCache.dirty || usageCache.sel !== usageSel || usageCache.ukey !== ukey) { usageCache = computeUsage(usageSel); usageCache.sel = usageSel; usageCache.ukey = ukey; }
     const U = usageCache, d0 = Math.floor(o.minDay + sx / px), d1 = Math.ceil(o.minDay + (sx + W) / px);
     const X = (d) => (d - o.minDay) * px - sx;
     const HB = 46, top = 8, bot = H - HB - 2, ch = bot - top;
@@ -397,8 +403,9 @@
       if (over > 0) { const h = (over / ymax) * ch; s += `<rect x="${x1}" y="${y - h}" width="${bw}" height="${h}" fill="#e00000" stroke="#000" stroke-width=".5"/>`; }
       if (x.lim > 0) { const yl = bot - Math.min(1, x.lim / ymax) * ch; lim += `${lim ? 'L' : 'M'}${x1} ${yl}H${x2}`; }
     }
-    if (line.length) s += `<polyline fill="none" stroke="#7fd77f" stroke-width="2" points="${line.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}"/>`;
-    if (lim) s += `<path d="${lim}" fill="none" stroke="#000" stroke-width="1.5"/>`;
+    const uo2 = Object.assign({ m: 'units', cum: true, limit: true }, App.cfg.usage);
+    if (line.length && uo2.cum) s += `<polyline fill="none" stroke="#7fd77f" stroke-width="2" points="${line.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ')}"/>`;
+    if (lim && uo2.limit) s += `<path d="${lim}" fill="none" stroke="#000" stroke-width="1.5"/>`;
     const dx = X(App.p.dataDate + 1); s += `<line x1="${dx}" x2="${dx}" y1="0" y2="${bot}" stroke="#2457d6" stroke-width="1.5"/>`;
     const hd = gt.header(W, d0, d1);
     s += `<g transform="translate(0,${H - HB})"><rect width="${W}" height="${HB}" fill="#eee"/>${hd.svg}</g>`;
