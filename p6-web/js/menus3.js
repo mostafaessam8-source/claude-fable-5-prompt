@@ -133,6 +133,38 @@
 
   document.addEventListener('wheel', (e) => { const d = e.target.closest && e.target.closest('.dtabs'); if (d && d.scrollWidth > d.clientWidth) { d.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); } }, { passive: false });
 
+
+  // ---- right-click in every window (Projects, Resources, Assignments, WBS, …): selects the row and offers the window's own buttons ----
+  document.addEventListener('contextmenu', (e) => {
+    const pane = e.target.closest && e.target.closest('#winpane');
+    if (!pane || App.win === 'activities') return;
+    const field = e.target.closest('input,textarea');
+    if (e.target.closest('[contenteditable=true]') || (field && !field.closest('table'))) return;
+    e.preventDefault();
+    const tr = e.target.closest('tr[data-rid], tr[data-k]');
+    if (tr) { tr.click(); }
+    const x = e.clientX, y = e.clientY;
+    setTimeout(() => {
+      const seen = new Set(), items = [];
+      pane.querySelectorAll('button[data-a]').forEach((b) => {
+        if (b.closest('table') || seen.has(b.dataset.a)) return; seen.add(b.dataset.a);
+        const a = b.dataset.a;
+        items.push({ l: b.textContent.trim() || a, i: /del|remove/i.test(a) ? 'del' : /new|add/i.test(a) ? 'add' : /open/i.test(a) ? 'open' : /copy|dup/i.test(a) ? 'copy' : /xer|export|backup/i.test(a) ? 'export' : '', dis: b.disabled, fn: () => { const nb = pane.querySelector(`button[data-a="${a}"]`); if (nb) nb.click(); } });
+      });
+      const rowText = tr ? [...tr.children].map((c) => c.innerText.replace(/\s+/g, ' ').trim()).join('\t') : '';
+      const table = (tr && tr.closest('table')) || pane.querySelector('table');
+      const tableText = table ? [...table.querySelectorAll('tr')].map((r) => [...r.children].map((c) => c.innerText.replace(/\s+/g, ' ').trim()).join('\t')).join('\r\n') : '';
+      const copy = (s) => { try { navigator.clipboard.writeText(s).then(() => App.toast(t('copied_excel', s.split('\r\n').length))); } catch (er) { /* ignore */ } };
+      if (field) {
+        const has = field.selectionStart !== field.selectionEnd;
+        items.unshift({ l: t('cut'), i: 'cut', dis: !has || field.readOnly, fn: () => { field.focus(); document.execCommand('cut'); } }, { l: t('copy'), i: 'copy', dis: !has, fn: () => { field.focus(); document.execCommand('copy'); } }, { l: t('paste'), i: 'paste', dis: field.readOnly, fn: async () => { try { const s = await navigator.clipboard.readText(); field.focus(); field.setRangeText(s, field.selectionStart, field.selectionEnd, 'end'); field.dispatchEvent(new Event('input', { bubbles: true })); field.dispatchEvent(new Event('change', { bubbles: true })); } catch (er) { /* ignore */ } } }, '-');
+      }
+      if (items.length) items.push('-');
+      items.push({ l: t('copy'), i: 'copy', dis: !rowText, fn: () => copy(rowText) }, { l: t('mi_copytable'), i: 'copy', dis: !tableText, fn: () => copy(tableText) });
+      App.popMenu(items, x, y);
+    }, 40);
+  });
+
   // ---- Gantt chart right-click menu ----
   App.chartMenu = function (x, y) {
     const sub = (l, i, fn, o) => Object.assign({ l, i, fn }, o || {});
