@@ -177,7 +177,7 @@
     modal({ title: t('mi_assignbl'), cls: 'mid', body, buttons: [{ label: t('cancel'), fn: () => {} }, { label: t('apply'), cls: 'pri', fn: (c, el) => { const v = $('#ab_p', el).value; App.mutate(t('mi_assignbl'), () => { P6.assignBaseline(p, v === '' ? null : +v); }, { noSched: true }); } }] });
   };
   D.setDefaultProject = async function () {
-    const list = (await App.listProjects()).sort((a, b) => b.updated - a.updated); const cur = localStorage.getItem('p6web.last');
+    const list = (await App.listProjects()).sort((a, b) => b.updated - a.updated); const cur = localStorage.getItem(App.lastKey());
     const body = `<div class="plist">${list.map((x) => `<label class="pitem"><input type="radio" name="dp" value="${esc(x.id)}"${x.id === cur ? ' checked' : ''}><div style="flex:1"><div class="nm" dir="auto">${esc(x.name)}</div><div class="sub">${esc(t('activities'))}: ${x.tasks}</div></div></label>`).join('')}</div>`;
     modal({ title: t('mi_setdefault'), cls: 'mid', body, buttons: [{ label: t('cancel'), fn: () => {} }, { label: t('save'), cls: 'pri', fn: (c, el) => { const r = el.querySelector('input[name=dp]:checked'); if (r) { try { localStorage.setItem('p6web.last', r.value); } catch (e) { /* */ } App.toast(t('default_set')); } } }] });
   };

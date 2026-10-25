@@ -34,6 +34,9 @@ Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحدد�
 ## قاعدة بيانات المشاريع (Projects / EPS)
 نافذة Projects بشكل P6: شجرة EPS ومشاريع تحتها (Project ID، Status، المدير، الأنشطة، البداية/النهاية، Data Date، آخر حفظ). New EPS / New Project / Open / Properties / Copy / Export XER / Delete، ونسخ احتياطي واستعادة لكل القاعدة في ملف JSON. التخزين داخل متصفحك (IndexedDB) — لا يوجد سيرفر ولا مشاركة بين الأجهزة؛ استخدم Backup لنقلها.
 
+## تسجيل الدخول وإعدادات قاعدة البيانات
+شاشة دخول بشكل P6 (Login Name / Password / Advanced لاختيار القاعدة / Connect / Disconnect / Edit database configuration) ونافذة Database Configuration لإضافة قواعد بيانات محلية متعددة (كل Alias هو IndexedDB مستقل في المتصفح)، مع Test ونسخ وحذف والتبديل بينها. كلمة المرور اختيارية (Admin ← Change Password) وهي قفل محلي للراحة وليست حماية حقيقية. يمكن إيقاف الشاشة من Preferences.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
