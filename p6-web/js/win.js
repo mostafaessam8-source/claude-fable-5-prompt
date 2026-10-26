@@ -10,7 +10,7 @@
   const WINS = {
     projects: { title: 'win_projects', icon: 'projects' }, resources: { title: 'win_resources', icon: 'people' }, assign: { title: 'win_assign', icon: 'resassign' },
     wbs: { title: 'win_wbs', icon: 'wbswin' }, expenses: { title: 'win_expenses', icon: 'expenses' }, docs: { title: 'win_docs', icon: 'docs' },
-    thresholds: { title: 'win_thresholds', icon: 'thresholds' }, issues: { title: 'win_issues', icon: 'issue' }, risks: { title: 'win_risks', icon: 'risk' }, activities: { title: 'win_activities', icon: 'activities' }
+    thresholds: { title: 'win_thresholds', icon: 'thresholds' }, issues: { title: 'win_issues', icon: 'issue' }, risks: { title: 'win_risks', icon: 'risk' }, dashboard: { title: 'win_dashboard', icon: 'dash' }, activities: { title: 'win_activities', icon: 'activities' }
   };
   App.WINS = WINS;
   const wsel = (App.wsel = {});                  // selected row per window
@@ -441,6 +441,7 @@
   const R = { projects: renderProjects, resources: renderResources, assign: renderAssign, wbs: renderWbs, expenses: renderExpenses, docs: renderDocs, thresholds: renderThresholds, issues: renderIssues, risks: renderRisks };
   App.renderWin = function () {
     const el = $('#winpane'); if (!el || App.win === 'activities') return;
-    const fn = R[App.win]; if (fn) fn(el);
+    el.classList.remove('dsh-host');
+    const fn = App.win === 'dashboard' ? App.renderDashboardWin : R[App.win]; if (fn) fn(el);
   };
 })(window);

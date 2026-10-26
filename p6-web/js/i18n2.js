@@ -63,5 +63,6 @@
     mi_dbconfig: ['Database Configuration…', 'إعدادات قاعدة البيانات…'], mi_chgpw: ['Change Password…', 'تغيير كلمة المرور…'], mi_disconnect: ['Disconnect (Log Out)', 'قطع الاتصال (تسجيل الخروج)'], login_at_start: ['Show the login screen at startup', 'إظهار شاشة تسجيل الدخول عند البدء'],
     rel_select_first: ['Select a relationship row first', 'اختر صف علاقة أولاً'], rel_hidden: ['That activity is hidden by the current filter', 'هذا النشاط مخفي بالفلتر الحالي'],
     remove: ['Remove', 'إزالة'],
+    win_dashboard: ['Dashboard', 'Dashboard'],
   });
 })(window);

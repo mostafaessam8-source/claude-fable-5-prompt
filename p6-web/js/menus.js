@@ -290,7 +290,7 @@
       ['win_activities', () => App.openWin('activities')], ['mi_addactview', () => App.setDock('acts2')], ['win_assign', () => App.openWin('assign')], ['win_wbs', () => App.openWin('wbs')], '-',
       ['mi_assignbl', () => D.assignBaselines()], ['mi_maintbl', () => D.maintainBaselines()], '-',
       ['win_expenses', () => App.openWin('expenses')], ['win_docs', () => App.openWin('docs')], '-',
-      ['win_thresholds', () => App.openWin('thresholds')], ['win_issues', () => App.openWin('issues')], ['win_risks', () => App.openWin('risks')], '-',
+      ['win_thresholds', () => App.openWin('thresholds')], ['win_issues', () => App.openWin('issues')], ['win_risks', () => App.openWin('risks')], ['win_dashboard', () => App.openWin('dashboard')], '-',
       ['project_settings', () => D.settings()], ['calendars', () => D.calendars()], ['mi_setdefault', () => D.setDefaultProject()]
     ];
     const view = [

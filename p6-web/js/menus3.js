@@ -73,7 +73,7 @@
   Object.assign(App.MENU_ICON || (App.MENU_ICON = {}), {
     mi_levelres: 'mi_levelres', mi_applyact: 'applyact', update_progress: 'update', mi_recalc: 'recalc', mi_summarize: 'summarize', mi_storeperiod: 'storeperiod', mi_disreorg: 'disreorg', mi_gchange: 'gchange', monitor_thresholds: 'thresholds', mi_issuenav: 'issue',
     mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_schedopts: 'gear', mi_checksched: 'check',
-    win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
+    win_dashboard: 'dash', win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
     calendars: 'calendars2', mi_shifts: 'shifts', mi_steptpl: 'steptpl', mi_accounts: 'acctico', mi_funding: 'funding', mi_curves: 'curves', mi_extapps: 'extapps', resource_usage: 'people', act_codes_project: 'actcodes',
     mi_adminprefs: 'adminprefs', mi_dbconfig: 'gchange', mi_chgpw: 'lock', mi_disconnect: 'exit', mi_admincat: 'admincat', mi_currency: 'currency', mi_finperiod: 'finperiod', reset_layout: 'resetbars', wipe_data: 'del'
   });
@@ -110,6 +110,7 @@
       ['sort', 'group_sort', () => D.groupSort(), () => [sub(t('group_sort'), 'sort', () => D.groupSort()), sub(t('sort_by') + '…', 'sort', () => D.sortDialog()), '-', sub(t('default'), '', () => { F().grp = null; F().sorts = null; F().sort = 'code'; F().sortDir = 1; App.saveCfg(); App.refresh(); })]],
       ['linenum', 'mi_linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, () => [sub(t('mi_linenum'), 'linenum', () => { F().lineNo = !F().lineNo; App.saveCfg(); App.refresh(); }, { ck: !!F().lineNo })]]
     ];
+    { const w = document.createElement('span'); w.className = 'split'; w.innerHTML = `<button class="ib" title="Dashboard">${P6.icon('dash')}</button>`; w.firstChild.onclick = () => App.openWin('dashboard'); tb.appendChild(w); }
     { const w = document.createElement('span'); w.className = 'split'; w.innerHTML = `<button class="ib rels-tg${F().show.rels !== false ? ' on' : ''}" title="${esc(t('show_rels'))}">${P6.icon('rel')}</button>`; w.firstChild.onclick = () => App.toggleShow('rels'); tb.appendChild(w); }
     defs.push(['xlsx', 'mi_xlsx', () => App.exportXlsx(), () => [sub(t('mi_xlsx_sel'), 'xlsx', () => App.exportXlsx('sel'), { dis: !App.sel.size }), sub(t('mi_xlsx_all'), 'xlsx', () => App.exportXlsx('all'))]]);
     defs.forEach(([icon, label, click, menu]) => {
