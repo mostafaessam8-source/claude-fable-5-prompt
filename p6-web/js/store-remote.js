@@ -9,9 +9,10 @@
   // ---------- the Apps Script that the owner deploys (shown in Database Configuration) ----------
   App.GAS_CODE = `// P6 Web shared database – paste into https://script.google.com (New project), then Deploy > New deployment > Web app
 // Execute as: Me   |   Who has access: Anyone
-const FOLDER = 'P6WebDB';          // folder created in your Google Drive
+const FOLDER = 'P6WebDB';          // folder created in your Google Drive (used when FOLDER_ID is empty)
+const FOLDER_ID = '';               // optional: ID of an existing Drive folder to use instead (the part after /folders/ in its link)
 const KEY = '';                     // optional access key: set a word here and enter the same word in P6 Web (empty = open to anyone with the link)
-function folder_() { const it = DriveApp.getFoldersByName(FOLDER); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER); }
+function folder_() { if (FOLDER_ID) return DriveApp.getFolderById(FOLDER_ID); const it = DriveApp.getFoldersByName(FOLDER); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER); }
 function file_(name, create) { const f = folder_(), it = f.getFilesByName(name); if (it.hasNext()) return it.next(); return create ? f.createFile(name, '{}', 'application/json') : null; }
 function read_(name, dflt) { const f = file_(name, false); if (!f) return dflt; try { return JSON.parse(f.getBlob().getDataAsString()); } catch (e) { return dflt; } }
 function write_(name, obj) { file_(name, true).setContent(JSON.stringify(obj)); }
