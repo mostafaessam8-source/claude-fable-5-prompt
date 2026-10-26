@@ -584,3 +584,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 .dsh-dm,.dsh-modal{--teal:#00778B;--dark:#3D3935}
 .dsh-t th{background:var(--dark,#3D3935)!important;color:#fff!important}
 .dsh-modal .dsh-t th{position:sticky;top:0}
+
+#fsTop{display:inline-flex;align-items:center;gap:6px;margin-inline:8px;padding:3px 12px;height:26px;background:#3D3935;color:#fff;border:1px solid #1f1c1a;border-radius:3px;font-weight:600;cursor:pointer;white-space:nowrap}
+#fsTop:hover,#fsTop.on{background:#00778B;border-color:#005f70}#fsTop svg{width:16px;height:16px}
+:root[data-theme=p6] #titlebar .wb button{font-size:20px;opacity:1;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.55);border-radius:3px;width:30px;height:22px;line-height:18px}

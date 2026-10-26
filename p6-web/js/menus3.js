@@ -176,6 +176,16 @@
       b.innerHTML = `${P6.icon('dash')}<span>Dashboard</span>`; b.onclick = (e) => { e.stopPropagation(); App.openWin('dashboard'); };
       mb.appendChild(b);
     };
+    const fsToggle = () => { if (document.fullscreenElement) document.exitFullscreen(); else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); else App.toast('Full screen is not supported by this browser', true); };
+    const fsIcon = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+    const fsEnsure = () => {
+      const hd = document.getElementById('topbar'); if (!hd || document.getElementById('fsTop')) return;
+      const b = document.createElement('button'); b.id = 'fsTop'; b.type = 'button'; b.onclick = fsToggle;
+      const sp = hd.querySelector('.spacer'); if (sp) sp.after(b); else hd.appendChild(b); upd();
+    };
+    const upd = () => { const b = document.getElementById('fsTop'); if (!b) return; const on = !!document.fullscreenElement; b.innerHTML = fsIcon + '<span>' + (on ? 'Exit full screen' : 'Full screen') + '</span>'; b.title = (on ? 'Exit full screen' : 'Full screen') + ' (F11)'; b.classList.toggle('on', on); };
+    document.addEventListener('fullscreenchange', upd);
+    document.addEventListener('DOMContentLoaded', fsEnsure); setTimeout(fsEnsure, 300); setTimeout(fsEnsure, 1500);
     const start = () => { const mb = document.getElementById('menubar'); if (!mb) return setTimeout(start, 200); ensure(); new MutationObserver(ensure).observe(mb, { childList: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   })();
