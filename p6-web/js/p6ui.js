@@ -420,7 +420,7 @@
     el.querySelector('#rtab tbody').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-r]'); if (!tr) return; usageSel = +tr.dataset.r; App.renderDetails(); if (App.cfg.filter.byRes) App.refresh(); });
     el.querySelector('#rtab').addEventListener('change', (e) => {
       const tr = e.target.closest('tr[data-r]'), r = p.rsrc.find((x) => x.id === +tr.dataset.r), f = e.target.dataset.f;
-      App.mutate(t('edit'), () => { if (f === 'units') r.units = parseFloat(e.target.value.replace(',', '.')) || 8; else if (f === 'price') r.price = Math.max(0, parseFloat(e.target.value.replace(',', '.')) || 0); else r[f] = e.target.value; }, { noSched: true, refresh: { keepDock: true } }); hook();
+      App.mutate(t('edit'), () => { if (f === 'units') r.units = parseFloat(e.target.value.replace(',', '.')) || 8; else if (f === 'price') { r.price = Math.max(0, parseFloat(e.target.value.replace(',', '.')) || 0); if (r.prices && r.prices.length) r.prices.slice().sort((a, b) => (a.date || 0) - (b.date || 0)).pop().price = r.price; } else r[f] = e.target.value; }, { noSched: true, refresh: { keepDock: true } }); hook();
     });
     el.querySelector('#rtab').addEventListener('contextmenu', (e) => {
       e.preventDefault(); const tr = e.target.closest('tr[data-r]'); if (tr) { usageSel = +tr.dataset.r; }

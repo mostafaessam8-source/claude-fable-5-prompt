@@ -194,7 +194,7 @@
     let v;
     if (row.kind !== 't') {
       if (k === 'wbsname') v = row.w.name; else if (k === 'wbs') v = row.w.code; else if (!d.vw) return { text: '', cls: '', v: null };
-      else v = d.vw(c, row.w);
+      else v = d.vw(c, row.ak ? Object.assign({}, row.w, { id: row.ak }) : row.w);
     } else v = d.v(c, row.t);
     const text = d.kind === 'yn' ? (v == null ? '' : v ? P6.t('yes') : P6.t('no')) : (KIND[d.kind] || KIND.text)(v);
     let cls = RIGHT.has(d.kind) ? 'r' : '';

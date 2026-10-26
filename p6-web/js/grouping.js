@@ -88,7 +88,9 @@
         if (!showEmpty && !cnt.get(w.id)) return;
         const lv = depth + wd, own = wd < maxD ? (tby.get(w.id) || []).slice().sort(o.cmp) : sub(w).sort(o.cmp);
         const ks = wd < maxD ? kids.get(w.id).slice().sort(ws) : [];
-        rows.push({ kind: 'w', id: w.id, level: lv, w, hasKids: ks.length + own.length > 0 });
+        // totals of a WBS row cover only the activities in this branch of the grouping / filter, so a parent always equals the sum of what is shown under it
+        const ak = 'wa:' + path + ':' + w.id; reg(ak, sub(w));
+        rows.push({ kind: 'w', id: w.id, ak, level: lv, w, hasKids: ks.length + own.length > 0 });
         S.levelColors[lv] = wpal[wd % wpal.length];
         if (S.collapsed.has(w.id) && !o.filtering) return;
         for (const k of ks) walk(k, wd + 1);

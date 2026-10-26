@@ -256,7 +256,7 @@
     const r = ALL_COLS[k] || {};
     const out = { text: '', cls: r.r ? 'r' : '', ro: !r.ed };
     if (row.kind !== 't') {
-      const ru = S.ru.get(row.id) || {};
+      const ru = S.ru.get(row.ak || row.id) || {};
       if (S.cfg.grp && S.cfg.grp.totals === false && k !== 'code' && k !== 'name' && k !== treeKey()) return out;
       out.ro = true;
       switch (k) {
