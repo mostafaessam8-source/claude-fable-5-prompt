@@ -64,5 +64,6 @@
     rel_select_first: ['Select a relationship row first', 'اختر صف علاقة أولاً'], rel_hidden: ['That activity is hidden by the current filter', 'هذا النشاط مخفي بالفلتر الحالي'],
     remove: ['Remove', 'إزالة'],
     win_dashboard: ['Dashboard', 'Dashboard'],
+    mi_sharedb: ['Share Database Link…', 'رابط مشاركة القاعدة…'], conflict_msg: ['Someone else changed this project in the shared database after you opened it.\n\nOK = overwrite their version with yours\nCancel = keep their version (reopen the project to see it)', 'شخص آخر عدّل هذا المشروع في القاعدة المشتركة بعد أن فتحته.\n\nموافق = استبدال نسخته بنسختك\nإلغاء = الإبقاء على نسخته (أعد فتح المشروع لرؤيتها)'], conflict_kept: ['Your changes were not saved – reopen the project to load the latest version', 'لم تُحفظ تعديلاتك – أعد فتح المشروع لتحميل آخر نسخة'], saved_offline: ['Saved on this device – will sync when the database is reachable', 'تم الحفظ على هذا الجهاز – ستتم المزامنة عند توفر القاعدة'],
   });
 })(window);

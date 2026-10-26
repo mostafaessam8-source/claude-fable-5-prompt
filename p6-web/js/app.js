@@ -62,28 +62,50 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveNow, 700);
   }
+  // ---- storage drivers: 'local' (this browser's IndexedDB) or a remote driver such as Google Drive (store-remote.js) ----
+  const localStore = {
+    kind: 'local',
+    async list() { try { return (await idb('projects', 'readonly', (st) => st.getAll())) || []; } catch (e) { return []; } },
+    async get(id) { const rec = await idb('projects', 'readonly', (st) => st.get(id)); if (!rec) return null; let raw = null; try { raw = (await idb('raw', 'readonly', (st) => st.get(id))) || null; } catch (e) { /* ignore */ } return { rec, raw }; },
+    async put(rec, raw) { await idb('projects', 'readwrite', (st) => st.put(rec)); if (raw != null) await idb('raw', 'readwrite', (st) => st.put(raw, rec.id)); return { ok: true }; },
+    async del(id) { await idb('projects', 'readwrite', (st) => st.delete(id)); try { await idb('raw', 'readwrite', (st) => st.delete(id)); } catch (e) { /* ignore */ } },
+    async epsAll() { try { return (await idb('eps', 'readonly', (st) => st.getAll())) || []; } catch (e) { return []; } },
+    async epsPut(n) { await idb('eps', 'readwrite', (st) => st.put(n)); },
+    async epsDel(id) { await idb('eps', 'readwrite', (st) => st.delete(id)); }
+  };
+  S.localStore = localStore; S.localIdb = idb;
+  S.dbEntry = () => { try { const l = JSON.parse(localStorage.getItem('p6web.dbs')); const a = S.dbAlias(); return (Array.isArray(l) && l.find((d) => d.alias === a)) || { alias: a, driver: 'local' }; } catch (e) { return { alias: S.dbAlias(), driver: 'local' }; } };
+  let _remote = null;
+  S.store = () => { const en = S.dbEntry(); if (en.driver && en.driver !== 'local' && S.remoteDriver) { if (!_remote || _remote.entry.url !== en.url || _remote.entry.alias !== en.alias) _remote = S.remoteDriver(en); return _remote; } return localStore; };
+  const rev = new Map(); // project id -> 'updated' stamp we last loaded/saved (detects edits by other people on a shared database)
   async function saveNow() {
     if (!S.p) return;
     try {
-      const p = S.p;
-      const data = json(p), m = p.meta || {};
-      await idb('projects', 'readwrite', (st) => st.put({ id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: spanOf(p)[0], finish: spanOf(p)[1], dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data }));
-      if (p.xer && rawSaved !== p.id) { await idb('raw', 'readwrite', (st) => st.put(p.xer, p.id)); rawSaved = p.id; }
+      const p = S.p, data = json(p), m = p.meta || {}, wantRaw = p.xer && rawSaved !== p.id;
+      const rec = { id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: spanOf(p)[0], finish: spanOf(p)[1], dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data };
+      let r = await S.store().put(rec, wantRaw ? p.xer : undefined, { expect: rev.get(p.id) });
+      if (r && r.conflict) {
+        if (!confirm(t('conflict_msg'))) { toast(t('conflict_kept'), true); S.dirty = false; updateStatus(); return; }
+        r = await S.store().put(rec, wantRaw ? p.xer : undefined, { force: true });
+      }
+      rev.set(p.id, rec.updated);
+      if (wantRaw) rawSaved = p.id;
       localStorage.setItem(API.lastKey(), p.id);
       S.dirty = false; loadRecent();
+      if (r && r.offline) toast(t('saved_offline'));
     } catch (e) { toast(t('save_fail'), true); }
     updateStatus();
   }
-  async function listProjects() { try { return (await idb('projects', 'readonly', (st) => st.getAll())) || []; } catch (e) { return []; } }
+  async function listProjects() { try { return (await S.store().list()) || []; } catch (e) { return []; } }
   async function loadProject(id) {
-    const rec = await idb('projects', 'readonly', (st) => st.get(id));
-    if (!rec) return null;
-    const p = JSON.parse(rec.data);
-    try { p.xer = (await idb('raw', 'readonly', (st) => st.get(id))) || null; } catch (e) { p.xer = null; }
+    const r = await S.store().get(id);
+    if (!r || !r.rec) return null;
+    const p = JSON.parse(r.rec.data);
+    p.xer = r.raw || null; rev.set(id, r.rec.updated);
     rawSaved = p.xer ? id : null;
     return p;
   }
-  async function deleteProject(id) { await idb('projects', 'readwrite', (st) => st.delete(id)); try { await idb('raw', 'readwrite', (st) => st.delete(id)); } catch (e) { /* ignore */ } }
+  async function deleteProject(id) { await S.store().del(id); }
 
   // ================= undo / mutate =================
   const snapshot = () => json(S.p);
@@ -1398,6 +1420,7 @@
 
   // ================= boot =================
   API.boot = async function () {
+    if (App.joinFromHash) App.joinFromHash();
     loadCfg();
     applyLang();
     $('#tablePane').style.width = S.cfg.tableW + 'px';
