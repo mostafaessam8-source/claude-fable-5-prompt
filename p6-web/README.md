@@ -40,6 +40,9 @@ Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحدد�
 ## Project Controls Dashboard (English, SAR-style)
 View ▸ Dashboard (or the teal chart icon in the toolbar). KPIs, S-Curve, SPI curve, progress by WBS, critical-path Gantt, float distribution, manpower histogram, look-ahead (2–12 weeks), achieved-in-period, out-of-sequence analysis with auto-fix (FS→SS / remove logic, impact preview, undo), areas of concern (duration overruns, late starts, negative float, constraints, open ends…) and a risk register with heat map (project risks + schedule-detected risks). Filters: WBS, status, type, max float, resource, activity code, progress basis, granularity, period, look-ahead, search. Every KPI, chart element and table row opens a detailed drill-down. Print / PDF button included.
 
+## قاعدة بيانات مشتركة على Google Drive
+من Admin ← Database Configuration ← Add ← Driver Type = **Google Drive – shared online database**: اضغط Get setup script، الصق السكربت في script.google.com وانشره Web app (Execute as: Me / Access: Anyone)، ثم ضع رابط /exec في الخانة. تُحفظ المشاريع كملفات في مجلد P6WebDB على درايفك، ويمكنك نسخ **رابط المشاركة** (Admin ← Share Database Link) ليفتحه الفريق فتُضاف القاعدة تلقائياً ويعمل الجميع على نفس المشاريع. يوجد كشف تعارض عند الحفظ، ونسخة محلية للعمل بدون إنترنت تُزامَن لاحقاً. Oracle وSQL Server وCloud Connect وSQLite ظاهرة في قائمة المشغّلات لكنها غير متاحة من المتصفح.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).

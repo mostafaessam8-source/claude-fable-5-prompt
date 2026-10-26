@@ -9,23 +9,23 @@
   const fmtD = (d) => (d == null ? '' : P6.fmtDate(d));
   const STATUS = [['Active', 'Active', 'نشط'], ['Planned', 'Planned', 'مخطط'], ['Inactive', 'Inactive', 'غير نشط'], ['WhatIf', 'What-If', 'سيناريو (What-If)']];
   const stLabel = (s) => { const x = STATUS.find((y) => y[0] === s) || STATUS[0]; return ar() ? x[2] : x[1]; };
-  const idb = (store, mode, fn) => App.idb(store, mode, fn);
+  const st = () => App.store();
   const uid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const ROOT = 'root';
   let sel = null; // 'e:<id>' | 'p:<id>'
 
   // ---------- data ----------
-  const epsAll = async () => (await idb('eps', 'readonly', (st) => st.getAll())) || [];
-  const epsPut = (n) => idb('eps', 'readwrite', (st) => st.put(n));
-  const epsDel = (id) => idb('eps', 'readwrite', (st) => st.delete(id));
+  const epsAll = async () => { try { return (await st().epsAll()) || []; } catch (e) { return []; } };
+  const epsPut = (n) => st().epsPut(n);
+  const epsDel = (id) => st().epsDel(id);
   const projAll = () => App.listProjects();
   const rootName = () => App.cfg.epsRoot || B('Enterprise', 'المؤسسة (Enterprise)');
   async function patchProject(id, fn) {
     if (App.p && App.p.id === id) { fn(App.p.meta = App.p.meta || {}, App.p); App.p.name = App.p.name; await App.saveNowP(); return; }
-    const rec = await idb('projects', 'readonly', (st) => st.get(id)); if (!rec) return;
+    const got = await st().get(id); if (!got) return; const rec = got.rec;
     const p = JSON.parse(rec.data); p.meta = p.meta || {}; fn(p.meta, p);
     Object.assign(rec, { name: p.name, eps: p.meta.eps || ROOT, code: p.meta.code || '', status: p.meta.status || 'Active', manager: p.meta.manager || '', data: JSON.stringify(p), updated: Date.now() });
-    await idb('projects', 'readwrite', (st) => st.put(rec));
+    await st().put(rec, undefined, { force: true });
   }
 
   // ---------- window ----------
@@ -109,12 +109,10 @@
     },
     async copy(rr, d) {
       if (!selIsP()) return; const id = selId();
-      const rec = await idb('projects', 'readonly', (st) => st.get(id)); if (!rec) return;
-      const raw = await idb('raw', 'readonly', (st) => st.get(id));
+      const got = await st().get(id); if (!got) return; const rec = got.rec, raw = got.raw;
       const p = JSON.parse(rec.data); const nid = uid('p'); p.id = nid; p.name = (p.name || '') + B(' (copy)', ' (نسخة)'); p.meta = Object.assign({}, p.meta, { code: ((p.meta && p.meta.code) || 'PROJ') + '-C', status: 'Planned' });
       const data = JSON.stringify(p);
-      await idb('projects', 'readwrite', (st) => st.put(Object.assign({}, rec, { id: nid, name: p.name, code: p.meta.code, status: 'Planned', updated: Date.now(), data })));
-      if (raw) await idb('raw', 'readwrite', (st) => st.put(raw, nid));
+      await st().put(Object.assign({}, rec, { id: nid, name: p.name, code: p.meta.code, status: 'Planned', updated: Date.now(), data }), raw || undefined, { force: true });
       sel = 'p:' + nid; rr();
     },
     async xer() {
@@ -133,9 +131,9 @@
     },
     async backup() {
       if (App.p && App.dirty) await App.saveNowP();
-      const [eps, projs] = await Promise.all([epsAll(), idb('projects', 'readonly', (st) => st.getAll())]);
+      const [eps, projs] = await Promise.all([epsAll(), st().list()]);
       const out = { format: 'p6web-db', version: 1, saved: new Date().toISOString(), epsRoot: App.cfg.epsRoot || null, eps, projects: [] };
-      for (const rec of projs || []) out.projects.push({ rec, raw: (await idb('raw', 'readonly', (st) => st.get(rec.id))) || null });
+      for (const r0 of projs || []) { const got = await st().get(r0.id); if (got) out.projects.push({ rec: got.rec, raw: got.raw || null }); }
       App.download('P6Web-Database-' + new Date().toISOString().slice(0, 10) + '.json', JSON.stringify(out), 'application/json');
       App.toast(B(`Backup saved: ${out.projects.length} projects`, `تم حفظ نسخة احتياطية: ${out.projects.length} مشروع`));
     },
@@ -150,7 +148,7 @@
         for (const x of db.projects) {
           const id = x.rec.id, exists = have.has(id);
           if (exists && (!overwrite || (App.p && App.p.id === id))) { skipped++; continue; }
-          await idb('projects', 'readwrite', (st) => st.put(x.rec)); if (x.raw) await idb('raw', 'readwrite', (st) => st.put(x.raw, id)); exists ? over++ : added++;
+          await st().put(x.rec, x.raw || undefined, { force: true }); exists ? over++ : added++;
         }
         for (const e of db.eps || []) await epsPut(e);
         if (db.epsRoot) { App.cfg.epsRoot = db.epsRoot; App.saveCfg(); }
