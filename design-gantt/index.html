@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAR Design Gantt</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>Design Submission <b>Gantt</b></h1>
+        <p>Saudi Arabia Railways · Programme Controls</p>
+      </div>
+    </div>
+    <div class="top-actions" id="topActions" hidden>
+      <button class="btn ghost" id="btnPrint" type="button">Print / PDF</button>
+      <button class="btn primary" id="btnDownload" type="button">Download Excel + Gantt <span class="ar">نزّل الشيت</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="drop" id="drop">
+      <input type="file" id="file" accept=".xlsx,.xlsm" hidden>
+      <div class="drop-box" id="dropBox" tabindex="0" role="button" aria-label="Choose the tracker workbook">
+        <svg viewBox="0 0 48 48" width="56" height="56" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M24 32V10m0 0-9 9m9-9 9 9M8 30v8h32v-8"/></svg>
+        <h2>Drop the Design Submission Tracker here <span class="ar">اسحب شيت التراكر هنا</span></h2>
+        <p>or click to choose the <code>.xlsx</code> file. You get the same workbook back with a professional <b>Gantt chart</b> sheet added.</p>
+        <p class="ar-note">الملف بيتعالج على جهازك بس — مفيش حاجة بتترفع لأي سيرفر.</p>
+      </div>
+      <ol class="steps">
+        <li><b>1</b> Upload the tracker <small>ارفع الشيت</small></li>
+        <li><b>2</b> Check the chart &amp; data checks <small>راجع الجانت والملاحظات</small></li>
+        <li><b>3</b> Download the workbook <small>نزّل الشيت + الجانت</small></li>
+      </ol>
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <section id="app" hidden>
+      <div class="bar">
+        <div class="file-info"><span class="dot"></span><span id="fileName"></span> <button class="link" id="btnChange" type="button">change file</button></div>
+        <div class="controls">
+          <label class="ctl">Data date <small>تاريخ القطع</small>
+            <input type="date" id="dataDate">
+          </label>
+          <span class="ctl-btns">
+            <button class="chip" id="ddBook" type="button" title="Use the data date written in the workbook">Workbook</button>
+            <button class="chip" id="ddToday" type="button" title="Use today's date">Today</button>
+          </span>
+          <div class="seg" role="group" aria-label="Time scale">
+            <button type="button" data-scale="day">Day</button>
+            <button type="button" data-scale="week" class="on">Week</button>
+            <button type="button" data-scale="month">Month</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab on" data-tab="gantt" type="button">Gantt chart</button>
+        <button class="tab" data-tab="checks" type="button">Data checks <span class="count" id="checkCount"></span></button>
+        <button class="tab" data-tab="about" type="button">How it is calculated</button>
+      </div>
+
+      <div class="panel" id="tab-gantt">
+        <div class="filters">
+          <select id="fProject" aria-label="Project"><option value="">All projects</option></select>
+          <div class="status-chips" id="fStatus"></div>
+          <input type="search" id="fSearch" placeholder="Search element… ابحث" aria-label="Search">
+          <button class="chip" id="btnCollapse" type="button">Collapse all</button>
+          <button class="chip" id="btnExpand" type="button">Expand all</button>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="gantt-wrap" id="ganttWrap"><div class="gantt" id="gantt"></div></div>
+        <p class="hint" id="rowHint"></p>
+      </div>
+
+      <div class="panel" id="tab-checks" hidden>
+        <div class="filters">
+          <div class="status-chips" id="cFilter"></div>
+        </div>
+        <div class="table-wrap"><table class="checks" id="checksTable"></table></div>
+      </div>
+
+      <div class="panel prose" id="tab-about" hidden>
+        <h3>What the chart shows</h3>
+        <ul>
+          <li><b>Baseline line</b> (grey): baseline submission → baseline approval of the design stage.</li>
+          <li><b>Actual / Forecast line</b>: actual submission → SAR review (teal); submitted and still with SAR (amber hatching, up to the data date); forecast re-submission → forecast approval (light hatching); the current plan dates (violet hatching). The letter on the bar is SAR's review code.</li>
+          <li><b>Project / element rows</b> roll their design stages up; open them with the outline buttons in Excel or the arrows here.</li>
+        </ul>
+        <h3>Rules (same as the Tracker's own formulas)</h3>
+        <ul id="rules"></ul>
+        <h3>Notes</h3>
+        <ul>
+          <li>Only the <code>Tracker</code> sheet is read; formulas are not recalculated, the cached values and dates in the file are used. Save the workbook in Excel before uploading so those values are current.</li>
+          <li>Every other sheet in the workbook is returned untouched; the <code>Gantt chart</code> sheet is replaced each time you generate a new one.</li>
+          <li>The chart is a picture of the dates at the moment you generate it. After changing dates in the Tracker, upload the workbook again.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <div class="tip" id="tip" hidden></div>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/xlsxgantt.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
