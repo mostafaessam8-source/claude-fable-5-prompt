@@ -43,6 +43,9 @@ View ▸ Dashboard (or the teal chart icon in the toolbar). KPIs, S-Curve, SPI c
 ## قاعدة بيانات مشتركة على Google Drive
 من Admin ← Database Configuration ← Add ← Driver Type = **Google Drive – shared online database**: اضغط Get setup script، الصق السكربت في script.google.com وانشره Web app (Execute as: Me / Access: Anyone)، ثم ضع رابط /exec في الخانة. تُحفظ المشاريع كملفات في مجلد P6WebDB على درايفك، ويمكنك نسخ **رابط المشاركة** (Admin ← Share Database Link) ليفتحه الفريق فتُضاف القاعدة تلقائياً ويعمل الجميع على نفس المشاريع. يوجد كشف تعارض عند الحفظ، ونسخة محلية للعمل بدون إنترنت تُزامَن لاحقاً. Oracle وSQL Server وCloud Connect وSQLite ظاهرة في قائمة المشغّلات لكنها غير متاحة من المتصفح.
 
+## ربط مجلد Google Drive مباشرة (Driver: Google Drive folder)
+الصق رابط مجلد درايف + OAuth Client ID (يُنشأ مرة واحدة في Google Cloud Console — الخطوات في «Setup guide»)، وسجّل الدخول بحساب جوجل. تُحفظ المشاريع كملفات داخل المجلد، والوصول تحدده مشاركة Drive (شارك المجلد مع فريقك كـ Editor). لا يمكن لصفحة ويب القراءة/الكتابة بالرابط وحده بدون تسجيل دخول جوجل.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
