@@ -157,7 +157,7 @@
         const base = sh.base ? 1 : 0;
         const bh = [5, 8, 12, 16, 20][Math.max(1, Math.min(5, sh.barSize || 3)) - 1], by = y + Math.max(1, Math.round((rh - bh) / 2)) - (base ? 3 : 0);
         if (r.kind !== 't') {
-          const ru = o.ru.get(r.id);
+          const ru = o.ru.get(r.ak || r.id);
           if (!ru || ru.es == null) continue;
           const x1 = X(ru.es), x2 = X(ru.ef + 1);
           if (x2 < -50 || x1 > W + 50) continue;
