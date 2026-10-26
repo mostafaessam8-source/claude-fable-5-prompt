@@ -44,6 +44,7 @@
     admincat: `<circle cx="12" cy="12" r="9.5" fill="${B}" stroke="${DK}" stroke-width=".8"/><path d="M6 9c3-3 7-1 6 2s-4 3-3 6" fill="${G}" stroke="${G}"/><circle cx="17" cy="17" r="5" fill="${Y}" stroke="${DY}"/>`,
     currency: `<circle cx="9" cy="9" r="6" fill="${Y}" stroke="${DY}"/><circle cx="15" cy="15" r="6" fill="${LG}" stroke="${G}"/><text x="12.5" y="19" font-size="9" font-weight="700" fill="${DK}" font-family="Arial">$</text>`,
     finperiod: `<rect x="3" y="4" width="18" height="17" fill="${W}" stroke="${B}"/><rect x="3" y="4" width="18" height="4" fill="${Y}"/><path d="M6 12h12M6 16h12M9 8v13M15 8v13" stroke="${GR}"/>`,
+    dash: `<rect x="3" y="3" width="18" height="18" rx="2" fill="#00778B"/><rect x="6" y="12" width="3" height="6" fill="#fff"/><rect x="10.5" y="8" width="3" height="10" fill="#fff"/><rect x="15" y="10" width="3" height="8" fill="#fff"/>`,
     xlsx: `<rect x="3" y="3" width="18" height="18" rx="2" fill="#1f7a45"/><path d="M7.5 7.5l9 9M16.5 7.5l-9 9" stroke="${W}" stroke-width="2.6" stroke-linecap="round"/>`,
     actdetails: `<path d="M5 3h9l5 5v13H5z" fill="${W}" stroke="${B}" stroke-width="1.2"/><path d="M8 11h8M8 14h8M8 17h5" stroke="${GR}"/><circle cx="16" cy="17" r="4" fill="${LB}" stroke="${DK}" stroke-width="1.3"/>`,
     barsico2: `<rect x="3" y="5" width="12" height="4" fill="${B}" stroke="${DK}" stroke-width=".6"/><rect x="7" y="11" width="14" height="4" fill="${G}" stroke="${DK}" stroke-width=".6"/><rect x="3" y="17" width="10" height="4" fill="${Y}" stroke="${DK}" stroke-width=".6"/>`

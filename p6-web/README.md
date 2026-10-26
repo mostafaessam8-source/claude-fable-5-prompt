@@ -37,6 +37,9 @@ Ctrl+A يحدد كل الصفوف، وCtrl+C ينسخ الصفوف المحدد�
 ## تسجيل الدخول وإعدادات قاعدة البيانات
 شاشة دخول بشكل P6 (Login Name / Password / Advanced لاختيار القاعدة / Connect / Disconnect / Edit database configuration) ونافذة Database Configuration لإضافة قواعد بيانات محلية متعددة (كل Alias هو IndexedDB مستقل في المتصفح)، مع Test ونسخ وحذف والتبديل بينها. كلمة المرور اختيارية (Admin ← Change Password) وهي قفل محلي للراحة وليست حماية حقيقية. يمكن إيقاف الشاشة من Preferences.
 
+## Project Controls Dashboard (English, SAR-style)
+View ▸ Dashboard (or the teal chart icon in the toolbar). KPIs, S-Curve, SPI curve, progress by WBS, critical-path Gantt, float distribution, manpower histogram, look-ahead (2–12 weeks), achieved-in-period, out-of-sequence analysis with auto-fix (FS→SS / remove logic, impact preview, undo), areas of concern (duration overruns, late starts, negative float, constraints, open ends…) and a risk register with heat map (project risks + schedule-detected risks). Filters: WBS, status, type, max float, resource, activity code, progress basis, granularity, period, look-ahead, search. Every KPI, chart element and table row opens a detailed drill-down. Print / PDF button included.
+
 ## الأيقونات والقوائم والتفاصيل / Icons, File menu, Activity Details
 
 * أيقونات **ملوّنة** بطراز P6 في التولبار والشريطين الجانبيين والقوائم (مجموعة SVG مرسومة داخل `js/icons.js`).
