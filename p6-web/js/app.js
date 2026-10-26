@@ -77,7 +77,7 @@
   S.dbEntry = () => { try { const l = JSON.parse(localStorage.getItem('p6web.dbs')); const a = S.dbAlias(); return (Array.isArray(l) && l.find((d) => d.alias === a)) || { alias: a, driver: 'local' }; } catch (e) { return { alias: S.dbAlias(), driver: 'local' }; } };
   S.dbLabel = () => S.dbEntry().label || S.dbAlias();
   let _remote = null;
-  S.store = () => { const en = S.dbEntry(); if (en.driver && en.driver !== 'local' && S.remoteDriver) { if (!_remote || _remote.entry.url !== en.url || _remote.entry.alias !== en.alias) _remote = S.remoteDriver(en); return _remote; } return localStore; };
+  S.store = () => { const en = S.dbEntry(); if (en.driver && en.driver !== 'local' && S.remoteDriver) { if (!_remote || _remote.entry.url !== en.url || _remote.entry.folder !== en.folder || _remote.entry.alias !== en.alias) _remote = S.remoteDriver(en); return _remote; } return localStore; };
   const rev = new Map(); // project id -> 'updated' stamp we last loaded/saved (detects edits by other people on a shared database)
   async function saveNow() {
     if (!S.p) return;
@@ -1469,6 +1469,7 @@
     addEventListener('beforeunload', () => { if (S.dirty) saveNow(); });
     addEventListener('resize', () => { renderRows(); gantt.schedule(); });
     if (App.loginScreen) await App.loginScreen();
+    if (App.driveCheck) App.driveCheck();
     // load project
     let p = null;
     try { const last = localStorage.getItem(API.lastKey()); if (last) p = await loadProject(last); } catch (e) { p = null; }

@@ -580,3 +580,4 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 #menubar .dsh-top{display:inline-flex;align-items:center;gap:6px;margin-inline-start:10px;padding:3px 12px 3px 8px;background:#00778B;color:#fff;border:1px solid #005f70;border-radius:3px;font-weight:600;cursor:pointer;height:24px}
 #menubar .dsh-top:hover{background:#005f70}#menubar .dsh-top svg{width:16px;height:16px}
 .dc-row{color:#222}.dc-row.on{background:#cfe8f7;color:#0b2a40}.dc-list{background:#fff}.dbcfg label{color:inherit}
+#drv-banner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9998;background:#fff7e5;border:1px solid #e0b64d;color:#5a4300;padding:8px 14px;border-radius:4px;display:flex;gap:12px;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,.25);font-size:13px}#drv-banner button{background:#0b6fb8;color:#fff;border:0;padding:6px 12px;border-radius:3px;cursor:pointer}
