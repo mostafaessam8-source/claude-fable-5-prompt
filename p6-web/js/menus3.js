@@ -167,6 +167,19 @@
     }, 40);
   });
 
+
+  // ---- always-visible "Dashboard" button in the menu bar (survives menu rebuilds) ----
+  (function () {
+    const ensure = () => {
+      const mb = document.getElementById('menubar'); if (!mb || mb.querySelector('.dsh-top')) return;
+      const b = document.createElement('button'); b.className = 'dsh-top'; b.type = 'button'; b.title = 'Project Controls Dashboard';
+      b.innerHTML = `${P6.icon('dash')}<span>Dashboard</span>`; b.onclick = (e) => { e.stopPropagation(); App.openWin('dashboard'); };
+      mb.appendChild(b);
+    };
+    const start = () => { const mb = document.getElementById('menubar'); if (!mb) return setTimeout(start, 200); ensure(); new MutationObserver(ensure).observe(mb, { childList: true }); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  })();
+
   // ---- Gantt chart right-click menu ----
   App.chartMenu = function (x, y) {
     const sub = (l, i, fn, o) => Object.assign({ l, i, fn }, o || {});
