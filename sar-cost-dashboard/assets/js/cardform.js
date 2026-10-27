@@ -1118,17 +1118,19 @@
       return readBook(zip).then(function (book) {
         var cs = cardSheets(book), chain = Promise.resolve(), seen = {};
         cs.forEach(function (sh) {
-          var P = prog.projects[sh.code]; if (!P) return; seen[sh.code] = 1;
+          var P = prog.projects[sh.code] || null, fbk = (prog.feedback || {})[sh.code] || "";
+          if (!P && !prog.rules && !fbk) return; if (P) seen[sh.code] = 1;
           chain = chain.then(function () {
             return zip.file(sh.path).async("string").then(function (xs) {
               var doc = parse(xs), S = readSheet(book, sh, doc), mdl = model(book, sh, S), g = mdl.prog, cells = S.cells, writes = [];
-              var base = { code: sh.code, name: P.name || mdl.name, src: P.repDate ? "report " + P.repDate : "" };
+              var base = { code: sh.code, name: (P && P.name) || mdl.name, src: P && P.repDate ? "report " + P.repDate : "" }, edits = {};
               function say(what, ref, from, to, status, why) { report.push({ code: base.code, name: base.name, what: what, ref: ref || "", from: from, to: to, status: status, why: why || "", src: base.src }); }
               function text0(x) { return x && typeof x.val === "string" ? x.val.trim() : ""; }
               function num(ref) { var x = cells[ref]; return x && typeof x.val === "number" ? x.val : null; }
               function txt(ref) { var x = cells[ref]; return x && typeof x.val === "string" ? x.val.replace(/\s+/g, " ").trim() : ""; }
               function blocked(ref) { var x = cells[ref]; if (x && x.hard) return "cell is protected in this file — kept as is"; if (x && x.f) return "cell holds a formula — kept as is"; if (x && x.sharedMaster) return "cell starts a shared formula"; return ""; }
               var pct = function (v) { return v == null ? "" : (Math.round(v * 10000) / 100) + "%"; }, day = function (s) { return s || ""; };
+              function weeklyPart() {
               if (P.cum == null) { say("Actual progress", "", "", "", "skipped", "no actual progress in the Progress data up to " + mLab); return; }
               if (!g || !g.ex) { say("Actual progress", "", "", "", "skipped", "S-curve / Execution Phase table not found on this card"); return; }
               (P.warn || []).forEach(function (w) { say("Progress data", "", "", "", "warning", w); });
@@ -1159,7 +1161,6 @@
                 });
               } else if (!spreadActs(acts, P.cum, P.phases)) say("Activities", "", "", "", "warning", "no activity weights (column O) — activity % kept");
               else if (acts.below) say("Activities", "", "", "", "warning", "the activities' last % already add up to more than the report (" + pct(P.cum) + ") — activity % kept (never lowered)");
-              var edits = {};
               scope.forEach(function (a) {
                 if (a.nn == null) return; var ref = "N" + a.r;
                 if (a.n != null && Math.abs(a.nn - a.n) < 5e-7) return;
@@ -1214,6 +1215,56 @@
                 var what = "Actual progress " + mLab + (blk ? " · " + blk.name + (blk.no ? " (PO " + blk.no + ")" : "") : "");
                 if (why2) say(what, target, pct(old), pct(inc), "skipped", why2);
                 else { writes.push([target, "pct", String(inc)]); say(what, target, pct(old), pct(inc), flag ? "warning" : "applied", flag || ("total " + pct(before) + " → " + pct(before + inc) + " (report " + pct(P.cum) + ")")); }
+              }
+              }
+              if (P) weeklyPart();
+              if (prog.rules) dateRules();
+              if (fbk) pmFeedback();
+              /* Date rules for every card (user rule, Oct 2026), after the Progress update:
+                 · Creation / Initiation / Planning / Tendering activities not at 100%: the forecast/actual end (K) must be after the
+                   month → end of next month.
+                 · Execution Phase activities not at 100%: end after the month (the report's forecast when the project is in the
+                   Progress data, else end of next month); at 0% the start (J) must be after the month too → 1st of next month.
+                 Formula, locked and protected cells are never written (reported "update by hand"). Phase head rows are skipped. */
+              function dateRules() {
+                var ME = isoToSerial(prog.monthEnd), NS = ME + 1, NE = isoToSerial(prog.nextEnd), hdr = 0, phase = "";
+                for (var r = 60; r <= Math.min(S.maxR, 260); r++) if (/^Project Phases$/i.test(txt("B" + r))) { hdr = r; break; }
+                if (!hdr) return;
+                for (var r2 = hdr + 1; r2 <= hdr + 80; r2++) {
+                  var nm = txt("B" + r2); if (!nm) { if (!txt("B" + (r2 + 1))) break; continue; }
+                  if (/^(Project Phases|Total)$/i.test(nm)) break;
+                  if (/phase$/i.test(nm)) { phase = /^(creation|initiation|planning|tendering)/i.test(nm) ? "pre" : /^execution/i.test(nm) ? "exe" : ""; continue; }
+                  if (!phase || /^\[insert/i.test(nm)) continue;
+                  var nRef = "N" + r2, n = nRef in edits ? edits[nRef] : num(nRef); if (n == null || n >= 0.99995) continue;
+                  var jRef = "J" + r2, kRef = "K" + r2, j = jRef in edits ? edits[jRef] : num(jRef), k = kRef in edits ? edits[kRef] : num(kRef), newJ = null;
+                  var lab = (phase === "pre" ? "Pre-execution" : "Execution") + " · " + nm;
+                  function put(ref, from, to, why) {
+                    var x = cells[ref], why2 = blocked(ref) || (x && x.locked && !(ref in edits) ? "cell is locked in this file — kept as is" : "");
+                    if (why2) { say(lab, ref, from ? serialToIso(from) : "", serialToIso(to), "skipped", why + " — " + why2 + " (update by hand)"); return false; }
+                    edits[ref] = to; writes.push([ref, "date", serialToIso(to)]); say(lab, ref, from ? serialToIso(from) : "", serialToIso(to), "applied", why); return true;
+                  }
+                  if (phase === "exe" && n === 0 && typeof j === "number" && j <= ME) { if (put(jRef, j, NS, "0% done and the start is not after " + mLab + " → start 1st of next month")) newJ = NS; }
+                  if (typeof k === "number" && k <= ME) {
+                    var to = NE, fc = phase === "exe" && P && P.fcst ? isoToSerial(P.fcst) : null;
+                    if (fc != null && fc > ME) to = fc;
+                    var sj = newJ != null ? newJ : j; if (typeof sj === "number" && to < sj) to = sj;
+                    put(kRef, k, to, pct(n) + " done and the end is not after " + mLab + " → " + (to === fc ? "the report's forecast finish" : "end of next month"));
+                  } else if (k == null && typeof j === "number") say(lab, kRef, "", "", "warning", pct(n) + " done but no end date — enter it by hand");
+                }
+              }
+              /* PM feedback (from the PM's e-mail): added on top of the "PM Feedback" cell, dated like the lines already there */
+              function pmFeedback() {
+                var at = null;
+                Object.keys(cells).some(function (ref) { if (/^PM Feedback$/i.test(txt(ref))) { at = splitRef(ref); return true; } return false; });
+                if (!at) { say("PM Feedback", "", "", "", "skipped", "no “PM Feedback” cell on this card"); return; }
+                var ref = colStr(at.c) + (at.r + 1), x = cells[ref], why = blocked(ref) || (x && x.locked ? "cell is locked in this file" : "");
+                var old = x && typeof x.val === "string" ? x.val : "", m = /^(\d{1,2})([ \-])([A-Za-z]{3})[a-z]*\2(\d{4})/.exec(old.trim()), d = new Date(prog.fbDate + "T00:00:00Z");
+                var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], sep = m ? m[2] : "-";
+                var stamp = (sep === " " ? d.getUTCDate() : ("0" + d.getUTCDate()).slice(-2)) + sep + MON[d.getUTCMonth()] + sep + d.getUTCFullYear();
+                var line = stamp + ": " + fbk.trim(), nv = old && old.indexOf(line) === 0 ? old : line + (old ? "\n" + old : "");
+                if (why) { say("PM Feedback", ref, "", line, "skipped", why); return; }
+                if (nv === old) { say("PM Feedback", ref, "", line, "skipped", "already in the cell"); return; }
+                writes.push([ref, "text", nv]); say("PM Feedback", ref, old.split("\n")[0], line, "applied", "added on top of the earlier lines");
               }
               if (!writes.length) return;
               writes.forEach(function (w) { writeCell(doc, w[0], w[1], w[2], cells[w[0]], null); });

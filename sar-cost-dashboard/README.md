@@ -206,6 +206,10 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    same cell, the latest saved one wins (shown in the report). Download the updated workbook (only those cells change,
    formats untouched, formulas recalculate on opening) and import it on Data Import; a CSV change report is available.
 
+
+Step 3 also applies the monthly **date rules** to every card (activities not at 100% end after the month; execution
+activities at 0% start after the month; formula cells are kept and listed) and writes the **PM feedback** typed in the box
+(`CODE: text` per line) on top of each card's "PM Feedback" cell with today's date.
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).

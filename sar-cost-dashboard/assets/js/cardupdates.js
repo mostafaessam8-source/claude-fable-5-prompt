@@ -172,16 +172,29 @@
     /* ---- S-curve & forecast finish from the Progress data (execution projects) — on the same new month file */
     var sc = U.el('<div class="cu-sc"><div class="cu-sum"><div><b>S-curve &amp; forecast finish from the Progress data</b><br><span class="muted">Execution projects in the Progress tab: ' +
       "the month's Actual Progress (%) so the card total equals the report, the Execution Phase activities' % and the forecast finish of unfinished activities. " +
-      'Works on the file dropped above (after the team updates when there are any) — one updated workbook.</span></div>' +
+      'Works on the file dropped above (after the team updates when there are any) — one updated workbook. ' +
+      'Also, on <b>every</b> card: activities not at 100% get an end date after the month (pre-execution and execution), and execution activities at 0% a start after the month.</span></div>' +
       '<div class="cu-sum-acts"><label class="cu-mon">Month <input type="month" class="cu-month"></label>' +
       '<button type="button" class="icon-btn" data-a="sc" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg><span>Update S-curve from Progress</span></button></div></div></div>');
+    var fbBox = U.el('<div class="cu-fb"><label><b>PM feedback</b> <span class="muted">(optional — one project per line: <code>CODE: text</code>; a line without a code continues the project above. ' +
+      'Written on top of the card\'s “PM Feedback” cell with today\'s date, the earlier lines kept.)</span></label>' +
+      '<textarea class="cu-fbt" rows="4" style="width:100%;margin-top:6px" placeholder="0647: FAT done; first delivery arrived on site and installation started."></textarea></div>');
     var out2 = U.el('<div class="cu-out"></div>');
-    p3.appendChild(sc); p3.appendChild(out2);
+    p3.appendChild(sc); p3.appendChild(fbBox); p3.appendChild(out2);
     sc.querySelector(".cu-month").value = defaultMonth();
     sc.querySelector('[data-a="sc"]').addEventListener("click", function () {
       if (!f3) return;
       var month = sc.querySelector(".cu-month").value; if (!/^\d{4}-\d{2}$/.test(month)) { U.toast("Pick the month first.", true); return; }
       var prog = progressData(month);
+      var y = +month.slice(0, 4), mo = +month.slice(5, 7), endOf = function (yy, mm) { return new Date(Date.UTC(yy, mm, 0)).toISOString().slice(0, 10); };
+      prog.monthEnd = endOf(y, mo); prog.nextEnd = endOf(mo === 12 ? y + 1 : y, mo === 12 ? 1 : mo + 1); prog.rules = true;
+      prog.fbDate = new Date().toISOString().slice(0, 10); prog.feedback = {};
+      var cur = "";
+      fbBox.querySelector(".cu-fbt").value.split(/\r?\n/).forEach(function (ln) {
+        var m = /^\s*([A-Z]?\d{3,4}[A-Z]?)\s*[:\-–]\s*(.*)$/i.exec(ln);
+        if (m) { cur = m[1].toUpperCase(); prog.feedback[cur] = (prog.feedback[cur] ? prog.feedback[cur] + " " : "") + m[2].trim(); }
+        else if (cur && ln.trim()) prog.feedback[cur] += " " + ln.trim();
+      });
       if (!Object.keys(prog.projects).length) { out2.innerHTML = '<div class="note-box warn">No execution projects in the Progress data — import the weekly report files on Data Import first.</div>'; return; }
       out2.innerHTML = '<div class="empty-note">Updating the S-curve for ' + esc(month) + " …</div>";
       (f3.team ? f3.team.blob.arrayBuffer() : Promise.resolve(f3.buffer.slice(0))).then(function (buf) {

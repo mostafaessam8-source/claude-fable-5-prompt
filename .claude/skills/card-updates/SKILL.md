@@ -181,6 +181,10 @@ gives one workbook + CSV report. Code: `SARCardForm.scurve` (cardform.js) + `pro
   that is missing or already past while the project is not complete (e.g. 0674 typed 27-May-26) → the date the report's
   S-curve forecast reaches 100% is used, flagged.
 - Protected / formula / shared-master cells are never written (reported); calcChain removed; Excel recalculates on open.
+- **Date rules on every card** (`prog.rules`, Oct 2026): pre-execution activities not at 100% → end after the month;
+  execution activities not at 100% → end after the month, at 0% → start after the month (report forecast when later,
+  else end of next month / 1st of next month). Formula / locked cells kept and reported. **PM feedback** (`prog.feedback`,
+  box under step 3): written on top of the "PM Feedback" cell, dated. Full monthly procedure: `monthly-card-update` skill.
 
 ## Privacy
 
