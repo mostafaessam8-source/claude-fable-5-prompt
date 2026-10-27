@@ -16,17 +16,14 @@ function tinyWorkbook() {
   z.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
   z.file('xl/styles.xml', '<?xml version="1.0"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>');
   const s = (r, t) => `<c r="${r}" t="inlineStr"><is><t>${t}</t></is></c>`, n = (r, v) => `<c r="${r}"><v>${v}</v></c>`;
-  const hdr = ['Baseline submission', 'Baseline approval', 'Actual submission', 'Actual Review', 'SAR code', 'FORECAST re-submission', 'FORECAST approval'];
-  const cols = ['D', 'E', 'F', 'G', 'H', 'I', 'J'];
   const rows = [];
   rows.push(`<row r="5">${s('A5', 'DATA DATE (cut-off)')}${n('C5', D(2026, 8, 31))}</row>`);
-  rows.push(`<row r="6">${s('A6', 'AT-RISK WINDOW (days)')}${n('C6', 14)}${s('D6', 'Concept Design')}${n('F6', 1)}</row>`);
-  rows.push(`<row r="7">${s('A7', '% EARNED — submitted')}${n('C7', 0.6)}</row><row r="8">${s('A8', '% EARNED — Code D')}${n('C8', 0.5)}</row><row r="9">${s('A9', '% EARNED — Code C')}${n('C9', 0.7)}</row><row r="10">${s('A10', '% EARNED — Code B')}${n('C10', 0.9)}</row><row r="11">${s('A11', '% EARNED — Code A')}${n('C11', 1)}</row>`);
-  rows.push(`<row r="16">${s('D16', '1. CONCEPT DESIGN')}</row>`);
-  rows.push(`<row r="17">${s('A17', 'Programme')}${s('B17', 'Project Code')}${s('C17', 'Project / Element — Package')}${hdr.map((h, i) => s(cols[i] + '17', h)).join('')}${s('K17', 'Main challenges / notes')}${s('L17', 'Lvl')}</row>`);
-  rows.push(`<row r="18">${s('A18', 'NSR')}${s('B18', '9001')}${s('C18', 'Test Project')}${s('L18', 'P')}</row>`);
-  rows.push(`<row r="19">${s('C19', 'Element 1')}${n('D19', D(2026, 3, 1))}${n('E19', D(2026, 3, 15))}${n('F19', D(2026, 3, 10))}${n('G19', D(2026, 4, 1))}${s('H19', 'D')}${n('I19', D(2026, 9, 1))}${n('J19', D(2026, 9, 20))}${s('K19', 'a note')}${s('L19', 'E')}</row>`);
-  rows.push(`<row r="20">${s('C20', 'Element 2')}${n('D20', D(2026, 10, 1))}${n('E20', D(2026, 10, 20))}${s('L20', 'E')}</row>`);
+  rows.push(`<row r="17">${s('A17', 'Programme')}${s('B17', 'Project Code')}${s('C17', 'Project / Element — Package')}${s('D17', 'Submission Date')}${s('E17', 'Approval Date')}${s('F17', 'Main challenges / notes')}${s('G17', 'Lvl')}</row>`);
+  rows.push(`<row r="18">${s('A18', 'NSR')}${s('B18', '9001')}${s('C18', 'Test Project')}${s('G18', 'P')}</row>`);
+  rows.push(`<row r="19">${s('C19', 'Element 1')}${n('D19', D(2026, 8, 1))}${n('E19', D(2026, 8, 20))}${s('F19', 'a note')}${s('G19', 'E')}</row>`);
+  rows.push(`<row r="20">${s('C20', 'Element 2')}${n('D20', D(2026, 8, 20))}${n('E20', D(2026, 9, 20))}${s('G20', 'E')}</row>`);
+  rows.push(`<row r="21">${s('C21', 'Element 3')}${n('D21', D(2026, 10, 1))}${n('E21', D(2026, 10, 20))}${s('G21', 'E')}</row>`);
+  rows.push(`<row r="22">${s('C22', 'Element 4')}${n('D22', D(2026, 10, 20))}${n('E22', D(2026, 10, 1))}${s('G22', 'E')}</row>`);
   z.file('xl/worksheets/sheet1.xml', `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.join('')}</sheetData></worksheet>`);
   return z;
 }
@@ -41,20 +38,17 @@ async function check(zip, label) {
 }
 
 (async () => {
-  // 1. tiny workbook: stage maths follow the Tracker's own rules
+  // 1. tiny workbook: status follows the data date; only Submission / Approval Date are used
   const t = await check(tinyWorkbook(), 'tiny.xlsx');
-  const m = t.model;
-  assert.strictEqual(m.projects.length, 1);
-  assert.strictEqual(m.projects[0].elements.length, 2);
-  const s1 = m.projects[0].elements[0].stages[0];
-  assert.strictEqual(s1.code, 'D'); assert.strictEqual(s1.pct, 0.5); assert.strictEqual(s1.health, 'Delayed');
-  assert.strictEqual(s1.varDays, D(2026, 9, 20) - D(2026, 3, 15));
-  assert.strictEqual(m.projects[0].elements[1].stages[0].health, 'Not Started');
-  // changing the data date re-derives the status
-  M.recalc(m, D(2026, 9, 25));
-  assert.strictEqual(m.projects[0].elements[1].stages[0].health, 'At Risk');
-  M.recalc(m, D(2026, 10, 25));
-  assert.strictEqual(m.projects[0].elements[1].stages[0].health, 'Delayed');
+  const m = t.model, els = m.projects[0].elements;
+  assert.strictEqual(m.projects.length, 1); assert.strictEqual(els.length, 4);
+  assert.deepStrictEqual(els.map(e => e.status), ['Actual', 'In progress', 'Forecast', 'Forecast']);
+  assert.strictEqual(m.projects[0].eps, D(2026, 8, 1)); assert.strictEqual(m.projects[0].epa, D(2026, 10, 20));
+  assert(m.checks.some(c => c.sev === 'error' && c.element === 'Element 4'), 'approval before submission is flagged');
+  const seg = M.buildItems(m).find(i => i.label === 'Element 2').segs;
+  assert.deepStrictEqual(seg.map(g => g.t), ['actual', 'forecast']); // split at the data date
+  M.recalc(m, D(2026, 10, 10));
+  assert.deepStrictEqual(m.projects[0].elements.map(e => e.status), ['Actual', 'Actual', 'In progress', 'Actual']);
 
   // 2. the written workbook: a new Gantt sheet whose numbers are formulas and whose bars are conditional formats
   const xml = await t.z2.file(t.names.find(n => /worksheets\/sheet\d+\.xml$/.test(n) && n !== 'xl/worksheets/sheet1.xml')).async('string');

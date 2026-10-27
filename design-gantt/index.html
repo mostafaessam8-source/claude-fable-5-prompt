@@ -87,18 +87,14 @@
 
       <div class="panel prose" id="tab-about" hidden>
         <h3>What the chart shows</h3>
-        <ul>
-          <li><b>Baseline line</b> (grey): baseline submission → baseline approval of the design stage.</li>
-          <li><b>Actual / Forecast line</b>: actual submission → SAR review (teal); submitted and still with SAR (amber hatching, up to the data date); forecast re-submission → forecast approval (light hatching); the current plan dates (violet hatching). The letter on the bar is SAR's review code.</li>
-          <li><b>Project / element rows</b> roll their design stages up; open them with the outline buttons in Excel or the arrows here.</li>
-        </ul>
-        <h3>Rules (same as the Tracker's own formulas)</h3>
+        <p>One bar per project and element, from its <b>Submission Date</b> to its <b>Approval Date</b>. Nothing else in the tracker is used.</p>
+        <h3>Rules</h3>
         <ul id="rules"></ul>
         <h3>Notes</h3>
         <ul>
-          <li>Only the <code>Tracker</code> sheet is read; formulas are not recalculated, the cached values and dates in the file are used. Save the workbook in Excel before uploading so those values are current.</li>
+          <li>Only the <code>Tracker</code> sheet is read; if a date cell is a formula, its saved value is used, so save the workbook in Excel before uploading.</li>
           <li>Every other sheet in the workbook is returned untouched; the <code>Gantt chart</code> sheet is replaced each time you generate a new one.</li>
-          <li>The chart is a picture of the dates at the moment you generate it. After changing dates in the Tracker, upload the workbook again.</li>
+          <li>In the downloaded workbook the Gantt sheet is live: change a date in the Tracker and it redraws. Re-upload only after adding elements or when dates move outside the chart's time range.</li>
         </ul>
       </div>
     </section>
