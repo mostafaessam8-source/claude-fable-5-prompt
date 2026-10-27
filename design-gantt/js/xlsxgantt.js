@@ -218,8 +218,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet);
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Live chart from the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Live chart from the ""Submission Date"" and ""Approval Date"" columns of the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v2.0   ·   Live chart from the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v2.0   ·   Live chart from the ""Submission Date"" and ""Approval Date"" columns of the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cards = [
       [1, 2, 'PROJECTS  /  ELEMENTS', 'COUNTIF(' + K + ',"P")&"  /  "&COUNTIF(' + K + ',"E")', st.projects + '  /  ' + st.elements, C.black],

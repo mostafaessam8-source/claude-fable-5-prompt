@@ -67,6 +67,7 @@ jobs:
           rm -rf dist/design-gantt/tests dist/design-gantt/package.json dist/design-gantt/README.md
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/design-gantt/index.html
+          sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/design-gantt/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
