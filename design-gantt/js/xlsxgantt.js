@@ -186,8 +186,8 @@
   var TL0 = 9; // first timeline column
   var WIDTHS = [6.5, 50, 11.5, 11.5, 7, 8, 12, 34];
   var HEAD_ROWS = 9;
-  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, PS: 6, PA: 7 };
-  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Submission (eff.)', 'Approval (eff.)'];
+  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5 };
+  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row'];
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
   var UNITS = { day: 270, week: 80, month: 30 };
   var SPARE_ROWS = 60; // empty Tracker rows below the last filled one that the chart already watches
@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
@@ -252,7 +252,7 @@
 
     var legend = [
       ['◆ Submission (actual)', { fill: C.sub }, C.white], ['◇ Submission (forecast)', { fill: C.subSoft }, C.sub],
-      ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app], ['Data date', { fill: C.red }, C.white]
+      ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app], ['Project period (bar)', { fill: C.black }, C.white], ['Data date', { fill: C.red }, C.white]
     ];
     var span = Math.max(2, Math.ceil(22 / unitW)), lr = 4, lc = TL0;
     legend.forEach(function (lg) {
@@ -266,10 +266,10 @@
 
     /* data date + chart start (row 7) */
     rowH(7, 15);
-    cell(7, 1, 'DATA DATE (from ' + lay.sheet + ')  ▶', { font: { sz: 9, b: true, color: C.red }, h: 'right' }); merge(7, 1, 7, 2);
+    cell(7, 1, 'DATA DATE (= TODAY)  ▶', { font: { sz: 9, b: true, color: C.red }, h: 'right' }); merge(7, 1, 7, 2);
     var dt0 = M.serialToDate(cut);
-    cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy' },
-      refs.dd ? TR + absRef(refs.dd) : 'DATE(' + dt0.getUTCFullYear() + ',' + (dt0.getUTCMonth() + 1) + ',' + dt0.getUTCDate() + ')');
+    cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true },
+      'TODAY()'); // the data date is always today; type a date over it to look at another day
     cell(7, 5, 'CHART STARTS (editable)  ▶', { font: { sz: 8.5, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
     // chart start: 4 weeks before the earliest date (or the data date), fixed when generated so the month bands can be merged
     var lo = cut;
@@ -322,7 +322,7 @@
       rowH(rw, 18);
       function T(key) { return g_[key] ? TR + g_[key] + t : null; }
       var NAME = 'TRIM(' + T('name') + '&"")', PROG = 'TRIM(' + (T('programme') || '""') + '&"")', CODE_ = 'TRIM(' + (T('code') || '""') + '&"")', LVL = T('lvl') ? 'UPPER(TRIM(' + T('lvl') + '&""))' : '""';
-      var Kc = '$' + hl(H.KIND) + rw, PIDc = '$' + hl(H.PID) + rw, OPS = '$' + hl(H.OPS) + rw, OPA = '$' + hl(H.OPA) + rw, PSc = '$' + hl(H.PS) + rw, PAc = '$' + hl(H.PA) + rw;
+      var Kc = '$' + hl(H.KIND) + rw, PIDc = '$' + hl(H.PID) + rw, OPS = '$' + hl(H.OPS) + rw, OPA = '$' + hl(H.OPA) + rw;
       var ISP = '$' + hl(H.ISP) + rw, BARE = '$' + hl(H.BARE) + rw, PIDp = '$' + hl(H.PID) + up;
       var hs = { font: { sz: 8, color: C.mute }, h: 'center', border: { bottom: thin(C.grid) } };
       function hput(k, f, fmt) { cell(rw, hc(k), '', Object.assign({}, hs, fmt ? { fmt: fmt } : {}), f); }
@@ -333,10 +333,13 @@
       // project / element / nothing. A project row without a code straight under a coded project is one of its lines (e.g. the 0583 packages).
       hput(H.KIND, 'IF(' + BARE + ',"",IF(' + NAME + '="","",IF(' + ISP + ',IF(' + PIDp + '="","P",IF(AND(' + CODE_ + '="",INDEX(' + codeCol + ',' + PIDp + ')<>"",' + PROG + '=TRIM(INDEX(' + progCol + ',' + PIDp + ')&"")),"E","P")),IF(' + PIDp + '<>"","E",""))))');
       hput(H.PID, 'IF(' + Kc + '="P",' + t + ',IF(' + BARE + ',"",' + PIDp + '))');
-      // effective dates: an element's own; a project's own, else the span of its elements
-      var span = function (fn, own, col) { return 'IF(' + Kc + '="E",' + own + ',IF(' + Kc + '="P",IF(ISNUMBER(' + own + '),' + own + ',IF(COUNTIFS(' + PIDr + ',' + PIDc + ',' + K + ',"E",' + colRange(col) + ',">0")=0,"",_xlfn.' + fn + '(' + colRange(col) + ',' + PIDr + ',' + PIDc + ',' + K + ',"E"))),""))'; };
-      hput(H.PS, span('MINIFS', OPS, hl(H.OPS)), dFmt);
-      hput(H.PA, span('MAXIFS', OPA, hl(H.OPA)), dFmt);
+      // dates: an element shows its own; a level-1 project shows MIN of its elements' submission dates and MAX of their approval dates
+      // (the rows BELOW it — so typed overrides in C / D of the elements flow up, with no circular reference). No elements: its own dates.
+      function below(col) { return '$' + col + '$' + (rw + 1) + ':$' + col + '$' + lastData; }
+      function rollup(fn, own, cCol) {
+        var p = rw < lastData ? 'IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below(cCol) + ',">0")>0,_xlfn.' + fn + '(' + below(cCol) + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),' + own + ')' : own;
+        return 'IF(' + Kc + '="E",' + own + ',IF(' + Kc + '="P",' + p + ',""))';
+      }
       for (c = 1; c <= 8; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 || c === 8 ? 'left' : 'center' }));
       var Cc = '$C' + rw, Dc = '$D' + rw;
       var cnt0 = 'COUNT(' + Cc + ',' + Dc + ')';
@@ -344,8 +347,8 @@
         'IF(' + Kc + '="P",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P"),IF(' + Kc + '="E",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P")&"."&COUNTIFS(' + hl(H.PID) + '$' + R0 + ':' + hl(H.PID) + rw + ',' + PIDc + ',' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"E"),""))');
       cell(rw, 2, '', Object.assign({}, base, { h: 'left', indent: 1, shrink: true }),
         'IF(' + Kc + '="P",IF(' + CODE_ + '="","",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
-      cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), 'IF(' + PSc + '="","",' + PSc + ')');
-      cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), 'IF(' + PAc + '="","",' + PAc + ')');
+      cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MINIFS', OPS, 'C'));
+      cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MAXIFS', OPA, 'D'));
       cell(rw, 5, '', Object.assign({}, base, { h: 'center', fmt: '0' }), 'IF(' + cnt0 + '=2,' + Dc + '-' + Cc + ',"")');
       cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.sar ? 'IF(' + Kc + '="","",UPPER(TRIM(' + TR + g_.sar + t + '&"")))' : '""');
       cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
@@ -356,7 +359,7 @@
         var col = numToCol(TL0 + uu);
         var inU = function (X_) { return 'AND(ISNUMBER(' + X_ + '),' + X_ + '>=' + col + '$9,' + X_ + '<=' + UE(col) + ')'; };
         cell(rw, TL0 + uu, '', { border: { left: thin(C.grid), bottom: thin(C.line) }, h: 'center', font: { sz: 11, b: true, color: C.text }, v: 'center' },
-          'IF(' + inU(Dc) + ',IF(' + Dc + '<=' + DD + ',"●","○"),IF(' + inU(Cc) + ',IF(' + Cc + '<=' + DD + ',"◆","◇"),""))');
+          'IF(' + Kc + '="P","",IF(' + inU(Dc) + ',IF(' + Dc + '<=' + DD + ',"●","○"),IF(' + inU(Cc) + ',IF(' + Cc + '<=' + DD + ',"◆","◇"),"")))');
       }
     }
 
@@ -368,6 +371,10 @@
       blk.rules.push('<cfRule type="' + (type || 'expression') + '" dxfId="' + dxf + '" priority="' + (pri++) + '"' + (op ? ' operator="' + op + '"' : '') + '><formula>' + esc(formula) + '</formula></cfRule>');
     }
     var TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = firstTl + R0, kc = '$' + hl(H.KIND) + R0;
+    // level-1 project: one BAR for its whole period (MIN submission -> MAX approval); solid up to the data date, hatched after it
+    var lo_ = 'MIN($C' + R0 + ',$D' + R0 + ')', hi_ = 'MAX($C' + R0 + ',$D' + R0 + ')', T0c = firstTl;
+    cf(TLr, 'AND(' + kc + '="P",COUNT($C' + R0 + ',$D' + R0 + ')>0,' + lo_ + '<=' + DD + ',' + lo_ + '<=' + UE(T0c) + ',MIN(' + hi_ + ',' + DD + ')>=' + T0c + '$9)', sb.dxf({ fill: C.black }));
+    cf(TLr, 'AND(' + kc + '="P",COUNT($C' + R0 + ',$D' + R0 + ')>0,' + hi_ + '>' + DD + ',MAX(' + lo_ + ',' + DD + '+1)<=' + UE(T0c) + ',' + hi_ + '>=' + T0c + '$9)', sb.dxf({ fill: { pattern: 'lightUp', fg: C.black, bg: 'C9CED1' } }));
     cf(TLr, 'OR(' + cc0 + '="◆",' + cc0 + '="◇")', sb.dxf({ font: { b: true, color: C.sub } }));
     cf(TLr, 'OR(' + cc0 + '="●",' + cc0 + '="○")', sb.dxf({ font: { b: true, color: C.app } }));
     var ddTest = 'AND(' + DD + '>=' + firstTl + '$9,' + DD + '<=' + UE(firstTl) + ')';
@@ -393,7 +400,7 @@
     [
       'HOW THIS SHEET WORKS',
       'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). Columns C and D (Submission / Approval Date) are open for typing: a date typed there overrides the link to the Tracker for that row (to restore the link, copy the cell from a neighbouring row; the other columns are protected without a password). A date typed in ANY of those Tracker rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
-      'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A project uses the dates typed on its own row, otherwise the span of its elements. The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
+      'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A level-1 project is a BAR for its whole period: Submission = MIN of its elements\u2019 submission dates, Approval = MAX of their approval dates (follows dates typed in C / D of its elements). The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
       'The time axis starts at the yellow "Chart starts" cell (fixed when generated: 4 weeks before the earliest date or the data date; the merged month bands do not move if you change it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
     ].forEach(function (txt, k) {
       cell(r, 1, txt, k === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
@@ -417,7 +424,7 @@
       });
       parts.push('</row>'); xml.push(parts.join(''));
     });
-    var lastHelper = hc(H.PA), cols = ['<cols>'];
+    var lastHelper = hc(H.PID), cols = ['<cols>'];
     WIDTHS.forEach(function (w, k) { cols.push('<col min="' + (k + 1) + '" max="' + (k + 1) + '" width="' + w + '" customWidth="1"/>'); });
     cols.push('<col min="' + TL0 + '" max="' + lastCol + '" width="' + unitW + '" customWidth="1"/>');
     cols.push('<col min="' + (lastCol + 1) + '" max="' + (lastCol + 1) + '" width="2.5" customWidth="1" collapsed="1"/>');

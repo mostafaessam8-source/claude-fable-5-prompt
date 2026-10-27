@@ -151,6 +151,17 @@
     return out;
   }
 
+  /* A level-1 project is one BAR for its whole period: solid up to the data date (actual), hatched after it (forecast). */
+  function segsOf(ps, pa, cut) {
+    var a = isNum(ps) ? ps : pa, b = isNum(pa) ? pa : ps;
+    if (!isNum(a)) return [];
+    if (a > b) { var t = a; a = b; b = t; }
+    var out = [];
+    if (a <= cut) out.push({ t: 'actual', s: a, e: Math.min(b, cut) });
+    if (b > cut) out.push({ t: 'forecast', s: Math.max(a, cut + 1), e: b });
+    return out;
+  }
+
   /* ---------- the reader ---------- */
   async function readWorkbook(zip, opts) {
     opts = opts || {};
@@ -200,10 +211,11 @@
     model.meta.cut = cut;
     model.projects.forEach(function (p) {
       p.elements.forEach(function (e) { e.status = statusOf(e.ps, e.pa, cut); });
-      // a project shows its own dates when they are entered on its row, otherwise the span of its elements
+      // level 1 (the project): Submission = MIN of its elements' submission dates, Approval = MAX of their approval dates;
+      // a project without dated elements keeps the dates typed on its own row
       var ps = p.elements.map(function (e) { return e.ps; }).filter(isNum), pa = p.elements.map(function (e) { return e.pa; }).filter(isNum);
-      p.eps = isNum(p.ps) ? p.ps : (ps.length ? Math.min.apply(null, ps) : null);
-      p.epa = isNum(p.pa) ? p.pa : (pa.length ? Math.max.apply(null, pa) : null);
+      p.eps = ps.length ? Math.min.apply(null, ps) : (isNum(p.ps) ? p.ps : null);
+      p.epa = pa.length ? Math.max.apply(null, pa) : (isNum(p.pa) ? p.pa : null);
       p.status = statusOf(p.eps, p.epa, cut);
     });
     model.stats = computeStats(model);
@@ -247,13 +259,13 @@
       pi++;
       // when filtering, the project bar covers just the lines shown
       var ps = p.eps, pa = p.epa;
-      if (els.length !== p.elements.length && !isNum(p.ps)) {
+      if (els.length !== p.elements.length) {
         var a = els.map(function (e) { return e.ps; }).filter(isNum), b = els.map(function (e) { return e.pa; }).filter(isNum);
         ps = a.length ? Math.min.apply(null, a) : null; pa = b.length ? Math.max.apply(null, b) : null;
       }
-      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: milestones(ps, pa, p.sar, cut), notes: p.notes, trow: p.row, kids: els.length });
+      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
       els.forEach(function (e, ei) {
-        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), notes: e.notes, trow: e.row });
+        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), segs: [], notes: e.notes, trow: e.row });
       });
     });
     return items;
@@ -262,7 +274,7 @@
   /* Date range of the chart: every bar date and the data date. */
   function chartRange(items, cut) {
     var lo = cut, hi = cut;
-    items.forEach(function (it) { it.ms.forEach(function (g) { lo = Math.min(lo, g.d); hi = Math.max(hi, g.d); }); });
+    items.forEach(function (it) { it.ms.forEach(function (g) { lo = Math.min(lo, g.d); hi = Math.max(hi, g.d); }); it.segs.forEach(function (g) { lo = Math.min(lo, g.s); hi = Math.max(hi, g.e); }); });
     return [lo, hi];
   }
 
