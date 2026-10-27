@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
@@ -271,11 +271,19 @@
     cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy' },
       refs.dd ? TR + absRef(refs.dd) : 'DATE(' + dt0.getUTCFullYear() + ',' + (dt0.getUTCMonth() + 1) + ',' + dt0.getUTCDate() + ')');
     cell(7, 5, 'CHART STARTS (editable)  ▶', { font: { sz: 8.5, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
-    var mn = 'MIN(' + PSr + ',' + PAr + ',' + DD + ')-14';
-    var startF = scale === 'week' ? mn + '-WEEKDAY(' + mn + ',1)+1' : scale === 'month' ? 'DATE(YEAR(' + mn + '),MONTH(' + mn + '),1)' : mn;
-    cell(7, 7, cut - 14, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } }, startF);
-
-    cell(7, 8, 'Edit dates here in columns C / D, or in the ' + lay.sheet + ' sheet — the chart follows either', { font: { sz: 8.5, b: true, i: true, color: C.red }, h: 'left', indent: 1, shrink: true });
+    // chart start: 4 weeks before the earliest date (or the data date), fixed when generated so the month bands can be merged
+    var lo = cut;
+    model.projects.forEach(function (p) { [p.eps, p.epa, p.ps, p.pa].concat(p.elements.reduce(function (acc, e) { return acc.concat([e.ps, e.pa]); }, [])).forEach(function (d) { if (isNum(d) && d < lo) lo = d; }); });
+    var startD = lo - 28, wd = M.serialToDate(startD).getUTCDay();
+    if (scale === 'week') startD -= wd; // Sunday
+    if (scale === 'month') { var sd = M.serialToDate(startD); startD = M.dateToSerial(new Date(Date.UTC(sd.getUTCFullYear(), sd.getUTCMonth(), 1))); }
+    cell(7, 7, startD, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } });
+    function unitDate(u) {
+      if (scale === 'week') return startD + 7 * u;
+      if (scale === 'day') return startD + u;
+      var s0 = M.serialToDate(startD), t = s0.getUTCFullYear() * 12 + s0.getUTCMonth() + u;
+      return M.dateToSerial(new Date(Date.UTC(Math.floor(t / 12), t % 12, 1)));
+    }
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
@@ -284,16 +292,23 @@
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
       cell(8, cc, h, i === 1 || i === 7 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
     });
+    var groups = [];
     for (var u = 0; u < N_UNITS; u++) {
-      var colL = numToCol(TL0 + u), prevL = numToCol(TL0 + u - 1), first = u === 0;
-      var lab8 = scale === 'month'
-        ? (first ? 'TEXT(' + colL + '9,"yyyy")' : 'IF(MONTH(' + colL + '9)=1,TEXT(' + colL + '9,"yyyy"),"")')
-        : (first ? 'TEXT(' + colL + '9,"mmm yy")' : 'IF(MONTH(' + colL + '9)<>MONTH(' + prevL + '9),TEXT(' + colL + '9,"mmm yy"),"")');
-      cell(8, TL0 + u, '', Object.assign({ font: { sz: scale === 'month' ? 9 : 8, b: true, color: C.white }, fill: C.teal, h: 'center', border: { left: thin(C.white) } }, scale === 'month' ? {} : { rot: 90 }), lab8);
-      cell(9, TL0 + u, cut - 14 + (scale === 'week' ? 7 * u : scale === 'day' ? u : 30 * u), { font: { sz: scale === 'day' ? 6 : 7.5, color: C.text }, fill: 'E3EAED', h: 'center', border: { left: thin(C.white) }, shrink: true, fmt: scale === 'month' ? 'mmm' : 'd' },
-        first ? START : scale === 'month' ? 'EDATE(' + prevL + '9,1)' : prevL + '9+' + (scale === 'week' ? 7 : 1));
+      var dd0 = M.serialToDate(unitDate(u)), key = scale === 'month' ? dd0.getUTCFullYear() : dd0.getUTCFullYear() * 12 + dd0.getUTCMonth();
+      var g = groups[groups.length - 1];
+      if (g && g.key === key) g.to = u; else groups.push({ key: key, from: u, to: u });
+      var colL = numToCol(TL0 + u), prevL = numToCol(TL0 + u - 1);
+      cell(9, TL0 + u, unitDate(u), { font: { sz: scale === 'day' ? 6 : 7.5, color: C.text }, fill: 'E3EAED', h: 'center', border: { left: thin(C.white) }, shrink: true, fmt: scale === 'month' ? 'mmm' : 'd' },
+        u === 0 ? START : scale === 'month' ? 'EDATE(' + prevL + '9,1)' : prevL + '9+' + (scale === 'week' ? 7 : 1));
     }
-    rowH(8, scale === 'month' ? 18 : 40); rowH(9, 16);
+    groups.forEach(function (g, gi) {
+      var sp = { font: { sz: 9, b: true, color: C.white }, fill: gi % 2 ? C.tealDark : C.teal, h: 'center', border: { left: thin(C.white) } };
+      for (var uu = g.from; uu <= g.to; uu++) styleOnly(8, TL0 + uu, sp);
+      var d1 = numToCol(TL0 + g.from) + '9';
+      cell(8, TL0 + g.from, '', sp, 'TEXT(' + d1 + ',"' + (scale === 'month' ? 'yyyy' : 'mmm yyyy') + '")');
+      if (g.to > g.from) merge(8, TL0 + g.from, 8, TL0 + g.to);
+    });
+    rowH(8, 18); rowH(9, 16);
     H_LABELS.forEach(function (lbl, i) {
       var sp = { font: { sz: 8, b: true, color: C.white }, fill: C.greyDark, h: 'center', wrap: true, border: { left: thin(C.white) } };
       styleOnly(8, hc(i), sp); styleOnly(9, hc(i), sp); cell(8, hc(i), lbl, sp); merge(8, hc(i), 9, hc(i));
@@ -379,7 +394,7 @@
       'HOW THIS SHEET WORKS',
       'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). Columns C and D (Submission / Approval Date) are open for typing: a date typed there overrides the link to the Tracker for that row (to restore the link, copy the cell from a neighbouring row; the other columns are protected without a password). A date typed in ANY of those Tracker rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
       'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A project uses the dates typed on its own row, otherwise the span of its elements. The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
-      'The time axis starts at the yellow "Chart starts" cell (automatic: 2 weeks before the earliest date or the data date; you may type a date over it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
+      'The time axis starts at the yellow "Chart starts" cell (fixed when generated: 4 weeks before the earliest date or the data date; the merged month bands do not move if you change it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
     ].forEach(function (txt, k) {
       cell(r, 1, txt, k === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
       merge(r, 1, r, 8); rowH(r, k === 0 ? 15 : 38); r++;
