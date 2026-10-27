@@ -133,7 +133,8 @@
       if (sp.h || sp.v || sp.wrap || sp.indent || sp.shrink || sp.rot)
         al = '<alignment' + (sp.h ? ' horizontal="' + sp.h + '"' : '') + ' vertical="' + (sp.v || 'center') + '"' + (sp.wrap ? ' wrapText="1"' : '') +
           (sp.indent ? ' indent="' + sp.indent + '"' : '') + (sp.shrink ? ' shrinkToFit="1"' : '') + (sp.rot ? ' textRotation="' + sp.rot + '"' : '') + '/>';
-      var frag = '<xf numFmtId="' + nf + '" fontId="' + fo + '" fillId="' + fi + '" borderId="' + bo + '" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"' + (al ? ' applyAlignment="1">' + al + '</xf>' : '/>');
+      var prot = sp.unlocked ? '<protection locked="0"/>' : '';
+      var frag = '<xf numFmtId="' + nf + '" fontId="' + fo + '" fillId="' + fi + '" borderId="' + bo + '" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"' + (al ? ' applyAlignment="1"' : '') + (prot ? ' applyProtection="1"' : '') + (al || prot ? '>' + al + prot + '</xf>' : '/>');
       var idx = self.base.xfs + self.added.xfs.length;
       self.added.xfs.push(frag); self.maps.xfs[key] = idx; return idx;
     };
@@ -223,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
@@ -272,7 +273,9 @@
     cell(7, 5, 'CHART STARTS (editable)  ▶', { font: { sz: 8.5, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
     var mn = 'MIN(' + PSr + ',' + PAr + ',' + DD + ')-14';
     var startF = scale === 'week' ? mn + '-WEEKDAY(' + mn + ',1)+1' : scale === 'month' ? 'DATE(YEAR(' + mn + '),MONTH(' + mn + '),1)' : mn;
-    cell(7, 7, cut - 14, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } }, startF);
+    cell(7, 7, cut - 14, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } }, startF);
+
+    cell(7, 8, 'Type dates in the ' + lay.sheet + ' sheet (Submission / Approval Date) — this sheet is formulas only', { font: { sz: 8.5, b: true, i: true, color: C.red }, h: 'left', indent: 1, shrink: true });
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
@@ -285,12 +288,12 @@
       var colL = numToCol(TL0 + u), prevL = numToCol(TL0 + u - 1), first = u === 0;
       var lab8 = scale === 'month'
         ? (first ? 'TEXT(' + colL + '9,"yyyy")' : 'IF(MONTH(' + colL + '9)=1,TEXT(' + colL + '9,"yyyy"),"")')
-        : (first ? 'TEXT(' + colL + '9,"mmm")&CHAR(10)&TEXT(' + colL + '9,"yy")' : 'IF(MONTH(' + colL + '9)<>MONTH(' + prevL + '9),TEXT(' + colL + '9,"mmm")&IF(MONTH(' + colL + '9)=1,CHAR(10)&TEXT(' + colL + '9,"yy"),""),"")');
-      cell(8, TL0 + u, '', { font: { sz: 7, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white) } }, lab8);
+        : (first ? 'TEXT(' + colL + '9,"mmm yy")' : 'IF(MONTH(' + colL + '9)<>MONTH(' + prevL + '9),TEXT(' + colL + '9,"mmm yy"),"")');
+      cell(8, TL0 + u, '', Object.assign({ font: { sz: scale === 'month' ? 9 : 8, b: true, color: C.white }, fill: C.teal, h: 'center', border: { left: thin(C.white) } }, scale === 'month' ? {} : { rot: 90 }), lab8);
       cell(9, TL0 + u, cut - 14 + (scale === 'week' ? 7 * u : scale === 'day' ? u : 30 * u), { font: { sz: scale === 'day' ? 6 : 7.5, color: C.text }, fill: 'E3EAED', h: 'center', border: { left: thin(C.white) }, shrink: true, fmt: scale === 'month' ? 'mmm' : 'd' },
         first ? START : scale === 'month' ? 'EDATE(' + prevL + '9,1)' : prevL + '9+' + (scale === 'week' ? 7 : 1));
     }
-    rowH(8, 28); rowH(9, 16);
+    rowH(8, scale === 'month' ? 18 : 40); rowH(9, 16);
     H_LABELS.forEach(function (lbl, i) {
       var sp = { font: { sz: 8, b: true, color: C.white }, fill: C.greyDark, h: 'center', wrap: true, border: { left: thin(C.white) } };
       styleOnly(8, hc(i), sp); styleOnly(9, hc(i), sp); cell(8, hc(i), lbl, sp); merge(8, hc(i), 9, hc(i));
@@ -373,7 +376,7 @@
     var r = lastData + 2;
     [
       'HOW THIS SHEET WORKS',
-      'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). Type a date in ANY of those rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
+      'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). This sheet is protected (no password) so formulas are not overwritten: type dates in the Tracker, never here (Review ▸ Unprotect Sheet if you must edit). Type a date in ANY of those Tracker rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
       'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A project uses the dates typed on its own row, otherwise the span of its elements. The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
       'The time axis starts at the yellow "Chart starts" cell (automatic: 2 weeks before the earliest date or the data date; you may type a date over it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
     ].forEach(function (txt, k) {
@@ -414,6 +417,7 @@
       '<selection pane="bottomRight" activeCell="C' + (HEAD_ROWS + 1) + '" sqref="C' + (HEAD_ROWS + 1) + '"/></sheetView></sheetViews>' +
       '<sheetFormatPr defaultRowHeight="14.4" outlineLevelCol="1"/>' + cols.join('') +
       '<sheetData>' + xml.join('') + '</sheetData>' +
+      '<sheetProtection sheet="1" objects="1" scenarios="1" formatColumns="0" formatRows="0"/>' +
       '<mergeCells count="' + merges.length + '">' + merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('') + '</mergeCells>' + cfXml +
       '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>' +
       '<pageSetup paperSize="8" orientation="landscape" fitToWidth="1" fitToHeight="0"/>' +
