@@ -9,8 +9,8 @@ Published at `/design-gantt/` by `.github/workflows/pages.yml` (after the change
 - Every figure (name, dates, SAR code, %, health, variance, KPI cards, data date) is a **formula** reading the `Tracker` sheet.
 - Every bar is **conditional formatting** driven by date helper columns (grouped columns right of the chart; click `+`).
   Change a date, a SAR code or the data date in `Tracker` and the chart redraws itself.
-- Per project / element / design stage: a grey baseline line and an actual / forecast line, SAR code letter, data-date line,
-  outline groups, A3 landscape print setup.
+- One bar per project / element from its `Submission Date` to its `Approval Date` (the only two columns used): solid up to the data date
+  (actual), hatched after it (forecast). No baseline, stages or health.
 - Fixed when generated: which projects / elements / stages get a line, and the time range (padded). Re-run the site after
   adding elements or when dates move outside the range. The data-checks block at the bottom is a snapshot.
 

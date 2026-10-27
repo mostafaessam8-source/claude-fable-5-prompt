@@ -3,8 +3,7 @@
   'use strict';
   var M = window.Model, X = window.XlsxGantt;
   var $ = function (id) { return document.getElementById(id); };
-  var HC = { 'Completed': '#2e7d32', 'In Progress': '#1e6fd9', 'At Risk': '#f5a300', 'Delayed': '#c62828', 'Not Started': '#b0bec5' };
-  var CODE = X.CODE;
+  var HC = { 'Actual': '#2e7d32', 'In progress': '#1e6fd9', 'Forecast': '#7e57c2', 'No dates': '#b0bec5' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
   var S = { buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
@@ -51,26 +50,22 @@
   }
 
   function renderKpis() {
-    var st = S.model.stats, m = S.model.meta, tot = 0, k;
-    for (k in st.health) tot += st.health[k];
-    var stack = Object.keys(HC).map(function (k2) { return '<i title="' + k2 + ' ' + st.health[k2] + '" style="width:' + (tot ? st.health[k2] / tot * 100 : 0) + '%;background:' + HC[k2] + '"></i>'; }).join('');
-    var stages = st.byStage.map(function (b) {
-      return '<div><span>' + M.STAGE_NAMES[b.k] + '</span><em><i style="width:' + (b.pct == null ? 0 : b.pct * 100) + '%"></i></em><b>' + pct(b.pct) + '</b></div>';
-    }).join('');
+    var st = S.model.stats, m = S.model.meta, tot = st.elements;
+    var stack = Object.keys(HC).map(function (k) { return '<i title="' + k + ' ' + st.counts[k] + '" style="width:' + (tot ? st.counts[k] / tot * 100 : 0) + '%;background:' + HC[k] + '"></i>'; }).join('');
     $('kpis').innerHTML =
-      kpi('Programme progress', pct(st.programmePct), 'weighted ' + m.weights.map(function (w) { return Math.round(w * 100); }).join(' / ') + '%', '#00778b') +
-      kpi('Projects / elements', st.projects + ' / ' + st.elements, st.openCD + ' open Code C/D · ' + st.approved + ' approved A', '#3d3935') +
-      kpi('Delayed items', st.health['Delayed'], 'of ' + tot + ' design stages', HC['Delayed']) +
-      kpi('At risk (≤ ' + m.window + ' d)', st.health['At Risk'], st.health['Not Started'] + ' not started', HC['At Risk']) +
-      kpi('Latest forecast close', st.latestClose ? M.fmtDate(st.latestClose) : '–', 'data date ' + M.fmtDate(m.cut), '#5e35b1') +
-      '<div class="kpi wide"><div class="l">Status of design stages</div><div class="stack">' + stack + '</div><div class="stage-bars">' + stages + '</div></div>';
+      kpi('Projects / elements', st.projects + ' / ' + st.elements, 'lines in the chart', '#3d3935') +
+      kpi('Actual', st.counts['Actual'], 'approval date reached', HC['Actual']) +
+      kpi('In progress', st.counts['In progress'], 'submitted, approval ahead', HC['In progress']) +
+      kpi('Forecast', st.counts['Forecast'], 'submission still ahead', HC['Forecast']) +
+      kpi('Programme span', st.first ? M.fmtDate(st.first) : '–', st.last ? 'to ' + M.fmtDate(st.last) : 'no dates', '#00778b') +
+      '<div class="kpi wide"><div class="l">Elements by status · data date ' + M.fmtDate(m.cut) + '</div><div class="stack">' + stack + '</div><div class="s" style="margin-top:6px">' +
+      Object.keys(HC).map(function (k) { return '<span style="margin-right:12px"><b style="color:' + HC[k] + '">●</b> ' + k + ' ' + st.counts[k] + '</span>'; }).join('') + '</div></div>';
   }
   function kpi(l, v, s, c) { return '<div class="kpi" style="border-top-color:' + c + '"><div class="l">' + l + '</div><div class="v" style="color:' + c + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
 
   function renderLegend() {
-    var l = [['#9aa9b3', 'Baseline'], ['#00778b', 'Actual (SAR reviewed)'], ['repeating-linear-gradient(135deg,#e69a00 0 4px,#fff3d6 4px 8px)', 'Under SAR review'],
-      ['repeating-linear-gradient(135deg,rgba(0,119,139,.55) 0 3px,#ddf0f4 3px 7px)', 'Forecast'], ['repeating-linear-gradient(45deg,rgba(94,53,177,.55) 0 3px,#e8e1f5 3px 7px)', 'Current plan'],
-      ['#2e7d32', 'Code A'], ['#6aa84f', 'Code B'], ['#e69a00', 'Code C'], ['#c62828', 'Code D / data date']];
+    var l = [['#00778b', 'Actual (up to the data date)'], ['repeating-linear-gradient(135deg,rgba(0,119,139,.55) 0 3px,#ddf0f4 3px 7px)', 'Forecast (after the data date)'],
+      ['#3d3935', 'Project summary'], ['#c62828', 'Data date']];
     $('legend').innerHTML = l.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + x[1] + '</span>'; }).join('');
   }
 
@@ -80,7 +75,7 @@
     var anyStatus = Object.keys(S.status).some(function (k) { return S.status[k]; });
     var q = S.q.trim().toLowerCase();
     if (!e) return !anyStatus && !q;
-    if (anyStatus && !S.status[e.health]) return false;
+    if (anyStatus && !S.status[e.status]) return false;
     if (q && (e.name + ' ' + p.name + ' ' + p.code).toLowerCase().indexOf(q) < 0) return false;
     return true;
   }
@@ -98,38 +93,23 @@
     var months = ax.groups.map(function (g) { var w = (ax.endOf(g.to) + 1 - ax.startOf(g.from)) * ppd; return '<div style="width:' + w + 'px">' + h(g.label) + '</div>'; }).join('');
     var units = '';
     for (i = 0; i < ax.n; i++) units += '<div style="width:' + (ax.endOf(i) + 1 - ax.startOf(i)) * ppd + 'px">' + (S.scale === 'day' || ppd * (ax.endOf(i) - ax.startOf(i) + 1) >= 14 ? ax.subLabel(i) : '') + '</div>';
-    var out = ['<div class="g-head"><div class="g-left"><span>Project / element / stage</span><span>Health</span><span>%</span><span>Var d</span></div>' +
+    var out = ['<div class="g-head"><div class="g-left"><span>Project / element</span><span>Status</span><span>Submit</span><span>Appr.</span></div>' +
       '<div class="g-time" style="width:' + totalW + 'px"><div class="g-months">' + months + '</div><div class="g-units">' + units + '</div></div></div>'];
 
-    // faint month grid lines
-    var gridStops = ax.groups.map(function (g) { return X_(ax.startOf(g.from)); });
-    var grid = gridStops.map(function (px) { return '<i style="position:absolute;top:0;bottom:0;left:' + px + 'px;border-left:1px solid #dfe5e8"></i>'; }).join('');
+    var grid = ax.groups.map(function (g) { return '<i style="position:absolute;top:0;bottom:0;left:' + X_(ax.startOf(g.from)) + 'px;border-left:1px solid #dfe5e8"></i>'; }).join('');
     var shown = 0;
     items.forEach(function (it, ix) {
       if (hidden(it)) return;
       shown++;
-      var cls = it.kind === 'project' ? 'p' : it.kind === 'element' ? 'e' : 's', two = !!it.base, ht = two ? 44 : 32;
-      var bars = '';
-      function bar(c, s, e, top, hh, extra) { return '<div class="g-bar ' + c + '" data-i="' + ix + '" style="left:' + X_(s) + 'px;width:' + Math.max(4, (e - s + 1) * ppd) + 'px;top:' + top + 'px;height:' + hh + 'px;' + (extra || '') + '"></div>'; }
-      if (two) bars += bar('b-base', it.base[0], it.base[1], 8, 8);
-      var aTop = two ? 22 : 9, aH = two ? 14 : 14;
-      var order = { forecast: 1, fmile: 2, plan: 2, review: 3, actual: 4, sum: 5 };
-      it.segs.slice().sort(function (a, b) { return order[a.t] - order[b.t]; }).forEach(function (g) {
-        if (g.t === 'fmile') bars += '<div class="g-bar b-fmile" data-i="' + ix + '" style="left:' + (X_(g.s) + ppd / 2 - 5) + 'px;top:' + (aTop + 2) + 'px;height:10px"></div>';
-        else bars += bar('b-' + g.t, g.s, g.e, aTop, aH);
+      var cls = it.kind === 'project' ? 'p' : 'e', bars = '';
+      it.segs.forEach(function (g) {
+        bars += '<div class="g-bar ' + (it.kind === 'project' ? 'b-p' : '') + ' b-' + g.t + '" data-i="' + ix + '" style="left:' + X_(g.s) + 'px;width:' + Math.max(5, (g.e - g.s + 1) * ppd) + 'px;top:' + (it.kind === 'project' ? 8 : 9) + 'px;height:' + (it.kind === 'project' ? 14 : 12) + 'px"></div>';
       });
-      if (it.codeAt) bars += '<div class="g-code" data-i="' + ix + '" style="left:' + (X_(it.codeAt.d) + ppd / 2 - 8) + 'px;top:' + (aTop - 1) + 'px;background:' + (CODE[it.codeAt.code] || '#999') + '">' + h(it.codeAt.code) + '</div>';
-      var healthPill = it.health && it.health !== '-' ? '<span class="pill" style="background:' + HC[it.health] + (it.health === 'At Risk' ? ';color:#3d2a00' : '') + '">' + it.health + '</span>' : '<span></span>';
-      var v = it.varDays == null ? '' : '<span class="' + (it.varDays > 0 ? 'var-late' : 'var-ok') + '">' + (it.varDays > 0 ? '+' : '') + it.varDays + '</span>';
-      var sub = [];
-      if (it.stage && it.kind !== 'stage') sub.push(it.stage);
-      if (it.base) sub.push('BL ' + M.fmtDate(it.base[0]) + ' → ' + M.fmtDate(it.base[1]));
-      var aS = null, aE = null; it.segs.forEach(function (g) { aS = aS == null ? g.s : Math.min(aS, g.s); aE = aE == null ? g.e : Math.max(aE, g.e); });
-      if (aS != null) sub.push('Act/Fc ' + M.fmtDate(aS) + ' → ' + M.fmtDate(aE)); else sub.push('no dates yet');
+      var pill = '<span class="pill" style="background:' + HC[it.status] + '">' + it.status + '</span>';
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
-      out.push('<div class="g-row ' + cls + '" style="height:' + ht + 'px" data-i="' + ix + '"><div class="g-left" style="padding-left:' + it.lvl * 14 + 'px">' +
-        '<div class="g-name"><div class="t">' + tog + '<span title="' + h(it.label) + '">' + h(it.label) + '</span>' + (it.code ? '<span class="pill" style="background:' + (CODE[it.code] || '#999') + '">' + h(it.code) + '</span>' : '') + '</div><div class="d">' + h(sub.join(' · ')) + '</div></div>' +
-        healthPill + '<div class="g-cell">' + (it.pct == null ? '' : pct(it.pct)) + '</div><div class="g-cell">' + v + '</div></div>' +
+      out.push('<div class="g-row ' + cls + '" style="height:30px" data-i="' + ix + '"><div class="g-left" style="padding-left:' + it.lvl * 14 + 'px">' +
+        '<div class="g-name"><div class="t">' + tog + '<span title="' + h(it.label) + '">' + h(it.label) + '</span></div></div>' + pill +
+        '<div class="g-cell">' + (M.isNum(it.ps) ? M.fmtDate(it.ps).slice(0, 6) : '') + '</div><div class="g-cell">' + (M.isNum(it.pa) ? M.fmtDate(it.pa).slice(0, 6) : '') + '</div></div>' +
         '<div class="g-plot" style="width:' + totalW + 'px"><div class="g-grid"></div>' + grid + bars + '</div></div>');
     });
     box.innerHTML = out.join('');
@@ -147,33 +127,26 @@
     $('checkCount').textContent = n ? n : '';
     Array.prototype.forEach.call(document.querySelectorAll('#cFilter .chip'), function (b) { b.classList.toggle('on', !!S.sev[b.dataset.sev]); });
     var rows = all.filter(function (k) { return S.sev[k.sev]; });
-    $('checksTable').innerHTML = '<thead><tr><th></th><th>Project</th><th>Element</th><th>Stage</th><th>Row</th><th>Finding</th></tr></thead><tbody>' +
+    $('checksTable').innerHTML = '<thead><tr><th></th><th>Project</th><th>Element</th><th>Row</th><th>Finding</th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (k) {
-        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + h(k.stage) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
-      }).join('') : '<tr><td colspan="6" style="padding:18px;color:#78909c">Nothing to report for this selection.</td></tr>') + '</tbody>';
+        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" style="padding:18px;color:#78909c">Nothing to report for this selection.</td></tr>') + '</tbody>';
   }
 
   function renderRules() {
-    var m = S.model.meta, e = m.earned;
+    var m = S.model.meta;
     $('rules').innerHTML =
-      '<li><b>% earned</b> per design stage: submitted ' + pct(e.sub) + ', Code D ' + pct(e.D) + ', C ' + pct(e.C) + ', B ' + pct(e.B) + ', A ' + pct(e.A) + '. An element’s % is the stage-weighted average of the stages that have dates (' + M.STAGE_NAMES.map(function (n, i) { return n + ' ' + pct(m.weights[i]); }).join(', ') + '); a project’s % is the average of its elements.</li>' +
-      '<li><b>Delayed</b>: not yet submitted and the baseline submission date has passed, or still open (no code, C or D) and the baseline approval date has passed.</li>' +
-      '<li><b>At Risk</b>: the same dates fall within the next ' + m.window + ' days of the data date. <b>Completed</b>: Code A. <b>Not Started</b>: nothing submitted or reviewed.</li>' +
-      '<li><b>Var (d)</b>: Code A/B → actual review minus baseline approval; otherwise forecast approval (or the data date if there is none) minus baseline approval. Positive = late.</li>' +
+      '<li>Only the <b>Submission Date</b> and <b>Approval Date</b> columns are used. Each is either an actual or a forecast date: up to the data date it is actual, after it it is forecast.</li>' +
+      '<li><b>Actual</b>: approval date reached. <b>In progress</b>: submission date reached, approval still ahead. <b>Forecast</b>: submission date still ahead.</li>' +
+      '<li>A project shows the dates typed on its own row; if there are none, the span from its first submission to its last approval.</li>' +
       '<li>Data date used: <b>' + M.fmtDate(m.cut) + '</b> (workbook says ' + M.fmtDate(m.workbookDataDate) + '). Change it above to see the position on another date.</li>';
   }
 
   /* ---------- tooltip ---------- */
   function tipText(it) {
-    var L = [], d = it.dates, f = M.fmtDate;
-    L.push('<b>' + h(it.label) + '</b>' + (it.stage ? ' · ' + h(it.stage) : ''));
-    L.push((it.health && it.health !== '-' ? it.health : 'No dates') + (it.pct != null ? ' · ' + pct(it.pct) : '') + (it.code ? ' · Code ' + it.code : '') + (it.varDays != null ? ' · ' + (it.varDays > 0 ? '+' : '') + it.varDays + ' d vs baseline' : ''));
-    if (it.base) L.push('Baseline: ' + f(it.base[0]) + ' → ' + f(it.base[1]));
-    if (d) {
-      if (d.as != null || d.ar != null) L.push('Actual: submitted ' + (f(d.as) || '–') + ' · SAR review ' + (f(d.ar) || 'pending'));
-      if (d.fs != null || d.fa != null) L.push('Forecast: re-submit ' + (f(d.fs) || '–') + ' · approval ' + (f(d.fa) || '–'));
-      if (d.ps != null || d.pa != null) L.push('Current plan: submit ' + (f(d.ps) || '–') + ' · approval ' + (f(d.pa) || '–'));
-    }
+    var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', it.status + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
+    L.push('Submission date: ' + (f(it.ps) || '–') + (M.isNum(it.ps) ? (it.ps <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
+    L.push('Approval date: ' + (f(it.pa) || '–') + (M.isNum(it.pa) ? (it.pa <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     if (it.notes) L.push('“' + it.notes.replace(/\s+/g, ' ').slice(0, 160) + '”');
     return L.join('\n');
   }
