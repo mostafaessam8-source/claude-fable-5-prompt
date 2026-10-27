@@ -172,3 +172,5 @@ table.checks { border-collapse: collapse; width: 100%; font-size: 13px; }
   .g-head, .g-row .g-left, .g-head .g-left { position: static; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+.ver { background: rgba(255,255,255,.2); border-radius: 999px; padding: 1px 8px; font-weight: 600; margin-inline-start: 6px; }
