@@ -120,6 +120,8 @@
     }
     if (!g.name) throw new Error('Could not find the "Project / Element" column.');
     if (!g.pa) throw new Error('Could not find the "Approval Date" column next to "Submission Date".');
+    // the SAR review code that belongs to these two dates: the nearest "SAR code" column to the left of Submission Date
+    for (c = g.ps - 1; c >= 1; c--) if (/^sar code/.test(norm(cells[numToCol(c) + hdrRow]))) { g.sar = c; break; }
     return { hdrRow: hdrRow, g: g };
   }
 
@@ -141,14 +143,11 @@
     if (isNum(ps) && ps <= cut) return 'In progress';
     return 'Forecast';
   }
-  /* The bar: solid up to the data date (actual), hatched after it (forecast). */
-  function segsOf(ps, pa, cut) {
-    var a = isNum(ps) ? ps : pa, b = isNum(pa) ? pa : ps;
-    if (!isNum(a)) return [];
-    if (a > b) { var t = a; a = b; b = t; }
+  /* Submission and Approval are MILESTONES (points), not activities. Each is actual up to the data date, forecast after it. */
+  function milestones(ps, pa, code, cut) {
     var out = [];
-    if (a <= cut) out.push({ t: 'actual', s: a, e: Math.min(b, cut) });
-    if (b > cut) out.push({ t: 'forecast', s: Math.max(a, cut + 1), e: b });
+    if (isNum(ps)) out.push({ t: 'sub', d: ps, actual: ps <= cut });
+    if (isNum(pa)) out.push({ t: 'app', d: pa, actual: pa <= cut, code: code || '' });
     return out;
   }
 
@@ -175,12 +174,12 @@
     var projects = [], cur = null, chain = false;
     for (var r = layout.hdrRow + 1; r <= lastRow; r++) {
       var lvl = txt(G.lvl, r).toUpperCase(), prog = txt(G.programme, r), name = txt(G.name, r), pcode = txt(G.code, r);
-      var line = { row: r, name: name, notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
+      var line = { row: r, name: name, notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: txt(G.sar, r).toUpperCase(), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
       if (lvl === 'P' || (lvl !== 'E' && !!prog)) {
         if (!name && !pcode) { cur = null; chain = false; continue; } // a bare "NSR" row is only a separator
         // a "project" row with no project code straight under another project is really one of its lines (e.g. the 0583 packages)
         if (chain && cur && !pcode && prog === cur.programme) { cur.elements.push(line); continue; }
-        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, elements: [] };
+        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, sar: line.code, elements: [] };
         projects.push(cur); chain = !!pcode;
         continue;
       }
@@ -210,9 +209,9 @@
   }
 
   function computeStats(model) {
-    var st = { projects: model.projects.length, elements: 0, counts: { 'Actual': 0, 'In progress': 0, 'Forecast': 0, 'No dates': 0 }, first: null, last: null };
+    var st = { projects: model.projects.length, elements: 0, codes: { A: 0, B: 0, C: 0, D: 0, none: 0 }, counts: { 'Actual': 0, 'In progress': 0, 'Forecast': 0, 'No dates': 0 }, first: null, last: null };
     model.projects.forEach(function (p) {
-      p.elements.forEach(function (e) { st.elements++; st.counts[e.status]++; });
+      p.elements.forEach(function (e) { st.elements++; st.counts[e.status]++; st.codes[/^[ABCD]$/.test(e.code) ? e.code : 'none']++; });
       [p.eps, p.epa].forEach(function (d) { if (isNum(d)) { st.first = st.first == null ? d : Math.min(st.first, d); st.last = st.last == null ? d : Math.max(st.last, d); } });
     });
     return st;
@@ -225,6 +224,7 @@
       [{ row: p.row, name: p.name, ps: p.ps, pa: p.pa }].concat(p.elements).forEach(function (e) {
         if (isNum(e.ps) && isNum(e.pa) && e.pa < e.ps) add('error', p, e, 'Approval Date (' + fmtDate(e.pa) + ') is before Submission Date (' + fmtDate(e.ps) + ').');
         else if (isNum(e.ps) !== isNum(e.pa) && (isNum(e.ps) || isNum(e.pa))) add('warn', p, e, 'Only the ' + (isNum(e.ps) ? 'Submission' : 'Approval') + ' Date is filled — shown as a single-day marker.');
+        if (e.code && !/^[ABCD]$/.test(e.code)) add('warn', p, e, 'SAR code "' + e.code + '" is not A, B, C or D.');
         if (e.strPs) add('info', p, e, 'Submission Date contains text, not a date.');
       });
       p.elements.forEach(function (e) { if (!isNum(e.ps) && !isNum(e.pa)) add('info', p, e, 'No Submission / Approval dates entered yet.'); });
@@ -249,9 +249,9 @@
         var a = els.map(function (e) { return e.ps; }).filter(isNum), b = els.map(function (e) { return e.pa; }).filter(isNum);
         ps = a.length ? Math.min.apply(null, a) : null; pa = b.length ? Math.max.apply(null, b) : null;
       }
-      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, status: statusOf(ps, pa, cut), segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
+      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: milestones(ps, pa, p.sar, cut), notes: p.notes, trow: p.row, kids: els.length });
       els.forEach(function (e, ei) {
-        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, status: e.status, segs: segsOf(e.ps, e.pa, cut), notes: e.notes, trow: e.row });
+        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), notes: e.notes, trow: e.row });
       });
     });
     return items;
@@ -260,13 +260,13 @@
   /* Date range of the chart: every bar date and the data date. */
   function chartRange(items, cut) {
     var lo = cut, hi = cut;
-    items.forEach(function (it) { it.segs.forEach(function (g) { lo = Math.min(lo, g.s); hi = Math.max(hi, g.e); }); });
+    items.forEach(function (it) { it.ms.forEach(function (g) { lo = Math.min(lo, g.d); hi = Math.max(hi, g.d); }); });
     return [lo, hi];
   }
 
   return {
     EPOCH: EPOCH, isNum: isNum, numToCol: numToCol, colToNum: colToNum, fmtDate: fmtDate, serialToDate: serialToDate, dateToSerial: dateToSerial, norm: norm,
-    readWorkbook: readWorkbook, recalc: recalc, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf,
+    readWorkbook: readWorkbook, recalc: recalc, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, milestones: milestones,
     parseSheet: parseSheet, parseSharedStrings: parseSharedStrings, locateSheets: locateSheets, readText: readText, unesc: unesc
   };
 });

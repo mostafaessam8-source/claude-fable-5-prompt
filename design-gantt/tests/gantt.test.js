@@ -45,8 +45,8 @@ async function check(zip, label) {
   assert.deepStrictEqual(els.map(e => e.status), ['Actual', 'In progress', 'Forecast', 'Forecast']);
   assert.strictEqual(m.projects[0].eps, D(2026, 8, 1)); assert.strictEqual(m.projects[0].epa, D(2026, 10, 20));
   assert(m.checks.some(c => c.sev === 'error' && c.element === 'Element 4'), 'approval before submission is flagged');
-  const seg = M.buildItems(m).find(i => i.label === 'Element 2').segs;
-  assert.deepStrictEqual(seg.map(g => g.t), ['actual', 'forecast']); // split at the data date
+  const ms = M.buildItems(m).find(i => i.label === 'Element 2').ms; // milestones, not bars
+  assert.deepStrictEqual(ms.map(g => [g.t, g.actual]), [['sub', true], ['app', false]]);
   M.recalc(m, D(2026, 10, 10));
   assert.deepStrictEqual(m.projects[0].elements.map(e => e.status), ['Actual', 'Actual', 'In progress', 'Actual']);
 
