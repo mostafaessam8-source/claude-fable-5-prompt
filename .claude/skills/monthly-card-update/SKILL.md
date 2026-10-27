@@ -26,7 +26,12 @@ Detailed S-curve rules: see the `card-updates` skill (section "S-curve & forecas
    shares**: the report's S-curve forecast (Cum Forecast % at each month end) gives each month's share, scaled so the card
    reaches exactly 100% (no lump in the last month); when the report's forecast is already complete by the month, the
    tail of a standard S-curve over the execution period is used (F(t)=t²(3−2t), share of month k = F(k/N) − F((k−1)/N)).
-   Existing values in those months are replaced; a month with no share is left empty.
+   Existing values in those months are replaced; a month with no share is left empty. Typed values left in month
+   columns that are closed (no month date, beyond the execution period) are cleared and reported (they pushed 0647 to 102.6%).
+   A card whose month column is not open (e.g. 0626, "Month 16" label missing in R75) cannot be closed at 100% — report it.
+   Check: run step 3 again on the result — no "rest" lines and the same month values = every card ends at 100%
+   (LibreOffice does not recalculate these cards reliably; the site's XLCalc matches Excel).
+   A date stated by the PM (e.g. the last delivery of Procurement) is set after the run and listed in the report.
 2. **Section 8** (Project Timeline, Execution Phase activities): % spread from the report's phases so Σ weight × % / Σ
    weight = the report actual; never lower an activity; forecast finish of unfinished activities = the report's forecast.
 3. **Date rules for every card** (not only the weekly projects), after 1–2:

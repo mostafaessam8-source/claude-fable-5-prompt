@@ -1240,6 +1240,14 @@
                   prevD = dv; nOpen++;
                   if (serialToIso(dv).slice(0, 7) > month) fut.push({ ref: colStr(c) + rest.aRow, ym: serialToIso(dv).slice(0, 7), k: nOpen, ex: num(colStr(c) + rest.aRow), pl: rest.plRow ? num(colStr(c) + rest.plRow) : null });
                 });
+                // typed values left in month columns that are closed now (no month date: beyond the execution / FCC period) would
+                // push the card above 100% — cleared and reported
+                g.cols.forEach(function (c0, k) {
+                  var c = rest.colAt(k), ref = colStr(c) + rest.aRow, dv = val2(colStr(c) + rest.dRow), ov = num(ref);
+                  if ((typeof dv === "number" && dv > 0) || ov == null || ov === 0 || blocked(ref)) return;
+                  edits[ref] = 0; writes.push([ref, "pct", ""]);
+                  say(rest.what + " · closed month", ref, pct(ov), "", "applied", "value in a month outside the execution period (no month date) — cleared so the card totals 100%");
+                });
                 fut = fut.filter(function (x) { var why = blocked(x.ref); if (why) say(rest.what + " · rest", x.ref, "", "", "skipped", why); return !why; });
                 if (!fut.length) { say(rest.what + " · rest", "", "", pct(left), "warning", "no open month after " + mLab + " on the S-curve — " + pct(left) + " left to reach 100% (the execution period ends in " + mLab + "; extend the forecast finish)"); return; }
                 /* S-curve shape (user rule): the month shares follow the report's S-curve forecast (Cum Forecast % at each month end),
