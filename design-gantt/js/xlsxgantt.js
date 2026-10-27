@@ -218,8 +218,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet);
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.0   ·   Submission and Approval are milestones read live from the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.0   ·   Submission and Approval are milestones read live from the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.1   ·   Submission and Approval are milestones read live from the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.1   ·   Submission and Approval are milestones read live from the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var codeTxt = 'A ' + st.codes.A + '  ·  B ' + st.codes.B + '  ·  C ' + st.codes.C + '  ·  D ' + st.codes.D + '  ·  none ' + st.codes.none;
     var CODE_R = colRange('F');
@@ -247,7 +247,6 @@
     var legend = [
       ['◆ Submission (actual)', { fill: C.sub }, C.white], ['◇ Submission (forecast)', { fill: C.subSoft }, C.sub],
       ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app],
-      ['A', { fill: CODE.A }, C.white], ['B', { fill: CODE.B }, C.white], ['C', { fill: CODE.C }, C.white], ['D', { fill: CODE.D }, C.white],
       ['Data date', { fill: C.red }, C.white]
     ];
     var wide = Math.max(2, Math.ceil(22 / unitW)), narrow = Math.max(1, Math.ceil(5 / unitW)), lr = 4, lc = TL0;
@@ -321,7 +320,7 @@
       cell(rw, 7, it.status, tspec({ h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
         'IF(COUNT(' + PSc + ',' + PAc + ')=0,"No dates",IF(AND(ISNUMBER(' + PAc + '),' + PAc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + PSc + '),' + PSc + '<=' + DD + '),"In progress","Forecast")))');
       cell(rw, 8, clean(it.notes || ''), tspec({ h: 'left', indent: 1, shrink: true, font: { sz: 8, color: proj ? 'D7E6EA' : C.mute } }), g_.notes ? TR + g_.notes + it.trow + '&""' : undefined);
-      // milestones: ◆/◇ submission (actual/forecast), ●/○ approval, the SAR code letter replaces the approval mark
+      // milestones: ◆/◇ submission (actual/forecast), ●/○ approval
       var msSub = it.ms.filter(function (m_) { return m_.t === 'sub'; })[0], msApp = it.ms.filter(function (m_) { return m_.t === 'app'; })[0];
       for (var uu = 0; uu < ax.n; uu++) {
         var col = numToCol(TL0 + uu), v = '';
@@ -329,7 +328,7 @@
         else if (msSub && ax.unitOf(msSub.d) === uu) v = msSub.actual ? '◆' : '◇';
         var inU = function (X_) { return 'AND(ISNUMBER(' + X_ + '),' + X_ + '>=' + col + '$9,' + X_ + '<=' + UE(col) + ')'; };
         cell(rw, TL0 + uu, v, { fill: band, border: { left: thin(ax.isMonthStart(uu) ? C.gridMonth : C.grid), bottom: thin(C.line) }, h: 'center', font: { sz: 11, b: true, color: C.text }, v: 'center' },
-          'IF(' + inU(PAc) + ',IF(LEN($F' + rw + ')=1,$F' + rw + ',IF(' + PAc + '<=' + DD + ',"●","○")),IF(' + inU(PSc) + ',IF(' + PSc + '<=' + DD + ',"◆","◇"),""))');
+          'IF(' + inU(PAc) + ',IF(' + PAc + '<=' + DD + ',"●","○"),IF(' + inU(PSc) + ',IF(' + PSc + '<=' + DD + ',"◆","◇"),""))');
       }
     });
 
@@ -341,7 +340,6 @@
       blk.rules.push('<cfRule type="' + (type || 'expression') + '" dxfId="' + dxf + '" priority="' + (pri++) + '"' + (op ? ' operator="' + op + '"' : '') + '><formula>' + esc(formula) + '</formula></cfRule>');
     }
     var T0 = firstTl, TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = T0 + R0;
-    ['A', 'B', 'C', 'D'].forEach(function (k) { cf(TLr, cc0 + '="' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } })); });
     cf(TLr, 'OR(' + cc0 + '="◆",' + cc0 + '="◇")', sb.dxf({ font: { b: true, color: C.sub } }));
     cf(TLr, 'OR(' + cc0 + '="●",' + cc0 + '="○")', sb.dxf({ font: { b: true, color: C.app } }));
     var ddTest = 'AND(' + DD + '>=' + T0 + '$9,' + DD + '<=' + UE(T0) + ')';
@@ -377,7 +375,7 @@
     [
       'HOW TO USE THIS CHART',
       'LIVE: dates, status and bars read the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet and its data date. Change a date there and this sheet redraws. Helper dates are in the grouped columns right of the chart (click + above them).',
-      'Submission and Approval are milestones, not activities. A milestone on or before the data date is ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). The SAR review code (A/B/C/D) from the Tracker replaces the approval mark and is also shown in the SAR code column. A project uses the dates typed on its own row, otherwise the span of its elements.',
+      'Submission and Approval are milestones, not activities. A milestone on or before the data date is ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). The SAR review code (A/B/C/D) from the Tracker is shown in the SAR code column. A project uses the dates typed on its own row, otherwise the span of its elements.',
       'Fixed when generated: which projects / elements have a line and the time range (padded for date moves). If you add elements or dates move outside the range, re-run the site.'
     ].forEach(function (t, i) {
       cell(r, 1, t, i === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });

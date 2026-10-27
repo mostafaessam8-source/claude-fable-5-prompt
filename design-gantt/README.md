@@ -10,7 +10,7 @@ Published at `/design-gantt/` by `.github/workflows/pages.yml` (after the change
 - Every bar is **conditional formatting** driven by date helper columns (grouped columns right of the chart; click `+`).
   Change a date, a SAR code or the data date in `Tracker` and the chart redraws itself.
 - Submission Date and Approval Date are **milestones** (blue ◆ / orange ●; solid = actual up to the data date, hollow = forecast),
-  with the SAR review code (A/B/C/D) shown at the approval milestone and in its own column. No bars, baseline, stages or health.
+  with the SAR review code (A/B/C/D) in its own column (not on the chart). No bars, baseline, stages or health.
 - Fixed when generated: which projects / elements / stages get a line, and the time range (padded). Re-run the site after
   adding elements or when dates move outside the range. The data-checks block at the bottom is a snapshot.
 

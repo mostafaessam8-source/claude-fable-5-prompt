@@ -67,7 +67,7 @@
 
   function renderLegend() {
     var l = [['<i class="ms sub"></i>', 'Submission (actual)'], ['<i class="ms sub hollow"></i>', 'Submission (forecast)'], ['<i class="ms app"></i>', 'Approval (actual)'], ['<i class="ms app hollow"></i>', 'Approval (forecast)'],
-      ['<i class="cd" style="background:' + CODE.A + '">A</i><i class="cd" style="background:' + CODE.B + '">B</i><i class="cd" style="background:' + CODE.C + '">C</i><i class="cd" style="background:' + CODE.D + '">D</i>', 'SAR review code'], ['<i class="dd"></i>', 'Data date']];
+      ['<i class="dd"></i>', 'Data date']];
     $('legend').innerHTML = l.map(function (x) { return '<span>' + x[0] + x[1] + '</span>'; }).join('');
   }
 
@@ -106,8 +106,7 @@
       var cls = it.kind === 'project' ? 'p' : 'e', bars = '';
       it.ms.forEach(function (g) {
         var x = X_(g.d) + ppd / 2, top = it.kind === 'project' ? 9 : 8;
-        if (g.t === 'app' && /^[ABCD]$/.test(it.code)) bars += '<div class="cd on" data-i="' + ix + '" style="left:' + (x - 9) + 'px;top:' + (top - 1) + 'px;background:' + CODE[it.code] + '">' + it.code + '</div>';
-        else bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
+        bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
       });
       var pill = '<span class="pill" style="background:' + HC[it.status] + '">' + it.status + '</span>';
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
