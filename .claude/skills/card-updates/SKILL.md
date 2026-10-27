@@ -165,7 +165,8 @@ gives one workbook + CSV report. Code: `SARCardForm.scurve` (cardform.js) + `pro
 - **Month cell** (section 7 Actual Progress (%), column of that month from the Month Starting Date row, recalculated with
   XLCalc after the date edits) = report cumulative − sum of the earlier months → the card total equals the report (as the
   team does by hand: 0214 Sep-26 = 97.83% − 82.89% = 14.94%). **Negative → write 0.0001 (never 0) and flag a warning.**
-  Later months are not touched. Month column not open → skipped with the reason (execution period ends earlier, or a
+  Later months: the rest to 100% is spread in an S-curve shape (report forecast, else a standard S-curve tail) — see the
+  `monthly-card-update` skill, rule 1b. Month column not open → skipped with the reason (execution period ends earlier, or a
   "Month N" label missing on the card, e.g. 0626 R75 — never repaired silently).
 - **Sub-projects (PO blocks, row 79 = contract-value-weighted formula)**: the report's contract is matched to a PO block by
   contract value (±1) or PO number (labels "PO1" or "PO1/14308"); the month value goes in that block's Actual Progress

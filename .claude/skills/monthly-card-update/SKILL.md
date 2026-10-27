@@ -21,6 +21,12 @@ Detailed S-curve rules: see the `card-updates` skill (section "S-curve & forecas
 1. **Section 7** (Execution Schedule, row "Actual Progress (%)"): the month's cell = report cumulative actual − the card's
    earlier months, so the total to the month equals the report; earlier months stay as in the card ("والباقي يوزع كما
    بالملف"). PO projects: the PO block of the report's contract. Negative → 0.0001 + warning.
+1b. **The card must end at 100%** (user rule): 100% − the total to the month is spread over the open months after it
+   (execution months only; FCC columns, where the month dates restart, are left out) **in an S-curve shape, never equal
+   shares**: the report's S-curve forecast (Cum Forecast % at each month end) gives each month's share, scaled so the card
+   reaches exactly 100% (no lump in the last month); when the report's forecast is already complete by the month, the
+   tail of a standard S-curve over the execution period is used (F(t)=t²(3−2t), share of month k = F(k/N) − F((k−1)/N)).
+   Existing values in those months are replaced; a month with no share is left empty.
 2. **Section 8** (Project Timeline, Execution Phase activities): % spread from the report's phases so Σ weight × % / Σ
    weight = the report actual; never lower an activity; forecast finish of unfinished activities = the report's forecast.
 3. **Date rules for every card** (not only the weekly projects), after 1–2:

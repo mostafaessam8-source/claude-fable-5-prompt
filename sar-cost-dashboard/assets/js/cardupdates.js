@@ -71,6 +71,7 @@
         ["Engineering", "Procurement", "Mobilization", "Construction"].forEach(function (p) { if (new RegExp("^" + p, "i").test(k) && v != null && phases[p] == null) phases[p] = v; });
       });
       out.projects[code] = { name: r["Project Name"] || "", cum: cum, repDate: repDate, fcst: fc, warn: warn, phases: phases,
+        fpts: pts.filter(function (x) { return x.d && x.f != null; }).map(function (x) { return { d: x.d, f: x.f }; }),
         cv: nOf(r["Revised Contract Value"]) || nOf(r["Contract Value"]), po: r["(Con) PO Number"] != null ? String(r["(Con) PO Number"]) : "", contractor: r.Contractor || "" };
     });
     return out;

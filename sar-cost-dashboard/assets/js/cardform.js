@@ -1123,7 +1123,7 @@
           chain = chain.then(function () {
             return zip.file(sh.path).async("string").then(function (xs) {
               var doc = parse(xs), S = readSheet(book, sh, doc), mdl = model(book, sh, S), g = mdl.prog, cells = S.cells, writes = [];
-              var base = { code: sh.code, name: (P && P.name) || mdl.name, src: P && P.repDate ? "report " + P.repDate : "" }, edits = {};
+              var base = { code: sh.code, name: (P && P.name) || mdl.name, src: P && P.repDate ? "report " + P.repDate : "" }, edits = {}, rest = null;
               function say(what, ref, from, to, status, why) { report.push({ code: base.code, name: base.name, what: what, ref: ref || "", from: from, to: to, status: status, why: why || "", src: base.src }); }
               function text0(x) { return x && typeof x.val === "string" ? x.val.trim() : ""; }
               function num(ref) { var x = cells[ref]; return x && typeof x.val === "number" ? x.val : null; }
@@ -1214,11 +1214,58 @@
                 inc = Math.round(inc * 1e10) / 1e10;
                 var what = "Actual progress " + mLab + (blk ? " · " + blk.name + (blk.no ? " (PO " + blk.no + ")" : "") : "");
                 if (why2) say(what, target, pct(old), pct(inc), "skipped", why2);
-                else { writes.push([target, "pct", String(inc)]); say(what, target, pct(old), pct(inc), flag ? "warning" : "applied", flag || ("total " + pct(before) + " → " + pct(before + inc) + " (report " + pct(P.cum) + ")")); }
+                else { writes.push([target, "pct", String(inc)]); edits[target] = inc; say(what, target, pct(old), pct(inc), flag ? "warning" : "applied", flag || ("total " + pct(before) + " → " + pct(before + inc) + " (report " + pct(P.cum) + ")")); }
+                rest = { dRow: dRow, aRow: aRow, colAt: colAt, plRow: blk ? blk.planRow : g.rPl, total: before + inc, what: what };
               }
+              }
+              /* the rest of the project (100% − total to the month) spread over the open months after it, as the card's planned
+                 % of those months (equal shares when they have no plan) — user rule Oct 2026: the card's S-curve must end at 100%.
+                 Months follow the dates after all updates (recalculated). Formula / protected cells are skipped. */
+              function restPart() {
+                if (!rest) return;
+                var left = 1 - rest.total; if (left <= 1e-7) return;
+                var formulas = {}, maxC = 1;
+                Object.keys(cells).forEach(function (ref) { if (cells[ref].c > maxC) maxC = cells[ref].c; });
+                Object.keys(mdl.fx).forEach(function (k) { formulas[k] = [mdl.fx[k], mdl.cv[k]]; });
+                Object.keys(mdl.fsd || {}).forEach(function (mr) { var a = splitRef(mr); mdl.fsd[mr].forEach(function (ref) { var b = splitRef(ref); formulas[ref] = [XLCalc.shift(mdl.fx[mr], b.r - a.r, b.c - a.c), mdl.cv[ref]]; }); });
+                var calc2 = {};
+                try { calc2 = XLCalc.sheet({ name: sh.name, book: fileName, maxR: S.maxR, maxC: maxC, formulas: formulas,
+                  value: function (r, c) { var ref = colStr(c) + r; if (ref in edits) return edits[ref]; var v = mdl.cv[ref]; return v === undefined ? null : v; } }).recalcAll(); } catch (er) { calc2 = {}; }
+                var val2 = function (ref) { return ref in edits ? edits[ref] : ref in calc2 ? calc2[ref] : mdl.cv[ref]; };
+                var fut = [], prevD = 0, fcc = false, nOpen = 0;
+                g.cols.forEach(function (c0, k) {
+                  if (fcc) return;
+                  var c = rest.colAt(k), dv = val2(colStr(c) + rest.dRow); if (typeof dv !== "number" || dv <= 0) return;
+                  if (prevD && dv <= prevD) { fcc = true; return; }   // the month dates restart: FCC period columns — not part of the execution S-curve
+                  prevD = dv; nOpen++;
+                  if (serialToIso(dv).slice(0, 7) > month) fut.push({ ref: colStr(c) + rest.aRow, ym: serialToIso(dv).slice(0, 7), k: nOpen, ex: num(colStr(c) + rest.aRow), pl: rest.plRow ? num(colStr(c) + rest.plRow) : null });
+                });
+                fut = fut.filter(function (x) { var why = blocked(x.ref); if (why) say(rest.what + " · rest", x.ref, "", "", "skipped", why); return !why; });
+                if (!fut.length) { say(rest.what + " · rest", "", "", pct(left), "warning", "no open month after " + mLab + " on the S-curve — " + pct(left) + " left to reach 100% (the execution period ends in " + mLab + "; extend the forecast finish)"); return; }
+                /* S-curve shape (user rule): the month shares follow the report's S-curve forecast (Cum Forecast % at each month end),
+                   scaled so the card ends at 100% — no lump in the last month. When the report's forecast is already complete by the
+                   month, the tail of a standard S-curve over the execution period is used (F(t) = t²(3 − 2t), shares F(k/N) − F((k−1)/N)). */
+                var fp = P && P.fpts && P.fpts.length ? P.fpts : null, fAt = function (ym) { var hit = null; (fp || []).forEach(function (q) { if (q.d.slice(0, 7) <= ym) hit = q.f; }); return hit; };
+                var prevT = rest.total, wS = 0;
+                fut.forEach(function (x) { var fc = fAt(x.ym), t = Math.min(1, Math.max(prevT, fc == null ? prevT : fc)); x.w = t - prevT; x.fc = fc; prevT = t; wS += x.w; });
+                var how = "the report's S-curve forecast";
+                if (!(wS > 1e-6)) {
+                  var F = function (t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }, N = Math.max(nOpen, 1);
+                  wS = 0; fut.forEach(function (x) { x.w = F(x.k / N) - F((x.k - 1) / N); wS += x.w; }); how = "a standard S-curve tail (month " + fut[0].k + "–" + fut[fut.length - 1].k + " of " + N + ")";
+                }
+                var lastW = -1; fut.forEach(function (x, i) { if (x.w > 0) lastW = i; });
+                var acc = 0;
+                fut.forEach(function (x, i) {
+                  var v = x.w > 0 ? (i === lastW ? left - acc : left * x.w / wS) : 0;
+                  v = Math.round(v * 1e10) / 1e10; acc += v;
+                  var old = num(x.ref); if ((old == null && v === 0) || (old != null && Math.abs(old - v) < 5e-11)) return;
+                  edits[x.ref] = v; writes.push([x.ref, "pct", String(v)]);
+                  say(rest.what + " · rest " + x.ym, x.ref, pct(old), pct(v), "applied", "S-curve share from " + how + (x.fc != null && how.indexOf("report") === 0 ? " (forecast " + pct(x.fc) + " by " + x.ym + ")" : "") + " → card total 100%");
+                });
               }
               if (P) weeklyPart();
               if (prog.rules) dateRules();
+              restPart();
               if (fbk) pmFeedback();
               /* Date rules for every card (user rule, Oct 2026), after the Progress update:
                  · Creation / Initiation / Planning / Tendering activities not at 100%: the forecast/actual end (K) must be after the
