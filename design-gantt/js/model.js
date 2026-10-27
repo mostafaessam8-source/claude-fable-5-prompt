@@ -186,7 +186,9 @@
       if (!name || !cur) continue;
       cur.elements.push(line);
     }
-    var model = { meta: meta, projects: projects, layout: { hdrRow: layout.hdrRow, sheet: chosen.name, g: (function () { var o = {}; Object.keys(G).forEach(function (k) { o[k] = numToCol(G[k]); }); return o; })() } };
+    var lastContent = layout.hdrRow;
+    for (var rc = layout.hdrRow + 1; rc <= lastRow; rc++) if (txt(G.name, rc) || txt(G.programme, rc) || txt(G.code, rc)) lastContent = rc;
+    var model = { meta: meta, projects: projects, layout: { hdrRow: layout.hdrRow, lastContent: lastContent, lastRow: lastRow, sheet: chosen.name, g: (function () { var o = {}; Object.keys(G).forEach(function (k) { o[k] = numToCol(G[k]); }); return o; })() } };
     var cut = opts.dataDate != null ? opts.dataDate : meta.dataDate;
     if (!isNum(cut)) cut = dateToSerial(new Date());
     meta.workbookDataDate = meta.dataDate;

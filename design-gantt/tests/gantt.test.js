@@ -53,6 +53,7 @@ async function check(zip, label) {
   // 2. the written workbook: a new Gantt sheet whose numbers are formulas and whose bars are conditional formats
   const xml = await t.z2.file(t.names.find(n => /worksheets\/sheet\d+\.xml$/.test(n) && n !== 'xl/worksheets/sheet1.xml')).async('string');
   assert(/<f>[^<]*Tracker[^<]*<\/f>/.test(xml), 'formulas read the Tracker sheet');
+  assert(/_xlfn\.MINIFS/.test(xml), 'project roll-ups are formulas');
   assert(/<conditionalFormatting /.test(xml) && /type="expression"/.test(xml), 'bars are conditional formats');
   assert(!/calcChain/.test(await t.z2.file('[Content_Types].xml').async('string')));
   assert(/fullCalcOnLoad="1"/.test(await t.z2.file('xl/workbook.xml').async('string')));
