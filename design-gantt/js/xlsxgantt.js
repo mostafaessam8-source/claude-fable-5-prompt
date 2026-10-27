@@ -184,7 +184,7 @@
    * forecast after it).
    */
   var TL0 = 9; // first timeline column
-  var WIDTHS = [6.5, 50, 11.5, 11.5, 7, 8, 12, 34];
+  var WIDTHS = [7, 54, 13, 13, 7, 9, 12, 58];
   var HEAD_ROWS = 9;
   var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5 };
   var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row'];
@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
@@ -270,7 +270,7 @@
     var dt0 = M.serialToDate(cut);
     cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true },
       'TODAY()'); // the data date is always today; type a date over it to look at another day
-    cell(7, 5, 'CHART STARTS (editable)  ▶', { font: { sz: 8.5, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
+    cell(7, 5, 'CHART START ▶', { font: { sz: 9, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
     // chart start: 4 weeks before the earliest date (or the data date), fixed when generated so the month bands can be merged
     var lo = cut;
     model.projects.forEach(function (p) { [p.eps, p.epa, p.ps, p.pa].concat(p.elements.reduce(function (acc, e) { return acc.concat([e.ps, e.pa]); }, [])).forEach(function (d) { if (isNum(d) && d < lo) lo = d; }); });
@@ -319,7 +319,7 @@
     var base = { font: { sz: 9, color: C.text }, fill: C.white, v: 'center', border: { left: thin(C.line), right: thin(C.line), bottom: thin(C.line) } };
     for (var i = 0; i < nRows; i++) {
       var rw = R0 + i, t = T0 + i, up = rw - 1;
-      rowH(rw, 18);
+      rowH(rw, 27);
       function T(key) { return g_[key] ? TR + g_[key] + t : null; }
       var NAME = 'TRIM(' + T('name') + '&"")', PROG = 'TRIM(' + (T('programme') || '""') + '&"")', CODE_ = 'TRIM(' + (T('code') || '""') + '&"")', LVL = T('lvl') ? 'UPPER(TRIM(' + T('lvl') + '&""))' : '""';
       var Kc = '$' + hl(H.KIND) + rw, PIDc = '$' + hl(H.PID) + rw, OPS = '$' + hl(H.OPS) + rw, OPA = '$' + hl(H.OPA) + rw;
@@ -345,7 +345,7 @@
       var cnt0 = 'COUNT(' + Cc + ',' + Dc + ')';
       cell(rw, 1, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.mute } }),
         'IF(' + Kc + '="P",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P"),IF(' + Kc + '="E",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P")&"."&COUNTIFS(' + hl(H.PID) + '$' + R0 + ':' + hl(H.PID) + rw + ',' + PIDc + ',' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"E"),""))');
-      cell(rw, 2, '', Object.assign({}, base, { h: 'left', indent: 1, shrink: true }),
+      cell(rw, 2, '', Object.assign({}, base, { h: 'left', indent: 1, wrap: true }),
         'IF(' + Kc + '="P",IF(' + CODE_ + '="","",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
       cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MINIFS', OPS, 'C'));
       cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MAXIFS', OPA, 'D'));
@@ -353,7 +353,7 @@
       cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.sar ? 'IF(' + Kc + '="","",UPPER(TRIM(' + TR + g_.sar + t + '&"")))' : '""');
       cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
         'IF(' + Kc + '="","",IF(' + cnt0 + '=0,"No dates",IF(AND(ISNUMBER(' + Dc + '),' + Dc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + Cc + '),' + Cc + '<=' + DD + '),"In progress","Forecast"))))');
-      cell(rw, 8, '', Object.assign({}, base, { h: 'left', indent: 1, shrink: true, font: { sz: 8, color: C.mute } }), g_.notes ? 'IF(' + Kc + '="","",' + TR + g_.notes + t + '&"")' : '""');
+      cell(rw, 8, '', Object.assign({}, base, { h: 'left', indent: 1, wrap: true, font: { sz: 9, color: C.text } }), g_.notes ? 'IF(' + Kc + '="","",' + TR + g_.notes + t + '&"")' : '""');
       // milestones: ◆/◇ submission (actual / forecast), ●/○ approval
       for (var uu = 0; uu < N_UNITS; uu++) {
         var col = numToCol(TL0 + uu);
