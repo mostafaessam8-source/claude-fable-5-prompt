@@ -25,6 +25,8 @@
       var zip = await JSZip.loadAsync(buf);
       var model = await M.readWorkbook(zip);
       if (!model.projects.length) throw new Error('The tracker sheet was found but no project rows were read. Check that the project rows have the Programme cell filled.');
+      // the data date is today (as in the Excel sheet); 'Workbook' restores the date written in the Tracker
+      var now = new Date(); M.recalc(model, M.dateToSerial(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))));
       S.buf = buf; S.name = file.name; S.model = model; S.collapsed = {}; S.status = {}; S.project = ''; S.q = '';
       $('fileName').textContent = file.name;
       $('dataDate').value = iso(model.meta.cut);
@@ -104,6 +106,9 @@
       if (hidden(it)) return;
       shown++;
       var cls = it.kind === 'project' ? 'p' : 'e', bars = '';
+      it.segs.forEach(function (g) {
+        bars += '<div class="g-bar b-p b-' + g.t + '" data-i="' + ix + '" style="left:' + X_(g.s) + 'px;width:' + Math.max(5, (g.e - g.s + 1) * ppd) + 'px;top:8px;height:14px"></div>';
+      });
       it.ms.forEach(function (g) {
         var x = X_(g.d) + ppd / 2, top = it.kind === 'project' ? 9 : 8;
         bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
