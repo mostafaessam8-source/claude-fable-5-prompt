@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SAR Org Chart Editor</title>
+<!--SAVED-->
 <style>
 :root{--teal:#00778B;--dark:#3D3935;--bg:#e6e6e6;--ribbon:#F2F8F9;--line:#C8C9C7;--accent:#00778B}
 *{box-sizing:border-box}
@@ -179,8 +180,9 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
 <div id="filemenu">
   <div data-a="new">New (original 5 options)</div>
   <div data-a="open">Open… <small>Ctrl+O</small></div><hr>
-  <div data-a="save">Save <small>Ctrl+S</small></div>
+  <div data-a="save">Save (overwrites the HTML file) <small>Ctrl+S</small></div>
   <div data-a="saveas">Save As… <small>Ctrl+Shift+S</small></div><hr>
+  <div data-a="json">Export data only (.json)</div>
   <div data-a="png">Export page as PNG</div>
   <div data-a="svg">Export page as SVG</div>
   <div data-a="pdf">Print / Save as PDF (all pages) <small>Ctrl+P</small></div>
@@ -188,8 +190,9 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
 <textarea id="ed"></textarea>
 <div id="toast"></div>
 <div id="printRoot"></div>
-<input type="file" id="fileIn" accept=".json,.sarorg,application/json" style="display:none">
+<input type="file" id="fileIn" accept=".html,.htm,.json,application/json" style="display:none">
 
+<!--SELFSRC-->
 <script>
 "use strict";
 const ORIGINAL = /*DATA*/null;
@@ -568,31 +571,50 @@ function doUndo(){if(!undo.length)return;redo.push(snap());doc=JSON.parse(undo.p
 function doRedo(){if(!redo.length)return;undo.push(snap());doc=JSON.parse(redo.pop());cur=Math.min(cur,doc.pages.length-1);clearSel();dirty=true;lcache.key='';render();renderThumbs();autosave();}
 function clearSel(){selN.clear();selE=null;connectFrom=null;}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
-const fileName=()=>(doc.name||'org-chart').replace(/[\\/:*?"<>|]+/g,'_')+'.sarorg.json';
-const payload=()=>JSON.stringify({format:'sar-orgchart-editor',version:1,doc},null,1);
+const fileName=()=>(doc.name||'SAR_Org_Chart_Editor').replace(/[\\/:*?"<>|]+/g,'_')+'.html';
+/* Self-contained save: the saved .html is this same editor with the current document embedded. */
+function buildHTML(){
+  const raw=$('selfsrc').textContent;                       // template text, "</script" escaped
+  const tpl=raw.split('<\\/script').join('<'+'/script');
+  const data=JSON.stringify({doc,cur}).replace(/</g,'\\u003c');
+  return tpl
+    .replace('<!--SA'+'VED-->',()=>'<script>window.__SAVED='+data+';<'+'/script>')
+    .replace('<!--SELF'+'SRC-->',()=>'<script type="text/plain" id="selfsrc">'+raw+'<'+'/script>');
+}
+const payload=buildHTML;
 function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+const HTML_TYPES=[{description:'SAR Org Chart Editor (HTML)',accept:{'text/html':['.html','.htm']}}];
 async function saveFile(as){
   try{
     if(window.showSaveFilePicker){
-      if(as||!fileHandle){fileHandle=await window.showSaveFilePicker({suggestedName:fileName(),types:[{description:'SAR Org Chart',accept:{'application/json':['.json']}}]});
-        const nm=fileHandle.name.replace(/\.sarorg\.json$|\.json$/,'');doc.name=nm;}
-      const w=await fileHandle.createWritable();await w.write(payload());await w.close();
+      if(as||!fileHandle){
+        fileHandle=await window.showSaveFilePicker({suggestedName:fileName(),types:HTML_TYPES});
+        doc.name=fileHandle.name.replace(/\.html?$/i,'');
+      }
+      const w=await fileHandle.createWritable();await w.write(buildHTML());await w.close();
+      dirty=false;render();toast('Saved to '+fileHandle.name);
     }else{
       if(as){const n=prompt('Save as (file name):',doc.name);if(n===null)return;doc.name=n.trim()||doc.name;}
-      download(fileName(),new Blob([payload()],{type:'application/json'}));
+      download(fileName(),new Blob([buildHTML()],{type:'text/html'}));
+      dirty=false;render();toast('Downloaded '+fileName());
     }
-    dirty=false;render();toast('Saved: '+fileName());
   }catch(e){if(e&&e.name!=='AbortError')toast('Save failed: '+e.message);}
 }
+function exportJSON(){download((doc.name||'org-chart')+'.sarorg.json',new Blob([JSON.stringify({format:'sar-orgchart-editor',version:1,doc},null,1)],{type:'application/json'}));}
+function parseSaved(txt){
+  const k=txt.indexOf('window.__SAVED=');
+  if(k>=0){const s=k+15,e=txt.indexOf(';<'+'/script>',s);return JSON.parse(txt.slice(s,e)).doc;}
+  const j=JSON.parse(txt);return j.doc||j;
+}
 function loadText(txt,name){
-  try{const j=JSON.parse(txt);const d=j.doc||j;if(!d.pages)throw new Error('not an org-chart file');
-    commit();doc=d;if(name)doc.name=name.replace(/\.sarorg\.json$|\.json$/,'');cur=0;clearSel();dirty=false;lcache.key='';render();renderThumbs();autosave();toast('Opened '+doc.name);
+  try{const d=parseSaved(txt);if(!d||!d.pages)throw new Error('not an org-chart file');
+    commit();doc=d;if(name)doc.name=name.replace(/\.sarorg\.json$|\.json$|\.html?$/i,'');cur=0;clearSel();dirty=false;lcache.key='';render();renderThumbs();autosave();toast('Opened '+doc.name);
   }catch(e){toast('Cannot open file: '+e.message);}
 }
 async function openFile(){
   if(window.showOpenFilePicker){
-    try{const[h]=await window.showOpenFilePicker({types:[{description:'SAR Org Chart',accept:{'application/json':['.json']}}]});
-      const f=await h.getFile();loadText(await f.text(),f.name);fileHandle=h;}catch(e){}
+    try{const[h]=await window.showOpenFilePicker({types:HTML_TYPES.concat([{description:'JSON',accept:{'application/json':['.json']}}])});
+      const f=await h.getFile();loadText(await f.text(),f.name);fileHandle=/\.html?$/i.test(f.name)?h:null;}catch(e){}
   }else $('fileIn').click();
 }
 $('fileIn').onchange=async e=>{const f=e.target.files[0];if(f){loadText(await f.text(),f.name);fileHandle=null;}e.target.value='';};
@@ -609,7 +631,7 @@ function fileAction(a){
   $('filemenu').style.display='none';
   if(a==='new'){if(dirty&&!confirm('Discard unsaved changes and reload the original 5 options?'))return;doc=defaultDoc();cur=0;undo=[];redo=[];clearSel();fileHandle=null;dirty=false;lcache.key='';render();renderThumbs();autosave();}
   else if(a==='open')openFile();else if(a==='save')saveFile(false);else if(a==='saveas')saveFile(true);
-  else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
+  else if(a==='json')exportJSON();else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
 }
 $('filemenu').onclick=e=>{const d=e.target.closest('[data-a]');if(d)fileAction(d.dataset.a);};
 window.addEventListener('beforeprint',()=>{if(!$('printRoot').innerHTML)$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');});
@@ -910,7 +932,8 @@ document.addEventListener('fullscreenchange',()=>{$('tFull').textContent=documen
 /* ===================== INIT ===================== */
 (function init(){
   let restored=false;
-  try{const s=localStorage.getItem('sar-orgchart-autosave');if(s){const o=JSON.parse(s);if(o.doc&&o.doc.pages&&o.doc.pages.length){doc=o.doc;cur=Math.min(o.cur||0,doc.pages.length-1);restored=true;}}}catch(e){}
+  if(window.__SAVED&&window.__SAVED.doc&&window.__SAVED.doc.pages){doc=window.__SAVED.doc;cur=Math.min(window.__SAVED.cur||0,doc.pages.length-1);}
+  else try{const s=localStorage.getItem('sar-orgchart-autosave');if(s){const o=JSON.parse(s);if(o.doc&&o.doc.pages&&o.doc.pages.length){doc=o.doc;cur=Math.min(o.cur||0,doc.pages.length-1);restored=true;}}}catch(e){}
   if(!doc)doc=defaultDoc();
   fit();renderThumbs();render();
   if(restored)toast('Restored your last session (File ▸ New to start from the original)');

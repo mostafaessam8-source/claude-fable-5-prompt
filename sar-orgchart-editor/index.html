@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SAR Org Chart Editor</title>
+
 <style>
 :root{--teal:#00778B;--dark:#3D3935;--bg:#e6e6e6;--ribbon:#F2F8F9;--line:#C8C9C7;--accent:#00778B}
 *{box-sizing:border-box}
@@ -179,8 +180,9 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
 <div id="filemenu">
   <div data-a="new">New (original 5 options)</div>
   <div data-a="open">Open… <small>Ctrl+O</small></div><hr>
-  <div data-a="save">Save <small>Ctrl+S</small></div>
+  <div data-a="save">Save (overwrites the HTML file) <small>Ctrl+S</small></div>
   <div data-a="saveas">Save As… <small>Ctrl+Shift+S</small></div><hr>
+  <div data-a="json">Export data only (.json)</div>
   <div data-a="png">Export page as PNG</div>
   <div data-a="svg">Export page as SVG</div>
   <div data-a="pdf">Print / Save as PDF (all pages) <small>Ctrl+P</small></div>
@@ -188,8 +190,203 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
 <textarea id="ed"></textarea>
 <div id="toast"></div>
 <div id="printRoot"></div>
-<input type="file" id="fileIn" accept=".json,.sarorg,application/json" style="display:none">
+<input type="file" id="fileIn" accept=".html,.htm,.json,application/json" style="display:none">
 
+<script type="text/plain" id="selfsrc"><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAR Org Chart Editor</title>
+<!--SAVED-->
+<style>
+:root{--teal:#00778B;--dark:#3D3935;--bg:#e6e6e6;--ribbon:#F2F8F9;--line:#C8C9C7;--accent:#00778B}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font:12px "Diodrum Arabic","Segoe UI",Arial,sans-serif;color:#222;background:var(--bg);overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%}
+#titlebar{background:var(--accent);color:#fff;display:flex;align-items:center;gap:10px;padding:0 10px;height:30px}
+#titlebar b{font-weight:600}#titlebar .sp{flex:1}
+#titlebar button{background:transparent;border:0;color:#fff;cursor:pointer;padding:4px 8px;font-size:13px}
+#titlebar button:hover{background:rgba(255,255,255,.2)}
+#docname{background:transparent;border:1px solid transparent;color:#fff;font-size:12px;padding:2px 6px;width:260px}
+#docname:hover,#docname:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);outline:0}
+#tabs{display:flex;background:#fff;border-bottom:1px solid var(--line);padding-left:6px}
+.tab{padding:6px 16px;cursor:pointer;border:1px solid transparent;border-bottom:0;margin-bottom:-1px}
+.tab.on{background:var(--ribbon);border-color:var(--line);color:var(--accent);font-weight:600}
+.tab.file{background:var(--accent);color:#fff;margin-right:4px}
+#ribbon{background:var(--ribbon);border-bottom:1px solid var(--line);height:86px;display:flex;align-items:stretch;padding:4px 6px;gap:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+.panel{display:none;align-items:stretch}.panel.on{display:flex}
+.grp{display:flex;flex-direction:column;border-right:1px solid var(--line);padding:0 8px;min-width:50px}
+.grp .row{display:flex;gap:3px;align-items:center;flex:1;flex-wrap:wrap;align-content:center;max-width:330px}
+.grp .cap{text-align:center;color:#666;font-size:10.5px;padding-top:2px}
+.btn{border:1px solid transparent;background:transparent;border-radius:3px;cursor:pointer;padding:3px 6px;min-width:26px;height:26px;font:inherit;color:#222;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.btn:hover{background:#dde8f5;border-color:#b5cbe6}.btn.on{background:#c7dcf3;border-color:#7ea6d8}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn.big{flex-direction:column;height:56px;min-width:54px;font-size:11px;white-space:normal;text-align:center;line-height:1.1}
+.btn.big i{font-style:normal;font-size:20px}
+select,input[type=number],input[type=text]{font:inherit;height:24px;border:1px solid #b9b9b9;border-radius:2px;background:#fff;padding:0 3px}
+input[type=color]{width:26px;height:24px;padding:0;border:1px solid #b9b9b9;background:#fff}
+label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
+#main{flex:1;display:flex;min-height:0}
+#nav{width:178px;background:#f7f7f7;border-right:1px solid var(--line);overflow-y:auto;padding:8px;flex:none}
+#nav h4{margin:0 0 6px;font-size:11px;color:#555;display:flex;justify-content:space-between;align-items:center}
+.thumb{border:2px solid transparent;margin-bottom:8px;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);position:relative}
+.thumb.on{border-color:var(--accent)}
+.thumb svg{display:block;width:100%;height:auto;pointer-events:none}
+.thumb .n{position:absolute;left:0;bottom:0;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:1px 5px}
+#scroller{flex:1;overflow:auto;position:relative;background:#cfcfcf}
+#pagewrap{padding:24px;display:inline-block;min-width:100%}
+#page{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4);margin:0 auto;display:block;user-select:none}
+#status{background:var(--accent);color:#fff;height:22px;display:flex;align-items:center;padding:0 10px;gap:14px}
+#status .sp{flex:1}#status input[type=range]{width:140px}
+#status button{background:transparent;color:#fff;border:0;cursor:pointer;font-size:14px}
+#ed{position:fixed;display:none;z-index:50;resize:none;border:2px solid var(--accent);padding:2px;outline:0;background:#fff;color:#000;overflow:hidden;font-family:Arial}
+#filemenu{position:fixed;left:6px;top:57px;width:250px;background:#fff;border:1px solid #999;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:60;display:none}
+#filemenu div{padding:8px 16px;cursor:pointer;display:flex;justify-content:space-between}
+#filemenu div:hover{background:#dde8f5}#filemenu hr{margin:2px 0;border:0;border-top:1px solid #ddd}#filemenu small{color:#777}
+#toast{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:7px 16px;border-radius:4px;opacity:0;transition:.25s;pointer-events:none;z-index:80}
+#toast.on{opacity:.95}
+#printRoot{display:none}
+#hint{color:#fff;opacity:.9}
+@media print{
+  @page{size:A4 landscape;margin:0}
+  html,body{overflow:visible;height:auto;background:#fff}
+  #app,#ed,#filemenu,#toast{display:none!important}
+  #printRoot{display:block}
+  #printRoot .pp{width:297mm;height:210mm;page-break-after:always;overflow:hidden}
+  #printRoot .pp svg{width:297mm;height:210mm;display:block}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="titlebar">
+    <b>SAR</b>
+    <button id="tSave" title="Save (Ctrl+S)">💾 Save</button><button id="tSaveAs" title="Save As (Ctrl+Shift+S)">Save As…</button><button id="tPrint" title="Print / PDF (Ctrl+P)">🖨 Print</button><button id="tFull" title="Full screen (F11)">⛶ Full screen</button>
+    <button id="tUndo" title="Undo (Ctrl+Z)">↶</button>
+    <button id="tRedo" title="Redo (Ctrl+Y)">↷</button>
+    <span class="sp"></span>
+    <input id="docname" type="text" spellcheck="false" title="Document name">
+    <span id="dirty"></span>
+    <span class="sp"></span>
+    <span id="hint">Org Chart Editor</span>
+  </div>
+  <div id="tabs">
+    <div class="tab file" data-tab="file">File</div>
+    <div class="tab on" data-tab="home">Home</div>
+    <div class="tab" data-tab="conn">Connectors</div>
+    <div class="tab" data-tab="page">Page</div>
+  </div>
+  <div id="ribbon">
+    <!-- HOME -->
+    <div class="panel on" id="p-home">
+      <div class="grp"><div class="row">
+        <button class="btn big" id="bPaste"><i>📋</i>Paste</button>
+        <div style="display:flex;flex-direction:column;gap:1px"><button class="btn" id="bCut">✂ Cut</button><button class="btn" id="bCopy">⧉ Copy</button><button class="btn" id="bDup">⎘ Duplicate</button></div>
+      </div><div class="cap">Clipboard</div></div>
+      <div class="grp"><div class="row" style="width:250px">
+        <select id="fFont" style="width:110px"><option>Diodrum Arabic</option><option>Arial</option><option>Calibri</option><option>Segoe UI</option><option>Tahoma</option><option>Times New Roman</option><option>Verdana</option><option>Courier New</option></select>
+        <select id="fSize" style="width:52px"></select>
+        <button class="btn" id="fB"><b>B</b></button><button class="btn" id="fI"><i>I</i></button><button class="btn" id="fU"><u>U</u></button>
+        <label class="lb" title="Text colour">A<input type="color" id="fColor"></label>
+        <button class="btn" id="aL" title="Align left">⯇</button><button class="btn" id="aC" title="Center">≡</button><button class="btn" id="aR" title="Align right">⯈</button>
+        <button class="btn" id="vT" title="Top">⤒</button><button class="btn" id="vM" title="Middle">↕</button><button class="btn" id="vB" title="Bottom">⤓</button>
+      </div><div class="cap">Font &amp; Alignment</div></div>
+      <div class="grp"><div class="row" style="width:300px">
+        <label class="lb">Fill<input type="color" id="sFill"></label>
+        <label class="lb">Outline<input type="color" id="sStroke"></label>
+        <label class="lb">Weight<input type="number" id="sSW" min="0" max="10" step="0.5" style="width:48px"></label>
+        <select id="sShape" style="width:80px"><option value="rect">Rectangle</option><option value="round">Rounded</option><option value="pill">Pill</option><option value="ellipse">Ellipse</option></select>
+        <label class="lb">W<input type="number" id="sW" min="20" style="width:52px"></label>
+        <label class="lb">H<input type="number" id="sH" min="16" style="width:52px"></label>
+      </div><div class="cap">Shape</div></div>
+      <div class="grp"><div class="row" style="width:290px">
+        <button class="btn big" id="bAdd"><i>▭</i>Add box</button>
+        <button class="btn big" id="bChild"><i>⤵</i>Add child</button>
+        <button class="btn big" id="bSib"><i>⇥</i>Add sibling</button>
+        <button class="btn big" id="bDel"><i>🗑</i>Delete</button>
+      </div><div class="cap">Insert</div></div>
+      <div class="grp"><div class="row" style="width:240px">
+        <button class="btn" id="alL" title="Align left">⊢</button><button class="btn" id="alCx" title="Align centers">⊹</button><button class="btn" id="alR" title="Align right">⊣</button>
+        <button class="btn" id="alT" title="Align top">⊤</button><button class="btn" id="alCy" title="Align middles">⊥</button><button class="btn" id="alB" title="Align bottom">⊥̲</button>
+        <button class="btn" id="dH" title="Distribute horizontally">⇔</button><button class="btn" id="dV" title="Distribute vertically">⇕</button>
+        <button class="btn" id="mSize" title="Match size of first selected">⧉ Same size</button>
+        <button class="btn" id="zFront" title="Bring to front">⬆</button><button class="btn" id="zBack" title="Send to back">⬇</button>
+      </div><div class="cap">Arrange</div></div>
+    </div>
+    <!-- CONNECTORS -->
+    <div class="panel" id="p-conn">
+      <div class="grp"><div class="row" style="width:260px">
+        <button class="btn big" id="tSel"><i>↖</i>Select</button>
+        <button class="btn big" id="tRep"><i>┬</i>Reporting line</button>
+        <button class="btn big" id="tLink"><i>⇢</i>Dashed link</button>
+      </div><div class="cap">Draw (or drag from a box's blue dot)</div></div>
+      <div class="grp"><div class="row" style="width:330px">
+        <label class="lb">Routing<select id="eRoute"><option value="avoid">Auto – around boxes</option><option value="tree">Org-chart elbow</option><option value="elbow">Simple elbow</option><option value="straight">Straight</option></select></label>
+        <label class="lb">Line<select id="eDash"><option value="solid">Solid</option><option value="dash">Dashed</option><option value="dot">Dotted</option></select></label>
+        <label class="lb">Colour<input type="color" id="eColor"></label>
+        <label class="lb">Weight<input type="number" id="eWidth" min="0.5" max="8" step="0.25" style="width:50px"></label>
+        <label class="lb">Arrows<select id="eArrow"><option value="none">None</option><option value="end">End →</option><option value="start">← Start</option><option value="both">Both ↔</option></select></label>
+      </div><div class="cap">Connector format</div></div>
+      <div class="grp"><div class="row" style="width:330px">
+        <label class="lb">From<select id="eFS"><option value="auto">Auto</option><option value="top">Top</option><option value="right">Right</option><option value="bottom">Bottom</option><option value="left">Left</option></select></label>
+        <label class="lb">pos<input type="number" id="eFP" min="5" max="95" step="5" style="width:46px" title="Position along the side, % (blank = auto)"></label>
+        <label class="lb">To<select id="eTS"><option value="auto">Auto</option><option value="top">Top</option><option value="right">Right</option><option value="bottom">Bottom</option><option value="left">Left</option></select></label>
+        <label class="lb">pos<input type="number" id="eTP" min="5" max="95" step="5" style="width:46px"></label>
+        <label class="lb">Label<input type="text" id="eLabel" style="width:130px"></label>
+        <button class="btn" id="eSwap">⇄ Swap ends</button>
+        <button class="btn" id="eDel">🗑 Delete</button>
+      </div><div class="cap">Connection points</div></div>
+      <div class="grp"><div class="row" style="width:230px;white-space:normal;color:#555;font-size:11px">
+        Lines are glued to the boxes (like Visio): move or resize a box and every line follows. Auto routing makes dashed lines bend around other boxes. Drag a line's end-handle onto another box to reconnect it.
+      </div><div class="cap">Tip</div></div>
+    </div>
+    <!-- PAGE -->
+    <div class="panel" id="p-page">
+      <div class="grp"><div class="row" style="width:250px">
+        <button class="btn big" id="pgAdd"><i>＋</i>New page</button>
+        <button class="btn big" id="pgDup"><i>⎘</i>Duplicate page</button>
+        <button class="btn big" id="pgDel"><i>🗑</i>Delete page</button>
+        <button class="btn big" id="pgUp"><i>▲</i>Move up</button>
+        <button class="btn big" id="pgDn"><i>▼</i>Move down</button>
+      </div><div class="cap">Pages</div></div>
+      <div class="grp"><div class="row" style="width:300px">
+        <label class="lb"><input type="checkbox" id="oGrid"> Grid</label>
+        <label class="lb"><input type="checkbox" id="oSnap" checked> Snap to grid</label>
+        <label class="lb"><input type="checkbox" id="oLegend" checked> Legend</label>
+        <label class="lb"><input type="checkbox" id="oHdr" checked> Header &amp; footer</label>
+        <label class="lb"><input type="checkbox" id="oNotes" checked> Notes</label>
+      </div><div class="cap">View</div></div>
+      <div class="grp"><div class="row" style="width:300px;white-space:normal;color:#555;font-size:11px">
+        Double-click any text (title, notes, header, box) to edit it. Press F2 on a selected box to rename it.
+      </div><div class="cap">Tip</div></div>
+    </div>
+  </div>
+  <div id="main">
+    <div id="nav"><h4>Pages</h4><div id="thumbs"></div></div>
+    <div id="scroller"><div id="pagewrap"><svg id="page" xmlns="http://www.w3.org/2000/svg"></svg></div></div>
+  </div>
+  <div id="status">
+    <span id="stPage"></span><span id="stSel"></span><span class="sp"></span>
+    <button id="zOut">−</button><input type="range" id="zoom" min="30" max="250" step="5" value="100"><button id="zIn">+</button><span id="zLbl" style="width:40px">100%</span><button id="zFit" title="Fit width">⤢</button>
+  </div>
+</div>
+<div id="filemenu">
+  <div data-a="new">New (original 5 options)</div>
+  <div data-a="open">Open… <small>Ctrl+O</small></div><hr>
+  <div data-a="save">Save (overwrites the HTML file) <small>Ctrl+S</small></div>
+  <div data-a="saveas">Save As… <small>Ctrl+Shift+S</small></div><hr>
+  <div data-a="json">Export data only (.json)</div>
+  <div data-a="png">Export page as PNG</div>
+  <div data-a="svg">Export page as SVG</div>
+  <div data-a="pdf">Print / Save as PDF (all pages) <small>Ctrl+P</small></div>
+</div>
+<textarea id="ed"></textarea>
+<div id="toast"></div>
+<div id="printRoot"></div>
+<input type="file" id="fileIn" accept=".html,.htm,.json,application/json" style="display:none">
+
+<!--SELFSRC-->
 <script>
 "use strict";
 const ORIGINAL = {"pages":[{"id":"p1","title":"Option 1 — Section-Based Structure – Central Engineering Manager","label":"Engineering:","sub":"Engineering Manager reports to Program Manager, shared by both sections","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Section 1 Project ↔ Engineering Manager ↔ Section 2 Project ↔ Contract Administration.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":384,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":384,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":384,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":384,"y":552,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":384,"y":622,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":668,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":692,"y":552,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":692,"y":622,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n17","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n17","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e17","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n9","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e19","to":"n10","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e20","to":"n16","kind":"link","fromSide":"auto","toSide":"auto","from":"n10","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p2","title":"Option 2 — Section-Based Structure – Engineering Focal Point per Section","label":"Engineering:","sub":"Engineering Focal Point embedded in each section","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Section 1 Project ↔ Section 2 Project ↔ Contract Administration. Each Engineering Focal Point is a non-line role within its section.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":282,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":436,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":461,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":461,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":461,"y":481,"w":99,"h":50,"text":"Engineering Focal Point","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":461,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":461,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":590,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":615,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":615,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":615,"y":481,"w":99,"h":50,"text":"Engineering Focal Point","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":615,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":615,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":745,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e17","to":"n9","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n15","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p3","title":"Option 3 — Phase-Based Structure – Engineering within Execution","label":"Engineering:","sub":"Engineering Manager reports to Execution","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Development ↔ Execution ↔ Closing. Document Control & Admin is shown as staff support (assistant) to the Program Manager.","nodes":[{"id":"n1","x":517,"y":128,"w":93,"h":46,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":224,"y":260,"w":93,"h":46,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":370,"y":260,"w":93,"h":46,"text":"Development","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":517,"y":260,"w":93,"h":46,"text":"Execution","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":540,"y":326,"w":93,"h":46,"text":"Construction Manager","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":540,"y":392,"w":93,"h":46,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":540,"y":458,"w":93,"h":46,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":540,"y":524,"w":93,"h":46,"text":"Engineering Manager","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":540,"y":590,"w":93,"h":46,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":540,"y":656,"w":93,"h":46,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":663,"y":260,"w":93,"h":46,"text":"Closing","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":809,"y":260,"w":93,"h":46,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":460,"y":194,"w":93,"h":46,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n13","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e14","to":"n4","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e15","to":"n11","kind":"link","fromSide":"auto","toSide":"auto","from":"n4","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p4","title":"Option 4 — Phase-Based Structure – Central Engineering Function","label":"Engineering:","sub":"Engineering Manager reports to Program Manager, coordinating with Execution","coordLabel":"Coordination / functional links:","coord":"Engineering Manager ↔ Execution.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Development & Closing","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":668,"y":269,"w":99,"h":50,"text":"Execution","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":692,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":692,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n12","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n5","kind":"link","fromSide":"auto","toSide":"auto","from":"n4","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p5","title":"Option 5 — Section-Based Structure – Central Engineering Focal Point","label":"Engineering:","sub":"Single Engineering Focal Point linked to the Program Manager, coordinating with both sections","coordLabel":"Coordination / functional links:","coord":"Engineering Focal Point ↔ Section 1 Project and Section 2 Project.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":384,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":384,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":384,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":384,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":384,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":668,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":692,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":692,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n17","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n17","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e17","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n10","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true}]};
@@ -568,31 +765,50 @@ function doUndo(){if(!undo.length)return;redo.push(snap());doc=JSON.parse(undo.p
 function doRedo(){if(!redo.length)return;undo.push(snap());doc=JSON.parse(redo.pop());cur=Math.min(cur,doc.pages.length-1);clearSel();dirty=true;lcache.key='';render();renderThumbs();autosave();}
 function clearSel(){selN.clear();selE=null;connectFrom=null;}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
-const fileName=()=>(doc.name||'org-chart').replace(/[\\/:*?"<>|]+/g,'_')+'.sarorg.json';
-const payload=()=>JSON.stringify({format:'sar-orgchart-editor',version:1,doc},null,1);
+const fileName=()=>(doc.name||'SAR_Org_Chart_Editor').replace(/[\\/:*?"<>|]+/g,'_')+'.html';
+/* Self-contained save: the saved .html is this same editor with the current document embedded. */
+function buildHTML(){
+  const raw=$('selfsrc').textContent;                       // template text, "<\/script" escaped
+  const tpl=raw.split('<\\/script').join('<'+'/script');
+  const data=JSON.stringify({doc,cur}).replace(/</g,'\\u003c');
+  return tpl
+    .replace('<!--SA'+'VED-->',()=>'<script>window.__SAVED='+data+';<'+'/script>')
+    .replace('<!--SELF'+'SRC-->',()=>'<script type="text/plain" id="selfsrc">'+raw+'<'+'/script>');
+}
+const payload=buildHTML;
 function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+const HTML_TYPES=[{description:'SAR Org Chart Editor (HTML)',accept:{'text/html':['.html','.htm']}}];
 async function saveFile(as){
   try{
     if(window.showSaveFilePicker){
-      if(as||!fileHandle){fileHandle=await window.showSaveFilePicker({suggestedName:fileName(),types:[{description:'SAR Org Chart',accept:{'application/json':['.json']}}]});
-        const nm=fileHandle.name.replace(/\.sarorg\.json$|\.json$/,'');doc.name=nm;}
-      const w=await fileHandle.createWritable();await w.write(payload());await w.close();
+      if(as||!fileHandle){
+        fileHandle=await window.showSaveFilePicker({suggestedName:fileName(),types:HTML_TYPES});
+        doc.name=fileHandle.name.replace(/\.html?$/i,'');
+      }
+      const w=await fileHandle.createWritable();await w.write(buildHTML());await w.close();
+      dirty=false;render();toast('Saved to '+fileHandle.name);
     }else{
       if(as){const n=prompt('Save as (file name):',doc.name);if(n===null)return;doc.name=n.trim()||doc.name;}
-      download(fileName(),new Blob([payload()],{type:'application/json'}));
+      download(fileName(),new Blob([buildHTML()],{type:'text/html'}));
+      dirty=false;render();toast('Downloaded '+fileName());
     }
-    dirty=false;render();toast('Saved: '+fileName());
   }catch(e){if(e&&e.name!=='AbortError')toast('Save failed: '+e.message);}
 }
+function exportJSON(){download((doc.name||'org-chart')+'.sarorg.json',new Blob([JSON.stringify({format:'sar-orgchart-editor',version:1,doc},null,1)],{type:'application/json'}));}
+function parseSaved(txt){
+  const k=txt.indexOf('window.__SAVED=');
+  if(k>=0){const s=k+15,e=txt.indexOf(';<'+'/script>',s);return JSON.parse(txt.slice(s,e)).doc;}
+  const j=JSON.parse(txt);return j.doc||j;
+}
 function loadText(txt,name){
-  try{const j=JSON.parse(txt);const d=j.doc||j;if(!d.pages)throw new Error('not an org-chart file');
-    commit();doc=d;if(name)doc.name=name.replace(/\.sarorg\.json$|\.json$/,'');cur=0;clearSel();dirty=false;lcache.key='';render();renderThumbs();autosave();toast('Opened '+doc.name);
+  try{const d=parseSaved(txt);if(!d||!d.pages)throw new Error('not an org-chart file');
+    commit();doc=d;if(name)doc.name=name.replace(/\.sarorg\.json$|\.json$|\.html?$/i,'');cur=0;clearSel();dirty=false;lcache.key='';render();renderThumbs();autosave();toast('Opened '+doc.name);
   }catch(e){toast('Cannot open file: '+e.message);}
 }
 async function openFile(){
   if(window.showOpenFilePicker){
-    try{const[h]=await window.showOpenFilePicker({types:[{description:'SAR Org Chart',accept:{'application/json':['.json']}}]});
-      const f=await h.getFile();loadText(await f.text(),f.name);fileHandle=h;}catch(e){}
+    try{const[h]=await window.showOpenFilePicker({types:HTML_TYPES.concat([{description:'JSON',accept:{'application/json':['.json']}}])});
+      const f=await h.getFile();loadText(await f.text(),f.name);fileHandle=/\.html?$/i.test(f.name)?h:null;}catch(e){}
   }else $('fileIn').click();
 }
 $('fileIn').onchange=async e=>{const f=e.target.files[0];if(f){loadText(await f.text(),f.name);fileHandle=null;}e.target.value='';};
@@ -609,7 +825,7 @@ function fileAction(a){
   $('filemenu').style.display='none';
   if(a==='new'){if(dirty&&!confirm('Discard unsaved changes and reload the original 5 options?'))return;doc=defaultDoc();cur=0;undo=[];redo=[];clearSel();fileHandle=null;dirty=false;lcache.key='';render();renderThumbs();autosave();}
   else if(a==='open')openFile();else if(a==='save')saveFile(false);else if(a==='saveas')saveFile(true);
-  else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
+  else if(a==='json')exportJSON();else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
 }
 $('filemenu').onclick=e=>{const d=e.target.closest('[data-a]');if(d)fileAction(d.dataset.a);};
 window.addEventListener('beforeprint',()=>{if(!$('printRoot').innerHTML)$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');});
@@ -910,7 +1126,758 @@ document.addEventListener('fullscreenchange',()=>{$('tFull').textContent=documen
 /* ===================== INIT ===================== */
 (function init(){
   let restored=false;
-  try{const s=localStorage.getItem('sar-orgchart-autosave');if(s){const o=JSON.parse(s);if(o.doc&&o.doc.pages&&o.doc.pages.length){doc=o.doc;cur=Math.min(o.cur||0,doc.pages.length-1);restored=true;}}}catch(e){}
+  if(window.__SAVED&&window.__SAVED.doc&&window.__SAVED.doc.pages){doc=window.__SAVED.doc;cur=Math.min(window.__SAVED.cur||0,doc.pages.length-1);}
+  else try{const s=localStorage.getItem('sar-orgchart-autosave');if(s){const o=JSON.parse(s);if(o.doc&&o.doc.pages&&o.doc.pages.length){doc=o.doc;cur=Math.min(o.cur||0,doc.pages.length-1);restored=true;}}}catch(e){}
+  if(!doc)doc=defaultDoc();
+  fit();renderThumbs();render();
+  if(restored)toast('Restored your last session (File ▸ New to start from the original)');
+  window.__sar={get doc(){return doc;},layoutPage,render,get page(){return page();}};
+})();
+<\/script>
+</body>
+</html>
+</script>
+<script>
+"use strict";
+const ORIGINAL = {"pages":[{"id":"p1","title":"Option 1 — Section-Based Structure – Central Engineering Manager","label":"Engineering:","sub":"Engineering Manager reports to Program Manager, shared by both sections","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Section 1 Project ↔ Engineering Manager ↔ Section 2 Project ↔ Contract Administration.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":384,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":384,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":384,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":384,"y":552,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":384,"y":622,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":668,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":692,"y":552,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":692,"y":622,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n17","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n17","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e17","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n9","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e19","to":"n10","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e20","to":"n16","kind":"link","fromSide":"auto","toSide":"auto","from":"n10","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p2","title":"Option 2 — Section-Based Structure – Engineering Focal Point per Section","label":"Engineering:","sub":"Engineering Focal Point embedded in each section","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Section 1 Project ↔ Section 2 Project ↔ Contract Administration. Each Engineering Focal Point is a non-line role within its section.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":282,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":436,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":461,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":461,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":461,"y":481,"w":99,"h":50,"text":"Engineering Focal Point","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":461,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":461,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":590,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":615,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":615,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":615,"y":481,"w":99,"h":50,"text":"Engineering Focal Point","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":615,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":615,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":745,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n9","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e17","to":"n9","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n15","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p3","title":"Option 3 — Phase-Based Structure – Engineering within Execution","label":"Engineering:","sub":"Engineering Manager reports to Execution","coordLabel":"Coordination / functional links:","coord":"Planning ↔ Development ↔ Execution ↔ Closing. Document Control & Admin is shown as staff support (assistant) to the Program Manager.","nodes":[{"id":"n1","x":517,"y":128,"w":93,"h":46,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":224,"y":260,"w":93,"h":46,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":370,"y":260,"w":93,"h":46,"text":"Development","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":517,"y":260,"w":93,"h":46,"text":"Execution","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":540,"y":326,"w":93,"h":46,"text":"Construction Manager","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":540,"y":392,"w":93,"h":46,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":540,"y":458,"w":93,"h":46,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":540,"y":524,"w":93,"h":46,"text":"Engineering Manager","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":540,"y":590,"w":93,"h":46,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":540,"y":656,"w":93,"h":46,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":663,"y":260,"w":93,"h":46,"text":"Closing","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":809,"y":260,"w":93,"h":46,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":460,"y":194,"w":93,"h":46,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n13","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n4","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n2","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e14","to":"n4","kind":"link","fromSide":"auto","toSide":"auto","from":"n3","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e15","to":"n11","kind":"link","fromSide":"auto","toSide":"auto","from":"n4","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p4","title":"Option 4 — Phase-Based Structure – Central Engineering Function","label":"Engineering:","sub":"Engineering Manager reports to Program Manager, coordinating with Execution","coordLabel":"Coordination / functional links:","coord":"Engineering Manager ↔ Execution.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Development & Closing","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":668,"y":269,"w":99,"h":50,"text":"Execution","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":692,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":692,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n12","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n5","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n5","kind":"link","fromSide":"auto","toSide":"auto","from":"n4","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true},{"id":"p5","title":"Option 5 — Section-Based Structure – Central Engineering Focal Point","label":"Engineering:","sub":"Single Engineering Focal Point linked to the Program Manager, coordinating with both sections","coordLabel":"Coordination / functional links:","coord":"Engineering Focal Point ↔ Section 1 Project and Section 2 Project.","nodes":[{"id":"n1","x":513,"y":128,"w":99,"h":50,"text":"Program Manager","fill":"#3D3935","stroke":"#3D3935","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n2","x":205,"y":269,"w":99,"h":50,"text":"Planning","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n3","x":359,"y":269,"w":99,"h":50,"text":"Section 1 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n4","x":384,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n5","x":384,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n6","x":384,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n7","x":384,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n8","x":384,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n9","x":513,"y":269,"w":99,"h":50,"text":"Engineering Manager","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n10","x":668,"y":269,"w":99,"h":50,"text":"Section 2 Project","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n11","x":692,"y":340,"w":99,"h":50,"text":"Construction","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n12","x":692,"y":411,"w":99,"h":50,"text":"PMs & PEs","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n13","x":692,"y":481,"w":99,"h":50,"text":"EHSS","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n14","x":692,"y":552,"w":99,"h":50,"text":"Quantity Surveying (QS)","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n15","x":692,"y":622,"w":99,"h":50,"text":"Inspection","fill":"#E6F1F4","stroke":"#00778B","color":"#3D3935","fontSize":11,"bold":false,"shape":"rect","font":"Diodrum Arabic"},{"id":"n16","x":822,"y":269,"w":99,"h":50,"text":"Contract Administration","fill":"#00778B","stroke":"#00778B","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"},{"id":"n17","x":453,"y":199,"w":99,"h":50,"text":"Document Control & Admin","fill":"#768692","stroke":"#768692","color":"#FFFFFF","fontSize":11,"bold":true,"shape":"rect","font":"Diodrum Arabic"}],"edges":[{"id":"e1","to":"n2","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e2","to":"n3","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e3","to":"n9","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e4","to":"n10","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e5","to":"n16","kind":"report","fromSide":"auto","toSide":"auto","from":"n1","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e6","to":"n17","kind":"report","fromSide":"bottom","toSide":"right","from":"n1","route":"elbow","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e7","to":"n4","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e8","to":"n5","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e9","to":"n6","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e10","to":"n7","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e11","to":"n8","kind":"report","fromSide":"auto","toSide":"auto","from":"n3","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e12","to":"n11","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e13","to":"n12","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e14","to":"n13","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e15","to":"n14","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e16","to":"n15","kind":"report","fromSide":"auto","toSide":"auto","from":"n10","route":"tree","dash":"solid","color":"#3D3935","width":1.5,"arrow":"none","label":"","fp":null,"tp":null},{"id":"e17","to":"n3","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null},{"id":"e18","to":"n10","kind":"link","fromSide":"auto","toSide":"auto","from":"n9","route":"avoid","dash":"dash","color":"#F1B434","width":2.2,"arrow":"both","label":"","fp":null,"tp":null}],"showLegend":true}]};
+const PW=1123, PH=794, GRID=10, XH='xmlns="http://www.w3.org/1999/xhtml"';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let _u=Date.now()%1e6; const uid=p=>p+(++_u).toString(36);
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+/* ===================== STATE ===================== */
+let doc, cur=0, selN=new Set(), selE=null, hoverId=null, zoom=1, tool='sel';
+let undo=[], redo=[], dirty=false, fileHandle=null, clipboard=null, pasteN=0;
+let opts={grid:false,snap:true};
+let connectFrom=null, drag=null, marquee=null, tempLine=null;
+
+function defaultDoc(){
+  const d=clone(ORIGINAL);
+  d.name='SAR_Program_Org_Chart_Options';
+  d.header={brand:'SAR',tag:'Saudi Arabia Railways',right:'Program Organization Structure – Options'};
+  return d;
+}
+const page=()=>doc.pages[cur];
+const nodeById=(p,id)=>p.nodes.find(n=>n.id===id);
+
+/* ===================== GEOMETRY / PORTS ===================== */
+const DIRS={top:[0,-1],right:[1,0],bottom:[0,1],left:[-1,0]};
+const OPP={top:'bottom',bottom:'top',left:'right',right:'left'};
+function portPt(n,side,pos=.5){
+  switch(side){
+    case 'top':return{x:n.x+n.w*pos,y:n.y};
+    case 'bottom':return{x:n.x+n.w*pos,y:n.y+n.h};
+    case 'left':return{x:n.x,y:n.y+n.h*pos};
+    default:return{x:n.x+n.w,y:n.y+n.h*pos};
+  }
+}
+function autoSides(a,b){
+  const hs=b.x>a.x+a.w||a.x>b.x+b.w, vs=b.y>a.y+a.h||a.y>b.y+b.h;
+  const dx=(b.x+b.w/2)-(a.x+a.w/2), dy=(b.y+b.h/2)-(a.y+a.h/2);
+  let horiz;
+  if(hs&&!vs)horiz=true; else if(vs&&!hs)horiz=false; else horiz=Math.abs(dx)>=Math.abs(dy)*1.4;
+  if(horiz)return dx>=0?['right','left']:['left','right'];
+  return dy>=0?['bottom','top']:['top','bottom'];
+}
+function simplify(pts){
+  const o=[];
+  for(const p of pts){
+    if(o.length&&Math.abs(o[o.length-1].x-p.x)<.01&&Math.abs(o[o.length-1].y-p.y)<.01)continue;
+    o.push(p);
+  }
+  for(let i=o.length-2;i>0;i--){
+    const a=o[i-1],b=o[i],c=o[i+1];
+    if((Math.abs(a.x-b.x)<.01&&Math.abs(b.x-c.x)<.01)||(Math.abs(a.y-b.y)<.01&&Math.abs(b.y-c.y)<.01))o.splice(i,1);
+  }
+  return o;
+}
+function elbow(p1,s1,p2,s2,busY){
+  const v1=s1==='top'||s1==='bottom', v2=s2==='top'||s2==='bottom';
+  if(v1&&!v2)return[p1,{x:p1.x,y:p2.y},p2];
+  if(!v1&&v2)return[p1,{x:p2.x,y:p1.y},p2];
+  if(v1){const my=busY??(p1.y+p2.y)/2;return[p1,{x:p1.x,y:my},{x:p2.x,y:my},p2];}
+  const mx=(p1.x+p2.x)/2;return[p1,{x:mx,y:p1.y},{x:mx,y:p2.y},p2];
+}
+
+/* ---------- obstacle-avoiding orthogonal router (A* on a compressed grid) ---------- */
+const STUB=12, MARG=8, BEND=45;
+function segHitsRect(x1,y1,x2,y2,r){
+  const xa=Math.min(x1,x2),xb=Math.max(x1,x2),ya=Math.min(y1,y2),yb=Math.max(y1,y2);
+  return xb>r.l+.01&&xa<r.r-.01&&yb>r.t+.01&&ya<r.b-.01;
+}
+function routeAvoid(p1,s1,p2,s2,rects,used){
+  const d1=DIRS[s1],d2=DIRS[s2];
+  const a={x:p1.x+d1[0]*STUB,y:p1.y+d1[1]*STUB}, b={x:p2.x+d2[0]*STUB,y:p2.y+d2[1]*STUB};
+  const xsS=new Set([a.x,b.x,10,PW-10]), ysS=new Set([a.y,b.y,10,PH-10]);
+  for(const r of rects){for(const m of[MARG,MARG+9]){xsS.add(r.l-m);xsS.add(r.r+m);ysS.add(r.t-m);ysS.add(r.b+m);}}
+  const rnd=v=>Math.round(v*2)/2;
+  const xs=[...new Set([...xsS].map(rnd))].filter(v=>v>=0&&v<=PW).sort((p,q)=>p-q);
+  const ys=[...new Set([...ysS].map(rnd))].filter(v=>v>=0&&v<=PH).sort((p,q)=>p-q);
+  const nx=xs.length,ny=ys.length;
+  const xi=new Map(xs.map((v,i)=>[v,i])), yi=new Map(ys.map((v,i)=>[v,i]));
+  const sx=xi.get(rnd(a.x)),sy=yi.get(rnd(a.y)),gx=xi.get(rnd(b.x)),gy=yi.get(rnd(b.y));
+  if(sx==null||sy==null||gx==null||gy==null)return null;
+  const DV=[[0,-1],[1,0],[0,1],[-1,0]];
+  const dirIdx=d=>DV.findIndex(v=>v[0]===d[0]&&v[1]===d[1]);
+  const endIn=dirIdx([-d2[0],-d2[1]]);
+  const N=nx*ny*4, dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1);
+  const heap=[]; // [f,state]
+  const push=(f,s)=>{heap.push([f,s]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
+  const pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i,L=2*i+1,R=L+1;if(L<heap.length&&heap[L][0]<heap[m][0])m=L;if(R<heap.length&&heap[R][0]<heap[m][0])m=R;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
+  const h=(ix,iy)=>Math.abs(xs[ix]-xs[gx])+Math.abs(ys[iy]-ys[gy]);
+  const st=(ix,iy,d)=>(iy*nx+ix)*4+d;
+  const s0=st(sx,sy,dirIdx(d1)); dist[s0]=0; push(h(sx,sy),s0);
+  let goal=-1,best=Infinity;
+  while(heap.length){
+    const [f,s]=pop(); if(f>best)break;
+    const d=s&3, c=s>>2, ix=c%nx, iy=(c-ix)/nx;
+    if(ix===gx&&iy===gy){ if(dist[s]<best){best=dist[s];goal=s;} continue; }
+    if(f-h(ix,iy)>dist[s]+1e-6)continue;
+    for(let nd=0;nd<4;nd++){
+      if(((nd+2)&3)===d)continue;
+      const jx=ix+DV[nd][0], jy=iy+DV[nd][1];
+      if(jx<0||jy<0||jx>=nx||jy>=ny)continue;
+      const x1=xs[ix],y1=ys[iy],x2=xs[jx],y2=ys[jy];
+      let blocked=false;
+      for(const r of rects){if(segHitsRect(x1,y1,x2,y2,r)){blocked=true;break;}}
+      if(blocked)continue;
+      const len=Math.abs(x2-x1)+Math.abs(y2-y1);
+      let cost=len+(nd!==d?BEND:0);
+      if(jx===gx&&jy===gy&&nd!==endIn)cost+=BEND;
+      for(const u of used){
+        if(u.h){
+          if(y1===y2&&Math.abs(u.y-y1)<2){const ov=Math.min(Math.max(x1,x2),u.b)-Math.max(Math.min(x1,x2),u.a);if(ov>0)cost+=ov*5;}
+          else if(x1===x2&&x1>u.a+1&&x1<u.b-1&&u.y>Math.min(y1,y2)&&u.y<Math.max(y1,y2))cost+=35;
+        }else{
+          if(x1===x2&&Math.abs(u.x-x1)<2){const ov=Math.min(Math.max(y1,y2),u.b)-Math.max(Math.min(y1,y2),u.a);if(ov>0)cost+=ov*5;}
+          else if(y1===y2&&y1>u.a+1&&y1<u.b-1&&u.x>Math.min(x1,x2)&&u.x<Math.max(x1,x2))cost+=35;
+        }
+      }
+      const ns=st(jx,jy,nd), nc=dist[s]+cost;
+      if(nc<dist[ns]){dist[ns]=nc;prev[ns]=s;push(nc+h(jx,jy),ns);}
+    }
+  }
+  if(goal<0)return null;
+  const pts=[p2,b]; let s=goal;
+  while(s>=0){const c=s>>2,ix=c%nx,iy=(c-ix)/nx;pts.push({x:xs[ix],y:ys[iy]});s=prev[s];}
+  pts.push(p1); pts.reverse();
+  // pts currently p1,(a..),...,b,p2 — first routed point is a (start), last is b
+  return{pts:simplify(pts),cost:best};
+}
+
+/* ---------- layout all edges of a page ---------- */
+const lcache={key:'',val:null};
+function layoutPage(p){
+  const key=JSON.stringify([p.nodes.map(n=>[n.id,n.x,n.y,n.w,n.h,n.shape]),p.edges]);
+  if(lcache.key===key&&lcache.p===p)return lcache.val;
+  const nodes=new Map(p.nodes.map(n=>[n.id,n]));
+  const out={}, used=[], slots={};
+  const takeSlot=(id,side,want)=>{
+    const k=id+side, arr=slots[k]||(slots[k]=[]);
+    if(want!=null){arr.push(want);return want;}
+    for(const c of[.5,.3,.7,.15,.85]){if(!arr.some(v=>Math.abs(v-c)<.09)){arr.push(c);return c;}}
+    arr.push(.5);return .5;
+  };
+  const addUsed=pts=>{for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];
+    if(Math.abs(a.y-b.y)<.01)used.push({h:true,y:a.y,a:Math.min(a.x,b.x),b:Math.max(a.x,b.x)});
+    else if(Math.abs(a.x-b.x)<.01)used.push({h:false,x:a.x,a:Math.min(a.y,b.y),b:Math.max(a.y,b.y)});}};
+  const valid=p.edges.filter(e=>nodes.has(e.from)&&nodes.has(e.to)&&e.from!==e.to);
+  // bus levels for org-chart edges
+  const bus={};
+  for(const e of valid){
+    if(e.route!=='tree'||e.fromSide!=='auto'&&e.fromSide!=='bottom'||e.toSide!=='auto'&&e.toSide!=='top')continue;
+    const A=nodes.get(e.from),B=nodes.get(e.to);
+    if(B.y>=A.y+A.h&&!(e.toSide==='auto'&&spineOK(A,B))){bus[A.id]=Math.min(bus[A.id]??1e9,B.y);}
+  }
+  function spineOK(A,B){const dx=B.x-A.x;return B.y>=A.y+A.h&&dx>=8&&dx<=44&&B.x-16>=A.x+4;}
+  const trees=valid.filter(e=>e.route==='tree'||e.route==='elbow'||e.route==='straight');
+  const links=valid.filter(e=>e.route==='avoid');
+  for(const e of trees){
+    const A=nodes.get(e.from),B=nodes.get(e.to);
+    let fs=e.fromSide,ts=e.toSide,pts;
+    if(e.route==='tree'&&(fs==='auto'||fs==='bottom')&&(ts==='auto'||ts==='left')&&spineOK(A,B)){
+      const sx=B.x-16, pos=(sx-A.x)/A.w;
+      takeSlot(A.id,'bottom',pos);takeSlot(B.id,'left',.5);
+      pts=[{x:sx,y:A.y+A.h},{x:sx,y:B.y+B.h/2},{x:B.x,y:B.y+B.h/2}];
+      out[e.id]={pts:simplify(pts),fs:'bottom',ts:'left'};addUsed(out[e.id].pts);continue;
+    }
+    if(fs==='auto'||ts==='auto'){
+      const [af,at]=e.route==='tree'&&B.y>=A.y+A.h?['bottom','top']:autoSides(A,B);
+      if(fs==='auto')fs=af;if(ts==='auto')ts=at;}
+    const p1=portPt(A,fs,takeSlot(A.id,fs,e.fp!=null?e.fp:.5)), p2=portPt(B,ts,takeSlot(B.id,ts,e.tp!=null?e.tp:.5));
+    if(e.route==='straight')pts=[p1,p2];
+    else{
+      let by;
+      if(e.route==='tree'&&fs==='bottom'&&ts==='top'&&bus[A.id]!=null)by=(A.y+A.h+bus[A.id])/2;
+      pts=elbow(p1,fs,p2,ts,by);
+    }
+    out[e.id]={pts:simplify(pts),fs,ts};addUsed(out[e.id].pts);
+  }
+  const boxes=p.nodes.map(n=>({id:n.id,l:n.x,t:n.y,r:n.x+n.w,b:n.y+n.h}));
+  for(const e of links){
+    const A=nodes.get(e.from),B=nodes.get(e.to);
+    const rectsFor=(inf)=>boxes.map(r=>({l:r.l-(r.id===A.id||r.id===B.id?1:inf),t:r.t-(r.id===A.id||r.id===B.id?1:inf),r:r.r+(r.id===A.id||r.id===B.id?1:inf),b:r.b+(r.id===A.id||r.id===B.id?1:inf)}));
+    const rects=rectsFor(MARG);
+    const [af,at]=autoSides(A,B);
+    const tiers=[];
+    if(e.fromSide!=='auto'||e.toSide!=='auto')tiers.push([[e.fromSide==='auto'?af:e.fromSide,e.toSide==='auto'?at:e.toSide,0]]);
+    else{
+      tiers.push([[af,at,0]]);
+      tiers.push(af==='right'||af==='left'?[['top','top',25],['bottom','bottom',25]]:[['left','left',25],['right','right',25]]);
+      tiers.push([['top','bottom',60],['right','left',60],['bottom','top',60],['left','right',60]]);
+    }
+    let best=null;
+    const pickPos=(n,side,want)=>{if(want!=null)return want;const arr=slots[n.id+side]||[];for(const c of[.5,.3,.7,.15,.85])if(!arr.some(v=>Math.abs(v-c)<.09))return c;return .5;};
+    const len=pts=>pts.reduce((s,q,i)=>i?s+Math.abs(q.x-pts[i-1].x)+Math.abs(q.y-pts[i-1].y):0,0);
+    for(const tier of tiers){
+      for(const [fs,ts,pen] of tier){
+        const fp=pickPos(A,fs,e.fp),tp=pickPos(B,ts,e.tp);
+        const p1=portPt(A,fs,fp),p2=portPt(B,ts,tp);
+        let r=null;
+        if(fs===OPP[ts]){ // facing sides: try a plain straight / Z connection first
+          const sp=simplify(elbow(p1,fs,p2,ts));
+          let clear=true;
+          for(const rc of boxes){if(rc.id===A.id||rc.id===B.id)continue;for(let i=0;i<sp.length-1;i++)if(segHitsRect(sp[i].x,sp[i].y,sp[i+1].x,sp[i+1].y,{l:rc.l-4,t:rc.t-4,r:rc.r+4,b:rc.b+4}))clear=false;}
+          const fwd=fs==='right'?p2.x>p1.x:fs==='left'?p2.x<p1.x:fs==='bottom'?p2.y>p1.y:p2.y<p1.y;
+          if(clear&&fwd)r={pts:sp,cost:len(sp)+(sp.length-2)*BEND};
+        }
+        if(!r)r=routeAvoid(p1,fs,p2,ts,rects,used);
+        if(!r)continue;
+        r.fs=fs;r.ts=ts;r.fp=fp;r.tp=tp;r.total=r.cost+pen;
+        if(!best||r.total<best.total)best=r;
+      }
+      if(best){const ideal=Math.abs(portPt(A,best.fs).x-portPt(B,best.ts).x)+Math.abs(portPt(A,best.fs).y-portPt(B,best.ts).y);
+        if(best.cost<=ideal*1.3+BEND*2+40)break;}
+    }
+    if(!best){ // fallback
+      const [fs,ts]=[af,at];best={pts:simplify(elbow(portPt(A,fs),fs,portPt(B,ts),ts)),fs,ts,fp:.5,tp:.5};
+    }
+    takeSlot(A.id,best.fs,best.fp);takeSlot(B.id,best.ts,best.tp);
+    out[e.id]=best;addUsed(best.pts);
+  }
+  lcache.key=key;lcache.p=p;lcache.val=out;return out;
+}
+
+/* ===================== RENDER ===================== */
+function ptsToPath(pts,r){
+  if(!r||pts.length<3)return'M'+pts.map(p=>p.x.toFixed(1)+' '+p.y.toFixed(1)).join('L');
+  let d='M'+pts[0].x.toFixed(1)+' '+pts[0].y.toFixed(1);
+  for(let i=1;i<pts.length-1;i++){
+    const a=pts[i-1],b=pts[i],c=pts[i+1];
+    const l1=Math.hypot(b.x-a.x,b.y-a.y),l2=Math.hypot(c.x-b.x,c.y-b.y),rr=Math.min(r,l1/2,l2/2);
+    const p=[b.x-(b.x-a.x)/l1*rr,b.y-(b.y-a.y)/l1*rr],q=[b.x+(c.x-b.x)/l2*rr,b.y+(c.y-b.y)/l2*rr];
+    d+=`L${p[0].toFixed(1)} ${p[1].toFixed(1)}Q${b.x.toFixed(1)} ${b.y.toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`;
+  }
+  const z=pts[pts.length-1];return d+`L${z.x.toFixed(1)} ${z.y.toFixed(1)}`;
+}
+function arrowPoly(tip,from,w,color,seg){
+  const dx=tip.x-from.x,dy=tip.y-from.y,l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,k=Math.min(1,l/(2.6*(5+w*1.3))),L=(5+w*1.3)*k,W=(2.4+w*.7)*k;
+  const bx=tip.x-ux*L,by=tip.y-uy*L;
+  return `<polygon points="${tip.x.toFixed(1)},${tip.y.toFixed(1)} ${(bx-uy*W).toFixed(1)},${(by+ux*W).toFixed(1)} ${(bx+uy*W).toFixed(1)},${(by-ux*W).toFixed(1)}" fill="${color}"/>`;
+}
+function textBox(x,y,w,h,html,style,h_){
+  return `<foreignObject x="${x}" y="${y}" width="${w}" height="${h}" ${h_?`data-h="${h_}"`:''}><div ${XH} style="width:100%;height:100%;${style}">${html}</div></foreignObject>`;
+}
+function pageMarkup(p,pi,interactive){
+  const L=layoutPage(p), hdr=doc.header, show=p.showHdr!==false, T="font-family:'Diodrum Arabic',Arial,sans-serif;";
+  let s=`<rect width="${PW}" height="${PH}" fill="#fff"/>`;
+  if(interactive&&opts.grid){
+    let g='';for(let x=0;x<=PW;x+=GRID*5)g+=`M${x} 0V${PH}`;for(let y=0;y<=PH;y+=GRID*5)g+=`M0 ${y}H${PW}`;
+    s+=`<path d="${g}" stroke="#e4e9ee" stroke-width="1" fill="none"/>`;
+  }
+  if(show){
+    // SAR chrome: wordmark top-left, breadcrumb top-right, SAR Blue baseline with circle node
+    s+=textBox(64,20,420,26,`<span style="color:#00778B;font-weight:700;font-size:20px;letter-spacing:1px">${esc(hdr.brand)}</span><span style="color:#768692;font-size:11px"> &#160;|&#160; ${esc(hdr.tag)}</span>`,T+'display:flex;align-items:baseline',interactive?'text:brand':'');
+    s+=textBox(560,24,499,22,esc(hdr.right)+` &#160;|&#160; <span style="color:#00778B">${esc(p.title.split('—')[0].trim())}</span>`,T+'text-align:right;color:#768692;font-size:10px;display:flex;align-items:center;justify-content:flex-end',interactive?'text:hright':'');
+  }
+  s+=`<polygon points="64,60 71,60 67,84 60,84" fill="#00778B"/>`;
+  s+=textBox(80,56,740,32,esc(p.title),T+'color:#00778B;font-weight:700;font-size:21px;display:flex;align-items:center;white-space:nowrap',interactive?'text:title':'');
+  s+=textBox(80,88,740,20,`<b style="color:#00778B">${esc(p.label)}</b>&#160;${esc(p.sub)}`,T+'font-size:11.5px;color:#3D3935;display:flex;align-items:center',interactive?'text:sub':'');
+  s+=`<line x1="64" x2="${PW-64}" y1="112" y2="112" stroke="#00778B" stroke-width="1.5"/><circle cx="${PW-64}" cy="112" r="4.5" fill="#fff" stroke="#00778B" stroke-width="1.5"/>`;
+  if(p.showLegend!==false){
+    const lx=PW-64-248,ly=72;
+    s+=`<line x1="${lx}" x2="${lx+34}" y1="${ly}" y2="${ly}" stroke="#3D3935" stroke-width="1.5"/>`;
+    s+=textBox(lx+40,ly-9,70,18,'Reporting line',T+'font-size:9.5px;color:#444;display:flex;align-items:center');
+    s+=`<line x1="${lx+118}" x2="${lx+152}" y1="${ly}" y2="${ly}" stroke="#F1B434" stroke-width="1.8" stroke-dasharray="6 4"/>`;
+    s+=textBox(lx+158,ly-9,90,18,'Coordination link',T+'font-size:9.5px;color:#444;display:flex;align-items:center');
+  }
+  // edges
+  const order=p.edges.filter(e=>L[e.id]);
+  for(const e of order){
+    const r=L[e.id], pts=r.pts, dash=e.dash==='dash'?'7 4':e.dash==='dot'?'2 3':'';
+    const hit=selE===e.id&&interactive;
+    if(interactive)s+=`<path d="${ptsToPath(pts,0)}" fill="none" stroke="transparent" stroke-width="12" data-h="edge:${e.id}" style="cursor:pointer"/>`;
+    if(hit)s+=`<path d="${ptsToPath(pts,e.radius??0)}" fill="none" stroke="#59CBE8" stroke-opacity=".35" stroke-width="${e.width+6}"/>`;
+    s+=`<path d="${ptsToPath(pts,e.radius??(e.route==='avoid'?6:0))}" fill="none" stroke="${e.color}" stroke-width="${e.width}" ${dash?`stroke-dasharray="${dash}"`:''} stroke-linejoin="round" stroke-linecap="butt" pointer-events="none"/>`;
+    const n=pts.length;
+    if(e.arrow==='end'||e.arrow==='both')s+=arrowPoly(pts[n-1],pts[n-2],e.width,e.color);
+    if(e.arrow==='start'||e.arrow==='both')s+=arrowPoly(pts[0],pts[1],e.width,e.color);
+    if(e.label){
+      let bi=0,bl=0;for(let i=0;i<n-1;i++){const l=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);if(l>bl){bl=l;bi=i;}}
+      const mx=(pts[bi].x+pts[bi+1].x)/2,my=(pts[bi].y+pts[bi+1].y)/2,w=Math.max(30,e.label.length*5.6+10);
+      s+=`<rect x="${mx-w/2}" y="${my-8}" width="${w}" height="16" rx="3" fill="#fff" stroke="${e.color}" stroke-width=".8"/>`;
+      s+=textBox(mx-w/2,my-8,w,16,esc(e.label),T+`font-size:9.5px;color:${e.color};display:flex;align-items:center;justify-content:center;white-space:nowrap`,interactive?`edge:${e.id}`:'');
+    }
+  }
+  // nodes
+  for(const n of p.nodes){
+    const sw=n.strokeW??1.25, rx=n.shape==='round'?8:n.shape==='pill'?n.h/2:0;
+    let shape;
+    if(n.shape==='ellipse')shape=`<ellipse cx="${n.x+n.w/2}" cy="${n.y+n.h/2}" rx="${n.w/2}" ry="${n.h/2}" fill="${n.fill}" stroke="${n.stroke}" stroke-width="${sw}"/>`;
+    else shape=`<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${rx}" fill="${n.fill}" stroke="${n.stroke}" stroke-width="${sw}"/>`;
+    const jc=n.align==='left'?'flex-start':n.align==='right'?'flex-end':'center', ai=n.valign==='top'?'flex-start':n.valign==='bottom'?'flex-end':'center';
+    const st=`font-family:'${n.font||'Arial'}',Arial,sans-serif;font-size:${n.fontSize}px;color:${n.color};${n.bold?'font-weight:700;':''}${n.italic?'font-style:italic;':''}${n.underline?'text-decoration:underline;':''}text-align:${n.align||'center'};display:flex;align-items:${ai};justify-content:${jc};padding:3px 5px;line-height:1.15;overflow:hidden;word-break:break-word;white-space:pre-wrap;`;
+    s+=`<g data-h="node:${n.id}" style="cursor:move">${shape}${textBox(n.x,n.y,n.w,n.h,`<span>${esc(n.text)}</span>`,st)}</g>`;
+  }
+  s+=`<line x1="64" x2="${PW-64}" y1="716" y2="716" stroke="#C8C9C7"/>`;
+  if(p.showNotes!==false)s+=textBox(64,722,PW-128,40,`<span><b style="color:#00778B">${esc(p.coordLabel)}</b> ${esc(p.coord)}</span>`,T+'font-size:10.5px;color:#3D3935;line-height:1.3',interactive?'text:coord':'');
+  if(show){
+    s+=textBox(PW-224,764,160,18,`Page ${pi+1} of ${doc.pages.length}`,T+'font-size:9.5px;color:#768692;text-align:right;display:flex;align-items:center;justify-content:flex-end');
+    s+=textBox(64,764,200,18,'SAR.COM.SA',T+'font-size:9.5px;color:#00778B;font-weight:700;letter-spacing:1px;display:flex;align-items:center');
+    s+=`<polygon points="${PW-52},784 ${PW-40},764 ${PW-34},764 ${PW-46},784" fill="#00778B"/><polygon points="${PW-40},784 ${PW-28},764 ${PW-24},764 ${PW-36},784" fill="#71B2C9"/>`;
+  }
+  return s;
+}
+function overlayMarkup(p){
+  let s='';const L=layoutPage(p);
+  for(const id of selN){const n=nodeById(p,id);if(!n)continue;
+    s+=`<rect x="${n.x-3}" y="${n.y-3}" width="${n.w+6}" height="${n.h+6}" fill="none" stroke="#59CBE8" stroke-width="1.2" stroke-dasharray="4 3" pointer-events="none"/>`;}
+  if(selN.size===1&&tool==='sel'){
+    const n=nodeById(p,[...selN][0]);
+    if(n)for(const [k,hx,hy] of[['nw',0,0],['n',.5,0],['ne',1,0],['e',1,.5],['se',1,1],['s',.5,1],['sw',0,1],['w',0,.5]])
+      s+=`<rect x="${n.x+n.w*hx-4}" y="${n.y+n.h*hy-4}" width="8" height="8" fill="#fff" stroke="#59CBE8" stroke-width="1.4" data-h="resize:${n.id}:${k}" style="cursor:${k}-resize"/>`;
+  }
+  const portFor=hoverId&&!drag?hoverId:(selN.size===1?[...selN][0]:null);
+  const pn=portFor&&nodeById(p,portFor);
+  if(pn&&!drag?.move&&!drag?.resize){
+    for(const side of['top','right','bottom','left']){const q=portPt(pn,side);
+      s+=`<circle cx="${q.x}" cy="${q.y}" r="5" fill="#59CBE8" fill-opacity=".85" stroke="#fff" stroke-width="1.5" data-h="port:${pn.id}:${side}" style="cursor:crosshair"/>`;}
+  }
+  if(connectFrom){const n=nodeById(p,connectFrom);if(n)s+=`<rect x="${n.x-4}" y="${n.y-4}" width="${n.w+8}" height="${n.h+8}" fill="none" stroke="#F1B434" stroke-width="2" pointer-events="none"/>`;}
+  if(selE&&L[selE]){const pts=L[selE].pts;
+    for(const [which,q] of[['from',pts[0]],['to',pts[pts.length-1]]])
+      s+=`<circle cx="${q.x}" cy="${q.y}" r="6" fill="#fff" stroke="#59CBE8" stroke-width="2" data-h="ep:${selE}:${which}" style="cursor:grab"/>`;}
+  if(drag?.port&&tempLine)s+=`<path d="M${tempLine.x1} ${tempLine.y1}L${tempLine.x2} ${tempLine.y2}" stroke="#59CBE8" stroke-width="2" stroke-dasharray="5 4" fill="none" pointer-events="none"/>`;
+  if(drag?.ep&&tempLine)s+=`<circle cx="${tempLine.x2}" cy="${tempLine.y2}" r="7" fill="#59CBE8" fill-opacity=".4" pointer-events="none"/>`;
+  if(marquee)s+=`<rect x="${Math.min(marquee.x1,marquee.x2)}" y="${Math.min(marquee.y1,marquee.y2)}" width="${Math.abs(marquee.x2-marquee.x1)}" height="${Math.abs(marquee.y2-marquee.y1)}" fill="#59CBE8" fill-opacity=".1" stroke="#59CBE8" pointer-events="none"/>`;
+  return s;
+}
+let rq=0;
+function render(now){
+  if(!now){if(!rq)rq=requestAnimationFrame(()=>{rq=0;render(true);});return;}
+  const p=page(),svg=$('page');
+  svg.setAttribute('viewBox',`0 0 ${PW} ${PH}`);svg.setAttribute('width',PW*zoom);svg.setAttribute('height',PH*zoom);
+  svg.innerHTML=pageMarkup(p,cur,true)+`<g id="ov">${overlayMarkup(p)}</g>`;
+  syncUI();
+}
+let thumbT=0;
+function renderThumbs(){
+  clearTimeout(thumbT);thumbT=setTimeout(()=>{
+    const keep=cur;
+    $('thumbs').innerHTML=doc.pages.map((p,i)=>`<div class="thumb ${i===keep?'on':''}" data-i="${i}"><svg viewBox="0 0 ${PW} ${PH}" xmlns="http://www.w3.org/2000/svg">${pageMarkup(p,i,false)}</svg><span class="n">${i+1} · ${esc(p.title.split('—')[0].trim())}</span></div>`).join('');
+  },120);
+}
+
+/* ===================== UI SYNC ===================== */
+const FS=[8,9,10,11,12,14,16,18,20,24,28,36];
+$('fSize').innerHTML=FS.map(v=>`<option>${v}</option>`).join('');
+function selNodes(){return[...selN].map(i=>nodeById(page(),i)).filter(Boolean);}
+function setVal(id,v){const el=$(id);if(document.activeElement!==el){if(el.type==='checkbox')el.checked=!!v;else el.value=v??'';}}
+function syncUI(){
+  const ns=selNodes(),n=ns[0],e=selE&&page().edges.find(x=>x.id===selE);
+  if(n){setVal('fFont',n.font||'Arial');setVal('fSize',n.fontSize);setVal('fColor',n.color);setVal('sFill',n.fill);setVal('sStroke',n.stroke);setVal('sSW',n.strokeW??1.25);setVal('sShape',n.shape);setVal('sW',Math.round(n.w));setVal('sH',Math.round(n.h));
+    $('fB').classList.toggle('on',!!n.bold);$('fI').classList.toggle('on',!!n.italic);$('fU').classList.toggle('on',!!n.underline);
+    for(const[k,v]of[['aL','left'],['aC','center'],['aR','right']])$(k).classList.toggle('on',(n.align||'center')===v);
+    for(const[k,v]of[['vT','top'],['vM','middle'],['vB','bottom']])$(k).classList.toggle('on',(n.valign||'middle')===v);}
+  if(e){setVal('eRoute',e.route);setVal('eDash',e.dash);setVal('eColor',e.color);setVal('eWidth',e.width);setVal('eArrow',e.arrow);setVal('eFS',e.fromSide);setVal('eTS',e.toSide);setVal('eFP',e.fp!=null?Math.round(e.fp*100):'');setVal('eTP',e.tp!=null?Math.round(e.tp*100):'');setVal('eLabel',e.label);}
+  for(const id of['eRoute','eDash','eColor','eWidth','eArrow','eFS','eTS','eFP','eTP','eLabel','eSwap','eDel'])$(id).disabled=!e;
+  $('tSel').classList.toggle('on',tool==='sel');$('tRep').classList.toggle('on',tool==='rep');$('tLink').classList.toggle('on',tool==='link');
+  setVal('oGrid',opts.grid);setVal('oSnap',opts.snap);setVal('oLegend',page().showLegend!==false);setVal('oHdr',page().showHdr!==false);setVal('oNotes',page().showNotes!==false);
+  $('stPage').textContent=`Page ${cur+1} of ${doc.pages.length}`;
+  $('stSel').textContent=e?'Connector selected':ns.length?`${ns.length} box${ns.length>1?'es':''} selected`:(tool!=='sel'?(connectFrom?'Click the target box':'Click the source box'):'');
+  $('dirty').textContent=dirty?'● unsaved':'';
+  $('docname').value!==doc.name&&document.activeElement!==$('docname')&&($('docname').value=doc.name);
+  $('zLbl').textContent=Math.round(zoom*100)+'%';$('zoom').value=Math.round(zoom*100);
+  $('tUndo').style.opacity=undo.length?1:.4;$('tRedo').style.opacity=redo.length?1:.4;
+  for(const t of document.querySelectorAll('.thumb'))t.classList.toggle('on',+t.dataset.i===cur);
+}
+
+/* ===================== HISTORY / SAVE ===================== */
+const snap=()=>JSON.stringify(doc);
+function commit(){ // call BEFORE mutating
+  undo.push(snap());if(undo.length>150)undo.shift();redo=[];
+}
+function changed(){dirty=true;lcache.key='';render();renderThumbs();autosave();}
+let asT=0;
+function autosave(){clearTimeout(asT);asT=setTimeout(()=>{try{localStorage.setItem('sar-orgchart-autosave',JSON.stringify({doc,cur}));}catch(e){}},400);}
+function doUndo(){if(!undo.length)return;redo.push(snap());doc=JSON.parse(undo.pop());cur=Math.min(cur,doc.pages.length-1);clearSel();dirty=true;lcache.key='';render();renderThumbs();autosave();}
+function doRedo(){if(!redo.length)return;undo.push(snap());doc=JSON.parse(redo.pop());cur=Math.min(cur,doc.pages.length-1);clearSel();dirty=true;lcache.key='';render();renderThumbs();autosave();}
+function clearSel(){selN.clear();selE=null;connectFrom=null;}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
+const fileName=()=>(doc.name||'SAR_Org_Chart_Editor').replace(/[\\/:*?"<>|]+/g,'_')+'.html';
+/* Self-contained save: the saved .html is this same editor with the current document embedded. */
+function buildHTML(){
+  const raw=$('selfsrc').textContent;                       // template text, "</script" escaped
+  const tpl=raw.split('<\\/script').join('<'+'/script');
+  const data=JSON.stringify({doc,cur}).replace(/</g,'\\u003c');
+  return tpl
+    .replace('<!--SA'+'VED-->',()=>'<script>window.__SAVED='+data+';<'+'/script>')
+    .replace('<!--SELF'+'SRC-->',()=>'<script type="text/plain" id="selfsrc">'+raw+'<'+'/script>');
+}
+const payload=buildHTML;
+function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+const HTML_TYPES=[{description:'SAR Org Chart Editor (HTML)',accept:{'text/html':['.html','.htm']}}];
+async function saveFile(as){
+  try{
+    if(window.showSaveFilePicker){
+      if(as||!fileHandle){
+        fileHandle=await window.showSaveFilePicker({suggestedName:fileName(),types:HTML_TYPES});
+        doc.name=fileHandle.name.replace(/\.html?$/i,'');
+      }
+      const w=await fileHandle.createWritable();await w.write(buildHTML());await w.close();
+      dirty=false;render();toast('Saved to '+fileHandle.name);
+    }else{
+      if(as){const n=prompt('Save as (file name):',doc.name);if(n===null)return;doc.name=n.trim()||doc.name;}
+      download(fileName(),new Blob([buildHTML()],{type:'text/html'}));
+      dirty=false;render();toast('Downloaded '+fileName());
+    }
+  }catch(e){if(e&&e.name!=='AbortError')toast('Save failed: '+e.message);}
+}
+function exportJSON(){download((doc.name||'org-chart')+'.sarorg.json',new Blob([JSON.stringify({format:'sar-orgchart-editor',version:1,doc},null,1)],{type:'application/json'}));}
+function parseSaved(txt){
+  const k=txt.indexOf('window.__SAVED=');
+  if(k>=0){const s=k+15,e=txt.indexOf(';<'+'/script>',s);return JSON.parse(txt.slice(s,e)).doc;}
+  const j=JSON.parse(txt);return j.doc||j;
+}
+function loadText(txt,name){
+  try{const d=parseSaved(txt);if(!d||!d.pages)throw new Error('not an org-chart file');
+    commit();doc=d;if(name)doc.name=name.replace(/\.sarorg\.json$|\.json$|\.html?$/i,'');cur=0;clearSel();dirty=false;lcache.key='';render();renderThumbs();autosave();toast('Opened '+doc.name);
+  }catch(e){toast('Cannot open file: '+e.message);}
+}
+async function openFile(){
+  if(window.showOpenFilePicker){
+    try{const[h]=await window.showOpenFilePicker({types:HTML_TYPES.concat([{description:'JSON',accept:{'application/json':['.json']}}])});
+      const f=await h.getFile();loadText(await f.text(),f.name);fileHandle=/\.html?$/i.test(f.name)?h:null;}catch(e){}
+  }else $('fileIn').click();
+}
+$('fileIn').onchange=async e=>{const f=e.target.files[0];if(f){loadText(await f.text(),f.name);fileHandle=null;}e.target.value='';};
+function svgString(p,pi){return`<svg xmlns="http://www.w3.org/2000/svg" width="${PW}" height="${PH}" viewBox="0 0 ${PW} ${PH}">${pageMarkup(p,pi,false)}</svg>`;}
+function exportSVG(){download((doc.name||'page')+`_p${cur+1}.svg`,new Blob([svgString(page(),cur)],{type:'image/svg+xml'}));}
+function exportPNG(){
+  const img=new Image(),url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgString(page(),cur));
+  img.onload=()=>{const c=document.createElement('canvas');c.width=PW*2;c.height=PH*2;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+    c.toBlob(b=>download((doc.name||'page')+`_p${cur+1}.png`,b));};
+  img.onerror=()=>toast('PNG export failed – use SVG or Print');img.src=url;
+}
+function doPrint(){$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');window.print();}
+function fileAction(a){
+  $('filemenu').style.display='none';
+  if(a==='new'){if(dirty&&!confirm('Discard unsaved changes and reload the original 5 options?'))return;doc=defaultDoc();cur=0;undo=[];redo=[];clearSel();fileHandle=null;dirty=false;lcache.key='';render();renderThumbs();autosave();}
+  else if(a==='open')openFile();else if(a==='save')saveFile(false);else if(a==='saveas')saveFile(true);
+  else if(a==='json')exportJSON();else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
+}
+$('filemenu').onclick=e=>{const d=e.target.closest('[data-a]');if(d)fileAction(d.dataset.a);};
+window.addEventListener('beforeprint',()=>{if(!$('printRoot').innerHTML)$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');});
+window.addEventListener('pagehide',()=>{try{localStorage.setItem('sar-orgchart-autosave',JSON.stringify({doc,cur}));}catch(e){}});
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+
+/* ===================== EDITING ACTIONS ===================== */
+const NODE_DEF={font:'Diodrum Arabic',fill:'#E6F1F4',stroke:'#00778B',color:'#3D3935',fontSize:11,bold:false,shape:'rect',strokeW:1.25};
+function snapV(v){return opts.snap?Math.round(v/5)*5:v;}
+function addNode(x,y,props){
+  const n=Object.assign({id:uid('n'),x:snapV(x),y:snapV(y),w:100,h:45,text:'New box'},NODE_DEF,props||{});
+  page().nodes.push(n);return n;
+}
+function addEdge(a,b,kind,extra){
+  const p=page();if(a===b)return null;
+  const rep=kind==='rep';
+  const e=Object.assign({id:uid('e'),from:a,to:b,kind:rep?'report':'link',route:rep?'tree':'avoid',fromSide:'auto',toSide:'auto',dash:rep?'solid':'dash',color:rep?'#3D3935':'#F1B434',width:rep?1.5:2.2,arrow:rep?'none':'both',label:'',fp:null,tp:null},extra||{});
+  p.edges.push(e);return e;
+}
+function applySel(fn){const ns=selNodes();if(!ns.length)return;commit();ns.forEach(fn);changed();}
+function applyEdge(fn){const e=selE&&page().edges.find(x=>x.id===selE);if(!e)return;commit();fn(e);changed();}
+function deleteSel(){
+  const p=page();
+  if(selE){commit();p.edges=p.edges.filter(e=>e.id!==selE);selE=null;changed();return;}
+  if(!selN.size)return;commit();
+  p.nodes=p.nodes.filter(n=>!selN.has(n.id));p.edges=p.edges.filter(e=>!selN.has(e.from)&&!selN.has(e.to));selN.clear();changed();
+}
+function copySel(){const ns=selNodes();if(!ns.length)return false;const ids=new Set(ns.map(n=>n.id));
+  clipboard={nodes:clone(ns),edges:clone(page().edges.filter(e=>ids.has(e.from)&&ids.has(e.to)))};pasteN=0;return true;}
+function pasteClip(){
+  if(!clipboard)return;commit();pasteN++;const m={},p=page();selN.clear();selE=null;
+  for(const n of clipboard.nodes){const c=clone(n);m[n.id]=c.id=uid('n');c.x+=20*pasteN;c.y+=20*pasteN;p.nodes.push(c);selN.add(c.id);}
+  for(const e of clipboard.edges){const c=clone(e);c.id=uid('e');c.from=m[e.from];c.to=m[e.to];p.edges.push(c);}
+  changed();
+}
+function align(kind){
+  const ns=selNodes();if(ns.length<2)return;commit();
+  const l=Math.min(...ns.map(n=>n.x)),r=Math.max(...ns.map(n=>n.x+n.w)),t=Math.min(...ns.map(n=>n.y)),b=Math.max(...ns.map(n=>n.y+n.h));
+  for(const n of ns){
+    if(kind==='l')n.x=l;if(kind==='r')n.x=r-n.w;if(kind==='cx')n.x=Math.round((l+r)/2-n.w/2);
+    if(kind==='t')n.y=t;if(kind==='b')n.y=b-n.h;if(kind==='cy')n.y=Math.round((t+b)/2-n.h/2);
+  }changed();
+}
+function distribute(axis){
+  const ns=selNodes();if(ns.length<3)return;commit();
+  const k=axis==='h'?'x':'y',s=axis==='h'?'w':'h';ns.sort((a,b)=>a[k]-b[k]);
+  const first=ns[0],last=ns[ns.length-1],total=(last[k]+last[s])-first[k],sum=ns.reduce((a,n)=>a+n[s],0),gap=(total-sum)/(ns.length-1);
+  let pos=first[k];for(const n of ns){n[k]=Math.round(pos);pos+=n[s]+gap;}changed();
+}
+function zOrder(front){
+  const p=page(),ns=selNodes();if(!ns.length)return;commit();
+  const ids=new Set(ns.map(n=>n.id)),sel=p.nodes.filter(n=>ids.has(n.id)),rest=p.nodes.filter(n=>!ids.has(n.id));
+  p.nodes=front?rest.concat(sel):sel.concat(rest);changed();
+}
+function addChild(sibling){
+  const n=selNodes()[0];if(!n)return toast('Select a box first');
+  const p=page();commit();
+  const props={fill:n.fill,stroke:n.stroke,color:n.color,fontSize:n.fontSize,bold:n.bold,shape:n.shape,w:n.w,h:n.h,font:n.font,strokeW:n.strokeW};
+  let c;
+  if(sibling){
+    const inc=p.edges.find(e=>e.to===n.id&&e.route==='tree');
+    // find free spot to the right
+    let x=n.x+n.w+14;while(p.nodes.some(o=>Math.abs(o.x-x)<n.w/2&&Math.abs(o.y-n.y)<n.h/2))x+=n.w+14;
+    c=addNode(x,n.y,props);if(inc)addEdge(inc.from,c.id,'rep');
+  }else{
+    let y=n.y+n.h+35;while(p.nodes.some(o=>Math.abs(o.x-n.x)<n.w/2&&Math.abs(o.y-y)<n.h/2))y+=n.h+20;
+    c=addNode(n.x,y,props);addEdge(n.id,c.id,'rep');
+  }
+  selN=new Set([c.id]);selE=null;changed();
+}
+
+/* ===================== MOUSE ===================== */
+const svgEl=$('page');
+function pt(ev){const r=svgEl.getBoundingClientRect();return{x:(ev.clientX-r.left)/zoom,y:(ev.clientY-r.top)/zoom};}
+function nodeAt(x,y,skip){const ns=page().nodes;for(let i=ns.length-1;i>=0;i--){const n=ns[i];if(n.id!==skip&&x>=n.x&&x<=n.x+n.w&&y>=n.y&&y<=n.y+n.h)return n;}return null;}
+function nearestSide(n,x,y){
+  const d={top:Math.abs(y-n.y),bottom:Math.abs(y-n.y-n.h),left:Math.abs(x-n.x),right:Math.abs(x-n.x-n.w)};
+  return Object.keys(d).sort((a,b)=>d[a]-d[b])[0];
+}
+svgEl.addEventListener('mousedown',ev=>{
+  if(ev.button!==0)return;
+  closeEditor(true);$('filemenu').style.display='none';
+  const m=pt(ev),h=ev.target.closest('[data-h]')?.getAttribute('data-h')||'',[kind,a,b]=h.split(':');
+  const p=page();
+  if(kind==='port'){drag={port:{id:a,side:b}};tempLine={x1:m.x,y1:m.y,x2:m.x,y2:m.y};const q=portPt(nodeById(p,a),b);tempLine.x1=q.x;tempLine.y1=q.y;return;}
+  if(kind==='ep'){drag={ep:{id:a,which:b}};tempLine={x2:m.x,y2:m.y};commit();undo.pop();drag.snap=snap();return;}
+  if(kind==='resize'){drag={resize:{id:a,dir:b,orig:{...nodeById(p,a)}},start:m,snap:snap()};return;}
+  if(kind==='edge'){selE=a;selN.clear();render();return;}
+  if(tool!=='sel'){ // connect mode
+    const n=nodeAt(m.x,m.y);
+    if(n){
+      if(!connectFrom){connectFrom=n.id;}
+      else if(connectFrom!==n.id){commit();const e=addEdge(connectFrom,n.id,tool);connectFrom=null;selE=e.id;selN.clear();tool='sel';changed();return;}
+    }
+    render();return;
+  }
+  if(kind==='node'){
+    if(ev.shiftKey||ev.ctrlKey||ev.metaKey){selN.has(a)?selN.delete(a):selN.add(a);}
+    else if(!selN.has(a)){selN=new Set([a]);}
+    selE=null;
+    drag={move:true,start:m,orig:new Map(selNodes().map(n=>[n.id,{x:n.x,y:n.y}])),snap:snap(),moved:false};
+    render();return;
+  }
+  // background
+  if(!(ev.shiftKey))clearSel();
+  marquee={x1:m.x,y1:m.y,x2:m.x,y2:m.y,base:new Set(selN)};render();
+});
+window.addEventListener('mousemove',ev=>{
+  if(!drag&&!marquee){ // hover for ports
+    if(ev.target===svgEl||svgEl.contains(ev.target)){
+      const m=pt(ev),n=tool==='sel'?nodeAt(m.x,m.y):null,id=n?n.id:null;
+      const onPort=ev.target.closest&&ev.target.closest('[data-h^="port"]');
+      if(!onPort&&id!==hoverId){hoverId=id;render();}
+      else if(onPort&&!hoverId){}
+    }
+    return;
+  }
+  const m=pt(ev),p=page();
+  if(marquee){marquee.x2=m.x;marquee.y2=m.y;
+    const x1=Math.min(marquee.x1,m.x),x2=Math.max(marquee.x1,m.x),y1=Math.min(marquee.y1,m.y),y2=Math.max(marquee.y1,m.y);
+    selN=new Set(marquee.base);for(const n of p.nodes)if(n.x<x2&&n.x+n.w>x1&&n.y<y2&&n.y+n.h>y1)selN.add(n.id);render();return;}
+  if(drag.port){tempLine.x2=m.x;tempLine.y2=m.y;render();return;}
+  if(drag.ep){tempLine.x2=m.x;tempLine.y2=m.y;render();return;}
+  if(drag.move){
+    let dx=m.x-drag.start.x,dy=m.y-drag.start.y;
+    if(!drag.moved){if(Math.abs(dx)+Math.abs(dy)<3)return;drag.moved=true;undo.push(drag.snap);redo=[];}
+    for(const n of selNodes()){const o=drag.orig.get(n.id);n.x=snapV(o.x+dx);n.y=snapV(o.y+dy);}
+    dirty=true;render();return;
+  }
+  if(drag.resize){
+    if(!drag.moved){drag.moved=true;undo.push(drag.snap);redo=[];}
+    const r=drag.resize,n=nodeById(p,r.id),o=r.orig,dx=m.x-drag.start.x,dy=m.y-drag.start.y,d=r.dir,MIN=30;
+    let x=o.x,y=o.y,w=o.w,h=o.h;
+    if(d.includes('e'))w=Math.max(MIN,snapV(o.w+dx));
+    if(d.includes('s'))h=Math.max(20,snapV(o.h+dy));
+    if(d.includes('w')){const nw=Math.max(MIN,snapV(o.w-dx));x=o.x+o.w-nw;w=nw;}
+    if(d.includes('n')){const nh=Math.max(20,snapV(o.h-dy));y=o.y+o.h-nh;h=nh;}
+    Object.assign(n,{x,y,w,h});dirty=true;render();
+  }
+});
+window.addEventListener('mouseup',ev=>{
+  const m=pt(ev),p=page();
+  if(marquee){marquee=null;render();return;}
+  if(!drag)return;
+  const d=drag;drag=null;
+  if(d.port){
+    const t=nodeAt(m.x,m.y,d.port.id);tempLine=null;
+    if(t){commit();const e=addEdge(d.port.id,t.id,'link',{fromSide:d.port.side,toSide:nearestSide(t,m.x,m.y)});selE=e.id;selN.clear();changed();}
+    else render();return;
+  }
+  if(d.ep){
+    tempLine=null;const e=p.edges.find(x=>x.id===d.ep.id),t=nodeAt(m.x,m.y);
+    if(e&&t&&t.id!==(d.ep.which==='from'?e.to:e.from)){commit();
+      if(d.ep.which==='from'){e.from=t.id;e.fromSide=nearestSide(t,m.x,m.y);e.fp=null;}else{e.to=t.id;e.toSide=nearestSide(t,m.x,m.y);e.tp=null;}changed();}
+    else render();return;
+  }
+  if(d.moved||d.resize?.moved){changed();}else render();
+});
+svgEl.addEventListener('dblclick',ev=>{
+  const h=ev.target.closest('[data-h]')?.getAttribute('data-h')||'',[kind,a]=h.split(':');
+  if(kind==='node'){selN=new Set([a]);openEditor('node',a);}
+  else if(kind==='text')openEditor('text',a);
+  else if(kind==='edge'){selE=a;openEditor('edge',a);}
+  else{ // empty space: add a box
+    const m=pt(ev);commit();const n=addNode(m.x-50,m.y-22);selN=new Set([n.id]);selE=null;changed();openEditor('node',n.id);}
+});
+
+/* ---- in-place text editor ---- */
+let edCtx=null;
+function openEditor(kind,key){
+  closeEditor(true);
+  const p=page(),r=svgEl.getBoundingClientRect(),ed=$('ed');
+  let x,y,w,h,val,font='Arial',size=12,color='#000',align='left';
+  if(kind==='node'){const n=nodeById(p,key);x=n.x;y=n.y;w=n.w;h=n.h;val=n.text;font=n.font||'Arial';size=n.fontSize;color=n.color==='#FFFFFF'?'#000':n.color;align=n.align||'center';ed.style.background=n.fill==='#FFFFFF'?'#fff':'#fff';}
+  else if(kind==='edge'){const e=p.edges.find(q=>q.id===key),pts=layoutPage(p)[key].pts;let bi=0,bl=0;for(let i=0;i<pts.length-1;i++){const l=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);if(l>bl){bl=l;bi=i;}}
+    w=140;h=22;x=(pts[bi].x+pts[bi+1].x)/2-70;y=(pts[bi].y+pts[bi+1].y)/2-11;val=e.label||'';size=10;align='center';}
+  else{
+    const map={title:[80,56,740,32,p.title,21],sub:[80,88,740,20,p.sub,11.5],coord:[64,722,PW-128,40,p.coord,10.5],brand:[64,20,200,26,doc.header.brand,20],hright:[560,24,499,22,doc.header.right,10]};
+    [x,y,w,h,val,size]=map[key];
+    if(key==='title')ed.style.background='#fff';
+  }
+  Object.assign(ed.style,{display:'block',left:(r.left+x*zoom)+'px',top:(r.top+y*zoom)+'px',width:Math.max(w,40)*zoom+'px',height:Math.max(h,20)*zoom+'px',fontFamily:font,fontSize:size*zoom+'px',textAlign:align,color});
+  ed.value=val;edCtx={kind,key};ed.focus();ed.select();
+}
+function closeEditor(commitIt){
+  const ed=$('ed');if(!edCtx)return;const c=edCtx;edCtx=null;ed.style.display='none';ed.blur();
+  if(!commitIt)return;
+  const v=ed.value,p=page();
+  commit();
+  if(c.kind==='node')nodeById(p,c.key).text=v;
+  else if(c.kind==='edge')p.edges.find(e=>e.id===c.key).label=v.trim();
+  else if(c.key==='title')p.title=v;else if(c.key==='sub')p.sub=v;else if(c.key==='coord')p.coord=v;
+  else if(c.key==='brand')doc.header.brand=v;else if(c.key==='hright')doc.header.right=v;
+  changed();
+}
+$('ed').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();closeEditor(false);}
+  else if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();closeEditor(true);}
+  e.stopPropagation();
+});
+$('ed').addEventListener('blur',()=>closeEditor(true));
+
+/* ===================== KEYBOARD ===================== */
+window.addEventListener('keydown',ev=>{
+  const tag=document.activeElement.tagName,typing=tag==='INPUT'&&document.activeElement.type==='text'||tag==='TEXTAREA';
+  const ctrl=ev.ctrlKey||ev.metaKey,k=ev.key.toLowerCase();
+  if(ctrl&&k==='s'){ev.preventDefault();saveFile(ev.shiftKey);return;}
+  if(ctrl&&k==='o'){ev.preventDefault();openFile();return;}
+  if(ctrl&&k==='p'){ev.preventDefault();doPrint();return;}
+  if(typing)return;
+  if(ctrl&&k==='z'){ev.preventDefault();ev.shiftKey?doRedo():doUndo();return;}
+  if(ctrl&&k==='y'){ev.preventDefault();doRedo();return;}
+  if(ctrl&&k==='c'){if(copySel())ev.preventDefault();return;}
+  if(ctrl&&k==='x'){if(copySel()){ev.preventDefault();deleteSel();}return;}
+  if(ctrl&&k==='v'){ev.preventDefault();pasteClip();return;}
+  if(ctrl&&k==='d'){ev.preventDefault();if(copySel())pasteClip();return;}
+  if(ctrl&&k==='a'){ev.preventDefault();selN=new Set(page().nodes.map(n=>n.id));selE=null;render();return;}
+  if(ctrl&&k==='b'){ev.preventDefault();$('fB').click();return;}
+  if(ctrl&&k==='i'){ev.preventDefault();$('fI').click();return;}
+  if(ctrl&&k==='u'){ev.preventDefault();$('fU').click();return;}
+  if(k==='delete'||k==='backspace'){ev.preventDefault();deleteSel();return;}
+  if(k==='escape'){tool='sel';connectFrom=null;clearSel();render();return;}
+  if(k==='f11'){ev.preventDefault();toggleFull();return;}
+  if(k==='f2'&&selN.size===1){openEditor('node',[...selN][0]);ev.preventDefault();return;}
+  if(k.startsWith('arrow')&&selN.size){ev.preventDefault();const s=ev.shiftKey?10:1,dx=k==='arrowleft'?-s:k==='arrowright'?s:0,dy=k==='arrowup'?-s:k==='arrowdown'?s:0;
+    commit();selNodes().forEach(n=>{n.x+=dx;n.y+=dy;});changed();}
+});
+
+/* ===================== RIBBON WIRING ===================== */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=e=>{
+  if(t.dataset.tab==='file'){const f=$('filemenu');f.style.display=f.style.display==='block'?'none':'block';e.stopPropagation();return;}
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('on',x.id==='p-'+t.dataset.tab));
+});
+document.addEventListener('click',e=>{if(!e.target.closest('#filemenu')&&!e.target.closest('.tab.file'))$('filemenu').style.display='none';});
+const on=(id,f,ev='click')=>$(id).addEventListener(ev,f);
+on('tSave',()=>saveFile(false));on('tSaveAs',()=>saveFile(true));on('tPrint',doPrint);on('tFull',toggleFull);on('tUndo',doUndo);on('tRedo',doRedo);
+on('bCopy',copySel);on('bCut',()=>{if(copySel())deleteSel();});on('bPaste',pasteClip);on('bDup',()=>{if(copySel())pasteClip();});
+on('docname',e=>{if(doc.name!==e.target.value){doc.name=e.target.value;dirty=true;syncUI();autosave();}},'input');
+on('fFont',e=>applySel(n=>n.font=e.target.value),'change');
+on('fSize',e=>applySel(n=>n.fontSize=+e.target.value),'change');
+on('fI',()=>{const v=!selNodes()[0]?.italic;applySel(n=>n.italic=v);});
+on('fU',()=>{const v=!selNodes()[0]?.underline;applySel(n=>n.underline=v);});
+$('fB').onclick=()=>{const v=!selNodes()[0]?.bold;applySel(n=>n.bold=v);};
+on('fColor',e=>applySel(n=>n.color=e.target.value.toUpperCase()),'input');
+for(const[id,v]of[['aL','left'],['aC','center'],['aR','right']])on(id,()=>applySel(n=>n.align=v));
+for(const[id,v]of[['vT','top'],['vM','middle'],['vB','bottom']])on(id,()=>applySel(n=>n.valign=v));
+on('sFill',e=>applySel(n=>n.fill=e.target.value.toUpperCase()),'input');
+on('sStroke',e=>applySel(n=>n.stroke=e.target.value.toUpperCase()),'input');
+on('sSW',e=>applySel(n=>n.strokeW=+e.target.value),'change');
+on('sShape',e=>applySel(n=>n.shape=e.target.value),'change');
+on('sW',e=>applySel(n=>n.w=Math.max(30,+e.target.value||n.w)),'change');
+on('sH',e=>applySel(n=>n.h=Math.max(20,+e.target.value||n.h)),'change');
+on('bAdd',()=>{commit();const n=addNode(PW/2-50,PH/2-22);selN=new Set([n.id]);selE=null;changed();openEditor('node',n.id);});
+on('bChild',()=>addChild(false));on('bSib',()=>addChild(true));on('bDel',deleteSel);
+for(const[id,k]of[['alL','l'],['alCx','cx'],['alR','r'],['alT','t'],['alCy','cy'],['alB','b']])on(id,()=>align(k));
+on('dH',()=>distribute('h'));on('dV',()=>distribute('v'));
+on('mSize',()=>{const ns=selNodes();if(ns.length<2)return;commit();ns.slice(1).forEach(n=>{n.w=ns[0].w;n.h=ns[0].h;});changed();});
+on('zFront',()=>zOrder(true));on('zBack',()=>zOrder(false));
+const setTool=t=>{tool=tool===t?'sel':t;connectFrom=null;if(tool!=='sel'){selN.clear();selE=null;}render();};
+on('tSel',()=>{tool='sel';connectFrom=null;render();});on('tRep',()=>setTool('rep'));on('tLink',()=>setTool('link'));
+on('eRoute',e=>applyEdge(x=>x.route=e.target.value),'change');
+on('eDash',e=>applyEdge(x=>x.dash=e.target.value),'change');
+on('eColor',e=>applyEdge(x=>x.color=e.target.value.toUpperCase()),'input');
+on('eWidth',e=>applyEdge(x=>x.width=+e.target.value||1),'change');
+on('eArrow',e=>applyEdge(x=>x.arrow=e.target.value),'change');
+on('eFS',e=>applyEdge(x=>x.fromSide=e.target.value),'change');
+on('eTS',e=>applyEdge(x=>x.toSide=e.target.value),'change');
+on('eFP',e=>applyEdge(x=>x.fp=e.target.value===''?null:Math.min(.95,Math.max(.05,e.target.value/100))),'change');
+on('eTP',e=>applyEdge(x=>x.tp=e.target.value===''?null:Math.min(.95,Math.max(.05,e.target.value/100))),'change');
+on('eLabel',e=>applyEdge(x=>x.label=e.target.value),'change');
+on('eSwap',()=>applyEdge(x=>{[x.from,x.to]=[x.to,x.from];[x.fromSide,x.toSide]=[x.toSide,x.fromSide];[x.fp,x.tp]=[x.tp,x.fp];}));
+on('eDel',deleteSel);
+// pages
+on('pgAdd',()=>{commit();const id=uid('p');doc.pages.push({id,title:`Option ${doc.pages.length+1} — New structure`,label:'Engineering:',sub:'',coordLabel:'Coordination / functional links:',coord:'',nodes:[],edges:[],showLegend:true});
+  cur=doc.pages.length-1;clearSel();const n=addNode(PW/2-50,130,{text:'Program Manager',fill:'#3D3935',stroke:'#3D3935',color:'#FFFFFF',bold:true});changed();});
+on('pgDup',()=>{commit();const c=clone(page());c.id=uid('p');c.title=c.title.replace(/^Option (\d+)/,'Option '+(doc.pages.length+1));doc.pages.splice(cur+1,0,c);cur++;clearSel();changed();});
+on('pgDel',()=>{if(doc.pages.length<2)return toast('At least one page is required');if(!confirm('Delete this page?'))return;commit();doc.pages.splice(cur,1);cur=Math.max(0,cur-1);clearSel();changed();});
+on('pgUp',()=>{if(cur<1)return;commit();const[p]=doc.pages.splice(cur,1);doc.pages.splice(--cur,0,p);changed();});
+on('pgDn',()=>{if(cur>=doc.pages.length-1)return;commit();const[p]=doc.pages.splice(cur,1);doc.pages.splice(++cur,0,p);changed();});
+on('oGrid',e=>{opts.grid=e.target.checked;render();});on('oSnap',e=>{opts.snap=e.target.checked;});
+on('oLegend',e=>{commit();page().showLegend=e.target.checked;changed();});
+on('oHdr',e=>{commit();page().showHdr=e.target.checked;changed();});
+on('oNotes',e=>{commit();page().showNotes=e.target.checked;changed();});
+$('thumbs').addEventListener('click',e=>{const t=e.target.closest('.thumb');if(t){cur=+t.dataset.i;clearSel();render();}});
+// zoom
+function setZoom(z){zoom=Math.min(2.5,Math.max(.3,z));render();}
+on('zoom',e=>setZoom(e.target.value/100),'input');on('zIn',()=>setZoom(zoom+.1));on('zOut',()=>setZoom(zoom-.1));
+function fit(){const w=$('scroller').clientWidth-60;setZoom(Math.min(1.4,w/PW));}
+on('zFit',fit);
+$('scroller').addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();setZoom(zoom*(e.deltaY<0?1.1:.9));}},{passive:false});
+window.addEventListener('resize',()=>{});
+
+function toggleFull(){
+  if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>toast('Full screen not available here – press F11'));
+}
+document.addEventListener('fullscreenchange',()=>{$('tFull').textContent=document.fullscreenElement?'⛶ Exit full screen':'⛶ Full screen';setTimeout(fit,150);});
+/* ===================== INIT ===================== */
+(function init(){
+  let restored=false;
+  if(window.__SAVED&&window.__SAVED.doc&&window.__SAVED.doc.pages){doc=window.__SAVED.doc;cur=Math.min(window.__SAVED.cur||0,doc.pages.length-1);}
+  else try{const s=localStorage.getItem('sar-orgchart-autosave');if(s){const o=JSON.parse(s);if(o.doc&&o.doc.pages&&o.doc.pages.length){doc=o.doc;cur=Math.min(o.cur||0,doc.pages.length-1);restored=true;}}}catch(e){}
   if(!doc)doc=defaultDoc();
   fit();renderThumbs();render();
   if(restored)toast('Restored your last session (File ▸ New to start from the original)');
