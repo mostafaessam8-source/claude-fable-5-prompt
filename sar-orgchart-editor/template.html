@@ -68,7 +68,7 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
 <div id="app">
   <div id="titlebar">
     <b>SAR</b>
-    <button id="tSave" title="Save (Ctrl+S)">💾 Save</button><button id="tSaveAs" title="Save As (Ctrl+Shift+S)">Save As…</button><button id="tPrint" title="Print / PDF (Ctrl+P)">🖨 Print</button><button id="tFull" title="Full screen (F11)">⛶ Full screen</button>
+    <button id="tSave" title="Save (Ctrl+S)">💾 Save</button><button id="tSaveAs" title="Save As (Ctrl+Shift+S)">Save As…</button><button id="tWord" title="Export to Word (.docx)">📄 Export Word</button><button id="tPrint" title="Print / PDF (Ctrl+P)">🖨 Print</button><button id="tFull" title="Full screen (F11)">⛶ Full screen</button>
     <button id="tUndo" title="Undo (Ctrl+Z)">↶</button>
     <button id="tRedo" title="Redo (Ctrl+Y)">↷</button>
     <span class="sp"></span>
@@ -182,6 +182,7 @@ label.lb{display:inline-flex;align-items:center;gap:3px;color:#444}
   <div data-a="open">Open… <small>Ctrl+O</small></div><hr>
   <div data-a="save">Save (overwrites the HTML file) <small>Ctrl+S</small></div>
   <div data-a="saveas">Save As… <small>Ctrl+Shift+S</small></div><hr>
+  <div data-a="docx">Export to Word (.docx)</div>
   <div data-a="json">Export data only (.json)</div>
   <div data-a="png">Export page as PNG</div>
   <div data-a="svg">Export page as SVG</div>
@@ -626,12 +627,114 @@ function exportPNG(){
     c.toBlob(b=>download((doc.name||'page')+`_p${cur+1}.png`,b));};
   img.onerror=()=>toast('PNG export failed – use SVG or Print');img.src=url;
 }
+
+/* ===================== WORD (.docx) EXPORT – native, editable Word shapes ===================== */
+const EMU=v=>Math.round(v*9525), xe=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hex=c=>String(c||'#000000').replace('#','').toUpperCase();
+function crcTable(){const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;}
+const CRC=crcTable();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  for(const f of files){
+    const name=enc.encode(f.name),data=enc.encode(f.text),crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,0,true);lh.setUint16(12,0x21,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,name.length,true);lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),name,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(14,0x21,true);
+    ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,name.length,true);ch.setUint32(42,off,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  let cs=0;for(const c of central)cs+=c.length;
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cs,true);end.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(end.buffer)],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+function docxPage(p,pi){
+  const L=layoutPage(p),show=p.showHdr!==false;let id=1,z=251658240;const out=[];
+  const run=(r,fs,font)=>`<w:r><w:rPr><w:rFonts w:ascii="${xe(r.font||font)}" w:hAnsi="${xe(r.font||font)}" w:cs="${xe(r.font||font)}"/>${r.b?'<w:b/>':''}${r.i?'<w:i/>':''}${r.u?'<w:u w:val="single"/>':''}<w:color w:val="${hex(r.color)}"/><w:sz w:val="${Math.round((r.size||fs)*.75*2)}"/><w:szCs w:val="${Math.round((r.size||fs)*.75*2)}"/></w:rPr><w:t xml:space="preserve">${xe(r.t)}</w:t></w:r>`;
+  function shape(o){ // o:{x,y,w,h,geom,fill,line,lw,dash,head,tail,flipH,flipV,cust,runs,font,size,align,valign,inset}
+    const n=id++,name=(o.name||'Shape')+' '+n;
+    let geom=o.cust||`<a:prstGeom prst="${o.geom||'rect'}"><a:avLst/></a:prstGeom>`;
+    const fill=o.fill?`<a:solidFill><a:srgbClr val="${hex(o.fill)}"/></a:solidFill>`:'<a:noFill/>';
+    const ln=o.line?`<a:ln w="${Math.round((o.lw??1)*9525)}"><a:solidFill><a:srgbClr val="${hex(o.line)}"/></a:solidFill>${o.dash&&o.dash!=='solid'?`<a:prstDash val="${o.dash==='dash'?'dash':'sysDot'}"/>`:''}<a:round/>${o.head?'<a:headEnd type="triangle" w="med" len="med"/>':''}${o.tail?'<a:tailEnd type="triangle" w="med" len="med"/>':''}</a:ln>`:'<a:ln><a:noFill/></a:ln>';
+    let tx='';
+    if(o.runs&&o.runs.length){
+      const jc=o.align==='right'?'right':o.align==='left'?'left':'center';
+      const paras=(o.paras||[o.runs]).map(rs=>`<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="${jc}"/></w:pPr>${rs.map(r=>run(r,o.size,o.font)).join('')}</w:p>`).join('');
+      tx=`<wps:txbx><w:txbxContent>${paras}</w:txbxContent></wps:txbx>`;
+    }
+    const ins=EMU(o.inset??3);
+    const anchor=o.valign==='top'?'t':o.valign==='bottom'?'b':'ctr';
+    return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${z++}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>${EMU(o.x)}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${EMU(o.y)}</wp:posOffset></wp:positionV><wp:extent cx="${EMU(o.w)}" cy="${EMU(o.h)}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${n}" name="${xe(name)}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr/><wps:spPr><a:xfrm${o.flipH?' flipH="1"':''}${o.flipV?' flipV="1"':''}><a:off x="0" y="0"/><a:ext cx="${EMU(o.w)}" cy="${EMU(o.h)}"/></a:xfrm>${geom}${fill}${ln}</wps:spPr>${tx}<wps:bodyPr rot="0" vert="horz" wrap="square" lIns="${ins}" tIns="${ins}" rIns="${ins}" bIns="${ins}" anchor="${anchor}" anchorCtr="0"><a:noAutofit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+  }
+  function polyline(pts,color,w,dash,head,tail){
+    const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y),x0=Math.min(...xs),y0=Math.min(...ys),W=Math.max(...xs)-x0,H=Math.max(...ys)-y0;
+    const base={x:x0,y:y0,w:W,h:H,line:color,lw:w,dash,head,tail,name:'Connector'};
+    if(pts.length===2)return shape({...base,flipH:pts[0].x>pts[1].x,flipV:pts[0].y>pts[1].y,geom:'line'});
+    const pw=EMU(W)||1,ph=EMU(H)||1;
+    const path=pts.map((q,i)=>`<a:${i?'lnTo':'moveTo'}><a:pt x="${EMU(q.x-x0)}" y="${EMU(q.y-y0)}"/></a:${i?'lnTo':'moveTo'}>`).join('');
+    return shape({...base,cust:`<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${pw}" h="${ph}" fill="none">${path}</a:path></a:pathLst></a:custGeom>`});
+  }
+  const F='Diodrum Arabic',hdr=doc.header,TEAL='#00778B';
+  const txt=(x,y,w,h,runs,o={})=>out.push(shape({x,y,w,h,runs,font:F,size:12,inset:0,name:'Text',...o}));
+  if(show){
+    txt(64,20,420,26,[{t:hdr.brand,b:1,size:20,color:TEAL},{t:'  |  '+hdr.tag,size:11,color:'#768692'}],{align:'left'});
+    txt(560,24,499,22,[{t:hdr.right+'  |  ',size:10,color:'#768692'},{t:p.title.split('—')[0].trim(),size:10,color:TEAL}],{align:'right'});
+  }
+  out.push(shape({x:60,y:60,w:11,h:24,geom:'parallelogram',fill:TEAL,name:'Accent'}));
+  txt(80,56,740,32,[{t:p.title,b:1,size:21,color:TEAL}],{align:'left'});
+  txt(80,88,740,20,[{t:p.label+' ',b:1,size:11.5,color:TEAL},{t:p.sub,size:11.5,color:'#3D3935'}],{align:'left'});
+  out.push(polyline([{x:64,y:112},{x:PW-64,y:112}],TEAL,1.5,'solid'));
+  out.push(shape({x:PW-68.5,y:107.5,w:9,h:9,geom:'ellipse',fill:'#FFFFFF',line:TEAL,lw:1.5,name:'Node'}));
+  if(p.showLegend!==false){const lx=PW-64-248,ly=72;
+    out.push(polyline([{x:lx,y:ly},{x:lx+34,y:ly}],'#3D3935',1.5,'solid'));
+    txt(lx+40,ly-9,70,18,[{t:'Reporting line',size:9.5,color:'#3D3935'}],{align:'left'});
+    out.push(polyline([{x:lx+118,y:ly},{x:lx+152,y:ly}],'#F1B434',2,'dash'));
+    txt(lx+158,ly-9,100,18,[{t:'Coordination link',size:9.5,color:'#3D3935'}],{align:'left'});}
+  // connectors first, then boxes on top
+  for(const e of p.edges){const r=L[e.id];if(!r)continue;const a=e.arrow==='start'||e.arrow==='both',b=e.arrow==='end'||e.arrow==='both';
+    out.push(polyline(r.pts,e.color,e.width,e.dash,a,b));
+    if(e.label){const pts=r.pts;let bi=0,bl=0;for(let i=0;i<pts.length-1;i++){const l=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);if(l>bl){bl=l;bi=i;}}
+      const mx=(pts[bi].x+pts[bi+1].x)/2,my=(pts[bi].y+pts[bi+1].y)/2,w=Math.max(30,e.label.length*5.6+10);
+      out.push(shape({x:mx-w/2,y:my-8,w,h:16,geom:'roundRect',fill:'#FFFFFF',line:e.color,lw:.8,runs:[{t:e.label,size:9.5,color:e.color}],font:F,size:9.5,inset:0,name:'Label'}));}}
+  for(const n of p.nodes){
+    const lines=String(n.text).split('\n');
+    out.push(shape({x:n.x,y:n.y,w:n.w,h:n.h,geom:n.shape==='ellipse'?'ellipse':n.shape==='rect'?'rect':'roundRect',fill:n.fill,line:n.stroke,lw:n.strokeW??1.25,
+      paras:lines.map(l=>[{t:l,b:n.bold,i:n.italic,u:n.underline,color:n.color,size:n.fontSize}]),runs:[{t:n.text}],font:n.font||'Arial',size:n.fontSize,align:n.align||'center',valign:n.valign,inset:3,name:n.text.slice(0,30)||'Box'}));
+  }
+  out.push(polyline([{x:64,y:716},{x:PW-64,y:716}],'#C8C9C7',1,'solid'));
+  if(p.showNotes!==false)txt(64,722,PW-128,40,[{t:p.coordLabel+' ',b:1,size:10.5,color:TEAL},{t:p.coord,size:10.5,color:'#3D3935'}],{align:'left',valign:'top'});
+  if(show){
+    txt(PW-224,764,160,18,[{t:`Page ${pi+1} of ${doc.pages.length}`,size:9.5,color:'#768692'}],{align:'right'});
+    txt(64,764,200,18,[{t:'SAR.COM.SA',b:1,size:9.5,color:TEAL}],{align:'left'});
+    out.push(shape({x:PW-52,y:764,w:18,h:20,geom:'parallelogram',fill:TEAL,name:'Stripe'}),shape({x:PW-40,y:764,w:16,h:20,geom:'parallelogram',fill:'#71B2C9',name:'Stripe'}));
+  }
+  return out.join('');
+}
+function exportDOCX(){
+  const sect='<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="0" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>';
+  const body=doc.pages.map((p,i)=>{
+    const last=i===doc.pages.length-1;
+    return `<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>${last?'':sect}</w:pPr>${docxPage(p,i)}</w:p>`;
+  }).join('');
+  const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const files=[
+    {name:'[Content_Types].xml',text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},
+    {name:'_rels/.rels',text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+    {name:'word/document.xml',text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}${sect}</w:body></w:document>`}
+  ];
+  download((doc.name||'SAR_Org_Chart')+'.docx',zipStore(files));toast('Exported Word file (editable shapes)');
+}
 function doPrint(){$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');window.print();}
 function fileAction(a){
   $('filemenu').style.display='none';
   if(a==='new'){if(dirty&&!confirm('Discard unsaved changes and reload the original 5 options?'))return;doc=defaultDoc();cur=0;undo=[];redo=[];clearSel();fileHandle=null;dirty=false;lcache.key='';render();renderThumbs();autosave();}
   else if(a==='open')openFile();else if(a==='save')saveFile(false);else if(a==='saveas')saveFile(true);
-  else if(a==='json')exportJSON();else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
+  else if(a==='docx')exportDOCX();else if(a==='json')exportJSON();else if(a==='png')exportPNG();else if(a==='svg')exportSVG();else if(a==='pdf')doPrint();
 }
 $('filemenu').onclick=e=>{const d=e.target.closest('[data-a]');if(d)fileAction(d.dataset.a);};
 window.addEventListener('beforeprint',()=>{if(!$('printRoot').innerHTML)$('printRoot').innerHTML=doc.pages.map((p,i)=>`<div class="pp">${svgString(p,i)}</div>`).join('');});
@@ -868,7 +971,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=e=>{
 });
 document.addEventListener('click',e=>{if(!e.target.closest('#filemenu')&&!e.target.closest('.tab.file'))$('filemenu').style.display='none';});
 const on=(id,f,ev='click')=>$(id).addEventListener(ev,f);
-on('tSave',()=>saveFile(false));on('tSaveAs',()=>saveFile(true));on('tPrint',doPrint);on('tFull',toggleFull);on('tUndo',doUndo);on('tRedo',doRedo);
+on('tSave',()=>saveFile(false));on('tSaveAs',()=>saveFile(true));on('tPrint',doPrint);on('tWord',exportDOCX);on('tFull',toggleFull);on('tUndo',doUndo);on('tRedo',doRedo);
 on('bCopy',copySel);on('bCut',()=>{if(copySel())deleteSel();});on('bPaste',pasteClip);on('bDup',()=>{if(copySel())pasteClip();});
 on('docname',e=>{if(doc.name!==e.target.value){doc.name=e.target.value;dirty=true;syncUI();autosave();}},'input');
 on('fFont',e=>applySel(n=>n.font=e.target.value),'change');
