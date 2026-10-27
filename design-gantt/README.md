@@ -11,8 +11,9 @@ Published at `/design-gantt/` by `.github/workflows/pages.yml` (after the change
   Change a date, a SAR code or the data date in `Tracker` and the chart redraws itself.
 - Submission Date and Approval Date are **milestones** (blue ◆ / orange ●; solid = actual up to the data date, hollow = forecast),
   with the SAR review code (A/B/C/D) in its own column (not on the chart). No bars, baseline, stages or health.
-- Fixed when generated: which projects / elements / stages get a line, and the time range (padded). Re-run the site after
-  adding elements or when dates move outside the range. The data-checks block at the bottom is a snapshot.
+- **Fully automatic**: Gantt row n mirrors Tracker row n by formula (project / element detection, names, dates, SAR code, status, the time axis and the
+  milestones). Dates typed in any Tracker row — also rows that were empty, or new elements — appear without re-running the site.
+  The chart watches the filled rows plus 60 spare rows; re-run the site only if the Tracker grows beyond that.
 
 ## Files
 - `js/model.js` – reads the tracker and builds Gantt lines (same health / % / variance rules as the sheet).

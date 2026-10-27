@@ -176,40 +176,45 @@
   }
 
   /* ---------- sheet builder ----------
-   * The chart uses only the Tracker's "Submission Date" and "Approval Date" columns (each is actual or forecast; the data date
-   * tells which). Every number is a formula reading the Tracker and every bar is conditional formatting, so changing a date in
-   * the Tracker redraws the chart. Fixed when generated: which projects / elements get a line, and the time range.
+   * The Gantt sheet mirrors the Tracker ROW BY ROW with formulas: Gantt row n reads Tracker row n + offset. Whether a row is a
+   * project or an element, its name, its Submission / Approval dates, the SAR code, the status, the time axis and the milestones
+   * in the timeline are all formulas — so a date typed in any Tracker row (also one that was empty when this sheet was generated,
+   * or a new project / element) appears by itself. Only Submission Date and Approval Date are used (actual up to the data date,
+   * forecast after it).
    */
   var TL0 = 9; // first timeline column
   var WIDTHS = [6.5, 50, 11.5, 11.5, 7, 8, 12, 34];
   var HEAD_ROWS = 9;
-  var H = { PS: 0, PA: 1, KIND: 2 };
-  var H_LABELS = ['Submission (eff.)', 'Approval (eff.)', 'Row kind'];
+  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, PS: 6, PA: 7 };
+  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Submission (eff.)', 'Approval (eff.)'];
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
+  var UNITS = { day: 270, week: 80, month: 30 };
+  var SPARE_ROWS = 60; // empty Tracker rows below the last filled one that the chart already watches
 
   function absRef(a1) { var m = /^([A-Z]+)(\d+)$/.exec(a1); return '$' + m[1] + '$' + m[2]; }
   function q(name) { return "'" + String(name).replace(/'/g, "''") + "'!"; }
 
-  function buildSheet(sb, model, items, o) {
-    var cut = model.meta.cut, ax = layout(items, cut, o.scale, true), st = model.stats, refs = model.meta.refs || {}, lay = model.layout, TR = q(lay.sheet);
-    var unitW = o.scale === 'day' ? 1.45 : o.scale === 'month' ? 8 : 2.8;
-    var lastCol = TL0 + ax.n - 1, HC0 = lastCol + 2, rows = {}, merges = [], rowMeta = {};
+  function buildSheet(sb, model, o) {
+    var cut = model.meta.cut, st = model.stats, refs = model.meta.refs || {}, lay = model.layout, TR = q(lay.sheet), g_ = lay.g;
+    var scale = o.scale, N_UNITS = UNITS[scale], unitW = scale === 'day' ? 2.6 : scale === 'month' ? 8 : 3.6;
+    var lastCol = TL0 + N_UNITS - 1, HC0 = lastCol + 2, rows = {}, merges = [], rowMeta = {}, c;
     function hc(i) { return HC0 + i; }
     function hl(i) { return numToCol(HC0 + i); }
-    function cell(r, c, v, spec, f) { (rows[r] = rows[r] || {})[c] = { v: v, s: spec ? sb.xf(spec) : 0, f: f }; }
-    function styleOnly(r, c, spec) { var ex = rows[r] && rows[r][c]; cell(r, c, ex ? ex.v : null, spec, ex ? ex.f : undefined); }
+    function cell(r, cc, v, spec, f) { (rows[r] = rows[r] || {})[cc] = { v: v, s: spec ? sb.xf(spec) : 0, f: f }; }
+    function styleOnly(r, cc, spec) { var ex = rows[r] && rows[r][cc]; cell(r, cc, ex ? ex.v : null, spec, ex ? ex.f : undefined); }
     function merge(r1, c1, r2, c2) { if (r1 !== r2 || c1 !== c2) merges.push(numToCol(c1) + r1 + ':' + numToCol(c2) + r2); }
-    function rowH(r, h, outline) { rowMeta[r] = { h: h, outline: outline || 0 }; }
-    var thin = function (c) { return ['thin', c]; };
-    var DD = '$C$7', firstTl = numToCol(TL0), lastTl = numToCol(lastCol), c;
-    function UE(col) { return o.scale === 'month' ? 'EOMONTH(' + col + '$9,0)' : col + '$9' + (o.scale === 'week' ? '+6' : ''); }
+    function rowH(r, h) { rowMeta[r] = { h: h }; }
+    var thin = function (col) { return ['thin', col]; };
+    var DD = '$C$7', firstTl = numToCol(TL0), lastTl = numToCol(lastCol), START = '$G$7';
+    function UE(col) { return scale === 'month' ? 'EOMONTH(' + col + '$9,0)' : col + '$9' + (scale === 'week' ? '+6' : ''); }
 
-    /* rows */
-    var r = HEAD_ROWS + 1;
-    items.forEach(function (it) { it.r = r++; });
-    var R0 = HEAD_ROWS + 1, lastData = r - 1;
+    // Gantt row i  <->  Tracker row (header row + 1 + i)
+    var R0 = HEAD_ROWS + 1, T0 = lay.hdrRow + 1;
+    var nRows = Math.max(1, Math.min(lay.lastRow, lay.lastContent + SPARE_ROWS) - lay.hdrRow);
+    var lastData = R0 + nRows - 1;
     function colRange(col) { return '$' + col + '$' + R0 + ':$' + col + '$' + lastData; }
-    var K = colRange(hl(H.KIND)), FST = colRange('G');
+    var K = colRange(hl(H.KIND)), FST = colRange('G'), PSr = colRange(hl(H.PS)), PAr = colRange(hl(H.PA)), PIDr = colRange(hl(H.PID));
+    var codeCol = TR + '$' + g_.code + '$1:$' + g_.code + '$2000', progCol = TR + '$' + g_.programme + '$1:$' + g_.programme + '$2000';
 
     /* title, KPI cards, legend */
     var bandSpec = { font: { sz: 18, b: true, color: C.white }, fill: C.teal, h: 'left', indent: 1 };
@@ -217,19 +222,19 @@
     cell(1, 1, 'DESIGN SUBMISSION — MILESTONE GANTT', bandSpec); merge(1, 1, 1, lastCol); rowH(1, 32);
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
-    var srcTxt = String(o.sourceName || lay.sheet);
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.1   ·   Submission and Approval are milestones read live from the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.1   ·   Submission and Approval are milestones read live from the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
-    var codeTxt = 'A ' + st.codes.A + '  ·  B ' + st.codes.B + '  ·  C ' + st.codes.C + '  ·  D ' + st.codes.D + '  ·  none ' + st.codes.none;
+    var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
     var cards = [
       [1, 2, 'PROJECTS  /  ELEMENTS', 'COUNTIF(' + K + ',"P")&"  /  "&COUNTIF(' + K + ',"E")', st.projects + '  /  ' + st.elements, C.black],
-      [3, 3, 'ACTUAL', 'COUNTIFS(' + K + ',"E",' + FST + ',"Actual")', st.counts['Actual'], STATUS_COL['Actual'][0]],
-      [4, 4, 'IN PROGRESS', 'COUNTIFS(' + K + ',"E",' + FST + ',"In progress")', st.counts['In progress'], STATUS_COL['In progress'][0]],
-      [5, 6, 'FORECAST', 'COUNTIFS(' + K + ',"E",' + FST + ',"Forecast")', st.counts['Forecast'], STATUS_COL['Forecast'][0]],
-      [7, 7, 'NO DATES', 'COUNTIFS(' + K + ',"E",' + FST + ',"No dates")', st.counts['No dates'], '78909C'],
-      [8, 8, 'SAR CODES (elements)', '"A "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")&"  ·  B "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")&"  ·  C "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")&"  ·  D "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"D")&"  ·  none "&(COUNTIF(' + K + ',"E")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"D"))', codeTxt, C.teal]
+      [3, 3, 'ACTUAL', cnt('Actual'), st.counts['Actual'], STATUS_COL['Actual'][0]],
+      [4, 4, 'IN PROGRESS', cnt('In progress'), st.counts['In progress'], STATUS_COL['In progress'][0]],
+      [5, 6, 'FORECAST', cnt('Forecast'), st.counts['Forecast'], STATUS_COL['Forecast'][0]],
+      [7, 7, 'NO DATES', cnt('No dates'), st.counts['No dates'], '78909C'],
+      [8, 8, 'SAR CODES (elements)', '"A "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")&"  ·  B "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")&"  ·  C "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")&"  ·  D "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"D")&"  ·  none "&(COUNTIF(' + K + ',"E")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"D"))', '', C.teal]
     ];
     cards.forEach(function (cd) {
       var lab = { font: { sz: 8, b: true, color: C.white }, fill: cd[5], h: 'center', border: { left: thin(C.white), right: thin(C.white) } };
@@ -239,19 +244,17 @@
     });
     rowH(4, 15); rowH(5, 30);
     var info = { font: { sz: 8.5, color: C.mute, i: true }, h: 'left', indent: 1 };
-    var psC = colRange(hl(H.PS)), paC = colRange(hl(H.PA));
-    cell(6, 1, 'Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission ' + (st.first ? M.fmtDate(st.first) : '—') + '   ·   Last approval ' + (st.last ? M.fmtDate(st.last) : '—'), info,
-      '"Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission "&IF(COUNT(' + psC + ')=0,"—",TEXT(MIN(' + psC + '),"dd-mmm-yy"))&"   ·   Last approval "&IF(COUNT(' + paC + ')=0,"—",TEXT(MAX(' + paC + '),"dd-mmm-yy"))');
+    var badRows = 'SUMPRODUCT(ISNUMBER(' + PSr + ')*ISNUMBER(' + PAr + ')*(' + PAr + '<' + PSr + '))';
+    cell(6, 1, 'Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead', info,
+      '"Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission "&IF(COUNT(' + PSr + ')=0,"—",TEXT(MIN(' + PSr + '),"dd-mmm-yy"))&"   ·   Last approval "&IF(COUNT(' + PAr + ')=0,"—",TEXT(MAX(' + PAr + '),"dd-mmm-yy"))&"   ·   Rows with Approval before Submission: "&' + badRows);
     merge(6, 1, 6, 8); rowH(6, 14);
 
     var legend = [
       ['◆ Submission (actual)', { fill: C.sub }, C.white], ['◇ Submission (forecast)', { fill: C.subSoft }, C.sub],
-      ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app],
-      ['Data date', { fill: C.red }, C.white]
+      ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app], ['Data date', { fill: C.red }, C.white]
     ];
-    var wide = Math.max(2, Math.ceil(22 / unitW)), narrow = Math.max(1, Math.ceil(5 / unitW)), lr = 4, lc = TL0;
+    var span = Math.max(2, Math.ceil(22 / unitW)), lr = 4, lc = TL0;
     legend.forEach(function (lg) {
-      var span = lg[0].length === 1 ? narrow : wide;
       if (lc + span - 1 > lastCol) { lr++; lc = TL0; }
       if (lr > 5) return;
       var sp = { font: { sz: 8, b: true, color: lg[2] }, fill: lg[1].fill, h: 'center', border: { left: thin(C.white), right: thin(C.white), top: thin(C.white), bottom: thin(C.white) } };
@@ -260,12 +263,16 @@
       lc += span;
     });
 
-    /* data date (value comes from the Tracker's control panel) */
-    rowH(7, 14);
+    /* data date + chart start (row 7) */
+    rowH(7, 15);
     cell(7, 1, 'DATA DATE (from ' + lay.sheet + ')  ▶', { font: { sz: 9, b: true, color: C.red }, h: 'right' }); merge(7, 1, 7, 2);
     var dt0 = M.serialToDate(cut);
     cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy' },
       refs.dd ? TR + absRef(refs.dd) : 'DATE(' + dt0.getUTCFullYear() + ',' + (dt0.getUTCMonth() + 1) + ',' + dt0.getUTCDate() + ')');
+    cell(7, 5, 'CHART STARTS (editable)  ▶', { font: { sz: 8.5, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
+    var mn = 'MIN(' + PSr + ',' + PAr + ',' + DD + ')-14';
+    var startF = scale === 'week' ? mn + '-WEEKDAY(' + mn + ',1)+1' : scale === 'month' ? 'DATE(YEAR(' + mn + '),MONTH(' + mn + '),1)' : mn;
+    cell(7, 7, cut - 14, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } }, startF);
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
@@ -274,79 +281,86 @@
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
       cell(8, cc, h, i === 1 || i === 7 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
     });
-    ax.groups.forEach(function (g, gi) {
-      var sp = { font: { sz: 9, b: true, color: C.white }, fill: gi % 2 ? C.tealDark : C.teal, h: 'center', border: { left: thin(C.white) } };
-      for (var uu = g.from; uu <= g.to; uu++) styleOnly(8, TL0 + uu, sp);
-      cell(8, TL0 + g.from, g.label, sp, 'TEXT(' + numToCol(TL0 + g.from) + '9,"' + (o.scale === 'month' ? 'yyyy' : 'mmm yyyy') + '")'); if (g.to > g.from) merge(8, TL0 + g.from, 8, TL0 + g.to);
-    });
-    var uFmt = o.scale === 'month' ? 'mmm' : 'd';
-    for (var u2 = 0; u2 < ax.n; u2++) {
-      var sp2 = { font: { sz: o.scale === 'day' ? 6 : 7.5, color: C.text }, fill: 'E3EAED', h: 'center', border: { left: thin(ax.isMonthStart(u2) ? C.gridMonth : C.white) }, shrink: true, fmt: uFmt };
-      var prev = numToCol(TL0 + u2 - 1);
-      cell(9, TL0 + u2, ax.startOf(u2), sp2, u2 === 0 ? undefined : o.scale === 'month' ? 'EDATE(' + prev + '9,1)' : prev + '9+' + (o.scale === 'week' ? 7 : 1));
+    for (var u = 0; u < N_UNITS; u++) {
+      var colL = numToCol(TL0 + u), prevL = numToCol(TL0 + u - 1), first = u === 0;
+      var lab8 = scale === 'month'
+        ? (first ? 'TEXT(' + colL + '9,"yyyy")' : 'IF(MONTH(' + colL + '9)=1,TEXT(' + colL + '9,"yyyy"),"")')
+        : (first ? 'TEXT(' + colL + '9,"mmm")&CHAR(10)&TEXT(' + colL + '9,"yy")' : 'IF(MONTH(' + colL + '9)<>MONTH(' + prevL + '9),TEXT(' + colL + '9,"mmm")&IF(MONTH(' + colL + '9)=1,CHAR(10)&TEXT(' + colL + '9,"yy"),""),"")');
+      cell(8, TL0 + u, '', { font: { sz: 7, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white) } }, lab8);
+      cell(9, TL0 + u, cut - 14 + (scale === 'week' ? 7 * u : scale === 'day' ? u : 30 * u), { font: { sz: scale === 'day' ? 6 : 7.5, color: C.text }, fill: 'E3EAED', h: 'center', border: { left: thin(C.white) }, shrink: true, fmt: scale === 'month' ? 'mmm' : 'd' },
+        first ? START : scale === 'month' ? 'EDATE(' + prevL + '9,1)' : prevL + '9+' + (scale === 'week' ? 7 : 1));
     }
-    rowH(8, 17); rowH(9, 16);
+    rowH(8, 28); rowH(9, 16);
     H_LABELS.forEach(function (lbl, i) {
       var sp = { font: { sz: 8, b: true, color: C.white }, fill: C.greyDark, h: 'center', wrap: true, border: { left: thin(C.white) } };
       styleOnly(8, hc(i), sp); styleOnly(9, hc(i), sp); cell(8, hc(i), lbl, sp); merge(8, hc(i), 9, hc(i));
     });
 
-    /* lines: dates, SAR code and status are formulas; the milestones in the timeline are formulas too */
-    var dFmt = 'dd\\-mmm\\-yy', g_ = lay.g;
-    items.forEach(function (it) {
-      var rw = it.r, proj = it.kind === 'project', band = proj ? C.band : null, tcol = proj ? C.white : C.text;
-      rowH(rw, proj ? 21 : 18, it.lvl);
-      function tspec(extra) { return Object.assign({ font: { sz: 9, b: proj, color: tcol }, fill: proj ? C.black : C.white, v: 'center', border: { left: thin(C.line), right: thin(C.line), bottom: thin(proj ? C.black : C.line) } }, extra || {}); }
-      for (c = 1; c <= 8; c++) cell(rw, c, null, tspec({ h: c === 2 || c === 8 ? 'left' : 'center' }));
-      var ps = it.ps, pa = it.pa, ownPs = TR + g_.ps + it.trow, ownPa = TR + g_.pa + it.trow;
-      var PSc = '$' + hl(H.PS) + rw, PAc = '$' + hl(H.PA) + rw;
-      var psF, paF;
-      if (proj && it.kids) {
-        var a = rw + 1, b = rw + it.kids, rp = hl(H.PS) + a + ':' + hl(H.PS) + b, ra = hl(H.PA) + a + ':' + hl(H.PA) + b;
-        psF = 'IF(ISNUMBER(' + ownPs + '),' + ownPs + ',IF(COUNT(' + rp + ')=0,"",MIN(' + rp + ')))';
-        paF = 'IF(ISNUMBER(' + ownPa + '),' + ownPa + ',IF(COUNT(' + ra + ')=0,"",MAX(' + ra + ')))';
-      } else { psF = 'IF(ISNUMBER(' + ownPs + '),' + ownPs + ',"")'; paF = 'IF(ISNUMBER(' + ownPa + '),' + ownPa + ',"")'; }
+    /* one Gantt row per Tracker row */
+    var dFmt = 'dd\\-mmm\\-yy';
+    var base = { font: { sz: 9, color: C.text }, fill: C.white, v: 'center', border: { left: thin(C.line), right: thin(C.line), bottom: thin(C.line) } };
+    for (var i = 0; i < nRows; i++) {
+      var rw = R0 + i, t = T0 + i, up = rw - 1;
+      rowH(rw, 18);
+      function T(key) { return g_[key] ? TR + g_[key] + t : null; }
+      var NAME = 'TRIM(' + T('name') + '&"")', PROG = 'TRIM(' + (T('programme') || '""') + '&"")', CODE_ = 'TRIM(' + (T('code') || '""') + '&"")', LVL = T('lvl') ? 'UPPER(TRIM(' + T('lvl') + '&""))' : '""';
+      var Kc = '$' + hl(H.KIND) + rw, PIDc = '$' + hl(H.PID) + rw, OPS = '$' + hl(H.OPS) + rw, OPA = '$' + hl(H.OPA) + rw, PSc = '$' + hl(H.PS) + rw, PAc = '$' + hl(H.PA) + rw;
+      var ISP = '$' + hl(H.ISP) + rw, BARE = '$' + hl(H.BARE) + rw, PIDp = '$' + hl(H.PID) + up;
       var hs = { font: { sz: 8, color: C.mute }, h: 'center', border: { bottom: thin(C.grid) } };
-      function hput(i, v, f, fmt) { cell(rw, hc(i), v, Object.assign({}, hs, fmt ? { fmt: fmt } : {}), f); }
-      hput(H.PS, isNum(ps) ? ps : '', psF, dFmt); hput(H.PA, isNum(pa) ? pa : '', paF, dFmt);
-      hput(H.KIND, proj ? 'P' : 'E');
-      var nameF = proj ? 'IF(' + TR + g_.code + it.trow + '="","",' + TR + g_.code + it.trow + '&" — ")&' + TR + g_.name + it.trow : TR + g_.name + it.trow + '&""';
-      cell(rw, 1, it.id, tspec({ h: 'center', font: { sz: 8.5, b: true, color: proj ? C.white : C.mute } }));
-      cell(rw, 2, clean(it.label), tspec({ h: 'left', indent: it.lvl * 2 + 1, shrink: true, font: { sz: proj ? 10 : 9, b: proj, color: tcol } }), nameF);
-      cell(rw, 3, isNum(ps) ? ps : '', tspec({ h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: tcol } }), 'IF(' + PSc + '="","",' + PSc + ')');
-      cell(rw, 4, isNum(pa) ? pa : '', tspec({ h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: tcol } }), 'IF(' + PAc + '="","",' + PAc + ')');
-      cell(rw, 5, isNum(ps) && isNum(pa) ? pa - ps : '', tspec({ h: 'center', fmt: '0', font: { sz: 9, color: tcol } }), 'IF(COUNT(' + PSc + ',' + PAc + ')=2,' + PAc + '-' + PSc + ',"")');
-      cell(rw, 6, it.code || '', tspec({ h: 'center', font: { sz: 10, b: true, color: tcol } }), g_.sar ? 'UPPER(TRIM(' + TR + g_.sar + it.trow + '&""))' : undefined);
-      cell(rw, 7, it.status, tspec({ h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
-        'IF(COUNT(' + PSc + ',' + PAc + ')=0,"No dates",IF(AND(ISNUMBER(' + PAc + '),' + PAc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + PSc + '),' + PSc + '<=' + DD + '),"In progress","Forecast")))');
-      cell(rw, 8, clean(it.notes || ''), tspec({ h: 'left', indent: 1, shrink: true, font: { sz: 8, color: proj ? 'D7E6EA' : C.mute } }), g_.notes ? TR + g_.notes + it.trow + '&""' : undefined);
-      // milestones: ◆/◇ submission (actual/forecast), ●/○ approval
-      var msSub = it.ms.filter(function (m_) { return m_.t === 'sub'; })[0], msApp = it.ms.filter(function (m_) { return m_.t === 'app'; })[0];
-      for (var uu = 0; uu < ax.n; uu++) {
-        var col = numToCol(TL0 + uu), v = '';
-        if (msApp && ax.unitOf(msApp.d) === uu) v = /^[ABCD]$/.test(it.code) ? it.code : (msApp.actual ? '●' : '○');
-        else if (msSub && ax.unitOf(msSub.d) === uu) v = msSub.actual ? '◆' : '◇';
+      function hput(k, f, fmt) { cell(rw, hc(k), '', Object.assign({}, hs, fmt ? { fmt: fmt } : {}), f); }
+      hput(H.OPS, 'IF(ISNUMBER(' + TR + g_.ps + t + '),' + TR + g_.ps + t + ',"")', dFmt);
+      hput(H.OPA, 'IF(ISNUMBER(' + TR + g_.pa + t + '),' + TR + g_.pa + t + ',"")', dFmt);
+      hput(H.ISP, 'OR(' + LVL + '="P",AND(' + LVL + '<>"E",' + PROG + '<>""))');
+      hput(H.BARE, 'AND(' + ISP + ',' + NAME + '="",' + CODE_ + '="")');
+      // project / element / nothing. A project row without a code straight under a coded project is one of its lines (e.g. the 0583 packages).
+      hput(H.KIND, 'IF(' + BARE + ',"",IF(' + NAME + '="","",IF(' + ISP + ',IF(' + PIDp + '="","P",IF(AND(' + CODE_ + '="",INDEX(' + codeCol + ',' + PIDp + ')<>"",' + PROG + '=TRIM(INDEX(' + progCol + ',' + PIDp + ')&"")),"E","P")),IF(' + PIDp + '<>"","E",""))))');
+      hput(H.PID, 'IF(' + Kc + '="P",' + t + ',IF(' + BARE + ',"",' + PIDp + '))');
+      // effective dates: an element's own; a project's own, else the span of its elements
+      var span = function (fn, own, col) { return 'IF(' + Kc + '="E",' + own + ',IF(' + Kc + '="P",IF(ISNUMBER(' + own + '),' + own + ',IF(COUNTIFS(' + PIDr + ',' + PIDc + ',' + K + ',"E",' + colRange(col) + ',">0")=0,"",_xlfn.' + fn + '(' + colRange(col) + ',' + PIDr + ',' + PIDc + ',' + K + ',"E"))),""))'; };
+      hput(H.PS, span('MINIFS', OPS, hl(H.OPS)), dFmt);
+      hput(H.PA, span('MAXIFS', OPA, hl(H.OPA)), dFmt);
+      for (c = 1; c <= 8; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 || c === 8 ? 'left' : 'center' }));
+      var cnt0 = 'COUNT(' + PSc + ',' + PAc + ')';
+      cell(rw, 1, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.mute } }),
+        'IF(' + Kc + '="P",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P"),IF(' + Kc + '="E",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P")&"."&COUNTIFS(' + hl(H.PID) + '$' + R0 + ':' + hl(H.PID) + rw + ',' + PIDc + ',' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"E"),""))');
+      cell(rw, 2, '', Object.assign({}, base, { h: 'left', indent: 1, shrink: true }),
+        'IF(' + Kc + '="P",IF(' + CODE_ + '="","",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
+      cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: C.text } }), 'IF(' + PSc + '="","",' + PSc + ')');
+      cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: C.text } }), 'IF(' + PAc + '="","",' + PAc + ')');
+      cell(rw, 5, '', Object.assign({}, base, { h: 'center', fmt: '0' }), 'IF(' + cnt0 + '=2,' + PAc + '-' + PSc + ',"")');
+      cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.sar ? 'IF(' + Kc + '="","",UPPER(TRIM(' + TR + g_.sar + t + '&"")))' : '""');
+      cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
+        'IF(' + Kc + '="","",IF(' + cnt0 + '=0,"No dates",IF(AND(ISNUMBER(' + PAc + '),' + PAc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + PSc + '),' + PSc + '<=' + DD + '),"In progress","Forecast"))))');
+      cell(rw, 8, '', Object.assign({}, base, { h: 'left', indent: 1, shrink: true, font: { sz: 8, color: C.mute } }), g_.notes ? 'IF(' + Kc + '="","",' + TR + g_.notes + t + '&"")' : '""');
+      // milestones: ◆/◇ submission (actual / forecast), ●/○ approval
+      for (var uu = 0; uu < N_UNITS; uu++) {
+        var col = numToCol(TL0 + uu);
         var inU = function (X_) { return 'AND(ISNUMBER(' + X_ + '),' + X_ + '>=' + col + '$9,' + X_ + '<=' + UE(col) + ')'; };
-        cell(rw, TL0 + uu, v, { fill: band, border: { left: thin(ax.isMonthStart(uu) ? C.gridMonth : C.grid), bottom: thin(C.line) }, h: 'center', font: { sz: 11, b: true, color: C.text }, v: 'center' },
+        cell(rw, TL0 + uu, '', { border: { left: thin(C.grid), bottom: thin(C.line) }, h: 'center', font: { sz: 11, b: true, color: C.text }, v: 'center' },
           'IF(' + inU(PAc) + ',IF(' + PAc + '<=' + DD + ',"●","○"),IF(' + inU(PSc) + ',IF(' + PSc + '<=' + DD + ',"◆","◇"),""))');
       }
-    });
+    }
 
-    /* conditional formatting: milestone colours, the data-date column, status / code colours */
+    /* conditional formatting */
     var pri = 1, blocks = [];
     function cf(sqref, formula, dxf, type, op) {
       var blk = blocks.filter(function (x) { return x.sqref === sqref; })[0];
       if (!blk) { blk = { sqref: sqref, rules: [] }; blocks.push(blk); }
       blk.rules.push('<cfRule type="' + (type || 'expression') + '" dxfId="' + dxf + '" priority="' + (pri++) + '"' + (op ? ' operator="' + op + '"' : '') + '><formula>' + esc(formula) + '</formula></cfRule>');
     }
-    var T0 = firstTl, TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = T0 + R0;
+    var TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = firstTl + R0, kc = '$' + hl(H.KIND) + R0;
     cf(TLr, 'OR(' + cc0 + '="◆",' + cc0 + '="◇")', sb.dxf({ font: { b: true, color: C.sub } }));
     cf(TLr, 'OR(' + cc0 + '="●",' + cc0 + '="○")', sb.dxf({ font: { b: true, color: C.app } }));
-    var ddTest = 'AND(' + DD + '>=' + T0 + '$9,' + DD + '<=' + UE(T0) + ')';
+    var ddTest = 'AND(' + DD + '>=' + firstTl + '$9,' + DD + '<=' + UE(firstTl) + ')';
     cf(TLr, ddTest, sb.dxf({ fill: C.redSoft, border: { left: ['thin', C.red] } }));
+    var monthStart = scale === 'month' ? 'MONTH(' + firstTl + '$9)=1' : scale === 'week' ? 'DAY(' + firstTl + '$9)<=7' : 'DAY(' + firstTl + '$9)=1';
+    cf(TLr, monthStart, sb.dxf({ border: { left: ['thin', C.gridMonth] } }));
+    cf(TLr, kc + '="P"', sb.dxf({ fill: C.band }));
     cf(firstTl + '7:' + lastTl + '7', ddTest, sb.dxf({ fill: C.red }));
     cf(firstTl + '9:' + lastTl + '9', ddTest, sb.dxf({ fill: C.red, font: { b: true, color: C.white } }));
-    // the date cells carry the same colours as the milestones: solid = actual, pale = forecast
+    var TBL = 'A' + R0 + ':H' + lastData;
+    cf(TBL, kc + '="P"', sb.dxf({ fill: C.black, font: { b: true, color: C.white } }));
+    // date cells carry the milestone colours: solid = actual, pale = forecast
     cf('C' + R0 + ':C' + lastData, 'AND(ISNUMBER(C' + R0 + '),C' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.sub, font: { b: true, color: C.white } }));
     cf('C' + R0 + ':C' + lastData, 'ISNUMBER(C' + R0 + ')', sb.dxf({ fill: C.subSoft, font: { b: true, color: C.sub } }));
     cf('D' + R0 + ':D' + lastData, 'AND(ISNUMBER(D' + R0 + '),D' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.app, font: { b: true, color: C.white } }));
@@ -355,31 +369,16 @@
     Object.keys(STATUS_COL).forEach(function (k) { cf('G' + R0 + ':G' + lastData, '"' + k + '"', sb.dxf({ fill: STATUS_COL[k][0], font: { b: true, color: STATUS_COL[k][1] } }), 'cellIs', 'equal'); });
     cf('E' + R0 + ':E' + lastData, 'AND(ISNUMBER(E' + R0 + '),E' + R0 + '<0)', sb.dxf({ font: { b: true, color: C.red } }));
 
-    /* checks + notes (snapshot) */
-    r = lastData + 2;
-    var secSpec = { font: { sz: 11, b: true, color: C.white }, fill: C.black, h: 'left', indent: 1 };
-    for (c = 1; c <= 8; c++) styleOnly(r, c, secSpec);
-    cell(r, 1, 'DATA CHECKS   —   snapshot when this sheet was generated; fix in the Tracker, then re-run the site to refresh', secSpec); merge(r, 1, r, 8); rowH(r, 20); r++;
-    var shown = model.checks.filter(function (k) { return k.sev !== 'info'; }), infos = model.checks.length - shown.length;
-    if (!shown.length) { cell(r, 1, 'No date errors or warnings found.', { font: { sz: 9, color: '2E7D32', b: true }, h: 'left', indent: 1 }); merge(r, 1, r, 8); rowH(r, 16); r++; }
-    shown.slice(0, 250).forEach(function (k) {
-      var sv = { font: { sz: 8, b: true, color: C.white }, fill: k.sev === 'error' ? 'C62828' : 'B26A00', h: 'center', border: { bottom: thin(C.line) } };
-      var tx = { font: { sz: 8.5, color: C.text }, h: 'left', indent: 1, shrink: true, border: { bottom: thin(C.line) } };
-      cell(r, 1, k.sev === 'error' ? 'ERROR' : 'WARN', sv);
-      cell(r, 2, clean(k.element), Object.assign({}, tx, { font: { sz: 8.5, b: true, color: C.text } }));
-      cell(r, 3, clean(k.msg), tx); for (c = 4; c <= 8; c++) styleOnly(r, c, tx);
-      merge(r, 3, r, 8); rowH(r, 15); r++;
-    });
-    if (infos) { cell(r, 1, infos + ' informational notes (rows without dates yet…) are listed in the website, not here.', { font: { sz: 8, i: true, color: C.mute }, h: 'left', indent: 1 }); merge(r, 1, r, 8); rowH(r, 14); r++; }
-    r++;
+    /* notes under the chart */
+    var r = lastData + 2;
     [
-      'HOW TO USE THIS CHART',
-      'LIVE: dates, status and bars read the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet and its data date. Change a date there and this sheet redraws. Helper dates are in the grouped columns right of the chart (click + above them).',
-      'Submission and Approval are milestones, not activities. A milestone on or before the data date is ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). The SAR review code (A/B/C/D) from the Tracker is shown in the SAR code column. A project uses the dates typed on its own row, otherwise the span of its elements.',
-      'Fixed when generated: which projects / elements have a line and the time range (padded for date moves). If you add elements or dates move outside the range, re-run the site.'
-    ].forEach(function (t, i) {
-      cell(r, 1, t, i === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
-      merge(r, 1, r, 8); rowH(r, i === 0 ? 15 : 26); r++;
+      'HOW THIS SHEET WORKS',
+      'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). Type a date in ANY of those rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
+      'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A project uses the dates typed on its own row, otherwise the span of its elements. The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
+      'The time axis starts at the yellow "Chart starts" cell (automatic: 2 weeks before the earliest date or the data date; you may type a date over it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
+    ].forEach(function (txt, k) {
+      cell(r, 1, txt, k === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
+      merge(r, 1, r, 8); rowH(r, k === 0 ? 15 : 38); r++;
     });
     var lastRow = r - 1;
 
@@ -387,7 +386,7 @@
     var xml = [], rowNums = Object.keys(rows).map(Number).sort(function (a, b) { return a - b; });
     rowNums.forEach(function (rn) {
       var rm = rowMeta[rn] || {}, cs = rows[rn], colNums = Object.keys(cs).map(Number).sort(function (a, b) { return a - b; });
-      var parts = ['<row r="' + rn + '"' + (rm.h ? ' ht="' + rm.h + '" customHeight="1"' : '') + (rm.outline ? ' outlineLevel="' + rm.outline + '"' : '') + '>'];
+      var parts = ['<row r="' + rn + '"' + (rm.h ? ' ht="' + rm.h + '" customHeight="1"' : '') + '>'];
       colNums.forEach(function (cn) {
         var ce = cs[cn], ref = numToCol(cn) + rn, v = ce.v;
         if (ce.f) {
@@ -399,8 +398,8 @@
       });
       parts.push('</row>'); xml.push(parts.join(''));
     });
-    var lastHelper = hc(H.KIND), cols = ['<cols>'];
-    WIDTHS.forEach(function (w, i) { cols.push('<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>'); });
+    var lastHelper = hc(H.PA), cols = ['<cols>'];
+    WIDTHS.forEach(function (w, k) { cols.push('<col min="' + (k + 1) + '" max="' + (k + 1) + '" width="' + w + '" customWidth="1"/>'); });
     cols.push('<col min="' + TL0 + '" max="' + lastCol + '" width="' + unitW + '" customWidth="1"/>');
     cols.push('<col min="' + (lastCol + 1) + '" max="' + (lastCol + 1) + '" width="2.5" customWidth="1" collapsed="1"/>');
     cols.push('<col min="' + HC0 + '" max="' + lastHelper + '" width="11" hidden="1" outlineLevel="1" customWidth="1"/></cols>');
@@ -413,14 +412,14 @@
       '<pane xSplit="2" ySplit="' + HEAD_ROWS + '" topLeftCell="C' + (HEAD_ROWS + 1) + '" activePane="bottomRight" state="frozen"/>' +
       '<selection pane="topRight" activeCell="C1" sqref="C1"/><selection pane="bottomLeft" activeCell="A' + (HEAD_ROWS + 1) + '" sqref="A' + (HEAD_ROWS + 1) + '"/>' +
       '<selection pane="bottomRight" activeCell="C' + (HEAD_ROWS + 1) + '" sqref="C' + (HEAD_ROWS + 1) + '"/></sheetView></sheetViews>' +
-      '<sheetFormatPr defaultRowHeight="14.4" outlineLevelRow="1" outlineLevelCol="1"/>' + cols.join('') +
+      '<sheetFormatPr defaultRowHeight="14.4" outlineLevelCol="1"/>' + cols.join('') +
       '<sheetData>' + xml.join('') + '</sheetData>' +
       '<mergeCells count="' + merges.length + '">' + merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('') + '</mergeCells>' + cfXml +
       '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>' +
       '<pageSetup paperSize="8" orientation="landscape" fitToWidth="1" fitToHeight="0"/>' +
       '<headerFooter><oddFooter>&amp;L&amp;8SAR — Design Submission Gantt&amp;C&amp;8Page &amp;P of &amp;N&amp;R&amp;8Printed &amp;D</oddFooter></headerFooter>' +
       '</worksheet>';
-    return { xml: sheet, lastData: lastData, lastRow: lastRow, lastCol: lastCol, ax: ax };
+    return { xml: sheet, lastData: lastData, lastRow: lastRow, lastCol: lastCol };
   }
 
   /* ---------- put the sheet into the workbook package ---------- */
@@ -428,10 +427,9 @@
     opts = opts || {};
     var scale = opts.scale || 'week';
     var loc = await M.locateSheets(zip);
-    var items = M.buildItems(model, opts);
     var stylesXml = await M.readText(zip, 'xl/styles.xml');
     var sb = new StyleBook(stylesXml);
-    var res = buildSheet(sb, model, items, { scale: scale, sourceName: opts.sourceName });
+    var res = buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName });
 
     var wbXml = loc.workbookXml, relsXml = loc.relsXml;
     var target = loc.sheets.filter(function (s) { return /^gantt/i.test(s.name); })[0], sheetIndex, sheetName;
@@ -470,7 +468,7 @@
       if (x && /tabSelected="1"/.test(x)) zip.file(p, x.replace(/\s*tabSelected="1"/, ''));
     }
     var out = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-    return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: items.length };
+    return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData };
   }
 
   return { build: build, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
