@@ -4,6 +4,7 @@
   var M = window.Model, X = window.XlsxGantt;
   var $ = function (id) { return document.getElementById(id); };
   var HC = { 'Actual': '#2e7d32', 'In progress': '#1e6fd9', 'Forecast': '#7e57c2', 'No dates': '#b0bec5' };
+  var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
   var S = { buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
@@ -57,6 +58,7 @@
       kpi('Actual', st.counts['Actual'], 'approval date reached', HC['Actual']) +
       kpi('In progress', st.counts['In progress'], 'submitted, approval ahead', HC['In progress']) +
       kpi('Forecast', st.counts['Forecast'], 'submission still ahead', HC['Forecast']) +
+      kpi('SAR codes', ['A', 'B', 'C', 'D'].map(function (k) { return '<b style="color:' + CODE[k] + '">' + k + '</b> ' + st.codes[k]; }).join(' · '), st.codes.none + ' elements without a code', '#00778b').replace('class="v"', 'class="v" style="font-size:20px"') +
       kpi('Programme span', st.first ? M.fmtDate(st.first) : '–', st.last ? 'to ' + M.fmtDate(st.last) : 'no dates', '#00778b') +
       '<div class="kpi wide"><div class="l">Elements by status · data date ' + M.fmtDate(m.cut) + '</div><div class="stack">' + stack + '</div><div class="s" style="margin-top:6px">' +
       Object.keys(HC).map(function (k) { return '<span style="margin-right:12px"><b style="color:' + HC[k] + '">●</b> ' + k + ' ' + st.counts[k] + '</span>'; }).join('') + '</div></div>';
@@ -64,9 +66,9 @@
   function kpi(l, v, s, c) { return '<div class="kpi" style="border-top-color:' + c + '"><div class="l">' + l + '</div><div class="v" style="color:' + c + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
 
   function renderLegend() {
-    var l = [['#00778b', 'Actual (up to the data date)'], ['repeating-linear-gradient(135deg,rgba(0,119,139,.55) 0 3px,#ddf0f4 3px 7px)', 'Forecast (after the data date)'],
-      ['#3d3935', 'Project summary'], ['#c62828', 'Data date']];
-    $('legend').innerHTML = l.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + x[1] + '</span>'; }).join('');
+    var l = [['<i class="ms sub"></i>', 'Submission (actual)'], ['<i class="ms sub hollow"></i>', 'Submission (forecast)'], ['<i class="ms app"></i>', 'Approval (actual)'], ['<i class="ms app hollow"></i>', 'Approval (forecast)'],
+      ['<i class="cd" style="background:' + CODE.A + '">A</i><i class="cd" style="background:' + CODE.B + '">B</i><i class="cd" style="background:' + CODE.C + '">C</i><i class="cd" style="background:' + CODE.D + '">D</i>', 'SAR review code'], ['<i class="dd"></i>', 'Data date']];
+    $('legend').innerHTML = l.map(function (x) { return '<span>' + x[0] + x[1] + '</span>'; }).join('');
   }
 
   function passFilter(p, e) {
@@ -102,8 +104,10 @@
       if (hidden(it)) return;
       shown++;
       var cls = it.kind === 'project' ? 'p' : 'e', bars = '';
-      it.segs.forEach(function (g) {
-        bars += '<div class="g-bar ' + (it.kind === 'project' ? 'b-p' : '') + ' b-' + g.t + '" data-i="' + ix + '" style="left:' + X_(g.s) + 'px;width:' + Math.max(5, (g.e - g.s + 1) * ppd) + 'px;top:' + (it.kind === 'project' ? 8 : 9) + 'px;height:' + (it.kind === 'project' ? 14 : 12) + 'px"></div>';
+      it.ms.forEach(function (g) {
+        var x = X_(g.d) + ppd / 2, top = it.kind === 'project' ? 9 : 8;
+        if (g.t === 'app' && /^[ABCD]$/.test(it.code)) bars += '<div class="cd on" data-i="' + ix + '" style="left:' + (x - 9) + 'px;top:' + (top - 1) + 'px;background:' + CODE[it.code] + '">' + it.code + '</div>';
+        else bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
       });
       var pill = '<span class="pill" style="background:' + HC[it.status] + '">' + it.status + '</span>';
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
@@ -147,6 +151,7 @@
     var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', it.status + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
     L.push('Submission date: ' + (f(it.ps) || '–') + (M.isNum(it.ps) ? (it.ps <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     L.push('Approval date: ' + (f(it.pa) || '–') + (M.isNum(it.pa) ? (it.pa <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
+    L.push('SAR code: ' + (it.code || 'none yet'));
     if (it.notes) L.push('“' + it.notes.replace(/\s+/g, ' ').slice(0, 160) + '”');
     return L.join('\n');
   }

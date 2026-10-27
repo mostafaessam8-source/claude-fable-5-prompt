@@ -20,7 +20,7 @@
   var C = {
     teal: '00778B', tealDark: '005A6A', tealSoft: 'DDF0F4', tealMid: '8CCAD6', black: '3D3935', grey: '9AA9B3', greyDark: '5F6B73',
     band: 'F1F3F4', bandEl: 'E4F1F4', line: 'D5DADD', grid: 'ECEFF1', gridMonth: 'B8C4CA', red: 'C62828', redSoft: 'FDECEA', amber: 'E69A00',
-    amberSoft: 'FFF3D6', plan: '5E35B1', planSoft: 'E8E1F5', white: 'FFFFFF', text: '263238', mute: '78909C'
+    amberSoft: 'FFF3D6', sub: '1E6FD9', subSoft: 'DCE9FB', app: 'EF6C00', appSoft: 'FDE9D6', plan: '5E35B1', planSoft: 'E8E1F5', white: 'FFFFFF', text: '263238', mute: '78909C'
   };
   var HEALTH = {
     'Completed': ['2E7D32', 'FFFFFF'], 'In Progress': ['1E6FD9', 'FFFFFF'], 'At Risk': ['F5A300', '3D2A00'],
@@ -180,11 +180,11 @@
    * tells which). Every number is a formula reading the Tracker and every bar is conditional formatting, so changing a date in
    * the Tracker redraws the chart. Fixed when generated: which projects / elements get a line, and the time range.
    */
-  var TL0 = 8; // first timeline column
-  var WIDTHS = [6.5, 50, 11.5, 11.5, 7, 12, 34];
+  var TL0 = 9; // first timeline column
+  var WIDTHS = [6.5, 50, 11.5, 11.5, 7, 8, 12, 34];
   var HEAD_ROWS = 9;
-  var H = { PS: 0, PA: 1, ST: 2, EN: 3, KIND: 4 };
-  var H_LABELS = ['Submission (eff.)', 'Approval (eff.)', 'Bar start', 'Bar end', 'Row kind'];
+  var H = { PS: 0, PA: 1, KIND: 2 };
+  var H_LABELS = ['Submission (eff.)', 'Approval (eff.)', 'Row kind'];
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
 
   function absRef(a1) { var m = /^([A-Z]+)(\d+)$/.exec(a1); return '$' + m[1] + '$' + m[2]; }
@@ -209,50 +209,56 @@
     items.forEach(function (it) { it.r = r++; });
     var R0 = HEAD_ROWS + 1, lastData = r - 1;
     function colRange(col) { return '$' + col + '$' + R0 + ':$' + col + '$' + lastData; }
-    var K = colRange(hl(H.KIND)), FST = colRange('F');
+    var K = colRange(hl(H.KIND)), FST = colRange('G');
 
     /* title, KPI cards, legend */
     var bandSpec = { font: { sz: 18, b: true, color: C.white }, fill: C.teal, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(1, c, bandSpec);
-    cell(1, 1, 'DESIGN SUBMISSION — GANTT CHART', bandSpec); merge(1, 1, 1, lastCol); rowH(1, 32);
+    cell(1, 1, 'DESIGN SUBMISSION — MILESTONE GANTT', bandSpec); merge(1, 1, 1, lastCol); rowH(1, 32);
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet);
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v2.0   ·   Live chart from the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v2.0   ·   Live chart from the ""Submission Date"" and ""Approval Date"" columns of the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.0   ·   Submission and Approval are milestones read live from the ' + lay.sheet + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v3.0   ·   Submission and Approval are milestones read live from the ' + lay.sheet.replace(/"/g, '""') + ' sheet (actual up to the data date, forecast after it)   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
+    var codeTxt = 'A ' + st.codes.A + '  ·  B ' + st.codes.B + '  ·  C ' + st.codes.C + '  ·  D ' + st.codes.D + '  ·  none ' + st.codes.none;
+    var CODE_R = colRange('F');
     var cards = [
       [1, 2, 'PROJECTS  /  ELEMENTS', 'COUNTIF(' + K + ',"P")&"  /  "&COUNTIF(' + K + ',"E")', st.projects + '  /  ' + st.elements, C.black],
       [3, 3, 'ACTUAL', 'COUNTIFS(' + K + ',"E",' + FST + ',"Actual")', st.counts['Actual'], STATUS_COL['Actual'][0]],
       [4, 4, 'IN PROGRESS', 'COUNTIFS(' + K + ',"E",' + FST + ',"In progress")', st.counts['In progress'], STATUS_COL['In progress'][0]],
       [5, 6, 'FORECAST', 'COUNTIFS(' + K + ',"E",' + FST + ',"Forecast")', st.counts['Forecast'], STATUS_COL['Forecast'][0]],
-      [7, 7, 'NO DATES YET', 'COUNTIFS(' + K + ',"E",' + FST + ',"No dates")', st.counts['No dates'], '78909C']
+      [7, 7, 'NO DATES', 'COUNTIFS(' + K + ',"E",' + FST + ',"No dates")', st.counts['No dates'], '78909C'],
+      [8, 8, 'SAR CODES (elements)', '"A "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")&"  ·  B "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")&"  ·  C "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")&"  ·  D "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"D")&"  ·  none "&(COUNTIF(' + K + ',"E")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"D"))', codeTxt, C.teal]
     ];
     cards.forEach(function (cd) {
       var lab = { font: { sz: 8, b: true, color: C.white }, fill: cd[5], h: 'center', border: { left: thin(C.white), right: thin(C.white) } };
-      var val = { font: { sz: 20, b: true, color: cd[5] }, fill: C.band, h: 'center', border: { left: thin(C.white), right: thin(C.white), bottom: ['medium', cd[5]] } };
+      var val = { font: { sz: cd[0] === 8 ? 11 : 20, b: true, color: cd[5] }, fill: C.band, h: 'center', border: { left: thin(C.white), right: thin(C.white), bottom: ['medium', cd[5]] } };
       for (var cc = cd[0]; cc <= cd[1]; cc++) { styleOnly(4, cc, lab); styleOnly(5, cc, val); }
       cell(4, cd[0], cd[2], lab); cell(5, cd[0], cd[4], val, cd[3]); merge(4, cd[0], 4, cd[1]); merge(5, cd[0], 5, cd[1]);
     });
     rowH(4, 15); rowH(5, 30);
     var info = { font: { sz: 8.5, color: C.mute, i: true }, h: 'left', indent: 1 };
-    var stC = colRange(hl(H.ST)), enC = colRange(hl(H.EN));
+    var psC = colRange(hl(H.PS)), paC = colRange(hl(H.PA));
     cell(6, 1, 'Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission ' + (st.first ? M.fmtDate(st.first) : '—') + '   ·   Last approval ' + (st.last ? M.fmtDate(st.last) : '—'), info,
-      '"Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission "&IF(COUNT(' + stC + ')=0,"—",TEXT(MIN(' + stC + '),"dd-mmm-yy"))&"   ·   Last approval "&IF(COUNT(' + enC + ')=0,"—",TEXT(MAX(' + enC + '),"dd-mmm-yy"))');
-    merge(6, 1, 6, 7); rowH(6, 14);
+      '"Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission "&IF(COUNT(' + psC + ')=0,"—",TEXT(MIN(' + psC + '),"dd-mmm-yy"))&"   ·   Last approval "&IF(COUNT(' + paC + ')=0,"—",TEXT(MAX(' + paC + '),"dd-mmm-yy"))');
+    merge(6, 1, 6, 8); rowH(6, 14);
 
     var legend = [
-      ['Actual (to data date)', { fill: C.teal }, C.white], ['Forecast (after data date)', { fill: { pattern: 'lightUp', fg: C.teal, bg: C.tealSoft } }, C.text],
-      ['Project summary', { fill: C.black }, C.white], ['Project forecast', { fill: { pattern: 'lightUp', fg: C.black, bg: 'D9DDDF' } }, C.text], ['Data date', { fill: C.red }, C.white]
+      ['◆ Submission (actual)', { fill: C.sub }, C.white], ['◇ Submission (forecast)', { fill: C.subSoft }, C.sub],
+      ['● Approval (actual)', { fill: C.app }, C.white], ['○ Approval (forecast)', { fill: C.appSoft }, C.app],
+      ['A', { fill: CODE.A }, C.white], ['B', { fill: CODE.B }, C.white], ['C', { fill: CODE.C }, C.white], ['D', { fill: CODE.D }, C.white],
+      ['Data date', { fill: C.red }, C.white]
     ];
-    var chipCols = Math.max(2, Math.ceil(21 / unitW)), lr = 4, lc = TL0;
+    var wide = Math.max(2, Math.ceil(22 / unitW)), narrow = Math.max(1, Math.ceil(5 / unitW)), lr = 4, lc = TL0;
     legend.forEach(function (lg) {
-      if (lc + chipCols - 1 > lastCol) { lr++; lc = TL0; }
+      var span = lg[0].length === 1 ? narrow : wide;
+      if (lc + span - 1 > lastCol) { lr++; lc = TL0; }
       if (lr > 5) return;
       var sp = { font: { sz: 8, b: true, color: lg[2] }, fill: lg[1].fill, h: 'center', border: { left: thin(C.white), right: thin(C.white), top: thin(C.white), bottom: thin(C.white) } };
-      for (var cc = lc; cc < lc + chipCols; cc++) styleOnly(lr, cc, sp);
-      cell(lr, lc, lg[0], sp); merge(lr, lc, lr, lc + chipCols - 1);
-      lc += chipCols;
+      for (var cc = lc; cc < lc + span; cc++) styleOnly(lr, cc, sp);
+      cell(lr, lc, lg[0], sp); merge(lr, lc, lr, lc + span - 1);
+      lc += span;
     });
 
     /* data date (value comes from the Tracker's control panel) */
@@ -264,10 +270,10 @@
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
-    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date', 'Days', 'Status', 'Remarks'].forEach(function (h, i) {
+    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date', 'Days', 'SAR code', 'Status', 'Remarks'].forEach(function (h, i) {
       var cc = i + 1;
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
-      cell(8, cc, h, i === 1 || i === 6 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
+      cell(8, cc, h, i === 1 || i === 7 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
     });
     ax.groups.forEach(function (g, gi) {
       var sp = { font: { sz: 9, b: true, color: C.white }, fill: gi % 2 ? C.tealDark : C.teal, h: 'center', border: { left: thin(C.white) } };
@@ -286,15 +292,15 @@
       styleOnly(8, hc(i), sp); styleOnly(9, hc(i), sp); cell(8, hc(i), lbl, sp); merge(8, hc(i), 9, hc(i));
     });
 
-    /* lines */
+    /* lines: dates, SAR code and status are formulas; the milestones in the timeline are formulas too */
     var dFmt = 'dd\\-mmm\\-yy', g_ = lay.g;
     items.forEach(function (it) {
       var rw = it.r, proj = it.kind === 'project', band = proj ? C.band : null, tcol = proj ? C.white : C.text;
       rowH(rw, proj ? 21 : 18, it.lvl);
       function tspec(extra) { return Object.assign({ font: { sz: 9, b: proj, color: tcol }, fill: proj ? C.black : C.white, v: 'center', border: { left: thin(C.line), right: thin(C.line), bottom: thin(proj ? C.black : C.line) } }, extra || {}); }
-      for (c = 1; c <= 7; c++) cell(rw, c, null, tspec({ h: c === 2 || c === 7 ? 'left' : 'center' }));
+      for (c = 1; c <= 8; c++) cell(rw, c, null, tspec({ h: c === 2 || c === 8 ? 'left' : 'center' }));
       var ps = it.ps, pa = it.pa, ownPs = TR + g_.ps + it.trow, ownPa = TR + g_.pa + it.trow;
-      var PSc = hl(H.PS) + rw, PAc = hl(H.PA) + rw, STc = hl(H.ST) + rw, ENc = hl(H.EN) + rw;
+      var PSc = '$' + hl(H.PS) + rw, PAc = '$' + hl(H.PA) + rw;
       var psF, paF;
       if (proj && it.kids) {
         var a = rw + 1, b = rw + it.kids, rp = hl(H.PS) + a + ':' + hl(H.PS) + b, ra = hl(H.PA) + a + ':' + hl(H.PA) + b;
@@ -304,9 +310,6 @@
       var hs = { font: { sz: 8, color: C.mute }, h: 'center', border: { bottom: thin(C.grid) } };
       function hput(i, v, f, fmt) { cell(rw, hc(i), v, Object.assign({}, hs, fmt ? { fmt: fmt } : {}), f); }
       hput(H.PS, isNum(ps) ? ps : '', psF, dFmt); hput(H.PA, isNum(pa) ? pa : '', paF, dFmt);
-      var segS = it.segs.length ? Math.min.apply(null, it.segs.map(function (g) { return g.s; })) : '', segE = it.segs.length ? Math.max.apply(null, it.segs.map(function (g) { return g.e; })) : '';
-      hput(H.ST, segS, 'IF(COUNT(' + PSc + ',' + PAc + ')=0,"",MIN(' + PSc + ',' + PAc + '))', dFmt);
-      hput(H.EN, segE, 'IF(COUNT(' + PSc + ',' + PAc + ')=0,"",MAX(' + PSc + ',' + PAc + '))', dFmt);
       hput(H.KIND, proj ? 'P' : 'E');
       var nameF = proj ? 'IF(' + TR + g_.code + it.trow + '="","",' + TR + g_.code + it.trow + '&" — ")&' + TR + g_.name + it.trow : TR + g_.name + it.trow + '&""';
       cell(rw, 1, it.id, tspec({ h: 'center', font: { sz: 8.5, b: true, color: proj ? C.white : C.mute } }));
@@ -314,63 +317,71 @@
       cell(rw, 3, isNum(ps) ? ps : '', tspec({ h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: tcol } }), 'IF(' + PSc + '="","",' + PSc + ')');
       cell(rw, 4, isNum(pa) ? pa : '', tspec({ h: 'center', fmt: dFmt, font: { sz: 9, b: true, color: tcol } }), 'IF(' + PAc + '="","",' + PAc + ')');
       cell(rw, 5, isNum(ps) && isNum(pa) ? pa - ps : '', tspec({ h: 'center', fmt: '0', font: { sz: 9, color: tcol } }), 'IF(COUNT(' + PSc + ',' + PAc + ')=2,' + PAc + '-' + PSc + ',"")');
-      cell(rw, 6, it.status, tspec({ h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
+      cell(rw, 6, it.code || '', tspec({ h: 'center', font: { sz: 10, b: true, color: tcol } }), g_.sar ? 'UPPER(TRIM(' + TR + g_.sar + it.trow + '&""))' : undefined);
+      cell(rw, 7, it.status, tspec({ h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
         'IF(COUNT(' + PSc + ',' + PAc + ')=0,"No dates",IF(AND(ISNUMBER(' + PAc + '),' + PAc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + PSc + '),' + PSc + '<=' + DD + '),"In progress","Forecast")))');
-      cell(rw, 7, clean(it.notes || ''), tspec({ h: 'left', indent: 1, shrink: true, font: { sz: 8, color: proj ? 'D7E6EA' : C.mute } }), g_.notes ? TR + g_.notes + it.trow + '&""' : undefined);
+      cell(rw, 8, clean(it.notes || ''), tspec({ h: 'left', indent: 1, shrink: true, font: { sz: 8, color: proj ? 'D7E6EA' : C.mute } }), g_.notes ? TR + g_.notes + it.trow + '&""' : undefined);
+      // milestones: ◆/◇ submission (actual/forecast), ●/○ approval, the SAR code letter replaces the approval mark
+      var msSub = it.ms.filter(function (m_) { return m_.t === 'sub'; })[0], msApp = it.ms.filter(function (m_) { return m_.t === 'app'; })[0];
       for (var uu = 0; uu < ax.n; uu++) {
-        var b2 = { left: thin(ax.isMonthStart(uu) ? C.gridMonth : C.grid), bottom: thin(C.line) };
-        cell(rw, TL0 + uu, null, { fill: band, border: b2 });
+        var col = numToCol(TL0 + uu), v = '';
+        if (msApp && ax.unitOf(msApp.d) === uu) v = /^[ABCD]$/.test(it.code) ? it.code : (msApp.actual ? '●' : '○');
+        else if (msSub && ax.unitOf(msSub.d) === uu) v = msSub.actual ? '◆' : '◇';
+        var inU = function (X_) { return 'AND(ISNUMBER(' + X_ + '),' + X_ + '>=' + col + '$9,' + X_ + '<=' + UE(col) + ')'; };
+        cell(rw, TL0 + uu, v, { fill: band, border: { left: thin(ax.isMonthStart(uu) ? C.gridMonth : C.grid), bottom: thin(C.line) }, h: 'center', font: { sz: 11, b: true, color: C.text }, v: 'center' },
+          'IF(' + inU(PAc) + ',IF(LEN($F' + rw + ')=1,$F' + rw + ',IF(' + PAc + '<=' + DD + ',"●","○")),IF(' + inU(PSc) + ',IF(' + PSc + '<=' + DD + ',"◆","◇"),""))');
       }
     });
-    var lastR = lastData;
 
-    /* conditional formatting: the bars, the data-date column, status colours */
+    /* conditional formatting: milestone colours, the data-date column, status / code colours */
     var pri = 1, blocks = [];
     function cf(sqref, formula, dxf, type, op) {
       var blk = blocks.filter(function (x) { return x.sqref === sqref; })[0];
       if (!blk) { blk = { sqref: sqref, rules: [] }; blocks.push(blk); }
       blk.rules.push('<cfRule type="' + (type || 'expression') + '" dxfId="' + dxf + '" priority="' + (pri++) + '"' + (op ? ' operator="' + op + '"' : '') + '><formula>' + esc(formula) + '</formula></cfRule>');
     }
-    var T0 = firstTl, TLr = firstTl + R0 + ':' + lastTl + lastData;
-    var ST_ = '$' + hl(H.ST) + R0, EN_ = '$' + hl(H.EN) + R0, KIND_ = '$' + hl(H.KIND) + R0;
-    var actual = 'AND(ISNUMBER(' + ST_ + '),' + ST_ + '<=' + DD + ',' + ST_ + '<=' + UE(T0) + ',MIN(' + EN_ + ',' + DD + ')>=' + T0 + '$9)';
-    var fcast = 'AND(ISNUMBER(' + EN_ + '),' + EN_ + '>' + DD + ',MAX(' + ST_ + ',' + DD + '+1)<=' + UE(T0) + ',' + EN_ + '>=' + T0 + '$9)';
-    cf(TLr, 'AND(' + KIND_ + '="P",' + actual + ')', sb.dxf({ fill: C.black }));
-    cf(TLr, 'AND(' + KIND_ + '="P",' + fcast + ')', sb.dxf({ fill: { pattern: 'lightUp', fg: C.black, bg: 'D9DDDF' } }));
-    cf(TLr, actual, sb.dxf({ fill: C.teal }));
-    cf(TLr, fcast, sb.dxf({ fill: { pattern: 'lightUp', fg: C.teal, bg: C.tealSoft } }));
+    var T0 = firstTl, TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = T0 + R0;
+    ['A', 'B', 'C', 'D'].forEach(function (k) { cf(TLr, cc0 + '="' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } })); });
+    cf(TLr, 'OR(' + cc0 + '="◆",' + cc0 + '="◇")', sb.dxf({ font: { b: true, color: C.sub } }));
+    cf(TLr, 'OR(' + cc0 + '="●",' + cc0 + '="○")', sb.dxf({ font: { b: true, color: C.app } }));
     var ddTest = 'AND(' + DD + '>=' + T0 + '$9,' + DD + '<=' + UE(T0) + ')';
     cf(TLr, ddTest, sb.dxf({ fill: C.redSoft, border: { left: ['thin', C.red] } }));
     cf(firstTl + '7:' + lastTl + '7', ddTest, sb.dxf({ fill: C.red }));
     cf(firstTl + '9:' + lastTl + '9', ddTest, sb.dxf({ fill: C.red, font: { b: true, color: C.white } }));
-    Object.keys(STATUS_COL).forEach(function (k) { cf('F' + R0 + ':F' + lastData, '"' + k + '"', sb.dxf({ fill: STATUS_COL[k][0], font: { b: true, color: STATUS_COL[k][1] } }), 'cellIs', 'equal'); });
+    // the date cells carry the same colours as the milestones: solid = actual, pale = forecast
+    cf('C' + R0 + ':C' + lastData, 'AND(ISNUMBER(C' + R0 + '),C' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.sub, font: { b: true, color: C.white } }));
+    cf('C' + R0 + ':C' + lastData, 'ISNUMBER(C' + R0 + ')', sb.dxf({ fill: C.subSoft, font: { b: true, color: C.sub } }));
+    cf('D' + R0 + ':D' + lastData, 'AND(ISNUMBER(D' + R0 + '),D' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.app, font: { b: true, color: C.white } }));
+    cf('D' + R0 + ':D' + lastData, 'ISNUMBER(D' + R0 + ')', sb.dxf({ fill: C.appSoft, font: { b: true, color: C.app } }));
+    ['A', 'B', 'C', 'D'].forEach(function (k) { cf('F' + R0 + ':F' + lastData, '"' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } }), 'cellIs', 'equal'); });
+    Object.keys(STATUS_COL).forEach(function (k) { cf('G' + R0 + ':G' + lastData, '"' + k + '"', sb.dxf({ fill: STATUS_COL[k][0], font: { b: true, color: STATUS_COL[k][1] } }), 'cellIs', 'equal'); });
     cf('E' + R0 + ':E' + lastData, 'AND(ISNUMBER(E' + R0 + '),E' + R0 + '<0)', sb.dxf({ font: { b: true, color: C.red } }));
 
     /* checks + notes (snapshot) */
     r = lastData + 2;
     var secSpec = { font: { sz: 11, b: true, color: C.white }, fill: C.black, h: 'left', indent: 1 };
-    for (c = 1; c <= 7; c++) styleOnly(r, c, secSpec);
-    cell(r, 1, 'DATA CHECKS   —   snapshot when this sheet was generated; fix in the Tracker, then re-run the site to refresh', secSpec); merge(r, 1, r, 7); rowH(r, 20); r++;
+    for (c = 1; c <= 8; c++) styleOnly(r, c, secSpec);
+    cell(r, 1, 'DATA CHECKS   —   snapshot when this sheet was generated; fix in the Tracker, then re-run the site to refresh', secSpec); merge(r, 1, r, 8); rowH(r, 20); r++;
     var shown = model.checks.filter(function (k) { return k.sev !== 'info'; }), infos = model.checks.length - shown.length;
-    if (!shown.length) { cell(r, 1, 'No date errors or warnings found.', { font: { sz: 9, color: '2E7D32', b: true }, h: 'left', indent: 1 }); merge(r, 1, r, 7); rowH(r, 16); r++; }
+    if (!shown.length) { cell(r, 1, 'No date errors or warnings found.', { font: { sz: 9, color: '2E7D32', b: true }, h: 'left', indent: 1 }); merge(r, 1, r, 8); rowH(r, 16); r++; }
     shown.slice(0, 250).forEach(function (k) {
       var sv = { font: { sz: 8, b: true, color: C.white }, fill: k.sev === 'error' ? 'C62828' : 'B26A00', h: 'center', border: { bottom: thin(C.line) } };
       var tx = { font: { sz: 8.5, color: C.text }, h: 'left', indent: 1, shrink: true, border: { bottom: thin(C.line) } };
       cell(r, 1, k.sev === 'error' ? 'ERROR' : 'WARN', sv);
       cell(r, 2, clean(k.element), Object.assign({}, tx, { font: { sz: 8.5, b: true, color: C.text } }));
-      cell(r, 3, clean(k.msg), tx); for (c = 4; c <= 7; c++) styleOnly(r, c, tx);
-      merge(r, 3, r, 7); rowH(r, 15); r++;
+      cell(r, 3, clean(k.msg), tx); for (c = 4; c <= 8; c++) styleOnly(r, c, tx);
+      merge(r, 3, r, 8); rowH(r, 15); r++;
     });
-    if (infos) { cell(r, 1, infos + ' informational notes (rows without dates yet…) are listed in the website, not here.', { font: { sz: 8, i: true, color: C.mute }, h: 'left', indent: 1 }); merge(r, 1, r, 7); rowH(r, 14); r++; }
+    if (infos) { cell(r, 1, infos + ' informational notes (rows without dates yet…) are listed in the website, not here.', { font: { sz: 8, i: true, color: C.mute }, h: 'left', indent: 1 }); merge(r, 1, r, 8); rowH(r, 14); r++; }
     r++;
     [
       'HOW TO USE THIS CHART',
       'LIVE: dates, status and bars read the "Submission Date" and "Approval Date" columns of the ' + lay.sheet + ' sheet and its data date. Change a date there and this sheet redraws. Helper dates are in the grouped columns right of the chart (click + above them).',
-      'Each date pair is either actual or forecast: the bar is solid up to the data date (actual) and hatched after it (forecast). A project uses the dates typed on its own row, otherwise the span of its elements.',
+      'Submission and Approval are milestones, not activities. A milestone on or before the data date is ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). The SAR review code (A/B/C/D) from the Tracker replaces the approval mark and is also shown in the SAR code column. A project uses the dates typed on its own row, otherwise the span of its elements.',
       'Fixed when generated: which projects / elements have a line and the time range (padded for date moves). If you add elements or dates move outside the range, re-run the site.'
     ].forEach(function (t, i) {
       cell(r, 1, t, i === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
-      merge(r, 1, r, 7); rowH(r, i === 0 ? 15 : 26); r++;
+      merge(r, 1, r, 8); rowH(r, i === 0 ? 15 : 26); r++;
     });
     var lastRow = r - 1;
 
