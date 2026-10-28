@@ -103,6 +103,8 @@
     return el;
   }
 
+  P6.compare.view = view; P6.compare.sheets = sheets;
+
   function showResult(cur, other, names) {
     const res = P6.compare(cur, other);
     D.modal({ title: B('Schedule Comparison', 'مقارنة الجداول'), cls: 'wide dsh-modal', body: view(res, names), buttons: [
