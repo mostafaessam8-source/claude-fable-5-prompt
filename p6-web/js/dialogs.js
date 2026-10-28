@@ -466,6 +466,6 @@
     modal({ title: t('shortcuts'), body: `<table class="mini"><tbody>${rows.map((r) => `<tr><td><span class="tag">${esc(r[0])}</span></td><td>${esc(t(r[1]))}</td></tr>`).join('')}</tbody></table>`, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }] });
   };
   D.about = function () {
-    modal({ title: t('about'), body: `<div style="line-height:1.8">${t('about_html')}</div>`, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }] });
+    modal({ title: t('about'), body: `<div style="line-height:1.8">${t('about_html')}<hr><b>${esc(P6.versionName())}</b><br><small>${esc(P6.BUILD_DATE)}</small></div>`, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }] });
   };
 })(window);

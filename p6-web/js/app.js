@@ -1102,7 +1102,7 @@
   function updateProjName() {
     const b = $('#projBtn'); if (!b || !S.p) return;
     b.textContent = '📁 ' + S.p.name; b.title = t('projects');
-    document.title = S.p.name + ' – P6 Web';
+    document.title = S.p.name + ' – P6 Web v' + P6.VERSION + (P6.OFFLINE ? ' (Offline)' : '');
     if (App.buildTitle) App.buildTitle();
   }
   function updateStatus() {
@@ -1123,7 +1123,8 @@
       p.imported ? `<span title="${esc(t('imported_hint'))}">ⓘ ${esc(t('file_dates'))}</span>` : '',
       '<span class="spacer"></span>',
       `<span>${S.cfg.auto ? '⚡ ' + esc(t('auto_on')) : '⏸ ' + esc(t('auto_off'))}</span>`,
-      saveSeg()
+      saveSeg(),
+      `<span class="verbadge" title="${esc(P6.versionName())}">v${esc(P6.VERSION)}${P6.OFFLINE ? ' · ' + (S.cfg.lang === 'ar' ? 'أوفلاين' : 'Offline') : ''}</span>`
     ].join('');
   }
 
@@ -1320,7 +1321,7 @@
         ['update_progress', () => App.dialogs.updateProgress()], ['spotlight', () => toggleShow('spot'), '', sh.spot], ['fp_title', () => App.dialogs.floatPaths()], ['baselines', () => App.dialogs.baselines()], ['reports', () => App.dialogs.reports()]
       ]],
       ['admin', [['act_codes_global', () => App.dialogs.codes('acg')], ['act_codes_project', () => App.dialogs.codes('acp')], ['act_pcodes', () => App.dialogs.codes('pc')], ['udf_manage', () => App.dialogs.udf()], '-', ['prefs', () => App.dialogs.prefs()], ['reset_layout', () => App.applyLayout('classic')], ['wipe_data', () => App.dialogs.prefs()]]],
-      ['help', [['guide', () => App.dialogs.help()], ['load_sample', () => App.loadSample()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()]]]
+      ['help', [['guide', () => App.dialogs.help()], ['load_sample', () => App.loadSample()], ['shortcuts', () => App.dialogs.shortcuts()], ['about', () => App.dialogs.about()], ['dl_offline', () => App.downloadOffline()]]]
     ];
   }
   API.baseMenuDefs = () => menuDefs();
@@ -1404,6 +1405,7 @@
     setTimeout(() => { zoomFit(); }, 30);
     if (fname) toast(t('opened', fname, p.tasks.length));
   }
+  API.downloadOffline = () => { if (P6.OFFLINE) return toast(S.cfg.lang === 'ar' ? 'أنت تستخدم النسخة الأوفلاين بالفعل: v' + P6.VERSION : 'You are already using the offline copy: v' + P6.VERSION); const a = document.createElement('a'); a.href = 'offline/' + P6.offlineFile(); a.download = P6.offlineFile(); document.body.appendChild(a); a.click(); a.remove(); };
   API.nextCode = (name) => { const b = String(name || '').replace(/\.[a-z0-9]+$/i, '').replace(/[^A-Za-z0-9_]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20); if (b.length >= 2) return b.toUpperCase(); S.cfg.projSeq = (S.cfg.projSeq || 0) + 1; saveCfg(); return 'PRJ-' + String(S.cfg.projSeq).padStart(3, '0'); };
   API.openProject = openProject; API.idb = idb; API.saveNowP = saveNow; API.download = download;
   API.loadSample = () => { const p = P6.sampleProject(); p.name = t('sample_name'); openProject(p); };

@@ -57,6 +57,9 @@ jobs:
           node p6-web/tests/engine.test.js
           cp -r p6-web dist/p6-web
           rm -rf dist/p6-web/tests dist/p6-web/package.json
+          # single-file offline copy, named with the version (linked from Help > Download Offline Version)
+          rm -rf dist/p6-web/offline
+          node p6-web/tools/build-offline.js dist/p6-web/offline "${GITHUB_SHA::7}"
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/p6-web/index.html
       # Design Gantt: upload the Design Submission Tracker .xlsx, get it back with a live Gantt chart sheet (static, no build) at /design-gantt/
