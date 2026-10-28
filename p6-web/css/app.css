@@ -600,3 +600,8 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 .pal-Activity{background:#dff0e4;color:#1d6b3a}.pal-WBS{background:#fff0cf;color:#8a5b00}.pal-Resource{background:#e8e0f6;color:#5a3d99}.pal-Window{background:#d9ecf0;color:#00596b}.pal-Recent{background:#eee;color:#555}
 .pal-lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pal-h{color:#889;font-size:12px;white-space:nowrap}.pal-empty{padding:22px;text-align:center;color:#889}
 .pal-foot{padding:6px 14px;border-top:1px solid #e3e7e9;font-size:11.5px;color:#889;background:#f7f9fa}
+/* Schedule comparison */
+.cmpcards{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.cmpc{flex:1 1 110px;border:1px solid #d9e6e9;border-radius:8px;padding:8px 10px;text-align:center;background:#f6fafb}.cmpc b{display:block;font-size:22px;color:#00778B}.cmpc span{font-size:11px;color:#555}
+.cmpc.bad b{color:#c0392b}.cmpc.good b{color:#2e8b3e}.cmptabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.cmp-bad{color:#c0392b;font-weight:600}.cmp-good{color:#2e8b3e;font-weight:600}
+.cmpt{width:100%;border-collapse:collapse;color:#333}.cmpt th{position:sticky;top:0;background:#00778B;color:#fff;padding:4px 8px;text-align:start}.cmpt td{padding:3px 8px;border-bottom:1px solid #e3ecee}
+.dsh-health{display:flex;align-items:center;gap:14px;margin-bottom:10px}.dh-score{font-size:42px;font-weight:800;line-height:1}.dh-score small{font-size:18px}.dh-bar{flex:1;height:12px;background:#e3ecee;border-radius:6px;overflow:hidden}.dh-bar i{display:block;height:100%}

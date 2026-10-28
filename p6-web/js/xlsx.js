@@ -25,6 +25,7 @@
     return new Blob([...parts, ...cen, new Uint8Array(e)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
+  P6.zipStore = zip;
   const colName = (i) => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
   const WCOL = [['#0000ff', '#ffffff'], ['#66ff66', '#000000'], ['#ffff00', '#000000'], ['#0000ff', '#ffffff'], ['#ff0000', '#ffffff']];
   const START_CT = ['SNET', 'SNLT', 'MSO'], FIN_CT = ['FNET', 'FNLT', 'MFO'];

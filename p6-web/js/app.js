@@ -58,7 +58,7 @@
   const json = (p) => JSON.stringify(p, (k, v) => (k === 'xer' ? undefined : v));
   let saveTimer = null, rawSaved = null;
   function scheduleSave() {
-    S.dirty = true; updateStatus();
+    S.dirty = true; S.saveState = 'dirty'; updateStatus();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveNow, 700);
   }
@@ -81,20 +81,22 @@
   const rev = new Map(); // project id -> 'updated' stamp we last loaded/saved (detects edits by other people on a shared database)
   async function saveNow() {
     if (!S.p) return;
+    S.saveState = 'saving'; S.saving = true; updateStatus();
     try {
       const p = S.p, data = json(p), m = p.meta || {}, wantRaw = p.xer && rawSaved !== p.id;
       const rec = { id: p.id, name: p.name, updated: Date.now(), tasks: p.tasks.length, start: spanOf(p)[0], finish: spanOf(p)[1], dataDate: p.dataDate, eps: m.eps || 'root', code: m.code || '', status: m.status || 'Active', manager: m.manager || '', size: data.length, data };
       let r = await S.store().put(rec, wantRaw ? p.xer : undefined, { expect: rev.get(p.id) });
       if (r && r.conflict) {
-        if (!confirm(t('conflict_msg'))) { toast(t('conflict_kept'), true); S.dirty = false; updateStatus(); return; }
+        if (!confirm(t('conflict_msg'))) { toast(t('conflict_kept'), true); S.dirty = false; S.saving = false; S.saveState = 'conflict'; updateStatus(); return; }
         r = await S.store().put(rec, wantRaw ? p.xer : undefined, { force: true });
       }
       rev.set(p.id, rec.updated);
       if (wantRaw) rawSaved = p.id;
       localStorage.setItem(API.lastKey(), p.id);
-      S.dirty = false; loadRecent();
+      S.dirty = false; S.savedAt = Date.now(); S.saveState = r && r.offline ? 'offline' : 'saved'; loadRecent();
       if (r && r.offline) toast(t('saved_offline'));
-    } catch (e) { toast(t('save_fail'), true); }
+    } catch (e) { S.saveState = 'error'; toast(t('save_fail'), true); }
+    S.saving = false;
     updateStatus();
   }
   async function listProjects() { try { return (await S.store().list()) || []; } catch (e) { return []; } }
@@ -1121,8 +1123,14 @@
       p.imported ? `<span title="${esc(t('imported_hint'))}">ⓘ ${esc(t('file_dates'))}</span>` : '',
       '<span class="spacer"></span>',
       `<span>${S.cfg.auto ? '⚡ ' + esc(t('auto_on')) : '⏸ ' + esc(t('auto_off'))}</span>`,
-      `<span>${S.dirty ? '● ' + esc(t('saving')) : '✓ ' + esc(t('saved'))}</span>`
+      saveSeg()
     ].join('');
+  }
+
+  function saveSeg() {
+    const st = S.saveState || (S.dirty ? 'dirty' : 'saved'), ar = P6.dir() === 'rtl', hm = S.savedAt ? new Date(S.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', db = S.dbLabel ? S.dbLabel() : '';
+    const L = { dirty: ['● ' + (ar ? 'تغييرات غير محفوظة' : 'Unsaved changes'), '#d97706'], saving: ['◌ ' + (ar ? 'جارٍ الحفظ…' : 'Saving…'), '#d97706'], saved: ['✓ ' + (ar ? 'تم الحفظ' : 'Saved') + (hm ? ' ' + hm : '') + (db ? ' · ' + db : ''), '#2e8b3e'], offline: ['⚠ ' + (ar ? 'محفوظ محلياً – بانتظار المزامنة' : 'Saved locally – waiting to sync') + (hm ? ' ' + hm : ''), '#d97706'], error: ['✖ ' + (ar ? 'فشل الحفظ – اضغط لإعادة المحاولة' : 'Save failed – click to retry'), '#c0392b'], conflict: ['⚠ ' + (ar ? 'تعارض – النسخة المحلية لم تُحفظ' : 'Conflict – local version not saved'), '#c0392b'] }[st] || ['', ''];
+    return `<span class="savest" data-save="1" style="cursor:pointer;color:${L[1]}" title="${ar ? 'اضغط للحفظ الآن' : 'Click to save now'}">${esc(L[0])}</span>`;
   }
 
   // ================= toolbar & menus =================
@@ -1466,7 +1474,8 @@
       else if (e.key === 'Escape') { $('#ctx').hidden = true; }
     });
     addEventListener('wheel', (e) => { if (e.ctrlKey && e.target.closest && e.target.closest('#ganttPane')) { e.preventDefault(); zoom(e.deltaY > 0 ? 1 : -1); } }, { passive: false });
-    addEventListener('beforeunload', () => { if (S.dirty) saveNow(); });
+    addEventListener('beforeunload', (e) => { if (S.dirty || S.saving || S.saveState === 'error' || S.saveState === 'conflict') { saveNow(); e.preventDefault(); e.returnValue = ''; return ''; } });
+    document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-save]')) { clearTimeout(saveTimer); saveNow(); } });
     addEventListener('resize', () => { renderRows(); gantt.schedule(); });
     if (App.loginScreen) await App.loginScreen();
     if (App.driveCheck) App.driveCheck();
@@ -1480,6 +1489,6 @@
     document.body.dataset.ready = '1';
   };
 
-  Object.assign(API, { rawValue, zoom, zoomFit, setRowH(h) { RH = h; document.documentElement.style.setProperty('--rowh', h + 'px'); }, getRH: () => RH, selectKeys(k) { return API.setSel(k); }, goDate, setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
+  Object.assign(API, { rawValue, zoom, zoomFit, setRowH(h) { RH = h; document.documentElement.style.setProperty('--rowh', h + 'px'); }, getRH: () => RH, selectKeys(k) { return API.setSel(k); }, goDate, setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
   g.App.dialogs = {};
 })(window);

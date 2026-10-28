@@ -225,6 +225,45 @@
     const mpt = mp.plan.map((_, i) => mp.act[i] + mp.rem[i]); const nz = mpt.filter((x) => x > 0);
     const mpStat = { peak: nz.length ? Math.max(...mpt) : 0, avg: nz.length ? nz.reduce((a, b) => a + b, 0) / nz.length : 0 };
     const risks = DA.risks(p, tasks, k, aoc, oos, mpStat);
-    return { tasks, M, W, basis, cur, mp, mpStat, k, oos, aoc, risks, gran };
+    return { tasks, M, W, basis, cur, mp, mpStat, k, oos, aoc, risks, gran, dcma: DA.dcma(p, tasks) };
+  };
+
+  /* DCMA 14-point schedule assessment (on the activities in scope; summary / LOE activities excluded). Day-based. */
+  DA.dcma = function (p, tasks) {
+    const dd = p.dataDate, real = tasks.filter((t) => !P6.isHammock(t)), open = real.filter((t) => t.status !== 'C'), ids = new Set(real.map((t) => t.id));
+    const rels = p.rels.filter((r) => ids.has(r.p) && ids.has(r.s)), byId = new Map(p.tasks.map((t) => [t.id, t]));
+    const hasP = new Set(rels.map((r) => r.s)), hasS = new Set(rels.map((r) => r.p));
+    const pct = (n, d) => (d ? 100 * n / d : 0), out = [];
+    const add = (n, name, desc, val, thr, pass, unit, items, rl) => out.push({ n, name, desc, val, thr, pass, unit, items: items || [], rels: rl || [] });
+    const noLogic = open.filter((t) => !(hasP.has(t.id) && hasS.has(t.id)) && !(P6.isMile(t) && ((t.type === 'TT_Mile' && !hasP.has(t.id) && hasS.has(t.id)) || (t.type === 'TT_FinMile' && hasP.has(t.id) && !hasS.has(t.id)))));
+    add(1, 'Logic', 'Open activities missing a predecessor or successor', pct(noLogic.length, open.length), '≤ 5%', pct(noLogic.length, open.length) <= 5, '%', noLogic);
+    const leads = rels.filter((r) => (r.lag || 0) < 0);
+    add(2, 'Leads', 'Relationships with negative lag', pct(leads.length, rels.length), '0%', leads.length === 0, '%', leads.map((r) => byId.get(r.s)), leads);
+    const lags = rels.filter((r) => (r.lag || 0) > 0);
+    add(3, 'Lags', 'Relationships with positive lag', pct(lags.length, rels.length), '≤ 5%', pct(lags.length, rels.length) <= 5, '%', lags.map((r) => byId.get(r.s)), lags);
+    const fs = rels.filter((r) => (r.type || 'FS') === 'FS');
+    add(4, 'Relationship types', 'Finish-to-Start relationships', pct(fs.length, rels.length), '≥ 90%', pct(fs.length, rels.length) >= 90, '%', rels.filter((r) => (r.type || 'FS') !== 'FS').map((r) => byId.get(r.s)), rels.filter((r) => (r.type || 'FS') !== 'FS'));
+    const hard = open.filter((t) => ['MSO', 'MFO', 'SNLT', 'FNLT'].includes(t.ct));
+    add(5, 'Hard constraints', 'Open activities with Mandatory / "No Later Than" constraints', pct(hard.length, open.length), '≤ 5%', pct(hard.length, open.length) <= 5, '%', hard);
+    const hf = open.filter((t) => t.tf != null && t.tf > 44);
+    add(6, 'High float', 'Open activities with total float > 44 days', pct(hf.length, open.length), '≤ 5%', pct(hf.length, open.length) <= 5, '%', hf);
+    const nf = open.filter((t) => t.tf != null && t.tf < 0);
+    add(7, 'Negative float', 'Open activities with negative total float', pct(nf.length, open.length), '0%', nf.length === 0, '%', nf);
+    const hd = open.filter((t) => !P6.isMile(t) && t.dur > 44);
+    add(8, 'High duration', 'Open activities with duration > 44 days', pct(hd.length, open.length), '≤ 5%', pct(hd.length, open.length) <= 5, '%', hd);
+    const inv = real.filter((t) => (t.as != null && t.as > dd) || (t.af != null && t.af > dd) || (t.status !== 'C' && t.es != null && t.es < dd && t.status === 'NS') || (t.status === 'IP' && t.ef != null && t.ef < dd));
+    add(9, 'Invalid dates', 'Actuals after the data date, or forecast dates before it', inv.length, '0', inv.length === 0, '#', inv);
+    const asg = new Set(p.asg.map((a) => a.task)), nores = open.filter((t) => !P6.isMile(t) && t.dur > 0 && !asg.has(t.id) && !(t.expenses && t.expenses.length));
+    add(10, 'Resources', 'Open activities with duration > 0 and no resource / cost', pct(nores.length, open.filter((t) => !P6.isMile(t) && t.dur > 0).length), '0%', nores.length === 0, '%', nores);
+    const shouldDone = real.filter((t) => t.bf != null && t.bf <= dd), missed = shouldDone.filter((t) => t.status !== 'C' || (t.af != null && t.af > t.bf));
+    add(11, 'Missed tasks', 'Activities that finished (or should have) later than the baseline finish', pct(missed.length, shouldDone.length), '≤ 5%', pct(missed.length, shouldDone.length) <= 5, '%', missed);
+    const crit = open.filter((t) => t.crit), fin = open.reduce((m, t) => (t.ef != null && t.ef > m ? t.ef : m), -Infinity);
+    add(12, 'Critical path test', 'A critical path exists and drives the project finish', crit.length ? 1 : 0, 'exists', crit.length > 0 && !open.some((t) => t.tf != null && t.tf < 0 && !t.crit), 'bool', crit);
+    const minTf = open.reduce((m, t) => (t.tf != null && t.tf < m ? t.tf : m), Infinity), cpl = isFinite(fin) ? Math.max(1, fin - dd) : 0, cpli = cpl && isFinite(minTf) ? (cpl + minTf) / cpl : null;
+    add(13, 'CPLI', 'Critical Path Length Index = (CP length + total float) / CP length', cpli, '≥ 0.95', cpli != null && cpli >= 0.95, 'idx', []);
+    const done = real.filter((t) => t.status === 'C' && t.af != null && t.af <= dd).length, bei = shouldDone.length ? done / shouldDone.length : null;
+    add(14, 'BEI', 'Baseline Execution Index = tasks completed / tasks that should be complete', bei, '≥ 0.95', bei != null && bei >= 0.95, 'idx', shouldDone.filter((t) => t.status !== 'C'));
+    const passed = out.filter((c) => c.pass).length;
+    return { checks: out, passed, total: out.length, score: Math.round(100 * passed / out.length) };
   };
 })(window);

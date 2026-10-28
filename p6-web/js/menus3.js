@@ -50,12 +50,12 @@
     const sel = ready ? App.selTasks() : [];
     const sub = (l, i, fn, o) => Object.assign({ l, i, fn }, o || {});
     const tools = [
-      ['schedule', () => App.schedule(), 'F9'], ['mi_checksched', () => D.checkSchedule()], ['mi_levelres', na(t('mi_levelres')), 'Shift+F9'], ['mi_applyact', () => App.applyActuals()], ['update_progress', () => D.updateProgress()], ['mi_recalc', () => App.recalcCosts()],
+      ['schedule', () => App.schedule(), 'F9'], ['mi_checksched', () => D.checkSchedule()], ['mi_levelres', na(t('mi_levelres')), 'Shift+F9'], ['mi_applyact', () => App.applyActuals()], ['mi_progexp', () => App.progressTemplate()], ['mi_progimp', () => App.progressImport()], ['update_progress', () => D.updateProgress()], ['mi_recalc', () => App.recalcCosts()],
       ['mi_summarize', null, '', false, [sub(t('mi_sum_proj'), 'summarize', na(t('mi_summarize'))), sub(t('mi_sum_wbs'), 'summarize', na(t('mi_summarize')))]], ['mi_storeperiod', na(t('mi_storeperiod'))], '-',
       ['mi_disreorg', na(t('mi_disreorg')), 'Shift+F12'], ['mi_gchange', () => D.globalChange()], '-',
       ['monitor_thresholds', () => App.monitorThresholds()], ['mi_issuenav', () => App.openWin('issues')], '-',
       ['mi_visualizer', na(t('mi_visualizer'))], ['reports', () => D.reports(), '', false, null], ['mi_reportwiz', na(t('mi_reportwiz'))], ['mi_checker', () => D.checkSchedule()], ['mi_publish', null, '', false, [sub(t('mi_pub_web'), 'publish', na(t('mi_publish')))]], '-',
-      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', na(t('mi_schedcmp'))], '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
+      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', () => App.scheduleCompare()], '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
     ];
     const enterprise = [
       ['win_projects', () => App.openWin('projects')], ['mi_eps', na(t('mi_eps'))], ['mi_tracking', na(t('mi_tracking'))], ['mi_portfolios', () => App.openWin('projects')], '-',
@@ -72,7 +72,7 @@
   };
   Object.assign(App.MENU_ICON || (App.MENU_ICON = {}), {
     mi_levelres: 'mi_levelres', mi_applyact: 'applyact', update_progress: 'update', mi_recalc: 'recalc', mi_summarize: 'summarize', mi_storeperiod: 'storeperiod', mi_disreorg: 'disreorg', mi_gchange: 'gchange', monitor_thresholds: 'thresholds', mi_issuenav: 'issue',
-    mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_schedopts: 'gear', mi_checksched: 'check',
+    mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_progexp: 'xlsx', mi_progimp: 'xlsx', mi_schedopts: 'gear', mi_checksched: 'check',
     win_dashboard: 'dash', win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
     calendars: 'calendars2', mi_shifts: 'shifts', mi_steptpl: 'steptpl', mi_accounts: 'acctico', mi_funding: 'funding', mi_curves: 'curves', mi_extapps: 'extapps', resource_usage: 'people', act_codes_project: 'actcodes',
     mi_adminprefs: 'adminprefs', mi_dbconfig: 'gchange', mi_sharedb: 'send', mi_chgpw: 'lock', mi_disconnect: 'exit', mi_admincat: 'admincat', mi_currency: 'currency', mi_finperiod: 'finperiod', reset_layout: 'resetbars', wipe_data: 'del'
