@@ -110,3 +110,6 @@ cd p6-web && python3 -m http.server 8000     # then open http://localhost:8000
 ```bash
 node p6-web/tests/engine.test.js
 ```
+
+## Offline version
+`node tools/build-offline.js` writes one self-contained file, `offline/P6-Web-v<VERSION>-offline.html` (CSS + scripts inlined, no network needed; works from `file://`, data stays in the browser's IndexedDB). The version number lives in `js/version.js` (bump it for each release) and is shown everywhere: browser title, status bar badge, Help ▸ About, and the offline file name. The Pages workflow rebuilds the offline file on every deploy (Help ▸ Download Offline Version).
