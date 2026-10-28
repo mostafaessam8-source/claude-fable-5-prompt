@@ -55,7 +55,7 @@
       ['mi_disreorg', na(t('mi_disreorg')), 'Shift+F12'], ['mi_gchange', () => D.globalChange()], '-',
       ['monitor_thresholds', () => App.monitorThresholds()], ['mi_issuenav', () => App.openWin('issues')], '-',
       ['mi_visualizer', na(t('mi_visualizer'))], ['reports', () => D.reports(), '', false, null], ['mi_reportwiz', na(t('mi_reportwiz'))], ['mi_checker', () => D.checkSchedule()], ['mi_publish', null, '', false, [sub(t('mi_pub_web'), 'publish', na(t('mi_publish')))]], '-',
-      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', na(t('mi_schedcmp'))], '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
+      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', () => App.scheduleCompare()], '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
     ];
     const enterprise = [
       ['win_projects', () => App.openWin('projects')], ['mi_eps', na(t('mi_eps'))], ['mi_tracking', na(t('mi_tracking'))], ['mi_portfolios', () => App.openWin('projects')], '-',
