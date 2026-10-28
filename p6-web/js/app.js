@@ -1480,6 +1480,6 @@
     document.body.dataset.ready = '1';
   };
 
-  Object.assign(API, { rawValue, zoom, zoomFit, setRowH(h) { RH = h; document.documentElement.style.setProperty('--rowh', h + 'px'); }, getRH: () => RH, selectKeys(k) { return API.setSel(k); }, goDate, setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
+  Object.assign(API, { rawValue, zoom, zoomFit, setRowH(h) { RH = h; document.documentElement.style.setProperty('--rowh', h + 'px'); }, getRH: () => RH, selectKeys(k) { return API.setSel(k); }, goDate, setView, applyView, DEF_TABS, ensureVisible, getCtx: () => S.ctx, mutate, refresh, toast, listProjects, loadProject, deleteProject, saveNow, selectRow, selTasks, selWbs, focusTask, taskById, wbsById, calOf, fmtD, fmtN, setStatus, setPct, setPct, applyField, handleFile, buildMenus, buildToolbar, goDate, scheduleSave, json, ALL_COLS, DEF_COLS, renderHead, renderRows, ZOOMS, restoreFrom: restore, download, matchesFilter });
   g.App.dialogs = {};
 })(window);
