@@ -64,6 +64,7 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 #cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.25);pointer-events:none}
 #joy{position:absolute;bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 26px);left:max(24px,env(safe-area-inset-left,0px));width:136px;height:136px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);touch-action:none;display:none}
 #knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.2)}
+#fsBtn{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 52px);inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px + 92px);height:40px;padding:0 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600}
 #placesBtn{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 52px);inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px);height:40px;padding:0 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;display:none}
 #act{position:absolute;bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 26px);right:max(20px,env(safe-area-inset-right,0px));display:none;gap:10px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;width:210px;touch-action:none}
 .ab{width:58px;height:58px;border-radius:50%;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:11px;font-weight:700;line-height:1.15;padding:0;touch-action:none;cursor:pointer}
@@ -96,6 +97,7 @@ body:not(.walk) #joy,body:not(.walk) #act{display:none}
     <button class="seg" data-mode="plan" aria-pressed="false">مسقط أفقي</button>
     <button class="seg" data-mode="compound" aria-pressed="false">الكمبوند</button>
   </nav>
+  <button id="fsBtn" class="glass" aria-label="ملء الشاشة">ملء الشاشة</button>
   <button id="placesBtn" class="glass" aria-label="الأماكن">الأماكن</button>
   <button id="gear" class="glass" aria-label="الإعدادات" aria-expanded="true">⚙</button>
   <aside id="panel" class="glass">
@@ -200,11 +202,11 @@ function artTex(i){const c=cv(256,320),g=c.getContext('2d');
   return toTex(c,false)}
 function facadeTex(emis){const c=cv(256,256),g=c.getContext('2d');
   if(emis){g.fillStyle='#000';g.fillRect(0,0,256,256);g.fillStyle='#ffc070';g.fillRect(44,74,168,112)}
-  else{g.fillStyle='#ebe6db';g.fillRect(0,0,256,256);g.fillStyle='#d2cabb';g.fillRect(0,236,256,20);g.fillStyle='#c9c1b1';g.fillRect(0,232,256,4);
+  else{g.fillStyle='#e4d0a6';g.fillRect(0,0,256,256);g.fillStyle='#faf7f1';g.fillRect(0,234,256,22);g.fillStyle='#d8cbae';g.fillRect(0,230,256,4);
     g.fillStyle='#f8f6f1';g.fillRect(36,64,184,132);
     const gr=g.createLinearGradient(0,74,0,186);gr.addColorStop(0,'#6f8c9e');gr.addColorStop(1,'#2b3944');g.fillStyle=gr;g.fillRect(44,74,168,112);
     g.fillStyle='#f8f6f1';g.fillRect(126,74,4,112);g.fillStyle='rgba(255,255,255,.28)';g.fillRect(44,146,168,40);
-    g.fillStyle='#cdc6b8';g.fillRect(30,196,196,7)}
+    g.fillStyle='#faf7f1';g.fillRect(30,196,196,7)}
   return toTex(c)}
 
 const T={wood:woodTex([201,164,124],3),woodDark:woodTex([120,82,56],9),deck:woodTex([150,128,104],11),
@@ -223,7 +225,7 @@ const M={
   sofa:std(0xd6cbbb,.95),rug:std(0xe7dfd2,1,0,{map:T.rug}),flute:std(0x6b4a35,.55),walnut:std(0x5a3d2b,.5),
   kBase:std(0x3b3f3d,.55),kTall:std(0xb88f68,.55),accent:std(0xb5703f,.9),accent2:std(0x6f7f68,.9),accent3:std(0x24364a,.9),
   linen:std(0xf0ebe3,1),leaf:std(0x3e6b3a,.85,0,{side:THREE.DoubleSide}),leaf2:std(0x56803f,.85,0,{side:THREE.DoubleSide}),leaf3:std(0x2f5530,.85,0,{side:THREE.DoubleSide}),
-  pot:std(0xe4ded3,.8),soil:std(0x2a1f18,1),tvScreen:std(0x08090b,.12,.2),stucco:std(0xe6dfd2,.95),concrete:std(0xb9b6b0,.95),
+  pot:std(0xe4ded3,.8),soil:std(0x2a1f18,1),tvScreen:std(0x08090b,.12,.2),stucco:std(0xe6dfd2,.95),concrete:std(0xe8dcc0,.95),
   ground:std(0xffffff,1)};
 const woodMats=[];
 const mkFloor=(tex,w,d,color=0xffffff,rough=.55)=>{const m=std(color,rough,0,{map:tiled(tex,w,d)});if(tex===T.wood||tex===T.deck)woodMats.push(m);return m};
@@ -803,7 +805,7 @@ document.querySelectorAll('#modes .seg').forEach(b=>b.onclick=()=>setMode(b.data
 /* ───────────────────────── input: keyboard, mouse, touch ───────────────────────── */
 let btnDown=false,btnJump=false;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
-  if(e.code==='KeyV'&&mode==='walk')toggleTpp();});
+  if(e.code==='KeyV'&&mode==='walk')toggleTpp();if(e.code==='KeyF')toggleFs();});
 addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 function toggleTpp(v=!tpp){tpp=v;$('tppOn').checked=tpp;$('bView').classList.toggle('on',tpp);$('cross').style.display=mode==='walk'&&!tpp?'block':'none'}
 $('tppOn').onchange=e=>toggleTpp(e.target.checked);
@@ -830,6 +832,12 @@ $('time').oninput=e=>{S.time=+e.target.value;applyTime()};$('lightsOn').onchange
 $('ceilOn').onchange=e=>{S.ceil=e.target.checked;updateVis()};$('labelsOn').onchange=e=>{S.labels=e.target.checked;updateVis()};
 document.querySelectorAll('#themes .seg').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));
 $('gear').onclick=()=>{const p=$('panel');p.hidden=!p.hidden;$('gear').setAttribute('aria-expanded',!p.hidden)};
+const fsEl=document.documentElement;
+function toggleFs(){try{if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{const r=(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen).call(fsEl);r&&r.catch&&r.catch(()=>{})}}catch{}}
+if(!(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen))$('fsBtn').hidden=true;
+$('fsBtn').onclick=toggleFs;
+const fsLabel=()=>{$('fsBtn').textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'خروج':'ملء الشاشة'};
+document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
 $('placesBtn').onclick=()=>roomsNav.classList.toggle('show');
 $('panel').hidden=true;$('gear').setAttribute('aria-expanded','false');
 if(isTouch){$('hint').textContent='العصا لليسار للحركة · اسحب يمين الشاشة للنظر · الأزرار للقفز والركض والغطس'}
