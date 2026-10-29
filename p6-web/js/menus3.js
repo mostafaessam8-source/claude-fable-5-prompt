@@ -171,7 +171,9 @@
   // ---- always-visible "Dashboard" button in the menu bar (survives menu rebuilds) ----
   (function () {
     const ensure = () => {
-      const mb = document.getElementById('menubar'); if (!mb || mb.querySelector('.dsh-top')) return;
+      const mb = document.getElementById('menubar'); if (!mb) return;
+      if (!mb.querySelector('.dly-top')) { const d = document.createElement('button'); d.className = 'dsh-top dly-top'; d.type = 'button'; d.title = 'EOT · Delay analysis · Out-of-sequence · Recovery · Revisions'; d.innerHTML = `${P6.icon('check')}<span>${P6.dir() === 'rtl' ? 'EOT والاسترداد' : 'EOT & Recovery'}</span>`; d.onclick = (e) => { e.stopPropagation(); App.openDelay(); }; mb.appendChild(d); }
+      if (mb.querySelector('.dsh-top:not(.dly-top)')) return;
       const b = document.createElement('button'); b.className = 'dsh-top'; b.type = 'button'; b.title = 'Project Controls Dashboard';
       b.innerHTML = `${P6.icon('dash')}<span>Dashboard</span>`; b.onclick = (e) => { e.stopPropagation(); App.openWin('dashboard'); };
       mb.appendChild(b);
