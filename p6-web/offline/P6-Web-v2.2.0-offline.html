@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="ltr">
 <head>
-<!-- P6 Web – Schedule Studio v2.1.0 (125ba48) – offline single-file build -->
+<!-- P6 Web – Schedule Studio v2.2.0 (f25a1cf) – offline single-file build -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P6 Web – Schedule Studio</title>
@@ -616,6 +616,10 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 .dsh-health{display:flex;align-items:center;gap:14px;margin-bottom:10px}.dh-score{font-size:42px;font-weight:800;line-height:1}.dh-score small{font-size:18px}.dh-bar{flex:1;height:12px;background:#e3ecee;border-radius:6px;overflow:hidden}.dh-bar i{display:block;height:100%}
 .wif{color:#333;font-family:"Segoe UI",Arial,sans-serif;max-height:70vh;overflow:auto}.wif-bar,.wif-add,.wif-run{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}.wif input,.wif select{padding:4px 6px}
 .verbadge{font-weight:600;opacity:.85;padding:0 6px;border:1px solid currentColor;border-radius:8px;font-size:11px}
+/* Delay & Recovery section */
+.dly{width:100%;display:flex;flex-direction:column;color:#333;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg,#fff)}.dly-tabs{display:flex;gap:2px;border-bottom:2px solid #00778B;padding:6px 8px 0;flex-wrap:wrap}.dly-tabs button{border:1px solid #cfe0e3;border-bottom:0;background:#eef6f7;padding:6px 14px;border-radius:8px 8px 0 0;cursor:pointer;font-weight:600;color:#0b5d6b}.dly-tabs button.on{background:#00778B;color:#fff}.dly-body{padding:10px 12px;overflow:auto;flex:1}
+.dly-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.dly-bar label{display:flex;gap:4px;align-items:center;font-size:12px}.dly-form{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dly-form label{display:flex;flex-direction:column;font-size:11px;color:#555;gap:2px}.dly-form .w2{grid-column:span 2}.dly-form .w3{grid-column:span 3}.dly-form input,.dly-form select,.dly-form textarea{padding:4px 6px;font-size:13px}
+.dly h4{margin:14px 0 6px;color:#00778B}.dly td.r,.dly th.r{text-align:end}
 
 </style>
 </head>
@@ -1173,7 +1177,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 (function (g) {
   'use strict';
   const P6 = g.P6;
-  P6.VERSION = '2.1.0'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '125ba48'; P6.OFFLINE = true;
+  P6.VERSION = '2.2.0'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = 'f25a1cf'; P6.OFFLINE = true;
   P6.versionName = () => 'P6 Web – Schedule Studio v' + P6.VERSION + (P6.COMMIT && P6.COMMIT !== 'dev' ? ' (' + P6.COMMIT + ')' : '') + (P6.OFFLINE ? ' · Offline' : '');
   P6.offlineFile = () => 'P6-Web-v' + P6.VERSION + '-offline.html';
   document.title = P6.versionName();
@@ -2196,7 +2200,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
     mi_dbconfig: ['Database Configuration…', 'إعدادات قاعدة البيانات…'], mi_chgpw: ['Change Password…', 'تغيير كلمة المرور…'], mi_disconnect: ['Disconnect (Log Out)', 'قطع الاتصال (تسجيل الخروج)'], login_at_start: ['Show the login screen at startup', 'إظهار شاشة تسجيل الدخول عند البدء'],
     rel_select_first: ['Select a relationship row first', 'اختر صف علاقة أولاً'], rel_hidden: ['That activity is hidden by the current filter', 'هذا النشاط مخفي بالفلتر الحالي'],
     remove: ['Remove', 'إزالة'],
-    win_dashboard: ['Dashboard', 'Dashboard'],
+    win_dashboard: ['Dashboard', 'Dashboard'], win_delay: ['Delay & Recovery', 'التأخير والاستردادية'], mi_eot: ['EOT Register…', 'سجل EOT…'], mi_delayan: ['Delay Analysis (TIA)…', 'تحليل التأخير (TIA)…'], mi_delayrep: ['Delay / EOT Report…', 'تقرير التأخير / EOT…'], mi_oosfix: ['Fix Out-of-Sequence…', 'تصحيح الأوت أوف سيكونس…'], mi_recovery: ['Recovery Schedule…', 'جدول الاسترداد (Recovery)…'], mi_revisions: ['Revised Schedule / Revisions…', 'الجدول المعدّل / المراجعات…'],
     mi_sharedb: ['Share Database Link…', 'رابط مشاركة القاعدة…'], conflict_msg: ['Someone else changed this project in the shared database after you opened it.\n\nOK = overwrite their version with yours\nCancel = keep their version (reopen the project to see it)', 'شخص آخر عدّل هذا المشروع في القاعدة المشتركة بعد أن فتحته.\n\nموافق = استبدال نسخته بنسختك\nإلغاء = الإبقاء على نسخته (أعد فتح المشروع لرؤيتها)'], conflict_kept: ['Your changes were not saved – reopen the project to load the latest version', 'لم تُحفظ تعديلاتك – أعد فتح المشروع لتحميل آخر نسخة'], saved_offline: ['Saved on this device – will sync when the database is reachable', 'تم الحفظ على هذا الجهاز – ستتم المزامنة عند توفر القاعدة'],
   });
 })(window);
@@ -5330,7 +5334,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
   const WINS = {
     projects: { title: 'win_projects', icon: 'projects' }, resources: { title: 'win_resources', icon: 'people' }, assign: { title: 'win_assign', icon: 'resassign' },
     wbs: { title: 'win_wbs', icon: 'wbswin' }, expenses: { title: 'win_expenses', icon: 'expenses' }, docs: { title: 'win_docs', icon: 'docs' },
-    thresholds: { title: 'win_thresholds', icon: 'thresholds' }, issues: { title: 'win_issues', icon: 'issue' }, risks: { title: 'win_risks', icon: 'risk' }, dashboard: { title: 'win_dashboard', icon: 'dash' }, activities: { title: 'win_activities', icon: 'activities' }
+    thresholds: { title: 'win_thresholds', icon: 'thresholds' }, issues: { title: 'win_issues', icon: 'issue' }, risks: { title: 'win_risks', icon: 'risk' }, delay: { title: 'win_delay', icon: 'check' }, dashboard: { title: 'win_dashboard', icon: 'dash' }, activities: { title: 'win_activities', icon: 'activities' }
   };
   App.WINS = WINS;
   const wsel = (App.wsel = {});                  // selected row per window
@@ -5762,7 +5766,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
   App.renderWin = function () {
     const el = $('#winpane'); if (!el || App.win === 'activities') return;
     el.classList.remove('dsh-host');
-    const fn = App.win === 'dashboard' ? App.renderDashboardWin : R[App.win]; if (fn) fn(el);
+    const fn = App.win === 'dashboard' ? App.renderDashboardWin : App.win === 'delay' ? App.renderDelayWin : R[App.win]; if (fn) fn(el);
   };
 })(window);
 
@@ -6060,7 +6064,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
       ['win_activities', () => App.openWin('activities')], ['mi_addactview', () => App.setDock('acts2')], ['win_assign', () => App.openWin('assign')], ['win_wbs', () => App.openWin('wbs')], '-',
       ['mi_assignbl', () => D.assignBaselines()], ['mi_maintbl', () => D.maintainBaselines()], '-',
       ['win_expenses', () => App.openWin('expenses')], ['win_docs', () => App.openWin('docs')], '-',
-      ['win_thresholds', () => App.openWin('thresholds')], ['win_issues', () => App.openWin('issues')], ['win_risks', () => App.openWin('risks')], ['win_dashboard', () => App.openWin('dashboard')], '-',
+      ['win_thresholds', () => App.openWin('thresholds')], ['win_issues', () => App.openWin('issues')], ['win_risks', () => App.openWin('risks')], ['win_dashboard', () => App.openWin('dashboard')], ['win_delay', () => App.openWin('delay')], '-',
       ['project_settings', () => D.settings()], ['calendars', () => D.calendars()], ['mi_setdefault', () => D.setDefaultProject()]
     ];
     const view = [
@@ -6169,7 +6173,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
       ['mi_disreorg', na(t('mi_disreorg')), 'Shift+F12'], ['mi_gchange', () => D.globalChange()], '-',
       ['monitor_thresholds', () => App.monitorThresholds()], ['mi_issuenav', () => App.openWin('issues')], '-',
       ['mi_visualizer', na(t('mi_visualizer'))], ['reports', () => D.reports(), '', false, null], ['mi_reportwiz', na(t('mi_reportwiz'))], ['mi_checker', () => D.checkSchedule()], ['mi_publish', null, '', false, [sub(t('mi_pub_web'), 'publish', na(t('mi_publish')))]], '-',
-      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', () => App.scheduleCompare()], ['mi_whatif', () => App.whatIf()], '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
+      ['mi_topdown', na(t('mi_topdown'))], ['mi_schedcmp', () => App.scheduleCompare()], ['mi_whatif', () => App.whatIf()], '-', ['mi_eot', () => App.openDelay('register')], ['mi_delayan', () => App.openDelay('analysis')], ['mi_delayrep', () => App.openDelay('report')], ['mi_oosfix', () => App.openDelay('oos')], ['mi_recovery', () => App.openDelay('recovery')], ['mi_revisions', () => App.openDelay('revisions')], '-', '-', ['auto_schedule', () => { F().auto = !F().auto; App.saveCfg(); App.buildMenus(); if (F().auto) App.runSchedule(); }, '', !!F().auto], ['mi_schedopts', () => D.schedOptions()]
     ];
     const enterprise = [
       ['win_projects', () => App.openWin('projects')], ['mi_eps', na(t('mi_eps'))], ['mi_tracking', na(t('mi_tracking'))], ['mi_portfolios', () => App.openWin('projects')], '-',
@@ -6186,8 +6190,8 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
   };
   Object.assign(App.MENU_ICON || (App.MENU_ICON = {}), {
     mi_levelres: 'mi_levelres', mi_drivepath: 'check', mi_applyact: 'applyact', update_progress: 'update', mi_recalc: 'recalc', mi_summarize: 'summarize', mi_storeperiod: 'storeperiod', mi_disreorg: 'disreorg', mi_gchange: 'gchange', monitor_thresholds: 'thresholds', mi_issuenav: 'issue',
-    mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_whatif: 'check', mi_progexp: 'xlsx', mi_progimp: 'xlsx', mi_schedopts: 'gear', mi_checksched: 'check',
-    win_dashboard: 'dash', win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
+    mi_visualizer: 'visualizer', reports: 'report', mi_reportwiz: 'reportwiz', mi_checker: 'checker', mi_publish: 'publish', mi_topdown: 'topdown', mi_schedcmp: 'check', mi_whatif: 'check', mi_eot: 'issue', mi_delayan: 'check', mi_delayrep: 'docs', mi_oosfix: 'check', mi_recovery: 'update', mi_revisions: 'docs', mi_progexp: 'xlsx', mi_progimp: 'xlsx', mi_schedopts: 'gear', mi_checksched: 'check',
+    win_dashboard: 'dash', win_delay: 'check', win_projects: 'projects', mi_eps: 'eps', mi_tracking: 'tracking', mi_portfolios: 'portfolios', win_resources: 'people', mi_roles: 'roleico', mi_obs: 'obs', mi_rescodes: 'rescodes', act_pcodes: 'projcodes', act_codes_global: 'actcodes', mi_rolecodes: 'rolecodes', mi_asgcodes: 'asgcodes', udf_manage: 'udfico', mi_storedimg: 'storedimg',
     calendars: 'calendars2', mi_shifts: 'shifts', mi_steptpl: 'steptpl', mi_accounts: 'acctico', mi_funding: 'funding', mi_curves: 'curves', mi_extapps: 'extapps', resource_usage: 'people', act_codes_project: 'actcodes',
     mi_adminprefs: 'adminprefs', mi_dbconfig: 'gchange', mi_sharedb: 'send', mi_chgpw: 'lock', mi_disconnect: 'exit', mi_admincat: 'admincat', mi_currency: 'currency', mi_finperiod: 'finperiod', reset_layout: 'resetbars', wipe_data: 'del'
   });
@@ -7785,7 +7789,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 
   const KINDS = {
     dur: () => B('Change duration', 'تغيير مدة نشاط'), event: () => B('Delay event (TIA)', 'حدث تأخير (TIA)'), lag: () => B('Change lag', 'تغيير Lag علاقة'),
-    addrel: () => B('Add relationship', 'إضافة علاقة'), rmrel: () => B('Remove relationship', 'حذف علاقة'), cons: () => B('Set constraint', 'وضع قيد'), scale: () => B('Scale open durations', 'تغيير نسبي لمدد الأنشطة المفتوحة')
+    addrel: () => B('Add relationship', 'إضافة علاقة'), rel: () => B('Change relationship type / lag', 'تغيير نوع / Lag علاقة'), rmrel: () => B('Remove relationship', 'حذف علاقة'), cons: () => B('Set constraint', 'وضع قيد'), scale: () => B('Scale open durations', 'تغيير نسبي لمدد الأنشطة المفتوحة')
   };
   const describe = (o) => {
     switch (o.k) {
@@ -7794,11 +7798,44 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
       case 'lag': return `${o.from} → ${o.to}: lag = ${o.lag} d`;
       case 'addrel': return `${o.from} → ${o.to} (${o.type}${o.lag ? ' ' + o.lag : ''})`;
       case 'rmrel': return `${o.from} ✕ ${o.to}`;
+      case 'rel': return `${o.from} → ${o.to}: ${o.type}${o.lag ? ' ' + o.lag : ''}${o.ff != null ? ' + FF ' + o.ff : ''}`;
       case 'cons': return `${o.code}: ${o.ct}${o.date ? ' ' + o.date : ''}`;
       case 'scale': return `${o.v}% ${B('of open durations', 'من مدد الأنشطة المفتوحة')}${o.wbs ? ' · WBS ' + o.wbs : ''}`;
     }
     return '';
   };
+
+  const input = (id, ph, w) => `<input id="${id}" list="wif_codes" placeholder="${esc(ph)}" style="width:${w || 110}px">`;
+  function formFor(k) {
+    const num = (id, ph, v) => `<input id="${id}" type="number" placeholder="${esc(ph)}" value="${v == null ? '' : v}" style="width:80px">`;
+    switch (k) {
+      case 'dur': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_mode"><option value="add">${B('Add days (±)', 'إضافة أيام (±)')}</option><option value="pct">${B('% of duration', '% من المدة')}</option><option value="set">${B('Set to days', 'تعيين بأيام')}</option></select>` + num('f_v', B('value', 'القيمة'));
+      case 'event': return `<input id="f_name" placeholder="${esc(B('Event name', 'اسم الحدث'))}" style="width:150px">` + num('f_days', B('days', 'أيام')) + input('f_succ', B('Delays activity', 'يؤخر النشاط')) + input('f_pred', B('After (optional)', 'بعد (اختياري)'));
+      case 'lag': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + num('f_lag', 'lag');
+      case 'rmrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى'));
+      case 'addrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + `<select id="f_type"><option>FS</option><option>SS</option><option>FF</option><option>SF</option></select>` + num('f_lag', 'lag', 0);
+      case 'cons': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_ct">${['SNET', 'FNET', 'SNLT', 'FNLT', 'MSO', 'MFO', 'NONE'].map((c) => `<option>${c}</option>`).join('')}</select><input id="f_date" placeholder="dd-mmm-yy" style="width:90px">`;
+      case 'scale': return num('f_v', B('% (e.g. 120)', '% (مثلاً 120)'), 100) + `<input id="f_wbs" placeholder="${esc(B('WBS code (optional)', 'كود WBS (اختياري)'))}" style="width:150px">`;
+    }
+    return '';
+  }
+  function readOp(k, el) {
+    const v = (id) => { const e = el.querySelector('#' + id); return e ? e.value.trim() : ''; }, n = (id) => { const x = parseFloat(v(id)); return isFinite(x) ? x : NaN; };
+    const o = { k };
+    if (k === 'dur') Object.assign(o, { code: v('f_code'), mode: v('f_mode'), v: n('f_v') });
+    else if (k === 'event') Object.assign(o, { name: v('f_name'), days: n('f_days'), succ: v('f_succ'), pred: v('f_pred') });
+    else if (k === 'lag') Object.assign(o, { from: v('f_from'), to: v('f_to'), lag: n('f_lag') });
+    else if (k === 'rel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
+    else if (k === 'rmrel') Object.assign(o, { from: v('f_from'), to: v('f_to') });
+    else if (k === 'addrel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
+    else if (k === 'cons') Object.assign(o, { code: v('f_code'), ct: v('f_ct'), date: v('f_date') });
+    else if (k === 'scale') Object.assign(o, { v: n('f_v'), wbs: v('f_wbs') });
+    const need = { dur: ['code', 'v'], event: ['days', 'succ'], lag: ['from', 'to', 'lag'], rmrel: ['from', 'to'], rel: ['from', 'to'], addrel: ['from', 'to'], cons: ['code'], scale: ['v'] }[k];
+    if (need.some((f) => o[f] === '' || (typeof o[f] === 'number' && isNaN(o[f])))) return null;
+    return o;
+  }
+
+  P6.opUI = { KINDS, describe, formFor, readOp };
 
   /* Apply ops to project p (mutating). Returns array of warnings. */
   P6.applyScenario = function (p, ops) {
@@ -7825,6 +7862,11 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
         const a = byCode(p, o.from), b = byCode(p, o.to), r = a && b && p.rels.find((q) => q.p === a.id && q.s === b.id);
         if (!r) { warn.push(o.from + '→' + o.to + ' ' + B('not found', 'غير موجودة')); continue; }
         if (o.k === 'lag') r.lag = o.lag; else p.rels = p.rels.filter((q) => q !== r);
+      } else if (o.k === 'rel') {
+        const a = byCode(p, o.from), b = byCode(p, o.to), r = a && b && p.rels.find((q) => q.p === a.id && q.s === b.id);
+        if (!r) { warn.push(o.from + '→' + o.to + ' ' + B('not found', 'غير موجودة')); continue; }
+        r.type = o.type; r.lag = o.lag || 0;
+        if (o.ff != null && !p.rels.some((q) => q.p === a.id && q.s === b.id && q.type === 'FF')) p.rels.push({ id: P6.nextId(p), p: a.id, s: b.id, type: 'FF', lag: o.ff });
       } else if (o.k === 'addrel') {
         const a = byCode(p, o.from), b = byCode(p, o.to); if (!a || !b) { warn.push(o.from + '→' + o.to + ' ?'); continue; }
         if (P6.wouldLoop && P6.wouldLoop(p, a.id, b.id)) { warn.push(B('Loop: ', 'حلقة: ') + o.from + '→' + o.to); continue; }
@@ -7848,34 +7890,6 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
     const root = document.createElement('div'); root.className = 'wif'; root.dir = P6.dir();
     const dl = `<datalist id="wif_codes">${p.tasks.slice(0, 3000).map((t) => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join('')}</datalist>`;
     const save = () => App.scheduleSave();
-    const input = (id, ph, w) => `<input id="${id}" list="wif_codes" placeholder="${esc(ph)}" style="width:${w || 110}px">`;
-    function formFor(k) {
-      const num = (id, ph, v) => `<input id="${id}" type="number" placeholder="${esc(ph)}" value="${v == null ? '' : v}" style="width:80px">`;
-      switch (k) {
-        case 'dur': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_mode"><option value="add">${B('Add days (±)', 'إضافة أيام (±)')}</option><option value="pct">${B('% of duration', '% من المدة')}</option><option value="set">${B('Set to days', 'تعيين بأيام')}</option></select>` + num('f_v', B('value', 'القيمة'));
-        case 'event': return `<input id="f_name" placeholder="${esc(B('Event name', 'اسم الحدث'))}" style="width:150px">` + num('f_days', B('days', 'أيام')) + input('f_succ', B('Delays activity', 'يؤخر النشاط')) + input('f_pred', B('After (optional)', 'بعد (اختياري)'));
-        case 'lag': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + num('f_lag', 'lag');
-        case 'rmrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى'));
-        case 'addrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + `<select id="f_type"><option>FS</option><option>SS</option><option>FF</option><option>SF</option></select>` + num('f_lag', 'lag', 0);
-        case 'cons': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_ct">${['SNET', 'FNET', 'SNLT', 'FNLT', 'MSO', 'MFO', 'NONE'].map((c) => `<option>${c}</option>`).join('')}</select><input id="f_date" placeholder="dd-mmm-yy" style="width:90px">`;
-        case 'scale': return num('f_v', B('% (e.g. 120)', '% (مثلاً 120)'), 100) + `<input id="f_wbs" placeholder="${esc(B('WBS code (optional)', 'كود WBS (اختياري)'))}" style="width:150px">`;
-      }
-      return '';
-    }
-    function readOp(k, el) {
-      const v = (id) => { const e = el.querySelector('#' + id); return e ? e.value.trim() : ''; }, n = (id) => { const x = parseFloat(v(id)); return isFinite(x) ? x : NaN; };
-      const o = { k };
-      if (k === 'dur') Object.assign(o, { code: v('f_code'), mode: v('f_mode'), v: n('f_v') });
-      else if (k === 'event') Object.assign(o, { name: v('f_name'), days: n('f_days'), succ: v('f_succ'), pred: v('f_pred') });
-      else if (k === 'lag') Object.assign(o, { from: v('f_from'), to: v('f_to'), lag: n('f_lag') });
-      else if (k === 'rmrel') Object.assign(o, { from: v('f_from'), to: v('f_to') });
-      else if (k === 'addrel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
-      else if (k === 'cons') Object.assign(o, { code: v('f_code'), ct: v('f_ct'), date: v('f_date') });
-      else if (k === 'scale') Object.assign(o, { v: n('f_v'), wbs: v('f_wbs') });
-      const need = { dur: ['code', 'v'], event: ['days', 'succ'], lag: ['from', 'to', 'lag'], rmrel: ['from', 'to'], addrel: ['from', 'to'], cons: ['code'], scale: ['v'] }[k];
-      if (need.some((f) => o[f] === '' || (typeof o[f] === 'number' && isNaN(o[f])))) return null;
-      return o;
-    }
     function draw() {
       const sc = p.scenarios;
       root.innerHTML = `${dl}<div class="wif-bar"><label>${esc(B('Scenario', 'السيناريو'))}</label><select id="wif_sel">${sc.map((s, i) => `<option value="${i}"${s === cur ? ' selected' : ''}>${esc(s.name)}</option>`).join('') || `<option>—</option>`}</select><button class="btn" id="wif_new">+ ${esc(B('New', 'جديد'))}</button><button class="btn" id="wif_ren"${cur ? '' : ' disabled'}>${esc(B('Rename', 'إعادة تسمية'))}</button><button class="btn" id="wif_dup"${cur ? '' : ' disabled'}>${esc(B('Duplicate', 'نسخ'))}</button><button class="btn" id="wif_del"${cur ? '' : ' disabled'}>${esc(B('Delete', 'حذف'))}</button></div>`
@@ -8098,6 +8112,573 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
     D.modal({ title: B('Driving Path', 'المسار الحاكم'), cls: 'wide dsh-modal', body: root, sticky: true, buttons: [{ label: P6.t('close'), fn: () => {} }] });
     run();
   };
+})(window);
+
+</script>
+<script>
+/* P6 Web – "Delay & Recovery" section: one window hosting the EOT register, delay analysis (TIA / windows), delay report,
+   recovery schedule, revisions and the out-of-sequence fixer. Tabs register themselves in P6.delay.tabs and render into a container.
+   Data lives in the project: p.eot (events + settings), p.revs (revision register), p.oosLog (audit log of logic fixes). */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App;
+  const esc = P6.esc, B = (en, ar) => (P6.dir() === 'rtl' ? ar : en);
+  const clone = (p) => JSON.parse(JSON.stringify(p, (k, v) => (k === 'xer' ? undefined : v)));
+  const fin = (q) => q.tasks.reduce((m, t) => (t.ef != null && t.ef > m ? t.ef : m), -Infinity);
+  const defCal = (p) => p.cals.find((c) => c.id === p.defCal) || p.cals[0];
+  /* working days from date a to date b on the project calendar (negative when b is earlier) */
+  const wdays = (p, a, b) => (a == null || b == null || !isFinite(a) || !isFinite(b) ? null : P6.signedWork(defCal(p), a, b));
+  const fd = (d) => (d == null || !isFinite(d) ? '' : P6.fmtDate(d));
+  const pd = (s) => { s = String(s == null ? '' : s).trim(); if (!s) return null; const d = P6.parseDate(s); return d == null ? undefined : d; };
+
+  function ensure(p) {
+    p.eot = Object.assign({ events: [], seq: 1, contractFinish: null, noticeDays: 28, particularsDays: 84, barLate: false, mode: 'cum', meta: {} }, p.eot);
+    p.revs = p.revs || []; p.oosLog = p.oosLog || [];
+    return p.eot;
+  }
+  const D2 = (P6.delay = { clone, fin, wdays, fd, pd, ensure, tabs: [], B, esc });
+
+  const css = () => {};
+  void css;
+
+  App.renderDelayWin = function (el) {
+    const p = App.p; if (!p) return; ensure(p);
+    el.innerHTML = '';
+    const root = document.createElement('div'); root.className = 'dly'; root.dir = P6.dir(); el.appendChild(root); el.classList.add('dsh-host');
+    const tabs = D2.tabs, cur = tabs.find((t) => t.id === App.delayTab) || tabs[0];
+    root.innerHTML = `<div class="dly-tabs">${tabs.map((t) => `<button class="${t.id === cur.id ? 'on' : ''}" data-t="${t.id}">${esc(t.label())}</button>`).join('')}</div><div class="dly-body"></div>`;
+    root.querySelectorAll('.dly-tabs button').forEach((b) => { b.onclick = () => { App.delayTab = b.dataset.t; App.renderDelayWin(el); }; });
+    const body = root.querySelector('.dly-body');
+    try { cur.render(body, () => App.renderDelayWin(el)); } catch (e) { console.error(e); body.innerHTML = `<p class="cmp-bad">${esc(String(e.message || e))}</p>`; }
+  };
+  App.openDelay = function (tab) { if (tab) App.delayTab = tab; App.openWin('delay'); if (App.win === 'delay') App.renderWin(); };
+  D2.save = () => App.scheduleSave();
+  D2.refresh = () => { if (App.win === 'delay') App.renderWin(); };
+})(window);
+
+</script>
+<script>
+/* P6 Web – EOT (Extension of Time): delay-event register, time-impact analysis and the delay report.
+   Method (per SCL Protocol / AACE 29R-03 practice, simplified for an in-browser CPM):
+   - Unimpacted schedule = the current schedule (re-scheduled). Each event's fragnet (What-If operations) is inserted on a copy.
+   - Independent TIA: delay_i = finish(unimpacted + fragnet_i) - finish(unimpacted), in working days of the project calendar.
+   - Cumulative TIA (chronological): excusable events (EC, ENC) are inserted one after another; entitlement_i = finish_i - finish_{i-1}.
+     Non-excusable (NE) events are inserted in a second chain to show the contractor's own delay; overlap with excusable delay = concurrency
+     (time but no money). Float is treated as project-owned: only days that move the completion date count.
+   - Windows analysis between saved revisions attributes each window's slip to events whose activities were critical at the window start. */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App, D = App.dialogs, X = P6.delay;
+  const { esc, B, clone, fin, wdays, fd, pd, ensure } = X;
+
+  const CAUSES = [['instr', 'Employer instruction / variation', 'تعليمات / أمر تغيير من صاحب العمل'], ['access', 'Late access to site', 'تأخر تسليم الموقع'], ['info', 'Late information / drawings', 'تأخر معلومات / مخططات'], ['items', 'Employer-supplied items', 'مواد / أعمال من صاحب العمل'], ['ground', 'Unforeseeable ground conditions', 'ظروف أرض غير متوقعة'], ['fm', 'Force majeure / exceptional event', 'قوة قاهرة / حدث استثنائي'], ['auth', 'Authorities / utilities', 'جهات حكومية / مرافق'], ['weather', 'Adverse weather', 'ظروف جوية سيئة'], ['contr', 'Contractor-caused', 'تأخير من المقاول'], ['third', 'Third party', 'طرف ثالث'], ['other', 'Other', 'أخرى']];
+  const CLS = { EC: ['Excusable – compensable', 'معذور – مع تعويض', '#2e8b3e'], ENC: ['Excusable – non-compensable', 'معذور – بدون تعويض', '#d97706'], NE: ['Non-excusable', 'غير معذور (مسؤولية المقاول)', '#c0392b'] };
+  const PARTY = [['emp', 'Employer', 'صاحب العمل'], ['eng', 'Engineer / PM', 'المهندس / مدير المشروع'], ['con', 'Contractor', 'المقاول'], ['sub', 'Sub-contractor', 'مقاول باطن'], ['neu', 'Neutral / external', 'محايد / خارجي']];
+  const STAT = ['Draft', 'Notified', 'Submitted', 'Assessed', 'Agreed', 'Rejected'];
+  const cause = (k) => (CAUSES.find((c) => c[0] === k) || CAUSES[CAUSES.length - 1]);
+  const lab = (a) => B(a[1], a[2]);
+
+  /* ---------- helpers ---------- */
+  const opCodes = (ops) => { const s = new Set(); for (const o of ops || []) [o.succ, o.pred, o.code, o.from, o.to].forEach((c) => { if (c) s.add(String(c).toLowerCase()); }); return s; };
+  const nominalDays = (ops) => (ops || []).reduce((n, o) => n + (o.k === 'event' ? +o.days || 0 : o.k === 'dur' && o.mode === 'add' ? +o.v || 0 : o.k === 'dur' && o.mode === 'set' ? 0 : 0), 0);
+  const noticeInfo = (e, S) => {
+    const a = e.aware, n = e.notice, pt = e.partic, nd = a != null && n != null ? n - a : null, pdd = a != null && pt != null ? pt - a : null;
+    return { nd, pdd, lateN: nd != null && nd > S.noticeDays, lateP: pdd != null && pdd > S.particularsDays, missing: n == null };
+  };
+  const calWork = (p, a, b) => { const c = p.cals.find((x) => x.id === p.defCal) || p.cals[0]; let n = 0; for (let d = a; d <= b; d++) if (P6.isWork(c, d)) n++; return n; };
+
+  X.opsLabel = (ops) => (ops || []).map((o) => P6.opUI.describe(o)).join(' | ');
+
+  /* ---------- engine ---------- */
+  X.eotAnalyse = function (p, optIn) {
+    const S = ensure(p), opt = Object.assign({ barLate: S.barLate }, optIn);
+    const evs = S.events.filter((e) => e.status !== 'Rejected' && (e.ops || []).length);
+    const order = evs.slice().sort((a, b) => (a.start == null ? 1e9 : a.start) - (b.start == null ? 1e9 : b.start) || a.id.localeCompare(b.id));
+    const base = clone(p); P6.schedule(base); const F0 = fin(base), byCode = new Map(base.tasks.map((t) => [String(t.code).toLowerCase(), t]));
+    const warnings = [];
+    const run = (T, ops, ev) => { const w = P6.applyScenario(T, ops); if (w.length) warnings.push(ev.id + ': ' + w.join(', ')); P6.schedule(T); return fin(T); };
+    // independent TIA
+    const ind = new Map();
+    for (const e of order) { const T = clone(p), f1 = run(T, e.ops, e); ind.set(e.id, { f1, d: wdays(p, F0, f1) }); }
+    // cumulative chains
+    const barred = (e) => opt.barLate && noticeInfo(e, S).lateN;
+    const exc = order.filter((e) => e.cls !== 'NE' && !barred(e)), non = order.filter((e) => e.cls === 'NE');
+    const cumExc = new Map(); let T1 = clone(p), prev = F0;
+    for (const e of exc) { const f = run(T1, e.ops, e); cumExc.set(e.id, { f, d: wdays(p, prev, f) }); prev = f; }
+    const Fexc = prev;
+    const cumAll = new Map(); let T2 = clone(p); prev = F0;
+    for (const e of order.filter((x) => !barred(x) || x.cls === 'NE')) { const f = run(T2, e.ops, e); cumAll.set(e.id, { f, d: wdays(p, prev, f) }); prev = f; }
+    const Fall = prev;
+    // contractor-only chain (what the non-excusable events alone do) for the concurrency picture
+    const T3 = clone(p); let fN = F0; for (const e of non) fN = run(T3, e.ops, e);
+    const neWin = non.filter((e) => (cumAll.get(e.id) || {}).d > 0 && e.start != null && e.end != null);
+    const rows = order.map((e) => {
+      const codes = opCodes(e.ops), aff = [...codes].map((c) => byCode.get(c)).filter(Boolean), tfMin = aff.length ? Math.min(...aff.map((t) => (t.tf == null ? 1e9 : t.tf))) : null;
+      const nom = nominalDays(e.ops), i = ind.get(e.id), ce = cumExc.get(e.id), ca = cumAll.get(e.id), ni = noticeInfo(e, S), isB = barred(e);
+      let overlap = 0;
+      if (e.cls !== 'NE' && ce && ce.d > 0 && e.start != null && e.end != null) for (const n of neWin) { const a = Math.max(e.start, n.start), b = Math.min(e.end, n.end); if (b >= a) overlap += calWork(p, a, b); }
+      const assessed = e.cls === 'NE' || isB ? 0 : Math.max(0, ce ? ce.d : 0);
+      const compens = e.cls === 'EC' ? Math.max(0, assessed - Math.min(assessed, overlap)) : 0;
+      return { ev: e, nominal: nom, indep: i ? i.d : 0, cum: ce ? ce.d : null, cumAll: ca ? ca.d : null, floatAbsorbed: nom > 0 ? Math.max(0, nom - (i ? i.d : 0)) : 0, tf: tfMin, critical: (i && i.d > 0) || (tfMin != null && tfMin <= 0), overlap, assessed, compens, ni, barred: isB, f1: i ? i.f1 : null };
+    });
+    const totalExc = wdays(p, F0, Fexc) || 0, totalAll = wdays(p, F0, Fall) || 0;
+    const blF = p.tasks.reduce((m, t) => (t.bf != null && t.bf > m ? t.bf : m), -Infinity);
+    const contract = S.contractFinish != null ? S.contractFinish : isFinite(blF) ? blF : F0;
+    const cal = p.cals.find((c) => c.id === p.defCal) || p.cals[0];
+    const approved = S.events.reduce((n, e) => n + (e.status !== 'Rejected' && e.approved > 0 ? +e.approved : 0), 0);
+    const revised = P6.shift(cal, contract, totalExc), revisedApproved = P6.shift(cal, contract, approved);
+    return { F0, Fexc, Fall, FNonOnly: fN, rows, totalExc, totalAll, contract, revised, revisedApproved, approved, order, warnings, windows: X.windowsAnalysis(p, order), opt, base };
+  };
+
+  /* windows analysis between saved revisions (revision.js stores compact snapshots) */
+  X.windowsAnalysis = function (p, order) {
+    const revs = (p.revs || []).filter((r) => r.snap).slice().sort((a, b) => (a.dataDate || 0) - (b.dataDate || 0)), out = [];
+    for (let i = 1; i < revs.length; i++) {
+      const a = revs[i - 1], b = revs[i], slip = wdays(p, a.finish, b.finish), crit = new Set(a.snap.tasks.filter((t) => t.crit).map((t) => String(t.code).toLowerCase()));
+      const inWin = order.filter((e) => e.start != null && e.start > (a.dataDate || -1e9) && e.start <= (b.dataDate || 1e9));
+      const attr = inWin.filter((e) => [...opCodes(e.ops)].some((c) => crit.has(c)));
+      out.push({ a, b, slip, events: inWin, attributed: attr, critCount: crit.size });
+    }
+    return out;
+  };
+
+  /* ---------- UI ---------- */
+  const dfld = (id, v) => `<input id="${id}" value="${esc(fd(v))}" placeholder="dd-mmm-yy" style="width:110px">`;
+  const chip = (t, c) => `<span class="dsh-chip" style="background:${c}1f;color:${c};border-color:${c}66">${esc(t)}</span>`;
+
+  function editEvent(e0, done) {
+    const p = App.p, S = ensure(p), isNew = !e0, e = e0 || { id: 'EOT-' + String(S.seq).padStart(2, '0'), title: '', desc: '', cause: 'instr', cls: 'EC', party: 'emp', clause: '', aware: null, notice: null, partic: null, start: null, end: null, claimed: 0, approved: 0, status: 'Draft', ops: [], notes: '' };
+    const ops = (e.ops || []).slice();
+    const body = document.createElement('div'); body.className = 'wif'; body.dir = P6.dir();
+    const sel = (id, list, v, lbl) => `<select id="${id}">${list.map((x) => `<option value="${Array.isArray(x) ? x[0] : x}"${(Array.isArray(x) ? x[0] : x) === v ? ' selected' : ''}>${esc(lbl ? lbl(x) : x)}</option>`).join('')}</select>`;
+    const dl = `<datalist id="wif_codes">${p.tasks.slice(0, 3000).map((t) => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join('')}</datalist>`;
+    body.innerHTML = `${dl}<div class="dly-form">
+      <label>ID<input id="e_id" value="${esc(e.id)}"></label><label class="w2">${esc(B('Title', 'العنوان'))}<input id="e_title" value="${esc(e.title)}"></label>
+      <label class="w3">${esc(B('Description / facts', 'الوصف / الوقائع'))}<textarea id="e_desc" rows="2">${esc(e.desc)}</textarea></label>
+      <label>${esc(B('Cause', 'السبب'))}${sel('e_cause', CAUSES, e.cause, lab)}</label><label>${esc(B('Classification', 'التصنيف'))}${sel('e_cls', Object.keys(CLS), e.cls, (k) => B(CLS[k][0], CLS[k][1]))}</label><label>${esc(B('Responsible party', 'الطرف المسؤول'))}${sel('e_party', PARTY, e.party, lab)}</label>
+      <label>${esc(B('Contract clause', 'بند العقد'))}<input id="e_clause" value="${esc(e.clause)}" placeholder="FIDIC 8.5 / 13.1…"></label><label>${esc(B('Status', 'الحالة'))}${sel('e_status', STAT, e.status)}</label><label>${esc(B('Approved days', 'الأيام المعتمدة'))}<input id="e_appr" type="number" value="${e.approved || 0}" style="width:90px"></label>
+      <label>${esc(B('Awareness date', 'تاريخ العلم بالحدث'))}${dfld('e_aware', e.aware)}</label><label>${esc(B('Notice sent', 'تاريخ الإخطار'))}${dfld('e_notice', e.notice)}</label><label>${esc(B('Particulars submitted', 'تاريخ تقديم التفاصيل'))}${dfld('e_part', e.partic)}</label>
+      <label>${esc(B('Event start', 'بداية الحدث'))}${dfld('e_start', e.start)}</label><label>${esc(B('Event end', 'نهاية الحدث'))}${dfld('e_end', e.end)}</label><label>${esc(B('Claimed days', 'الأيام المطالب بها'))}<input id="e_claim" type="number" value="${e.claimed || 0}" style="width:90px"></label>
+      <label class="w3">${esc(B('Notes', 'ملاحظات'))}<input id="e_notes" value="${esc(e.notes || '')}"></label></div>
+      <h4>${esc(B('Fragnet – how the event delays the schedule', 'الـ Fragnet – كيف يؤثر الحدث على الجدول'))}</h4>
+      <div class="wif-add"><select id="wif_k">${['event', 'dur', 'lag', 'rel', 'addrel', 'rmrel', 'cons'].map((k) => `<option value="${k}">${esc(P6.opUI.KINDS[k]())}</option>`).join('')}</select><span id="wif_form">${P6.opUI.formFor('event')}</span><button class="btn pri" id="e_addop">${esc(B('Add', 'أضف'))}</button></div>
+      <div id="e_ops"></div>`;
+    const $ = (s) => body.querySelector(s);
+    const drawOps = () => { $('#e_ops').innerHTML = `<table class="mini cmpt"><tbody>${ops.map((o, i) => `<tr><td>${esc(P6.opUI.KINDS[o.k]())}</td><td>${esc(P6.opUI.describe(o))}</td><td><a data-rm="${i}" style="cursor:pointer;color:#c0392b">✕</a></td></tr>`).join('') || `<tr><td style="color:#888">${esc(B('No fragnet yet – add at least one change to analyse this event', 'لا يوجد Fragnet – أضف تغييراً واحداً على الأقل لتحليل الحدث'))}</td></tr>`}</tbody></table>`; body.querySelectorAll('[data-rm]').forEach((a) => { a.onclick = () => { ops.splice(+a.dataset.rm, 1); drawOps(); }; }); };
+    drawOps();
+    $('#wif_k').onchange = (ev) => { $('#wif_form').innerHTML = P6.opUI.formFor(ev.target.value); };
+    $('#e_addop').onclick = () => { const o = P6.opUI.readOp($('#wif_k').value, body); if (!o) return App.toast(B('Fill in all fields', 'املأ كل الحقول'), true); ops.push(o); drawOps(); };
+    D.modal({ title: isNew ? B('New EOT event', 'حدث EOT جديد') : e.id, cls: 'wide dsh-modal', body, sticky: true, buttons: [
+      ...(isNew ? [] : [{ label: B('Delete', 'حذف'), fn: () => { if (!confirm(B('Delete this event?', 'حذف الحدث؟'))) return false; S.events = S.events.filter((x) => x !== e0); X.save(); done(); } }]),
+      { label: P6.t('cancel'), fn: () => {} },
+      { label: B('Save', 'حفظ'), cls: 'pri', fn: () => {
+        const v = (id) => $('#' + id).value.trim(), dts = ['e_aware', 'e_notice', 'e_part', 'e_start', 'e_end'].map((id) => pd(v(id)));
+        if (dts.some((d) => d === undefined)) { App.toast(B('Check the dates (dd-mmm-yy)', 'راجع التواريخ (dd-mmm-yy)'), true); return false; }
+        if (!v('e_title')) { App.toast(B('Enter a title', 'اكتب عنواناً'), true); return false; }
+        const id = v('e_id') || e.id; if (S.events.some((x) => x !== e0 && x.id === id)) { App.toast(B('ID already used', 'الـ ID مستخدم'), true); return false; }
+        Object.assign(e, { id, title: v('e_title'), desc: v('e_desc'), cause: v('e_cause'), cls: v('e_cls'), party: v('e_party'), clause: v('e_clause'), status: v('e_status'), approved: +v('e_appr') || 0, aware: dts[0], notice: dts[1], partic: dts[2], start: dts[3], end: dts[4], claimed: +v('e_claim') || 0, notes: v('e_notes'), ops });
+        if (isNew) { S.events.push(e); S.seq++; }
+        X.save(); done();
+      } }] });
+  }
+
+  /* ---------- tab: register ---------- */
+  X.tabs.push({ id: 'register', label: () => B('EOT Register', 'سجل EOT'), render(el, redo) {
+    const p = App.p, S = ensure(p);
+    const blF = p.tasks.reduce((m, t) => (t.bf != null && t.bf > m ? t.bf : m), -Infinity);
+    const head = `<div class="dly-bar"><button class="btn pri" id="eo_add">+ ${esc(B('New event', 'حدث جديد'))}</button><label>${esc(B('Contract completion date', 'تاريخ الإنجاز التعاقدي'))} ${dfld('eo_cf', S.contractFinish != null ? S.contractFinish : isFinite(blF) ? blF : null)}</label><label>${esc(B('Notice limit (days)', 'مهلة الإخطار (يوم)'))} <input id="eo_nd" type="number" value="${S.noticeDays}" style="width:60px"></label><label>${esc(B('Particulars limit (days)', 'مهلة التفاصيل (يوم)'))} <input id="eo_pd" type="number" value="${S.particularsDays}" style="width:60px"></label><label><input type="checkbox" id="eo_bar"${S.barLate ? ' checked' : ''}> ${esc(B('Late notice bars the claim', 'الإخطار المتأخر يُسقط المطالبة'))}</label><button class="btn" id="eo_go">▶ ${esc(B('Analyse', 'تحليل'))}</button></div>`;
+    const sumClaimed = S.events.reduce((n, e) => n + (e.claimed || 0), 0), sumAppr = S.events.reduce((n, e) => n + (e.status !== 'Rejected' ? e.approved || 0 : 0), 0);
+    const rows = S.events.map((e, i) => { const ni = noticeInfo(e, S), c = CLS[e.cls]; return `<tr data-i="${i}" style="cursor:pointer"><td>${esc(e.id)}</td><td>${esc(e.title)}</td><td>${esc(lab(cause(e.cause)))}</td><td>${chip(B(c[0], c[1]), c[2])}</td><td>${esc(lab(PARTY.find((x) => x[0] === e.party) || PARTY[4]))}</td><td>${esc(e.clause)}</td><td>${fd(e.start)}${e.end != null ? ' → ' + fd(e.end) : ''}</td><td>${ni.missing ? chip(B('No notice', 'بدون إخطار'), '#c0392b') : ni.lateN ? chip(B('Late +' + (ni.nd - S.noticeDays) + ' d', 'متأخر +' + (ni.nd - S.noticeDays) + ' يوم'), '#c0392b') : chip(B('On time', 'في الموعد'), '#2e8b3e')}</td><td class="r">${e.claimed || 0}</td><td class="r">${e.approved || 0}</td><td>${esc(e.status)}</td><td>${(e.ops || []).length ? '✓' : '<span style="color:#c0392b">–</span>'}</td></tr>`; }).join('');
+    el.innerHTML = `${head}<div class="tbl-scroll" style="max-height:60vh"><table class="mini cmpt"><thead><tr><th>ID</th><th>${esc(B('Event', 'الحدث'))}</th><th>${esc(B('Cause', 'السبب'))}</th><th>${esc(B('Class', 'التصنيف'))}</th><th>${esc(B('Party', 'الطرف'))}</th><th>${esc(B('Clause', 'البند'))}</th><th>${esc(B('Period', 'الفترة'))}</th><th>${esc(B('Notice', 'الإخطار'))}</th><th>${esc(B('Claimed', 'مطالب'))}</th><th>${esc(B('Approved', 'معتمد'))}</th><th>${esc(B('Status', 'الحالة'))}</th><th>${esc(B('Fragnet', 'Fragnet'))}</th></tr></thead><tbody>${rows || `<tr><td colspan="12" style="text-align:center;color:#888">${esc(B('No events yet – press "New event"', 'لا أحداث بعد – اضغط "حدث جديد"'))}</td></tr>`}</tbody><tfoot><tr><td colspan="8"><b>${esc(B('Total', 'الإجمالي'))}</b></td><td class="r"><b>${sumClaimed}</b></td><td class="r"><b>${sumAppr}</b></td><td colspan="2"></td></tr></tfoot></table></div>
+      <p class="hint">${esc(B('Each event needs a fragnet (how it delays the schedule) to be analysed. Notice dates are checked against the limits above (FIDIC 20.2.1: 28 days from awareness, full particulars within 84 days).', 'كل حدث يحتاج Fragnet (كيف يؤخر الجدول) ليتم تحليله. تُفحص تواريخ الإخطار مقابل المهل أعلاه (FIDIC 20.2.1: 28 يوماً من العلم، والتفاصيل الكاملة خلال 84 يوماً).'))}</p>`;
+    const $ = (s) => el.querySelector(s);
+    $('#eo_add').onclick = () => editEvent(null, redo);
+    el.querySelectorAll('tbody tr[data-i]').forEach((tr) => { tr.onclick = () => editEvent(S.events[+tr.dataset.i], redo); });
+    const sv = () => { const d = pd($('#eo_cf').value); if (d === undefined) return App.toast(B('Bad date', 'تاريخ غير صالح'), true); S.contractFinish = d; S.noticeDays = +$('#eo_nd').value || 28; S.particularsDays = +$('#eo_pd').value || 84; S.barLate = $('#eo_bar').checked; X.save(); };
+    ['#eo_cf', '#eo_nd', '#eo_pd', '#eo_bar'].forEach((s) => { $(s).onchange = () => { sv(); redo(); }; });
+    $('#eo_go').onclick = () => { sv(); App.delayTab = 'analysis'; redo(); };
+  } });
+
+  /* ---------- tab: analysis ---------- */
+  function waterfall(res) {
+    const steps = [{ l: B('Contract completion', 'الإنجاز التعاقدي'), d: res.contract, tot: true }];
+    let run = res.contract; const cal = App.p.cals.find((c) => c.id === App.p.defCal) || App.p.cals[0];
+    for (const r of res.rows) if (r.assessed > 0) { const nd = P6.shift(cal, run, r.assessed); steps.push({ l: r.ev.id + ' (+' + r.assessed + ')', d: nd, from: run }); run = nd; }
+    steps.push({ l: B('Revised completion', 'الإنجاز المعدّل'), d: run, tot: true });
+    const lo = Math.min(...steps.map((s) => s.from || s.d)), hi = Math.max(...steps.map((s) => s.d)), W = 720, rh = 22, lw = 190, sc = (d) => lw + ((d - lo) / Math.max(1, hi - lo)) * (W - lw - 70);
+    return `<svg viewBox="0 0 ${W} ${steps.length * rh + 12}" style="width:100%;max-height:${steps.length * rh + 20}px" dir="ltr">${steps.map((s, i) => { const y = 6 + i * rh, x0 = s.from != null ? sc(s.from) : sc(lo), x1 = sc(s.d); return `<text x="4" y="${y + 14}" font-size="11" fill="#333">${esc(s.l)}</text><rect x="${x0.toFixed(1)}" y="${y + 3}" width="${Math.max(2, x1 - x0).toFixed(1)}" height="${rh - 8}" fill="${s.tot ? '#00778B' : '#d97706'}" rx="2"/><text x="${(x1 + 4).toFixed(1)}" y="${y + 14}" font-size="10" fill="#555">${esc(fd(s.d))}</text>`; }).join('')}</svg>`;
+  }
+  X.waterfall = waterfall;
+
+  X.tabs.push({ id: 'analysis', label: () => B('Delay Analysis (TIA)', 'تحليل التأخير (TIA)'), render(el, redo) {
+    const p = App.p, S = ensure(p);
+    if (!S.events.some((e) => (e.ops || []).length && e.status !== 'Rejected')) { el.innerHTML = `<p class="hint">${esc(B('Add events with a fragnet in the EOT Register first.', 'أضف أحداثاً بها Fragnet في سجل EOT أولاً.'))}</p>`; return; }
+    el.innerHTML = `<p class="hint">${esc(B('Running time-impact analysis…', 'جارٍ تشغيل تحليل الأثر الزمني…'))}</p>`;
+    setTimeout(() => {
+      let res; try { res = X.eotAnalyse(p); } catch (e) { console.error(e); el.innerHTML = `<p class="cmp-bad">${esc(String(e.message || e))}</p>`; return; }
+      X.last = res;
+      const cd = (n) => (n == null ? '–' : n > 0 ? '+' + n : String(n));
+      const cards = `<div class="cmpcards"><div class="cmpc"><b>${fd(res.contract)}</b><span>${esc(B('Contract completion', 'الإنجاز التعاقدي'))}</span></div><div class="cmpc good"><b>${res.totalExc}</b><span>${esc(B('EOT entitlement (working days)', 'استحقاق EOT (أيام عمل)'))}</span></div><div class="cmpc"><b>${fd(res.revised)}</b><span>${esc(B('Revised completion (assessed)', 'الإنجاز المعدّل (المقيَّم)'))}</span></div><div class="cmpc ${res.approved ? 'good' : ''}"><b>${res.approved}</b><span>${esc(B('Approved so far (days)', 'المعتمد حتى الآن (يوم)'))} → ${fd(res.revisedApproved)}</span></div><div class="cmpc ${res.totalAll > res.totalExc ? 'bad' : ''}"><b>${cd(res.totalAll - res.totalExc)}</b><span>${esc(B('Contractor-caused delay (days)', 'تأخير بسبب المقاول (يوم)'))}</span></div></div>`;
+      const trs = res.rows.map((r) => { const c = CLS[r.ev.cls]; return `<tr><td>${esc(r.ev.id)}</td><td>${esc(r.ev.title)}</td><td>${chip(B(c[0], c[1]), c[2])}</td><td class="r">${r.nominal || ''}</td><td class="r">${cd(r.indep)}</td><td class="r"><b>${r.cum == null ? '–' : cd(r.cum)}</b></td><td>${r.critical ? chip(B('Critical', 'حرج'), '#c0392b') : chip(B('Non-critical', 'غير حرج'), '#2e8b3e')}</td><td class="r">${r.tf == null ? '' : r.tf}</td><td class="r">${r.floatAbsorbed || ''}</td><td class="r">${r.overlap || ''}</td><td class="r"><b>${r.assessed}</b>${r.barred ? ' ⛔' : ''}</td><td class="r">${r.ev.cls === 'EC' ? r.compens : '–'}</td><td class="r">${r.ev.claimed || 0}</td></tr>`; }).join('');
+      const win = res.windows.length ? `<h4>${esc(B('Windows analysis (between saved revisions)', 'تحليل النوافذ (بين المراجعات المحفوظة)'))}</h4><table class="mini cmpt"><thead><tr><th>${esc(B('Window', 'النافذة'))}</th><th>${esc(B('Data dates', 'تواريخ البيانات'))}</th><th>${esc(B('Finish', 'النهاية'))}</th><th>${esc(B('Slip (wd)', 'الانزلاق'))}</th><th>${esc(B('Events in window', 'أحداث النافذة'))}</th><th>${esc(B('On critical path', 'على المسار الحرج'))}</th></tr></thead><tbody>${res.windows.map((w) => `<tr><td>${esc(w.a.label)} → ${esc(w.b.label)}</td><td>${fd(w.a.dataDate)} → ${fd(w.b.dataDate)}</td><td>${fd(w.a.finish)} → ${fd(w.b.finish)}</td><td class="r ${w.slip > 0 ? 'cmp-bad' : ''}">${cd(w.slip)}</td><td>${esc(w.events.map((e) => e.id).join(', ')) || '–'}</td><td>${esc(w.attributed.map((e) => e.id).join(', ')) || '–'}</td></tr>`).join('')}</tbody></table>` : `<p class="hint">${esc(B('Windows analysis needs at least two saved revisions (Revisions tab).', 'تحليل النوافذ يحتاج مراجعتين محفوظتين على الأقل (تبويب المراجعات).'))}</p>`;
+      el.innerHTML = `<div class="dly-bar"><label><input type="checkbox" id="an_bar"${S.barLate ? ' checked' : ''}> ${esc(B('Late notice bars the claim', 'الإخطار المتأخر يُسقط المطالبة'))}</label><button class="btn" id="an_store">${esc(B('Store assessed days in the register', 'احفظ الأيام المقيَّمة في السجل'))}</button><button class="btn" id="an_scn">${esc(B('Create What-If scenario from excusable events', 'أنشئ سيناريو What-If من الأحداث المعذورة'))}</button><button class="btn pri" id="an_rep">${esc(B('Delay report ▸', 'تقرير التأخير ▸'))}</button><button class="btn" id="an_xl">${esc(B('Export to Excel', 'تصدير Excel'))}</button></div>${res.warnings.length ? `<p class="cmp-bad">⚠ ${esc(res.warnings.join(' · '))}</p>` : ''}${cards}
+        <div class="tbl-scroll" style="max-height:44vh"><table class="mini cmpt"><thead><tr><th>ID</th><th>${esc(B('Event', 'الحدث'))}</th><th>${esc(B('Class', 'التصنيف'))}</th><th>${esc(B('Nominal', 'اسمي'))}</th><th>${esc(B('Independent TIA', 'TIA مستقل'))}</th><th>${esc(B('Cumulative TIA', 'TIA تراكمي'))}</th><th>${esc(B('Critical?', 'حرج؟'))}</th><th>${esc(B('TF', 'فلوت'))}</th><th>${esc(B('Float absorbed', 'فلوت مستهلك'))}</th><th>${esc(B('Concurrent (wd)', 'تزامن (يوم)'))}</th><th>${esc(B('EOT days', 'أيام EOT'))}</th><th>${esc(B('Compensable', 'قابل للتعويض'))}</th><th>${esc(B('Claimed', 'مطالب'))}</th></tr></thead><tbody>${trs}</tbody><tfoot><tr><td colspan="10"><b>${esc(B('Total', 'الإجمالي'))}</b></td><td class="r"><b>${res.rows.reduce((n, r) => n + r.assessed, 0)}</b></td><td class="r"><b>${res.rows.reduce((n, r) => n + (r.ev.cls === 'EC' ? r.compens : 0), 0)}</b></td><td class="r"><b>${res.rows.reduce((n, r) => n + (r.ev.claimed || 0), 0)}</b></td></tr></tfoot></table></div>
+        <h4>${esc(B('EOT build-up', 'تراكم EOT'))}</h4>${waterfall(res)}${win}
+        <p class="hint">${esc(B('Method: unimpacted schedule = the current schedule. Cumulative TIA inserts the excusable events chronologically; entitlement of each event = movement of the completion date it causes (project-owned float). Concurrent = overlap with non-excusable delay: time without money. A simplified, indicative analysis – review before submission.', 'المنهج: الجدول غير المتأثر = الجدول الحالي. الـ TIA التراكمي يدخل الأحداث المعذورة زمنياً؛ استحقاق كل حدث = حركة تاريخ الإنجاز التي يسببها (الفلوت ملك المشروع). التزامن = تداخل مع تأخير غير معذور: وقت بدون تعويض. تحليل مبسّط استرشادي – راجعه قبل التقديم.'))}</p>`;
+      const $ = (s) => el.querySelector(s);
+      $('#an_bar').onchange = (e) => { S.barLate = e.target.checked; X.save(); redo(); };
+      $('#an_store').onclick = () => { for (const r of res.rows) { r.ev.assessed = r.assessed; r.ev.compens = r.compens; if (!r.ev.approved && r.assessed) r.ev.approved = r.assessed; if (r.ev.status === 'Draft' || r.ev.status === 'Notified' || r.ev.status === 'Submitted') r.ev.status = 'Assessed'; } X.save(); App.toast(B('Stored in the register (approved days pre-filled – edit if different)', 'تم الحفظ في السجل (الأيام المعتمدة معبّأة – عدّلها إن اختلفت)')); redo(); };
+      $('#an_scn').onclick = () => { const ops = res.order.filter((e) => e.cls !== 'NE').flatMap((e) => e.ops); p.scenarios = p.scenarios || []; p.scenarios.push({ id: Date.now(), name: 'EOT – excusable events', ops: JSON.parse(JSON.stringify(ops)) }); X.save(); App.toast(B('Scenario created – open Tools ▸ What-If Scenarios', 'تم إنشاء السيناريو – افتح Tools ▸ What-If Scenarios')); };
+      $('#an_rep').onclick = () => { App.delayTab = 'report'; redo(); };
+      $('#an_xl').onclick = () => X.exportEotXlsx(p, res);
+    }, 30);
+  } });
+
+  X.exportEotXlsx = function (p, res) {
+    const S = ensure(p), L = (c) => B(c[0], c[1]);
+    const sh = [
+      { name: 'Summary', title: B('EOT & delay analysis', 'تحليل التأخير وEOT') + ' – ' + p.name, cols: [{ h: 'Item', w: 44 }, { h: 'Value', w: 22, t: 'n' }], rows: [['Contract completion', fd(res.contract)], ['Unimpacted completion (current schedule)', fd(res.F0)], ['Completion with excusable events', fd(res.Fexc)], ['Completion with all events', fd(res.Fall)], ['EOT entitlement (working days)', res.totalExc], ['Revised completion (assessed)', fd(res.revised)], ['Approved days', res.approved], ['Revised completion (approved)', fd(res.revisedApproved)], ['Contractor-caused delay (working days)', res.totalAll - res.totalExc]] },
+      { name: 'Event register', title: B('Delay event register', 'سجل أحداث التأخير'), cols: [{ h: 'ID', w: 10 }, { h: 'Title', w: 36 }, { h: 'Cause', w: 28 }, { h: 'Class', w: 24 }, { h: 'Party', w: 16 }, { h: 'Clause', w: 14 }, { h: 'Awareness', t: 'd', w: 13 }, { h: 'Notice', t: 'd', w: 13 }, { h: 'Notice days', t: 'n', w: 10 }, { h: 'Notice status', w: 12 }, { h: 'Start', t: 'd', w: 13 }, { h: 'End', t: 'd', w: 13 }, { h: 'Claimed', t: 'n', w: 9 }, { h: 'Approved', t: 'n', w: 9 }, { h: 'Status', w: 11 }, { h: 'Fragnet', w: 60 }], rows: S.events.map((e) => { const ni = noticeInfo(e, S); return [e.id, e.title, lab(cause(e.cause)), L(CLS[e.cls]), lab(PARTY.find((x) => x[0] === e.party) || PARTY[4]), e.clause, e.aware, e.notice, ni.nd, ni.missing ? 'No notice' : ni.lateN ? 'Late' : 'On time', e.start, e.end, e.claimed || 0, e.approved || 0, e.status, X.opsLabel(e.ops)]; }) },
+      { name: 'TIA', title: B('Time impact analysis', 'تحليل الأثر الزمني'), cols: [{ h: 'ID', w: 10 }, { h: 'Event', w: 36 }, { h: 'Class', w: 24 }, { h: 'Nominal', t: 'n', w: 9 }, { h: 'Independent TIA', t: 'n', w: 12 }, { h: 'Cumulative TIA', t: 'n', w: 12 }, { h: 'Critical', w: 9 }, { h: 'TF', t: 'n', w: 7 }, { h: 'Float absorbed', t: 'n', w: 11 }, { h: 'Concurrent wd', t: 'n', w: 11 }, { h: 'EOT days', t: 'n', w: 9 }, { h: 'Compensable', t: 'n', w: 11 }, { h: 'Claimed', t: 'n', w: 9 }], rows: res.rows.map((r) => [r.ev.id, r.ev.title, L(CLS[r.ev.cls]), r.nominal, r.indep, r.cum, r.critical ? 'Yes' : 'No', r.tf, r.floatAbsorbed, r.overlap, r.assessed, r.ev.cls === 'EC' ? r.compens : '', r.ev.claimed || 0]) },
+      { name: 'Windows', title: B('Windows analysis', 'تحليل النوافذ'), cols: [{ h: 'From', w: 16 }, { h: 'To', w: 16 }, { h: 'Data date from', t: 'd', w: 14 }, { h: 'Data date to', t: 'd', w: 14 }, { h: 'Finish from', t: 'd', w: 14 }, { h: 'Finish to', t: 'd', w: 14 }, { h: 'Slip wd', t: 'n', w: 9 }, { h: 'Events', w: 30 }, { h: 'On critical path', w: 30 }], rows: res.windows.map((w) => [w.a.label, w.b.label, w.a.dataDate, w.b.dataDate, w.a.finish, w.b.finish, w.slip, w.events.map((e) => e.id).join(', '), w.attributed.map((e) => e.id).join(', ')]) }
+    ];
+    App.xlsxBook('EOT-Delay-Analysis.xlsx', sh);
+  };
+
+  /* ---------- tab: report ---------- */
+  X.buildReport = function (p, res, lang) {
+    const S = ensure(p), ar = lang === 'ar', T = (en, a) => (ar ? a : en), meta = S.meta || {}, L = (c) => (ar ? c[1] : c[0]), lbl = (a) => (ar ? a[2] : a[1]);
+    const cd = (n) => (n == null ? '–' : n > 0 ? '+' + n : String(n)), E = esc;
+    const sec = (n, t, body) => `<section><h2>${n}. ${E(t)}</h2>${body}</section>`;
+    const tbl = (h, rows, foot) => `<table><thead><tr>${h.map((x) => `<th>${E(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('') || `<tr><td colspan="${h.length}" class="c">–</td></tr>`}</tbody>${foot ? `<tfoot>${foot}</tfoot>` : ''}</table>`;
+    const dates = (a, b) => (a != null ? fd(a) : '–') + (b != null ? ' → ' + fd(b) : '');
+    const narr = (r) => {
+      const e = r.ev, ni = r.ni, c = CLS[e.cls];
+      const who = lbl(PARTY.find((x) => x[0] === e.party) || PARTY[4]), cz = lbl(cause(e.cause));
+      const notice = e.notice != null ? T(`notified on ${fd(e.notice)}${ni.nd != null ? ` (${ni.nd} days after awareness – ${ni.lateN ? 'LATE against the ' + S.noticeDays + '-day limit' : 'within the ' + S.noticeDays + '-day limit'})` : ''}`, `تم الإخطار بتاريخ ${fd(e.notice)}${ni.nd != null ? ` (بعد ${ni.nd} يوماً من العلم – ${ni.lateN ? 'متأخر عن مهلة ' + S.noticeDays + ' يوماً' : 'ضمن مهلة ' + S.noticeDays + ' يوماً'})` : ''}`) : T('no notice has been recorded', 'لم يتم تسجيل إخطار');
+      return T(`On ${fd(e.start)}, ${who} caused "${e.title}" (${cz}${e.clause ? ', clause ' + e.clause : ''}); ${notice}. The fragnet (${X.opsLabel(e.ops)}) was inserted into the unimpacted schedule: the independent impact on completion is ${cd(r.indep)} working day(s) and the cumulative impact is ${cd(r.cum)}. The affected activities were ${r.critical ? 'on' : 'not on'} the critical path${r.tf != null ? ` (total float ${r.tf} d)` : ''}${r.floatAbsorbed ? `; ${r.floatAbsorbed} day(s) were absorbed by float` : ''}. Classified as ${L(c)}${r.overlap ? `; concurrent with non-excusable delay for ${r.overlap} working day(s)` : ''}. Assessed entitlement: ${r.assessed} day(s) EOT, ${e.cls === 'EC' ? r.compens + ' day(s) with cost' : 'without cost'}${r.barred ? ' (claim barred for late notice)' : ''}.`,
+        `بتاريخ ${fd(e.start)}، تسبّب ${who} في "${e.title}" (${cz}${e.clause ? '، البند ' + e.clause : ''})؛ ${notice}. تم إدخال الـ Fragnet (${X.opsLabel(e.ops)}) في الجدول غير المتأثر: الأثر المستقل على الإنجاز ${cd(r.indep)} يوم عمل والأثر التراكمي ${cd(r.cum)}. الأنشطة المتأثرة ${r.critical ? 'على' : 'ليست على'} المسار الحرج${r.tf != null ? ` (الفلوت ${r.tf} يوم)` : ''}${r.floatAbsorbed ? `؛ استهلك الفلوت ${r.floatAbsorbed} يوم` : ''}. التصنيف: ${L(c)}${r.overlap ? `؛ متزامن مع تأخير غير معذور لمدة ${r.overlap} يوم عمل` : ''}. الاستحقاق المقيَّم: ${r.assessed} يوم EOT، ${e.cls === 'EC' ? r.compens + ' يوم مع تعويض' : 'بدون تعويض'}${r.barred ? ' (سقطت المطالبة لتأخر الإخطار)' : ''}.`);
+    };
+    const upd = (p.revs || []).filter((r) => r.snap).sort((a, b) => (a.dataDate || 0) - (b.dataDate || 0));
+    const totC = res.rows.reduce((n, r) => n + (r.ev.cls === 'EC' ? r.compens : 0), 0), totClaim = S.events.reduce((n, e) => n + (e.claimed || 0), 0);
+    const parts = [];
+    parts.push(sec(1, T('Executive summary', 'الملخص التنفيذي'), `<table class="kv"><tr><th>${T('Contract completion date', 'تاريخ الإنجاز التعاقدي')}</th><td>${fd(res.contract)}</td></tr><tr><th>${T('Extension of time claimed', 'مدة التمديد المطالب بها')}</th><td>${totClaim} ${T('days', 'يوم')}</td></tr><tr><th>${T('EOT assessed (working days)', 'EOT المقيَّم (أيام عمل)')}</th><td><b>${res.totalExc}</b></td></tr><tr><th>${T('Of which compensable', 'منها قابل للتعويض')}</th><td>${totC}</td></tr><tr><th>${T('Revised completion date (assessed)', 'تاريخ الإنجاز المعدّل (المقيَّم)')}</th><td><b>${fd(res.revised)}</b></td></tr><tr><th>${T('Approved so far', 'المعتمد حتى الآن')}</th><td>${res.approved} ${T('days', 'يوم')} → ${fd(res.revisedApproved)}</td></tr><tr><th>${T('Contractor-caused delay', 'التأخير بسبب المقاول')}</th><td>${res.totalAll - res.totalExc} ${T('working days', 'يوم عمل')}</td></tr></table>`));
+    parts.push(sec(2, T('Method, assumptions and calendars', 'المنهج والافتراضات والتقاويم'), `<ul><li>${T('Unimpacted schedule: the current schedule of the project, re-scheduled (CPM) with data date ' + fd(p.dataDate) + '.', 'الجدول غير المتأثر: الجدول الحالي للمشروع بعد إعادة الجدولة (CPM) بتاريخ بيانات ' + fd(p.dataDate) + '.')}</li><li>${T('Time impact analysis: each event’s fragnet is inserted into a copy; the movement of the project completion date, in working days of the project calendar, is the delay. Cumulative TIA applies excusable events in chronological order.', 'تحليل الأثر الزمني: يُدخل الـ Fragnet لكل حدث في نسخة من الجدول؛ وحركة تاريخ إنجاز المشروع بأيام عمل تقويم المشروع هي التأخير. الـ TIA التراكمي يطبّق الأحداث المعذورة زمنياً.')}</li><li>${T('Float is treated as project-owned; only days that move the completion date are credited. Concurrent delay (excusable with non-excusable) gives time but not money.', 'الفلوت ملك المشروع؛ تُحتسب فقط الأيام التي تحرّك تاريخ الإنجاز. التأخير المتزامن (معذور مع غير معذور) يمنح وقتاً بلا تعويض.')}</li><li>${T('Notice limits: ' + S.noticeDays + ' days from awareness; particulars within ' + S.particularsDays + ' days.' + (S.barLate ? ' Late notice bars the claim.' : ' Late notice is flagged, not barred.'), 'مهل الإخطار: ' + S.noticeDays + ' يوماً من العلم؛ والتفاصيل خلال ' + S.particularsDays + ' يوماً.' + (S.barLate ? ' الإخطار المتأخر يُسقط المطالبة.' : ' الإخطار المتأخر يُنبَّه إليه فقط دون إسقاط.'))}</li></ul>`));
+    parts.push(sec(3, T('Baseline and update register', 'سجل الـ Baseline والتحديثات'), tbl([T('Revision', 'المراجعة'), T('Data date', 'تاريخ البيانات'), T('Completion', 'الإنجاز'), T('Reason', 'السبب'), T('Status', 'الحالة')], upd.map((r) => `<tr><td>${E(r.label)}</td><td>${fd(r.dataDate)}</td><td>${fd(r.finish)}</td><td>${E(r.reasonText || r.reason || '')}</td><td>${E(r.status)}</td></tr>`))));
+    parts.push(sec(4, T('Delay event register', 'سجل أحداث التأخير'), tbl(['ID', T('Event', 'الحدث'), T('Cause', 'السبب'), T('Class', 'التصنيف'), T('Clause', 'البند'), T('Notice', 'الإخطار'), T('Claimed', 'مطالب'), T('Assessed', 'مقيَّم')], res.rows.map((r) => `<tr><td>${E(r.ev.id)}</td><td>${E(r.ev.title)}</td><td>${E(lbl(cause(r.ev.cause)))}</td><td>${E(L(CLS[r.ev.cls]))}</td><td>${E(r.ev.clause)}</td><td>${r.ni.missing ? T('None', 'لا يوجد') : (r.ni.lateN ? '⚠ ' : '✓ ') + fd(r.ev.notice)}</td><td class="r">${r.ev.claimed || 0}</td><td class="r">${r.assessed}</td></tr>`))));
+    parts.push(sec(5, T('Time impact analysis per event', 'تحليل الأثر الزمني لكل حدث'), tbl(['ID', T('Nominal', 'اسمي'), T('Independent', 'مستقل'), T('Critical?', 'حرج؟'), 'TF', T('Float absorbed', 'فلوت مستهلك'), T('Finish with event', 'النهاية مع الحدث')], res.rows.map((r) => `<tr><td>${E(r.ev.id)}</td><td class="r">${r.nominal || ''}</td><td class="r">${cd(r.indep)}</td><td>${r.critical ? T('Yes', 'نعم') : T('No', 'لا')}</td><td class="r">${r.tf == null ? '' : r.tf}</td><td class="r">${r.floatAbsorbed || ''}</td><td>${fd(r.f1)}</td></tr>`))));
+    parts.push(sec(6, T('Cumulative EOT', 'EOT التراكمي'), tbl([T('Order', 'الترتيب'), 'ID', T('Event start', 'بداية الحدث'), T('Cumulative Δ (wd)', 'Δ تراكمي (يوم)'), T('EOT days', 'أيام EOT'), T('Compensable', 'قابل للتعويض')], res.rows.map((r, i) => `<tr><td>${i + 1}</td><td>${E(r.ev.id)}</td><td>${fd(r.ev.start)}</td><td class="r">${r.cum == null ? '–' : cd(r.cum)}</td><td class="r">${r.assessed}</td><td class="r">${r.ev.cls === 'EC' ? r.compens : '–'}</td></tr>`), `<tr><td colspan="4"><b>${T('Total', 'الإجمالي')}</b></td><td class="r"><b>${res.totalExc}</b></td><td class="r"><b>${totC}</b></td></tr>`) + `<div class="chart">${X.waterfall(res)}</div>`));
+    parts.push(sec(7, T('Windows analysis', 'تحليل النوافذ'), res.windows.length ? tbl([T('Window', 'النافذة'), T('Data dates', 'تواريخ البيانات'), T('Completion', 'الإنجاز'), T('Slip (wd)', 'الانزلاق'), T('Events on critical path', 'أحداث على المسار الحرج')], res.windows.map((w) => `<tr><td>${E(w.a.label)} → ${E(w.b.label)}</td><td>${dates(w.a.dataDate, w.b.dataDate)}</td><td>${dates(w.a.finish, w.b.finish)}</td><td class="r">${cd(w.slip)}</td><td>${E(w.attributed.map((e) => e.id).join(', ')) || '–'}</td></tr>`)) : `<p>${T('Fewer than two saved revisions – not performed.', 'أقل من مراجعتين محفوظتين – لم يُجرَ.')}</p>`));
+    parts.push(sec(8, T('Concurrency and float', 'التزامن والفلوت'), tbl(['ID', T('Class', 'التصنيف'), T('Concurrent with non-excusable (wd)', 'متزامن مع غير معذور (يوم)'), T('Float absorbed (d)', 'فلوت مستهلك (يوم)'), T('Compensable days', 'أيام قابلة للتعويض')], res.rows.map((r) => `<tr><td>${E(r.ev.id)}</td><td>${E(L(CLS[r.ev.cls]))}</td><td class="r">${r.overlap || 0}</td><td class="r">${r.floatAbsorbed || 0}</td><td class="r">${r.ev.cls === 'EC' ? r.compens : '–'}</td></tr>`))));
+    parts.push(sec(9, T('Event narratives', 'السرد التفصيلي للأحداث'), res.rows.map((r) => `<div class="nar"><h3>${E(r.ev.id)} – ${E(r.ev.title)}</h3><p>${E(narr(r))}</p>${r.ev.desc ? `<p class="mut">${E(r.ev.desc)}</p>` : ''}</div>`).join('')));
+    parts.push(sec(10, T('Fragnet appendix', 'ملحق الـ Fragnets'), tbl(['ID', T('Fragnet changes', 'تغييرات الـ Fragnet')], res.rows.map((r) => `<tr><td>${E(r.ev.id)}</td><td>${E(X.opsLabel(r.ev.ops))}</td></tr>`))));
+    parts.push(sec(11, T('Reservations', 'التحفظات'), `<p>${T('This analysis is based on the schedule as held in the application and on the facts recorded in the event register. The contractor’s right to revise this assessment as further information becomes available is reserved. Results are indicative until agreed by the parties.', 'يستند هذا التحليل إلى الجدول الموجود في التطبيق وإلى الوقائع المسجلة في سجل الأحداث. يُحتفظ بالحق في تعديل هذا التقييم عند توفر معلومات إضافية. النتائج استرشادية إلى حين اتفاق الأطراف.')}</p>`));
+    const meta2 = [[T('Project', 'المشروع'), p.name], [T('Contract no.', 'رقم العقد'), meta.contractNo], [T('Employer', 'صاحب العمل'), meta.employer], [T('Contractor', 'المقاول'), meta.contractor], [T('Prepared by', 'أعدّه'), meta.by], [T('Report date', 'تاريخ التقرير'), meta.date || new Date().toLocaleDateString('en-GB')], [T('Data date', 'تاريخ البيانات'), fd(p.dataDate)]].filter((x) => x[1]);
+    const style = `body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:#222;margin:0;padding:24px 32px;line-height:1.55;font-size:13px}h1{color:#00778B;margin:0 0 4px;font-size:24px}h2{color:#00778B;border-bottom:2px solid #00778B;padding-bottom:3px;margin:26px 0 8px;font-size:17px}h3{margin:12px 0 2px;font-size:14px}table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px}th{background:#00778B;color:#fff;padding:5px 8px;text-align:start}td{padding:4px 8px;border-bottom:1px solid #d9e6e9;vertical-align:top}td.r{text-align:end}td.c{text-align:center;color:#888}tfoot td{border-top:2px solid #00778B;background:#f2f8f9}table.kv th{width:42%;background:#eef6f7;color:#222}.mut{color:#666}.nar{page-break-inside:avoid}.chart{margin:10px 0}.meta{display:flex;flex-wrap:wrap;gap:4px 24px;margin:8px 0 14px;font-size:12px;color:#444}section{page-break-inside:auto}@media print{body{padding:0}h2{page-break-after:avoid}}`;
+    return `<!doctype html><html lang="${ar ? 'ar' : 'en'}" dir="${ar ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><title>${E(T('Delay & EOT Report', 'تقرير التأخير وتمديد المدة'))} – ${E(p.name)}</title><style>${style}</style></head><body><h1>${E(T('Delay & Extension of Time (EOT) Report', 'تقرير التأخير وتمديد المدة (EOT)'))}</h1><div class="meta">${meta2.map((x) => `<span><b>${E(x[0])}:</b> ${E(x[1])}</span>`).join('')}</div>${parts.join('')}<p class="mut" style="margin-top:24px">${E(P6.versionName())}</p></body></html>`;
+  };
+
+  X.tabs.push({ id: 'report', label: () => B('Delay Report', 'تقرير التأخير'), render(el, redo) {
+    const p = App.p, S = ensure(p), m = S.meta;
+    if (!S.events.some((e) => (e.ops || []).length && e.status !== 'Rejected')) { el.innerHTML = `<p class="hint">${esc(B('Add events with a fragnet in the EOT Register first.', 'أضف أحداثاً بها Fragnet في سجل EOT أولاً.'))}</p>`; return; }
+    const f = (id, ph, v) => `<label>${esc(ph)}<input id="${id}" value="${esc(v || '')}"></label>`;
+    el.innerHTML = `<div class="dly-bar">${f('rp_c', B('Contract no.', 'رقم العقد'), m.contractNo)}${f('rp_e', B('Employer', 'صاحب العمل'), m.employer)}${f('rp_k', B('Contractor', 'المقاول'), m.contractor)}${f('rp_b', B('Prepared by', 'أعدّه'), m.by)}<label>${esc(B('Language', 'اللغة'))}<select id="rp_l"><option value="en">English</option><option value="ar"${P6.dir() === 'rtl' ? ' selected' : ''}>العربية</option></select></label><button class="btn pri" id="rp_go">${esc(B('Generate report', 'إنشاء التقرير'))}</button><button class="btn" id="rp_print" disabled>${esc(B('Print / PDF', 'طباعة / PDF'))}</button><button class="btn" id="rp_dl" disabled>${esc(B('Download .html', 'تنزيل .html'))}</button></div><iframe id="rp_fr" style="width:100%;height:68vh;border:1px solid #cfe0e3;border-radius:8px;background:#fff"></iframe>`;
+    const $ = (s) => el.querySelector(s); let html = '';
+    $('#rp_go').onclick = () => {
+      S.meta = { contractNo: $('#rp_c').value, employer: $('#rp_e').value, contractor: $('#rp_k').value, by: $('#rp_b').value }; X.save();
+      $('#rp_fr').srcdoc = '<p style="font-family:sans-serif">…</p>';
+      setTimeout(() => { try { const res = X.eotAnalyse(p); X.last = res; html = X.buildReport(p, res, $('#rp_l').value); $('#rp_fr').srcdoc = html; $('#rp_print').disabled = false; $('#rp_dl').disabled = false; } catch (e) { console.error(e); App.toast(String(e.message || e), true); } }, 30);
+    };
+    $('#rp_print').onclick = () => { const w = $('#rp_fr').contentWindow; w.focus(); w.print(); };
+    $('#rp_dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'EOT-Delay-Report-' + p.name.replace(/[^\w\-]+/g, '_') + '-v' + P6.VERSION + '.html'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
+    void redo;
+  } });
+})(window);
+
+</script>
+<script>
+/* P6 Web – Fix Out-of-Sequence. Detects progress recorded out of sequence per relationship type (FS/SS/FF/SF, with lag), shows what P6 would do under
+   Retained Logic / Progress Override, proposes a correction per case, previews the impact on a copy and applies the chosen fixes with an audit log
+   (p.oosLog) that can be exported for claims. Never deletes logic automatically. Loop and duplicate checks protect the network. */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App, X = P6.delay;
+  const { esc, B, clone, fin, wdays, fd, ensure } = X;
+
+  /* detection: returns [{ r, P, S, sev, kase, why, fix }] */
+  P6.oosDetect = function (p, opt) {
+    opt = Object.assign({ skipHammock: true }, opt);
+    const by = new Map(p.tasks.map((t) => [t.id, t])), out = [], dd = p.dataDate;
+    const started = (t) => t.status !== 'NS' && (t.as != null || t.status === 'C'), done = (t) => t.status === 'C';
+    for (const r of p.rels) {
+      const Pt = by.get(r.p), St = by.get(r.s); if (!Pt || !St) continue;
+      if (opt.skipHammock && (P6.isHammock(Pt) || P6.isHammock(St))) continue;
+      if (done(Pt) && done(St)) continue;
+      const type = r.type || 'FS', lag = r.lag || 0; let kase = null, sev = 0, why = '';
+      if (type === 'FS') {
+        if (started(St) && !done(Pt)) { kase = Pt.status === 'NS' ? 'pred-not-started' : 'pred-partial'; sev = done(St) ? 5 : Pt.status === 'NS' ? 4 : 3; why = B('Successor started while the predecessor is ' + (Pt.status === 'NS' ? 'not started' : 'unfinished'), 'اللاحق بدأ بينما السابق ' + (Pt.status === 'NS' ? 'لم يبدأ' : 'لم ينتهِ')); }
+        else if (started(St) && done(Pt) && Pt.af != null && St.as != null && St.as < Pt.af + (lag > 0 ? lag : 0) + (lag < 0 ? lag : 0)) { kase = 'date'; sev = 2; why = B('Successor started before the predecessor finished (+lag)', 'اللاحق بدأ قبل انتهاء السابق (+lag)'); }
+      } else if (type === 'SS') {
+        if (started(St) && !started(Pt)) { kase = 'pred-not-started'; sev = done(St) ? 5 : 4; why = B('Successor started but the predecessor has not', 'اللاحق بدأ والسابق لم يبدأ'); }
+        else if (started(St) && Pt.as != null && St.as != null && St.as < Pt.as + lag) { kase = 'date'; sev = 2; why = B('Successor started before predecessor start + lag', 'اللاحق بدأ قبل بداية السابق + lag'); }
+      } else if (type === 'FF') {
+        if (done(St) && !done(Pt)) { kase = 'succ-done-pred-open'; sev = 5; why = B('Successor completed while the predecessor is incomplete', 'اللاحق اكتمل والسابق غير مكتمل'); }
+        else if (done(St) && done(Pt) && St.af != null && Pt.af != null && St.af < Pt.af + lag) { kase = 'date'; sev = 2; why = B('Successor finished before predecessor finish + lag', 'اللاحق انتهى قبل نهاية السابق + lag'); }
+      } else if (type === 'SF') {
+        if (done(St) && !started(Pt)) { kase = 'succ-done-pred-open'; sev = 5; why = B('Successor completed but the predecessor has not started', 'اللاحق اكتمل والسابق لم يبدأ'); }
+        else if (done(St) && Pt.as != null && St.af != null && St.af < Pt.as + lag) { kase = 'date'; sev = 2; why = B('Successor finished before predecessor start + lag', 'اللاحق انتهى قبل بداية السابق + lag'); }
+      }
+      if (!kase) continue;
+      // default fix per the planner guidance: only FS with a partly-done predecessor is auto-suggested; everything else is reviewed by a person
+      const fix = type === 'FS' && kase === 'pred-partial' ? 'ss' : 'keep';
+      out.push({ r, P: Pt, S: St, sev, kase, why, fix, type, lag });
+    }
+    return out.sort((a, b) => b.sev - a.sev || (a.S.as || 0) - (b.S.as || 0));
+  };
+  void 0;
+
+  const ACT = { keep: () => B('Keep (document)', 'إبقاء (مع التوثيق)'), ss: () => B('FS → SS (keep lag)', 'FS → SS (مع نفس الـ lag)'), ssff: () => B('SS + FF pair', 'زوج SS + FF'), del: () => B('Delete logic', 'حذف العلاقة') };
+  const REASON = [['data', 'Actual dates wrong – corrected', 'التواريخ الفعلية خاطئة – تم تصحيحها'], ['logic', 'Logic was wrong', 'المنطق كان خاطئاً'], ['overlap', 'Genuine overlap in the field', 'تداخل فعلي في الموقع'], ['other', 'Other', 'أخرى']];
+
+  function applyFix(p, o, act) {
+    const r = p.rels.find((q) => q.id === o.r.id); if (!r) return null;
+    const old = (r.type || 'FS') + (r.lag ? ' ' + r.lag : '');
+    if (act === 'del') { p.rels = p.rels.filter((q) => q !== r); return { from: old, to: B('deleted', 'محذوفة') }; }
+    if (act === 'ss' || act === 'ssff') {
+      if (p.rels.some((q) => q !== r && q.p === r.p && q.s === r.s && q.type === 'SS')) return { skipped: B('SS already exists between the pair', 'يوجد SS بين النشاطين بالفعل') };
+      const wasFS = (r.type || 'FS') === 'FS'; r.type = 'SS';
+      let to = 'SS' + (r.lag ? ' ' + r.lag : '');
+      if ((act === 'ssff' || wasFS) && act === 'ssff' && !p.rels.some((q) => q.p === r.p && q.s === r.s && q.type === 'FF')) { p.rels.push({ id: P6.nextId(p), p: r.p, s: r.s, type: 'FF', lag: 0 }); to += ' + FF 0'; }
+      return { from: old, to };
+    }
+    return null;
+  }
+
+  X.tabs.push({ id: 'oos', label: () => B('Fix Out-of-Sequence', 'تصحيح الأوت أوف سيكونس'), render(el, redo) {
+    const p = App.p; ensure(p);
+    const rows = P6.oosDetect(p), act = new Map(rows.map((o) => [o.r.id, o.fix])), why = new Map(rows.map((o) => [o.r.id, 'data'])), cm = new Map();
+    const finNow = fin((() => { const t = clone(p); P6.schedule(t); return t; })());
+    const optFin = (logic) => { const t = clone(p); t.schedOpts = Object.assign({ logic: 'retained', crit: 'tf', critFloat: 0, lagCal: 'pred', tfMode: 'finish', openCrit: false }, t.schedOpts, { logic }); t.retained = logic !== 'override'; P6.schedule(t); return fin(t); };
+    const fRet = optFin('retained'), fOvr = optFin('override'), curLogic = (p.schedOpts && p.schedOpts.logic) || (p.retained === false ? 'override' : 'retained');
+    const sevN = (s) => rows.filter((o) => o.sev === s).length;
+    const sevChip = (s) => `<span class="dsh-chip" style="background:${s >= 5 ? '#c0392b' : s === 4 ? '#e67e22' : s === 3 ? '#d4ac0d' : '#7f8c8d'}22">${['', '', B('Low', 'منخفض'), B('Medium', 'متوسط'), B('High', 'مرتفع'), B('Critical', 'حرج')][s]}</span>`;
+    el.innerHTML = `<div class="cmpcards"><div class="cmpc ${rows.length ? 'bad' : 'good'}"><b>${rows.length}</b><span>${esc(B('Out-of-sequence relationships', 'علاقات خارج التسلسل'))}</span></div><div class="cmpc"><b>${sevN(5)}</b><span>${esc(B('Critical', 'حرج'))}</span></div><div class="cmpc"><b>${sevN(4)}</b><span>${esc(B('High', 'مرتفع'))}</span></div><div class="cmpc"><b>${sevN(3) + sevN(2)}</b><span>${esc(B('Medium / low', 'متوسط / منخفض'))}</span></div></div>
+      <div class="tbl-scroll" style="max-height:130px;margin-bottom:8px"><table class="mini cmpt"><thead><tr><th>${esc(B('Scheduling option (what P6 does with OOS progress)', 'خيار الجدولة (تعامل P6 مع التقدم خارج التسلسل)'))}</th><th>${esc(B('Project finish', 'نهاية المشروع'))}</th><th></th></tr></thead><tbody>
+      <tr><td><b>Retained Logic</b> – ${esc(B('remaining work of the OOS successor waits for its predecessor (conservative)', 'العمل المتبقي للاحق ينتظر السابق (متحفظ)'))}</td><td>${fd(fRet)}</td><td>${curLogic === 'retained' ? '✓ ' + esc(B('current', 'الحالي')) : `<button class="btn" data-lg="retained">${esc(B('Use', 'استخدم'))}</button>`}</td></tr>
+      <tr><td><b>Progress Override</b> – ${esc(B('remaining work ignores the OOS logic (can shorten the finish; logic is silently lost)', 'العمل المتبقي يتجاهل المنطق (قد يقصّر النهاية؛ ويضيع المنطق صامتاً)'))}</td><td>${fd(fOvr)}${fOvr !== fRet ? ' (' + (wdays(p, fRet, fOvr) > 0 ? '+' : '') + wdays(p, fRet, fOvr) + ' wd)' : ''}</td><td>${curLogic === 'override' ? '✓ ' + esc(B('current', 'الحالي')) : `<button class="btn" data-lg="override">${esc(B('Use', 'استخدم'))}</button>`}</td></tr></tbody></table></div>
+      ${rows.length ? `<div class="dly-bar"><button class="btn" id="oo_auto">${esc(B('Reset to suggested fixes', 'العودة للإصلاحات المقترحة'))}</button><button class="btn" id="oo_prev">${esc(B('Preview impact', 'معاينة الأثر'))}</button><button class="btn pri" id="oo_apply">${esc(B('Apply selected fixes', 'طبّق الإصلاحات المختارة'))}</button><span id="oo_imp"></span></div>
+      <div class="tbl-scroll" style="max-height:38vh"><table class="mini cmpt"><thead><tr><th>${esc(B('Severity', 'الخطورة'))}</th><th>${esc(B('Predecessor', 'السابق'))}</th><th>${esc(B('Pred. status', 'حالة السابق'))}</th><th>${esc(B('Rel.', 'العلاقة'))}</th><th>${esc(B('Successor', 'اللاحق'))}</th><th>${esc(B('Succ. actuals', 'فعلي اللاحق'))}</th><th>${esc(B('Issue', 'المشكلة'))}</th><th>${esc(B('Fix', 'الإصلاح'))}</th><th>${esc(B('Reason', 'السبب'))}</th><th>${esc(B('Comment', 'تعليق'))}</th></tr></thead><tbody>${rows.slice(0, 400).map((o) => `<tr data-id="${o.r.id}"><td>${sevChip(o.sev)}</td><td>${esc(o.P.code)} – ${esc(o.P.name)}</td><td>${esc(o.P.status)}${o.P.status === 'IP' ? ' ' + (o.P.pct || 0) + '%' : ''}</td><td>${o.type}${o.lag ? ' ' + (o.lag > 0 ? '+' : '') + o.lag : ''}</td><td>${esc(o.S.code)} – ${esc(o.S.name)}</td><td>${o.S.as != null ? fd(o.S.as) : ''}${o.S.af != null ? ' → ' + fd(o.S.af) : ''}</td><td>${esc(o.why)}</td><td><select class="oo_a">${Object.keys(ACT).map((k) => `<option value="${k}"${act.get(o.r.id) === k ? ' selected' : ''}>${esc(ACT[k]())}</option>`).join('')}</select></td><td><select class="oo_r">${REASON.map((x) => `<option value="${x[0]}">${esc(B(x[1], x[2]))}</option>`).join('')}</select></td><td><input class="oo_c" style="width:130px"></td></tr>`).join('')}</tbody></table></div>
+      <p class="hint">${esc(B('Suggested: FS → SS only where the predecessor is partly done. Everything else is left to your judgement – fix the actual dates if they are wrong, delete the logic only if it was wrong. FS → SS drops the finish constraint: use "SS + FF pair" to keep it.', 'المقترح: تحويل FS إلى SS فقط حيث السابق منفّذ جزئياً. الباقي بحكمك – صحّح التواريخ الفعلية إن كانت خاطئة، واحذف العلاقة فقط إن كان المنطق خاطئاً. تحويل FS إلى SS يُسقط قيد النهاية: استخدم "زوج SS + FF" للإبقاء عليه.'))}</p>` : `<p class="hint">✓ ${esc(B('No out-of-sequence progress found.', 'لا يوجد تقدم خارج التسلسل.'))}</p>`}
+      <h4>${esc(B('Audit log', 'سجل التعديلات'))} (${p.oosLog.length}) <button class="btn" id="oo_xl"${p.oosLog.length ? '' : ' disabled'}>${esc(B('Export to Excel', 'تصدير Excel'))}</button></h4>
+      <div class="tbl-scroll" style="max-height:20vh"><table class="mini cmpt"><thead><tr><th>${esc(B('Date', 'التاريخ'))}</th><th>${esc(B('Predecessor → Successor', 'السابق ← اللاحق'))}</th><th>${esc(B('Change', 'التغيير'))}</th><th>${esc(B('Reason', 'السبب'))}</th><th>${esc(B('Comment', 'تعليق'))}</th><th>${esc(B('Finish before → after', 'النهاية قبل ← بعد'))}</th></tr></thead><tbody>${p.oosLog.slice().reverse().slice(0, 200).map((l) => `<tr><td>${esc(l.ts)}</td><td>${esc(l.pred)} → ${esc(l.succ)}</td><td>${esc(l.from)} → ${esc(l.to)}</td><td>${esc(l.reason)}</td><td>${esc(l.comment || '')}</td><td>${esc(l.finBefore)} → ${esc(l.finAfter)}</td></tr>`).join('') || `<tr><td colspan="6" style="color:#888;text-align:center">–</td></tr>`}</tbody></table></div>`;
+    const $ = (s) => el.querySelector(s);
+    const collect = () => { el.querySelectorAll('tbody tr[data-id]').forEach((tr) => { const id = +tr.dataset.id; act.set(id, tr.querySelector('.oo_a').value); why.set(id, tr.querySelector('.oo_r').value); cm.set(id, tr.querySelector('.oo_c').value); }); };
+    el.querySelectorAll('[data-lg]').forEach((b) => { b.onclick = () => { App.mutate(B('Scheduling option', 'خيار الجدولة'), () => { p.schedOpts = Object.assign({ logic: 'retained', crit: 'tf', critFloat: 0, lagCal: 'pred', tfMode: 'finish', openCrit: false }, p.schedOpts, { logic: b.dataset.lg }); p.retained = b.dataset.lg !== 'override'; }); redo(); }; });
+    if (rows.length) {
+      $('#oo_auto').onclick = () => { rows.forEach((o) => act.set(o.r.id, o.fix)); el.querySelectorAll('.oo_a').forEach((s) => { s.value = act.get(+s.closest('tr').dataset.id); }); };
+      const trial = () => { collect(); const t = clone(p); let n = 0, skip = []; for (const o of rows) { const a = act.get(o.r.id); if (a && a !== 'keep') { const rs = applyFix(t, o, a); if (rs && rs.skipped) skip.push(o.P.code + '→' + o.S.code + ': ' + rs.skipped); else n++; } } P6.schedule(t); return { t, n, skip }; };
+      $('#oo_prev').onclick = () => { const { t, n, skip } = trial(), loops = t.loops && t.loops.length, after = fin(t), left = P6.oosDetect(t).length; $('#oo_imp').innerHTML = `<b>${n}</b> ${esc(B('fixes', 'إصلاح'))} → ${esc(B('finish', 'النهاية'))} ${fd(finNow)} → <b class="${after > finNow ? 'cmp-bad' : 'cmp-good'}">${fd(after)}</b> (${wdays(p, finNow, after) > 0 ? '+' : ''}${wdays(p, finNow, after)} wd) · ${esc(B('OOS left', 'متبقي OOS'))}: ${left}${loops ? ' · <span class="cmp-bad">⚠ ' + esc(B('creates a loop – blocked', 'يسبب حلقة – ممنوع')) + '</span>' : ''}${skip.length ? ' · ' + esc(skip.join('; ')) : ''}`; };
+      $('#oo_apply').onclick = () => {
+        const { t, n, skip } = trial(); if (t.loops && t.loops.length) return App.toast(B('These fixes create a logic loop – not applied', 'هذه الإصلاحات تسبب حلقة منطقية – لم تُطبّق'), true);
+        const todo = rows.filter((o) => act.get(o.r.id) && act.get(o.r.id) !== 'keep'), kept = rows.filter((o) => act.get(o.r.id) === 'keep' && (cm.get(o.r.id) || why.get(o.r.id) !== 'data'));
+        if (!todo.length && !kept.length) return App.toast(B('No fixes selected', 'لم تُختر إصلاحات'), true);
+        const before = finNow, ts = new Date().toLocaleString('en-GB'), logs = [], rl = new Map(REASON.map((x) => [x[0], B(x[1], x[2])]));
+        App.mutate(B('Fix out-of-sequence logic', 'تصحيح منطق الأوت أوف سيكونس'), () => {
+          for (const o of todo) { const rs = applyFix(App.p, o, act.get(o.r.id)); if (rs && !rs.skipped) logs.push({ ts, pred: o.P.code, succ: o.S.code, from: rs.from, to: rs.to, reason: rl.get(why.get(o.r.id)), comment: cm.get(o.r.id) || '' }); }
+          for (const o of kept) logs.push({ ts, pred: o.P.code, succ: o.S.code, from: o.type + (o.lag ? ' ' + o.lag : ''), to: B('kept', 'أُبقيت'), reason: rl.get(why.get(o.r.id)), comment: cm.get(o.r.id) || '' });
+        });
+        const after = fin(App.p); logs.forEach((l) => { l.finBefore = fd(before); l.finAfter = fd(after); }); App.p.oosLog = (App.p.oosLog || []).concat(logs); X.save();
+        if (!App.cfg.auto) App.runSchedule();
+        App.toast(B(n + ' fixes applied (logged)', 'تم تطبيق ' + n + ' إصلاح (موثّق)') + (skip.length ? ' – ' + skip.length + ' ' + B('skipped', 'تُخطّي') : '')); redo();
+      };
+    }
+    const xl = $('#oo_xl'); if (xl) xl.onclick = () => App.xlsxBook('OOS-Fix-Log.xlsx', [{ name: 'OOS fixes', title: B('Out-of-sequence fix log', 'سجل تصحيح الأوت أوف سيكونس'), subtitle: p.name, cols: [{ h: 'Date', w: 20 }, { h: 'Predecessor', w: 16 }, { h: 'Successor', w: 16 }, { h: 'From', w: 14 }, { h: 'To', w: 16 }, { h: 'Reason', w: 32 }, { h: 'Comment', w: 40 }, { h: 'Finish before', w: 14 }, { h: 'Finish after', w: 14 }], rows: p.oosLog.map((l) => [l.ts, l.pred, l.succ, l.from, l.to, l.reason, l.comment, l.finBefore, l.finAfter]) }]);
+  } });
+})(window);
+
+</script>
+<script>
+/* P6 Web – Recovery schedule. Given a target finish, finds the recovery actions that really bring the finish back (each action is tested by re-scheduling a copy)
+   and builds an action register: logic clean-up (remove lags), fast-tracking (FS → SS + lag with an FF tail) and duration compression (with a cost premium).
+   Greedy: best real-days-gained per unit of risk/cost first, repeated until the target is met or nothing helps. Gains are cumulative, not additive.
+   Output: before/after, required vs achievable days, action register (owner / due), apply to the schedule, save as What-If scenario, Excel. */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App, X = P6.delay;
+  const { esc, B, clone, fin, wdays, fd, pd, ensure } = X;
+  const RISK = { logic: 1, compress: 2, fast: 3 };
+  const LV = { logic: () => B('Logic clean-up', 'تنظيف المنطق'), fast: () => B('Fast-track', 'تداخل (Fast-track)'), compress: () => B('Compress duration', 'ضغط المدة') };
+
+  P6.recoveryPlan = function (p, o) {
+    o = Object.assign({ target: null, overlapPct: 50, tail: 2, compressPct: 20, minDur: 1, premium: 25, levers: { logic: true, fast: true, compress: true }, nearFloat: 5, maxActions: 25, maxMs: 9000 }, o);
+    const t0 = Date.now(), touched = new Set(), M = P6.metrics(p), cost = (id) => { const m = M.T.get(id); return m ? m.bc || 0 : 0; };
+    let T = clone(p); P6.schedule(T); const F0 = fin(T); let Fc = F0;
+    const gap0 = o.target != null ? wdays(p, o.target, F0) : 0, actions = []; let timedOut = false;
+    while (actions.length < o.maxActions && (o.target == null || Fc > o.target)) {
+      if (Date.now() - t0 > o.maxMs) { timedOut = true; break; }
+      const open = T.tasks.filter((t) => t.status !== 'C' && !P6.isHammock(t) && t.tf != null && t.tf <= o.nearFloat).sort((a, b) => a.tf - b.tf).slice(0, 60), ids = new Set(open.map((t) => t.id)), by = new Map(T.tasks.map((t) => [t.id, t]));
+      const cands = [];
+      if (o.levers.logic) for (const r of T.rels) if ((r.lag || 0) > 0 && ids.has(r.s) && !touched.has(r.p + '>' + r.s)) { const a = by.get(r.p), b = by.get(r.s); cands.push({ key: r.p + '>' + r.s, lever: 'logic', op: { k: 'rel', from: a.code, to: b.code, type: r.type || 'FS', lag: 0 }, desc: `${a.code} → ${b.code}: lag ${r.lag} → 0`, cost: 0 }); }
+      if (o.levers.fast) for (const r of T.rels) { const a = by.get(r.p), b = by.get(r.s); if (!a || !b || (r.type || 'FS') !== 'FS' || (r.lag || 0) > 0 || touched.has(r.p + '>' + r.s) || !ids.has(r.s) || a.status === 'C' || b.status !== 'NS' || P6.isMile(a) || P6.isMile(b)) continue; const rem = a.status === 'NS' ? a.dur : a.rem, lag = Math.max(1, Math.round((rem * o.overlapPct) / 100)); if (rem < 2 || lag >= rem) continue; cands.push({ key: r.p + '>' + r.s, lever: 'fast', op: { k: 'rel', from: a.code, to: b.code, type: 'SS', lag, ff: Math.min(o.tail, Math.max(0, b.dur - 1)) }, desc: `${a.code} → ${b.code}: FS → SS+${lag} (FF+${Math.min(o.tail, Math.max(0, b.dur - 1))})`, cost: 0 }); }
+      if (o.levers.compress) for (const t of open) { if (P6.isMile(t)) continue; const cur = t.status === 'NS' ? t.dur : t.rem, nd = Math.max(o.minDur, Math.round(cur * (1 - o.compressPct / 100))); if (nd >= cur || cur < 2) continue; const newDur = t.status === 'NS' ? nd : t.dur - (cur - nd); cands.push({ lever: 'compress', op: { k: 'dur', code: t.code, mode: 'set', v: newDur }, desc: `${t.code}: ${t.status === 'NS' ? t.dur : t.rem} → ${nd} d`, cost: (cost(t.id) * o.premium) / 100 * ((cur - nd) / cur) }); }
+      const maxCost = Math.max(1, ...cands.map((c) => c.cost));
+      let best = null;
+      for (const c of cands) {
+        if (Date.now() - t0 > o.maxMs) { timedOut = true; break; }
+        const X2 = clone(T); P6.applyScenario(X2, [c.op]); P6.schedule(X2); const f = fin(X2), gain = wdays(p, f, Fc) || 0;
+        if (gain <= 0) continue; const score = gain / (RISK[c.lever] + (2 * c.cost) / maxCost);
+        if (!best || score > best.score || (score === best.score && gain > best.gain)) best = Object.assign({}, c, { gain, score, f, T: X2 });
+      }
+      if (!best) break;
+      if (best.key) touched.add(best.key);
+      T = best.T; Fc = best.f; actions.push({ lever: best.lever, op: best.op, desc: best.desc, gain: best.gain, cum: wdays(p, Fc, F0), cost: best.cost, risk: RISK[best.lever], f: Fc });
+      if (timedOut) break;
+    }
+    const achieved = wdays(p, Fc, F0) || 0, shortfall = o.target != null ? Math.max(0, wdays(p, o.target, Fc) || 0) : 0;
+    return { F0, F1: Fc, gap: gap0, achieved, shortfall, actions, totalCost: actions.reduce((n, a) => n + a.cost, 0), timedOut, tr: T, opt: o };
+  };
+
+  X.tabs.push({ id: 'recovery', label: () => B('Recovery Schedule', 'جدول الاسترداد'), render(el, redo) {
+    const p = App.p, S = ensure(p); p.recov = p.recov || {};
+    const cal = p.cals.find((c) => c.id === p.defCal) || p.cals[0], appr = S.events.reduce((n, e) => n + (e.status !== 'Rejected' ? +e.approved || 0 : 0), 0);
+    const blF = p.tasks.reduce((m, t) => (t.bf != null && t.bf > m ? t.bf : m), -Infinity);
+    const defTarget = p.recov.target != null ? p.recov.target : S.contractFinish != null ? P6.shift(cal, S.contractFinish, appr) : isFinite(blF) ? blF : null;
+    const R = Object.assign({ overlapPct: 50, tail: 2, compressPct: 20, premium: 25, nearFloat: 5, logic: true, fast: true, compress: true }, p.recov.opt);
+    const num = (id, v, w) => `<input id="${id}" type="number" value="${v}" style="width:${w || 60}px">`;
+    el.innerHTML = `<div class="dly-bar"><label>${esc(B('Target finish', 'تاريخ النهاية المستهدف'))} <input id="rc_t" value="${esc(fd(defTarget))}" placeholder="dd-mmm-yy" style="width:110px"></label><span class="hint" id="rc_gap"></span></div>
+      <div class="dly-bar"><label><input type="checkbox" id="rc_l"${R.logic ? ' checked' : ''}> ${esc(LV.logic())}</label><label><input type="checkbox" id="rc_f"${R.fast ? ' checked' : ''}> ${esc(LV.fast())}: ${esc(B('overlap %', 'نسبة التداخل %'))} ${num('rc_op', R.overlapPct)} ${esc(B('FF tail (d)', 'ذيل FF (يوم)'))} ${num('rc_tl', R.tail, 45)}</label><label><input type="checkbox" id="rc_c"${R.compress ? ' checked' : ''}> ${esc(LV.compress())}: ${esc(B('compress %', 'نسبة الضغط %'))} ${num('rc_cp', R.compressPct)} ${esc(B('cost premium %', 'علاوة التكلفة %'))} ${num('rc_pr', R.premium)}</label><label>${esc(B('Near-critical float ≤', 'فلوت شبه حرج ≤'))} ${num('rc_nf', R.nearFloat, 45)}</label><button class="btn pri" id="rc_run">▶ ${esc(B('Build recovery plan', 'ابنِ خطة الاسترداد'))}</button></div><div id="rc_out"></div>
+      <p class="hint">${esc(B('The target defaults to the contract completion + approved EOT (EOT tab). Each action is tested on a copy – the days shown are real gains on the critical path, and they are cumulative (parallel paths cap the total). Calendar / shift changes, extra resources and scope changes are not modelled – add them manually and re-run.', 'الهدف الافتراضي = الإنجاز التعاقدي + EOT المعتمد (تبويب EOT). كل إجراء يُختبر على نسخة – الأيام المعروضة مكاسب حقيقية على المسار الحرج، وهي تراكمية (المسارات المتوازية تحدّ من الإجمالي). تغيير التقاويم/الورديات وإضافة موارد وتغيير النطاق غير مُنمذجة – أضفها يدوياً وأعد التشغيل.'))}</p>`;
+    const $ = (s) => el.querySelector(s);
+    const base = clone(p); P6.schedule(base); const F0 = fin(base);
+    const gapTxt = () => { const t = pd($('#rc_t').value); $('#rc_gap').textContent = t ? B('Forecast ', 'المتوقع ') + fd(F0) + ' → ' + (wdays(p, t, F0) > 0 ? B('behind by ', 'متأخر بـ ') + wdays(p, t, F0) + ' wd' : B('on target', 'ضمن الهدف')) : ''; };
+    $('#rc_t').onchange = gapTxt; gapTxt();
+    let res = null;
+    function show() {
+      const out = $('#rc_out'), r = res;
+      out.innerHTML = (r.timedOut ? `<p class="cmp-bad">⚠ ${esc(B('Stopped at the time limit – partial plan.', 'توقف عند حد الوقت – خطة جزئية.'))}</p>` : '') + `<div class="cmpcards"><div class="cmpc ${r.gap > 0 ? 'bad' : 'good'}"><b>${r.gap}</b><span>${esc(B('Days to recover (wd)', 'أيام مطلوب استردادها'))}</span></div><div class="cmpc good"><b>${r.achieved}</b><span>${esc(B('Achievable by actions (wd)', 'الممكن بالإجراءات (يوم)'))}</span></div><div class="cmpc ${r.shortfall ? 'bad' : 'good'}"><b>${r.shortfall}</b><span>${esc(B('Shortfall (wd)', 'العجز (يوم)'))}</span></div><div class="cmpc"><b>${fd(r.F1)}</b><span>${esc(B('Finish after plan', 'النهاية بعد الخطة'))} (${fd(r.F0)})</span></div><div class="cmpc"><b>${Math.round(r.totalCost).toLocaleString()}</b><span>${esc(B('Extra cost (estimate)', 'تكلفة إضافية (تقدير)'))}</span></div></div>`
+        + (r.shortfall ? `<p class="cmp-bad">⚠ ${esc(B('The listed levers cannot close the whole gap. Options: more compression %, resources / shifts, scope change, or a time-extension claim.', 'الإجراءات المتاحة لا تسد الفجوة كلها. الخيارات: نسبة ضغط أكبر، موارد/ورديات، تغيير نطاق، أو مطالبة بتمديد المدة.'))}</p>` : '')
+        + `<div class="tbl-scroll" style="max-height:38vh"><table class="mini cmpt"><thead><tr><th></th><th>#</th><th>${esc(B('Lever', 'الإجراء'))}</th><th>${esc(B('Change', 'التغيير'))}</th><th>${esc(B('Days gained', 'المكسب'))}</th><th>${esc(B('Cumulative', 'التراكمي'))}</th><th>${esc(B('Risk', 'المخاطرة'))}</th><th>${esc(B('Extra cost', 'تكلفة إضافية'))}</th><th>${esc(B('Owner', 'المسؤول'))}</th><th>${esc(B('Due', 'الاستحقاق'))}</th></tr></thead><tbody>${r.actions.map((a, i) => `<tr><td><input type="checkbox" class="rc_k" data-i="${i}" checked></td><td>${i + 1}</td><td>${esc(LV[a.lever]())}</td><td>${esc(a.desc)}</td><td class="r cmp-good">+${a.gain}</td><td class="r">${a.cum}</td><td>${['', B('Low', 'منخفضة'), B('Medium', 'متوسطة'), B('High', 'مرتفعة')][a.risk]}</td><td class="r">${a.cost ? Math.round(a.cost).toLocaleString() : '–'}</td><td><input class="rc_o" data-i="${i}" style="width:90px"></td><td><input class="rc_d" data-i="${i}" style="width:80px"></td></tr>`).join('') || `<tr><td colspan="10" style="text-align:center;color:#888">${esc(B('No action brings the finish earlier', 'لا إجراء يقدّم النهاية'))}</td></tr>`}</tbody></table></div>
+        <div class="dly-bar" style="margin-top:8px"><button class="btn" id="rc_eval">${esc(B('Re-evaluate selected', 'أعد تقييم المختار'))}</button><span id="rc_ev"></span><button class="btn pri" id="rc_apply"${r.actions.length ? '' : ' disabled'}>${esc(B('Apply selected to schedule', 'طبّق المختار على الجدول'))}</button><button class="btn" id="rc_scn"${r.actions.length ? '' : ' disabled'}>${esc(B('Save as What-If scenario', 'احفظ كسيناريو What-If'))}</button><button class="btn" id="rc_xl">${esc(B('Export to Excel', 'تصدير Excel'))}</button></div>`;
+      const sel = () => [...out.querySelectorAll('.rc_k')].filter((c) => c.checked).map((c) => r.actions[+c.dataset.i]);
+      $('#rc_eval').onclick = () => { const ops = sel().map((a) => a.op), T = clone(p); P6.applyScenario(T, ops); P6.schedule(T); const f = fin(T), t = pd($('#rc_t').value); $('#rc_ev').innerHTML = `${esc(B('Finish', 'النهاية'))} ${fd(f)} (${wdays(p, f, F0) > 0 ? '-' : ''}${Math.abs(wdays(p, f, F0))} wd)${t ? ' · ' + (f <= t ? '<b class="cmp-good">' + esc(B('target met', 'الهدف محقق')) + '</b>' : '<b class="cmp-bad">' + esc(B('short by ', 'عجز ')) + wdays(p, t, f) + ' wd</b>') : ''}`; };
+      $('#rc_apply').onclick = () => { const ops = sel().map((a) => a.op); if (!ops.length) return; if (!confirm(B('Apply ' + ops.length + ' recovery actions to the live schedule? (Undo with Ctrl+Z)', 'تطبيق ' + ops.length + ' إجراء استرداد على الجدول الفعلي؟ (تراجع بـ Ctrl+Z)'))) return; App.mutate(B('Recovery plan', 'خطة الاسترداد'), () => { P6.applyScenario(App.p, ops); }); App.toast(B('Applied – create a revision in the Revisions tab', 'تم التطبيق – أنشئ مراجعة من تبويب المراجعات')); };
+      $('#rc_scn').onclick = () => { p.scenarios = p.scenarios || []; p.scenarios.push({ id: Date.now(), name: 'Recovery plan ' + fd(P6.todayDay ? P6.todayDay() : p.dataDate), ops: JSON.parse(JSON.stringify(sel().map((a) => a.op))) }); X.save(); App.toast(B('Saved – Tools ▸ What-If Scenarios', 'تم الحفظ – Tools ▸ What-If Scenarios')); };
+      $('#rc_xl').onclick = () => {
+        const owners = [...out.querySelectorAll('.rc_o')].map((i) => i.value), dues = [...out.querySelectorAll('.rc_d')].map((i) => i.value), cmp = P6.compare(r.tr, base);
+        App.xlsxBook('Recovery-Plan.xlsx', [{ name: 'Summary', title: B('Recovery schedule', 'جدول الاسترداد'), subtitle: p.name, cols: [{ h: 'Item', w: 40 }, { h: 'Value', w: 20, t: 'n' }], rows: [['Forecast finish (current)', fd(r.F0)], ['Target finish', fd(r.opt.target)], ['Days to recover (wd)', r.gap], ['Achievable by actions (wd)', r.achieved], ['Shortfall (wd)', r.shortfall], ['Finish after plan', fd(r.F1)], ['Extra cost (estimate)', Math.round(r.totalCost)]] },
+          { name: 'Action register', title: B('Recovery action register', 'سجل إجراءات الاسترداد'), cols: [{ h: '#', t: 'n', w: 5 }, { h: 'Lever', w: 20 }, { h: 'Change', w: 50 }, { h: 'Days gained', t: 'n', w: 11 }, { h: 'Cumulative', t: 'n', w: 11 }, { h: 'Risk', w: 9 }, { h: 'Extra cost', t: 'm', w: 14 }, { h: 'Owner', w: 18, input: 1 }, { h: 'Due', w: 14, input: 1 }, { h: 'Status', w: 12, input: 1 }], rows: r.actions.map((a, i) => [i + 1, LV[a.lever](), a.desc, a.gain, a.cum, ['', 'Low', 'Medium', 'High'][a.risk], Math.round(a.cost), owners[i] || '', dues[i] || '', '']) }].concat(P6.compare.sheets(cmp, r.tr, base, { cur: 'Recovery plan', oth: 'Current' }).slice(1, 3)));
+      };
+    }
+    $('#rc_run').onclick = () => {
+      const t = pd($('#rc_t').value); if (t === undefined) return App.toast(B('Bad date', 'تاريخ غير صالح'), true);
+      const opt = { overlapPct: +$('#rc_op').value || 50, tail: +$('#rc_tl').value || 0, compressPct: +$('#rc_cp').value || 20, premium: +$('#rc_pr').value || 0, nearFloat: +$('#rc_nf').value || 0, logic: $('#rc_l').checked, fast: $('#rc_f').checked, compress: $('#rc_c').checked };
+      p.recov.target = t; p.recov.opt = opt; X.save();
+      $('#rc_out').innerHTML = `<p class="hint">${esc(B('Testing recovery levers on copies of the schedule…', 'جارٍ اختبار إجراءات الاسترداد على نسخ من الجدول…'))}</p>`;
+      setTimeout(() => { try { res = P6.recoveryPlan(p, { target: t, overlapPct: opt.overlapPct, tail: opt.tail, compressPct: opt.compressPct, premium: opt.premium, nearFloat: opt.nearFloat, levers: { logic: opt.logic, fast: opt.fast, compress: opt.compress } }); show(); } catch (e) { console.error(e); App.toast(String(e.message || e), true); } }, 30);
+    };
+    void redo;
+  } });
+})(window);
+
+</script>
+<script>
+/* P6 Web – Revised schedule / revision control. A revision register (Rev 0, 1, 2…) with reason, data date, status workflow, linked EOT events,
+   pre-submission checks (open ends, negative float, hard constraints, lags, out-of-sequence, actuals frozen vs the previous revision, finish vs contract + EOT),
+   compact snapshots for comparison (dates / logic only – not a full restore; use Backup for that) and an optional baseline snapshot.
+   The contract baseline is never overwritten. */
+(function (g) {
+  'use strict';
+  const P6 = g.P6, App = g.App, D = App.dialogs, X = P6.delay;
+  const { esc, B, clone, fin, wdays, fd, ensure } = X;
+  const REASONS = [['periodic', 'Periodic update', 'تحديث دوري'], ['eot', 'Delay / EOT', 'تأخير / EOT'], ['scope', 'Scope change / variation', 'تغيير نطاق / أمر تغيير'], ['recovery', 'Recovery programme', 'برنامج استرداد'], ['request', 'Contractor request', 'طلب المقاول'], ['other', 'Other', 'أخرى']];
+  const STATUSES = ['Draft', 'Submitted', 'Approved', 'Approved as Noted', 'Rejected'];
+  const reasonLbl = (k) => { const r = REASONS.find((x) => x[0] === k) || REASONS[5]; return B(r[1], r[2]); };
+
+  function snapOf(p) {
+    return {
+      tasks: p.tasks.map((t) => ({ id: t.id, code: t.code, name: t.name, type: t.type, wbs: t.wbs, es: t.es, ef: t.ef, dur: t.dur, tf: t.tf, crit: !!t.crit, status: t.status, pct: t.pct || 0, ct: t.ct || '', cd: t.cd == null ? null : t.cd, as: t.as, af: t.af, bs: t.bs, bf: t.bf })),
+      rels: p.rels.map((r) => ({ id: r.id, p: r.p, s: r.s, type: r.type || 'FS', lag: r.lag || 0 })), wbs: p.wbs.map((w) => ({ id: w.id, parent: w.parent, code: w.code, name: w.name }))
+    };
+  }
+  const pseudo = (rev, p) => ({ name: rev.label, tasks: rev.snap.tasks, rels: rev.snap.rels, wbs: rev.snap.wbs, cals: p.cals, defCal: p.defCal });
+
+  /* pre-submission checks: [{ id, label, pass, detail, items }] */
+  X.revChecks = function (p) {
+    const S = ensure(p), DA = P6.dash, dc = DA.dcma(p, p.tasks), c = (n) => dc.checks.find((x) => x.n === n);
+    const out = [], add = (id, label, pass, detail) => out.push({ id, label, pass, detail });
+    const lg = c(1); add('logic', B('No open ends (logic)', 'لا نهايات مفتوحة (المنطق)'), lg.items.length === 0, lg.items.length + ' ' + B('activities', 'نشاط'));
+    const ng = c(7); add('negfloat', B('No negative float', 'لا فلوت سالب'), ng.items.length === 0, ng.items.length + ' ' + B('activities', 'نشاط'));
+    const hc = c(5); add('constraints', B('No hard constraints', 'لا قيود صلبة'), hc.items.length === 0, hc.items.length);
+    const bigLag = p.rels.filter((r) => (r.lag || 0) > 20 || (r.lag || 0) < 0); add('lags', B('Lags ≤ 20 days and no leads', 'Lag ≤ 20 يوم ولا leads'), bigLag.length === 0, bigLag.length + ' ' + B('relationships', 'علاقة'));
+    const iv = c(9); add('dates', B('Actuals consistent with the data date', 'الفعلي متسق مع تاريخ البيانات'), iv.items.length === 0, iv.items.length + ' ' + B('activities', 'نشاط'));
+    const oos = P6.oosDetect(p); add('oos', B('No out-of-sequence progress', 'لا تقدم خارج التسلسل'), oos.length === 0, oos.length + ' ' + B('relationships', 'علاقة'));
+    const prev = (p.revs || []).filter((r) => r.snap).slice(-1)[0];
+    if (prev) {
+      const pm = new Map(prev.snap.tasks.map((t) => [t.id, t])), bad = [];
+      for (const t of p.tasks) { const o = pm.get(t.id); if (!o) continue; if ((o.status === 'C' && (t.status !== 'C' || t.af !== o.af || t.as !== o.as)) || (o.as != null && t.as !== o.as)) bad.push(t); }
+      add('frozen', B('Actuals unchanged vs ' + prev.label + ' (frozen)', 'الفعلي لم يتغير مقارنة بـ ' + prev.label + ' (مجمّد)'), bad.length === 0, bad.length + ' ' + B('activities changed', 'نشاط تغيّر'));
+    }
+    const cal = p.cals.find((x) => x.id === p.defCal) || p.cals[0], allowed = S.contractFinish != null ? P6.shift(cal, S.contractFinish, S.events.reduce((n, e) => n + (e.status !== 'Rejected' ? +e.approved || 0 : 0), 0)) : null, f = fin((() => { const t = clone(p); P6.schedule(t); return t; })());
+    if (allowed != null) add('finish', B('Finish ≤ contract completion + approved EOT', 'النهاية ≤ الإنجاز التعاقدي + EOT المعتمد'), f <= allowed, fd(f) + ' vs ' + fd(allowed) + (f > allowed ? ' (+' + wdays(p, allowed, f) + ' wd)' : ''));
+    return out;
+  };
+
+  function showCompare(p, a, b, nameA, nameB) {
+    const res = P6.compare(a, b), el = P6.compare.view(res, { cur: nameA, oth: nameB });
+    D.modal({ title: B('Revision comparison', 'مقارنة المراجعات'), cls: 'wide dsh-modal', body: el, buttons: [{ label: B('Export to Excel', 'تصدير Excel'), cls: 'pri', fn: () => { App.xlsxBook('Revision-Comparison.xlsx', P6.compare.sheets(res, a, b, { cur: nameA, oth: nameB })); return false; } }, { label: P6.t('close'), fn: () => {} }] });
+  }
+
+  function createDialog(done) {
+    const p = App.p, S = ensure(p), n = (p.revs.reduce((m, r) => Math.max(m, r.no), -1)) + 1, checks = X.revChecks(p), fails = checks.filter((c) => !c.pass);
+    const body = document.createElement('div'); body.className = 'wif'; body.dir = P6.dir();
+    body.innerHTML = `<div class="dly-form"><label>${esc(B('Revision', 'المراجعة'))}<input id="r_lab" value="Rev ${n}"></label><label>${esc(B('Reason', 'السبب'))}<select id="r_rs">${REASONS.map((r) => `<option value="${r[0]}">${esc(B(r[1], r[2]))}</option>`).join('')}</select></label><label>${esc(B('Prepared by', 'أعدّه'))}<input id="r_by" value="${esc((S.meta && S.meta.by) || '')}"></label><label class="w3">${esc(B('Description of changes', 'وصف التغييرات'))}<textarea id="r_txt" rows="2"></textarea></label></div>
+      <h4>${esc(B('Linked EOT events', 'أحداث EOT المرتبطة'))}</h4><div>${S.events.map((e) => `<label style="margin-inline-end:12px"><input type="checkbox" class="r_ev" value="${esc(e.id)}"> ${esc(e.id)}</label>`).join('') || `<span class="hint">–</span>`}</div>
+      <h4>${esc(B('Pre-submission checks', 'فحوصات ما قبل التقديم'))}</h4><table class="mini cmpt"><tbody>${checks.map((c) => `<tr><td>${c.pass ? '✅' : '⚠️'}</td><td>${esc(c.label)}</td><td class="${c.pass ? 'cmp-good' : 'cmp-bad'}">${esc(String(c.detail))}</td></tr>`).join('')}</tbody></table>
+      ${fails.length ? `<label class="cmp-bad"><input type="checkbox" id="r_sign"> ${esc(B('I sign off the exceptions above', 'أقرّ بالاستثناءات أعلاه'))}</label>` : ''}
+      <h4>${esc(B('Baseline', 'الـ Baseline'))}</h4><label><input type="checkbox" id="r_bl"> ${esc(B('Also save this revision as a baseline snapshot (the contract baseline is kept)', 'احفظ هذه المراجعة كـ baseline أيضاً (الـ baseline التعاقدي يبقى)'))}</label><br><label><input type="checkbox" id="r_blact"> ${esc(B('…and make it the active baseline', '…واجعله الـ baseline النشط'))}</label>`;
+    D.modal({ title: B('Create revision', 'إنشاء مراجعة'), cls: 'wide dsh-modal', body, sticky: true, buttons: [{ label: P6.t('cancel'), fn: () => {} }, { label: B('Create', 'إنشاء'), cls: 'pri', fn: () => {
+      if (fails.length && !body.querySelector('#r_sign').checked) { App.toast(B('Tick the sign-off for the failed checks', 'أقرّ بالفحوصات الفاشلة أولاً'), true); return false; }
+      const label = body.querySelector('#r_lab').value.trim() || 'Rev ' + n;
+      if (p.revs.some((r) => r.label === label)) { App.toast(B('Revision label already used', 'اسم المراجعة مستخدم'), true); return false; }
+      if (!p.imported) { /* schedule is current */ }
+      const f = fin((() => { const t = clone(p); P6.schedule(t); return t; })()), now = new Date();
+      const rev = { no: n, label, date: now.toLocaleDateString('en-GB'), dataDate: p.dataDate, finish: f, reason: body.querySelector('#r_rs').value, reasonText: body.querySelector('#r_txt').value, by: body.querySelector('#r_by').value, status: 'Draft', events: [...body.querySelectorAll('.r_ev:checked')].map((x) => x.value), checks: checks.map((c) => ({ id: c.id, pass: c.pass, detail: String(c.detail) })), exceptions: fails.length, log: [{ date: now.toLocaleString('en-GB'), status: 'Draft', comment: '' }], snap: snapOf(p) };
+      if (body.querySelector('#r_bl').checked) { const bl = P6.snapshotBaseline(p, label, P6.metrics(p)); p.baselines.push(bl); rev.baselineId = bl.id; if (body.querySelector('#r_blact').checked) P6.assignBaseline(p, bl.id); }
+      p.revs.push(rev); p.meta = p.meta || {}; p.meta.rev = label; X.save(); App.refresh(); done(); App.toast(B(label + ' created', 'تم إنشاء ' + label));
+    } }] });
+  }
+
+  function statusDialog(rev, done) {
+    const body = document.createElement('div'); body.className = 'wif'; body.dir = P6.dir();
+    body.innerHTML = `<div class="dly-form"><label>${esc(B('Status', 'الحالة'))}<select id="s_st">${STATUSES.map((s) => `<option${s === rev.status ? ' selected' : ''}>${s}</option>`).join('')}</select></label><label class="w2">${esc(B('Comment / reference', 'تعليق / مرجع'))}<input id="s_c"></label></div>`;
+    D.modal({ title: rev.label + ' – ' + B('status', 'الحالة'), cls: 'mid', body, buttons: [{ label: P6.t('cancel'), fn: () => {} }, { label: B('Save', 'حفظ'), cls: 'pri', fn: () => { rev.status = body.querySelector('#s_st').value; rev.log.push({ date: new Date().toLocaleString('en-GB'), status: rev.status, comment: body.querySelector('#s_c').value }); X.save(); done(); } }] });
+  }
+
+  X.tabs.push({ id: 'revisions', label: () => B('Revisions', 'المراجعات'), render(el, redo) {
+    const p = App.p; ensure(p);
+    const revs = p.revs.slice().sort((a, b) => a.no - b.no);
+    el.innerHTML = `<div class="dly-bar"><button class="btn pri" id="rv_new">+ ${esc(B('Create revision from current schedule', 'إنشاء مراجعة من الجدول الحالي'))}</button><button class="btn" id="rv_chk">${esc(B('Run pre-submission checks', 'تشغيل فحوصات ما قبل التقديم'))}</button><button class="btn" id="rv_xl"${revs.length ? '' : ' disabled'}>${esc(B('Export register to Excel', 'تصدير السجل إلى Excel'))}</button></div>
+      <div class="tbl-scroll" style="max-height:44vh"><table class="mini cmpt"><thead><tr><th>${esc(B('Revision', 'المراجعة'))}</th><th>${esc(B('Date', 'التاريخ'))}</th><th>${esc(B('Data date', 'تاريخ البيانات'))}</th><th>${esc(B('Completion', 'الإنجاز'))}</th><th>${esc(B('Δ vs previous (wd)', 'Δ عن السابقة'))}</th><th>${esc(B('Reason', 'السبب'))}</th><th>${esc(B('EOT', 'EOT'))}</th><th>${esc(B('Checks', 'الفحوصات'))}</th><th>${esc(B('Status', 'الحالة'))}</th><th></th></tr></thead><tbody>${revs.map((r, i) => `<tr data-no="${r.no}"><td><b>${esc(r.label)}</b>${r.baselineId ? ' <span class="dsh-chip">BL</span>' : ''}</td><td>${esc(r.date)}</td><td>${fd(r.dataDate)}</td><td>${fd(r.finish)}</td><td class="r ${i && wdays(p, revs[i - 1].finish, r.finish) > 0 ? 'cmp-bad' : ''}">${i ? (wdays(p, revs[i - 1].finish, r.finish) > 0 ? '+' : '') + wdays(p, revs[i - 1].finish, r.finish) : '–'}</td><td>${esc(reasonLbl(r.reason))}${r.reasonText ? ' – ' + esc(r.reasonText) : ''}</td><td>${esc((r.events || []).join(', '))}</td><td>${r.exceptions ? '⚠️ ' + r.exceptions : '✅'}</td><td>${esc(r.status)}</td><td style="white-space:nowrap"><button class="btn" data-a="st">${esc(B('Status', 'الحالة'))}</button> <button class="btn" data-a="cur">${esc(B('vs current', 'مقابل الحالي'))}</button>${i ? ` <button class="btn" data-a="prev">${esc(B('vs previous', 'مقابل السابقة'))}</button>` : ''} <button class="btn" data-a="del">✕</button></td></tr>`).join('') || `<tr><td colspan="10" style="text-align:center;color:#888">${esc(B('No revisions yet. Create Rev 0 from the approved baseline schedule, then one revision per update / EOT / recovery.', 'لا مراجعات بعد. أنشئ Rev 0 من الجدول المعتمد ثم مراجعة لكل تحديث / EOT / استرداد.'))}</td></tr>`}</tbody></table></div>
+      <div id="rv_out"></div>
+      <p class="hint">${esc(B('Revisions keep dates and logic for comparison and for the windows analysis (EOT tab) – they are not a full restore; use Projects ▸ Backup for that. Actuals must not change between revisions (checked). The contract baseline is never overwritten.', 'المراجعات تحفظ التواريخ والمنطق للمقارنة ولتحليل النوافذ (تبويب EOT) – وليست نسخة استعادة كاملة؛ استخدم Backup لذلك. يجب ألا يتغير الفعلي بين المراجعات (يُفحص). الـ baseline التعاقدي لا يُستبدل أبداً.'))}</p>`;
+    const $ = (s) => el.querySelector(s);
+    $('#rv_new').onclick = () => createDialog(redo);
+    $('#rv_chk').onclick = () => { const cs = X.revChecks(p); $('#rv_out').innerHTML = `<table class="mini cmpt"><tbody>${cs.map((c) => `<tr><td>${c.pass ? '✅' : '⚠️'}</td><td>${esc(c.label)}</td><td class="${c.pass ? 'cmp-good' : 'cmp-bad'}">${esc(String(c.detail))}</td></tr>`).join('')}</tbody></table>`; };
+    el.querySelectorAll('tbody tr[data-no]').forEach((tr) => {
+      const idx = revs.findIndex((r) => r.no === +tr.dataset.no), r = revs[idx];
+      tr.querySelectorAll('[data-a]').forEach((b) => { b.onclick = (ev) => { ev.stopPropagation(); const a = b.dataset.a;
+        if (a === 'st') statusDialog(r, redo);
+        else if (a === 'cur') showCompare(p, p, pseudo(r, p), p.name + ' (' + B('current', 'الحالي') + ')', r.label);
+        else if (a === 'prev') showCompare(p, pseudo(r, p), pseudo(revs[idx - 1], p), r.label, revs[idx - 1].label);
+        else if (a === 'del') { if (confirm(B('Delete ' + r.label + '? (the baseline snapshot, if any, is kept)', 'حذف ' + r.label + '؟ (الـ baseline إن وُجد يبقى)'))) { p.revs = p.revs.filter((x) => x !== r); X.save(); redo(); } }
+      }; });
+    });
+    $('#rv_xl').onclick = () => App.xlsxBook('Revision-Register.xlsx', [
+      { name: 'Register', title: B('Revision register', 'سجل المراجعات'), subtitle: p.name, cols: [{ h: 'Revision', w: 12 }, { h: 'Date', w: 12 }, { h: 'Data date', t: 'd', w: 14 }, { h: 'Completion', t: 'd', w: 14 }, { h: 'Reason', w: 24 }, { h: 'Description', w: 40 }, { h: 'Prepared by', w: 16 }, { h: 'EOT events', w: 22 }, { h: 'Check exceptions', t: 'n', w: 12 }, { h: 'Status', w: 16 }], rows: revs.map((r) => [r.label, r.date, r.dataDate, r.finish, reasonLbl(r.reason), r.reasonText, r.by, (r.events || []).join(', '), r.exceptions || 0, r.status]) },
+      { name: 'Status log', title: B('Approval log', 'سجل الاعتماد'), cols: [{ h: 'Revision', w: 12 }, { h: 'Date', w: 22 }, { h: 'Status', w: 18 }, { h: 'Comment', w: 50 }], rows: revs.flatMap((r) => (r.log || []).map((l) => [r.label, l.date, l.status, l.comment])) },
+      { name: 'Checks', title: B('Pre-submission checks', 'فحوصات ما قبل التقديم'), cols: [{ h: 'Revision', w: 12 }, { h: 'Check', w: 22 }, { h: 'Result', w: 10 }, { h: 'Detail', w: 40 }], rows: revs.flatMap((r) => (r.checks || []).map((c) => [r.label, c.id, c.pass ? 'PASS' : 'FAIL', c.detail])), fill: (r) => (r[2] === 'FAIL' ? '#FDE2E0' : null) }
+    ]);
+  } });
 })(window);
 
 </script>
@@ -9291,7 +9872,7 @@ function doPost(e) {
     const oosRows = A.oos; const fixOpts = [['ss', 'Convert FS → SS'], ['remove', 'Remove relationship'], ['keep', 'Keep (review manually)']];
     oosRows.forEach((o) => { if (!oosFix[o.rel.id]) oosFix[o.rel.id] = o.fix === 'ss' ? 'ss' : o.fix === 'remove' ? 'remove' : 'keep'; });
     const oosBody = oosRows.length ? `<div class="dsh-note">Progress has been recorded out of sequence on ${oosRows.length} relationship(s). Pick a fix per row or use <b>Auto-fix</b>: FS→SS where the predecessor is partly done, remove the logic where the predecessor has not started, and leave non-FS cases for review. Changes can be undone (Ctrl+Z).</div>` + tbl([{ h: 'Predecessor', get: (o) => `${o.pred.code} – ${o.pred.name}`, w: 220 }, { h: 'Pred. status', get: (o) => `${stName[o.pred.status]} ${o.pred.status === 'IP' ? o.pred.pct + '%' : ''}` }, { h: 'Type', get: (o) => o.rel.type }, { h: 'Successor', get: (o) => `${o.succ.code} – ${o.succ.name}`, w: 220 }, { h: 'Succ. actual start', get: (o) => fd(o.succ.as), al: 'r' }, { h: 'Issue', get: (o) => o.issue, w: 220 }, { h: 'Days', get: (o) => o.days, al: 'r' }, { h: 'Fix', get: (o) => `<select data-fix="${o.rel.id}">${fixOpts.map(([v, l]) => `<option value="${v}"${oosFix[o.rel.id] === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`, raw: 1 }], oosRows, { rowAttr: (o) => `data-card="${o.succ.id}"`, max: 300 }) + `<div class="dsh-actions"><button data-act="oos-auto">Auto-fix all (recommended)</button><button data-act="oos-apply">Apply selected fixes</button><button data-act="oos-preview">Preview impact on finish date</button><button data-act="oos-override">Switch scheduling to Progress Override</button></div><div id="oos-prev"></div>` : `<div class="dsh-ok">No out-of-sequence progress detected: recorded actuals are consistent with the network logic.</div>`;
-    const oosc = card('oos', 'Out-of-Sequence Analysis & Auto-Fix', `${oosRows.length} violations`, oosBody);
+    const oosc = card('oos', 'Out-of-Sequence Analysis & Auto-Fix', `${oosRows.length} violations`, oosBody, '<button data-act="oos-tool">Open Fix Out-of-Sequence tool ▸</button>');
     // DCMA 14-point
     const DC = A.dcma, dval = (c) => (c.val == null ? '–' : c.unit === 'idx' ? c.val.toFixed(2) : c.unit === 'bool' ? (c.val ? 'Yes' : 'No') : c.unit === '%' ? c.val.toFixed(1) + '%' : String(c.val));
     const dcmac = card('dcma', 'DCMA 14-Point Schedule Assessment', `${DC.passed} of ${DC.total} checks passed · schedule health score ${DC.score}%`, `<div class="dsh-health"><div class="dh-score" style="color:${DC.score >= 80 ? C.green : DC.score >= 60 ? C.amber : C.red}">${DC.score}<small>%</small></div><div class="dh-bar"><i style="width:${DC.score}%;background:${DC.score >= 80 ? C.green : DC.score >= 60 ? C.amber : C.red}"></i></div></div>` + tbl([{ h: '#', get: (c) => c.n }, { h: 'Check', get: (c) => `<b>${esc(c.name)}</b><br><small>${esc(c.desc)}</small>`, raw: 1, w: 340 }, { h: 'Result', get: (c) => dval(c), al: 'r' }, { h: 'Threshold', get: (c) => c.thr, al: 'r' }, { h: 'Status', get: (c) => chip(c.pass ? 'PASS' : 'FAIL', c.pass ? C.green : C.red), raw: 1 }, { h: 'Activities', get: (c) => (c.items.length ? `<a class="dsh-go" data-d="dcma:${c.n}">${c.items.length} ▸</a>` : ''), raw: 1, al: 'r' }], DC.checks));
@@ -9401,7 +9982,7 @@ function doPost(e) {
       const act = e.target.closest('[data-act]'); if (act) {
         const a = act.dataset.act;
         if (a === 'reset') { App.cfg.dash = DA.defaults(); App.saveCfg(); render(); } else if (a === 'print') { document.body.classList.add('dsh-printing'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('dsh-printing'), 500); }, 100); }
-        else if (a === 'xlsx') exportXlsx(); else if (a === 'oos-auto') applyOos(true); else if (a === 'oos-apply') applyOos(false); else if (a === 'oos-preview') previewOos();
+        else if (a === 'oos-tool') App.openDelay('oos'); else if (a === 'xlsx') exportXlsx(); else if (a === 'oos-auto') applyOos(true); else if (a === 'oos-apply') applyOos(false); else if (a === 'oos-preview') previewOos();
         else if (a === 'oos-override') { App.mutate('Progress Override', () => { P.schedOpts = Object.assign({ logic: 'retained', crit: 'tf', critFloat: 0, lagCal: 'pred', tfMode: 'finish', openCrit: false }, P.schedOpts, { logic: 'override' }); P.retained = false; }); if (!App.cfg.auto) App.runSchedule(); App.toast('Scheduling switched to Progress Override'); render(); }
         return;
       }
