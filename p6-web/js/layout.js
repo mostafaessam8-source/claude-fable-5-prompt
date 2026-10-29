@@ -5,7 +5,7 @@
 (function (g) {
   'use strict';
   const P6 = g.P6, App = g.App, B = (en, ar) => (P6.dir() === 'rtl' ? ar : en);
-  const CONT = [{ id: 'menubar', sel: '#menubar', v: false }, { id: 'toolbar', sel: '#toolbar', v: false }, { id: 'sideL', sel: '#sideL', v: true }, { id: 'sideR', sel: '#sideR', v: true }];
+  const CONT = [{ id: 'menubar', sel: '#menubar', v: false }, { id: 'toolbar', sel: '#toolbar', v: false, rows: true }, { id: 'sideL', sel: '#sideL', v: true }, { id: 'sideR', sel: '#sideR', v: true }];
   const VER = 3;
   const UI = () => {
     const c = App.cfg; c.ui = Object.assign({ order: {}, hidden: {}, tbBottom: false, ver: 0 }, c.ui);
@@ -28,11 +28,14 @@
 
   function applyOne(c) {
     const el = document.querySelector(c.sel); if (!el) return;
-    const ui = UI(), saved = ui.order[c.id] || [], hid = new Set(ui.hidden[c.id] || []), us = units(c, el), rank = new Map(saved.map((k, i) => [k, i]));
+    const ui = UI(), saved = ui.order[c.id] || [], hid = new Set(ui.hidden[c.id] || []);
+    if (c.rows) { saved.filter((k) => /^brk#/.test(k)).forEach((k) => { if (![...el.children].some((n) => n.__gk === k)) { const b = document.createElement('i'); b.className = 'arr-brk'; b.__gk = k; guard = true; el.appendChild(b); endGuard(); } }); }
+    const us = units(c, el), rank = new Map(saved.map((k, i) => [k, i]));
     const ord = us.map((x, i) => ({ x, i })).sort((a, b) => (rank.has(a.x.key) ? rank.get(a.x.key) : 1e6 + a.i) - (rank.has(b.x.key) ? rank.get(b.x.key) : 1e6 + b.i)).map((o) => o.x);
     const have = [...el.children];
     if (ord.some((x, i) => have[i] !== x.node)) { guard = true; ord.forEach((x) => el.appendChild(x.node)); endGuard(); }
     guard = true;
+    if (c.rows) el.classList.toggle('multi', us.some((x) => /^brk#/.test(x.key)));
     us.forEach((x) => { x.node.classList.toggle('arr-hid', hid.has(x.key)); x.node.dataset.ag = x.key; x.node.dataset.c = c.id; if (arrange) x.node.draggable = true; else x.node.removeAttribute('draggable'); x.node.classList.toggle('arr-sel', !!(arrange && sel && sel.c === c.id && sel.key === x.key)); });
     endGuard();
   }
@@ -49,9 +52,9 @@
     let pop = document.getElementById('arrPop'); if (pop) pop.remove();
     if (!arrange || !sel) return;
     const c = CONT.find((x) => x.id === sel.c), el = document.querySelector(c.sel), n = el && [...el.children].find((k) => k.__gk === sel.key); if (!n) return;
-    const hid = (UI().hidden[c.id] || []).includes(sel.key), a = c.v ? ['▲', '▼'] : ['◀', '▶'], r = n.getBoundingClientRect();
+    const isBrk = /^brk#/.test(sel.key), hid = (UI().hidden[c.id] || []).includes(sel.key), a = c.v ? ['▲', '▼'] : ['◀', '▶'], r = n.getBoundingClientRect();
     pop = document.createElement('div'); pop.id = 'arrPop'; pop.dir = 'ltr';
-    pop.innerHTML = `<b class="mv" data-d="-1">${a[0]}</b><b class="mv" data-d="1">${a[1]}</b><b class="x">${hid ? '＋ ' + B('Show', 'إظهار') : '✕ ' + B('Hide', 'إخفاء')}</b>`;
+    pop.innerHTML = `<b class="mv" data-d="-1">${a[0]}</b><b class="mv" data-d="1">${a[1]}</b>${isBrk ? '' : c.rows ? `<b class="row">↵ ${B('New row from here', 'صف جديد من هنا')}</b>` : ''}<b class="x">${isBrk ? '✕ ' + B('Remove row break', 'إزالة فاصل الصف') : hid ? '＋ ' + B('Show', 'إظهار') : '✕ ' + B('Hide', 'إخفاء')}</b>`;
     document.body.appendChild(pop);
     const w = pop.offsetWidth; pop.style.left = Math.max(2, Math.min(innerWidth - w - 2, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = Math.min(innerHeight - 30, r.bottom + 4) + 'px';
   }
@@ -62,11 +65,24 @@
     guard = true; el.insertBefore(us[i].node, dom < 0 ? us[j].node : us[j].node.nextSibling); endGuard(); save(c); applyAll();
   }
 
+  function addBreak() {
+    const c = CONT.find((x) => x.id === sel.c), el = document.querySelector(c.sel), n = [...el.children].find((k) => k.__gk === sel.key); if (!n) return;
+    const b = document.createElement('i'); b.className = 'arr-brk'; b.__gk = 'brk#' + Date.now(); guard = true; el.insertBefore(b, n); endGuard(); sel = { c: c.id, key: b.__gk }; save(c); applyAll();
+  }
+  function removeBreak() {
+    const c = CONT.find((x) => x.id === sel.c), el = document.querySelector(c.sel), n = [...el.children].find((k) => k.__gk === sel.key); if (n) { guard = true; n.remove(); endGuard(); } sel = null; save(c); applyAll(); const pop = document.getElementById('arrPop'); if (pop && !sel) pop.remove();
+  }
+  App.twoRowToolbar = function () {
+    const c = CONT[1], el = document.querySelector(c.sel), us = units(c, el); us.filter((x) => /^brk#/.test(x.key)).forEach((x) => x.node.remove());
+    const at = us.find((x) => x.key === 'search'); if (!at) return; const b = document.createElement('i'); b.className = 'arr-brk'; b.__gk = 'brk#' + Date.now(); guard = true; el.insertBefore(b, at.node); endGuard(); save(c); applyAll();
+  };
+
   function panel() {
     let p = document.getElementById('arrPanel'); if (p) p.remove(); if (!arrange) return;
     p = document.createElement('div'); p.id = 'arrPanel'; p.dir = P6.dir();
-    p.innerHTML = `<b>⠿ ${B('Arrange mode', 'وضع الترتيب')}</b><span>${B('Drag any menu / button to a new place, or click it and use ◀ ▶. ✕ hides, ＋ restores.', 'اسحب أي قائمة / زرار لمكان جديد، أو اضغط عليه واستخدم ◀ ▶. ✕ للإخفاء و＋ للاستعادة.')}</span><button class="btn" id="arrPos">${UI().tbBottom ? B('Toolbar: bottom', 'شريط الأدوات: أسفل') : B('Toolbar: top', 'شريط الأدوات: أعلى')}</button><button class="btn" id="arrRst">${B('Reset layout', 'إعادة الترتيب الافتراضي')}</button><button class="btn pri" id="arrDone">${B('Done', 'تم')}</button>`;
+    p.innerHTML = `<b>⠿ ${B('Arrange mode', 'وضع الترتيب')}</b><span>${B('Drag any menu / button to a new place, or click it: ◀ ▶ move, ↵ starts a new toolbar row from it, ✕ hides.', 'اسحب أي قائمة / زرار لمكان جديد، أو اضغط عليه: ◀ ▶ تحريك، ↵ يبدأ صفاً جديداً من عنده، ✕ إخفاء.')}</span><button class="btn" id="arrRows">${B('Two-row toolbar', 'شريط أدوات بصفين')}</button><button class="btn" id="arrPos">${UI().tbBottom ? B('Toolbar: bottom', 'شريط الأدوات: أسفل') : B('Toolbar: top', 'شريط الأدوات: أعلى')}</button><button class="btn" id="arrRst">${B('Reset layout', 'إعادة الترتيب الافتراضي')}</button><button class="btn pri" id="arrDone">${B('Done', 'تم')}</button>`;
     document.body.appendChild(p);
+    p.querySelector('#arrRows').onclick = () => App.twoRowToolbar();
     p.querySelector('#arrDone').onclick = () => App.arrangeMode(false);
     p.querySelector('#arrPos').onclick = () => { UI().tbBottom = !UI().tbBottom; App.saveCfg(); applyAll(); panel(); };
     p.querySelector('#arrRst').onclick = () => App.resetLayout();
@@ -103,6 +119,8 @@
     const pb = e.target.closest && e.target.closest('#arrPop b');
     if (pb) {
       if (pb.classList.contains('mv')) moveSel(+pb.dataset.d);
+      else if (pb.classList.contains('row')) addBreak();
+      else if (/^brk#/.test(sel.key)) removeBreak();
       else { const ui = UI(), set = new Set(ui.hidden[sel.c] || []); if (set.has(sel.key)) set.delete(sel.key); else set.add(sel.key); ui.hidden[sel.c] = [...set]; App.saveCfg(); applyAll(); }
       e.preventDefault(); e.stopPropagation(); return;
     }
