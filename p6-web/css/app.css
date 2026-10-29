@@ -620,3 +620,6 @@ body.arr-mode #menubar>:not(.arr-h),body.arr-mode #toolbar>:not(.arr-h):not(.sep
 #arrPanel{position:fixed;z-index:99999;bottom:40px;left:50%;transform:translateX(-50%);background:#fff;color:#333;border:2px solid #e67e22;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:8px 14px;display:flex;gap:10px;align-items:center;font-size:12px;max-width:96vw;flex-wrap:wrap}#arrPanel b{color:#e67e22}
 #app.tb-bottom #work{order:1}#app.tb-bottom #toolbar{order:2;border-top:1px solid var(--line);border-bottom:0}#app.tb-bottom #statusbar{order:3}
 body.arr-mode [data-ag][draggable]{cursor:grab}
+.arr-sel{outline:2px solid #e67e22!important;background:#fff0dc!important}
+#arrPop{position:fixed;z-index:99999;background:#e67e22;color:#fff;border-radius:6px;display:flex;gap:2px;padding:2px 4px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.35)}#arrPop b{cursor:pointer;padding:2px 8px;border-radius:4px;font-weight:700}#arrPop b:hover{background:rgba(0,0,0,.25)}
+body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
