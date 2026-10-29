@@ -699,11 +699,13 @@ function ground(x,z,fy){let best=GY;
   if(fy+STEP>=0&&L0.some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]))best=0;
   if(x>ST.x0&&x<ST.x1&&z<ST.zTop&&z>ST.zBot){const h=GY*((ST.zTop-z)/10);if(h<=fy+STEP&&h>best)best=h}
   return best}
-function resolve(){const r=.26,fy=P.y;let x=P.x,z=P.z;
-  for(let it=0;it<2;it++)for(const c of colliders){if(!c.on||!(fy<c.y1-.05&&fy+1.7>c.y0))continue;
-    if(x>c.x0-r&&x<c.x1+r&&z>c.z0-r&&z<c.z1+r){const d=[x-(c.x0-r),(c.x1+r)-x,z-(c.z0-r),(c.z1+r)-z],m=Math.min(...d);
-      if(m===d[0])x=c.x0-r;else if(m===d[1])x=c.x1+r;else if(m===d[2])z=c.z0-r;else z=c.z1+r}}
-  P.x=clamp(x,-480,480);P.z=clamp(z,-330,330)}
+const PR=.26;
+const hit=(c,x,z)=>x>c.x0-PR&&x<c.x1+PR&&z>c.z0-PR&&z<c.z1+PR;
+function canMove(nx,nz){const fy=P.y;
+  for(const c of colliders){if(!c.on||!(fy<c.y1-.05&&fy+1.7>c.y0))continue;
+    if(hit(c,nx,nz)&&!hit(c,P.x,P.z))return false}   // already overlapping a piece: let the player walk out of it
+  return true}
+function resolve(){P.x=clamp(P.x,-480,480);P.z=clamp(P.z,-330,330)}
 
 /* low-poly character for third-person view */
 const avatar=(()=>{const g=new THREE.Group(),skin=std(0xe0b08c,.8),shirt=std(0xc0623a,.8),pants=std(0x2b3440,.8),shoe=std(0xf0ece4,.6),hair=std(0x2a1d16,.9);
@@ -740,7 +742,7 @@ function updatePlayer(dt,tm){
   const inW=P.y<=GY+.8&&inWater(P.x,P.z);
   let base=inW?1.5:(P.crouch>.5?1.0:1.8);if(sprint)base*=inW?1.7:2.0;
   const sp=base*m*dt,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
-  const ox=P.x,oz=P.z;P.x+=(fx*f+rx*s)*base*dt;resolve();P.z+=(fz*f+rz*s)*base*dt;resolve();
+  const ox=P.x,oz=P.z,dx=(fx*f+rx*s)*base*dt,dz=(fz*f+rz*s)*base*dt;if(canMove(P.x+dx,P.z))P.x+=dx;if(canMove(P.x,P.z+dz))P.z+=dz;resolve();
   P.speed+=((Math.hypot(P.x-ox,P.z-oz)/Math.max(dt,1e-4))-P.speed)*Math.min(1,dt*10);
   const jump=!!(k.Space||btnJump);
   if(inW){if(!P.swim){P.swim=true;P.vy=0;P.grounded=false}
