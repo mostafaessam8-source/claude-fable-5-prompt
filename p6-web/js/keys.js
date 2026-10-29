@@ -103,7 +103,7 @@
     const inTable = !!(e.target.closest && e.target.closest('#tBody, #tHead'));
     let used = true;
     if (k === 'F1' && !e.altKey) D.help && D.help();
-    else if (k === 'F9' && e.shiftKey) D.modal({ title: t('mi_levelres'), cls: 'mid', body: `<p style="line-height:1.8">${esc(t('na_body'))}</p>`, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }] });
+    else if (k === 'F9' && e.shiftKey) App.levelResources();
     else if (k === 'F12' && e.shiftKey) used = false;
     else if (ty) used = false;
     else if (mod && (k === '+' || k === 'Add' || e.code === 'NumpadAdd')) App.expandAll();
@@ -130,7 +130,7 @@
     ['grp_file', [['Alt+N', 'New project'], ['Ctrl+O', 'Open project'], ['Alt+W', 'Close all'], ['Ctrl+P', 'Print preview'], ['Ctrl+S', 'Export XER'], ['F5', 'Refresh data'], ['F10', 'Commit changes']]],
     ['grp_edit', [['Ctrl+Z / Ctrl+Y', 'Undo / Redo'], ['Ctrl+X / Ctrl+C / Ctrl+V', 'Cut / Copy / Paste (Copy also puts the rows on the clipboard as tab-separated text for Excel)'], ['Ctrl+A', 'Select all rows'], ['Ctrl+Shift+C', 'Copy the whole table (with headers) for Excel'], ['Insert', 'Add activity'], ['Delete', 'Delete'], ['Ctrl+D', 'Duplicate'], ['Ctrl+E', 'Fill down'], ['Ctrl+F / F3 / Shift+F3', 'Find / Find next / previous'], ['Ctrl+R', 'Replace'], ['F7', 'Spell check'], ['F2 / Enter', 'Edit cell'], ['Tab / Shift+Tab', 'Next / previous cell while editing'], ['Esc', 'Cancel edit / close menu']]],
     ['grp_nav', [['↑ ↓ ← →', 'Move between cells'], ['Shift+↑ ↓', 'Extend row selection'], ['Home / End', 'First / last row'], ['Ctrl+Home / Ctrl+End', 'First / last row'], ['Page Up / Page Down', 'Move 15 rows'], ['Numpad + / −', 'Expand / collapse selected WBS'], ['Ctrl+Numpad + / −', 'Expand all / collapse all'], ['Ctrl+→ / Ctrl+←', 'Indent / outdent WBS'], ['Ctrl+Wheel (Gantt)', 'Zoom timescale']]],
-    ['grp_tools', [['F9', 'Schedule'], ['Shift+F9', 'Level Resources (not available in this version)'], ['F1', 'Help'], ['Alt+F1', 'Toggle hint help']]]
+    ['grp_tools', [['F9', 'Schedule'], ['Shift+F9', 'Level Resources'], ['F1', 'Help'], ['Alt+F1', 'Toggle hint help']]]
   ];
   D.shortcuts = function () {
     const body = LIST.map(([h, rows]) => `<h4 style="margin:12px 0 4px">${esc(t(h))}</h4><table class="mini" style="width:100%"><tbody>${rows.map(([a, b]) => `<tr><td style="width:240px"><kbd>${esc(a)}</kbd></td><td dir="auto">${esc(b)}</td></tr>`).join('')}</tbody></table>`).join('');
