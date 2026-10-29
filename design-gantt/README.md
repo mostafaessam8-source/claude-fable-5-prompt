@@ -15,6 +15,13 @@ Published at `/design-gantt/` by `.github/workflows/pages.yml` (after the change
   milestones). Dates typed in any Tracker row — also rows that were empty, or new elements — appear without re-running the site.
   The chart watches the filled rows plus 60 spare rows; re-run the site only if the Tracker grows beyond that.
 
+## Revised schedule (v5.0)
+`js/revised.js` holds the *Revised Detailed Design Submission Schedule — NSR Mitigation Measures Phase 2* (18 culverts, issued 26-Oct-2026).
+On upload each line is matched to the Tracker element of the same name; its Submission Date replaces the workbook's, the Approval Date is kept when it
+still follows the new submission, otherwise assumed (+15 days) — or left empty for lines already under SAR review. The downloaded workbook has the
+dates written into the Tracker sheet (columns Submission Date / Approval Date), so the live Gantt follows them. Untick "apply to the chart" to ignore it.
+To load a newer schedule, replace `js/revised.js`.
+
 ## Files
 - `js/model.js` – reads the tracker and builds Gantt lines (same health / % / variance rules as the sheet).
 - `js/xlsxgantt.js` – writes the live Gantt worksheet into the original package.

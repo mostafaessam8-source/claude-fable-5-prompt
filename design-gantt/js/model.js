@@ -271,6 +271,45 @@
     return items;
   }
 
+  /* ---------- revised schedule overlay ----------
+   * Applies a revised submission schedule (js/revised.js) on top of the tracker: each schedule line is matched to the element of the
+   * same name, its Submission Date is replaced, and the Approval Date is kept when it still follows the new submission, otherwise
+   * assumed (submission + review days). Returns what changed; model.edits lists the Tracker cells to write into the workbook. */
+  function norm2(x) { return String(x || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function candidates(name) { // "ZRL 3+700 & 3+750" -> ["zrl 3+700", "zrl 3+750"]
+    var n = norm2(name).replace(/\s*\(.*$/, ''), parts = n.split(/\s*&\s*/), prefix = (/^([a-z]+)\s/.exec(parts[0]) || [])[1] || '';
+    return parts.map(function (p) { return /^[a-z]+\s/.test(p) || !prefix ? p : prefix + ' ' + p; });
+  }
+  function isoSerial(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); return m ? dateToSerial(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))) : null; }
+  function applyRevised(model, rev) {
+    var out = { changes: [], unmatched: [], edits: [] }, byEl = [], seen = {};
+    model.projects.forEach(function (p) { p.elements.forEach(function (e) { byEl.push({ p: p, e: e, cands: candidates(e.name) }); }); });
+    var g = model.layout.g;
+    rev.items.forEach(function (it) {
+      var key = norm2(it.name), hit = byEl.filter(function (x) { return x.cands.indexOf(key) >= 0; })[0];
+      if (!hit) { out.unmatched.push(it); return; }
+      var e = hit.e, newPs = isoSerial(it.sub), oldPs = e.ps, oldPa = e.pa, prior = out.changes.filter(function (c) { return c.row === e.row; })[0];
+      if (prior) newPs = Math.min(newPs, prior.newPs); // one tracker row covering several culverts (e.g. "ZRL 3+700 & 3+750")
+      // Approval Date: keep the workbook's when it still follows the new submission. Otherwise, for a line still to be re-submitted assume
+      // the review period; for a line already under SAR review leave it empty (nobody knows the approval date yet).
+      var keep = isNum(oldPa) && oldPa >= newPs, underReview = /under/i.test(it.status);
+      var newPa = keep ? oldPa : (underReview ? null : newPs + (rev.reviewDays || 15));
+      e.ps = newPs; e.pa = newPa; e.strPs = false;
+      e.rev = { sr: it.sr, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method };
+      var rec = { sr: String(it.sr), name: it.name, element: e.name, project: hit.p.code || hit.p.name, row: e.row, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method,
+        oldPs: prior ? prior.oldPs : oldPs, newPs: newPs, oldPa: prior ? prior.oldPa : oldPa, newPa: newPa, paKept: keep, paNone: newPa == null };
+      if (prior) { rec.sr = prior.sr + ', ' + it.sr; rec.name = prior.name + ' + ' + it.name; }
+      out.changes = out.changes.filter(function (c) { return c.row !== e.row; });
+      out.changes.push(rec);
+    });
+    out.changes.forEach(function (c) {
+      out.edits.push({ row: c.row, col: g.ps, value: c.newPs }, { row: c.row, col: g.pa, value: c.newPa });
+    });
+    out.changes.sort(function (a, b) { return parseInt(a.sr, 10) - parseInt(b.sr, 10); });
+    model.revised = out;
+    return out;
+  }
+
   /* Date range of the chart: every bar date and the data date. */
   function chartRange(items, cut) {
     var lo = cut, hi = cut;
@@ -280,7 +319,7 @@
 
   return {
     EPOCH: EPOCH, isNum: isNum, numToCol: numToCol, colToNum: colToNum, fmtDate: fmtDate, serialToDate: serialToDate, dateToSerial: dateToSerial, norm: norm,
-    readWorkbook: readWorkbook, recalc: recalc, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, milestones: milestones,
+    readWorkbook: readWorkbook, recalc: recalc, applyRevised: applyRevised, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, milestones: milestones,
     parseSheet: parseSheet, parseSharedStrings: parseSharedStrings, locateSheets: locateSheets, readText: readText, unesc: unesc
   };
 });

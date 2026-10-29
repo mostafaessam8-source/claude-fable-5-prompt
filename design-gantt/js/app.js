@@ -22,12 +22,9 @@
     try {
       if (!/\.xls[xm]$/i.test(file.name)) throw new Error('Please choose an Excel .xlsx workbook (this one is "' + file.name + '").');
       var buf = await file.arrayBuffer();
-      var zip = await JSZip.loadAsync(buf);
-      var model = await M.readWorkbook(zip);
-      if (!model.projects.length) throw new Error('The tracker sheet was found but no project rows were read. Check that the project rows have the Programme cell filled.');
-      // the data date is today (as in the Excel sheet); 'Workbook' restores the date written in the Tracker
-      var now = new Date(); M.recalc(model, M.dateToSerial(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))));
-      S.buf = buf; S.name = file.name; S.model = model; S.collapsed = {}; S.status = {}; S.project = ''; S.q = '';
+      S.buf = buf; S.name = file.name; S.useRevised = true;
+      var model = await buildModel(null);
+      S.model = model; S.collapsed = {}; S.status = {}; S.project = ''; S.q = '';
       $('fileName').textContent = file.name;
       $('dataDate').value = iso(model.meta.cut);
       $('drop').hidden = true; $('app').hidden = false; $('topActions').hidden = false;
@@ -36,6 +33,34 @@
       showError(err && err.message ? err.message : String(err));
       console.error(err);
     }
+  }
+
+  /* Read the workbook, lay the revised schedule over it (if switched on) and set the data date (today unless given). */
+  async function buildModel(cut) {
+    var zip = await JSZip.loadAsync(S.buf);
+    var model = await M.readWorkbook(zip);
+    if (!model.projects.length) throw new Error('The tracker sheet was found but no project rows were read. Check that the project rows have the Programme cell filled.');
+    if (S.useRevised && window.REVISED) M.applyRevised(model, window.REVISED);
+    var now = new Date();
+    M.recalc(model, cut != null ? cut : M.dateToSerial(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))));
+    return model;
+  }
+
+  function renderRevised() {
+    var R = window.REVISED, box = $('revised');
+    if (!R) { box.hidden = true; return; }
+    box.hidden = false;
+    $('revUse').checked = !!S.useRevised;
+    var rv = S.model.revised, f = M.fmtDate;
+    $('revTitle').textContent = R.title + ' — issued ' + f(M.dateToSerial(new Date(R.issued + 'T00:00:00Z')));
+    if (!S.useRevised || !rv) { $('revBody').innerHTML = '<p class="hint">Switched off: the chart uses the dates in the workbook only.</p>'; return; }
+    var rows = rv.changes.map(function (c) {
+      var chg = M.isNum(c.oldPs) && c.oldPs === c.newPs ? 'same' : (M.isNum(c.oldPs) ? f(c.oldPs) + ' → ' : 'was empty → ');
+      return '<tr><td>' + c.sr + '</td><td><b>' + h(c.name) + '</b>' + (c.element !== c.name ? '<br><small>' + h(c.element) + '</small>' : '') + '</td><td>' + h(c.rev) + '</td><td>' + (chg === 'same' ? f(c.newPs) + ' <small>(unchanged)</small>' : '<small>' + chg + '</small><b>' + f(c.newPs) + '</b>') + '</td><td>' + (c.paNone ? '<small>not yet known (under SAR review)</small>' : f(c.newPa) + ' <small>' + (c.paKept ? '(kept from workbook)' : '(assumed: +' + R.reviewDays + ' d review)') + '</small>') + '</td><td>' + h(c.status) + '</td><td>' + h([c.method === 'Open Cut' ? '' : c.method, c.critical].filter(Boolean).join(' · ')) + '</td></tr>';
+    }).join('');
+    $('revBody').innerHTML = '<p class="hint">' + rv.changes.length + ' of ' + R.items.length + ' culverts matched to a Tracker row' + (rv.unmatched.length ? '; <b style="color:#c62828">not found: ' + rv.unmatched.map(function (u) { return h(u.name); }).join(', ') + '</b>' : '') +
+      '. Submission dates come from the schedule; the Approval Date stays as in the workbook when it still follows the new submission, otherwise it is assumed (+' + R.reviewDays + ' days for lines still to be re-submitted; left empty for lines already under SAR review). The downloaded workbook has these dates written into the Tracker sheet.</p>' +
+      '<div class="table-wrap" style="max-height:260px"><table class="checks"><thead><tr><th>Sr</th><th>Culvert</th><th>Rev</th><th>Submission Date</th><th>Approval Date</th><th>Status</th><th>Method / critical item</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   function fillProjects() {
@@ -49,7 +74,7 @@
 
   /* ---------- rendering ---------- */
   function render() {
-    renderKpis(); renderLegend(); renderGantt(); renderChecks(); renderRules();
+    renderKpis(); renderLegend(); renderGantt(); renderChecks(); renderRules(); renderRevised();
   }
 
   function renderKpis() {
@@ -241,6 +266,11 @@
       renderGantt();
     });
     $('btnExpand').addEventListener('click', function () { S.collapsed = {}; renderGantt(); });
+    $('revUse').addEventListener('change', async function () {
+      S.useRevised = this.checked;
+      try { S.model = await buildModel(S.model.meta.cut); S.collapsed = {}; $('dataDate').value = iso(S.model.meta.cut); render(); }
+      catch (err) { showError(err.message || String(err)); }
+    });
     wireTip();
   }
   init();

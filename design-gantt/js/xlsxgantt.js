@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v4.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
     var CODE_R = colRange('F');
@@ -449,11 +449,42 @@
     return { xml: sheet, lastData: lastData, lastRow: lastRow, lastCol: lastCol };
   }
 
+  /* ---------- write revised dates into the Tracker sheet itself ---------- */
+  function setNumberCell(xml, ref, value, styleFallback) {
+    var m = /^([A-Z]+)(\d+)$/.exec(ref), col = M.colToNum(m[1]), rn = m[2];
+    var cellRe = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>[\\s\\S]*?</c>)');
+    var ex = cellRe.exec(xml);
+    if (ex) {
+      var st = /\bs="(\d+)"/.exec(ex[1]);
+      return xml.replace(cellRe, '<c r="' + ref + '"' + (st ? ' s="' + st[1] + '"' : '') + (value == null ? '/>' : '><v>' + value + '</v></c>'));
+    }
+    if (value == null) return xml; // nothing to clear
+    var rowRe = new RegExp('(<row r="' + rn + '"[^>]*?)(/>|>([\\s\\S]*?)</row>)'), rm = rowRe.exec(xml);
+    if (!rm) return xml; // row missing: leave the tracker untouched rather than guess
+    var cell = '<c r="' + ref + '"' + (styleFallback ? ' s="' + styleFallback + '"' : '') + '><v>' + value + '</v></c>', body = rm[3] || '', pos = body.length, cr = /<c r="([A-Z]+)\d+"/g, c;
+    while ((c = cr.exec(body))) if (M.colToNum(c[1]) > col) { pos = c.index; break; }
+    var open = rm[1].replace(/\s*spans="[^"]*"/, '');
+    return xml.replace(rowRe, open + '>' + body.slice(0, pos) + cell + body.slice(pos) + '</row>');
+  }
+  async function patchTracker(zip, loc, model) {
+    var edits = model.revised && model.revised.edits;
+    if (!edits || !edits.length) return 0;
+    var sh = loc.sheets.filter(function (x) { return x.name === model.layout.sheet; })[0];
+    if (!sh) return 0;
+    var xml = await M.readText(zip, sh.path), n = 0, g = model.layout.g;
+    var sty = {};
+    [g.ps, g.pa].forEach(function (col) { var m = new RegExp('<c r="' + col + '\\d+"[^>]*?\\bs="(\\d+)"').exec(xml); sty[col] = m ? m[1] : ''; });
+    edits.forEach(function (e) { var before = xml; xml = setNumberCell(xml, e.col + e.row, e.value, sty[e.col]); if (xml !== before) n++; });
+    zip.file(sh.path, xml);
+    return n;
+  }
+
   /* ---------- put the sheet into the workbook package ---------- */
   async function build(zip, model, opts) {
     opts = opts || {};
     var scale = opts.scale || 'week';
     var loc = await M.locateSheets(zip);
+    var patched = await patchTracker(zip, loc, model);
     var stylesXml = await M.readText(zip, 'xl/styles.xml');
     var sb = new StyleBook(stylesXml);
     var res = buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName });
@@ -495,7 +526,7 @@
       if (x && /tabSelected="1"/.test(x)) zip.file(p, x.replace(/\s*tabSelected="1"/, ''));
     }
     var out = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-    return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData };
+    return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData, patched: patched };
   }
 
   return { build: build, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };

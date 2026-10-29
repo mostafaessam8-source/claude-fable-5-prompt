@@ -189,3 +189,9 @@ table.checks { border-collapse: collapse; width: 100%; font-size: 13px; }
 .legend i.cd { width: 17px; height: 17px; border-radius: 4px; }
 .legend i.dd { width: 3px; height: 14px; border-radius: 0; }
 .kpi .v { overflow-wrap: anywhere; }
+
+.revised { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 14px; margin-bottom: 16px; border-inline-start: 4px solid #ef6c00; }
+.revised[hidden] { display: none; }
+.revised summary { cursor: pointer; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.rev-use { margin-inline-start: auto; font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.revised td small { color: var(--mute); }

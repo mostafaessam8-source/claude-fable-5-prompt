@@ -6,6 +6,7 @@ const fs = require('fs');
 const JSZip = require('../vendor/jszip.min.js');
 const M = require('../js/model.js');
 const X = require('../js/xlsxgantt.js');
+const REVISED = require('../js/revised.js').REVISED;
 
 const D = (y, m, d) => Math.floor(Date.UTC(y, m - 1, d) / 864e5) + M.EPOCH;
 function tinyWorkbook() {
@@ -63,6 +64,23 @@ async function check(zip, label) {
   assert(/<dxfs count="\d+">/.test(st));
   // every XML part must be well-formed enough for a strict parser: balanced counts
   assert.strictEqual((xml.match(/<row /g) || []).length, (xml.match(/<\/row>/g) || []).length);
+
+  // 2b. revised schedule overlay: matched by element name, written into the Tracker cells
+  const rv = M.applyRevised(m, { reviewDays: 15, items: [
+    { sr: 1, name: 'Element 1', rev: 'B0', sub: '2026-11-06', status: 'To be Re-submitted' },
+    { sr: 2, name: 'Element 3', rev: 'A0', sub: '2026-10-16', status: 'Under SAR Review' },
+    { sr: 3, name: 'Nope', rev: 'A0', sub: '2026-10-16', status: 'Under SAR Review' }] });
+  assert.strictEqual(rv.changes.length, 2); assert.strictEqual(rv.unmatched.length, 1);
+  assert.strictEqual(m.projects[0].elements[0].ps, D(2026, 11, 6)); assert.strictEqual(m.projects[0].elements[0].pa, D(2026, 11, 21)); // assumed +15 d
+  assert.strictEqual(m.projects[0].elements[2].pa, D(2026, 10, 20)); // under review with an existing approval that still follows: kept
+  const zr = await JSZip.loadAsync(tinyWorkbook().generateAsync ? await tinyWorkbook().generateAsync({ type: 'uint8array' }) : null);
+  const outR = await X.build(zr, m, { scale: 'week' });
+  assert(outR.patched >= 2, 'revised dates written into the Tracker sheet');
+  const tr = await (await JSZip.loadAsync(outR.bytes)).file('xl/worksheets/sheet1.xml').async('string');
+  assert(new RegExp('<c r="D19"[^>]*><v>' + D(2026, 11, 6) + '</v>').test(tr), 'Element 1 submission written');
+
+  // 2c. the bundled schedule
+  assert.strictEqual(REVISED.items.length, 18);
 
   // 3. optional: a real workbook
   if (process.env.SAR_TRACKER) {
