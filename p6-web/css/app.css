@@ -621,5 +621,8 @@ body.arr-mode #menubar>:not(.arr-h),body.arr-mode #toolbar>:not(.arr-h):not(.sep
 #app.tb-bottom #work{order:1}#app.tb-bottom #toolbar{order:2;border-top:1px solid var(--line);border-bottom:0}#app.tb-bottom #statusbar{order:3}
 body.arr-mode [data-ag][draggable]{cursor:grab}
 .arr-sel{outline:2px solid #e67e22!important;background:#fff0dc!important}
-#arrPop{position:fixed;z-index:99999;background:#e67e22;color:#fff;border-radius:6px;display:flex;gap:2px;padding:2px 4px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.35)}#arrPop b{cursor:pointer;padding:2px 8px;border-radius:4px;font-weight:700}#arrPop b:hover{background:rgba(0,0,0,.25)}
+#arrPop{position:fixed;z-index:99999;background:#e67e22;color:#fff;border-radius:6px;display:flex;gap:2px;padding:2px 4px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.35)}#arrPop b{white-space:nowrap;cursor:pointer;padding:2px 8px;border-radius:4px;font-weight:700}#arrPop b:hover{background:rgba(0,0,0,.25)}
 body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
+#toolbar.multi{height:auto!important;min-height:38px;flex-wrap:wrap;overflow:visible!important;white-space:normal;row-gap:2px;padding-top:2px;padding-bottom:2px}
+.arr-brk{flex:0 0 100%;height:0;margin:0;padding:0;border:0}
+body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relative;cursor:grab}body.arr-mode .arr-brk::after{content:"↵ row break / فاصل صف";position:absolute;top:1px;inset-inline-start:6px;font-size:10px;color:#e67e22;font-style:normal}
