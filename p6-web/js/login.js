@@ -62,7 +62,7 @@
       $('#lg_adv').onclick = () => { const bx = $('#lg_advbox'); bx.hidden = !bx.hidden; $('#lg_adv').firstChild.textContent = bx.hidden ? '▶ ' : '▼ '; };
       const go = async () => {
         const u = $('#lg_u').value.trim(); if (!u) return err(B('Enter a login name', 'أدخل اسم الدخول'));
-        const stored = LS.get(pwKey(u)); if (stored && stored !== await hash($('#lg_p').value)) return err(B('Wrong password', 'كلمة المرور غير صحيحة'));
+        // the login is only a local convenience lock: any password (or none) is accepted
         LS.set('p6web.user', u); SS.set('p6web.sess', u); App.cfg.user = u; App.saveCfg();
         const al = $('#lg_db').value;
         if (al !== App.dbAlias()) { LS.set('p6web.db', al); location.reload(); return; }
@@ -71,7 +71,7 @@
       $('#lg_go').onclick = go;
       ov.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
       $('#lg_cfg').onclick = () => App.dialogs.dbConfig(true);
-      $('#lg_help').onclick = () => alert(B('Enter any login name (default: admin, empty password). Use Edit database configuration to add or switch between local databases.', 'أدخل أي اسم دخول (الافتراضي admin وبدون كلمة مرور). استخدم تعديل إعدادات قاعدة البيانات لإضافة قواعد بيانات محلية أو التبديل بينها.'));
+      $('#lg_help').onclick = () => alert(B('Enter any login name and any password (default: admin, empty password). Use Edit database configuration to add or switch between local databases.', 'أدخل أي اسم دخول (الافتراضي admin وبدون كلمة مرور). استخدم تعديل إعدادات قاعدة البيانات لإضافة قواعد بيانات محلية أو التبديل بينها.'));
     });
   };
   App.disconnect = function () { SS.del('p6web.sess'); location.reload(); };
