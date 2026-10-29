@@ -45,9 +45,10 @@
       groups(c, el).forEach((x) => {
         const h = document.createElement('span'); h.className = 'arr-h' + (c.v ? ' v' : ''); h.draggable = true; h.dataset.ag = x.key; h.dataset.c = c.id;
         const isH = hid.has(x.key);
-        h.innerHTML = `<i title="${B('Drag to move', 'اسحب للتحريك')}">⠿</i><b title="${isH ? B('Show', 'إظهار') : B('Hide', 'إخفاء')}">${isH ? '＋' : '✕'}</b>`;
+        const a = c.v ? ['▲', '▼'] : ['◀', '▶'];
+        h.innerHTML = `<b class="mv" data-d="-1" title="${B('Move', 'تحريك')}">${a[0]}</b><i title="${B('Drag to move', 'اسحب للتحريك')}">⠿</i><b class="mv" data-d="1" title="${B('Move', 'تحريك')}">${a[1]}</b><b class="x" title="${isH ? B('Show', 'إظهار') : B('Hide', 'إخفاء')}">${isH ? '＋' : '✕'}</b>`;
         el.insertBefore(h, x.nodes[0]);
-        x.nodes.forEach((n) => { n.dataset.c = c.id; });
+        x.nodes.forEach((n) => { n.dataset.c = c.id; if (!isSep(n)) n.draggable = true; });
       });
       endGuard();
     });
@@ -68,7 +69,7 @@
   function panel() {
     let p = document.getElementById('arrPanel'); if (p) p.remove(); if (!arrange) return;
     p = document.createElement('div'); p.id = 'arrPanel'; p.dir = P6.dir();
-    p.innerHTML = `<b>⠿ ${B('Arrange mode', 'وضع الترتيب')}</b><span>${B('Drag the ⠿ handles to move menus / toolbar groups, ✕ hides, ＋ restores.', 'اسحب مقابض ⠿ لتحريك القوائم ومجموعات الأزرار، ✕ للإخفاء، ＋ للاستعادة.')}</span><button class="btn" id="arrPos">${UI().tbBottom ? B('Toolbar: bottom', 'شريط الأدوات: أسفل') : B('Toolbar: top', 'شريط الأدوات: أعلى')}</button><button class="btn" id="arrRst">${B('Reset layout', 'إعادة الترتيب الافتراضي')}</button><button class="btn pri" id="arrDone">${B('Done', 'تم')}</button>`;
+    p.innerHTML = `<b>⠿ ${B('Arrange mode', 'وضع الترتيب')}</b><span>${B('Drag any menu / button group (or its ⠿ handle), or use the ◀ ▶ arrows. ✕ hides, ＋ restores.', 'اسحب أي قائمة / مجموعة أزرار (أو مقبض ⠿) أو استخدم الأسهم ◀ ▶. ✕ للإخفاء، ＋ للاستعادة.')}</span><button class="btn" id="arrPos">${UI().tbBottom ? B('Toolbar: bottom', 'شريط الأدوات: أسفل') : B('Toolbar: top', 'شريط الأدوات: أعلى')}</button><button class="btn" id="arrRst">${B('Reset layout', 'إعادة الترتيب الافتراضي')}</button><button class="btn pri" id="arrDone">${B('Done', 'تم')}</button>`;
     document.body.appendChild(p);
     p.querySelector('#arrDone').onclick = () => App.arrangeMode(false);
     p.querySelector('#arrPos').onclick = () => { UI().tbBottom = !UI().tbBottom; App.saveCfg(); applyAll(); panel(); };
@@ -80,17 +81,17 @@
     document.body.classList.toggle('arr-mode', arrange);
     if (typeof App.closeMenus === 'function') App.closeMenus();
     document.querySelectorAll('.menu.open').forEach((m) => m.classList.remove('open'));
-    if (arrange) decorate(); else document.querySelectorAll('.arr-h').forEach((h) => h.remove());
+    if (arrange) decorate(); else { document.querySelectorAll('.arr-h').forEach((h) => h.remove()); document.querySelectorAll('[data-ag][draggable]').forEach((n) => n.removeAttribute('draggable')); }
     panel();
   };
   App.resetLayout = function () { const ui = UI(); ui.order = {}; ui.hidden = {}; ui.tbBottom = false; App.saveCfg(); if (App.buildMenus) App.buildMenus(); if (App.buildToolbar) App.buildToolbar(); applyAll(); if (arrange) panel(); App.toast(B('Layout reset', 'تمت إعادة الترتيب الافتراضي')); };
 
   // ----- drag & drop -----
-  document.addEventListener('dragstart', (e) => { const h = e.target.closest && e.target.closest('.arr-h'); if (!h || !arrange) return; drag = { c: h.dataset.c, key: h.dataset.ag }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', h.dataset.ag); } catch (er) { /* ignore */ } h.classList.add('drag'); });
-  document.addEventListener('dragend', () => { drag = null; document.querySelectorAll('.arr-h.drag').forEach((h) => h.classList.remove('drag')); document.querySelectorAll('.arr-before,.arr-after').forEach((n) => n.classList.remove('arr-before', 'arr-after')); });
+  document.addEventListener('dragstart', (e) => { if (!arrange) return; const h = e.target.closest && e.target.closest('[data-ag]'); if (!h) return; drag = { c: h.dataset.c, key: h.dataset.ag }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', h.dataset.ag); } catch (er) { /* ignore */ } h.classList.add('drag'); });
+  document.addEventListener('dragend', () => { drag = null; document.querySelectorAll('.drag').forEach((h) => h.classList.remove('drag')); document.querySelectorAll('.arr-before,.arr-after').forEach((n) => n.classList.remove('arr-before', 'arr-after')); });
   const targetOf = (e) => { const n = e.target.closest && e.target.closest('[data-ag]'); return n && drag && n.dataset.c === drag.c ? n : null; };
   const beforeOf = (n, e) => { const c = CONT.find((x) => x.id === n.dataset.c), r = n.getBoundingClientRect(); if (c.v) return e.clientY < r.top + r.height / 2; const rtl = getComputedStyle(n.parentElement).direction === 'rtl'; return rtl ? e.clientX > r.left + r.width / 2 : e.clientX < r.left + r.width / 2; };
-  document.addEventListener('dragover', (e) => { if (!arrange || !drag) return; const n = targetOf(e); if (!n) return; e.preventDefault(); document.querySelectorAll('.arr-before,.arr-after').forEach((x) => x.classList.remove('arr-before', 'arr-after')); n.classList.add(beforeOf(n, e) ? 'arr-before' : 'arr-after'); });
+  document.addEventListener('dragover', (e) => { if (!arrange || !drag) return; { const c0 = CONT.find((x) => x.id === drag.c), el0 = c0 && document.querySelector(c0.sel); if (el0) { const r = el0.getBoundingClientRect(); if (c0.v) { if (e.clientY < r.top + 30) el0.scrollTop -= 18; else if (e.clientY > r.bottom - 30) el0.scrollTop += 18; } else if (e.clientX < r.left + 40) el0.scrollLeft -= 20; else if (e.clientX > r.right - 40) el0.scrollLeft += 20; } } const n = targetOf(e); if (!n) return; e.preventDefault(); document.querySelectorAll('.arr-before,.arr-after').forEach((x) => x.classList.remove('arr-before', 'arr-after')); n.classList.add(beforeOf(n, e) ? 'arr-before' : 'arr-after'); });
   document.addEventListener('drop', (e) => {
     if (!arrange || !drag) return; const n = targetOf(e); if (!n || n.dataset.ag === drag.key) return; e.preventDefault();
     const c = CONT.find((x) => x.id === drag.c), el = document.querySelector(c.sel), gs = groups(c, el), mv = gs.find((x) => x.key === drag.key), tg = gs.find((x) => x.key === n.dataset.ag); if (!mv || !tg) return;
@@ -100,7 +101,9 @@
   });
   document.addEventListener('click', (e) => {
     if (!arrange) return;
-    const b = e.target.closest && e.target.closest('.arr-h b');
+    const mvb = e.target.closest && e.target.closest('.arr-h b.mv');
+    if (mvb) { const h = mvb.parentElement, c = CONT.find((x) => x.id === h.dataset.c), el = document.querySelector(c.sel), gs = groups(c, el), i = gs.findIndex((x) => x.key === h.dataset.ag), visual = +mvb.dataset.d, rtl = !c.v && getComputedStyle(el).direction === 'rtl', dom = rtl ? -visual : visual, j = i + dom; if (i >= 0 && j >= 0 && j < gs.length) { const mv = gs[i], tg = gs[j], hMv = el.querySelector(`.arr-h[data-ag="${CSS.escape(mv.key)}"]`), anchor = dom < 0 ? el.querySelector(`.arr-h[data-ag="${CSS.escape(tg.key)}"]`) : tg.nodes[tg.nodes.length - 1].nextSibling; guard = true; [hMv, ...mv.nodes].forEach((x) => el.insertBefore(x, anchor)); endGuard(); save(c); applyAll(); } e.preventDefault(); e.stopPropagation(); return; }
+    const b = e.target.closest && e.target.closest('.arr-h b.x');
     if (b) { const h = b.parentElement, ui = UI(), c = h.dataset.c, set = new Set(ui.hidden[c] || []); if (set.has(h.dataset.ag)) set.delete(h.dataset.ag); else set.add(h.dataset.ag); ui.hidden[c] = [...set]; App.saveCfg(); applyAll(); e.preventDefault(); e.stopPropagation(); return; }
     if (e.target.closest('#arrPanel')) return;
     if (e.target.closest('#menubar,#toolbar,#sideL,#sideR,#projBtn,#langBtn,#themeBtn')) { e.preventDefault(); e.stopPropagation(); }
