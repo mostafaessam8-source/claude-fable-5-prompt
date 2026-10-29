@@ -257,7 +257,7 @@ const rbx=(p,w,h,d,mat,x,y0,z,r=.03,seg=3)=>{const m=new THREE.Mesh(new RoundedB
 const cy=(p,r,h,mat,x,y0,z,seg=24,rt=r)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,r,h,seg),mat);m.position.set(x,y0+h/2,z);m.castShadow=m.receiveShadow=true;p.add(m);return m};
 const sp=(p,r,mat,x,y,z,sx=1,sy=1,sz=1)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),mat);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;p.add(m);return m};
 const mkCol=(x0,x1,z0,z1,y0=0,y1=2.6)=>{const c={x0,x1,z0,z1,y0,y1,on:true};colliders.push(c);return c};
-const addCol=(cx,cz,w,d)=>mkCol(cx-w/2,cx+w/2,cz-d/2,cz+d/2,0,1.6);
+const addCol=(cx,cz,w,d)=>{const hw=Math.max(.08,w/2-.1),hd=Math.max(.08,d/2-.1),k=mkCol(cx-hw,cx+hw,cz-hd,cz+hd,0,1.6);k.soft=true;return k};
 function fg(x,z,rot=0,w=0,d=0,parent=furn){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;parent.add(g);
   if(w&&d){const s=Math.abs(Math.sin(rot))>.7;addCol(x,z,s?d:w,s?w:d)}return g}
 
@@ -850,10 +850,10 @@ function ground(x,z,fy){let best=GY;
   if(fy+STEP>=0&&L0.some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]))best=0;
   if(x>ST.x0&&x<ST.x1&&z<ST.zTop&&z>ST.zBot){const h=GY*((ST.zTop-z)/10);if(h<=fy+STEP&&h>best)best=h}
   return best}
-const PR=.26;
-const hit=(c,x,z)=>{if(c.obb){const dx=x-c.cx,dz=z-c.cz,lx=dx*c.cs+dz*c.sn,lz=-dx*c.sn+dz*c.cs;return Math.abs(lx)<c.hw+PR&&Math.abs(lz)<c.hd+PR}return x>c.x0-PR&&x<c.x1+PR&&z>c.z0-PR&&z<c.z1+PR};
+const PR=.26;let ghostT=0,stuckT=0;
+const hit=(c,x,z)=>{const PR=c.soft?.12:.26;if(c.obb){const dx=x-c.cx,dz=z-c.cz,lx=dx*c.cs+dz*c.sn,lz=-dx*c.sn+dz*c.cs;return Math.abs(lx)<c.hw+PR&&Math.abs(lz)<c.hd+PR}return x>c.x0-PR&&x<c.x1+PR&&z>c.z0-PR&&z<c.z1+PR};
 function canMove(nx,nz){const fy=P.y;
-  for(const c of colliders){if(!c.on||!(fy<c.y1-.05&&fy+1.7>c.y0))continue;
+  for(const c of colliders){if(!c.on||(c.soft&&ghostT>0)||!(fy<c.y1-.05&&fy+1.7>c.y0))continue;
     if(hit(c,nx,nz)&&!hit(c,P.x,P.z))return false}   // already overlapping a piece: let the player walk out of it
   return true}
 function resolve(){P.x=clamp(P.x,-330,330);P.z=clamp(P.z,-340,95)}
@@ -893,7 +893,8 @@ function updatePlayer(dt,tm){
   const inW=P.y<=GY+.8&&inWater(P.x,P.z);
   let base=inW?1.5:(P.crouch>.5?1.0:1.8);if(sprint)base*=inW?1.7:2.0;
   const sp=base*m*dt,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
-  const ox=P.x,oz=P.z,dx=(fx*f+rx*s)*base*dt,dz=(fz*f+rz*s)*base*dt;if(canMove(P.x+dx,P.z))P.x+=dx;if(canMove(P.x,P.z+dz))P.z+=dz;resolve();
+  const ox=P.x,oz=P.z,dx=(fx*f+rx*s)*base*dt,dz=(fz*f+rz*s)*base*dt;{const bx0=P.x,bz0=P.z;if(canMove(P.x+dx,P.z))P.x+=dx;if(canMove(P.x,P.z+dz))P.z+=dz;resolve();
+    const want=Math.hypot(dx,dz);if(want>.004&&Math.hypot(P.x-bx0,P.z-bz0)<want*.3)stuckT+=dt;else stuckT=0;if(stuckT>.8){ghostT=1.6;stuckT=0}ghostT=Math.max(0,ghostT-dt)}
   P.speed+=((Math.hypot(P.x-ox,P.z-oz)/Math.max(dt,1e-4))-P.speed)*Math.min(1,dt*10);
   const jump=!!(k.Space||btnJump);
   if(inW){if(!P.swim){P.swim=true;P.vy=0;P.grounded=false}
