@@ -56,8 +56,10 @@ Detailed S-curve rules: see the `card-updates` skill (section "S-curve & forecas
    protection or password. When in doubt, ask the user before writing.
 
 ## Run (Playwright on the local site)
-- `python3 -m http.server` in sar-cost-dashboard; Data Import ← the weekly source file; Card Updates → step 3: drop the
-  cards file, month, PM feedback text, "Update S-curve from Progress", download the workbook and the CSV report.
+- `python3 -m http.server` in sar-cost-dashboard; Data Import ← the weekly source file; Card Updates → step 3: type the PM
+  feedback first, then drop the cards file — **the update runs by itself** (team updates, then the S-curve; month read
+  from the file name, e.g. "Oct26" → 2026-10, else the reports' month). "Run again" after changing the month / feedback.
+  Download the workbook and the CSV report.
 
 ## Check before sending
 - Only the cells in the report changed (compare every sheet with openpyxl; ArrayFormula objects compare by `.text`);

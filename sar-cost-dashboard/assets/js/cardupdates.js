@@ -48,6 +48,13 @@
     if (!last) { var t = new Date(); last = t.toISOString().slice(0, 10); }
     return last.slice(0, 7);
   }
+  /* the month of a cards file from its name: "EP - NSR Projects Oct26", "(Sep26)", "October 2026", "2026-10" */
+  function monthOfName(name) {
+    var n = String(name || ""), M = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    var m = /(?:^|[^a-z])(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s_\-.']*((?:20)?\d{2})(?!\d)/i.exec(n);
+    if (m) { var y = m[2].length === 2 ? "20" + m[2] : m[2]; return y + "-" + ("0" + (M.indexOf(m[1].toLowerCase()) + 1)).slice(-2); }
+    m = /(20\d{2})[\-_.](0[1-9]|1[0-2])(?!\d)/.exec(n); return m ? m[1] + "-" + m[2] : "";
+  }
   function progressData(month) {
     var end = month + "-31", out = { month: month, projects: {} }, sc = tab("S_Curve");
     var reps = tab("Weekly_Report_Updates").slice().sort(function (a, b) { return isoOf(a["Report Date"]).localeCompare(isoOf(b["Report Date"])); });
@@ -166,26 +173,29 @@
       out.innerHTML = '<div class="empty-note">Applying the updates to ' + esc(f.name) + " …</div>"; out2.innerHTML = "";
       Promise.all([f.arrayBuffer(), getUpdates()]).then(function (x) {
         f3 = { name: f.name, buffer: x[0], team: null }; sc.querySelector('[data-a="sc"]').disabled = false;
-        if (!x[1].length) { out.innerHTML = '<div class="note-box">No team update files yet (step 2) — the file is loaded: you can still update the S-curve below.</div>'; return; }
+        var fm = monthOfName(f.name); if (fm) sc.querySelector(".cu-month").value = fm;   // the month of the file (e.g. "Oct26")
+        if (!x[1].length) { out.innerHTML = '<div class="note-box">No team update files (step 2) — only the S-curve update below is applied.</div>'; return; }
         return SARCardForm.apply(x[0].slice(0), x[1].map(function (u) { return u.data; }), f.name).then(function (res) { f3.team = res; showResult(f.name, res); });
-      }).catch(function (e) { out.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
+      }).then(function () { if (f3) runScurve(); })   // automatic: the monthly update runs as soon as the file is dropped
+        .catch(function (e) { out.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
     }));
     p3.appendChild(out);
 
     /* ---- S-curve & forecast finish from the Progress data (execution projects) — on the same new month file */
     var sc = U.el('<div class="cu-sc"><div class="cu-sum"><div><b>S-curve &amp; forecast finish from the Progress data</b><br><span class="muted">Execution projects in the Progress tab: ' +
-      "the month's Actual Progress (%) so the card total equals the report, the Execution Phase activities' % and the forecast finish of unfinished activities. " +
-      'Works on the file dropped above (after the team updates when there are any) — one updated workbook. ' +
-      'Also, on <b>every</b> card: activities not at 100% get an end date after the month (pre-execution and execution), and execution activities at 0% a start after the month.</span></div>' +
+      "the month's Actual Progress (%) so the card total equals the report, the rest of the S-curve to 100%, and the Execution Phase activities' % from the report's activities. " +
+      '<b>Runs by itself when the file is dropped above</b> (month read from the file name, e.g. “Oct26”; after the team updates when there are any) — one updated workbook. ' +
+      'On <b>every</b> card, passed dates and months missing for the rest are listed <b>to discuss</b> (not changed). Change the month or the PM feedback and click the button to run it again.</span></div>' +
       '<div class="cu-sum-acts"><label class="cu-mon">Month <input type="month" class="cu-month"></label>' +
-      '<button type="button" class="icon-btn" data-a="sc" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg><span>Update S-curve from Progress</span></button></div></div></div>');
+      '<button type="button" class="icon-btn" data-a="sc" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg><span>Run again</span></button></div></div></div>');
     var fbBox = U.el('<div class="cu-fb"><label><b>PM feedback</b> <span class="muted">(optional — one project per line: <code>CODE: text</code>; a line without a code continues the project above. ' +
-      'Written on top of the card\'s “PM Feedback” cell with today\'s date, the earlier lines kept.)</span></label>' +
+      'Added as the first line of the card\'s “PM Feedback” cell, dated with the card\'s own day in the month; earlier lines kept. Type it before dropping the file, or click Run again.)</span></label>' +
       '<textarea class="cu-fbt" rows="4" style="width:100%;margin-top:6px" placeholder="0647: FAT done; first delivery arrived on site and installation started."></textarea></div>');
     var out2 = U.el('<div class="cu-out"></div>');
     p3.appendChild(sc); p3.appendChild(fbBox); p3.appendChild(out2);
     sc.querySelector(".cu-month").value = defaultMonth();
-    sc.querySelector('[data-a="sc"]').addEventListener("click", function () {
+    sc.querySelector('[data-a="sc"]').addEventListener("click", function () { runScurve(); });
+    function runScurve() {
       if (!f3) return;
       var month = sc.querySelector(".cu-month").value; if (!/^\d{4}-\d{2}$/.test(month)) { U.toast("Pick the month first.", true); return; }
       var prog = progressData(month);
@@ -203,7 +213,7 @@
       (f3.team ? f3.team.blob.arrayBuffer() : Promise.resolve(f3.buffer.slice(0))).then(function (buf) {
         return SARCardForm.scurve(buf, prog, f3.name);
       }).then(function (res) { showScurve(f3.name, res, !!f3.team); }).catch(function (e) { out2.innerHTML = '<div class="note-box warn">' + esc(e.message) + "</div>"; });
-    });
+    }
     function showScurve(fname, res, withTeam) {
       var ext = (/\.xlsm$/i.test(fname) ? ".xlsm" : ".xlsx"), stem = fname.replace(/(\.xls[xm])$/i, ""), newName = stem + (withTeam ? " - team updates + S-curve" : " - S-curve") + ext;
       var rank = { review: 0, skipped: 1, warning: 2, applied: 3 }, rows = res.report.slice().sort(function (a, b) { return (rank[a.status] - rank[b.status]) || String(a.code).localeCompare(String(b.code)); });

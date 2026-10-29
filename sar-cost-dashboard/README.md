@@ -207,7 +207,8 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    formats untouched, formulas recalculate on opening) and import it on Data Import; a CSV change report is available.
 
 
-Step 3 also checks the dates of every card: activities not at 100% whose end has passed, execution activities at 0%
+Step 3 runs by itself as soon as the new month's file is dropped (month read from the file name, e.g. "Oct26"); "Run again"
+after changing the month or the PM feedback. It also checks the dates of every card: activities not at 100% whose end has passed, execution activities at 0%
 whose start has passed and missing end dates are listed as **to discuss** (nothing is changed), as are cards with no
 month left for the rest of the S-curve. Section 8 % come from the weekly report activity by activity. The **PM feedback**
 typed in the box (`CODE: text` per line) is added as the first line of each card's "PM Feedback" cell, dated with the
