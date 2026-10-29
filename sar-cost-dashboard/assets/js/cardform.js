@@ -1090,24 +1090,36 @@
     for (var i = 0; i < PHASES.length; i++) if (PHASES[i][0].test(name)) return PHASES[i][1];
     return null;
   }
-  /* new % per activity: start from max(last %, its phase %), then move every unfinished activity the same share of its
-     remaining work (or back towards its last %) until Σ w·% = T·Σ w */
-  function spreadActs(acts, T, ph) {
+  /* new % per activity (user rule Oct 2026: "from the weekly, activity by activity"):
+     · an activity whose name is an activity of the weekly report (Project Milestones Progress) takes the report's % as is;
+     · the others start from max(last %, their phase %) and move together (one not started whose start is after the month
+       is never moved) the same share of their remaining work (or back
+       towards their last %) until Σ w·% = T·Σ w. acts.gap = what is still off when only report activities are left. */
+  function normName(s) { return String(s || "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim(); }
+  function spreadActs(acts, T, ph, wk, ME) {
     var W = 0; acts.forEach(function (a) { W += a.w; }); if (!(W > 0)) return false;
-    acts.forEach(function (a) { var p = a.ph && ph && ph[a.ph] != null ? ph[a.ph] : null; a.prev = a.n == null ? 0 : a.n; a.b = Math.min(1, Math.max(a.prev, p == null ? a.prev : p)); });
-    var X = Math.min(1, Math.max(0, T)) * W, A = 0; acts.forEach(function (a) { A += a.w * a.b; });
-    if (X >= A) {
+    var byName = {}; (wk || []).forEach(function (x) { var k = normName(x.name); if (k && x.a != null && !(k in byName)) byName[k] = x.a; });
+    acts.forEach(function (a) {
+      var p = a.ph && ph && ph[a.ph] != null ? ph[a.ph] : null, k = normName(a.name); a.prev = a.n == null ? 0 : a.n;
+      if (k in byName) { a.fix = true; a.wk = Math.min(1, Math.max(0, byName[k])); a.nn = a.wk; }
+      else a.b = Math.min(1, Math.max(a.prev, p == null ? a.prev : p));
+    });
+    var X = Math.min(1, Math.max(0, T)) * W, F = 0; acts.forEach(function (a) { if (a.fix) F += a.w * a.nn; });
+    var flex = acts.filter(function (a) { return !a.fix; }), A = 0; X -= F; flex.forEach(function (a) { A += a.w * a.b; });
+    if (!flex.some(function (a) { return a.w > 0; })) { acts.gap = X / W; flex.forEach(function (a) { a.nn = a.b; }); }
+    else if (X >= A) {
       // first the activities under way or with a phase in the report; one not started yet moves only when those are full
-      var g1 = acts.filter(function (a) { return a.ph || a.prev > 0 || a.b > 0; }), g2 = acts.filter(function (a) { return g1.indexOf(a) < 0; }), left = X - A;
-      acts.forEach(function (a) { a.nn = a.b; });
+      var g1 = flex.filter(function (a) { return a.ph || a.prev > 0 || a.b > 0; }), g2 = flex.filter(function (a) { return g1.indexOf(a) < 0 && !(a.j > ME); }), left = X - A;
+      flex.forEach(function (a) { a.nn = a.b; });
       [g1, g2].forEach(function (grp) {
         var R = 0; grp.forEach(function (a) { R += a.w * (1 - a.b); }); if (!(R > 0) || left <= 0) return;
         var s = Math.min(1, left / R); grp.forEach(function (a) { a.nn = a.b + s * (1 - a.b); }); left -= s * R;
       });
+      if (left > 1e-7) acts.gap = left / W;
     } else {
-      var SL = 0; acts.forEach(function (a) { SL += a.w * a.prev; });
-      if (SL > X + 1e-9) { acts.forEach(function (a) { a.nn = a.prev; }); acts.below = true; }   // never lower an activity: kept, flagged
-      else { var t = A - SL > 0 ? (X - SL) / (A - SL) : 0; acts.forEach(function (a) { a.nn = a.prev + t * (a.b - a.prev); }); }
+      var SL = 0; flex.forEach(function (a) { SL += a.w * a.prev; });
+      if (SL > X + 1e-9) { flex.forEach(function (a) { a.nn = a.prev; }); acts.below = true; }   // never lower an activity: kept, flagged
+      else { var t = A - SL > 0 ? (X - SL) / (A - SL) : 0; flex.forEach(function (a) { a.nn = a.prev + t * (a.b - a.prev); }); }
     }
     acts.forEach(function (a) { a.nn = Math.round(a.nn * 1e6) / 1e6; });
     return true;
@@ -1135,7 +1147,7 @@
               if (!g || !g.ex) { say("Actual progress", "", "", "", "skipped", "S-curve / Execution Phase table not found on this card"); return; }
               (P.warn || []).forEach(function (w) { say("Progress data", "", "", "", "warning", w); });
               // the execution-phase activities
-              var acts = g.ex.rows.map(function (r) { return { r: r, name: txt("B" + r), w: num("O" + r) || 0, n: num("N" + r), k: num("K" + r) }; })
+              var acts = g.ex.rows.map(function (r) { return { r: r, name: txt("B" + r), w: num("O" + r) || 0, n: num("N" + r), k: num("K" + r), j: num("J" + r) }; })
                 .filter(function (a) { return a.name && !/^\[insert/i.test(a.name) && (a.w > 0 || a.n != null); });
               acts.forEach(function (a) { a.ph = phaseOf(a.name); });
               // PO block of the report's contract (projects with several contracts)
@@ -1159,23 +1171,20 @@
                   if (a.n != null && v < a.n - 1e-9) { say("Activity % · " + a.name, "N" + a.r, pct(a.n), pct(v), "warning", "the report (" + pct(P.cum) + ") is below the activity's last % — kept (never lowered)"); v = a.n; }
                   a.nn = v;
                 });
-              } else if (!spreadActs(acts, P.cum, P.phases)) say("Activities", "", "", "", "warning", "no activity weights (column O) — activity % kept");
-              else if (acts.below) say("Activities", "", "", "", "warning", "the activities' last % already add up to more than the report (" + pct(P.cum) + ") — activity % kept (never lowered)");
+              } else if (!spreadActs(acts, P.cum, P.phases, P.acts, prog.monthEnd ? isoToSerial(prog.monthEnd) : null)) say("Activities", "", "", "", "warning", "no activity weights (column O) — activity % kept");
+              else {
+                if (acts.below) say("Activities", "", "", "", "warning", "the activities' last % already add up to more than the report (" + pct(P.cum) + ") — activity % kept (never lowered)");
+                if (acts.gap && Math.abs(acts.gap) > 5e-4) say("Activities", "", "", "", "warning", "with the report's activity % the weighted total is off the report (" + pct(P.cum) + ") by " + pct(acts.gap) + " — check the weights (column O) with the PM");
+                acts.forEach(function (a) { if (a.fix && a.n != null && a.wk < a.n - 1e-9) say("Activity % · " + a.name, "N" + a.r, pct(a.n), pct(a.wk), "warning", "the weekly report's % is below the card's last % — written as in the report, check with the PM"); });
+              }
               scope.forEach(function (a) {
                 if (a.nn == null) return; var ref = "N" + a.r;
                 if (a.n != null && Math.abs(a.nn - a.n) < 5e-7) return;
                 var why = blocked(ref); if (why) { say("Activity % · " + a.name, ref, pct(a.n), pct(a.nn), "skipped", why); return; }
-                edits[ref] = a.nn; writes.push([ref, "pct", String(a.nn)]); say("Activity % · " + a.name, ref, pct(a.n), pct(a.nn), "applied", a.ph && !blk ? "phase " + a.ph + (P.phases && P.phases[a.ph] != null ? " " + pct(P.phases[a.ph]) : "") : "");
+                edits[ref] = a.nn; writes.push([ref, "pct", String(a.nn)]); say("Activity % · " + a.name, ref, pct(a.n), pct(a.nn), "applied", a.fix ? "the weekly report's activity " + a.name : a.ph && !blk ? "spread to match the total (phase " + a.ph + (P.phases && P.phases[a.ph] != null ? " " + pct(P.phases[a.ph]) : "") + ")" : "spread to match the total");
               });
-              // forecast finish of the unfinished activities
-              var fs = P.fcst ? isoToSerial(P.fcst) : null;
-              if (fs == null) say("Forecast finish", "", "", "", "warning", "no forecast completion date in the Progress data — dates kept");
-              else scope.forEach(function (a) {
-                var done = (a.nn != null ? a.nn : a.n) >= 0.99995, ref = "K" + a.r; if (done || a.k == null) return;
-                if (Math.abs(a.k - fs) < 0.5) return;
-                var why = blocked(ref); if (why) { say("Forecast finish · " + a.name, ref, serialToIso(a.k), P.fcst, "skipped", why); return; }
-                edits[ref] = fs; writes.push([ref, "date", P.fcst]); say("Forecast finish · " + a.name, ref, day(serialToIso(a.k)), P.fcst, "applied", "");
-              });
+              // forecast finish dates are not changed from the report (user rule Oct 2026): the S-curve months follow the card's
+              // own section 8 forecast dates; a passed date is listed by dateRules() for a case-by-case decision
               // recalculate the card (month columns follow the new dates), then find the month's column
               var formulas = {}, maxR = S.maxR, maxC = 1;
               Object.keys(cells).forEach(function (ref) { if (cells[ref].c > maxC) maxC = cells[ref].c; });
@@ -1249,15 +1258,17 @@
                   say(rest.what + " · closed month", ref, pct(ov), "", "applied", "value in a month outside the execution period (no month date) — cleared so the card totals 100%");
                 });
                 fut = fut.filter(function (x) { var why = blocked(x.ref); if (why) say(rest.what + " · rest", x.ref, "", "", "skipped", why); return !why; });
-                if (!fut.length) { say(rest.what + " · rest", "", "", pct(left), "warning", "no open month after " + mLab + " on the S-curve — " + pct(left) + " left to reach 100% (the execution period ends in " + mLab + "; extend the forecast finish)"); return; }
-                /* S-curve shape (user rule): the month shares follow the report's S-curve forecast (Cum Forecast % at each month end),
+                if (!fut.length) { say(rest.what + " · rest", "", "", pct(left), "review", "no month after " + mLab + " on the S-curve while " + pct(left) + " is left to reach 100% — management to decide (new forecast dates in section 8 / more months)"); return; }
+                /* S-curve shape (user rule): when the card already has values in the months after the update month (typed by the
+                   PM), they keep their shape and are scaled to what is left. Else the month shares follow the report's S-curve forecast (Cum Forecast % at each month end),
                    scaled so the card ends at 100% — no lump in the last month. When the report's forecast is already complete by the
                    month, the tail of a standard S-curve over the execution period is used (F(t) = t²(3 − 2t), shares F(k/N) − F((k−1)/N)). */
                 var fp = P && P.fpts && P.fpts.length ? P.fpts : null, fAt = function (ym) { var hit = null; (fp || []).forEach(function (q) { if (q.d.slice(0, 7) <= ym) hit = q.f; }); return hit; };
                 var prevT = rest.total, wS = 0;
                 fut.forEach(function (x) { var fc = fAt(x.ym), t = Math.min(1, Math.max(prevT, fc == null ? prevT : fc)); x.w = t - prevT; x.fc = fc; prevT = t; wS += x.w; });
-                var how = "the report's S-curve forecast";
-                if (!(wS > 1e-6)) {
+                var how = "the report's S-curve forecast", own = 0; fut.forEach(function (x) { if (x.ex > 0) own += x.ex; });
+                if (own > 1e-6) { fut.forEach(function (x) { x.w = x.ex > 0 ? x.ex : 0; x.fc = null; }); wS = own; how = "the card's own month values (scaled)"; }
+                else if (!(wS > 1e-6)) {
                   var F = function (t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }, N = Math.max(nOpen, 1);
                   wS = 0; fut.forEach(function (x) { x.w = F(x.k / N) - F((x.k - 1) / N); wS += x.w; }); how = "a standard S-curve tail (month " + fut[0].k + "–" + fut[fut.length - 1].k + " of " + N + ")";
                 }
@@ -1274,15 +1285,21 @@
               if (P) weeklyPart();
               if (prog.rules) dateRules();
               restPart();
-              if (fbk) pmFeedback();
-              /* Date rules for every card (user rule, Oct 2026), after the Progress update:
-                 · Creation / Initiation / Planning / Tendering activities not at 100%: the forecast/actual end (K) must be after the
-                   month → end of next month.
-                 · Execution Phase activities not at 100%: end after the month (the report's forecast when the project is in the
-                   Progress data, else end of next month); at 0% the start (J) must be after the month too → 1st of next month.
-                 Formula, locked and protected cells are never written (reported "update by hand"). Phase head rows are skipped. */
+              if (fbk) pmFeedback(); else if (prog.rules) fbCheck();
+              /* no new feedback for this card: its last PM Feedback line is listed when it is older than the update month */
+              function fbCheck() {
+                var at = null; Object.keys(cells).some(function (ref) { if (/^PM Feedback$/i.test(txt(ref))) { at = splitRef(ref); return true; } return false; });
+                if (!at) return; var ref = colStr(at.c) + (at.r + 1), old = cells[ref] && typeof cells[ref].val === "string" ? cells[ref].val.trim() : "";
+                var m = /^(\d{1,2})[ \-]([A-Za-z]{3})[a-z]*[ \-](\d{4})/.exec(old), MON = "JanFebMarAprMayJunJulAugSepOctNovDec";
+                var ym = m ? m[3] + "-" + ("0" + (MON.indexOf(m[2].slice(0, 1).toUpperCase() + m[2].slice(1, 3).toLowerCase()) / 3 + 1)).slice(-2) : "";
+                if (!m || ym < month) say("PM Feedback", ref, old.split("\n")[0].slice(0, 60), "", "review", "no new PM feedback for " + mLab + " — last line " + (m ? "dated " + m[0] : "has no date") + "; ask the PM");
+              }
+              /* Date check for every card (user rule, Oct 2026: "any date that has passed — tell me and we discuss case by case"):
+                 an activity not at 100% whose forecast/actual end (K) is not after the month, an Execution activity at 0% whose
+                 start (J) is not after the month, and an activity not at 100% with no end date are listed as "review" — nothing
+                 is written. Phase head rows are skipped. */
               function dateRules() {
-                var ME = isoToSerial(prog.monthEnd), NS = ME + 1, NE = isoToSerial(prog.nextEnd), hdr = 0, phase = "";
+                var ME = isoToSerial(prog.monthEnd), hdr = 0, phase = "";
                 for (var r = 60; r <= Math.min(S.maxR, 260); r++) if (/^Project Phases$/i.test(txt("B" + r))) { hdr = r; break; }
                 if (!hdr) return;
                 for (var r2 = hdr + 1; r2 <= hdr + 80; r2++) {
@@ -1291,20 +1308,11 @@
                   if (/phase$/i.test(nm)) { phase = /^(creation|initiation|planning|tendering)/i.test(nm) ? "pre" : /^execution/i.test(nm) ? "exe" : ""; continue; }
                   if (!phase || /^\[insert/i.test(nm)) continue;
                   var nRef = "N" + r2, n = nRef in edits ? edits[nRef] : num(nRef); if (n == null || n >= 0.99995) continue;
-                  var jRef = "J" + r2, kRef = "K" + r2, j = jRef in edits ? edits[jRef] : num(jRef), k = kRef in edits ? edits[kRef] : num(kRef), newJ = null;
+                  var jRef = "J" + r2, kRef = "K" + r2, j = jRef in edits ? edits[jRef] : num(jRef), k = kRef in edits ? edits[kRef] : num(kRef);
                   var lab = (phase === "pre" ? "Pre-execution" : "Execution") + " · " + nm;
-                  function put(ref, from, to, why) {
-                    var x = cells[ref], why2 = blocked(ref) || (x && x.locked && !(ref in edits) ? "cell is locked in this file — kept as is" : "");
-                    if (why2) { say(lab, ref, from ? serialToIso(from) : "", serialToIso(to), "skipped", why + " — " + why2 + " (update by hand)"); return false; }
-                    edits[ref] = to; writes.push([ref, "date", serialToIso(to)]); say(lab, ref, from ? serialToIso(from) : "", serialToIso(to), "applied", why); return true;
-                  }
-                  if (phase === "exe" && n === 0 && typeof j === "number" && j <= ME) { if (put(jRef, j, NS, "0% done and the start is not after " + mLab + " → start 1st of next month")) newJ = NS; }
-                  if (typeof k === "number" && k <= ME) {
-                    var to = NE, fc = phase === "exe" && P && P.fcst ? isoToSerial(P.fcst) : null;
-                    if (fc != null && fc > ME) to = fc;
-                    var sj = newJ != null ? newJ : j; if (typeof sj === "number" && to < sj) to = sj;
-                    put(kRef, k, to, pct(n) + " done and the end is not after " + mLab + " → " + (to === fc ? "the report's forecast finish" : "end of next month"));
-                  } else if (k == null && typeof j === "number") say(lab, kRef, "", "", "warning", pct(n) + " done but no end date — enter it by hand");
+                  if (phase === "exe" && n === 0 && typeof j === "number" && j <= ME) say(lab, jRef, serialToIso(j), "", "review", "0% done but the start is not after " + mLab + " — decide the new start with the PM");
+                  if (typeof k === "number" && k <= ME) say(lab, kRef, serialToIso(k), "", "review", pct(n) + " done but the end has passed (not after " + mLab + ") — decide the new forecast end with the PM");
+                  else if (k == null && typeof j === "number") say(lab, kRef, "", "", "review", pct(n) + " done but no end date — enter it with the PM");
                 }
               }
               /* PM feedback (from the PM's e-mail): added on top of the "PM Feedback" cell, dated like the lines already there */
@@ -1313,9 +1321,12 @@
                 Object.keys(cells).some(function (ref) { if (/^PM Feedback$/i.test(txt(ref))) { at = splitRef(ref); return true; } return false; });
                 if (!at) { say("PM Feedback", "", "", "", "skipped", "no “PM Feedback” cell on this card"); return; }
                 var ref = colStr(at.c) + (at.r + 1), x = cells[ref], why = blocked(ref) || (x && x.locked ? "cell is locked in this file" : "");
-                var old = x && typeof x.val === "string" ? x.val : "", m = /^(\d{1,2})([ \-])([A-Za-z]{3})[a-z]*\2(\d{4})/.exec(old.trim()), d = new Date(prog.fbDate + "T00:00:00Z");
+                var old = x && typeof x.val === "string" ? x.val : "", m = /^(\d{1,2})([ \-])([A-Za-z]{3})[a-z]*\2(\d{4})/.exec(old.trim());
+                // dated like the card's last line: the same day of the month, in the update month (25 Sep 2026 → 25 Oct 2026)
                 var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], sep = m ? m[2] : "-";
-                var stamp = (sep === " " ? d.getUTCDate() : ("0" + d.getUTCDate()).slice(-2)) + sep + MON[d.getUTCMonth()] + sep + d.getUTCFullYear();
+                var ym = /^(\d{4})-(\d{2})$/.exec(month), Y = ym ? +ym[1] : new Date().getUTCFullYear(), M = ym ? +ym[2] - 1 : new Date().getUTCMonth();
+                var dd = m ? +m[1] : new Date(prog.fbDate + "T00:00:00Z").getUTCDate(); dd = Math.min(dd, new Date(Date.UTC(Y, M + 1, 0)).getUTCDate());
+                var stamp = (m && m[1].length === 1 ? String(dd) : ("0" + dd).slice(-2)) + sep + MON[M] + sep + Y;
                 var line = stamp + ": " + fbk.trim(), nv = old && old.indexOf(line) === 0 ? old : line + (old ? "\n" + old : "");
                 if (why) { say("PM Feedback", ref, "", line, "skipped", why); return; }
                 if (nv === old) { say("PM Feedback", ref, "", line, "skipped", "already in the cell"); return; }

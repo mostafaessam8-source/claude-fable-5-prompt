@@ -65,12 +65,14 @@
         warn.push("forecast completion in the report (" + (fc || "empty") + ") is " + (fc ? "already past while the project is not complete" : "missing") + (hit ? " — the date the S-curve forecast reaches 100% (" + hit.d + ") is used" : " — dates kept"));
         fc = hit ? hit.d : "";
       }
-      var phases = {};
-      tab("Project_Milestones_Progress_Combine").concat(tab("Project_Milestones_Progress")).forEach(function (x) {
-        if (x["Source.Name"] !== src) return; var k = String(x.WSB || x.Description || "").trim(), v = nOf(x["Actual Progress"]);
+      // activities of the report (latest table first; its Description, not the WSB column, which is shifted in the Combine table)
+      var phases = {}, acts = [];
+      tab("Project_Milestones_Progress").concat(tab("Project_Milestones_Progress_Combine")).forEach(function (x) {
+        if (x["Source.Name"] !== src) return; var k = String(x.Description || x.WSB || "").trim(), v = nOf(x["Actual Progress"]);
+        if (k && v != null && !acts.some(function (a) { return a.name.toLowerCase() === k.toLowerCase(); })) acts.push({ name: k, a: v, fin: isoOf(x["Actual/Forecast Finish"]) });
         ["Engineering", "Procurement", "Mobilization", "Construction"].forEach(function (p) { if (new RegExp("^" + p, "i").test(k) && v != null && phases[p] == null) phases[p] = v; });
       });
-      out.projects[code] = { name: r["Project Name"] || "", cum: cum, repDate: repDate, fcst: fc, warn: warn, phases: phases,
+      out.projects[code] = { name: r["Project Name"] || "", cum: cum, repDate: repDate, fcst: fc, warn: warn, phases: phases, acts: acts,
         fpts: pts.filter(function (x) { return x.d && x.f != null; }).map(function (x) { return { d: x.d, f: x.f }; }),
         cv: nOf(r["Revised Contract Value"]) || nOf(r["Contract Value"]), po: r["(Con) PO Number"] != null ? String(r["(Con) PO Number"]) : "", contractor: r.Contractor || "" };
     });
@@ -204,16 +206,16 @@
     });
     function showScurve(fname, res, withTeam) {
       var ext = (/\.xlsm$/i.test(fname) ? ".xlsm" : ".xlsx"), stem = fname.replace(/(\.xls[xm])$/i, ""), newName = stem + (withTeam ? " - team updates + S-curve" : " - S-curve") + ext;
-      var rank = { skipped: 0, warning: 1, applied: 2 }, rows = res.report.slice().sort(function (a, b) { return (rank[a.status] - rank[b.status]) || String(a.code).localeCompare(String(b.code)); });
-      var ok = rows.filter(function (r) { return r.status === "applied"; }).length, warn = rows.filter(function (r) { return r.status === "warning"; }).length, sk = rows.filter(function (r) { return r.status === "skipped"; }).length;
-      out2.innerHTML = '<div class="cu-sum"><div><b>' + ok + " cells updated</b> from the Progress data (" + esc(res.month) + ")" + (warn ? ' · <span class="neg">' + warn + " warnings</span>" : "") + (sk ? ' · <span class="neg">' + sk + " not applied</span>" : "") +
+      var rank = { review: 0, skipped: 1, warning: 2, applied: 3 }, rows = res.report.slice().sort(function (a, b) { return (rank[a.status] - rank[b.status]) || String(a.code).localeCompare(String(b.code)); });
+      var ok = rows.filter(function (r) { return r.status === "applied"; }).length, warn = rows.filter(function (r) { return r.status === "warning"; }).length, sk = rows.filter(function (r) { return r.status === "skipped"; }).length, rv = rows.filter(function (r) { return r.status === "review"; }).length;
+      out2.innerHTML = '<div class="cu-sum"><div><b>' + ok + " cells updated</b> from the Progress data (" + esc(res.month) + ")" + (warn ? ' · <span class="neg">' + warn + " warnings</span>" : "") + (sk ? ' · <span class="neg">' + sk + " not applied</span>" : "") + (rv ? ' · <span class="neg"><b>' + rv + " to discuss</b> (passed dates, months to add, feedback to ask) — nothing was changed for these</span>" : "") +
         '</div><div class="cu-sum-acts"><button type="button" class="icon-btn" data-a="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download updated workbook</span></button>' +
         '<button type="button" class="icon-btn ghost" data-a="csv">Download S-curve report (.csv)</button></div></div>' +
         '<div class="muted cu-note">' + (withTeam ? "Includes the team updates above. " : "") + "Formulas (totals, month columns, row 79 of PO projects) recalculate when it is opened in Excel.</div>" +
         '<table class="cu-tbl"><thead><tr><th>Project</th><th>What</th><th>Cell</th><th>In the file</th><th>New value</th><th>Source</th><th>Result</th></tr></thead><tbody>' +
         rows.map(function (r) {
           return "<tr" + (r.status !== "applied" ? ' class="cu-skip"' : "") + "><td>" + esc(r.code) + "</td><td>" + esc(r.what) + "</td><td>" + esc(r.ref) + "</td><td>" + esc(r.from || "") + "</td><td><b>" + esc(r.to || "") +
-            "</b></td><td>" + esc(r.src || "") + "</td><td>" + (r.status === "applied" ? '<span class="pos">applied</span>' + (r.why ? '<div class="muted">' + esc(r.why) + "</div>" : "") : '<span class="neg">' + (r.status === "warning" ? "warning: " : "") + esc(r.why) + "</span>") + "</td></tr>";
+            "</b></td><td>" + esc(r.src || "") + "</td><td>" + (r.status === "applied" ? '<span class="pos">applied</span>' + (r.why ? '<div class="muted">' + esc(r.why) + "</div>" : "") : '<span class="neg">' + (r.status === "warning" ? "warning: " : r.status === "review" ? "<b>to discuss:</b> " : "") + esc(r.why) + "</span>") + "</td></tr>";
         }).join("") + "</tbody></table>";
       out2.querySelector('[data-a="xlsx"]').addEventListener("click", function () {
         var a = document.createElement("a"); a.href = URL.createObjectURL(res.blob); a.download = newName; document.body.appendChild(a); a.click(); a.remove();

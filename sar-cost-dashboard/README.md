@@ -207,9 +207,11 @@ Project Cards → **Card Updates (Team)**. The yellow cells of every `<code>_Pro
    formats untouched, formulas recalculate on opening) and import it on Data Import; a CSV change report is available.
 
 
-Step 3 also applies the monthly **date rules** to every card (activities not at 100% end after the month; execution
-activities at 0% start after the month; formula cells are kept and listed) and writes the **PM feedback** typed in the box
-(`CODE: text` per line) on top of each card's "PM Feedback" cell with today's date.
+Step 3 also checks the dates of every card: activities not at 100% whose end has passed, execution activities at 0%
+whose start has passed and missing end dates are listed as **to discuss** (nothing is changed), as are cards with no
+month left for the rest of the S-curve. Section 8 % come from the weekly report activity by activity. The **PM feedback**
+typed in the box (`CODE: text` per line) is added as the first line of each card's "PM Feedback" cell, dated with the
+card's own day in the update month.
 ## Updating the data
 
 1. Open the site and go to **Data Import** (or click **Import Excel** in the header).
