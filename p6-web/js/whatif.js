@@ -11,7 +11,7 @@
 
   const KINDS = {
     dur: () => B('Change duration', 'تغيير مدة نشاط'), event: () => B('Delay event (TIA)', 'حدث تأخير (TIA)'), lag: () => B('Change lag', 'تغيير Lag علاقة'),
-    addrel: () => B('Add relationship', 'إضافة علاقة'), rmrel: () => B('Remove relationship', 'حذف علاقة'), cons: () => B('Set constraint', 'وضع قيد'), scale: () => B('Scale open durations', 'تغيير نسبي لمدد الأنشطة المفتوحة')
+    addrel: () => B('Add relationship', 'إضافة علاقة'), rel: () => B('Change relationship type / lag', 'تغيير نوع / Lag علاقة'), rmrel: () => B('Remove relationship', 'حذف علاقة'), cons: () => B('Set constraint', 'وضع قيد'), scale: () => B('Scale open durations', 'تغيير نسبي لمدد الأنشطة المفتوحة')
   };
   const describe = (o) => {
     switch (o.k) {
@@ -20,11 +20,44 @@
       case 'lag': return `${o.from} → ${o.to}: lag = ${o.lag} d`;
       case 'addrel': return `${o.from} → ${o.to} (${o.type}${o.lag ? ' ' + o.lag : ''})`;
       case 'rmrel': return `${o.from} ✕ ${o.to}`;
+      case 'rel': return `${o.from} → ${o.to}: ${o.type}${o.lag ? ' ' + o.lag : ''}${o.ff != null ? ' + FF ' + o.ff : ''}`;
       case 'cons': return `${o.code}: ${o.ct}${o.date ? ' ' + o.date : ''}`;
       case 'scale': return `${o.v}% ${B('of open durations', 'من مدد الأنشطة المفتوحة')}${o.wbs ? ' · WBS ' + o.wbs : ''}`;
     }
     return '';
   };
+
+  const input = (id, ph, w) => `<input id="${id}" list="wif_codes" placeholder="${esc(ph)}" style="width:${w || 110}px">`;
+  function formFor(k) {
+    const num = (id, ph, v) => `<input id="${id}" type="number" placeholder="${esc(ph)}" value="${v == null ? '' : v}" style="width:80px">`;
+    switch (k) {
+      case 'dur': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_mode"><option value="add">${B('Add days (±)', 'إضافة أيام (±)')}</option><option value="pct">${B('% of duration', '% من المدة')}</option><option value="set">${B('Set to days', 'تعيين بأيام')}</option></select>` + num('f_v', B('value', 'القيمة'));
+      case 'event': return `<input id="f_name" placeholder="${esc(B('Event name', 'اسم الحدث'))}" style="width:150px">` + num('f_days', B('days', 'أيام')) + input('f_succ', B('Delays activity', 'يؤخر النشاط')) + input('f_pred', B('After (optional)', 'بعد (اختياري)'));
+      case 'lag': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + num('f_lag', 'lag');
+      case 'rmrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى'));
+      case 'addrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + `<select id="f_type"><option>FS</option><option>SS</option><option>FF</option><option>SF</option></select>` + num('f_lag', 'lag', 0);
+      case 'cons': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_ct">${['SNET', 'FNET', 'SNLT', 'FNLT', 'MSO', 'MFO', 'NONE'].map((c) => `<option>${c}</option>`).join('')}</select><input id="f_date" placeholder="dd-mmm-yy" style="width:90px">`;
+      case 'scale': return num('f_v', B('% (e.g. 120)', '% (مثلاً 120)'), 100) + `<input id="f_wbs" placeholder="${esc(B('WBS code (optional)', 'كود WBS (اختياري)'))}" style="width:150px">`;
+    }
+    return '';
+  }
+  function readOp(k, el) {
+    const v = (id) => { const e = el.querySelector('#' + id); return e ? e.value.trim() : ''; }, n = (id) => { const x = parseFloat(v(id)); return isFinite(x) ? x : NaN; };
+    const o = { k };
+    if (k === 'dur') Object.assign(o, { code: v('f_code'), mode: v('f_mode'), v: n('f_v') });
+    else if (k === 'event') Object.assign(o, { name: v('f_name'), days: n('f_days'), succ: v('f_succ'), pred: v('f_pred') });
+    else if (k === 'lag') Object.assign(o, { from: v('f_from'), to: v('f_to'), lag: n('f_lag') });
+    else if (k === 'rel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
+    else if (k === 'rmrel') Object.assign(o, { from: v('f_from'), to: v('f_to') });
+    else if (k === 'addrel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
+    else if (k === 'cons') Object.assign(o, { code: v('f_code'), ct: v('f_ct'), date: v('f_date') });
+    else if (k === 'scale') Object.assign(o, { v: n('f_v'), wbs: v('f_wbs') });
+    const need = { dur: ['code', 'v'], event: ['days', 'succ'], lag: ['from', 'to', 'lag'], rmrel: ['from', 'to'], rel: ['from', 'to'], addrel: ['from', 'to'], cons: ['code'], scale: ['v'] }[k];
+    if (need.some((f) => o[f] === '' || (typeof o[f] === 'number' && isNaN(o[f])))) return null;
+    return o;
+  }
+
+  P6.opUI = { KINDS, describe, formFor, readOp };
 
   /* Apply ops to project p (mutating). Returns array of warnings. */
   P6.applyScenario = function (p, ops) {
@@ -51,6 +84,11 @@
         const a = byCode(p, o.from), b = byCode(p, o.to), r = a && b && p.rels.find((q) => q.p === a.id && q.s === b.id);
         if (!r) { warn.push(o.from + '→' + o.to + ' ' + B('not found', 'غير موجودة')); continue; }
         if (o.k === 'lag') r.lag = o.lag; else p.rels = p.rels.filter((q) => q !== r);
+      } else if (o.k === 'rel') {
+        const a = byCode(p, o.from), b = byCode(p, o.to), r = a && b && p.rels.find((q) => q.p === a.id && q.s === b.id);
+        if (!r) { warn.push(o.from + '→' + o.to + ' ' + B('not found', 'غير موجودة')); continue; }
+        r.type = o.type; r.lag = o.lag || 0;
+        if (o.ff != null && !p.rels.some((q) => q.p === a.id && q.s === b.id && q.type === 'FF')) p.rels.push({ id: P6.nextId(p), p: a.id, s: b.id, type: 'FF', lag: o.ff });
       } else if (o.k === 'addrel') {
         const a = byCode(p, o.from), b = byCode(p, o.to); if (!a || !b) { warn.push(o.from + '→' + o.to + ' ?'); continue; }
         if (P6.wouldLoop && P6.wouldLoop(p, a.id, b.id)) { warn.push(B('Loop: ', 'حلقة: ') + o.from + '→' + o.to); continue; }
@@ -74,34 +112,6 @@
     const root = document.createElement('div'); root.className = 'wif'; root.dir = P6.dir();
     const dl = `<datalist id="wif_codes">${p.tasks.slice(0, 3000).map((t) => `<option value="${esc(t.code)}">${esc(t.name)}</option>`).join('')}</datalist>`;
     const save = () => App.scheduleSave();
-    const input = (id, ph, w) => `<input id="${id}" list="wif_codes" placeholder="${esc(ph)}" style="width:${w || 110}px">`;
-    function formFor(k) {
-      const num = (id, ph, v) => `<input id="${id}" type="number" placeholder="${esc(ph)}" value="${v == null ? '' : v}" style="width:80px">`;
-      switch (k) {
-        case 'dur': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_mode"><option value="add">${B('Add days (±)', 'إضافة أيام (±)')}</option><option value="pct">${B('% of duration', '% من المدة')}</option><option value="set">${B('Set to days', 'تعيين بأيام')}</option></select>` + num('f_v', B('value', 'القيمة'));
-        case 'event': return `<input id="f_name" placeholder="${esc(B('Event name', 'اسم الحدث'))}" style="width:150px">` + num('f_days', B('days', 'أيام')) + input('f_succ', B('Delays activity', 'يؤخر النشاط')) + input('f_pred', B('After (optional)', 'بعد (اختياري)'));
-        case 'lag': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + num('f_lag', 'lag');
-        case 'rmrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى'));
-        case 'addrel': return input('f_from', B('From', 'من')) + input('f_to', B('To', 'إلى')) + `<select id="f_type"><option>FS</option><option>SS</option><option>FF</option><option>SF</option></select>` + num('f_lag', 'lag', 0);
-        case 'cons': return input('f_code', B('Activity ID', 'رقم النشاط')) + `<select id="f_ct">${['SNET', 'FNET', 'SNLT', 'FNLT', 'MSO', 'MFO', 'NONE'].map((c) => `<option>${c}</option>`).join('')}</select><input id="f_date" placeholder="dd-mmm-yy" style="width:90px">`;
-        case 'scale': return num('f_v', B('% (e.g. 120)', '% (مثلاً 120)'), 100) + `<input id="f_wbs" placeholder="${esc(B('WBS code (optional)', 'كود WBS (اختياري)'))}" style="width:150px">`;
-      }
-      return '';
-    }
-    function readOp(k, el) {
-      const v = (id) => { const e = el.querySelector('#' + id); return e ? e.value.trim() : ''; }, n = (id) => { const x = parseFloat(v(id)); return isFinite(x) ? x : NaN; };
-      const o = { k };
-      if (k === 'dur') Object.assign(o, { code: v('f_code'), mode: v('f_mode'), v: n('f_v') });
-      else if (k === 'event') Object.assign(o, { name: v('f_name'), days: n('f_days'), succ: v('f_succ'), pred: v('f_pred') });
-      else if (k === 'lag') Object.assign(o, { from: v('f_from'), to: v('f_to'), lag: n('f_lag') });
-      else if (k === 'rmrel') Object.assign(o, { from: v('f_from'), to: v('f_to') });
-      else if (k === 'addrel') Object.assign(o, { from: v('f_from'), to: v('f_to'), type: v('f_type'), lag: n('f_lag') || 0 });
-      else if (k === 'cons') Object.assign(o, { code: v('f_code'), ct: v('f_ct'), date: v('f_date') });
-      else if (k === 'scale') Object.assign(o, { v: n('f_v'), wbs: v('f_wbs') });
-      const need = { dur: ['code', 'v'], event: ['days', 'succ'], lag: ['from', 'to', 'lag'], rmrel: ['from', 'to'], addrel: ['from', 'to'], cons: ['code'], scale: ['v'] }[k];
-      if (need.some((f) => o[f] === '' || (typeof o[f] === 'number' && isNaN(o[f])))) return null;
-      return o;
-    }
     function draw() {
       const sc = p.scenarios;
       root.innerHTML = `${dl}<div class="wif-bar"><label>${esc(B('Scenario', 'السيناريو'))}</label><select id="wif_sel">${sc.map((s, i) => `<option value="${i}"${s === cur ? ' selected' : ''}>${esc(s.name)}</option>`).join('') || `<option>—</option>`}</select><button class="btn" id="wif_new">+ ${esc(B('New', 'جديد'))}</button><button class="btn" id="wif_ren"${cur ? '' : ' disabled'}>${esc(B('Rename', 'إعادة تسمية'))}</button><button class="btn" id="wif_dup"${cur ? '' : ' disabled'}>${esc(B('Duplicate', 'نسخ'))}</button><button class="btn" id="wif_del"${cur ? '' : ' disabled'}>${esc(B('Delete', 'حذف'))}</button></div>`

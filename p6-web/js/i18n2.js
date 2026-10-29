@@ -63,7 +63,7 @@
     mi_dbconfig: ['Database Configuration…', 'إعدادات قاعدة البيانات…'], mi_chgpw: ['Change Password…', 'تغيير كلمة المرور…'], mi_disconnect: ['Disconnect (Log Out)', 'قطع الاتصال (تسجيل الخروج)'], login_at_start: ['Show the login screen at startup', 'إظهار شاشة تسجيل الدخول عند البدء'],
     rel_select_first: ['Select a relationship row first', 'اختر صف علاقة أولاً'], rel_hidden: ['That activity is hidden by the current filter', 'هذا النشاط مخفي بالفلتر الحالي'],
     remove: ['Remove', 'إزالة'],
-    win_dashboard: ['Dashboard', 'Dashboard'],
+    win_dashboard: ['Dashboard', 'Dashboard'], win_delay: ['Delay & Recovery', 'التأخير والاستردادية'], mi_eot: ['EOT Register…', 'سجل EOT…'], mi_delayan: ['Delay Analysis (TIA)…', 'تحليل التأخير (TIA)…'], mi_delayrep: ['Delay / EOT Report…', 'تقرير التأخير / EOT…'], mi_oosfix: ['Fix Out-of-Sequence…', 'تصحيح الأوت أوف سيكونس…'], mi_recovery: ['Recovery Schedule…', 'جدول الاسترداد (Recovery)…'], mi_revisions: ['Revised Schedule / Revisions…', 'الجدول المعدّل / المراجعات…'],
     mi_sharedb: ['Share Database Link…', 'رابط مشاركة القاعدة…'], conflict_msg: ['Someone else changed this project in the shared database after you opened it.\n\nOK = overwrite their version with yours\nCancel = keep their version (reopen the project to see it)', 'شخص آخر عدّل هذا المشروع في القاعدة المشتركة بعد أن فتحته.\n\nموافق = استبدال نسخته بنسختك\nإلغاء = الإبقاء على نسخته (أعد فتح المشروع لرؤيتها)'], conflict_kept: ['Your changes were not saved – reopen the project to load the latest version', 'لم تُحفظ تعديلاتك – أعد فتح المشروع لتحميل آخر نسخة'], saved_offline: ['Saved on this device – will sync when the database is reachable', 'تم الحفظ على هذا الجهاز – ستتم المزامنة عند توفر القاعدة'],
   });
 })(window);
