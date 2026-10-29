@@ -42,8 +42,9 @@
   // ---------- login screen ----------
   const logo = '<span class="lg-logo">P6</span>';
   App.loginScreen = function () {
+    if (!App.cfg.loginMig) { App.cfg.loginMig = true; App.cfg.loginAtStart = false; App.saveCfg(); } // v2.4.1: no login screen by default (re-enable in Admin Preferences)
     if (SS.get('p6web.sess')) { App.cfg.user = SS.get('p6web.sess'); return Promise.resolve(); }
-    if (App.cfg.loginAtStart === false) { SS.set('p6web.sess', App.cfg.user || 'admin'); return Promise.resolve(); }
+    if (App.cfg.loginAtStart !== true) { SS.set('p6web.sess', App.cfg.user || 'admin'); return Promise.resolve(); }
     return new Promise((resolve) => {
       const ov = document.createElement('div'); ov.id = 'loginov'; ov.dir = ar() ? 'rtl' : 'ltr';
       const dbs = dbList(), cur = App.dbAlias();

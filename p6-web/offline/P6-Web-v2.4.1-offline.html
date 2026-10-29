@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="ltr">
 <head>
-<!-- P6 Web – Schedule Studio v2.4.0 (241a348) – offline single-file build -->
+<!-- P6 Web – Schedule Studio v2.4.1 (8de5705) – offline single-file build -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P6 Web – Schedule Studio</title>
@@ -1189,7 +1189,7 @@ body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
 (function (g) {
   'use strict';
   const P6 = g.P6;
-  P6.VERSION = '2.4.0'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '241a348'; P6.OFFLINE = true;
+  P6.VERSION = '2.4.1'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '8de5705'; P6.OFFLINE = true;
   P6.versionName = () => 'P6 Web – Schedule Studio v' + P6.VERSION + (P6.COMMIT && P6.COMMIT !== 'dev' ? ' (' + P6.COMMIT + ')' : '') + (P6.OFFLINE ? ' · Offline' : '');
   P6.offlineFile = () => 'P6-Web-v' + P6.VERSION + '-offline.html';
   document.title = P6.versionName();
@@ -6991,7 +6991,7 @@ body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
     const body = `<div class="grid2"><div class="fld"><label>${esc(t('language'))}</label><select id="pf_l"><option value="ar"${F.lang === 'ar' ? ' selected' : ''}>العربية</option><option value="en"${F.lang === 'en' ? ' selected' : ''}>English</option></select></div>
       <div class="fld"><label>${esc(t('theme'))}</label><select id="pf_t"><option value="p6"${F.theme === 'p6' ? ' selected' : ''}>P6 Classic</option><option value="light"${F.theme === 'light' ? ' selected' : ''}>${esc(t('th_light'))}</option><option value="dark"${F.theme === 'dark' ? ' selected' : ''}>${esc(t('th_dark'))}</option></select></div></div>
       <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('copy_style'))}</label><select id="pf_cs"><option value="screen"${F.copyStyle !== 'p6' ? ' selected' : ''}>${esc(t('copy_screen'))}</option><option value="p6"${F.copyStyle === 'p6' ? ' selected' : ''}>${esc(t('copy_p6'))}</option><option value="text"${F.copyStyle === 'text' ? ' selected' : ''}>${esc(t('copy_text'))}</option></select></div>
-      <label class="chk" style="margin-top:10px"><input type="checkbox" id="pf_login"${F.loginAtStart !== false ? ' checked' : ''}> ${esc(t('login_at_start'))}</label>
+      <label class="chk" style="margin-top:10px"><input type="checkbox" id="pf_login"${F.loginAtStart === true ? ' checked' : ''}> ${esc(t('login_at_start'))}</label>
       <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('ui_size'))}</label><select id="pf_z">${['auto', 70, 80, 90, 100, 110, 125, 150].map((z) => `<option value="${z}"${String(F.uiScale == null ? 'auto' : F.uiScale) === String(z) ? ' selected' : ''}>${z === 'auto' ? esc(t('ui_auto')) : z + '%'}</option>`).join('')}</select></div>
       <div class="fld" style="margin-top:10px;max-width:260px"><label>${esc(t('user'))}</label><input id="pf_u" dir="auto" value="${esc(F.user || 'USER')}"></div>
       <label class="chk" style="margin-top:10px"><input type="checkbox" id="pf_a"${F.auto ? ' checked' : ''}> ${esc(t('auto_schedule'))}</label>
@@ -9201,8 +9201,9 @@ function doPost(e) {
   // ---------- login screen ----------
   const logo = '<span class="lg-logo">P6</span>';
   App.loginScreen = function () {
+    if (!App.cfg.loginMig) { App.cfg.loginMig = true; App.cfg.loginAtStart = false; App.saveCfg(); } // v2.4.1: no login screen by default (re-enable in Admin Preferences)
     if (SS.get('p6web.sess')) { App.cfg.user = SS.get('p6web.sess'); return Promise.resolve(); }
-    if (App.cfg.loginAtStart === false) { SS.set('p6web.sess', App.cfg.user || 'admin'); return Promise.resolve(); }
+    if (App.cfg.loginAtStart !== true) { SS.set('p6web.sess', App.cfg.user || 'admin'); return Promise.resolve(); }
     return new Promise((resolve) => {
       const ov = document.createElement('div'); ov.id = 'loginov'; ov.dir = ar() ? 'rtl' : 'ltr';
       const dbs = dbList(), cur = App.dbAlias();
