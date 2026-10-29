@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="ltr">
 <head>
-<!-- P6 Web – Schedule Studio v2.2.1 (16f4e7a) – offline single-file build -->
+<!-- P6 Web – Schedule Studio v2.2.2 (f7921db) – offline single-file build -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P6 Web – Schedule Studio</title>
@@ -620,6 +620,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 .dly{width:100%;display:flex;flex-direction:column;color:#333;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg,#fff)}.dly-tabs{display:flex;gap:2px;border-bottom:2px solid #00778B;padding:6px 8px 0;flex-wrap:wrap}.dly-tabs button{border:1px solid #cfe0e3;border-bottom:0;background:#eef6f7;padding:6px 14px;border-radius:8px 8px 0 0;cursor:pointer;font-weight:600;color:#0b5d6b}.dly-tabs button.on{background:#00778B;color:#fff}.dly-body{padding:10px 12px;overflow:auto;flex:1}
 .dly-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.dly-bar label{display:flex;gap:4px;align-items:center;font-size:12px}.dly-form{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dly-form label{display:flex;flex-direction:column;font-size:11px;color:#555;gap:2px}.dly-form .w2{grid-column:span 2}.dly-form .w3{grid-column:span 3}.dly-form input,.dly-form select,.dly-form textarea{padding:4px 6px;font-size:13px}
 .dly h4{margin:14px 0 6px;color:#00778B}.dly td.r,.dly th.r{text-align:end}
+.dly-top{background:#c0392b!important}
 
 </style>
 </head>
@@ -1177,7 +1178,7 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
 (function (g) {
   'use strict';
   const P6 = g.P6;
-  P6.VERSION = '2.2.1'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '16f4e7a'; P6.OFFLINE = true;
+  P6.VERSION = '2.2.2'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = 'f7921db'; P6.OFFLINE = true;
   P6.versionName = () => 'P6 Web – Schedule Studio v' + P6.VERSION + (P6.COMMIT && P6.COMMIT !== 'dev' ? ' (' + P6.COMMIT + ')' : '') + (P6.OFFLINE ? ' · Offline' : '');
   P6.offlineFile = () => 'P6-Web-v' + P6.VERSION + '-offline.html';
   document.title = P6.versionName();
@@ -6289,7 +6290,9 @@ body:has(#loginov) .modal-bg,body:has(#loginov) .mback{z-index:10050!important}
   // ---- always-visible "Dashboard" button in the menu bar (survives menu rebuilds) ----
   (function () {
     const ensure = () => {
-      const mb = document.getElementById('menubar'); if (!mb || mb.querySelector('.dsh-top')) return;
+      const mb = document.getElementById('menubar'); if (!mb) return;
+      if (!mb.querySelector('.dly-top')) { const d = document.createElement('button'); d.className = 'dsh-top dly-top'; d.type = 'button'; d.title = 'EOT · Delay analysis · Out-of-sequence · Recovery · Revisions'; d.innerHTML = `${P6.icon('check')}<span>${P6.dir() === 'rtl' ? 'EOT والاسترداد' : 'EOT & Recovery'}</span>`; d.onclick = (e) => { e.stopPropagation(); App.openDelay(); }; mb.appendChild(d); }
+      if (mb.querySelector('.dsh-top:not(.dly-top)')) return;
       const b = document.createElement('button'); b.className = 'dsh-top'; b.type = 'button'; b.title = 'Project Controls Dashboard';
       b.innerHTML = `${P6.icon('dash')}<span>Dashboard</span>`; b.onclick = (e) => { e.stopPropagation(); App.openWin('dashboard'); };
       mb.appendChild(b);
