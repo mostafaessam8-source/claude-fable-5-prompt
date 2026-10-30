@@ -304,7 +304,7 @@ const R={
   mbed:{ar:'غرفة الماستر',en:'M. Bedroom',x:[7.8,12.2],z:[0,3.85],f:'wood',a:16.92},
   bed1:{ar:'الليفنج',en:'Living Room',x:[0,3.8],z:[1.2,5.4],f:'wood',a:15.77},
   bed2:{ar:'غرفة نوم 2',en:'Bedroom 02',x:[3.8,7.8],z:[1.2,5.4],f:'wood',a:16.01},
-  terrace:{ar:'التراس',en:'Terrace',x:[0,7.8],z:[5.4,6.7],f:'deck',a:8.91}};
+  terrace:{ar:'التراس',en:'Terrace',x:[0,6.86],z:[5.4,6.7],f:'deck',a:8.91}};
 const WET={gtoilet:1,bathroom:1,mbath:1};const OPEN=[];
 function roomAt(x,z){for(const k in R){const r=R[k];if(x>=r.x[0]&&x<=r.x[1]&&z>=r.z[0]&&z<=r.z[1])return k}return null}
 
@@ -406,8 +406,8 @@ function railing(x1,z1,x2,z2){const horiz=Math.abs(z1-z2)<1e-6,len=horiz?Math.ab
   bx(g,len,1.0,.014,M.glass,0,.12,0).castShadow=false;bx(g,len,.04,.06,M.frame,0,1.1,0);bx(g,len,.04,.06,M.frame,0,.08,0);
   for(let i=0;i<=Math.round(len/1.4);i++)bx(g,.04,1.1,.04,M.frame,-len/2+i*len/Math.round(len/1.4),.04,0);
   if(horiz)mkCol(Math.min(x1,x2),Math.max(x1,x2),z1-.06,z1+.06,0,1.3);else mkCol(x1-.06,x1+.06,Math.min(z1,z2),Math.max(z1,z2),0,1.3)}
-railing(0,6.7,7.8,6.7);railing(7.8,5.4,7.8,6.7);
-{const s=bx(ceilG,7.9,.25,1.4,M.concrete,3.9,H,6.05);s.castShadow=true}
+railing(0,6.7,6.86,6.7);railing(6.86,5.4,6.86,6.7);
+{const s=bx(ceilG,7.0,.25,1.4,M.concrete,3.43,H,6.05);s.castShadow=true}
 /* entrance landing + open-air stair down to the compound */
 {const steps=36,rise=-GY/steps,run=10/steps,dk=std(0xd9d0bf,.85);
   bx(lower,2.75,.3,2.2,M.concrete,-1.225,-.3,-2.35);bx(lower,2.5,.03,2.05,dk,-1.225,0,-2.3);
@@ -689,7 +689,7 @@ sideTable(3.85,6.42,.2,.4);
 {const g=fg(5.4,6.5,0,1.9,.3);rbx(g,1.9,.32,.3,M.pot,0,.0,0,.03);for(let i=0;i<6;i++)sp(g,.14,i%2?M.leaf:M.leaf2,-.78+i*.31,.5,0,1,1.2,1)}
 
 /* big hanging rattan egg chair: woven shell open at the front, deep cushions, rope + ceiling anchor */
-{const piv=new THREE.Group();piv.position.set(7.3,H,6.05);piv.rotation.y=0;furn.add(piv);window.__swing=piv;
+{const piv=new THREE.Group();piv.position.set(6.2,H,6.05);piv.rotation.y=0;furn.add(piv);window.__swing=piv;
   const wk=wickerTex();wk.repeat.set(5,4);const rattan=std(0xffffff,.9,0,{map:wk,bumpMap:wk,bumpScale:1.4,side:THREE.DoubleSide}),cush=fabric(0xefe8da,{bumpScale:.5}),cush2=fabric(0xcfbfa8,{bumpScale:.5});
   const rope=std(0xd8c9a6,1,0,{bumpMap:T.noise,bumpScale:1});
   cy(piv,.02,1.45,rope,0,-1.45,0,10);cy(piv,.07,.025,M.steel,0,-.025,0,16);cy(piv,.035,.1,M.steel,0,-.12,0,12);
@@ -702,7 +702,7 @@ sideTable(3.85,6.42,.2,.4);
   const bol=new THREE.Mesh(new THREE.SphereGeometry(.2,20,12),cush2);bol.scale.set(1.2,1,.5);bol.position.set(.28,-2.1,-.12);bol.rotation.z=.3;piv.add(bol);
   // lower hoop + 6 rope stays to a ring above the shell
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,8,16),M.steel);ring.position.set(0,-1.45,0);piv.add(ring);
-  addCol(7.3,6.05,.9,.9)}
+  addCol(6.2,6.05,.9,.9)}
 
 
 /* ── references: layered gypsum ceilings with LED coves, gold rings, wall mouldings ── */
@@ -959,7 +959,7 @@ function applyTime(){const t=S.time,sh=Math.sin(Math.PI*(t-6)/12),az=Math.PI*(t-
 
 /* ───────────────────────── game: player / modes ───────────────────────── */
 const EYE=1.6,EYE_CROUCH=1.1,STEP=.6,SURF=GY+.09;
-const P={x:-.6,y:0,z:2.0,vy:0,yaw:Math.atan2(2.2,6),pitch:-.03,grounded:true,swim:false,dive:0,crouch:0,speed:0,phase:0,air:0};
+const P={hy:0,x:-.6,y:0,z:2.0,vy:0,yaw:Math.atan2(2.2,6),pitch:-.03,grounded:true,swim:false,dive:0,crouch:0,speed:0,phase:0,air:0};
 let mode='walk',tpp=false,tween=null,shellK=1,under=false,tpDist=3.2,doorK=0,runLatch=false,jumpHeld=false;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const keys={},joy={x:0,y:0};
@@ -978,12 +978,26 @@ function canMove(nx,nz){const fy=P.y;
 function resolve(){P.x=clamp(P.x,-330,330);P.z=clamp(P.z,-340,95)}
 
 /* low-poly character for third-person view */
-const avatar=(()=>{const g=new THREE.Group(),skin=std(0xe0b08c,.8),shirt=std(0xc0623a,.8),pants=std(0x2b3440,.8),shoe=std(0xf0ece4,.6),hair=std(0x2a1d16,.9);
-  rbx(g,.44,.62,.25,shirt,0,.8,0,.08);sp(g,.13,skin,0,1.56,0);sp(g,.14,hair,0,1.6,.015,1,.72,1.05);
-  const limb=(w,h,d,mat,x,y)=>{const p=new THREE.Group();p.position.set(x,y,0);g.add(p);bx(p,w,h,d,mat,0,-h,0);return p};
-  const legL=limb(.16,.8,.17,pants,-.11,.82),legR=limb(.16,.8,.17,pants,.11,.82);bx(legL,.17,.08,.24,shoe,0,-.8,.03);bx(legR,.17,.08,.24,shoe,0,-.8,.03);
-  const armL=limb(.11,.6,.12,shirt,-.28,1.4),armR=limb(.11,.6,.12,shirt,.28,1.4);bx(armL,.1,.14,.11,skin,0,-.6,0);bx(armR,.1,.14,.11,skin,0,-.6,0);
-  g.visible=false;scene.add(g);return {g,legL,legR,armL,armR}})();
+const avatar=(()=>{const root=new THREE.Group(),g=new THREE.Group();root.add(g);
+  const skin=phys(0xd9a584,.7),shirt=fabric(0xe8e2d6),jeans=fabric(0x2f3b4d),shoe=std(0xf4f1ea,.5),hair=std(0x241912,.9);
+  const cap=(r,h,mat,x,y,z,parent)=>{const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,h,6,14),mat);m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m};
+  // torso (slightly tapered), neck, head with hair
+  const torso=cap(.17,.34,shirt,0,1.2,0,g);torso.scale.set(1.15,1,.7);
+  const hips=cap(.16,.08,jeans,0,.93,0,g);hips.scale.set(1.15,1,.75);
+  cap(.045,.06,skin,0,1.52,0,g);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.105,20,16),skin);head.scale.set(.92,1.08,1);head.position.set(0,1.67,0);head.castShadow=true;g.add(head);
+  const hr=new THREE.Mesh(new THREE.SphereGeometry(.112,20,14,0,Math.PI*2,0,Math.PI*.55),hair);hr.position.set(0,1.675,-.012);hr.rotation.x=-.2;g.add(hr);
+  [-.035,.035].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.011,8,6),M.black);e.position.set(x,1.675,.095);g.add(e)});
+  // legs: hip → knee → ankle
+  const leg=x=>{const hip=new THREE.Group();hip.position.set(x,.92,0);g.add(hip);cap(.075,.3,jeans,0,-.22,0,hip);
+    const knee=new THREE.Group();knee.position.set(0,-.43,0);hip.add(knee);cap(.062,.3,jeans,0,-.2,0,knee);
+    const foot=rbx(knee,.1,.07,.26,shoe,0,-.45,.05,.03);return {hip,knee}};
+  const L=leg(-.095),R=leg(.095);
+  // arms: shoulder → elbow
+  const arm=x=>{const sh=new THREE.Group();sh.position.set(x,1.38,0);g.add(sh);cap(.045,.22,shirt,0,-.17,0,sh);
+    const el=new THREE.Group();el.position.set(0,-.33,0);sh.add(el);cap(.04,.2,skin,0,-.15,0,el);return {sh,el}};
+  const AL=arm(-.235),AR=arm(.235);
+  root.visible=false;scene.add(root);return {hy:0,g:root,body:g,L,R,AL,AR,head}})();
 
 /* dynamic pieces: entrance door + sun + underwater look */
 function updateDoor(dt){if(!frontLeaf)return;const d=Math.hypot(P.x+1.2,P.z+1.4);
@@ -1029,12 +1043,22 @@ function updatePlayer(dt,tm){
   updateDoor(dt);
   if(!tpp){camera.position.set(P.x,P.y+eye,P.z);camera.rotation.set(P.pitch,P.yaw,0)}else placeTPP(eye);
   // avatar
-  avatar.g.visible=tpp;if(tpp){avatar.g.position.set(P.x,P.y+(P.swim?.15:0)-(P.crouch*.3),P.z);
-    if(P.speed>.2)avatar.g.rotation.y=P.yaw;else avatar.g.rotation.y=P.yaw;
-    P.phase+=P.speed*dt*3.2;const sw=Math.sin(P.phase)*Math.min(1,P.speed/1.8)*.9,air=!P.grounded&&!P.swim;
-    avatar.legL.rotation.x=air?.5:sw;avatar.legR.rotation.x=air?-.4:-sw;avatar.armL.rotation.x=air?-2.4:-sw*.8;avatar.armR.rotation.x=air?-2.4:sw*.8;
-    if(P.swim){const st=Math.sin(tm*5)*.6;avatar.armL.rotation.x=st-1.2;avatar.armR.rotation.x=-st-1.2;avatar.legL.rotation.x=Math.sin(tm*9)*.4;avatar.legR.rotation.x=-Math.sin(tm*9)*.4}
-    avatar.g.scale.y=1-P.crouch*.22}
+  avatar.g.visible=tpp;
+  if(P.speed>.15&&!P.swim){const hx=fx*f+rx*s,hz=fz*f+rz*s;if(Math.hypot(hx,hz)>.05){const want=Math.atan2(hx,hz)+(f<0&&Math.abs(s)<.3?Math.PI:0);let d=want-avatar.hy;d=Math.atan2(Math.sin(d),Math.cos(d));avatar.hy+=d*Math.min(1,dt*12)}}
+  else if(P.speed<=.15&&!P.swim){let d=P.yaw+Math.PI-avatar.hy;d=Math.atan2(Math.sin(d),Math.cos(d));if(Math.abs(d)>1.2)avatar.hy+=d*Math.min(1,dt*4)}
+  if(tpp){const A=avatar,run=Math.min(1,P.speed/1.8),sprintK=P.speed>2.4?1:0,air=!P.grounded&&!P.swim;
+    A.g.position.set(P.x,P.y+(P.swim?-.25:0),P.z);A.g.rotation.y=P.swim?P.yaw+Math.PI:A.hy;
+    P.phase+=P.speed*dt*(P.speed>2.4?2.7:3.4);const ph=P.phase,amp=run*(.55+.3*sprintK);
+    if(air){A.L.hip.rotation.x=.7;A.R.hip.rotation.x=-.3;A.L.knee.rotation.x=-.9;A.R.knee.rotation.x=-.4;A.AL.sh.rotation.x=-.8;A.AR.sh.rotation.x=-.8;A.AL.el.rotation.x=-.6;A.AR.el.rotation.x=-.6}
+    else if(P.swim){const st=Math.sin(tm*4);A.body.rotation.x=1.25;A.body.position.y=.55;A.L.hip.rotation.x=Math.sin(tm*9)*.35;A.R.hip.rotation.x=-Math.sin(tm*9)*.35;A.L.knee.rotation.x=-.1;A.R.knee.rotation.x=-.1;A.AL.sh.rotation.x=-2.4+st*.7;A.AR.sh.rotation.x=-2.4-st*.7;A.AL.el.rotation.x=-.2;A.AR.el.rotation.x=-.2}
+    else{A.body.rotation.x=sprintK*.18*run;A.body.position.y=Math.abs(Math.sin(ph))*.035*run-P.crouch*.35;
+      A.L.hip.rotation.x=Math.sin(ph)*amp-P.crouch*.9;A.R.hip.rotation.x=-Math.sin(ph)*amp-P.crouch*.9;
+      A.L.knee.rotation.x=-Math.max(0,-Math.cos(ph))*amp*1.2-P.crouch*1.5;A.R.knee.rotation.x=-Math.max(0,Math.cos(ph))*amp*1.2-P.crouch*1.5;
+      A.AL.sh.rotation.x=-Math.sin(ph)*amp*.9;A.AR.sh.rotation.x=Math.sin(ph)*amp*.9;A.AL.el.rotation.x=-.25-run*.4*(1+sprintK);A.AR.el.rotation.x=-.25-run*.4*(1+sprintK)}
+    if(!P.swim){if(!air&&A.body.position.y===0)A.body.position.y=0}
+    if(!P.swim)A.body.rotation.x=A.body.rotation.x||0;
+    if(!P.swim&&!air&&P.speed<.15)A.AL.el.rotation.x=A.AR.el.rotation.x=-.15}
+  else if(!P.swim){const bob=Math.sin((P.phase+=P.speed*dt*3.4))*Math.min(1,P.speed/1.8);camera.position.y+=Math.abs(bob)*.025;camera.rotation.z=bob*.004}
 }
 
 /* ───────────────────────── places & modes ───────────────────────── */
