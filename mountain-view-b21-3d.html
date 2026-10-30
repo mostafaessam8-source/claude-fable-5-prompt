@@ -128,9 +128,11 @@ body:not(.walk) #joy,body:not(.walk) #act{display:none}
     <button id="bJump" class="ab big" aria-label="قفز أو سباحة لأعلى">قفز</button>
   </div>
   <div id="fade"></div>
-  <div id="loader"><div>جاري بناء الشقة…<span>Lagoon Beach Park · B21</span></div></div>
+  <div id="loader"><div>جاري بناء الشقة…<span>Lagoon Beach Park · B21</span><span id="lerr"></span></div></div>
 </div>
 
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+<script>window.addEventListener("error",function(e){var l=document.getElementById("lerr");if(l)l.textContent="تعذر التحميل: "+(e.message||"خطأ")});window.addEventListener("unhandledrejection",function(e){var l=document.getElementById("lerr");if(l)l.textContent="تعذر التحميل: "+(e.reason&&e.reason.message||"خطأ")})</script>
 <script type="importmap">
 {"imports":{
  "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -143,6 +145,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r||0,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath()}}
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
@@ -154,7 +157,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 const canvas=document.getElementById('c');
 const isTouch=matchMedia('(pointer:coarse)').matches;
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?1.5:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?1.25:2));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.82;
 RectAreaLightUniformsLib.init();
@@ -249,7 +252,8 @@ const M={
   pot:std(0xe4ded3,.75),soil:std(0x2a1f18,1),tvScreen:phys(0x08090b,.1,.2,{clearcoat:1}),stucco:std(0xe6dfd2,.95),concrete:std(0xe8dcc0,.95),shade:std(0xf1e6cf,1,0,{side:THREE.DoubleSide,emissive:0xffe2b0,emissiveIntensity:.0}),
   paper:std(0xf3efe6,.9)};
 const woodMats=[];
-const mkFloor=(tex,w,d,bump,color=0xffffff,rough=.55,bs=.5)=>{const m=std(color,rough,0,{map:tiled(tex,w,d)});if(bump&&bump.tex){m.bumpMap=tiled(bump.tex,w,d);m.bumpScale=bs}if(tex===T.wood||tex===T.deck)woodMats.push(m);return m};
+const mkFloor=(tex,w,d,bump,color=0xffffff,rough=.55,bs=.5)=>{const m=std(color,rough,0,{map:tex});if(bump&&bump.tex){m.bumpMap=bump.tex;m.bumpScale=bs}if(tex===T.wood||tex===T.deck)woodMats.push(m);return m};
+function scaleFaceUV(geo,face,sx,sy){const uv=geo.attributes.uv;for(let i=face*4;i<face*4+4;i++)uv.setXY(i,uv.getX(i)*sx,uv.getY(i)*sy)}
 
 /* ───────────────────────── primitive builders ───────────────────────── */
 const bx=(p,w,h,d,mat,x,y0,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y0+h/2,z);m.castShadow=m.receiveShadow=true;p.add(m);return m};
@@ -292,13 +296,13 @@ const WET={gtoilet:1,bathroom:1,mbath:1};
 function roomAt(x,z){for(const k in R){const r=R[k];if(x>=r.x[0]&&x<=r.x[1]&&z>=r.z[0]&&z<=r.z[1])return k}return null}
 
 /* facade boxes (lower floors, neighbours) */
-const facadeMats=[];
+const FM=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.88,map:T.fac,emissive:0xffffff,emissiveMap:T.facE,emissiveIntensity:0});
+const facadeMats=[FM];
 function facadeBox(parent,x0,x1,y0,y1,z0,z1,roof=M.concrete){
-  const w=x1-x0,h=y1-y0,d=z1-z0;
-  const mk=len=>{const m=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.88,map:T.fac.clone(),emissive:0xffffff,emissiveMap:T.facE.clone(),emissiveIntensity:0});
-    const rx=Math.max(1,Math.round(len/3)),ry=Math.max(1,Math.round(h/3.3));
-    m.map.repeat.set(rx,ry);m.emissiveMap.repeat.set(rx,ry);m.map.needsUpdate=m.emissiveMap.needsUpdate=true;facadeMats.push(m);return m};
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),[mk(d),mk(d),roof,M.concrete,mk(w),mk(w)]);
+  const w=x1-x0,h=y1-y0,d=z1-z0,geo=new THREE.BoxGeometry(w,h,d);
+  const ry=Math.max(1,Math.round(h/3.3)),rd=Math.max(1,Math.round(d/3)),rw=Math.max(1,Math.round(w/3));
+  scaleFaceUV(geo,0,rd,ry);scaleFaceUV(geo,1,rd,ry);scaleFaceUV(geo,4,rw,ry);scaleFaceUV(geo,5,rw,ry);
+  const mesh=new THREE.Mesh(geo,[FM,FM,roof,M.concrete,FM,FM]);
   mesh.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);mesh.receiveShadow=mesh.castShadow=true;blockers.push(mesh);parent.add(mesh);return mesh}
 
 for(const k in R){const r=R[k];
@@ -306,7 +310,7 @@ for(const k in R){const r=R[k];
   if(r.f==='tile')r.mat=mkFloor(T.tile,w,d,tileB,0xffffff,.28,.9);
   else if(r.f==='deck')r.mat=mkFloor(T.deck,w,d,deckB,0xffffff,.8,.5);
   else r.mat=mkFloor(T.wood,w,d,woodB,0xffffff,.5,.55);
-  const f=new THREE.Mesh(new THREE.PlaneGeometry(w,d),r.mat);f.rotation.x=-Math.PI/2;f.position.set((x0+x1)/2,.002,(z0+z1)/2);f.receiveShadow=true;floors.add(f);
+  const fgeo=new THREE.PlaneGeometry(w,d),fuv=fgeo.attributes.uv;for(let i=0;i<fuv.count;i++)fuv.setXY(i,fuv.getX(i)*w/2,fuv.getY(i)*d/2);const f=new THREE.Mesh(fgeo,r.mat);f.rotation.x=-Math.PI/2;f.position.set((x0+x1)/2,.002,(z0+z1)/2);f.receiveShadow=true;floors.add(f);
   facadeBox(lower,x0-.15,x1+.15,GY,0,z0-.15,z1+.15);mkCol(x0-.15,x1+.15,z0-.15,z1+.15,GY-1,0);
   bx(upper,w+.3,3.3-H,d+.3,M.concrete,(x0+x1)/2,H,(z0+z1)/2);facadeBox(upper,x0-.15,x1+.15,3.3,9.9,z0-.15,z1+.15);
   if(w*d>9)for(let px=x0+1.6;px<x1-1.2;px+=3.4)for(let pz=z0+1.2;pz<z1-1.0;pz+=2.8)solarPos.push([px,10.15,pz])}
@@ -314,20 +318,19 @@ for(const k in R){const r=R[k];
 /* ───────────────────────── walls & openings ───────────────────────── */
 const RWALL={bed1:'wallBed',bed2:'wallBed',mbed:'wallBed',terrace:'wallExt'};
 M.wallBed=std(0xe9e1d4,.93,0,{bumpMap:T.noiseSoft,bumpScale:.25});
-const tileWallCache={};
-function tileWall(len,h){const key=len.toFixed(2)+'_'+h.toFixed(2);if(tileWallCache[key])return tileWallCache[key];
-  const m=std(0xffffff,.22,0,{map:tiled(T.tile,len,h,1.2),bumpMap:tiled(tileB.tex,len,h,1.2),bumpScale:.8});tileWallCache[key]=m;return m}
+M.tileWallBase=std(0xffffff,.22,0,{map:T.tile,bumpMap:tileB.tex,bumpScale:.8});
 const doorMat=std(0xf4f1ea,.45);
 function wall(x1,z1,x2,z2,ops=[]){
   const horiz=Math.abs(z1-z2)<1e-6;
   const a=horiz?Math.min(x1,x2):Math.min(z1,z2),b=horiz?Math.max(x1,x2):Math.max(z1,z2),fixed=horiz?z1:x1;
   ops=ops.slice().sort((p,q)=>p.a-q.a);
-  const sideMat=(k,len,hh)=>k===null?M.wallExt:(WET[k]?tileWall(len,hh):(M[RWALL[k]]||M.wall));
+  const sideMat=(k)=>k===null?M.wallExt:(WET[k]?M.tileWallBase:(M[RWALL[k]]||M.wall));
   const roomSide=(mid,sg)=>horiz?roomAt(mid,fixed+sg*(WT/2+.05)):roomAt(fixed+sg*(WT/2+.05),mid);
   const piece=(s,e,y0,y1,col)=>{if(e-s<.002||y1-y0<.002)return;const c=(s+e)/2,len=e-s,hh=y1-y0;
     const kp=roomSide(c,1),kn=roomSide(c,-1),mats=[M.wall,M.wall,M.wall,M.wall,M.wall,M.wall];
-    if(horiz){mats[4]=sideMat(kp,len,hh);mats[5]=sideMat(kn,len,hh)}else{mats[0]=sideMat(kp,len,hh);mats[1]=sideMat(kn,len,hh)}
-    const m=new THREE.Mesh(new THREE.BoxGeometry(horiz?len:WT,hh,horiz?WT:len),mats);
+    if(horiz){mats[4]=sideMat(kp);mats[5]=sideMat(kn)}else{mats[0]=sideMat(kp);mats[1]=sideMat(kn)}
+    const wg=new THREE.BoxGeometry(horiz?len:WT,hh,horiz?WT:len);{const fp=horiz?4:0,fn=horiz?5:1;if(kp&&WET[kp])scaleFaceUV(wg,fp,len/1.2,hh/1.2);if(kn&&WET[kn])scaleFaceUV(wg,fn,len/1.2,hh/1.2)}
+    const m=new THREE.Mesh(wg,mats);
     m.position.set(horiz?c:fixed,(y0+y1)/2,horiz?fixed:c);m.castShadow=m.receiveShadow=true;shell.add(m);blockers.push(m);
     if(y0===0&&hh>.4&&len>.15)[[kp,1],[kn,-1]].forEach(([k,sg])=>{if(k===null||WET[k]||k==='terrace')return;
       const sb=new THREE.Mesh(new THREE.BoxGeometry(horiz?len:.012,.1,horiz?.012:len),M.trim);
@@ -623,8 +626,8 @@ chair(4.9,5.75,Math.PI,M.accent);chair(5.9,5.75,Math.PI,M.accent2);chair(5.4,6.4
 plant(.5,6.4,1.5,furn,.26,'palm');plant(7.4,5.65,1.3,furn,.2,'palm');
 
 /* ───────────────────────── lights ───────────────────────── */
-const roomLights=[],dayLights=[];
-const rl=(x,y,z,I,d=8)=>{const l=new THREE.PointLight(0xffe0b8,I,d,2);l.position.set(x,y,z);scene.add(l);roomLights.push({l,I})};
+const roomLights=[],dayLights=[];const KEEPL=new Set(['-1.2,0','-3,2.6','-2.4,6.3','3,-1.25','4,.6','1.9,3.3','5.8,3.3','9.6,1.9','7.3,-1.3']);
+const rl=(x,y,z,I,d=8)=>{if(isTouch&&!KEEPL.has(x+','+z))return;const l=new THREE.PointLight(0xffe0b8,I,d,2);l.position.set(x,y,z);scene.add(l);roomLights.push({l,I})};
 rl(-1.2,2.4,0,7,6);rl(-3.0,2.5,2.6,11);rl(-1.6,2.5,4.2,11);rl(-2.4,2.5,6.3,11);
 rl(3.0,2.5,-1.25,13,7);rl(4.8,2.5,-1.25,9,6);rl(.8,2.5,-1.25,5,4);rl(7.3,2.5,-1.3,9,6);
 rl(1.5,2.4,.6,4,5);rl(4.0,2.4,.6,4,5);rl(6.5,2.4,.6,4,5);
@@ -757,13 +760,14 @@ for(const [px,py] of[[268,198],[826,282],[1118,218]]){const cx=wx(px),cz=wz(py),
 const ours={cx:3.8,cz:1.1,hw:9,hd:6.6,cs:1,sn:0,rot:0,top:9.9};bldgs.push(ours);
 
 /* palms + trees + villas (instanced) */
+const VMAX=isTouch?350:1500;
 const blockedAt=(x,z,m=2.5)=>{if(x>-26&&x<34&&z>8&&z<28)return true;for(const b of bldgs)if(obbHit(b,x,z,m))return true;
   if(x>-12&&x<19&&z>-26&&z<12)return true;if(inWater(x,z,4))return true;if(onRoad(x,z,1.5))return true;return false};
 {const leafGeos=[];for(let k=0;k<9;k++){const g=new THREE.PlaneGeometry(.5,3.4,2,8),p=g.attributes.position;
     for(let i=0;i<p.count;i++){const u=p.getX(i),v=p.getY(i)+1.7,t=v/3.4;p.setXYZ(i,v,1.1*Math.sin(t*1.5)-1.1*t*t,u*(1-t*.8))}
     g.rotateY(k*Math.PI*2/9);leafGeos.push(g.toNonIndexed())}
   const crown=mergeGeometries(leafGeos);crown.computeVertexNormals();
-  const N=2200,rr=rnd(99),trunkGeo=new THREE.CylinderGeometry(.13,.22,1,6);
+  const N=isTouch?600:2200,rr=rnd(99),trunkGeo=new THREE.CylinderGeometry(.13,.22,1,6);
   const trunks=new THREE.InstancedMesh(trunkGeo,std(0x7b6650,1),N),crowns=new THREE.InstancedMesh(crown,std(0x3f6b34,.85,0,{side:DS}),N),m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler();
   const place=(i,x,z)=>{const h=5+rr()*5,s=.8+rr()*.5;e.set(0,rr()*6.28,0);q.setFromEuler(e);
     m4.compose(new THREE.Vector3(x,GY+h/2,z),q,new THREE.Vector3(1,h,1));trunks.setMatrixAt(i,m4);
@@ -775,19 +779,19 @@ const blockedAt=(x,z,m=2.5)=>{if(x>-26&&x<34&&z>8&&z<28)return true;for(const b 
   for(let i=0;i<N*8&&n<N;i++){const x=-260+rr()*520,z=-330+rr()*400;if(blockedAt(x,z,2))continue;
     const nearW=inWater(x,z,16);if(!nearW&&rr()<.55)continue;place(n++,x,z)}
   trunks.count=crowns.count=n;ctx.add(trunks,crowns);
-  const nb=1100,blob=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),std(0x4f7d3c,.9),nb),bt=new THREE.InstancedMesh(trunkGeo,std(0x6e5a44,1),nb);let c=0;q.identity();
+  const nb=isTouch?300:1100,blob=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),std(0x4f7d3c,.9),nb),bt=new THREE.InstancedMesh(trunkGeo,std(0x6e5a44,1),nb);let c=0;q.identity();
   for(let i=0;i<nb*8&&c<nb;i++){const x=-260+rr()*520,z=-330+rr()*400;if(blockedAt(x,z,2.5))continue;
     const r=1.8+rr()*2.2,th=1.8+rr()*1.4;m4.compose(new THREE.Vector3(x,GY+th/2,z),q,new THREE.Vector3(.6,th,.6));bt.setMatrixAt(c,m4);
     m4.compose(new THREE.Vector3(x,GY+th+r*.8,z),q,new THREE.Vector3(r*1.2,r,r*1.2));blob.setMatrixAt(c,m4);c++}
   blob.count=bt.count=c;ctx.add(blob,bt);
   // villas around the edge of the master plan
-  const vg=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),std(0xf0ebe0,.9),1500),vr=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),std(0xb9a98a,.8),1500);let v=0;
+  const vg=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),std(0xf0ebe0,.9),VMAX),vr=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),std(0xb9a98a,.8),VMAX);let v=0;
   const zones=[[440,1000,95,205],[1050,1290,170,720],[0,300,520,720],[0,110,330,500],[310,520,560,720]];
-  for(const [x0,x1,y0,y1] of zones)for(let py=y0;py<y1;py+=40)for(let px=x0;px<x1;px+=46){if(v>=1500)break;
+  for(const [x0,x1,y0,y1] of zones)for(let py=y0;py<y1;py+=40)for(let px=x0;px<x1;px+=46){if(v>=VMAX)break;
     const x=wx(px+rr()*8),z=wz(py+rr()*8);if(blockedAt(x,z,3))continue;const w=8+rr()*3,d=7+rr()*3,h=5.5+rr()*2.5;
     m4.compose(new THREE.Vector3(x,GY+h/2,z),q,new THREE.Vector3(w,h,d));vg.setMatrixAt(v,m4);m4.compose(new THREE.Vector3(x,GY+h+.3,z),q,new THREE.Vector3(w+.5,.6,d+.5));vr.setMatrixAt(v,m4);v++}
   // outer ring beyond the plan
-  for(let i=0;i<500&&v<1500;i++){const x=-300+rr()*600,z=-330+rr()*420;if(x>-205&&x<215&&z>-200&&z<55)continue;if(blockedAt(x,z,3))continue;
+  for(let i=0;i<500&&v<VMAX;i++){const x=-300+rr()*600,z=-330+rr()*420;if(x>-205&&x<215&&z>-200&&z<55)continue;if(blockedAt(x,z,3))continue;
     const w=8+rr()*3,d=7+rr()*3,h=5.5+rr()*2.5;m4.compose(new THREE.Vector3(x,GY+h/2,z),q,new THREE.Vector3(w,h,d));vg.setMatrixAt(v,m4);m4.compose(new THREE.Vector3(x,GY+h+.3,z),q,new THREE.Vector3(w+.5,.6,d+.5));vr.setMatrixAt(v,m4);v++}
   vg.count=vr.count=v;ctx.add(vg,vr)}
 /* location marker (compound view): south facade of the unit */
@@ -815,7 +819,7 @@ scene.add(sky);
 const starG=new THREE.BufferGeometry(),sp_=[],sr=rnd(31);for(let i=0;i<700;i++){const a=sr()*6.28,e=sr()*1.4,r=2800;sp_.push(Math.cos(a)*Math.cos(e)*r,Math.sin(e)*r+50,Math.sin(a)*Math.cos(e)*r)}
 starG.setAttribute('position',new THREE.Float32BufferAttribute(sp_,3));const starM=new THREE.PointsMaterial({color:0xffffff,size:5,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false});scene.add(new THREE.Points(starG,starM));
 const hemi=new THREE.HemisphereLight(0xcfe6ff,0x8b7d68,.6);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff1d8,3);sun.castShadow=true;sun.shadow.mapSize.set(isTouch?2048:4096,isTouch?2048:4096);
+const sun=new THREE.DirectionalLight(0xfff1d8,3);sun.castShadow=true;sun.shadow.mapSize.set(isTouch?1024:4096,isTouch?1024:4096);
 Object.assign(sun.shadow.camera,{left:-20,right:20,top:18,bottom:-18,near:1,far:140});sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;
 sun.target.position.set(3.8,0,1.2);scene.add(sun,sun.target);
 const moon=new THREE.DirectionalLight(0x6f8bd8,0);moon.position.set(-30,40,-20);scene.add(moon);
