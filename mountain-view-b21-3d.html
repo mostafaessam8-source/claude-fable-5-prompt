@@ -236,18 +236,21 @@ const T={wood:woodTex([205,170,130],3,woodB),deck:woodTex([150,128,104],11,deckB
   rug:rugTex(),fac:facadeTex(false),facE:facadeTex(true),noise:noiseTex(256,4,.7),noiseSoft:noiseTex(256,9,.35)};
 T.noise.repeat.set(10,10);T.noiseSoft.repeat.set(5,5);
 function plasterTex(){const cn=cv(512,512),g=cn.getContext('2d'),q=rnd(61);g.fillStyle='#fff';g.fillRect(0,0,512,512);
-  for(let i=0;i<260;i++){const x=q()*512,y=q()*512,rad=30+q()*90,gr=g.createRadialGradient(x,y,0,x,y,rad),v=q()<.5?0:255;gr.addColorStop(0,`rgba(${v},${v},${v},${.018+q()*.025})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)}
-  for(let i=0;i<9000;i++){g.fillStyle=`rgba(0,0,0,${q()*.035})`;g.fillRect(q()*512,q()*512,1.4,1.4)}return toTex(cn)}
+  for(let i=0;i<260;i++){const x=q()*512,y=q()*512,rad=30+q()*90,gr=g.createRadialGradient(x,y,0,x,y,rad),v=q()<.5?0:255;gr.addColorStop(0,`rgba(${v},${v},${v},${.006+q()*.01})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-rad,y-rad,rad*2,rad*2)}
+  for(let i=0;i<9000;i++){g.fillStyle=`rgba(0,0,0,${q()*.015})`;g.fillRect(q()*512,q()*512,1.4,1.4)}return toTex(cn)}
 T.plaster=plasterTex();T.plaster.repeat.set(1.5,1.5);
 function mirrorTex(){const cn=cv(256,512),g=cn.getContext('2d'),gr=g.createLinearGradient(0,0,0,512);gr.addColorStop(0,'#d9e6ee');gr.addColorStop(.45,'#f3efe6');gr.addColorStop(1,'#bfae92');g.fillStyle=gr;g.fillRect(0,0,256,512);
   g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.moveTo(40,0);g.lineTo(120,0);g.lineTo(0,300);g.lineTo(0,180);g.fill();g.fillStyle='rgba(255,255,255,.25)';g.beginPath();g.moveTo(150,0);g.lineTo(190,0);g.lineTo(60,512);g.lineTo(20,512);g.fill();return toTex(cn,false)}
+function wickerTex(){const cn=cv(512,512),g=cn.getContext('2d'),q=rnd(88);g.fillStyle='#b98f5a';g.fillRect(0,0,512,512);
+  for(let i=0;i<64;i++){const y=i*8;for(let k=0;k<64;k++){const x=k*8,o=(i+k)%2;g.fillStyle=o?'#cfa66e':'#a77c47';g.fillRect(x+(o?0:1),y+(o?1:0),o?8:7,o?6:8);g.fillStyle='rgba(60,35,15,.4)';g.fillRect(x,y+(o?0:7),8,1)}}
+  for(let i=0;i<2500;i++){g.fillStyle=`rgba(${q()<.5?255:60},${q()<.5?220:40},120,${q()*.08})`;g.fillRect(q()*512,q()*512,2,2)}return toTex(cn)}
 const oakB={},walB={};T.oak=woodTex([214,180,138],21,oakB);T.walnut=woodTex([128,86,58],22,walB);
 const fabric=(color,o={})=>new THREE.MeshPhysicalMaterial({color,roughness:.95,sheen:1,sheenRoughness:.65,sheenColor:new THREE.Color(0xfff6ea),bumpMap:T.noise,bumpScale:.8,...o});
 const artT=[artTex(0),artTex(1),artTex(2)];
 
 /* ───────────────────────── materials ───────────────────────── */
 const M={
-  wall:std(0xf0ece4,.9,0,{map:T.plaster,bumpMap:T.plaster,bumpScale:.35}),wallExt:std(0xe6d3aa,.9,0,{map:T.plaster,bumpMap:T.plaster,bumpScale:.5}),ceil:std(0xf8f6f1,.95),trim:std(0xf7f5f0,.55),
+  wall:std(0xf0ece4,.9,0,{map:T.plaster,bumpMap:T.noiseSoft,bumpScale:.12}),wallExt:std(0xe6d3aa,.9,0,{map:T.plaster,bumpMap:T.noiseSoft,bumpScale:.2}),ceil:std(0xf8f6f1,.95),trim:std(0xf7f5f0,.55),
   frame:std(0x1f2225,.45,.7),brass:std(0xc9a45c,.28,1),black:std(0x101113,.4,.2),steel:std(0xb8bcc0,.3,.9),
   white:std(0xf6f6f3,.5),ceramic:phys(0xfbfbfa,.08,0,{clearcoat:.8,clearcoatRoughness:.08}),dark:std(0x1b1c1d,.7),
   glass:new THREE.MeshPhysicalMaterial({color:0xdcecf2,transparent:true,opacity:.14,roughness:.03,metalness:0,envMapIntensity:1.6,depthWrite:false}),
@@ -329,7 +332,7 @@ for(const k in R){const r=R[k];
 const RWALL={bed2:'wallBed',mbed:'wallBed',terrace:'wallExt'};
 M.wallBed=std(0xe9e1d4,.93,0,{bumpMap:T.noiseSoft,bumpScale:.25});
 M.tileWallBase=std(0xffffff,.22,0,{map:T.tile,bumpMap:tileB.tex,bumpScale:.8});
-const doorMat=phys(0xf4f1ea,.38,0,{clearcoat:.15,clearcoatRoughness:.5,bumpMap:T.noiseSoft,bumpScale:.15});
+const doorMat=phys(0xf4f1ea,.38,0,{clearcoat:.15,clearcoatRoughness:.5,bumpMap:T.noiseSoft,bumpScale:.15,emissive:0x4a463e,emissiveIntensity:.5});
 function wall(x1,z1,x2,z2,ops=[]){
   const horiz=Math.abs(z1-z2)<1e-6;
   const a=horiz?Math.min(x1,x2):Math.min(z1,z2),b=horiz?Math.max(x1,x2):Math.max(z1,z2),fixed=horiz?z1:x1;
@@ -363,7 +366,7 @@ function wall(x1,z1,x2,z2,ops=[]){
     }else if(kind==='door'||kind==='arch'){
       const t=.05;if(kind==='door'){bx(g,t,top,WT+.03,M.trim,-len/2-t/2+.02,0,0);bx(g,t,top,WT+.03,M.trim,len/2+t/2-.02,0,0);bx(g,len+t*2-.04,t,WT+.03,M.trim,0,top-.0,0)}
       else{bx(g,.03,top,WT+.02,M.trim,-len/2-.005,0,0);bx(g,.03,top,WT+.02,M.trim,len/2+.005,0,0);bx(g,len+.06,.03,WT+.02,M.trim,0,top,0)}
-      if(o.leaf){const hing=o.leaf.hinge,ha=hing==='a'?o.a:o.b,dd=hing==='a'?1:-1,n=o.leaf.into,ang=88*Math.PI/180,w=len-.03;
+      if(o.leaf){const hing=o.leaf.hinge,ha=hing==='a'?o.a:o.b,dd=hing==='a'?1:-1,n=o.leaf.into,ang=125*Math.PI/180,w=len-.03;
         const ax=horiz?[dd,0]:[0,dd],nv=horiz?[0,n]:[n,0],vx=ax[0]*Math.cos(ang)+nv[0]*Math.sin(ang),vz=ax[1]*Math.cos(ang)+nv[1]*Math.sin(ang);
         const lf=new THREE.Group();lf.position.set(horiz?ha:fixed,0,horiz?fixed:ha);lf.rotation.y=Math.atan2(-vz,vx);shell.add(lf);
         bx(lf,w,2.1,.04,doorMat,w/2,.0,0);for(const sd of[-1,1])bx(lf,.14,.022,.03,M.brass,w-.1,1.0,sd*.035);
@@ -592,7 +595,7 @@ function jacuzzi(x,z,rot,l=1.9,w=.95){const g=fg(x,z,rot,l+.1,w+.1);
   const m=fg(-2.355,-.05,Math.PI/2);const mr=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.025,56),M.mirror);mr.rotation.x=Math.PI/2;mr.position.set(0,1.58,0);m.add(mr);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.505,.014,8,56),M.brass);ring.position.set(0,1.58,.005);m.add(ring)}
 {const g=fg(-.275,-.75,-Math.PI/2,.9,.4);bx(g,.9,2.1,.4,M.oak,0,0,0);for(let i=0;i<11;i++)bx(g,.03,2.0,.02,M.walnut,-.42+i*.084,.05,.21);bx(g,.01,2.0,.02,M.black,0,.05,.215);}
-plant(-2.05,-1.1,1.5);pendantDome(-1.2,-.1,2.1,.26);
+plant(-1.95,-.95,1.4);pendantDome(-1.2,-.1,2.1,.26);
 
 /* ───────────────────────── SALON (reception) ───────────────────────── */
 function chandelier(x,z,y,r=.55){const g=new THREE.Group();g.position.set(x,0,z);ceilG.add(g);
@@ -607,9 +610,9 @@ fluted(-.1,3.5,-Math.PI/2,3.6,2.7,M.flute);tvUnit(-.285,3.5,-Math.PI/2,2.2,1.66)
 // formal seating: sofa + two armchairs around a pair of tables
 sofa(-3.93,3.5,Math.PI/2,2.7,.98,M.sofa,{cush:3});
 {const g=fg(-3.93,3.5,Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent);pillow(g,1.0,.52,-.3,M.accent);pillow(g,-.55,.52,-.3,M.accent3,.2);pillow(g,.55,.52,-.3,M.accent3,-.2);rbx(g,.9,.05,.5,M.throw_,0,.5,.12,.02).rotation.z=.04}
-armchair(-2.4,2.15,0);armchair(-2.4,4.85,Math.PI);
+armchair(-2.4,2.55,0);armchair(-2.4,4.45,Math.PI);
 rug(-2.5,3.5,3.4,3.0,0);coffeeTable(-2.4,3.5);
-floorLamp(-4.0,5.15);plant(-.45,7.0,1.5,furn,.22,'palm');
+floorLamp(-4.0,5.15);plant(-.7,6.65,1.4,furn,.22,'palm');
 {const g=fg(-3.4,1.5,0,1.7,.4);rbx(g,1.7,.7,.4,M.walnut,0,.0,0,.02);bx(g,1.66,.02,.38,M.travertine,0,.7,0);vase(g,-.5,.72,0,.34);vase(g,.1,.72,0,.22,M.oak,false);books(g,.55,.72,0,4);lamp(g,-.2,.72,0,.4)}
 {const g=fg(-4.475,3.85,Math.PI/2);art(g,0,1.3,0,.55,.7,0)}
 chandelier(-2.4,3.5,2.15);
@@ -623,13 +626,13 @@ curtain(-.1,6.1,-Math.PI/2,1.0);
 
 /* ───────────────────────── CORRIDOR ───────────────────────── */
 {const g=fg(3.6,1.125,Math.PI);art(g,-.55,1.25,0,.45,.6,0);art(g,.05,1.25,0,.45,.6,1);art(g,.65,1.25,0,.45,.6,2)}
-rug(3.9,.6,6.4,.7,0);sconce(1.0,1.5,.075,0);sconce(6.7,1.5,1.125,Math.PI);
+rug(3.9,.6,6.4,.7,0);sconce(4.8,1.55,.075,0);sconce(3.9,1.55,1.125,Math.PI);sconce(6.35,1.55,1.125,Math.PI);
 
 
 /* ───────────────────────── KITCHEN ───────────────────────── */
 kRun(3.675,-2.125,0,4.08,{sink:0.0,uppers:[[-2.04,-1.3],[.9,1.9]]});
-kRun(5.5,-1.325,-Math.PI/2,1.3,{hob:0,uppers:[]});
-kRun(3.85,-.375,Math.PI,1.1,{});fridge(4.8,-.4,Math.PI);ovenTower(5.4,-.37,Math.PI);
+kRun(5.44,-1.3,-Math.PI/2,1.2,{hob:0,uppers:[]});
+kRun(3.85,-.375,Math.PI,1.1,{});fridge(4.7,-.4,Math.PI);ovenTower(5.4,-.37,Math.PI);
 {const g=fg(1.8,-.375,Math.PI,.32,.6);bx(g,.32,2.2,.58,M.oak,0,0,0)}
 pendantDome(3.0,-1.25,2.15,.18);pendantDome(3.8,-1.25,2.15,.18);
 {const g=fg(2.2,-2.12);cy(g,.06,.22,M.ceramic,0,.88,0,16,.05);bx(g,.4,.02,.25,M.oak,.5,.88,.02);for(let i=0;i<3;i++)sp(g,.04,std([0xc8553d,0xe0b441,0x6b8e4e][i],.6),.43+i*.07,.95,.02);
@@ -638,25 +641,28 @@ pendantDome(3.0,-1.25,2.15,.18);pendantDome(3.8,-1.25,2.15,.18);
 
 
 /* ───────────────────────── G.TOILET / BATHROOM / MASTER BATH ───────────────────────── */
-toilet(.78,-2.185,0);vanity(1.225,-1.05,-Math.PI/2,.4);
+toilet(.78,-2.11,0);vanity(1.225,-1.05,-Math.PI/2,.4);
 {const g=fg(.35,-1.0,Math.PI/2);cy(g,.04,.02,M.brass,0,1.0,.0,16);bx(g,.1,.012,.16,M.brass,.0,.5,0)}
-vanity(6.14,-1.3,Math.PI/2,1.3,{double:true});jacuzzi(7.5,-1.92,0,1.9,.95);toilet(8.485,-.85,-Math.PI/2);
+vanity(6.14,-1.3,Math.PI/2,1.3,{double:true});toilet(7.0,-2.11,0);shower(8.275,-1.55,-Math.PI/2,1.7,.9);
 {const g=fg(6.2,-2.38,0);bx(g,.5,.012,.012,M.brass,0,1.45,0);for(let i=0;i<5;i++)bx(g,.5,.012,.012,M.brass,0,.5+i*.2,0);bx(g,.014,1.2,.014,M.brass,-.25,.5,0);bx(g,.014,1.2,.014,M.brass,.25,.5,0);
   for(let i=0;i<3;i++)rbx(g,.46,.04,.02,M.linen,0,.6+i*.35,.01,.01)}
-toilet(10.33,-3.4,-Math.PI/2);vanity(9.14,-3.35,Math.PI/2,.5);shower(9.725,-4.6,0,1.7,.9);
+toilet(10.27,-3.4,-Math.PI/2);vanity(9.14,-3.35,Math.PI/2,.5);jacuzzi(9.7,-4.5,0,1.7,.95);
 {const g=fg(9.725,-4.99,0);bx(g,.4,.3,.06,M.travertine,-.4,1.2,0);bx(g,.05,.5,.05,M.brass,.6,.3,0).visible=false}
 /* ───────────────────────── DRESSING ───────────────────────── */
-{const g=fg(10.45,-2.425,0);bx(g,.58,2.05,.02,M.mirror,0,.08,.012);bx(g,.64,.04,.03,M.brass,0,2.13,.02);bx(g,.64,.04,.03,M.brass,0,.04,.02);bx(g,.04,2.13,.03,M.brass,-.3,.04,.02);bx(g,.04,2.13,.03,M.brass,.3,.04,.02);bx(g,.012,2.0,.012,glow(0xfff0d8,1.2),-.335,.1,.015)}
+{const g=fg(9.825,-2.425,0);const mz=.012,fr=M.brass;
+  [[8.875,9.27],[10.13,10.775]].forEach(([x0,x1])=>{const w=x1-x0,cx=(x0+x1)/2-9.825;bx(g,w,H-.02,.014,M.mirror,cx,0,mz);bx(g,.025,H-.02,.02,fr,cx-w/2+.0125,0,.012);bx(g,.025,H-.02,.02,fr,cx+w/2-.0125,0,.012)});
+  bx(g,1.905,H-2.32,.014,M.mirror,0,2.3,mz);bx(g,1.905,.025,.02,fr,0,2.3,.012);bx(g,1.905,.025,.02,fr,0,H-.04,.012);
+  bx(g,.012,H-.1,.01,glow(0xfff0d8,1.1),-.95,.04,.02).visible=false}
 wardrobe(9.155,-1.0,Math.PI/2,1.8,.56,true);wardrobe(10.495,-1.0,-Math.PI/2,1.8,.56,true);
 /* ───────────────────────── MASTER BEDROOM ───────────────────────── */
-bed(9.0,2.35,Math.PI/2,1.8,2.05);nightstand(8.15,1.2,Math.PI/2);nightstand(8.15,3.5,Math.PI/2);
+bed(9.0,2.35,Math.PI/2,1.8,2.05);nightstand(8.15,1.25,Math.PI/2);nightstand(8.15,3.45,Math.PI/2);
 fluted(7.9,2.35,Math.PI/2,3.3,2.7,M.flute);rug(9.7,2.35,3.0,2.5,Math.PI/2);
 {const g=fg(10.5,2.35,Math.PI/2,1.5,.45);rbx(g,1.5,.42,.45,M.sofa,0,.0,0,.06);bx(g,1.45,.04,.42,M.throw_,0,.42,0)}
 armchair(11.5,3.15,-Math.PI*.75);sideTable(11.75,2.35,.24,.5,M.walnut);
-{const g=fg(11.5,.33,0,1.4,.5);rbx(g,1.4,.8,.5,M.walnut,0,.0,0,.02);bx(g,1.36,.02,.46,M.travertine,0,.8,0);bx(g,.8,1.0,.02,M.mirror,0,1.0,-.24);vase(g,.5,.82,0,.3);books(g,-.5,.82,0,3)}
-ac(11.5,.185,0);
+{const g=fg(11.4,.33,0,1.4,.5);rbx(g,1.4,.8,.5,M.walnut,0,.0,0,.02);bx(g,1.36,.02,.46,M.travertine,0,.8,0);bx(g,.8,1.0,.02,M.mirror,0,1.0,-.24);vase(g,.5,.82,0,.3);books(g,-.5,.82,0,3)}
+ac(11.4,.185,0);
 curtain(10.0,3.77,Math.PI,2.5);
-pendantDome(10.9,2.9,2.05,.2);floorLamp(12.0,3.75,1.5);plant(8.3,3.6,1.4,furn,.22,'palm');
+pendantDome(10.9,2.9,2.05,.2);floorLamp(11.85,3.7,1.5);plant(8.3,3.6,1.4,furn,.22,'palm');
 /* ───────────────────────── LIVING ROOM (was bedroom 1) ───────────────────────── */
 fluted(.1,3.3,Math.PI/2,3.3,2.7,M.flute);tvUnit(.285,3.3,Math.PI/2,2.3);
 {const g=fg(.1,3.3,Math.PI/2);[-1,1].forEach(s=>{bx(g,.04,2.2,.28,M.oak,s*1.8,.3,.12);for(let k=0;k<4;k++)bx(g,.28,.02,.24,M.oak,s*1.8,.7+k*.5,.1);bx(g,.01,2.2,.01,glow(0xffd9a0,1.1),s*1.8,.3,.25)});
@@ -666,30 +672,36 @@ sofa(3.2,3.3,-Math.PI/2,2.7,.98,M.sofa,{cush:3});
 pouf(1.3,4.55);pouf(2.15,4.7,M.accent);
 rug(1.9,3.3,2.6,2.8,Math.PI/2);coffeeTable(1.8,3.3);sideTable(3.35,5.0,.25,.5,M.walnut);{const g=fg(3.35,5.0);lamp(g,0,.53,0,.4)}
 {const g=fg(3.0,1.5,0,1.3,.4);rbx(g,1.3,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.26,.02,.38,M.travertine,0,.72,0);vase(g,-.3,.74,0,.3);books(g,.3,.74,0,3)}
-floorLamp(.35,1.55,1.6);curtain(2.2,5.3,Math.PI,2.1);plant(.5,5.0,1.4,furn,.2,'palm');ac(3.0,1.375,0);
+floorLamp(.35,1.55,1.6);curtain(2.2,5.3,Math.PI,2.1);plant(.55,4.75,1.4,furn,.2,'palm');ac(3.0,1.375,0);
 pendantDome(1.9,3.3,2.0,.24);
 
 /* ───────────────────────── BEDROOM 2 ───────────────────────── */
 bed(6.55,3.3,-Math.PI/2,1.5,2.0);nightstand(7.45,2.35,-Math.PI/2);nightstand(7.45,4.25,-Math.PI/2);
 {const g=fg(7.725,3.3,-Math.PI/2);art(g,0,1.45,0,1.0,.7,1)}
 wardrobe(4.175,3.95,Math.PI/2,2.3);desk(4.175,1.95,Math.PI/2,1.2,.6);chair(4.65,1.95,-Math.PI/2,M.accent);
-rug(5.9,3.3,2.5,2.7,Math.PI/2);curtain(5.45,5.3,Math.PI,2.3);plant(7.3,5.0,1.3);ac(4.5,1.375,0);
+rug(5.9,3.3,2.5,2.7,Math.PI/2);curtain(5.45,5.3,Math.PI,2.3);plant(7.35,4.7,1.3);ac(4.5,1.375,0);
 /* ───────────────────────── TERRACE ─────────────────────────
    Circulation first: a clear strip (z 5.5–6.25) runs in front of the three glass doors; seating is slim and sits against the balustrade. */
 {const g=fg(2.2,6.45,0,2.6,.4);rbx(g,2.6,.34,.4,std(0x8a7f70,.9),0,.0,0,.04);rbx(g,2.6,.3,.1,std(0x8a7f70,.9),0,.34,.15,.03);
   for(let i=-1;i<=1;i+=2){rbx(g,1.24,.12,.36,M.accent2,i*.65,.34,-.02,.05)}pillow(g,-1.05,.5,.1,M.accent,0,-.3,.34);pillow(g,1.05,.5,.1,M.accent3,0,-.3,.34)}
 sideTable(3.85,6.42,.2,.4);
 {const g=fg(5.4,6.5,0,1.9,.3);rbx(g,1.9,.32,.3,M.pot,0,.0,0,.03);for(let i=0;i<6;i++)sp(g,.14,i%2?M.leaf:M.leaf2,-.78+i*.31,.5,0,1,1.2,1)}
-plant(.9,6.5,1.4,furn,.2,'palm');
-/* hanging rattan swing chair in the east corner, clear of the doors (sways gently) */
-{const piv=new THREE.Group();piv.position.set(7.35,H,6.12);furn.add(piv);window.__swing=piv;
-  const rattan=std(0xc7a57a,.95,0,{bumpMap:T.noise,bumpScale:1.2,side:THREE.DoubleSide}),cush=std(0xefe9dd,1,0,{bumpMap:T.noise,bumpScale:.6});
-  cy(piv,.012,1.85,M.black,0,-1.85,0,6);
-  const shell=new THREE.Mesh(new THREE.SphereGeometry(.5,28,18,0,Math.PI*2,0,Math.PI*.62),rattan);shell.rotation.x=Math.PI;shell.position.set(0,-2.0,0);shell.scale.set(1,1,.9);shell.castShadow=true;piv.add(shell);
-  const rim=new THREE.Mesh(new THREE.TorusGeometry(.46,.025,8,36),rattan);rim.rotation.x=Math.PI/2;rim.position.set(0,-1.82,0);rim.scale.set(1,.9,1);piv.add(rim);
-  rbx(piv,.62,.13,.55,cush,0,-2.28,.02,.06);rbx(piv,.6,.45,.12,cush,0,-2.2,-.22,.06).rotation.x=-.25;
-  cy(piv,.03,.04,std(0xc9a45c,.3,1),0,-.02,0,12);
-  addCol(7.35,6.12,.8,.8)}
+
+/* big hanging rattan egg chair: woven shell open at the front, deep cushions, rope + ceiling anchor */
+{const piv=new THREE.Group();piv.position.set(7.0,H,6.05);piv.rotation.y=0;furn.add(piv);window.__swing=piv;
+  const wk=wickerTex();wk.repeat.set(5,4);const rattan=std(0xffffff,.9,0,{map:wk,bumpMap:wk,bumpScale:1.4,side:THREE.DoubleSide}),cush=fabric(0xefe8da,{bumpScale:.5}),cush2=fabric(0xcfbfa8,{bumpScale:.5});
+  const rope=std(0xd8c9a6,1,0,{bumpMap:T.noise,bumpScale:1});
+  cy(piv,.02,1.45,rope,0,-1.45,0,10);cy(piv,.07,.025,M.steel,0,-.025,0,16);cy(piv,.035,.1,M.steel,0,-.12,0,12);
+  const R0=.62;                                        // shell radius → ~1.2 m wide, 1.4 m tall
+  const sh=new THREE.Mesh(new THREE.SphereGeometry(R0,40,28,Math.PI*.5+.55,Math.PI*2-1.1),rattan);sh.scale.set(1,1.15,.82);sh.position.set(0,-2.05,0);sh.castShadow=true;piv.add(sh);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(R0*.98,.03,8,48,Math.PI*2),rattan);rim.scale.set(1,1.15,1);rim.rotation.x=Math.PI/2;rim.position.set(0,-1.5,0);rim.visible=false;
+  // seat + back cushions
+  const seat=new THREE.Mesh(new THREE.SphereGeometry(.42,28,16),cush);seat.scale.set(1.1,.3,1);seat.position.set(0,-2.35,.06);seat.castShadow=true;piv.add(seat);
+  const back=new THREE.Mesh(new THREE.SphereGeometry(.48,28,16),cush);back.scale.set(1.05,1.0,.32);back.position.set(0,-2.0,-.3);back.rotation.x=-.18;back.castShadow=true;piv.add(back);
+  const bol=new THREE.Mesh(new THREE.SphereGeometry(.2,20,12),cush2);bol.scale.set(1.2,1,.5);bol.position.set(.28,-2.1,-.12);bol.rotation.z=.3;piv.add(bol);
+  // lower hoop + 6 rope stays to a ring above the shell
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,8,16),M.steel);ring.position.set(0,-1.45,0);piv.add(ring);
+  addCol(7.0,6.05,.9,.9)}
 
 /* ───────────────────────── lights ───────────────────────── */
 const roomLights=[],dayLights=[];const KEEPL=new Set(['-1.2,0','-3,2.6','-2.4,6.3','3,-1.25','4,.6','1.9,3.3','5.8,3.3','9.6,1.9','7.3,-1.3']);
