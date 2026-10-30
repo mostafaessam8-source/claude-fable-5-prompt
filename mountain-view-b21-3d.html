@@ -625,7 +625,7 @@ fluted(.1,3.3,Math.PI/2,3.3,2.7,M.flute);tvUnit(.285,3.3,Math.PI/2,2.3);
   vase(g,-1.7,.62,.1,.3);books(g,1.7,1.2,.1,4)}
 sofa(3.2,3.3,-Math.PI/2,2.7,.98,M.sofa,{cush:3});
 {const g=fg(3.2,3.3,-Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent2);pillow(g,.95,.52,-.3,M.accent);pillow(g,.5,.52,-.3,M.accent3,.2);rbx(g,.9,.05,.5,M.throw_,-.55,.5,.12,.02).rotation.z=.04}
-barrel(1.5,5.0,Math.PI+.7,M.accent3);
+barrel(.8,1.95,Math.PI/4,M.accent3);
 rug(1.9,3.3,2.6,2.8,Math.PI/2);coffeeTable(1.8,3.3);sideTable(3.35,5.0,.25,.5,M.walnut);{const g=fg(3.35,5.0);lamp(g,0,.53,0,.4)}
 {const g=fg(3.0,1.5,0,1.3,.4);rbx(g,1.3,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.26,.02,.38,M.travertine,0,.72,0);vase(g,-.3,.74,0,.3);books(g,.3,.74,0,3)}
 floorLamp(.35,1.55,1.6);curtain(1.9,5.3,Math.PI,2.5);plant(.5,5.0,1.4,furn,.2,'palm');ac(3.0,1.375,0);
@@ -636,22 +636,22 @@ bed(6.55,3.3,-Math.PI/2,1.5,2.0);nightstand(7.45,2.35,-Math.PI/2);nightstand(7.4
 {const g=fg(7.725,3.3,-Math.PI/2);art(g,0,1.45,0,1.0,.7,1)}
 wardrobe(4.175,3.95,Math.PI/2,2.3);desk(4.175,1.95,Math.PI/2,1.2,.6);chair(4.65,1.95,-Math.PI/2,M.accent);
 rug(5.9,3.3,2.5,2.7,Math.PI/2);curtain(5.8,5.3,Math.PI,2.6);plant(7.3,5.0,1.3);ac(4.5,1.375,0);
-/* ───────────────────────── TERRACE ───────────────────────── */
-{const g=fg(1.9,6.15,0,2.1,.4);rbx(g,2.0,.4,.75,std(0x8a7f70,.9),0,.0,0,.08);rbx(g,2.0,.35,.2,std(0x8a7f70,.9),0,.35,-.28,.06);for(let i=-1;i<=1;i+=2)rbx(g,.5,.14,.4,M.accent2,i*.55,.4,.08,.05);}
-sideTable(3.2,6.15,.3,.4);
-{const g=fg(5.4,6.05,0,1.0,.5);cy(g,.4,.03,M.steel,0,.72,0,32);cy(g,.03,.72,M.black,0,0,0,8);cy(g,.25,.02,M.black,0,0,0,24)}
-chair(4.9,5.75,Math.PI,M.accent);chair(5.9,5.75,Math.PI,M.accent2);chair(5.4,6.4,0,M.accent3);
-plant(.5,6.45,1.5,furn,.26,'palm');plant(5.2,5.6,1.1,furn,.18,'palm');
-/* hanging rattan swing chair (sways gently) */
-{const piv=new THREE.Group();piv.position.set(6.75,H,6.05);furn.add(piv);window.__swing=piv;
+/* ───────────────────────── TERRACE ─────────────────────────
+   Circulation first: a clear strip (z 5.5–6.25) runs in front of the three glass doors; seating is slim and sits against the balustrade. */
+{const g=fg(2.2,6.45,0,2.6,.4);rbx(g,2.6,.34,.4,std(0x8a7f70,.9),0,.0,0,.04);rbx(g,2.6,.3,.1,std(0x8a7f70,.9),0,.34,.15,.03);
+  for(let i=-1;i<=1;i+=2){rbx(g,1.24,.12,.36,M.accent2,i*.65,.34,-.02,.05)}pillow(g,-1.05,.5,.1,M.accent,0,-.3,.34);pillow(g,1.05,.5,.1,M.accent3,0,-.3,.34)}
+sideTable(3.85,6.42,.2,.4);
+{const g=fg(5.4,6.5,0,1.9,.3);rbx(g,1.9,.32,.3,M.pot,0,.0,0,.03);for(let i=0;i<6;i++)sp(g,.14,i%2?M.leaf:M.leaf2,-.78+i*.31,.5,0,1,1.2,1)}
+plant(.9,6.5,1.4,furn,.2,'palm');
+/* hanging rattan swing chair in the east corner, clear of the doors (sways gently) */
+{const piv=new THREE.Group();piv.position.set(7.35,H,6.12);furn.add(piv);window.__swing=piv;
   const rattan=std(0xc7a57a,.95,0,{bumpMap:T.noise,bumpScale:1.2,side:THREE.DoubleSide}),cush=std(0xefe9dd,1,0,{bumpMap:T.noise,bumpScale:.6});
   cy(piv,.012,1.85,M.black,0,-1.85,0,6);
   const shell=new THREE.Mesh(new THREE.SphereGeometry(.5,28,18,0,Math.PI*2,0,Math.PI*.62),rattan);shell.rotation.x=Math.PI;shell.position.set(0,-2.0,0);shell.scale.set(1,1,.9);shell.castShadow=true;piv.add(shell);
   const rim=new THREE.Mesh(new THREE.TorusGeometry(.46,.025,8,36),rattan);rim.rotation.x=Math.PI/2;rim.position.set(0,-1.82,0);rim.scale.set(1,.9,1);piv.add(rim);
   rbx(piv,.62,.13,.55,cush,0,-2.28,.02,.06);rbx(piv,.6,.45,.12,cush,0,-2.2,-.22,.06).rotation.x=-.25;
-  const a=std(0xc9a45c,.3,1);cy(piv,.03,.04,a,0,-.02,0,12);
-  addCol(6.75,6.05,.9,.9)}
-sideTable(6.0,5.65,.2,.4);
+  cy(piv,.03,.04,std(0xc9a45c,.3,1),0,-.02,0,12);
+  addCol(7.35,6.12,.8,.8)}
 
 /* ───────────────────────── lights ───────────────────────── */
 const roomLights=[],dayLights=[];const KEEPL=new Set(['-1.2,0','-3,2.6','-2.4,6.3','3,-1.25','4,.6','1.9,3.3','5.8,3.3','9.6,1.9','7.3,-1.3']);
