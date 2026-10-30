@@ -281,7 +281,7 @@ function buildComposer(){const w=innerWidth,h=innerHeight,pr=renderer.getPixelRa
 /* ───────────────────────── rooms ───────────────────────── */
 const R={
   entrance:{ar:'المدخل',en:'Entrance',x:[-2.45,0],z:[-1.4,1.2],f:'tile',a:6.29},
-  reception:{ar:'الريسبشن',en:'Reception',x:[-4.55,0],z:[1.2,7.3],f:'wood',a:27.04},
+  reception:{ar:'الصالون',en:'Salon',x:[-4.55,0],z:[1.2,7.3],f:'wood',a:27.04},
   corridor:{ar:'الممر',en:'Corridor',x:[0,7.8],z:[0,1.2],f:'wood',a:9.06},
   gtoilet:{ar:'حمام الضيوف',en:'G. Toilet',x:[0,1.55],z:[-2.5,0],f:'tile',a:3.87},
   kitchen:{ar:'المطبخ',en:'Kitchen',x:[1.55,5.8],z:[-2.5,0],f:'tile',a:10.63},
@@ -289,7 +289,7 @@ const R={
   dressing:{ar:'الدريسينج',en:'M. Dressing',x:[8.8,10.85],z:[-2.5,0],f:'wood',a:5.22},
   mbath:{ar:'حمام الماستر',en:'M. Bathroom',x:[8.8,10.65],z:[-5.1,-2.5],f:'tile',a:4.79},
   mbed:{ar:'غرفة الماستر',en:'M. Bedroom',x:[7.8,12.2],z:[0,3.85],f:'wood',a:16.92},
-  bed1:{ar:'غرفة نوم 1',en:'Bedroom 01',x:[0,3.8],z:[1.2,5.4],f:'wood',a:15.77},
+  bed1:{ar:'الليفنج',en:'Living Room',x:[0,3.8],z:[1.2,5.4],f:'wood',a:15.77},
   bed2:{ar:'غرفة نوم 2',en:'Bedroom 02',x:[3.8,7.8],z:[1.2,5.4],f:'wood',a:16.01},
   terrace:{ar:'التراس',en:'Terrace',x:[0,7.8],z:[5.4,6.7],f:'deck',a:8.91}};
 const WET={gtoilet:1,bathroom:1,mbath:1};
@@ -316,7 +316,7 @@ for(const k in R){const r=R[k];
   if(w*d>9)for(let px=x0+1.6;px<x1-1.2;px+=3.4)for(let pz=z0+1.2;pz<z1-1.0;pz+=2.8)solarPos.push([px,10.15,pz])}
 
 /* ───────────────────────── walls & openings ───────────────────────── */
-const RWALL={bed1:'wallBed',bed2:'wallBed',mbed:'wallBed',terrace:'wallExt'};
+const RWALL={bed2:'wallBed',mbed:'wallBed',terrace:'wallExt'};
 M.wallBed=std(0xe9e1d4,.93,0,{bumpMap:T.noiseSoft,bumpScale:.25});
 M.tileWallBase=std(0xffffff,.22,0,{map:T.tile,bumpMap:tileB.tex,bumpScale:.8});
 const doorMat=std(0xf4f1ea,.45);
@@ -554,24 +554,38 @@ function ovenTower(x,z,rot,len=.62){const g=fg(x,z,rot,len,.58);bx(g,len,2.2,.58
 {const g=fg(-.275,-.75,-Math.PI/2,.9,.4);bx(g,.9,2.1,.4,M.oak,0,0,0);for(let i=0;i<11;i++)bx(g,.03,2.0,.02,M.walnut,-.42+i*.084,.05,.21);bx(g,.01,2.0,.02,M.black,0,.05,.215);}
 plant(-2.05,-1.1,1.5);pendantDome(-1.2,-.1,2.1,.26);
 
-/* ───────────────────────── RECEPTION ───────────────────────── */
-fluted(-.1,3.5,-Math.PI/2,3.6,2.7,M.flute);tvUnit(-.285,3.5,-Math.PI/2,2.4);
-{const g=fg(-.1,3.5,-Math.PI/2);[-1,1].forEach(s=>{bx(g,.04,2.2,.28,M.oak,s*1.95,.3,.12);for(let k=0;k<4;k++)bx(g,.28,.02,.24,M.oak,s*1.95,.7+k*.5,.1);bx(g,.01,2.2,.01,glow(0xffd9a0,1.1),s*1.95,.3,.25)})}
-sofa(-3.0,3.5,Math.PI/2,2.6,.98,M.sofa,{cush:3});
-{const g=fg(-3.0,3.5,Math.PI/2);pillow(g,-.9,.52,-.3,M.accent);pillow(g,.8,.52,-.3,M.accent2);pillow(g,-.4,.52,-.3,M.accent3,.2);rbx(g,.9,.05,.5,M.throw_,.85,.5,.1,.02).rotation.z=.04}
-barrel(-3.85,1.85,Math.PI/4+.2,M.leather);barrel(-1.25,5.05,Math.PI+.35,M.leather);
-rug(-2.0,3.5,3.4,2.6,0);coffeeTable(-1.85,3.5);sideTable(-3.95,4.95,.26,.5);
-{const g=fg(-3.95,4.95);lamp(g,0,.53,0,.4)}
-floorLamp(-4.05,2.75);plant(-4.1,3.15,1.8,furn,.26);plant(-.45,7.0,1.5,furn,.22,'palm');
+/* ───────────────────────── SALON (reception) ───────────────────────── */
+function chandelier(x,z,y,r=.55){const g=new THREE.Group();g.position.set(x,0,z);ceilG.add(g);
+  cy(g,.006,H-y,M.brass,0,y,0,6);const ring=new THREE.Mesh(new THREE.TorusGeometry(r,.014,8,64),M.brass);ring.rotation.x=Math.PI/2;ring.position.y=y;g.add(ring);
+  const ring2=new THREE.Mesh(new THREE.TorusGeometry(r*.55,.012,8,48),M.brass);ring2.rotation.x=Math.PI/2;ring2.position.y=y+.12;g.add(ring2);
+  const bulb=glow(0xffe6b8,2.2);for(let i=0;i<16;i++){const a=i/16*6.283,rr=i%2?r:r*.55,yy=i%2?y:y+.12,s=new THREE.Mesh(new THREE.SphereGeometry(.04,12,8),bulb);s.position.set(Math.cos(a)*rr,yy-.04,Math.sin(a)*rr);g.add(s)}
+  for(let i=0;i<4;i++){const a=i*1.571,rd=cy(g,.004,.12,M.brass,Math.cos(a)*r*.55,y,Math.sin(a)*r*.55,4)}
+  cy(g,.07,.06,M.brass,0,y+.2,0,16)}
+// east wall: fluted backdrop with a tall gilded mirror and a console
+fluted(-.1,3.5,-Math.PI/2,3.6,2.7,M.flute);
+{const g=fg(-.1,3.5,-Math.PI/2);bx(g,1.5,1.9,.03,M.mirror,0,.7,.04);
+  bx(g,1.58,.04,.05,M.brass,0,2.6,.045);bx(g,1.58,.04,.05,M.brass,0,.66,.045);bx(g,.04,1.98,.05,M.brass,-.77,.66,.045);bx(g,.04,1.98,.05,M.brass,.77,.66,.045);
+  [-1,1].forEach(s=>{bx(g,.06,.2,.04,M.brass,s*1.15,1.7,.04);cy(g,.06,.2,M.shade,s*1.15,1.62,.1,16,.045).castShadow=false})}
+{const g=fg(-.3,3.5,-Math.PI/2,1.9,.42);rbx(g,1.9,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.94,.03,.44,M.travertine,0,.72,0);for(let i=1;i<4;i++)bx(g,.006,.66,.01,M.black,-.95+i*.475,.03,.205);
+  lamp(g,-.7,.75,0,.46);lamp(g,.7,.75,0,.46);vase(g,0,.75,0,.34);books(g,.3,.75,.0,3);bowl(g,-.3,.75,.05,.1,M.oak)}
+// formal seating: sofa + two armchairs around a pair of tables
+sofa(-3.1,3.5,Math.PI/2,2.7,.98,M.sofa,{cush:3});
+{const g=fg(-3.1,3.5,Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent);pillow(g,1.0,.52,-.3,M.accent);pillow(g,-.55,.52,-.3,M.accent3,.2);pillow(g,.55,.52,-.3,M.accent3,-.2);rbx(g,.9,.05,.5,M.throw_,0,.5,.12,.02).rotation.z=.04}
+barrel(-1.15,2.25,-Math.PI/2-.25,M.leather);barrel(-1.15,4.75,-Math.PI/2+.25,M.leather);
+rug(-2.1,3.5,3.5,2.9,0);coffeeTable(-2.0,3.5);sideTable(-1.2,3.5,.24,.45);
+{const g=fg(-1.2,3.5);vase(g,0,.48,0,.22)}
+{const g=fg(-4.0,2.0);sideTable(0,0,.26,.5);}
+floorLamp(-4.05,4.95);plant(-4.1,3.2,1.8,furn,.26);plant(-.45,7.0,1.5,furn,.22,'palm');
 {const g=fg(-3.4,1.5,0,1.7,.4);rbx(g,1.7,.7,.4,M.walnut,0,.0,0,.02);bx(g,1.66,.02,.38,M.travertine,0,.7,0);vase(g,-.5,.72,0,.34);vase(g,.1,.72,0,.22,M.oak,false);books(g,.55,.72,0,4);lamp(g,-.2,.72,0,.4)}
 {const g=fg(-4.475,3.85,Math.PI/2);art(g,0,1.3,0,.55,.7,0)}
+chandelier(-2.1,3.5,2.15);
 /* dining */
-{const g=fg(-2.4,6.2,0,2,.5);rbx(g,2.0,.05,.95,M.travertine,0,.72,0,.02);bx(g,.08,.72,.7,M.black,-.7,0,0);bx(g,.08,.72,.7,M.black,.7,0,0);bx(g,1.4,.04,.08,M.black,0,.1,0);
+{const g=fg(-2.4,6.2,0,2,1.0);rbx(g,2.0,.05,.95,M.travertine,0,.72,0,.02);bx(g,.08,.72,.7,M.black,-.7,0,0);bx(g,.08,.72,.7,M.black,.7,0,0);bx(g,1.4,.04,.08,M.black,0,.1,0);
   vase(g,0,.77,0,.3);bowl(g,-.55,.77,.1,.12,M.oak);cy(g,.012,.28,M.ceramic,.5,.77,-.1,8);}
 [-.6,0,.6].forEach(dx=>{chair(-2.4+dx,5.5,0,M.sofa);chair(-2.4+dx,6.9,Math.PI,M.sofa)});
 linearPendant(-2.4,6.2,1.9,1.6);
 curtain(-4.44,2.9,Math.PI/2,2.0);curtain(-4.44,5.7,Math.PI/2,2.2);curtain(-2.3,7.2,Math.PI,3.6,2.78);curtain(-3.5,1.31,Math.PI,1.5,2.5);
-curtain(-.1,6.1,-Math.PI/2,.5);
+curtain(-.1,6.1,-Math.PI/2,1.0);
 
 /* ───────────────────────── CORRIDOR ───────────────────────── */
 {const g=fg(3.6,1.125,Math.PI);art(g,-.55,1.25,0,.45,.6,0);art(g,.05,1.25,0,.45,.6,1);art(g,.65,1.25,0,.45,.6,2)}
@@ -607,11 +621,18 @@ barrel(11.5,3.15,-Math.PI*.75,M.leather);sideTable(11.75,2.35,.24,.5,M.walnut);
 ac(11.5,.185,0);
 curtain(12.12,2.1,-Math.PI/2,2.4);curtain(10.0,3.77,Math.PI,3.5);
 pendantDome(10.9,2.9,2.05,.2);floorLamp(11.9,3.55,1.5);plant(8.3,3.6,1.4,furn,.22,'palm');
-/* ───────────────────────── BEDROOM 1 ───────────────────────── */
-bed(1.25,3.3,Math.PI/2,1.5,2.0);nightstand(.35,2.35,Math.PI/2);nightstand(.35,4.25,Math.PI/2);
-{const g=fg(.075,3.3,Math.PI/2);art(g,0,1.45,0,1.0,.7,2)}
-wardrobe(3.425,3.95,-Math.PI/2,2.3);desk(3.425,1.95,-Math.PI/2,1.2,.6);chair(3.0,1.95,Math.PI/2,M.accent2);
-rug(1.9,3.3,2.5,2.7,Math.PI/2);curtain(1.9,5.3,Math.PI,2.5);plant(.5,5.0,1.3,furn,.2,'palm');ac(3.0,1.375,0);
+/* ───────────────────────── LIVING ROOM (was bedroom 1) ───────────────────────── */
+fluted(.1,3.3,Math.PI/2,3.3,2.7,M.flute);tvUnit(.285,3.3,Math.PI/2,2.3);
+{const g=fg(.1,3.3,Math.PI/2);[-1,1].forEach(s=>{bx(g,.04,2.2,.28,M.oak,s*1.8,.3,.12);for(let k=0;k<4;k++)bx(g,.28,.02,.24,M.oak,s*1.8,.7+k*.5,.1);bx(g,.01,2.2,.01,glow(0xffd9a0,1.1),s*1.8,.3,.25)});
+  vase(g,-1.7,.62,.1,.3);books(g,1.7,1.2,.1,4)}
+sofa(3.2,3.3,-Math.PI/2,2.7,.98,M.sofa,{cush:3});
+{const g=fg(3.2,3.3,-Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent2);pillow(g,.95,.52,-.3,M.accent);pillow(g,.5,.52,-.3,M.accent3,.2);rbx(g,.9,.05,.5,M.throw_,-.55,.5,.12,.02).rotation.z=.04}
+barrel(1.5,5.0,Math.PI+.7,M.accent3);
+rug(1.9,3.3,2.6,2.8,Math.PI/2);coffeeTable(1.8,3.3);sideTable(3.35,5.0,.25,.5,M.walnut);{const g=fg(3.35,5.0);lamp(g,0,.53,0,.4)}
+{const g=fg(3.0,1.5,0,1.3,.4);rbx(g,1.3,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.26,.02,.38,M.travertine,0,.72,0);vase(g,-.3,.74,0,.3);books(g,.3,.74,0,3)}
+floorLamp(.35,1.55,1.6);curtain(1.9,5.3,Math.PI,2.5);plant(.5,5.0,1.4,furn,.2,'palm');ac(3.0,1.375,0);
+pendantDome(1.9,3.3,2.0,.24);
+
 /* ───────────────────────── BEDROOM 2 ───────────────────────── */
 bed(6.55,3.3,-Math.PI/2,1.5,2.0);nightstand(7.45,2.35,-Math.PI/2);nightstand(7.45,4.25,-Math.PI/2);
 {const g=fg(7.725,3.3,-Math.PI/2);art(g,0,1.45,0,1.0,.7,1)}
@@ -925,9 +946,9 @@ function updatePlayer(dt,tm){
 /* ───────────────────────── places & modes ───────────────────────── */
 const $=id=>document.getElementById(id);
 const SPOTS={
-  reception:[-3.9,6.5,-.2,3.6,'الريسبشن',0],dining:[-.7,2.0,-3.5,6.4,'السفرة',0],entrance:[-1.2,-.9,-1.6,5.5,'المدخل',0],corridor:[.4,.6,7.6,.6,'الممر',0],
+  reception:[-3.9,6.5,-.2,3.6,'الصالون',0],dining:[-.7,2.0,-3.5,6.4,'السفرة',0],entrance:[-1.2,-.9,-1.6,5.5,'المدخل',0],corridor:[.4,.6,7.6,.6,'الممر',0],
   kitchen:[2.0,-1.25,5.5,-1.3,'المطبخ',0],gtoilet:[.8,-.3,.8,-2.5,'حمام الضيوف',0],bathroom:[6.6,-.4,7.4,-2.4,'الحمام',0],
-  bed1:[3.2,1.9,0,3.5,'غرفة 1',0],bed2:[4.5,1.9,7.8,3.5,'غرفة 2',0],mbed:[11.3,3.3,7.8,2.2,'الماستر',0],dressing:[9.8,-.3,9.8,-2.5,'الدريسينج',0],mbath:[10.1,-2.8,9.7,-5.1,'حمام الماستر',0],
+  bed1:[3.4,1.9,.2,3.3,'الليفنج',0],bed2:[4.5,1.9,7.8,3.5,'غرفة 2',0],mbed:[11.3,3.3,7.8,2.2,'الماستر',0],dressing:[9.8,-.3,9.8,-2.5,'الدريسينج',0],mbath:[10.1,-2.8,9.7,-5.1,'حمام الماستر',0],
   terrace:[3.9,5.95,38,24,'التراس',0],
   outside:[-1.45,-14.5,3.8,5,'برا العمارة',GY],street:[3.8,31,3.8,-10,'الشارع',GY],beach:[26,24,40,40,'الشاطئ',GY],swim:[40,38,60,26,'اسبح في اللاجون',GY]};
 {const rib=waters.filter(w=>w.t==='r')[4],s0=rib.s[10],s1=rib.s[40];let dx=3.8-s0[0],dz=8-s0[1];const L=Math.hypot(dx,dz);dx/=L;dz/=L;
