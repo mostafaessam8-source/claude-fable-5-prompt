@@ -164,7 +164,7 @@ RectAreaLightUniformsLib.init();
 const scene=new THREE.Scene();
 const pmrem=new THREE.PMREMGenerator(renderer);
 scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
-const camera=new THREE.PerspectiveCamera(70,1,0.05,4000);
+const camera=new THREE.PerspectiveCamera(80,1,0.05,4000);
 camera.rotation.order='YXZ';
 
 /* ───────────────────────── constants ───────────────────────── */
@@ -569,16 +569,14 @@ fluted(-.1,3.5,-Math.PI/2,3.6,2.7,M.flute);
 {const g=fg(-.3,3.5,-Math.PI/2,1.9,.42);rbx(g,1.9,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.94,.03,.44,M.travertine,0,.72,0);for(let i=1;i<4;i++)bx(g,.006,.66,.01,M.black,-.95+i*.475,.03,.205);
   lamp(g,-.7,.75,0,.46);lamp(g,.7,.75,0,.46);vase(g,0,.75,0,.34);books(g,.3,.75,.0,3);bowl(g,-.3,.75,.05,.1,M.oak)}
 // formal seating: sofa + two armchairs around a pair of tables
-sofa(-3.1,3.5,Math.PI/2,2.7,.98,M.sofa,{cush:3});
-{const g=fg(-3.1,3.5,Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent);pillow(g,1.0,.52,-.3,M.accent);pillow(g,-.55,.52,-.3,M.accent3,.2);pillow(g,.55,.52,-.3,M.accent3,-.2);rbx(g,.9,.05,.5,M.throw_,0,.5,.12,.02).rotation.z=.04}
-barrel(-1.15,2.25,-Math.PI/2-.25,M.leather);barrel(-1.15,4.75,-Math.PI/2+.25,M.leather);
-rug(-2.1,3.5,3.5,2.9,0);coffeeTable(-2.0,3.5);sideTable(-1.2,3.5,.24,.45);
-{const g=fg(-1.2,3.5);vase(g,0,.48,0,.22)}
-{const g=fg(-4.0,2.0);sideTable(0,0,.26,.5);}
-floorLamp(-4.05,4.95);plant(-4.1,3.2,1.8,furn,.26);plant(-.45,7.0,1.5,furn,.22,'palm');
+sofa(-3.93,3.5,Math.PI/2,2.7,.98,M.sofa,{cush:3});
+{const g=fg(-3.93,3.5,Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent);pillow(g,1.0,.52,-.3,M.accent);pillow(g,-.55,.52,-.3,M.accent3,.2);pillow(g,.55,.52,-.3,M.accent3,-.2);rbx(g,.9,.05,.5,M.throw_,0,.5,.12,.02).rotation.z=.04}
+barrel(-1.0,2.3,-Math.PI/2-.25,M.leather);barrel(-1.0,4.7,-Math.PI/2+.25,M.leather);
+rug(-2.4,3.5,3.3,2.8,0);coffeeTable(-2.4,3.5);
+floorLamp(-4.0,5.15);plant(-.45,7.0,1.5,furn,.22,'palm');
 {const g=fg(-3.4,1.5,0,1.7,.4);rbx(g,1.7,.7,.4,M.walnut,0,.0,0,.02);bx(g,1.66,.02,.38,M.travertine,0,.7,0);vase(g,-.5,.72,0,.34);vase(g,.1,.72,0,.22,M.oak,false);books(g,.55,.72,0,4);lamp(g,-.2,.72,0,.4)}
 {const g=fg(-4.475,3.85,Math.PI/2);art(g,0,1.3,0,.55,.7,0)}
-chandelier(-2.1,3.5,2.15);
+chandelier(-2.4,3.5,2.15);
 /* dining */
 {const g=fg(-2.4,6.2,0,2,1.0);rbx(g,2.0,.05,.95,M.travertine,0,.72,0,.02);bx(g,.08,.72,.7,M.black,-.7,0,0);bx(g,.08,.72,.7,M.black,.7,0,0);bx(g,1.4,.04,.08,M.black,0,.1,0);
   vase(g,0,.77,0,.3);bowl(g,-.55,.77,.1,.12,M.oak);cy(g,.012,.28,M.ceramic,.5,.77,-.1,8);}
@@ -643,8 +641,17 @@ rug(5.9,3.3,2.5,2.7,Math.PI/2);curtain(5.8,5.3,Math.PI,2.6);plant(7.3,5.0,1.3);a
 sideTable(3.2,6.15,.3,.4);
 {const g=fg(5.4,6.05,0,1.0,.5);cy(g,.4,.03,M.steel,0,.72,0,32);cy(g,.03,.72,M.black,0,0,0,8);cy(g,.25,.02,M.black,0,0,0,24)}
 chair(4.9,5.75,Math.PI,M.accent);chair(5.9,5.75,Math.PI,M.accent2);chair(5.4,6.4,0,M.accent3);
-{const g=fg(7.3,6.45,0,.9,.4);bx(g,.9,.35,.3,M.pot,0,.0,0);for(let i=0;i<5;i++)sp(g,.18,M.leaf,-.35+i*.18,.55,0,1,1.2,1)}
-plant(.5,6.4,1.5,furn,.26,'palm');plant(7.4,5.65,1.3,furn,.2,'palm');
+plant(.5,6.45,1.5,furn,.26,'palm');plant(5.2,5.6,1.1,furn,.18,'palm');
+/* hanging rattan swing chair (sways gently) */
+{const piv=new THREE.Group();piv.position.set(6.75,H,6.05);furn.add(piv);window.__swing=piv;
+  const rattan=std(0xc7a57a,.95,0,{bumpMap:T.noise,bumpScale:1.2,side:THREE.DoubleSide}),cush=std(0xefe9dd,1,0,{bumpMap:T.noise,bumpScale:.6});
+  cy(piv,.012,1.85,M.black,0,-1.85,0,6);
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(.5,28,18,0,Math.PI*2,0,Math.PI*.62),rattan);shell.rotation.x=Math.PI;shell.position.set(0,-2.0,0);shell.scale.set(1,1,.9);shell.castShadow=true;piv.add(shell);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.46,.025,8,36),rattan);rim.rotation.x=Math.PI/2;rim.position.set(0,-1.82,0);rim.scale.set(1,.9,1);piv.add(rim);
+  rbx(piv,.62,.13,.55,cush,0,-2.28,.02,.06);rbx(piv,.6,.45,.12,cush,0,-2.2,-.22,.06).rotation.x=-.25;
+  const a=std(0xc9a45c,.3,1);cy(piv,.03,.04,a,0,-.02,0,12);
+  addCol(6.75,6.05,.9,.9)}
+sideTable(6.0,5.65,.2,.4);
 
 /* ───────────────────────── lights ───────────────────────── */
 const roomLights=[],dayLights=[];const KEEPL=new Set(['-1.2,0','-3,2.6','-2.4,6.3','3,-1.25','4,.6','1.9,3.3','5.8,3.3','9.6,1.9','7.3,-1.3']);
@@ -660,7 +667,7 @@ if(!isTouch){const win=(x,y,z,w,h,tx,ty,tz,I)=>{const l=new THREE.RectAreaLight(
 
 /* ───────────────────────── themes ───────────────────────── */
 const THEMES={
-  warm:{wall:0xf0ece4,wallBed:0xe9e1d4,ceil:0xf8f6f1,wood:[1,1,1],flute:0x6b4a35,sofa:0xd9cfc0,rug:0xe9e2d6,kBase:0x8d857a,kTall:0xb99068,accent:0x9c6b4a,accent2:0x7d8a74,accent3:0x2f3a47,curtain:0xcfc2b0,walnut:0x5a3d2b},
+  warm:{wall:0xf6f3ed,wallBed:0xf1ece3,ceil:0xfbf9f5,wood:[1.1,1.08,1.05],flute:0x6b4a35,sofa:0xe3dacc,rug:0xece6da,kBase:0x8d857a,kTall:0xb99068,accent:0x9c6b4a,accent2:0x7d8a74,accent3:0x2f3a47,curtain:0xcfc2b0,walnut:0x5a3d2b},
   light:{wall:0xf8f7f4,wallBed:0xf1eee8,ceil:0xffffff,wood:[1.13,1.13,1.1],flute:0xd6bd99,sofa:0xece7df,rug:0xf3f0ea,kBase:0xe6e2da,kTall:0xd8bf9b,accent:0xc29a7a,accent2:0x9db09a,accent3:0x8aa0a8,curtain:0xf0ebe3,walnut:0xc9a27a},
   dark:{wall:0x4a4744,wallBed:0x403d3b,ceil:0x3a3836,wood:[.5,.46,.44],flute:0x2b2019,sofa:0x544d46,rug:0x3a3733,kBase:0x1e2021,kTall:0x4b3b30,accent:0xc9a45c,accent2:0x7a3a3a,accent3:0x2c3a4a,curtain:0x6b5f55,walnut:0x2a1f19}};
 function applyTheme(n){const t=THEMES[n];
@@ -977,7 +984,7 @@ function setMode(m){const prev=mode;mode=m;
   if(!walk){setUnder(false);avatar.g.visible=false;if(document.pointerLockElement)document.exitPointerLock?.();
     if(prev==='walk'){camera.getWorldDirection(fwdV);controls.target.copy(camera.position).addScaledVector(fwdV,4)}
     const v=VIEWS[m];flyTo(new THREE.Vector3(...v[0]),new THREE.Vector3(...v[1]),1.4);document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));setFov(55)}
-  else{tween=null;setFov(70)}
+  else{tween=null;setFov(80)}
   updateVis();followSun()}
 function updateVis(){{const dh0=mode==='dollhouse'||mode==='plan';bldgs.forEach(b=>{if(b!==ours&&b.g)b.g.visible=!(dh0&&Math.hypot(b.cx-3.8,b.cz-1.1)<48)});if(window.__panels)window.__panels.visible=!dh0}
   camera.near=mode==='walk'?(P.y>-1.5?.05:.3):1;camera.updateProjectionMatrix();const dh=mode==='dollhouse'||mode==='plan';shellK=dh?.42:1;
@@ -999,7 +1006,7 @@ canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id||docum
 const dragEnd=e=>{if(drag&&e.pointerId===drag.id){drag=null}};canvas.addEventListener('pointerup',dragEnd);canvas.addEventListener('pointercancel',dragEnd);
 canvas.addEventListener('click',()=>{if(mode==='walk'&&!isTouch&&document.pointerLockElement!==canvas){try{const r=canvas.requestPointerLock();r&&r.catch&&r.catch(()=>{})}catch{}}});
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&mode==='walk'){P.yaw-=e.movementX*.0022;P.pitch=clamp(P.pitch-e.movementY*.0022,-1.25,1.25)}});
-canvas.addEventListener('wheel',e=>{if(mode!=='walk')return;if(tpp)tpDist=clamp(tpDist+e.deltaY*.004,1.6,7);else setFov(clamp(camera.fov+e.deltaY*.03,40,85));e.preventDefault()},{passive:false});
+canvas.addEventListener('wheel',e=>{if(mode!=='walk')return;if(tpp)tpDist=clamp(tpDist+e.deltaY*.004,1.6,7);else setFov(clamp(camera.fov+e.deltaY*.03,45,95));e.preventDefault()},{passive:false});
 /* joystick (left) + action buttons (right) */
 const joyEl=$('joy'),knob=$('knob');let jid=null;
 const jset=e=>{const r=joyEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=(e.clientX-cx)/(r.width/2),dy=(e.clientY-cy)/(r.height/2);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}joy.x=dx;joy.y=dy;knob.style.transform=`translate(${dx*42}px,${dy*42}px)`};
@@ -1057,7 +1064,7 @@ function frame(){const dt=Math.min(clock.getDelta(),.05),tm=clock.elapsedTime;
   else controls.update();
   if(mode==='walk'&&tween)tween=null;
   if(fn%4===0)followSun();
-  const pulse=.55+.45*Math.sin(tm*3);if(window.__marker)window.__marker.material.opacity=.15+.3*pulse;
+  if(window.__swing)window.__swing.rotation.z=Math.sin(tm*1.1)*.07;const pulse=.55+.45*Math.sin(tm*3);if(window.__marker)window.__marker.material.opacity=.15+.3*pulse;
   if(HQ.on&&!under){if(!HQ.composer)buildComposer();HQ.composer.render(dt)}else renderer.render(scene,camera);
   waterM.bumpMap.offset.x+=dt*.004;waterM.bumpMap.offset.y+=dt*.003;
   if(++fn%3===0)drawMini();
