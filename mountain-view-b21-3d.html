@@ -704,6 +704,25 @@ sideTable(3.85,6.42,.2,.4);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,8,16),M.steel);ring.position.set(0,-1.45,0);piv.add(ring);
   addCol(7.3,6.05,.9,.9)}
 
+
+/* ── references: layered gypsum ceilings with LED coves, gold rings, wall mouldings ── */
+function trayCeiling(cx,cz,w,d,drop=.1,col=0xffd9a0){const g=new THREE.Group();ceilG.add(g);const t=.1,sm=glow(col,2.4);
+  bx(g,w,drop,t,M.ceil,cx,H-drop,cz-d/2+t/2);bx(g,w,drop,t,M.ceil,cx,H-drop,cz+d/2-t/2);bx(g,t,drop,d-2*t,M.ceil,cx-w/2+t/2,H-drop,cz);bx(g,t,drop,d-2*t,M.ceil,cx+w/2-t/2,H-drop,cz);
+  bx(g,w-2*t-.02,.012,.025,sm,cx,H-drop-.004,cz-d/2+t+.02);bx(g,w-2*t-.02,.012,.025,sm,cx,H-drop-.004,cz+d/2-t-.02);bx(g,.025,.012,d-2*t-.02,sm,cx-w/2+t+.02,H-drop-.004,cz);bx(g,.025,.012,d-2*t-.02,sm,cx+w/2-t-.02,H-drop-.004,cz)}
+function goldRing(x,z,r){const m=new THREE.Mesh(new THREE.TorusGeometry(r,.014,8,72),glow(0xffd9a0,2.2));m.rotation.x=Math.PI/2;m.position.set(x,H-.02,z);ceilG.add(m);
+  const m2=new THREE.Mesh(new THREE.TorusGeometry(r+.06,.012,8,72),M.brass);m2.rotation.x=Math.PI/2;m2.position.set(x,H-.015,z);ceilG.add(m2)}
+function mould(parent,x,y0,z,w,h,rotY=0){const g=new THREE.Group();g.position.set(x,y0,z);g.rotation.y=rotY;parent.add(g);const t=.035;
+  bx(g,w,t,.02,M.trim,0,0,0);bx(g,w,t,.02,M.trim,0,h-t,0);bx(g,t,h,.02,M.trim,-w/2+t/2,0,0);bx(g,t,h,.02,M.trim,w/2-t/2,0,0);
+  bx(g,w-.14,.012,.024,M.brass,0,.07,0);bx(g,w-.14,.012,.024,M.brass,0,h-.082,0);bx(g,.012,h-.14,.024,M.brass,-w/2+.07,.07,0);bx(g,.012,h-.14,.024,M.brass,w/2-.07,.07,0)}
+trayCeiling(-2.3,4.25,3.6,3.6,.1);goldRing(-2.4,3.7,1.0);
+trayCeiling(1.9,3.3,2.4,2.6,.1);goldRing(1.9,3.4,.7);
+trayCeiling(9.9,1.9,2.6,2.4,.1);
+trayCeiling(-1.2,.1,1.2,1.2,.08);
+{const g=new THREE.Group();furn.add(g);
+  [-4.15,-3.35,-2.55].forEach(x=>mould(g,x,.15,1.275,.7,2.45,Math.PI));
+  [4.5,5.6].forEach(z=>mould(g,-4.475,.15,z,.7,2.45,Math.PI/2));
+  [2.45,3.2].forEach(x=>mould(g,x,.15,5.325,.7,2.45,0)) 
+}
 /* ───────────────────────── lights ───────────────────────── */
 const roomLights=[],dayLights=[];const KEEPL=new Set(['-1.2,0','-3,2.6','-2.4,6.3','3,-1.25','4,.6','1.9,3.3','5.8,3.3','9.6,1.9','7.3,-1.3']);
 const rl=(x,y,z,I,d=8)=>{if(isTouch&&!KEEPL.has(x+','+z))return;const l=new THREE.PointLight(0xffe0b8,I,d,2);l.position.set(x,y,z);scene.add(l);roomLights.push({l,I})};
