@@ -932,10 +932,19 @@ slimPendant(7.45,2.2,1.35);slimPendant(7.45,4.4,1.35);
 wardrobe(4.175,3.95,Math.PI/2,2.3);shagRug(6.0,3.3,2.4,2.6);curtain(5.45,5.3,Math.PI,2.3);
 
 /* ───────────────────────── TERRACE (balcony ref): built-in bench on the glass, LED under, egg chair on stand ───────────────────────── */
-{const L=4.0,cx=3.3,g=fg(cx,6.44,0,L,.45);g.userData.name='كنبة البلكونة المبنية';bx(g,L,.36,.45,M.comp,0,0,0);bx(g,L-.04,.012,.02,LED(0xffb866,2.2),0,.04,-.23);
-  [-1.33,0,1.33].forEach(o=>rbx(g,1.3,.09,.43,M.cushSand,o,.36,0,.03));
-  [[-1.75,M.cushTerra],[-1.4,M.cushBeige],[-.2,M.cushTerra],[.15,M.cushSage],[1.2,M.cushBeige],[1.6,M.cushTerra]].forEach(([o,mat])=>{const p=rbx(g,.42,.42,.13,mat,o,.45,.13,.06);p.rotation.set(.22,0,0)});
-  bx(g,.9,.03,.4,M.knit,.6,.45,-.02)}
+/* outdoor dining set against the glass: teak table on black steel, two rope-woven armchairs */
+const teak=std(0xffffff,.6,0,{map:woodTex([150,105,68],61),bumpMap:T.noise,bumpScale:.4}),ropeTex=(()=>{const c=cv(256,256),q=c.getContext('2d');q.fillStyle='#cdb894';q.fillRect(0,0,256,256);for(let y=0;y<256;y+=12)for(let x=0;x<256;x+=12){q.fillStyle=((x+y)/12)%2?'#b49c76':'#ddcba8';q.fillRect(x+1,y+1,10,10)}const t=toTex(c);t.repeat.set(3,3);return t})(),rope=std(0xffffff,.95,0,{map:ropeTex,bumpMap:ropeTex,bumpScale:2});
+function outdoorTable(x,z,l=1.2,w=.62){const g=fg(x,z,0,l,w);g.userData.name='ترابيزة خارجية تيك';
+  for(let k=0;k<6;k++)bx(g,l,.035,w/6-.008,teak,0,.72,-w/2+w/12+k*w/6);
+  [-1,1].forEach(s=>{bx(g,.04,.72,.04,M.blackM,s*(l/2-.08),0,-w/2+.07);bx(g,.04,.72,.04,M.blackM,s*(l/2-.08),0,w/2-.07);bx(g,.04,.04,w-.14,M.blackM,s*(l/2-.08),.66,0)});bx(g,l-.16,.04,.04,M.blackM,0,.66,-w/2+.07);bx(g,l-.16,.04,.04,M.blackM,0,.66,w/2-.07);
+  vaseS(g,0,.755,0,.2,M.ceramic,.07);for(let i=0;i<7;i++){const st=cy(g,.004,.22,M.leaf2,Math.cos(i)*.03,.9,Math.sin(i)*.03,4);st.rotation.set(Math.sin(i)*.25,0,Math.cos(i)*.25);sp(g,.035,i%2?M.cushBeige:std(0xe9a77f,.8),Math.cos(i)*.08,1.12+(i%3)*.03,Math.sin(i)*.08)}
+  bx(g,.12,.2,.12,M.blackM,.4,.755,.05);cy(g,.03,.08,LED(0xffb050,2.5),.4,.79,.05,10);[-.32,.3].forEach((o,i)=>{cy(g,.1,.012,M.ceramic,o,.755,-.1+i*.15,24);cy(g,.035,.12,M.glass,o+.12,.755,-.12+i*.15,12)});return g}
+function ropeChair(x,z,rot){const g=fg(x,z,rot,.6,.6);g.userData.name='كرسي خارجي حبال';
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>bx(g,.035,.42,.035,M.blackM,a*.25,0,b*.25));bx(g,.54,.03,.54,M.blackM,0,.4,0);
+  bx(g,.52,.02,.5,rope,0,.42,0);const back=bx(g,.54,.42,.03,rope,0,.46,-.26);back.rotation.x=-.14;[-1,1].forEach(s=>{bx(g,.03,.25,.03,M.blackM,s*.27,.42,.2);bx(g,.04,.03,.54,teak,s*.27,.66,-.02)});
+  rbx(g,.48,.08,.46,M.cushBeige,0,.44,.02,.03);const p=rbx(g,.38,.36,.12,M.cushTerra,0,.52,-.17,.05);p.rotation.x=-.25;return g}
+outdoorTable(3.8,6.38,1.2,.58);ropeChair(2.92,6.36,Math.PI/2);ropeChair(4.68,6.36,-Math.PI/2);
+
 {const st=new THREE.Group();st.userData.name='مرجيحة بيضاوية بقاعدة';st.position.set(6.25,0,6.0);furn.add(st);const base=new THREE.Mesh(new THREE.TorusGeometry(.42,.025,10,40),M.blackM);base.rotation.x=Math.PI/2;base.position.y=.03;st.add(base);
   const path=new THREE.CatmullRomCurve3([new THREE.Vector3(0,.04,.42),new THREE.Vector3(0,1.2,.55),new THREE.Vector3(0,1.95,.38),new THREE.Vector3(0,2.05,0)]);const arm=new THREE.Mesh(new THREE.TubeGeometry(path,40,.025,8),M.blackM);arm.castShadow=true;st.add(arm);
   const piv=new THREE.Group();piv.position.set(0,2.05,0);st.add(piv);window.__swing=piv;cy(piv,.008,.32,M.blackM,0,-.32,0,6);
