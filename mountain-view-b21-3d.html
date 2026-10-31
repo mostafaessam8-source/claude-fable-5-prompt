@@ -608,12 +608,13 @@ function sectional(x,z,rot,w=2.5,d=.98,ch=1.0,chw=.95){
 function quiltTex(){const cn=cv(256,256),g=cn.getContext('2d');g.fillStyle='#efe8da';g.fillRect(0,0,256,256);g.strokeStyle='rgba(120,105,85,.55)';g.lineWidth=3;
   for(let i=0;i<=256;i+=64){g.beginPath();g.moveTo(i,0);g.lineTo(i,256);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(256,i);g.stroke()}
   for(let i=0;i<4000;i++){g.fillStyle=`rgba(110,95,75,${Math.random()*.08})`;g.fillRect(Math.random()*256,Math.random()*256,2,2)}return toTex(cn,false)}
-function persianTex(){const cn=cv(512,768),g=cn.getContext('2d'),q=rnd(91);g.fillStyle='#e9dcc2';g.fillRect(0,0,512,768);
-  const bord=['#6e1f24','#b04a3a','#1f2f4a'];g.fillStyle='#6e1f24';g.fillRect(24,24,464,720);g.fillStyle='#e9dcc2';g.fillRect(44,44,424,680);g.fillStyle='#8c2a2e';g.fillRect(60,60,392,648);
-  for(let i=0;i<420;i++){g.fillStyle=bord[i%3];const x=70+q()*370,y=70+q()*630;g.beginPath();g.arc(x,y,2+q()*5,0,7);g.globalAlpha=.55;g.fill()}g.globalAlpha=1;
-  g.fillStyle='#1f2f4a';g.beginPath();g.ellipse(256,384,150,230,0,0,7);g.fill();g.fillStyle='#d9a441';g.beginPath();g.ellipse(256,384,88,140,0,0,7);g.fill();g.fillStyle='#8c2a2e';g.beginPath();g.ellipse(256,384,42,70,0,0,7);g.fill();
-  g.strokeStyle='#e9dcc2';g.lineWidth=4;for(let k=1;k<5;k++){g.beginPath();g.ellipse(256,384,150-k*10,230-k*14,0,0,7);g.stroke()}
-  for(let i=0;i<9000;i++){g.fillStyle=`rgba(40,20,10,${q()*.07})`;g.fillRect(q()*512,q()*768,2,2)}return toTex(cn,false)}
+function persianTex(){const cn=cv(512,768),g=cn.getContext('2d'),q=rnd(91);g.fillStyle='#dcd3c4';g.fillRect(0,0,512,768);
+  g.fillStyle='#bfb3a0';g.fillRect(0,0,512,768);g.fillStyle='#e6dfd2';g.fillRect(28,28,456,712);
+  // soft taupe cloud shapes + fine gold contour lines (abstract modern pattern)
+  for(let i=0;i<9;i++){const x=80+q()*350,y=80+q()*600,rx=70+q()*120,ry=50+q()*90;const gr=g.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));gr.addColorStop(0,'rgba(140,125,105,.38)');gr.addColorStop(1,'rgba(140,125,105,0)');g.fillStyle=gr;g.beginPath();g.ellipse(x,y,rx,ry,q()*3,0,7);g.fill()}
+  g.strokeStyle='rgba(176,140,70,.75)';g.lineWidth=2.2;for(let k=0;k<7;k++){g.beginPath();let x=40,y=100+k*95+q()*30;g.moveTo(x,y);for(let n=0;n<5;n++){const nx=x+90,ny=y+(q()-.5)*120;g.bezierCurveTo(x+30,y+(q()-.5)*60,nx-30,ny+(q()-.5)*60,nx,ny);x=nx;y=ny}g.stroke()}
+  g.strokeStyle='#8f8372';g.lineWidth=3;g.strokeRect(28,28,456,712);g.strokeStyle='rgba(176,140,70,.9)';g.lineWidth=2;g.strokeRect(40,40,432,688);
+  for(let i=0;i<9000;i++){g.fillStyle=`rgba(60,50,40,${q()*.05})`;g.fillRect(q()*512,q()*768,2,2)}return toTex(cn,false)}
 const chenille=fabric(0xcdbfa8,{bumpScale:1.2});M.chenille=chenille;
 const quiltM=fabric(0xffffff,{map:quiltTex(),bumpScale:.4}),persianM=std(0xffffff,1,0,{map:persianTex(),bumpMap:T.noise,bumpScale:.5});
 function chunkySofa(x,z,rot,w,d=.95,{arms=true}={}){const g=fg(x,z,rot,w,d),n=Math.max(1,Math.round((w-.7)/.75)),cw=(w-.7)/n;
@@ -682,14 +683,14 @@ function chandelier(x,z,y,r=.55){const g=new THREE.Group();g.position.set(x,0,z)
 fluted(-.1,3.7,-Math.PI/2,3.6,2.7,M.flute);tvUnit(-.285,3.7,-Math.PI/2,2.2,1.66);
 {const g=fg(-.1,3.7,-Math.PI/2);[-1,1].forEach(s=>{bx(g,.03,2.3,.04,glow(0xffd9a0,1.1),s*1.35,.25,.07)})}
 // formal seating: sofa + two armchairs around a pair of tables
-chunkySofa(-3.9,3.75,Math.PI/2,2.6,.95);
-{const g=fg(-3.9,3.75,Math.PI/2);quilt(g,-.85,.62,-.2,.2);quilt(g,.85,.62,-.2,-.2);quilt(g,0,.6,-.22,0,-.2)}
-chunkySofa(-3.2,1.75,Math.PI,1.7,.9);
-{const g=fg(-3.2,1.75,Math.PI);quilt(g,-.5,.62,-.2,.15);quilt(g,.5,.62,-.2,-.15)}
-chunkyChair(-1.35,3.0,-Math.PI/2+.5);chunkyChair(-1.3,4.6,-Math.PI/2-.5);
-{const g=fg(-1.5,3.0,-Math.PI/2+.5);quilt(g,.1,.62,-.28,0)}
+chunkySofa(-3.8,3.75,Math.PI/2,2.6,.95);
+{const g=fg(-3.8,3.75,Math.PI/2);quilt(g,-.85,.62,-.2,.2);quilt(g,.85,.62,-.2,-.2);quilt(g,0,.6,-.22,0,-.2)}
+chunkySofa(-3.0,1.95,Math.PI,1.7,.9);
+{const g=fg(-3.0,1.95,Math.PI);quilt(g,-.5,.62,-.2,.15);quilt(g,.5,.62,-.2,-.15)}
+chunkyChair(-1.6,3.0,-Math.PI/2+.5);chunkyChair(-1.55,4.6,-Math.PI/2-.5);
+{const g=fg(-1.6,3.0,-Math.PI/2+.5);quilt(g,.1,.62,-.28,0)}
 persian(-2.45,3.7,3.1,2.5,Math.PI/2);ovalTable(-2.45,3.7,Math.PI/2);
-{const g=fg(-4.2,1.65);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}{const g=fg(-4.2,5.9);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}
+{const g=fg(-4.15,1.75);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}{const g=fg(-4.2,5.9);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}
 plant(-4.15,6.9,1.6,furn,.24,'palm');plant(-1.25,7.05,1.6,furn,.24,'palm');
 
 {const g=fg(-3.4,1.5,0,1.7,.4);rbx(g,1.7,.7,.4,M.walnut,0,.0,0,.02);bx(g,1.66,.02,.38,M.travertine,0,.7,0);vase(g,-.5,.72,0,.34);vase(g,.1,.72,0,.22,M.oak,false);books(g,.55,.72,0,4);lamp(g,-.2,.72,0,.4)}
