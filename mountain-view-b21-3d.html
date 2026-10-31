@@ -66,6 +66,12 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 #cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.25);pointer-events:none}
 #joy{position:absolute;bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 26px);left:max(24px,env(safe-area-inset-left,0px));width:136px;height:136px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);touch-action:none;display:none}
 #knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.2)}
+#measBtn{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 52px);inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px + 92px + 112px);height:40px;padding:0 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600}
+#measBtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+@media (pointer:coarse){#measBtn{inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px + 92px + 94px)}}
+#measTip{position:absolute;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 92px);transform:translateX(-50%);padding:8px 16px;display:grid;gap:2px;text-align:center;pointer-events:none;white-space:nowrap}
+#measTip b{font:700 16px var(--display);font-variant-numeric:tabular-nums}#measTip span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#bPt{display:none}body.measuring #bPt{display:block}
 #fsBtn{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 52px);inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px + 92px);height:40px;padding:0 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600}
 #placesBtn{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 52px);inset-inline-end:calc(max(16px,env(safe-area-inset-right,0px)) + 48px);height:40px;padding:0 14px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;display:none}
 #act{position:absolute;bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 26px);right:max(20px,env(safe-area-inset-right,0px));display:none;gap:10px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;width:210px;touch-action:none}
@@ -101,6 +107,8 @@ body:not(.walk) #joy,body:not(.walk) #act{display:none}
     <button class="seg" data-mode="compound" aria-pressed="false">الكمبوند</button>
   </nav>
   <button id="fsBtn" class="glass" aria-label="ملء الشاشة">ملء الشاشة</button>
+  <button id="measBtn" class="glass" aria-pressed="false" aria-label="قياس مسافة">قياس</button>
+  <div id="measTip" class="glass" hidden><b id="measVal">وجّه النقطة وحط أول نقطة</b><span id="measSub"></span></div>
   <button id="placesBtn" class="glass" aria-label="الأماكن">الأماكن</button>
   <button id="gear" class="glass" aria-label="الإعدادات" aria-expanded="true">⚙</button>
   <aside id="panel" class="glass">
@@ -121,7 +129,7 @@ body:not(.walk) #joy,body:not(.walk) #act{display:none}
       </div></div>
   </aside>
   <canvas id="mini" class="glass" width="380" height="284"></canvas>
-  <div id="hint" class="glass">انقر للتحكم بالماوس · W A S D حركة · Space قفز · Shift ركض · C انحناء / غطس · V منظور ثالث</div>
+  <div id="hint" class="glass">انقر للتحكم بالماوس · W A S D حركة · Space قفز · Shift ركض · C انحناء / غطس · V منظور ثالث · M قياس</div>
   <nav id="rooms" aria-label="الغرف"></nav>
   <div id="uw"></div>
   <div id="joy"><div id="knob"></div></div>
@@ -129,6 +137,7 @@ body:not(.walk) #joy,body:not(.walk) #act{display:none}
     <button id="bView" class="ab" aria-label="تبديل المنظور">منظور</button>
     <button id="bDown" class="ab" aria-label="انحناء أو غطس">انحناء / غطس</button>
     <button id="bRun" class="ab" aria-label="ركض">ركض</button>
+    <button id="bPt" class="ab" aria-label="حط نقطة قياس">حط نقطة</button>
     <button id="bJump" class="ab big" aria-label="قفز أو سباحة لأعلى">قفز</button>
   </div>
   <div id="fade"></div>
@@ -1322,7 +1331,7 @@ document.querySelectorAll('#modes .seg').forEach(b=>b.onclick=()=>setMode(b.data
 
 /* ───────────────────────── input: keyboard, mouse, touch ───────────────────────── */
 let btnDown=false,btnJump=false;
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;keys[e.code]=true;if(e.code==='KeyM'&&mode==='walk')toggleMeasure();if(e.code==='KeyE'&&measuring)measPoint();if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
   if(e.code==='KeyV'&&mode==='walk')toggleTpp();if(e.code==='KeyF')toggleFs();});
 addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 function toggleTpp(v=!tpp){tpp=v;$('tppOn').checked=tpp;$('bView').classList.toggle('on',tpp);$('cross').style.display=mode==='walk'&&!tpp?'block':'none'}
@@ -1331,8 +1340,8 @@ let drag=null;
 canvas.addEventListener('pointerdown',e=>{if(mode!=='walk')return;if(drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:0};try{canvas.setPointerCapture(e.pointerId)}catch{}});
 canvas.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id||document.pointerLockElement===canvas)return;const k=e.pointerType==='touch'?.0055:.0035;
   P.yaw-=(e.clientX-drag.x)*k;P.pitch=clamp(P.pitch-(e.clientY-drag.y)*k,-1.25,1.25);drag.moved+=Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y);drag.x=e.clientX;drag.y=e.clientY});
-const dragEnd=e=>{if(drag&&e.pointerId===drag.id){drag=null}};canvas.addEventListener('pointerup',dragEnd);canvas.addEventListener('pointercancel',dragEnd);
-canvas.addEventListener('click',()=>{if(mode==='walk'&&!isTouch&&document.pointerLockElement!==canvas){try{const r=canvas.requestPointerLock();r&&r.catch&&r.catch(()=>{})}catch{}}});
+let drag0=0;const dragEnd=e=>{if(drag&&e.pointerId===drag.id){drag0=drag.moved;drag=null}};canvas.addEventListener('pointerup',dragEnd);canvas.addEventListener('pointercancel',dragEnd);
+canvas.addEventListener('click',()=>{if(mode==='walk'&&!isTouch&&!measuring&&document.pointerLockElement!==canvas){try{const r=canvas.requestPointerLock();r&&r.catch&&r.catch(()=>{})}catch{}}});
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas&&mode==='walk'){P.yaw-=e.movementX*.0022;P.pitch=clamp(P.pitch-e.movementY*.0022,-1.25,1.25)}});
 canvas.addEventListener('wheel',e=>{if(mode!=='walk')return;if(tpp)tpDist=clamp(tpDist+e.deltaY*.004,1.6,7);else setFov(clamp(camera.fov+e.deltaY*.03,45,95));e.preventDefault()},{passive:false});
 /* joystick (left) + action buttons (right) */
@@ -1359,7 +1368,7 @@ const fsLabel=()=>{$('fsBtn').textContent=(document.fullscreenElement||document.
 document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
 $('placesBtn').onclick=()=>roomsNav.classList.toggle('show');
 $('panel').hidden=true;$('gear').setAttribute('aria-expanded','false');
-if(isTouch){$('hint').textContent='العصا لليسار للحركة · اسحب يمين الشاشة للنظر · الأزرار للقفز والركض والغطس'}
+if(isTouch){$('hint').textContent='العصا لليسار للحركة · اسحب يمين الشاشة للنظر · الأزرار للقفز والركض والغطس · «قياس» لقياس أي مسافة'}
 
 /* ───────────────────────── minimap (apartment / compound) ───────────────────────── */
 const mini=$('mini'),mc=mini.getContext('2d'),MB={x0:-4.9,x1:12.5,z0:-5.4,z1:7.6};
@@ -1391,7 +1400,7 @@ function localSize(g){g.updateMatrixWorld(true);dimInv.copy(g.matrixWorld).inver
     if(o.isInstancedMesh){const im=new THREE.Matrix4();for(let i=0;i<o.count;i++){o.getMatrixAt(i,im);dimTmp.copy(o.geometry.boundingBox).applyMatrix4(dimM.multiplyMatrices(dimInv,o.matrixWorld).multiply(im));dimBox.union(dimTmp)}return}
     dimTmp.copy(o.geometry.boundingBox).applyMatrix4(dimM.multiplyMatrices(dimInv,o.matrixWorld));dimBox.union(dimTmp)});return dimBox.getSize(new THREE.Vector3())}
 function updateDims(t){if(t-dimLast<.15)return;dimLast=t;const tip=$('dimTip');
-  if(!dimsOn||mode!=='walk'){tip.hidden=true;dimHelper.visible=false;return}
+  if(!dimsOn||mode!=='walk'||measuring){tip.hidden=true;dimHelper.visible=false;return}
   dimRay.setFromCamera(dimC,camera);dimRay.far=tpp?tpDist+5:5;const hits=dimRay.intersectObjects(furn.children,true);let g=null;
   for(const h of hits){let o=h.object;while(o.parent&&o.parent!==furn)o=o.parent;if(o.userData.name){g=o;break}if(!o.userData.name){const sz=new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());if(Math.max(sz.x,sz.z)<2.6&&sz.y<2.5){g=o;break}}}
   if(!g){tip.hidden=true;dimHelper.visible=false;dimObj=null;return}
@@ -1399,6 +1408,33 @@ function updateDims(t){if(t-dimLast<.15)return;dimLast=t;const tip=$('dimTip');
     $('dimVal').textContent=`عرض ${cm(sz.x)} × عمق ${cm(sz.z)} × ارتفاع ${cm(sz.y)} سم`;dimHelper.box.setFromObject(g)}
   tip.hidden=false;dimHelper.visible=true}
 $('dimsOn').onchange=e=>{dimsOn=e.target.checked};
+/* tape measure: points snap to whatever the screen centre hits (floor, walls, furniture) */
+let measuring=false;const measG=new THREE.Group();scene.add(measG);const measPts=[];let measHit=null;
+const measMat=new THREE.MeshBasicMaterial({color:0xe0a03a,depthTest:false}),measCursor=new THREE.Mesh(new THREE.RingGeometry(.035,.055,24),new THREE.MeshBasicMaterial({color:0xe0a03a,depthTest:false,side:THREE.DoubleSide}));
+measCursor.renderOrder=9;measCursor.visible=false;scene.add(measCursor);
+const measLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xe0a03a,depthTest:false}));measLine.renderOrder=9;measLine.visible=false;scene.add(measLine);
+const fmt=d=>d<1?`${Math.round(d*100)} سم`:`${d.toFixed(2)} م`;
+function measLabel(text,pos){const c=cv(360,110),g=c.getContext('2d');g.fillStyle='rgba(28,22,16,.85)';g.beginPath();g.roundRect(4,4,352,102,30);g.fill();g.strokeStyle='#e0a03a';g.lineWidth=4;g.stroke();
+  g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';g.font='700 54px Cairo,sans-serif';g.fillText(text,180,58);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:toTex(c,false),depthTest:false}));sp.scale.set(.42,.13,1);sp.position.copy(pos);sp.renderOrder=10;return sp}
+function measTargets(){return [shell,floors,furn,ceilG,lower]}
+function measCast(){camera.updateMatrixWorld();dimRay.setFromCamera(dimC,camera);dimRay.far=30;const h=dimRay.intersectObjects(measTargets(),true).find(h=>h.object.visible&&!(h.object.material&&h.object.material.transparent&&h.object.material.opacity<.5));return h||null}
+function measPoint(){if(!measHit)return;const p=measHit.point.clone();
+  if(measPts.length===2){measG.clear();measPts.length=0}
+  measPts.push(p);const dot=new THREE.Mesh(new THREE.SphereGeometry(.03,16,12),measMat);dot.position.copy(p);dot.renderOrder=9;measG.add(dot);
+  if(measPts.length===2){const [a,b]=measPts,d=a.distanceTo(b);const ln=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),new THREE.LineBasicMaterial({color:0xe0a03a,depthTest:false}));ln.renderOrder=9;measG.add(ln);
+    measG.add(measLabel(fmt(d),a.clone().add(b).multiplyScalar(.5).add(new THREE.Vector3(0,.1,0))));}}
+function toggleMeasure(v=!measuring){measuring=v;$('measBtn').setAttribute('aria-pressed',v);document.body.classList.toggle('measuring',v);$('measTip').hidden=!v;
+  if(!v){measG.clear();measPts.length=0;measCursor.visible=false;measLine.visible=false}}
+function updateMeasure(){if(!measuring||mode!=='walk'){measCursor.visible=false;measLine.visible=false;return}measHit=measCast();
+  if(measHit){measCursor.visible=true;measCursor.position.copy(measHit.point);const n=measHit.face?measHit.face.normal.clone().transformDirection(measHit.object.matrixWorld):new THREE.Vector3(0,1,0);measCursor.lookAt(measHit.point.clone().add(n));measCursor.position.addScaledVector(n,.004)}else measCursor.visible=false;
+  const a=measPts.length===1?measPts[0]:null;
+  if(a&&measHit){const b=measHit.point,d=a.distanceTo(b),hz=Math.hypot(b.x-a.x,b.z-a.z),vt=Math.abs(b.y-a.y);measLine.visible=true;measLine.geometry.setFromPoints([a,b]);
+    $('measVal').textContent=fmt(d);$('measSub').textContent=`أفقي ${fmt(hz)} · رأسي ${fmt(vt)} — حط النقطة التانية`}
+  else if(measPts.length===2){measLine.visible=false;const [p,q]=measPts;$('measVal').textContent=fmt(p.distanceTo(q));$('measSub').textContent=`أفقي ${fmt(Math.hypot(q.x-p.x,q.z-p.z))} · رأسي ${fmt(Math.abs(q.y-p.y))} — نقطة جديدة تبدأ قياس جديد`}
+  else{measLine.visible=false;$('measVal').textContent='وجّه النقطة وحط أول نقطة';$('measSub').textContent=isTouch?'زر «حط نقطة» للتثبيت':'كليك أو E للتثبيت · M للإغلاق'}}
+$('measBtn').onclick=()=>{if(mode!=='walk')setMode('walk');toggleMeasure()};
+$('bPt').addEventListener('pointerdown',e=>{e.preventDefault();measPoint()});
+canvas.addEventListener('click',()=>{if(measuring&&!isTouch&&(!drag0||drag0<6))measPoint()});
 function frame(){const dt=Math.min(clock.getDelta(),.05),tm=clock.elapsedTime;
   shell.scale.y+=(shellK-shell.scale.y)*Math.min(1,dt*6);
   if(tween){tween.t+=dt;const k=Math.min(1,tween.t/tween.dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
@@ -1409,7 +1445,7 @@ function frame(){const dt=Math.min(clock.getDelta(),.05),tm=clock.elapsedTime;
   if(mode==='walk'&&tween)tween=null;
   if(fn%4===0)followSun();
   if(window.__swing)window.__swing.rotation.z=Math.sin(tm*1.1)*.07;const pulse=.55+.45*Math.sin(tm*3);if(window.__marker)window.__marker.material.opacity=.15+.3*pulse;
-  updateDims(tm);
+  updateDims(tm);updateMeasure();
   if(HQ.on&&!under){if(!HQ.composer)buildComposer();HQ.composer.render(dt)}else renderer.render(scene,camera);
   waterM.bumpMap.offset.x+=dt*.004;waterM.bumpMap.offset.y+=dt*.003;
   if(++fn%3===0)drawMini();
@@ -1420,7 +1456,7 @@ document.fonts?.ready.then(()=>{labelsG.clear();buildLabels()}).catch(()=>{});
 goRoom('reception');setMode('walk');frame();
 requestAnimationFrame(()=>requestAnimationFrame(()=>{$('loader').classList.add('done');window.__ready=true}));
 setTimeout(()=>{$('hint').style.opacity=0},16000);
-window.__api={OPEN,furn,shell,THREE,colliders,hit,dbg:()=>({doorK,frontCol:frontCol&&[frontCol.z0,frontCol.z1,frontCol.on],leaf:!!frontLeaf}),scene,step:(n,dt=.05)=>{for(let i=0;i<n;i++)updatePlayer(dt,i*dt)},finishTween:()=>{if(tween)tween.t=tween.dur},setMode,goRoom,setTime:t=>{S.time=t;$('time').value=t;applyTime()},P,camera,controls,applyTheme,S,toggleTpp,keys};
+window.__api={toggleMeasure,measPoint,measPts,updateMeasure,OPEN,furn,shell,THREE,colliders,hit,dbg:()=>({doorK,frontCol:frontCol&&[frontCol.z0,frontCol.z1,frontCol.on],leaf:!!frontLeaf}),scene,step:(n,dt=.05)=>{for(let i=0;i<n;i++)updatePlayer(dt,i*dt)},finishTween:()=>{if(tween)tween.t=tween.dur},setMode,goRoom,setTime:t=>{S.time=t;$('time').value=t;applyTime()},P,camera,controls,applyTheme,S,toggleTpp,keys};
 </script>
 
 
