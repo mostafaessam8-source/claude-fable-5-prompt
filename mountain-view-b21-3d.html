@@ -157,6 +157,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 
 if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r||0,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath()}}
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -170,7 +171,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 const canvas=document.getElementById('c');
 const isTouch=matchMedia('(pointer:coarse)').matches;
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?1.25:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?(innerWidth*devicePixelRatio>2600?1.5:1.75):2));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.82;
 RectAreaLightUniformsLib.init();
@@ -191,7 +192,7 @@ scene.add(unit,lower,upper,ctx,markerG);
 /* ───────────────────────── helpers ───────────────────────── */
 const rnd=(s=1)=>()=>(s=(s*16807)%2147483647)/2147483647;
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
-const toTex=(c,rep=true,srgb=true)=>{const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;if(rep)t.wrapS=t.wrapT=THREE.RepeatWrapping;return t};
+const toTex=(c,rep=true,srgb=true)=>{const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());if(rep)t.wrapS=t.wrapT=THREE.RepeatWrapping;return t};
 const tiled=(t,w,d,size=2)=>{const n=t.clone();n.needsUpdate=true;n.repeat.set(w/size,d/size);return n};
 const std=(color,rough=.8,metal=0,extra={})=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal,...extra});
 const phys=(color,rough=.4,metal=0,extra={})=>new THREE.MeshPhysicalMaterial({color,roughness:rough,metalness:metal,...extra});
@@ -907,7 +908,12 @@ toilet(10.27,-3.6,-Math.PI/2);bathVanity(9.14,-3.55,Math.PI/2,.9);travTub(9.725,
 {const g=fg(9.825,-2.425,0);const mz=.012,fr=M.bronze;
   [[8.875,9.27],[10.13,10.775]].forEach(([x0,x1])=>{const w=x1-x0,c=(x0+x1)/2-9.825;bx(g,w,H-.02,.014,M.mirror,c,0,mz);bx(g,.02,H-.02,.02,fr,c-w/2+.01,0,.012);bx(g,.02,H-.02,.02,fr,c+w/2-.01,0,.012)});
   bx(g,1.905,H-2.32,.014,M.mirror,0,2.3,mz);bx(g,1.905,.02,.02,fr,0,2.3,.012)}
-glassWardrobe(9.135,-1.2,Math.PI/2,1.5,.52);glassWardrobe(10.515,-1.2,-Math.PI/2,1.5,.52);flatRug(9.825,-1.2,.78,1.9,M.greyRug);
+glassWardrobe(9.175,-1.2,Math.PI/2,1.6,.6);flatRug(10.12,-1.2,.95,1.9,M.greyRug);
+/* full-height, full-width mirror wall on the east side (real reflection) */
+{const w=2.33,h=H-.03,mir=new Reflector(new THREE.PlaneGeometry(w,h),{textureWidth:isTouch?640:1024,textureHeight:isTouch?800:1280,color:0xd8d8d4,clipBias:.003});
+  mir.position.set(10.768,h/2+.01,-1.25);mir.rotation.y=-Math.PI/2;shell.add(mir);
+  const g=fg(10.77,-1.25,-Math.PI/2,0,0,shell);[-1,1].forEach(sd=>bx(g,.025,h,.02,M.bronze,sd*(w/2-.0125),.01,.01));bx(g,w,.025,.02,M.bronze,0,h-.015,.01);bx(g,w,.025,.02,M.bronze,0,.01,.01);
+  mkCol(10.7,10.85,-2.43,-.07,0,H)}
 
 /* ───────────────────────── MASTER BEDROOM (ref 2): oak slat headboard wall, boucle bed, floating nightstands ───────────────────────── */
 {const g=fg(12.11,1.925,-Math.PI/2);bx(g,3.65,H-.02,.03,M.oak,0,0,.015)}
@@ -1160,7 +1166,7 @@ scene.add(sky);
 const starG=new THREE.BufferGeometry(),sp_=[],sr=rnd(31);for(let i=0;i<700;i++){const a=sr()*6.28,e=sr()*1.4,r=2800;sp_.push(Math.cos(a)*Math.cos(e)*r,Math.sin(e)*r+50,Math.sin(a)*Math.cos(e)*r)}
 starG.setAttribute('position',new THREE.Float32BufferAttribute(sp_,3));const starM=new THREE.PointsMaterial({color:0xffffff,size:5,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false});scene.add(new THREE.Points(starG,starM));
 const hemi=new THREE.HemisphereLight(0xcfe6ff,0x8b7d68,.6);scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xfff1d8,3);sun.castShadow=true;sun.shadow.mapSize.set(isTouch?1024:4096,isTouch?1024:4096);
+const sun=new THREE.DirectionalLight(0xfff1d8,3);sun.castShadow=true;sun.shadow.mapSize.set(isTouch?2048:4096,isTouch?2048:4096);sun.shadow.radius=3;
 Object.assign(sun.shadow.camera,{left:-20,right:20,top:18,bottom:-18,near:1,far:140});sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;
 sun.target.position.set(3.8,0,1.2);scene.add(sun,sun.target);
 const moon=new THREE.DirectionalLight(0x6f8bd8,0);moon.position.set(-30,40,-20);scene.add(moon);
@@ -1455,6 +1461,9 @@ buildLabels();applyTheme('warm');applyTime();updateVis();
 document.fonts?.ready.then(()=>{labelsG.clear();buildLabels()}).catch(()=>{});
 goRoom('reception');setMode('walk');frame();
 requestAnimationFrame(()=>requestAnimationFrame(()=>{$('loader').classList.add('done');window.__ready=true}));
+setTimeout(()=>{try{const crt=new THREE.WebGLCubeRenderTarget(isTouch?128:256,{type:THREE.HalfFloatType});const cc=new THREE.CubeCamera(.05,80,crt);cc.position.set(-1.6,1.5,4.0);scene.add(cc);
+  const av=avatar.g.visible;avatar.g.visible=false;const ah=dimHelper.visible;dimHelper.visible=false;const env=scene.environment;scene.environment=null;cc.update(renderer,scene);scene.environment=env;
+  const tex=pmrem.fromCubemap(crt.texture).texture;scene.environment=tex;scene.remove(cc);crt.dispose();avatar.g.visible=av;dimHelper.visible=ah;applyTime()}catch(e){console.warn('env capture',e)}},1200);
 setTimeout(()=>{$('hint').style.opacity=0},16000);
 window.__api={toggleMeasure,measPoint,measPts,updateMeasure,OPEN,furn,shell,THREE,colliders,hit,dbg:()=>({doorK,frontCol:frontCol&&[frontCol.z0,frontCol.z1,frontCol.on],leaf:!!frontLeaf}),scene,step:(n,dt=.05)=>{for(let i=0;i<n;i++)updatePlayer(dt,i*dt)},finishTween:()=>{if(tween)tween.t=tween.dur},setMode,goRoom,setTime:t=>{S.time=t;$('time').value=t;applyTime()},P,camera,controls,applyTheme,S,toggleTpp,keys};
 </script>
