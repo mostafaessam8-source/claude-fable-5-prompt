@@ -582,6 +582,54 @@ function armchair(x,z,rot,mat=M.armchair){const g=fg(x,z,rot,.8,.82);
   rbx(g,.8,.5,.16,mat,0,.38,-.33,.07).rotation.x=-.12;
   [-1,1].forEach(s=>rbx(g,.12,.26,.76,mat,s*.34,.36,0,.05));
   pillow(g,0,.5,-.2,M.linen,0,-.3,.36);return g}
+
+/* grey L-shaped sectional: segmented headrest panels, wide arm, chaise, piped seams (reference photo) */
+function sectional(x,z,rot,w=2.5,d=.98,ch=1.0,chw=.95){
+  const g=fg(x,z,rot,0,0);const grey=fabric(0x9d9ea3,{bumpScale:.9}),greyD=fabric(0x8a8b90,{bumpScale:.9}),yel=fabric(0xe2b72b,{bumpScale:.5}),pipe=fabric(0xb9bac0,{bumpScale:.3});
+  rbx(g,w,.26,d+.04,greyD,0,.04,0,.06);                                   // plinth
+  rbx(g,w,.14,d,grey,0,.3,0,.05);                                         // seat deck
+  // back: 3 panels each with a slightly raised headrest
+  const n=3,pw=(w-.5)/n;
+  for(let i=0;i<n;i++){const px=-w/2+.25+pw*(i+.5);rbx(g,pw-.02,.52,.22,grey,px,.32,-d/2+.12,.08).rotation.x=-.1;rbx(g,pw-.1,.2,.2,grey,px,.66,-d/2+.1,.08).rotation.x=-.18}
+  // seat cushions with piping
+  for(let i=0;i<n;i++){const px=-w/2+.25+pw*(i+.5);rbx(g,pw-.02,.18,d-.3,grey,px,.42,.1,.07);bx(g,pw-.02,.01,.012,pipe,px,.6,d/2-.2)}
+  // wide padded arms
+  rbx(g,.26,.34,d,grey,-w/2+.12,.38,0,.1);rbx(g,.2,.3,d,grey,w/2-.1,.38,0,.1);
+  // chaise at the +x end
+  rbx(g,chw,.14,ch,grey,w/2-chw/2-.05,.3,d/2+ch/2-.04,.05);rbx(g,chw-.02,.18,ch+.02,grey,w/2-chw/2-.05,.42,d/2+ch/2-.04,.07);
+  rbx(g,chw,.26,ch+.04,greyD,w/2-chw/2-.05,.04,d/2+ch/2-.04,.06);
+  bx(g,chw-.02,.01,.012,pipe,w/2-chw/2-.05,.6,d/2+ch-.04);
+  // scatter pillows
+  const pl=(px,py,pz,mat,ry,s=.42)=>{const m=rbx(g,s,s,.14,mat,px,py,pz,.06);m.rotation.set(-.22,ry,0);return m};
+  pl(-w/2+.5,.58,-d/2+.38,grey,.2);pl(-w/2+.82,.6,-d/2+.38,yel,-.15,.4);pl(w/2-.6,.6,-d/2+.38,yel,.1,.4);pl(.05,.58,-d/2+.38,grey,0,.38);
+  addCol(x,z,rot===0||Math.abs(rot)===Math.PI?w:d,rot===0||Math.abs(rot)===Math.PI?d:w);return g}
+
+/* salon set after the reference photo: chunky rounded chenille sofas, quilted cushions, oval walnut table, persian rugs */
+function quiltTex(){const cn=cv(256,256),g=cn.getContext('2d');g.fillStyle='#efe8da';g.fillRect(0,0,256,256);g.strokeStyle='rgba(120,105,85,.55)';g.lineWidth=3;
+  for(let i=0;i<=256;i+=64){g.beginPath();g.moveTo(i,0);g.lineTo(i,256);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(256,i);g.stroke()}
+  for(let i=0;i<4000;i++){g.fillStyle=`rgba(110,95,75,${Math.random()*.08})`;g.fillRect(Math.random()*256,Math.random()*256,2,2)}return toTex(cn,false)}
+function persianTex(){const cn=cv(512,768),g=cn.getContext('2d'),q=rnd(91);g.fillStyle='#e9dcc2';g.fillRect(0,0,512,768);
+  const bord=['#6e1f24','#b04a3a','#1f2f4a'];g.fillStyle='#6e1f24';g.fillRect(24,24,464,720);g.fillStyle='#e9dcc2';g.fillRect(44,44,424,680);g.fillStyle='#8c2a2e';g.fillRect(60,60,392,648);
+  for(let i=0;i<420;i++){g.fillStyle=bord[i%3];const x=70+q()*370,y=70+q()*630;g.beginPath();g.arc(x,y,2+q()*5,0,7);g.globalAlpha=.55;g.fill()}g.globalAlpha=1;
+  g.fillStyle='#1f2f4a';g.beginPath();g.ellipse(256,384,150,230,0,0,7);g.fill();g.fillStyle='#d9a441';g.beginPath();g.ellipse(256,384,88,140,0,0,7);g.fill();g.fillStyle='#8c2a2e';g.beginPath();g.ellipse(256,384,42,70,0,0,7);g.fill();
+  g.strokeStyle='#e9dcc2';g.lineWidth=4;for(let k=1;k<5;k++){g.beginPath();g.ellipse(256,384,150-k*10,230-k*14,0,0,7);g.stroke()}
+  for(let i=0;i<9000;i++){g.fillStyle=`rgba(40,20,10,${q()*.07})`;g.fillRect(q()*512,q()*768,2,2)}return toTex(cn,false)}
+const chenille=fabric(0xcdbfa8,{bumpScale:1.2});M.chenille=chenille;
+const quiltM=fabric(0xffffff,{map:quiltTex(),bumpScale:.4}),persianM=std(0xffffff,1,0,{map:persianTex(),bumpMap:T.noise,bumpScale:.5});
+function chunkySofa(x,z,rot,w,d=.95,{arms=true}={}){const g=fg(x,z,rot,w,d),n=Math.max(1,Math.round((w-.7)/.75)),cw=(w-.7)/n;
+  rbx(g,w,.38,d,chenille,0,.06,0,.17,5);                                       // fat rounded base
+  rbx(g,w-.08,.58,.3,chenille,0,.3,-d/2+.15,.15,5);                            // soft back
+  if(arms)[-1,1].forEach(s=>rbx(g,.34,.6,d,chenille,s*(w/2-.17),.28,0,.16,5)); // thick arms
+  for(let i=0;i<n;i++){const px=-w/2+.35+cw*(i+.5);rbx(g,cw-.02,.18,d-.34,chenille,px,.42,.1,.09,4);rbx(g,cw-.06,.4,.18,chenille,px,.55,-d/2+.3,.09,4).rotation.x=-.16}
+  return g}
+function chunkyChair(x,z,rot){const g=fg(x,z,rot,1.0,.95);rbx(g,1.0,.4,.95,chenille,0,.06,0,.2,5);rbx(g,.92,.6,.32,chenille,0,.3,-.32,.17,5);
+  [-1,1].forEach(s=>rbx(g,.3,.55,.95,chenille,s*.35,.28,0,.15,5));rbx(g,.5,.17,.62,chenille,0,.43,.12,.09,4);return g}
+function quilt(g,x,y,z,ry=0,rx=-.25){const m=rbx(g,.42,.42,.13,quiltM,x,y,z,.05);m.rotation.set(rx,ry,0)}
+function ovalTable(x,z,rot=0){const g=fg(x,z,rot,1.2,.7);const top=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.045,48),M.walnut);top.scale.set(1.25,1,.78);top.position.y=.43;top.castShadow=true;g.add(top);
+  [[-.45,-.2],[.45,-.2],[-.45,.2],[.45,.2]].forEach(([a,b])=>{const l=cy(g,.016,.43,M.black,a,0,b,8,.012);l.rotation.z=a*.28;l.rotation.x=-b*.28});
+  books(g,-.12,.455,0,2);vase(g,.18,.455,.05,.16);return g}
+function persian(x,z,w,d,rot=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,.014,d),persianM);m.position.set(x,.01,z);m.rotation.y=rot;m.receiveShadow=true;furn.add(m)}
+function orangeLamp(parent,x,y0,z){cy(parent,.07,.28,std(0xc66a2f,.5),x,y0,z,20,.05);cy(parent,.17,.24,std(0xf0b55a,.9,0,{emissive:0xffc070,emissiveIntensity:.8,side:THREE.DoubleSide}),x,y0+.28,z,26,.11).castShadow=false}
 function pouf(x,z,mat=M.accent2,r=.24){const g=fg(x,z,0,r*2,r*2);cy(g,r,.34,mat,0,.03,0,28);const t=new THREE.Mesh(new THREE.TorusGeometry(r*.92,.03,10,32),mat);t.rotation.x=Math.PI/2;t.position.y=.37;g.add(t);return g}
 const waterMat=new THREE.MeshPhysicalMaterial({color:0x3fc3d8,transparent:true,opacity:.9,roughness:.04,clearcoat:1,emissive:0x0a4c5a,emissiveIntensity:.5,depthWrite:false});
 function jacuzzi(x,z,rot,l=1.9,w=.95){const g=fg(x,z,rot,l+.1,w+.1);
@@ -634,11 +682,16 @@ function chandelier(x,z,y,r=.55){const g=new THREE.Group();g.position.set(x,0,z)
 fluted(-.1,3.7,-Math.PI/2,3.6,2.7,M.flute);tvUnit(-.285,3.7,-Math.PI/2,2.2,1.66);
 {const g=fg(-.1,3.7,-Math.PI/2);[-1,1].forEach(s=>{bx(g,.03,2.3,.04,glow(0xffd9a0,1.1),s*1.35,.25,.07)})}
 // formal seating: sofa + two armchairs around a pair of tables
-sofa(-3.93,3.7,Math.PI/2,2.7,.98,M.sofa,{cush:3});
-{const g=fg(-3.93,3.7,Math.PI/2);pillow(g,-1.0,.52,-.3,M.accent);pillow(g,1.0,.52,-.3,M.accent);pillow(g,-.55,.52,-.3,M.accent3,.2);pillow(g,.55,.52,-.3,M.accent3,-.2);rbx(g,.9,.05,.5,M.throw_,0,.5,.12,.02).rotation.z=.04}
-armchair(-2.4,2.75,0);armchair(-2.4,4.65,Math.PI);
-rug(-2.5,3.7,3.4,3.0,0);coffeeTable(-2.4,3.7);
-floorLamp(-4.05,5.6);plant(-4.1,6.9,1.4,furn,.22,'palm');
+chunkySofa(-3.9,3.75,Math.PI/2,2.6,.95);
+{const g=fg(-3.9,3.75,Math.PI/2);quilt(g,-.85,.62,-.2,.2);quilt(g,.85,.62,-.2,-.2);quilt(g,0,.6,-.22,0,-.2)}
+chunkySofa(-3.2,1.75,Math.PI,1.7,.9);
+{const g=fg(-3.2,1.75,Math.PI);quilt(g,-.5,.62,-.2,.15);quilt(g,.5,.62,-.2,-.15)}
+chunkyChair(-1.35,3.0,-Math.PI/2+.5);chunkyChair(-1.3,4.6,-Math.PI/2-.5);
+{const g=fg(-1.5,3.0,-Math.PI/2+.5);quilt(g,.1,.62,-.28,0)}
+persian(-2.45,3.7,3.1,2.5,Math.PI/2);ovalTable(-2.45,3.7,Math.PI/2);
+{const g=fg(-4.2,1.65);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}{const g=fg(-4.2,5.9);sideTable(0,0,.22,.5,M.walnut);orangeLamp(g,0,.53,0)}
+plant(-4.15,6.9,1.6,furn,.24,'palm');plant(-1.25,7.05,1.6,furn,.24,'palm');
+
 {const g=fg(-3.4,1.5,0,1.7,.4);rbx(g,1.7,.7,.4,M.walnut,0,.0,0,.02);bx(g,1.66,.02,.38,M.travertine,0,.7,0);vase(g,-.5,.72,0,.34);vase(g,.1,.72,0,.22,M.oak,false);books(g,.55,.72,0,4);lamp(g,-.2,.72,0,.4)}
 {const g=fg(-4.475,3.85,Math.PI/2);art(g,0,1.3,0,.55,.7,0)}
 chandelier(-2.4,3.7,2.15);
@@ -693,10 +746,10 @@ chandelier2(9.5,2.35,2.1);floorLamp(11.95,1.4,1.5);plant(8.3,3.6,1.4,furn,.22,'p
 fluted(.1,3.4,Math.PI/2,3.0,2.7,M.flute);tvUnit(.285,3.4,Math.PI/2,2.3);
 {const g=fg(.1,3.4,Math.PI/2);[-1,1].forEach(s=>{bx(g,.04,2.2,.28,M.oak,s*1.8,.3,.12);for(let k=0;k<4;k++)bx(g,.28,.02,.24,M.oak,s*1.8,.7+k*.5,.1);bx(g,.01,2.2,.01,glow(0xffd9a0,1.1),s*1.8,.3,.25)});
   vase(g,-1.7,.62,.1,.3);books(g,1.7,1.2,.1,4)}
-sofa(3.3,3.4,-Math.PI/2,2.3,.98,M.sofa,{cush:3});
-{const g=fg(3.3,3.4,-Math.PI/2);pillow(g,-.85,.52,-.3,M.accent2);pillow(g,.8,.52,-.3,M.accent);pillow(g,.4,.52,-.3,M.accent3,.2);rbx(g,.9,.05,.5,M.throw_,-.45,.5,.12,.02).rotation.z=.04}
+sectional(3.3,3.4,-Math.PI/2,2.4,.98,.95,.9);addCol(2.33,3.95,1.0,.9);
+
 pouf(1.3,4.05);
-rug(1.9,3.4,2.6,2.6,Math.PI/2);coffeeTable(1.85,3.4);sideTable(3.45,4.6,.22,.5,M.walnut);{const g=fg(3.45,4.6);lamp(g,0,.53,0,.4)}
+rug(1.9,3.5,2.8,2.7,Math.PI/2);coffeeTable(1.5,2.9);{const g=fg(3.35,1.75);sideTable(0,0,.22,.5,M.walnut);lamp(g,0,.53,0,.4)}
 {const g=fg(1.0,1.5,0,1.3,.4);rbx(g,1.3,.72,.4,M.walnut,0,.0,0,.02);bx(g,1.26,.02,.38,M.travertine,0,.72,0);vase(g,-.3,.74,0,.3);books(g,.3,.74,0,3)}
 floorLamp(.35,1.55,1.6);curtain(2.2,5.3,Math.PI,2.1);ac(1.0,1.375,0);
 pendantDome(1.9,3.4,2.0,.24);
