@@ -55,7 +55,8 @@ main { padding: 0; }
 .nav button.hid { color: var(--mute); font-style: italic; }
 .nav .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pill { font-size: 11px; font-weight: 700; border-radius: 10px; padding: 0 6px; min-width: 20px; text-align: center; color: #fff; }
-.pill.ch { background: var(--amber); } .pill.ok { background: var(--green); } .pill.er { background: var(--red); } .pill.wr { background: #f08c00; }
+.pill.ch { background: var(--amber); } .pill.ok { background: var(--green); } .pill.er { background: var(--red); } .pill.wr { background: #fff3e0; color: #b45f00; box-shadow: inset 0 0 0 1.5px #f08c00; }
+.pill[data-pill] { cursor: pointer; } .pill[data-pill]:hover { filter: brightness(.92); outline: 2px solid rgba(0,0,0,.15); }
 .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
 .toolbar h2 { margin: 0; font-size: 16px; }

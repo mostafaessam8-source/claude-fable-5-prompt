@@ -266,8 +266,8 @@
     S.cur.wb.sheets.forEach(function (sh) {
       var st = sheetStats(sh.name), on = S.sheet === sh.name;
       out.push('<button type="button" data-s="' + h(sh.name) + '" class="' + (on ? 'on ' : '') + (sh.state !== 'visible' ? 'hid' : '') + '" style="border-bottom-color:' + (sh.tabColor || 'transparent') + '" title="' + h(sh.name) + (sh.state !== 'visible' ? ' (hidden sheet)' : '') + '"><span class="nm">' + h(sh.name) + '</span>' +
-        (st.pending ? '<span class="pill ch" title="changes to review">' + st.pending + '</span>' : (st.changes ? '<span class="pill ok" title="all reviewed">✓</span>' : '')) +
-        (st.err ? '<span class="pill er" title="checker errors">' + st.err + '</span>' : '') + (st.warn ? '<span class="pill wr" title="checker warnings">' + st.warn + '</span>' : '') + '</button>');
+        (st.pending ? '<span class="pill ch" data-pill="changes" title="' + st.pending + ' changed cell(s) to review — click to see them · خلايا متغيرة للمراجعة">✎ ' + st.pending + '</span>' : (st.changes ? '<span class="pill ok" title="all changes in this sheet reviewed">✓</span>' : '')) +
+        (st.err ? '<span class="pill er" data-pill="errors" title="' + st.err + ' checker error(s) — click to see them · أخطاء من الفاحص">✖ ' + st.err + '</span>' : '') + (st.warn ? '<span class="pill wr" data-pill="warnings" title="' + st.warn + ' checker warning(s) — click to see them · تنبيهات من الفاحص">⚠ ' + st.warn + '</span>' : '') + '</button>');
     });
     $('nav').innerHTML = out.join('');
   }
@@ -525,7 +525,12 @@
     var o = ['<div class="btnrow"><button class="chip' + (sc === 'sheet' ? ' ok' : '') + '" data-scope="sheet" type="button">This sheet</button><button class="chip' + (sc === 'all' ? ' ok' : '') + '" data-scope="all" type="button">All sheets</button>' +
       '<label class="chk"><input type="checkbox" id="optPend"' + (S.pendingOnly ? ' checked' : '') + '> to review only</label></div>',
       '<div class="btnrow"><button class="act accept" data-bulkl="accept" type="button">✔ Keep all listed (' + list.length + ')</button><button class="act reject" data-bulkl="reject" type="button">↺ Reject all listed</button></div>'];
-    if (!list.length) { o.push('<div class="empty">' + (S.sheet === '__overview' && sc === 'sheet' ? 'Pick a sheet, or switch to “All sheets”.' : 'No changes here. (مفيش تغييرات)') + '</div>'); return o.join(''); }
+    if (!list.length) {
+      var nIss = sc === 'sheet' && S.sheet !== '__overview' ? S.issues.filter(function (i) { return i.sheet === S.sheet; }).length : 0;
+      o.push('<div class="empty">' + (S.sheet === '__overview' && sc === 'sheet' ? 'Pick a sheet, or switch to “All sheets”.' : 'No changed cells in this sheet. <span class="ar">مفيش خلايا متغيرة في الشيت ده.</span>') +
+        (nIss ? '<br><br><b>The checker has ' + nIss + ' finding' + (nIss > 1 ? 's' : '') + ' in this sheet</b> <span class="ar">(التنبيه اللي في التبويب)</span><br><button class="chip warn" data-gochecks type="button" style="margin-top:8px">Show ' + (nIss > 1 ? 'them' : 'it') + ' → <span class="ar">اعرضها</span></button>' : '') + '</div>');
+      return o.join('');
+    }
     var lastSheet = null;
     list.slice(0, 400).forEach(function (c) {
       var d = S.dec[c.id], st = d ? DOT[d.m === 'custom' ? 'custom' : d.m] : 'pending';
@@ -573,7 +578,21 @@
 
   /* ---------- events ---------- */
   function wire() {
-    $('nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-s]'); if (b) showSheet(b.getAttribute('data-s'), !!pointInput() || S.editing); });
+    $('nav').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-s]'); if (!b) return;
+      var name = b.getAttribute('data-s'), keep = !!pointInput() || S.editing, pill = e.target.closest('[data-pill]');
+      showSheet(name, keep);
+      if (!pill || name === '__overview') return;
+      var kind = pill.getAttribute('data-pill');
+      if (kind === 'changes') {                       /* ✎ n : the changed cells of this sheet */
+        S.tab = 'changes'; S.scope.changes = 'sheet';
+        var ch = S.cmp.changes.filter(function (c) { return c.sheet === name && !S.dec[c.id]; })[0]; refreshSide(); if (ch) selectCell(name, ch.a);
+      } else {                                         /* ✖ n / ⚠ n : the checker findings of this sheet */
+        S.tab = 'checks'; S.scope.checks = 'sheet';
+        var sev = kind === 'errors' ? 'error' : 'warn', mine = S.issues.filter(function (i) { return i.sheet === name; });
+        var it = mine.filter(function (i) { return i.sev === sev; })[0] || mine[0]; refreshSide(); if (it) selectCell(name, it.a);
+      }
+    });
     $('nav').addEventListener('mousedown', function (e) { if (pointInput()) e.preventDefault(); });
     $('gridWrap').addEventListener('click', function (e) {
       var bb = e.target.closest('[data-bulk]'); if (bb) { bulkSheet(bb.getAttribute('data-sheet'), bb.getAttribute('data-bulk')); return; }
@@ -652,6 +671,7 @@
       if (fix) { var iss = S.issuesAll.filter(function (i) { return i.id === fix.getAttribute('data-fix'); })[0]; if (iss && iss.fix) { setDec(iss.sheet, iss.a, 'custom', iss.fix.text); toast('Fixed ' + iss.sheet + ' ▸ ' + iss.a); } return; }
       if (dis) { var id = dis.getAttribute('data-dismiss'); if (S.dismissed[id]) delete S.dismissed[id]; else S.dismissed[id] = 1; afterChange(); return; }
       if (act) { var ch = S.cmp.byKey[act.getAttribute('data-k')]; setDec(ch.sheet, ch.a, act.getAttribute('data-act'), null, false); return; }
+      if (t.closest('[data-gochecks]')) { S.tab = 'checks'; S.scope.checks = 'sheet'; var mine2 = S.issues.filter(function (i) { return i.sheet === S.sheet; }); refreshSide(); if (mine2[0]) selectCell(S.sheet, mine2[0].a); return; }
       var bl = t.closest('[data-bulkl]');
       if (bl) { var ls = listedChanges(); if (!ls.length) return; if (bl.getAttribute('data-bulkl') === 'reject' && !window.confirm('Reject all ' + ls.length + ' listed change(s)?\n(ترفض كل التغييرات المعروضة؟)')) return; bulk(ls, bl.getAttribute('data-bulkl')); return; }
       if (sc) { S.scope.changes = sc.getAttribute('data-scope'); refreshSide(); return; }

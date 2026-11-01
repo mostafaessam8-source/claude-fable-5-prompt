@@ -4,6 +4,11 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 2.1 — 2026-11-01
+- The numbers on the sheet tabs now say what they are: `✎ n` changed cells to review, `✖ n` checker errors, `⚠ n` checker warnings (tooltips in English / Arabic). Clicking one opens
+  that list for the sheet and shows the first cell.
+- The Changes tab of a sheet with no changed cells now says so and points to the checker findings of that sheet ("Show them →").
+
 ## 2.0 — 2026-11-01
 - Excel-style sheet: name box, `ƒx` formula bar, sheet tabs with colours, zoom, exact column widths / row heights / fonts, hidden gridlines.
 - Excel-style selection: drag, `Shift`, `Ctrl`, `Ctrl`+`Shift`, headers, `Ctrl+A`, name box (`C7,K1:M1`), keyboard (`Ctrl`/`Shift`+arrows, `Ctrl`/`Shift`+`Space`, `Home`); no text selection while dragging; auto-scroll.
