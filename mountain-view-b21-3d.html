@@ -741,8 +741,22 @@ const veneerT=(()=>{const c=cv(512,2048),g=c.getContext('2d'),q=rnd(91);g.fillSt
   for(let i=0;i<6;i++){const cx=q()*512,cy=q()*2048;for(let k=1;k<14;k++){g.strokeStyle=`rgba(130,90,52,${.05})`;g.lineWidth=1.2;g.beginPath();g.ellipse(cx,cy,k*5,k*22,0,0,7);g.stroke()}}
   return toTex(c,false)})();
 M.veneer=phys(0xffffff,.42,0,{map:veneerT,clearcoat:.3,clearcoatRoughness:.35,bumpMap:T.noiseSoft,bumpScale:.05});
-function slatWall(x,z,rot,w,h=H-.02,y0=0){const g=fg(x,z,rot,0,0,furn);g.position.y=y0;bx(g,w,h,.012,M.slatGap,0,0,0);
-  const n=Math.max(1,Math.round(w/.6)),pw=w/n;for(let i=0;i<n;i++)bx(g,pw-.003,h,.018,M.veneer,-w/2+pw*(i+.5),0,.015);return g}
+/* reeded oak wall: rounded ribs touching each other (no dust gaps), lacquered, warm LED wash top and bottom */
+M.reed=phys(0xffffff,.38,0,{map:veneerT,clearcoat:.35,clearcoatRoughness:.3});
+const limeT=(()=>{const c=cv(512,512),g=c.getContext('2d'),q=rnd(77);g.fillStyle='#f1e7d7';g.fillRect(0,0,512,512);
+  for(let i=0;i<500;i++){const x=q()*512,y=q()*512,rr=20+q()*90,gr=g.createRadialGradient(x,y,0,x,y,rr),v=q()<.5;gr.addColorStop(0,v?'rgba(252,247,238,.18)':'rgba(200,180,150,.08)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-rr,y-rr,2*rr,2*rr)}
+  for(let i=0;i<120;i++){g.strokeStyle=`rgba(170,148,120,${.015+q()*.02})`;g.lineWidth=8+q()*20;g.beginPath();const x=q()*512,y=q()*512;g.arc(x,y,30+q()*80,q()*6,q()*6+1.4);g.stroke()}
+  const t=toTex(c);t.repeat.set(1.2,1.2);return t})();
+M.lime=std(0xe9dcc8,.95,0,{map:T.plaster,bumpMap:T.noiseSoft,bumpScale:.08});
+function slatWall(x,z,rot,w,h=H-.02,y0=0){const g=fg(x,z,rot,0,0,furn);g.position.y=y0;bx(g,w,h,.02,M.reed,0,0,0);
+  const rr=.028,n=Math.floor(w/(2*rr)),geo=new THREE.CylinderGeometry(rr,rr,h-.24,14,1,false,-Math.PI/2,Math.PI),im=new THREE.InstancedMesh(geo,M.reed,n),m4=new THREE.Matrix4();
+  for(let i=0;i<n;i++){m4.setPosition(-w/2+rr+i*(w/n),h/2,.02);im.setMatrixAt(i,m4)}im.castShadow=im.receiveShadow=true;g.add(im);
+  bx(g,w,.12,.06,M.reed,0,0,.03);bx(g,w,.12,.06,M.reed,0,h-.12,.03);bx(g,w-.04,.01,.02,LED(0xffcf8a,1.8),0,.125,.05);bx(g,w-.04,.01,.02,LED(0xffcf8a,1.8),0,h-.13,.05);return g}
+function limeWall(x,z,rot,w,h=H-.02){const g=fg(x,z,rot,0,0,shell);const geo=new THREE.BoxGeometry(w,h,.012);scaleFaceUV(geo,4,w/1.4,h/1.4);const m=new THREE.Mesh(geo,M.lime);m.position.y=h/2;m.receiveShadow=true;g.add(m);return g}
+/* channel-tufted upholstered headboard wall */
+function channelHead(x,z,rot,w,h=1.45){const g=fg(x,z,rot,0,0,furn);g.userData.name='راس سرير مبطنة';const n=Math.round(w/.2),cw=w/n;
+  bx(g,w+.04,h+.04,.03,M.oak,0,0,.015);for(let i=0;i<n;i++)rbx(g,cw-.01,h-.04,.08,M.boucleTaupe,-w/2+cw*(i+.5),.02,.06,.04,4);
+  bx(g,w,.01,.02,LED(0xffcf8a,1.8),0,h+.03,.04);return g}
 function screen(g,x,y,z,w){if(!g.userData.name)g.userData.name='تليفزيون';const h=w*.5625;bx(g,w+.02,h+.02,.035,M.black,x,y,z);const s=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tvScreen,emissiveMap:tvScreen,emissive:0xffffff,emissiveIntensity:.35,roughness:.15}));s.position.set(x,y+(h+.02)/2,z+.019);g.add(s)}
 function vaseS(g,x,y,z,h=.22,mat=M.ceramic,r=.07){const m=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),mat);m.scale.set(1,h/(2*r),1);m.position.set(x,y+h/2,z);m.castShadow=true;g.add(m);cy(g,r*.35,h*.25,mat,x,y+h*.9,z,14)}
 function pampas(g,x,y,z,h=.6){for(let i=0;i<7;i++){const a=i/7*6.28,s=cy(g,.004,h,M.walnut,x,y,z,4);s.rotation.set(Math.cos(a)*.25,0,Math.sin(a)*.25);s.position.set(x+Math.sin(a)*.05,y+h/2,z+Math.cos(a)*.05);
@@ -922,8 +936,8 @@ glassWardrobe(9.175,-1.2,Math.PI/2,1.6,.6);flatRug(10.12,-1.2,.95,1.9,M.greyRug)
   mkCol(10.7,10.85,-2.43,-.07,0,H)}
 
 /* ───────────────────────── MASTER BEDROOM (ref 2): oak slat headboard wall, boucle bed, floating nightstands ───────────────────────── */
-{const g=fg(12.11,1.925,-Math.PI/2);const n=6,pw=3.65/n;for(let i=0;i<n;i++)bx(g,pw-.003,H-.02,.03,M.veneer,-3.65/2+pw*(i+.5),0,.015)}
-slatWall(12.07,1.925,-Math.PI/2,2.3);{const g=fg(12.04,1.925,-Math.PI/2);[-1.17,1.17].forEach(px=>bx(g,.012,H-.04,.01,LED(0xffcf8a,1.8),px,.02,.03));bx(g,2.3,.012,.01,LED(0xffcf8a,1.6),0,H-.03,.03)}
+limeWall(12.117,1.925,-Math.PI/2,3.65);
+channelHead(12.12,1.925,-Math.PI/2,2.9);
 boucleBed(10.98,1.925,-Math.PI/2,1.8,2.05);floatNight(11.8,.68,-Math.PI/2);floatNight(11.8,3.17,-Math.PI/2,{lampOn:false});
 slimPendant(11.75,.68,1.35);slimPendant(11.75,3.17,1.35);
 archBench(9.62,1.925,Math.PI/2,1.4);shagRug(10.0,1.925,2.9,2.7);
@@ -931,7 +945,7 @@ vanityDesk(8.1,2.3,Math.PI/2,1.15);slimChair(8.68,2.3,-Math.PI/2);
 curtain(10.0,3.77,Math.PI,2.5);plant(8.25,3.45,1.3,furn,.2,'palm');
 
 /* ───────────────────────── LIVING ROOM (ref 5): oak slat walls, floating LED shelves, grey sectional, jute rug ───────────────────────── */
-slatWall(.1,3.3,Math.PI/2,4.05);slatWall(1.16,1.29,0,2.15);
+slatWall(.1,3.3,Math.PI/2,4.05);limeWall(1.12,1.286,0,2.2);
 floatConsole(.33,3.4,Math.PI/2,2.4,{y0:.08,h:.42,d:.4,top:M.taupe,body:M.taupe});
 {const g=fg(.14,3.4,Math.PI/2);screen(g,0,1.15,.06,1.45);}
 {const g=fg(.33,3.4,Math.PI/2);bx(g,.9,.06,.1,M.black,0,.5,.05);vaseS(g,-.95,.5,0,.26,M.ceramic,.08);pampas(g,-.95,.75,0,.4);cy(g,.06,.12,std(0xfff0d0,.3,0,{emissive:0xffb050,emissiveIntensity:1}),.95,.5,0,16)}
@@ -947,7 +961,7 @@ travSide(.5,1.62,.17,.5);travSide(3.5,4.85,.2,.48);{const g=fg(3.5,4.85);cy(g,.0
 discPendant(1.9,3.35,2.0);plant(.45,4.95,1.5,furn,.22);curtain(2.2,5.3,Math.PI,2.1);
 
 /* ───────────────────────── BEDROOM 2 ───────────────────────── */
-slatWall(7.7,3.3,-Math.PI/2,2.3);{const g=fg(7.67,3.3,-Math.PI/2);[-1.17,1.17].forEach(px=>bx(g,.012,H-.04,.01,LED(0xffcf8a,1.6),px,.02,.03))}
+limeWall(7.714,3.3,-Math.PI/2,4.05);channelHead(7.7,3.3,-Math.PI/2,2.4);
 boucleBed(6.6,3.3,-Math.PI/2,1.6,2.0);floatNight(7.5,2.2,-Math.PI/2);floatNight(7.5,4.4,-Math.PI/2,{lampOn:false});
 slimPendant(7.45,2.2,1.35);slimPendant(7.45,4.4,1.35);
 wardrobe(4.175,3.95,Math.PI/2,2.3);shagRug(6.0,3.3,2.4,2.6);curtain(5.45,5.3,Math.PI,2.3);
