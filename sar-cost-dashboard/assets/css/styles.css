@@ -647,8 +647,9 @@ body.printing .pg-row.g-head { position: static; }
 .iv-p .badge { font-size: 10px; padding: 1px 6px; }
 .iv-p:hover b { text-decoration: underline; }
 /* the project's spend figures (full year · year to date) under its row, in ordered boxes */
-.iv-p > .iv-kpis { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 2px 8px 8px; align-items: stretch; }
+.iv-p > .iv-kpis { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 2px 8px 8px; align-items: stretch; }
 .iv-kg { display: flex; flex-direction: column; gap: 3px; }
+.iv-kg + .iv-kg { padding-left: 18px; border-left: 1px solid var(--cool-gray); }
 .iv-kg > i { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--slate); }
 .iv-kr { display: flex; gap: 6px; flex-wrap: wrap; }
 .iv-k { display: flex; flex-direction: column; min-width: 92px; padding: 4px 8px; background: var(--white); border: 1px solid var(--tint-10); border-left: 4px solid var(--cool-gray); border-radius: 4px; line-height: 1.2; }
