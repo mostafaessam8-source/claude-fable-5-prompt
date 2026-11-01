@@ -211,7 +211,7 @@
     place(wrap.getBoundingClientRect(), wrap, tbl, [hoverTd], bands[2], bands[3]);
   }
   function paintMarks() {
-    paintCells(); updateRuler();
+    paintCells(); updateRuler(); paintSelRects();
   }
   function paintCells() {
     if (S.sheet === '__overview') return;
@@ -384,6 +384,30 @@
     RECTS = selRects();
     var tds = $('gridWrap').querySelectorAll('td[data-a]');
     for (var i = 0; i < tds.length; i++) tds[i].classList.toggle('rng', inRange(S.sheet, tds[i].getAttribute('data-a')));
+    paintSelRects();
+  }
+  /* The selection is drawn like in Excel: one tinted box with a thick green border around each selected rectangle. */
+  function paintSelRects() {
+    var wrap = $('gridWrap');
+    wrap.querySelectorAll('.selrect').forEach(function (n) { n.parentNode.removeChild(n); });
+    if (S.sheet === '__overview' || !wrap.querySelector('table.sheet')) return;
+    var rects = selRects(); if (!rects.length) return;
+    var wr = wrap.getBoundingClientRect();
+    function findTd(g, rev) {
+      for (var i = 0; i <= Math.min(60, g.r2 - g.r1); i++) {
+        var r = rev ? g.r2 - i : g.r1 + i;
+        for (var j = 0; j <= Math.min(60, g.c2 - g.c1); j++) { var td = wrap.querySelector('td[data-a="' + Xl.addr(rev ? g.c2 - j : g.c1 + j, r) + '"]'); if (td) return td; }
+      }
+      return null;
+    }
+    rects.forEach(function (g) {
+      var a = findTd(g, false), b = findTd(g, true); if (!a || !b) return;
+      var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      var l = Math.min(ra.left, rb.left), t = Math.min(ra.top, rb.top), r = Math.max(ra.right, rb.right), bt = Math.max(ra.bottom, rb.bottom), d = document.createElement('div');
+      d.className = 'selrect';
+      d.style.cssText = 'left:' + (l - wr.left + wrap.scrollLeft - 1) + 'px;top:' + (t - wr.top + wrap.scrollTop - 1) + 'px;width:' + (r - l + 1) + 'px;height:' + (bt - t + 1) + 'px';
+      wrap.appendChild(d);
+    });
   }
   function clearSelection() { S.range = null; S.extra = []; paintRange(); }
   function describeSel() {
@@ -408,12 +432,17 @@
   /* floating action bar next to the sheet: appears whenever the selection contains changed cells */
   function updateSelBar() {
     var bar = $('selbar'), list = S.sheet === '__overview' ? [] : selectedChanges();
-    if (!list.length) { bar.hidden = true; return; }
+    if (S.sheet === '__overview') { bar.hidden = true; return; }
+    bar.hidden = false;
+    if (!list.length) {
+      var cells = selRects().reduce(function (n, g) { return n + (g.r2 - g.r1 + 1) * (g.c2 - g.c1 + 1); }, 0);
+      bar.innerHTML = '<span class="n muted">' + (S.sel && S.sel.sheet === S.sheet ? 'Selected <b>' + h(describeSel()) + '</b>' + (cells > 1 ? ' · ' + cells + ' cells' : '') + ' · no changed cells in the selection' : 'Click a cell or drag to select · Ctrl+click adds · click a column/row header · Ctrl+A = all · Esc clears') + ' <span class="ar">لا توجد تغييرات في التحديد</span></span>';
+      return;
+    }
     var pend = list.filter(function (c) { return !S.dec[c.id]; }).length;
     bar.innerHTML = '<span class="n"><b>' + list.length + '</b> changed cell' + (list.length > 1 ? 's' : '') + ' selected · ' + pend + ' to review <span class="ar">محدد</span></span>' +
       '<button class="act accept" data-selbar="accept" type="button">✔ Keep <span class="ar">وافق</span></button><button class="act reject" data-selbar="reject" type="button">↺ Reject <span class="ar">ارفض</span></button>' +
       '<button class="act undo" data-selbar="undo" type="button">Undo</button><button class="act undo" data-selbar="clear" type="button" title="Clear the selection (Esc)">✕</button>';
-    bar.hidden = false;
   }
   function selBarAction(act) {
     var list = selectedChanges();
@@ -563,7 +592,30 @@
     $('gridWrap').addEventListener('mouseleave', function () { hoverTd = null; updateHover(); });
     $('optRuler').addEventListener('change', function () { updateRuler(); updateHover(); });
     window.addEventListener('resize', function () { updateRuler(); });
-    document.addEventListener('mouseup', function () { S.pdrag = null; if (!drag) return; drag = false; S.tab = 'cell'; paintMarks(); refreshSide(); });
+    /* a drag over the sheet selects cells, never text; dragging past an edge scrolls like Excel */
+    $('gridWrap').addEventListener('selectstart', function (e) { var n = e.target.nodeType === 3 ? e.target.parentNode : e.target; if (n && n.closest && n.closest('table.sheet')) e.preventDefault(); });
+    $('gridWrap').addEventListener('dragstart', function (e) { e.preventDefault(); });
+    var lastPt = null, dragTimer = null;
+    document.addEventListener('mousemove', function (e) {
+      if (!drag) return;
+      lastPt = { x: e.clientX, y: e.clientY };
+      if (!dragTimer) dragTimer = setInterval(function () {
+        if (!drag || !lastPt) return;
+        var wrap = $('gridWrap'), wr = wrap.getBoundingClientRect(), m = 26, dx = 0, dy = 0;
+        if (lastPt.x > wr.right - m) dx = Math.min(60, (lastPt.x - (wr.right - m)) / 2 + 10); else if (lastPt.x < wr.left + 44 + m) dx = -Math.min(60, ((wr.left + 44 + m) - lastPt.x) / 2 + 10);
+        if (lastPt.y > wr.bottom - m) dy = Math.min(60, (lastPt.y - (wr.bottom - m)) / 2 + 10); else if (lastPt.y < wr.top + 24 + m) dy = -Math.min(60, ((wr.top + 24 + m) - lastPt.y) / 2 + 10);
+        if (!dx && !dy) return;
+        wrap.scrollBy(dx, dy);
+        var el = document.elementFromPoint(Math.min(Math.max(lastPt.x, wr.left + 52), wr.right - 24), Math.min(Math.max(lastPt.y, wr.top + 30), wr.bottom - 24)), td = el && el.closest && el.closest('td[data-a]');
+        if (td) setRange(S.sel.a, td.getAttribute('data-a'));
+      }, 40);
+    });
+    document.addEventListener('mouseup', function () {
+      clearInterval(dragTimer); dragTimer = null; lastPt = null;
+      S.pdrag = null; if (!drag) return; drag = false;
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      S.tab = 'cell'; paintMarks(); refreshSide();
+    });
     $('gridWrap').addEventListener('click', function (e) { if (e.shiftKey && e.target.closest('td[data-a]')) { S.tab = 'cell'; paintMarks(); refreshSide(); } });
     $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td && !pointInput()) { $('fbIn').focus(); $('fbIn').select(); } });
     document.querySelector('.tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) { S.tab = t.getAttribute('data-tab'); refreshSide(); } });
@@ -700,7 +752,7 @@
     });
     $('zoom').addEventListener('change', applyZoom);
   }
-  function applyZoom() { var t = $('gridWrap').querySelector('table.sheet'); if (t) { t.style.zoom = $('zoom').value; updateRuler(); } }
+  function applyZoom() { var t = $('gridWrap').querySelector('table.sheet'); if (t) { t.style.zoom = $('zoom').value; updateRuler(); paintSelRects(); } }
 
   /* what the typed text will become: the result of a formula, or the type Excel will give it */
   function previewText(text) {

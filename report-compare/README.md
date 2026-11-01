@@ -30,7 +30,8 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   to follow. Toggle with the "ruler" box.
 - **Select several cells, then Keep or Reject** – drag a range, `Shift`+click to extend, **`Ctrl`+click** (Cmd on Mac) to add single cells or `Ctrl`+drag to add more ranges
   (Ctrl+click a selected cell to remove it), click a column/row header to select it, `Ctrl+A` for the whole sheet, or type areas in the name box (`C7,K1:M1`).
-  A bar appears next to the sheet — "N changed cells selected · ✔ Keep · ↺ Reject · Undo" (keys `A` / `R`, `Esc` clears) — and the same buttons are in the Cell tab.
+  The selection looks like Excel's (one thick green box per area; dragging never selects text and scrolls at the edges). A status bar under the sheet shows
+  "N changed cells selected · ✔ Keep · ↺ Reject · Undo" (keys `A` / `R`, `Esc` clears); it never covers cells. The same buttons are in the Cell tab.
   Also: *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and *Keep / Reject all listed* in the Changes tab.
   Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
 - The review is saved in the browser (per pair of files) and restored when the same two files are loaded again.
