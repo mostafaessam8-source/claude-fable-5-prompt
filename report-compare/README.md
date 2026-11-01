@@ -23,6 +23,11 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   Name box: type `B5` or `B5:C9` + Enter. Arrow keys / Tab move (Shift extends), `F2`/Enter edits in the formula bar, double-click a cell edits it.
 - **Pick cells from the sheet** – while a formula is being typed (in the formula bar or "Your own value"), click a cell or drag a range in the sheet and its
   reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
+- **Keyboard selection like Excel** – `Shift`+arrows extend, `Ctrl`+arrows jump to the edge of the filled block, `Ctrl`+`Shift`+arrows select up to it, `Ctrl`+`Space` selects the
+  column, `Shift`+`Space` the row, `Home` / `Ctrl`+`Home` go to the start of the row / the sheet (with `Shift` they select). Mouse: `Shift`+click extends, `Ctrl`+click adds,
+  `Ctrl`+`Shift`+click extends while keeping the other areas.
+- **Speed on big sheets** – the grid is indexed once per render; selection, the active-cell frame, the ruler and the checker marks are overlays / incremental updates, so moving
+  the selection never re-styles the table (only marked cells carry a `position`), and the ruler and selection boxes are clipped to the part of the sheet that is on screen.
 - **Find the cell** – clicking any item in the Changes or Checker list (or the name box) opens its sheet, scrolls the cell to the middle of the grid (and brings the
   grid on screen in a narrow window) and flashes it. List items also show where the cell is: `← row label · ↑ column header`. The list keeps its scroll position
   while you keep / reject items.
