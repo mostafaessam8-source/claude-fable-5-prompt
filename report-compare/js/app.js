@@ -398,7 +398,7 @@
     var wrap = $('gridWrap'), isOv = name === '__overview';
     $('sheetTitle').innerHTML = isOv ? 'Overview <span class="ar">ملخص المراجعة</span>' : h(name);
     ['btnPrevCh', 'btnNextCh', 'btnNextIss', 'btnAcceptSheet', 'btnRejectSheet'].forEach(function (id) { $(id).hidden = isOv && /Sheet/.test(id); });
-    $('legend').hidden = isOv; $('fbar').hidden = isOv; $('zoom').hidden = isOv;
+    $('legend').hidden = isOv; $('fbar').hidden = isOv; $('statusbar').hidden = isOv;
     if (isOv) { wrap.className = 'grid-wrap'; wrap.innerHTML = renderOverview(); }
     else {
       wrap.innerHTML = renderGrid(name);
@@ -724,6 +724,8 @@
     var drag = false;
     $('gridWrap').addEventListener('mousedown', function (e) {
       if (e.button !== 0) return;
+      var ae0 = document.activeElement;   /* the zoom slider / a button must not keep the keyboard once you work in the sheet */
+      if (ae0 && ((ae0.tagName === 'INPUT' && ae0.type === 'range') || ae0.tagName === 'BUTTON' || ae0.tagName === 'SELECT')) ae0.blur();
       var th = e.target.closest('th');
       if (th && !pointInput() && S.sheet !== '__overview') {   /* click a column / row header: select the whole column / row */
         var shh = S.cur.wb.byName[S.sheet], multiH = e.ctrlKey || e.metaKey, ha1, ha2;
@@ -933,9 +935,42 @@
       S.tab = 'cell'; paintMarks(); refreshSide();
       nb.blur();
     });
-    $('zoom').addEventListener('change', applyZoom);
+    wireZoom();
   }
-  function applyZoom() { var t = $('gridWrap').querySelector('table.sheet'); if (t) { t.style.zoom = $('zoom').value; updateRuler(); paintSelRects(); } }
+  /* ----- zoom (like Excel's: − slider + percentage, Ctrl + mouse wheel) ----- */
+  var ZMIN = 25, ZMAX = 400;
+  try { S.zoom = Math.min(ZMAX, Math.max(ZMIN, parseInt(localStorage.getItem('rc.zoom'), 10) || 100)); } catch (e) { S.zoom = 100; }
+  function showZoom() { $('zoomRange').value = S.zoom; $('zoomPct').textContent = S.zoom + '%'; $('zoomOut').disabled = S.zoom <= ZMIN; $('zoomIn').disabled = S.zoom >= ZMAX; }
+  function applyZoom() { var t = $('gridWrap').querySelector('table.sheet'); showZoom(); if (t) { t.style.zoom = S.zoom / 100; updateRuler(); updateHover(); paintSelRects(); } }
+  /* the point (x, y) of the sheet area that is under the pointer stays where it is */
+  function setZoom(pct, ax, ay) {
+    pct = Math.min(ZMAX, Math.max(ZMIN, Math.round(pct)));
+    if (pct === S.zoom) { showZoom(); return; }
+    var wrap = $('gridWrap'), t = wrap.querySelector('table.sheet'), r = pct / S.zoom;
+    if (ax == null) { ax = wrap.clientWidth / 2; ay = wrap.clientHeight / 2; }
+    var sl = wrap.scrollLeft, st = wrap.scrollTop;
+    S.zoom = pct; try { localStorage.setItem('rc.zoom', String(pct)); } catch (e) { /* ignore */ }
+    showZoom();
+    if (!t) return;
+    t.style.zoom = pct / 100;
+    wrap.scrollLeft = (sl + ax) * r - ax; wrap.scrollTop = (st + ay) * r - ay;
+    updateRuler(); updateHover(); paintSelRects();
+  }
+  function wireZoom() {
+    $('zoomOut').addEventListener('click', function () { setZoom(Math.ceil(S.zoom / 10) * 10 - 10); });
+    $('zoomIn').addEventListener('click', function () { setZoom(Math.floor(S.zoom / 10) * 10 + 10); });
+    $('zoomPct').addEventListener('click', function () { setZoom(100); });
+    $('zoomRange').addEventListener('input', function () { setZoom(+this.value); });
+    $('zoomRange').addEventListener('pointerup', function () { this.blur(); });
+    ['zoomOut', 'zoomIn', 'zoomPct'].forEach(function (id) { $(id).addEventListener('pointerup', function () { this.blur(); }); });
+    $('gridWrap').addEventListener('wheel', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || S.sheet === '__overview') return;
+      e.preventDefault();
+      var q = $('gridWrap').getBoundingClientRect();
+      setZoom(S.zoom + Math.max(-10, Math.min(10, -e.deltaY * 0.1)) * 1, e.clientX - q.left, e.clientY - q.top);
+    }, { passive: false });
+    showZoom();
+  }
 
   /* what the typed text will become: the result of a formula, or the type Excel will give it */
   function previewText(text) {

@@ -273,3 +273,13 @@ table.sheet td.iss-error, table.sheet td.iss-warn, table.sheet td.iss-info, tabl
 
 /* a cell the tool calculated itself because the file only stored #NAME? */
 table.sheet td.recalc { box-shadow: inset 0 -2px 0 #2e7d32; }
+
+/* status bar: selection on the left, zoom on the right (like Excel) */
+.statusbar { display: flex; align-items: center; flex: none; background: #eef3f5; border-top: 1px solid #c6c6c6; }
+.statusbar .selbar { flex: 1; min-width: 0; border-top: 0 !important; background: transparent !important; width: auto !important; }
+.zoombox { display: flex; align-items: center; gap: 4px; padding: 0 12px; flex: none; }
+.zoombox button { border: 0; background: transparent; color: #444; cursor: pointer; border-radius: 4px; }
+.zoombox #zoomOut, .zoombox #zoomIn { width: 24px; height: 24px; font-size: 18px; line-height: 1; padding: 0; }
+.zoombox button:hover:not(:disabled) { background: #dcdcdc; } .zoombox button:disabled { color: #b9b9b9; cursor: default; }
+.zoombox #zoomPct { min-width: 46px; font-size: 13px; padding: 2px 4px; text-align: center; }
+.zoombox input[type=range] { width: 130px; accent-color: #217346; cursor: pointer; }
