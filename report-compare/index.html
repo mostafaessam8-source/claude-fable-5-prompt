@@ -51,7 +51,6 @@
     </section>
 
     <section id="app" hidden>
-      <nav class="nav" id="nav" aria-label="Sheets"></nav>
       <div class="center">
         <div class="toolbar" id="toolbar">
           <h2 id="sheetTitle"></h2>
@@ -59,6 +58,7 @@
             <button class="chip" id="btnPrevCh" type="button" title="Previous change (P)">◀ Change</button>
             <button class="chip" id="btnNextCh" type="button" title="Next change (N)">Change ▶</button>
             <button class="chip" id="btnNextIss" type="button" title="Next issue (I)">Issue ▶</button>
+            <select class="chip" id="zoom" aria-label="Zoom"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select>
             <label class="chk"><input type="checkbox" id="optAuto"> auto-calculated <small>محسوبة تلقائيًا</small></label>
             <label class="chk"><input type="checkbox" id="optRuler" checked> ruler <small>مسطرة</small></label>
             <label class="chk"><input type="checkbox" id="optIssues" checked> checker marks <small>علامات الفاحص</small></label>
@@ -75,7 +75,14 @@
           <span><i class="k err"></i>checker: error <small>خطأ</small></span>
           <span><i class="k warn"></i>checker: warning <small>تنبيه</small></span>
         </div>
+        <div class="fbar" id="fbar">
+          <input id="nameBox" class="namebox" type="text" value="" spellcheck="false" aria-label="Name box — type a cell or range and press Enter" title="Name box: type B5 or B5:C9 and press Enter">
+          <span class="fx" aria-hidden="true">ƒx</span>
+          <input id="fbIn" class="fbin" type="text" value="" spellcheck="false" aria-label="Formula bar" title="Formula bar: type a value or a formula (starting with =). While typing a formula, click cells in the sheet to insert their references. Enter = apply, Esc = cancel.">
+          <span class="fres" id="fbRes"></span>
+        </div>
         <div class="grid-wrap" id="gridWrap" tabindex="-1"></div>
+        <nav class="nav" id="nav" aria-label="Sheets"></nav>
       </div>
       <aside class="side">
         <div class="tabs" role="tablist">

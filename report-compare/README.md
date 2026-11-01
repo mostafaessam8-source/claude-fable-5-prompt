@@ -17,6 +17,12 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   SUMIF COUNTIF SUMPRODUCT INDEX MATCH VLOOKUP XLOOKUP TEXT LEFT RIGHT MID LEN UPPER LOWER TRIM CONCAT(ENATE) DATE YEAR MONTH DAY WEEKDAY TODAY and more.
   Any other function is still saved and Excel calculates it when the report is opened. Formulas already in the report that depend on a changed cell are
   refreshed by Excel on open (the web view keeps their old results).
+- **Excel look** – the sheet opens like in Excel: name box, `ƒx` formula bar, column/row headers (highlighted for the selection), gridlines (hidden when the
+  sheet hides them), sheet tabs at the bottom in their own colours, and a zoom box. Column widths, row heights, fonts, fills, borders, merged cells and text
+  that spills into empty neighbours follow the file (a wrapped cell is clipped to its row height, as in Excel).
+  Name box: type `B5` or `B5:C9` + Enter. Arrow keys / Tab move (Shift extends), `F2`/Enter edits in the formula bar, double-click a cell edits it.
+- **Pick cells from the sheet** – while a formula is being typed (in the formula bar or "Your own value"), click a cell or drag a range in the sheet and its
+  reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
 - **Ruler** – a horizontal and a vertical band follow the selected cell/range (strong) and the mouse (light), and the row/column headers light up, so tables are easy
   to follow. Toggle with the "ruler" box.
 - **Bulk decisions** – drag over cells (or click, then Shift+click) to select a range, then *Keep all* / *Reject all* for the changed
