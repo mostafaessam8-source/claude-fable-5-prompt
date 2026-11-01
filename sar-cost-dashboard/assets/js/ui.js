@@ -680,3 +680,57 @@
     modal: modal, recordModal: recordModal, toast: toast, eot: eot, eotStatus: eotStatus
   };
 })();
+
+/* Frozen key columns: in every table the leading "Code" / "Project" / "Name" columns (within the first 3) stay in
+   place when the table is scrolled sideways (position: sticky; left). Runs by itself on every table the pages draw.
+   A table opts out with class "no-freeze". */
+(function () {
+  var KEY = /^(#|id|no\.?|sr\.?\s*no\.?|code|project|project code|project name|project title|name|description|contract code|contract name|po(\s*no\.?)?)$/i, MAXC = 3;
+  function grid(rows) {   // cell → start column, with rowspan / colspan
+    var taken = [], out = [];
+    rows.forEach(function (tr, r) {
+      var c = 0; taken[r] = taken[r] || [];
+      Array.prototype.forEach.call(tr.cells, function (td) {
+        while (taken[r][c]) c++;
+        var cs = td.colSpan || 1, rs = td.rowSpan || 1;
+        for (var i = 0; i < rs; i++) { taken[r + i] = taken[r + i] || []; for (var j = 0; j < cs; j++) taken[r + i][c + j] = 1; }
+        out.push({ td: td, c: c, cs: cs, head: !!tr.closest("thead") }); c += cs;
+      });
+    });
+    return out;
+  }
+  function bgOf(el) {
+    for (var e = el; e && e.nodeType === 1; e = e.parentElement) {
+      var b = getComputedStyle(e).backgroundColor; if (b && b !== "transparent" && !/rgba\(.*,\s*0\)$/.test(b)) return b;
+    }
+    return "#fff";
+  }
+  function freeze(t) {
+    if (t.classList.contains("no-freeze") || t.closest(".no-freeze") || t.classList.contains("cu-grid")) return;
+    var rows = Array.prototype.slice.call(t.rows); if (!rows.length) return;
+    var cells = grid(rows), hdr = cells.filter(function (x) { return x.head; });
+    if (!hdr.length) hdr = cells.filter(function (x) { return x.td.parentElement === rows[0]; });
+    var k = -1;
+    hdr.forEach(function (x) { if (x.c < MAXC && x.cs === 1 && KEY.test(String(x.td.textContent || "").trim())) k = Math.max(k, x.c); });
+    cells.forEach(function (x) { x.td.classList.remove("fz", "fz-last"); x.td.style.removeProperty("left"); });
+    if (k < 0 || t.scrollWidth <= (t.parentElement ? t.parentElement.clientWidth : 0) + 1) return;   // nothing to freeze / no side scroll
+    var lefts = [], base = null;
+    cells.forEach(function (x) { if (x.cs === 1 && x.c <= k && lefts[x.c] == null) lefts[x.c] = x.td.offsetLeft; });
+    for (var i = 0; i <= k; i++) if (lefts[i] == null) return;
+    base = lefts[0];
+    cells.forEach(function (x) {
+      if (x.c > k || x.c + x.cs - 1 > k) return;
+      x.td.classList.add("fz"); if (x.c + x.cs - 1 === k) x.td.classList.add("fz-last");
+      x.td.style.left = (lefts[x.c] - base) + "px";
+      if (!x.head) x.td.style.setProperty("--fzbg", bgOf(x.td.parentElement));
+    });
+  }
+  var queued = false;
+  function run() { queued = false; Array.prototype.forEach.call(document.querySelectorAll("table"), function (t) { try { freeze(t); } catch (e) { /* keep the page */ } }); }
+  function later() { if (!queued) { queued = true; requestAnimationFrame(run); } }
+  if (typeof MutationObserver !== "undefined" && typeof document !== "undefined") {
+    var start = function () { new MutationObserver(function (ms) { if (ms.some(function (m) { return m.addedNodes.length; })) later(); }).observe(document.body, { childList: true, subtree: true }); later(); };
+    if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+    window.addEventListener("resize", later);
+  }
+})();

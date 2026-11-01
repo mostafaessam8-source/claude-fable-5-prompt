@@ -41,6 +41,8 @@ opened straight from disk.
 * **Tables**: search, CSV export and **multi-column sort**. Click a header to sort by it, and
   **Shift + click** other headers to add sort levels. You can also use **⇅ Sort** to build the levels,
   like Excel's custom sort.
+  The key columns (**Code / Project / Name**, within the first three) stay fixed when a wide table is
+  scrolled sideways, on every table of the site (ui.js; a table opts out with the class `no-freeze`).
 * **Print A4**: prints the current page, with any active filters, on **one A4 sheet**. Every table row and
   the whole Gantt are expanded (nothing is hidden behind scrollbars). The page is scaled to fit, and
   portrait or landscape is picked automatically. The sheet gets a SAR header with the page title, report

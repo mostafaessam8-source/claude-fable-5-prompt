@@ -245,6 +245,12 @@ main.content { flex: 1; min-width: 0; padding: 24px 28px 48px; }
 .table-tools .count { font-size: 12px; color: var(--slate); margin-left: auto; }
 .table-wrap { overflow: auto; max-height: 560px; border: 1px solid var(--cool-gray); }
 .table-wrap.auto-h { max-height: none; }
+/* frozen key columns (Code / Project) — ui.js; placed before the table rules so their row colours still apply */
+th.fz, td.fz { position: sticky; z-index: 1; }
+td.fz { background-color: var(--fzbg, #fff); }
+table thead th.fz { z-index: 4; }
+table tfoot td.fz { z-index: 4; }
+th.fz-last, td.fz-last { box-shadow: inset -1px 0 0 var(--cool-gray); }
 table.dt { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 table.dt th {
   position: sticky; top: 0; z-index: 2;
