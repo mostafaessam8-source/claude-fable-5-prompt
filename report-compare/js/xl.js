@@ -116,7 +116,8 @@
     items = section(xml, 'fonts').match(/<font\b[^>]*?(?:\/>|>[\s\S]*?<\/font>)/g) || [];
     items.forEach(function (f) {
       var b = /<b\b([^>]*)\/?>/.exec(f), i = /<i\b([^>]*)\/?>/.exec(f), sz = /<sz\b([^>]*)\/>/.exec(f), col = /<color\b[^>]*\/>/.exec(f), u = /<u\b/.test(f);
-      fonts.push({ b: !!b && attrs(b[1]).val !== '0', i: !!i && attrs(i[1]).val !== '0', u: u, sz: sz ? parseFloat(attrs(sz[1]).val) : 11, color: col ? resolveColor(col[0], theme) : null });
+      var nm = /<name\b[^>]*val="([^"]*)"/.exec(f) || /<rFont\b[^>]*val="([^"]*)"/.exec(f);
+      fonts.push({ name: nm ? unesc(nm[1]) : '', b: !!b && attrs(b[1]).val !== '0', i: !!i && attrs(i[1]).val !== '0', u: u, sz: sz ? parseFloat(attrs(sz[1]).val) : 11, color: col ? resolveColor(col[0], theme) : null });
     });
     items = section(xml, 'fills').match(/<fill\b[^>]*?(?:\/>|>[\s\S]*?<\/fill>)/g) || [];
     items.forEach(function (f) {
@@ -202,7 +203,7 @@
     if (!isFinite(n)) return String(n);
     if (n === 0) return '0';
     var a = Math.abs(n);
-    if (a >= 1e11 || a < 1e-9) return n.toExponential(5).replace(/\.?0+e/, 'E').replace('e', 'E');
+    if (a >= 1e11 || a < 1e-5) { var ex = n.toExponential(5).split('e'), mant = ex[0].replace(/\.?0+$/, ''), eN = parseInt(ex[1], 10); return mant + 'E' + (eN < 0 ? '-' : '+') + (Math.abs(eN) < 10 ? '0' : '') + Math.abs(eN); }
     return String(parseFloat(n.toPrecision(11)));
   }
   function fmtNumberCode(sec, n) {
@@ -283,9 +284,9 @@
 
   /* ---------- worksheet ---------- */
   function parseSheet(xml, sst) {
-    var sh = { cells: new Map(), maxR: 0, maxC: 0, cols: [], rows: new Map(), merges: [], arrays: [], defW: 8.43, defH: 15, hasDrawing: /<drawing\b/.test(xml) };
+    var sh = { showGrid: !/<sheetView\b[^>]*showGridLines="(0|false)"/.test(xml), cells: new Map(), maxR: 0, maxC: 0, cols: [], rows: new Map(), merges: [], arrays: [], defW: 8.43, defH: 15, hasDrawing: /<drawing\b/.test(xml) };
     var m, a;
-    if ((m = /<sheetFormatPr\b([^>]*)\/?>/.exec(xml))) { a = attrs(m[1]); if (a.defaultColWidth) sh.defW = +a.defaultColWidth; else if (a.baseColWidth) sh.defW = +a.baseColWidth + 0.7; if (a.defaultRowHeight) sh.defH = +a.defaultRowHeight; }
+    if ((m = /<sheetFormatPr\b([^>]*)\/?>/.exec(xml))) { a = attrs(m[1]); if (a.defaultColWidth) sh.defW = +a.defaultColWidth; else sh.defW = a.baseColWidth ? (+a.baseColWidth * 7 + 5) / 7 + 0.43 : 9.140625; if (a.defaultRowHeight) sh.defH = +a.defaultRowHeight; }
     var colsXml = section(xml, 'cols'), cre = /<col\b([^>]*)\/?>/g;
     while ((m = cre.exec(colsXml))) { a = attrs(m[1]); sh.cols.push({ min: +a.min, max: +a.max, w: a.width ? +a.width : sh.defW, hidden: a.hidden === '1' || a.hidden === 'true' }); }
     var mre = /<mergeCell\b[^>]*ref="([^"]+)"/g;
@@ -353,7 +354,8 @@
       var path = target.charAt(0) === '/' ? target.slice(1) : 'xl/' + target;
       var xml = await readText(zip, path);
       if (xml == null) continue;
-      var sh = parseSheet(xml, sst);
+      var sh = parseSheet(xml, sst), tc = /<tabColor\b[^>]*\/>/.exec(xml);
+      sh.tabColor = tc ? resolveColor(tc[0], theme) : null;
       sh.name = sa.name; sh.path = path; sh.state = sa.state || 'visible';
       out.sheets.push(sh);
     }

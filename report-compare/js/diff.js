@@ -8,9 +8,9 @@
  *                                          { m: 'custom', v: 'text' }  the reviewer's own value (same typing rules as Excel)
  */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./xl.js'));
-  else root.Diff = factory(root.Xl);
-})(typeof self !== 'undefined' ? self : this, function (Xl) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./xl.js'), require('./formula.js'));
+  else root.Diff = factory(root.Xl, root.Formula);
+})(typeof self !== 'undefined' ? self : this, function (Xl, Formula) {
   'use strict';
 
   function key(sheet, a) { return sheet + '!' + a; }
@@ -82,21 +82,37 @@
   /* ---------- the view of the report after the reviewer's decisions ---------- */
   function makeView(prev, cur, dec) {
     function sheetCell(wb, sheet, a) { var s = wb.byName[sheet]; return s ? (s.cells.get(a) || null) : null; }
+    var memo = {}, busy = {};
+    var fctx = { get: function (sh, a) { return val(sh, a); }, bounds: function (sh) { var x = cur.byName[sh]; return x ? { maxR: x.maxR, maxC: x.maxC } : null; } };
+    /* a value the reviewer typed: parsed like Excel; a formula is evaluated now (unsupported functions are left for Excel) */
+    function customCell(sheet, a, text) {
+      var pi = parseInput(text);
+      if (!pi) return null;
+      var c = sheetCell(cur, sheet, a), pa = Xl.parseAddr(a);
+      pi.s = c ? c.s : 0; pi.a = a; pi.custom = true; pi.r = pa.r; pi.c = pa.c;
+      if (pi.f != null) {
+        fctx.sheet = sheet;
+        var saved = fctx.sheet, res = Formula.evaluate(pi.f, { sheet: sheet, get: fctx.get, bounds: fctx.bounds });
+        fctx.sheet = saved;
+        pi.k = res.k; pi.v = res.v; if (res.unsupported) { pi.unsupported = true; pi.fn = res.fn; pi.syntax = res.syntax; }
+      }
+      return pi;
+    }
     function eff(sheet, a) {
-      var d = dec[key(sheet, a)], c = sheetCell(cur, sheet, a);
+      var k = key(sheet, a), d = dec[k], c = sheetCell(cur, sheet, a);
       if (d && d.m === 'reject') { var p = sheetCell(prev, sheet, a); return hasContent(p) ? p : null; }
       if (d && d.m === 'custom') {
-        var pi = parseInput(d.v);
-        if (!pi) return null;
-        pi.s = c ? c.s : 0; pi.a = a; pi.custom = true;
-        var pa = Xl.parseAddr(a); pi.r = pa.r; pi.c = pa.c;
-        return pi;
+        if (memo[k] !== undefined) return memo[k];
+        if (busy[k]) return { k: 'e', v: '#REF!', f: null, a: a, custom: true, circular: true };
+        busy[k] = true;
+        try { memo[k] = customCell(sheet, a, d.v); } finally { busy[k] = false; }
+        return memo[k];
       }
       return hasContent(c) ? c : null;
     }
     function val(sheet, a) { var c = eff(sheet, a); if (!c || c.k === '') return null; return c.k === 'e' ? { err: c.v } : c.v; }
     return {
-      eff: eff, val: val,
+      eff: eff, val: val, evalText: function (sheet, a, text) { return customCell(sheet, a, text); },
       num: function (sheet, a) { var v = val(sheet, a); return typeof v === 'number' ? v : null; },
       str: function (sheet, a) { var v = val(sheet, a); return v == null ? '' : (typeof v === 'object' ? v.err : String(v)); },
       prevCell: function (sheet, a) { var c = sheetCell(prev, sheet, a); return hasContent(c) ? c : null; },

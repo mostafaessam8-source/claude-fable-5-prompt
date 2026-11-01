@@ -9,10 +9,21 @@
 })(typeof self !== 'undefined' ? self : this, function (Xl, Diff) {
   'use strict';
 
+  /* functions added to Excel after 2007 are stored with an _xlfn. prefix */
+  var NEWFN = /(^|[^A-Za-z0-9_.])(XLOOKUP|XMATCH|CONCAT|TEXTJOIN|IFS|SWITCH|MAXIFS|MINIFS|IFNA)\(/gi;
+  function fileFormula(f) { return f.replace(NEWFN, function (_, pre, fn) { return pre + '_xlfn.' + fn.toUpperCase() + '('; }); }
+
   function cellXml(a, s, t) {
     var at = ' r="' + a + '"' + (s ? ' s="' + s + '"' : '');
     if (!t || (t.k === '' && t.f == null)) return '<c' + at + '/>';
-    if (t.f != null) return '<c' + at + '><f>' + Xl.esc(t.f) + '</f></c>';
+    if (t.f != null) { // formula, with its result cached when we know it (Excel recalculates on open anyway)
+      var f = '<f>' + Xl.esc(fileFormula(t.f)) + '</f>';
+      if (t.k === 'n') return '<c' + at + '>' + f + '<v>' + String(t.v) + '</v></c>';
+      if (t.k === 's') return '<c' + at + ' t="str">' + f + '<v>' + Xl.esc(t.v) + '</v></c>';
+      if (t.k === 'b') return '<c' + at + ' t="b">' + f + '<v>' + (t.v ? 1 : 0) + '</v></c>';
+      if (t.k === 'e') return '<c' + at + ' t="e">' + f + '<v>' + Xl.esc(t.v) + '</v></c>';
+      return '<c' + at + '>' + f + '</c>';
+    }
     if (t.k === 'n') return '<c' + at + '><v>' + String(t.v) + '</v></c>';
     if (t.k === 'b') return '<c' + at + ' t="b"><v>' + (t.v ? 1 : 0) + '</v></c>';
     if (t.k === 'e') return '<c' + at + ' t="e"><v>' + Xl.esc(t.v) + '</v></c>';
@@ -45,7 +56,7 @@
         var ca = Xl.attrs(cm[1]);
         cells.push({ c: Xl.parseAddr(ca.r).c, a: ca.r, s: ca.s, xml: cm[0] });
       }
-      cells.forEach(function (c) { if (c.a === p.a) { c.xml = cellXml(p.a, p.s != null && !c.s ? p.s : c.s, p.t); found = true; } });
+      cells.forEach(function (c) { if (c.a === p.a) { c.xml = cellXml(p.a, p.forceS ? p.s : (p.s != null && !c.s ? p.s : c.s), p.t); found = true; } });
       if (!found) cells.push({ c: pa.c, a: p.a, xml: cellXml(p.a, p.s, p.t) });
       cells.sort(function (u, v) { return u.c - v.c; });
       row.body = cells.map(function (c) { return c.xml; }).join('');
@@ -56,6 +67,16 @@
     return xml.slice(0, m.index) + sd + xml.slice(m.index + m[0].length);
   }
 
+  /* A copy of cell style `base` with the date number format (id 14); returns its index. */
+  function dateStyle(stylesXml, base) {
+    var m = /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/.exec(stylesXml);
+    if (!m) return null;
+    var xfs = m[1].match(/<xf\b[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g) || [], src = xfs[base || 0] || xfs[0];
+    if (!src) return null;
+    var nx = src.replace(/\snumFmtId="\d+"/, '').replace(/\sapplyNumberFormat="\d+"/, '').replace(/^<xf\b/, '<xf numFmtId="14" applyNumberFormat="1"');
+    var all = m[0].replace(/<cellXfs\b([^>]*?)count="\d+"/, '<cellXfs$1count="' + (xfs.length + 1) + '"').replace('</cellXfs>', nx + '</cellXfs>');
+    return { xml: stylesXml.replace(m[0], all), index: xfs.length };
+  }
   async function build(JSZip, curBytes, prev, cur, dec) {
     var view = Diff.makeView(prev, cur, dec), bySheet = {}, n = 0;
     Object.keys(dec).forEach(function (k) {
@@ -69,6 +90,15 @@
       n++;
     });
     var zip = await JSZip.loadAsync(curBytes);
+    // dates typed into cells that are not date-formatted get a date style (otherwise Excel shows the serial number)
+    var stylesXml = await Xl.readText(zip, 'xl/styles.xml'), dstyle = {}, stylesDirty = false;
+    for (var nm in bySheet) bySheet[nm].forEach(function (p) {
+      if (!(p.t && p.t.date && p.t.k === 'n' && p.t.f == null) || Xl.isDateCell({ k: 'n', v: p.t.v, s: p.s || 0 }, cur.styles)) return;
+      var base = p.s || 0;
+      if (dstyle[base] == null) { var r = dateStyle(stylesXml, base); if (r) { stylesXml = r.xml; dstyle[base] = r.index; stylesDirty = true; } else dstyle[base] = -1; }
+      if (dstyle[base] >= 0) { p.s = dstyle[base]; p.forceS = true; }
+    });
+    if (stylesDirty) zip.file('xl/styles.xml', stylesXml);
     for (var name in bySheet) {
       var sh = cur.byName[name], xml = await Xl.readText(zip, sh.path);
       zip.file(sh.path, patchSheet(xml, bySheet[name], sh));

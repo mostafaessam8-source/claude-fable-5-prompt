@@ -47,7 +47,7 @@ main { padding: 0; }
 .error { background: #fdecea; color: var(--red); border-radius: 8px; padding: 10px 14px; }
 
 /* workspace */
-#app { display: grid; grid-template-columns: 230px minmax(0, 1fr) 390px; height: calc(100vh - 62px); }
+#app { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 28vw, 390px); height: calc(100vh - 62px); }
 .nav { overflow: auto; background: var(--card); border-inline-end: 1px solid var(--line); padding: 8px 0; }
 .nav button { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; border: 0; background: none; padding: 7px 12px; color: var(--text); border-inline-start: 4px solid transparent; }
 .nav button:hover { background: var(--band); }
@@ -84,7 +84,7 @@ table.sheet th { background: #eef1f3; color: #66757d; font-weight: 600; font-siz
 table.sheet th.rh { left: 0; z-index: 4; top: auto; position: sticky; }
 table.sheet thead th.rh { z-index: 5; top: 0; }
 table.sheet td.wrap { white-space: pre-wrap; word-break: break-word; }
-table.sheet td { cursor: cell; position: relative; }
+table.sheet td { cursor: cell; }
 td.pending { background-image: linear-gradient(rgba(255,193,7,.5), rgba(255,193,7,.5)); box-shadow: inset 0 0 0 2px #e69a00; }
 td.accept { background-image: linear-gradient(rgba(76,175,80,.35), rgba(76,175,80,.35)); box-shadow: inset 0 0 0 2px #2e7d32; }
 td.reject { background-image: linear-gradient(rgba(30,111,217,.3), rgba(30,111,217,.3)); box-shadow: inset 0 0 0 2px #1e6fd9; }
@@ -158,9 +158,95 @@ td.sel { outline: 3px solid #111 !important; outline-offset: -2px; z-index: 2; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #263238; color: #fff; padding: 9px 16px; border-radius: 8px; z-index: 50; box-shadow: var(--shadow); max-width: 90vw; }
 
 @media (max-width: 1100px) {
-  #app { grid-template-columns: 180px minmax(0, 1fr); height: auto; }
+  #app { grid-template-columns: minmax(0, 1fr); height: auto; }
   .side { grid-column: 1 / -1; min-height: 360px; }
   .grid-wrap { max-height: 70vh; }
   .two { grid-template-columns: 1fr; }
 }
 @media print { .top, .nav, .side, .toolbar, .legend { display: none; } #app { display: block; height: auto; } }
+
+/* range selection */
+td.rng::before { content: ""; position: absolute; inset: 0; background: rgba(0,119,139,.2); border: 1px solid rgba(0,119,139,.65); pointer-events: none; z-index: 1; }
+table.sheet td { user-select: none; }
+.selbox { background: var(--teal-s); border: 1px solid #9ec7cf; border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; font-size: 13px; }
+.selbox .btnrow { margin: 8px 0 0; }
+
+/* ruler */
+.band { position: absolute; pointer-events: none; z-index: 2; display: none; }
+.band.selH, .band.selV { background: rgba(0,119,139,.10); border: 0 solid rgba(0,119,139,.6); }
+.band.selH { border-top-width: 1px; border-bottom-width: 1px; }
+.band.selV { border-left-width: 1px; border-right-width: 1px; }
+.band.hovH, .band.hovV { background: rgba(230,154,0,.09); border: 0 solid rgba(230,154,0,.45); }
+.band.hovH { border-top-width: 1px; border-bottom-width: 1px; }
+.band.hovV { border-left-width: 1px; border-right-width: 1px; }
+table.sheet th.hl { background: #bfe0e7 !important; color: #004a58; }
+.preview { min-height: 20px; margin: 4px 0; font-size: 13px; }
+.preview .warn { color: #8a5a00; } .preview .bad { color: var(--red); }
+
+/* ---- Excel look ---- */
+[hidden] { display: none !important; }
+.fbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #f3f3f3; border-bottom: 1px solid #d4d4d4; }
+.fbar .namebox { width: 96px; border: 1px solid #c6c6c6; background: #fff; padding: 3px 6px; font: 13px Calibri, Carlito, "Segoe UI", sans-serif; text-align: center; }
+.fbar .fx { color: #6b6b6b; font-style: italic; font-weight: 700; padding: 0 4px; border-inline-start: 1px solid #c6c6c6; border-inline-end: 1px solid #c6c6c6; }
+.fbar .fbin { flex: 1; min-width: 0; border: 1px solid #c6c6c6; background: #fff; padding: 3px 8px; font: 14px Consolas, "Segoe UI", monospace; }
+.fbar .fbin:focus, .fbar .namebox:focus { border-color: #217346; outline: 1px solid #217346; }
+.fbar .fres { font-size: 12.5px; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #445; }
+.fbar .fres .warn { color: #8a5a00; } .fbar .fres .bad { color: var(--red); }
+.grid-wrap { scroll-padding: 26px 48px; }
+table.sheet { font-size: 14.67px; font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif; }
+table.sheet td { padding: 0 2px; border: 1px solid #d4d4d4; text-overflow: clip; line-height: 1.2; }
+table.sheet td .c { overflow: hidden; }
+table.sheet th { background: #e6e6e6; border: 1px solid #ababab; color: #444; font-weight: 400; font-size: 12px; }
+table.sheet th.rh { width: 44px; min-width: 44px; }
+table.sheet th.hl { background: #d2e5d9 !important; color: #1d6f42; font-weight: 700; border-bottom: 2px solid #217346; }
+table.sheet th.rh.hl { border-bottom: 1px solid #ababab; border-right: 2px solid #217346; }
+.grid-wrap.nogrid table.sheet td { border-color: transparent; }
+td.sel { outline: 2px solid #217346 !important; outline-offset: -1px; }
+td.pt { outline: 2px dashed #217346 !important; outline-offset: -2px; background-image: linear-gradient(rgba(33,115,70,.12), rgba(33,115,70,.12)); }
+.band.selH, .band.selV { background: rgba(33,115,70,.07); border-color: rgba(33,115,70,.55); }
+/* sheet tabs at the bottom, like Excel */
+.center .nav { display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; background: #f3f3f3; border-top: 1px solid #c6c6c6; border-inline-end: 0; padding: 0 4px; flex: none; }
+.center .nav button { width: auto; flex: none; max-width: 230px; padding: 6px 12px 3px; border: 0; border-bottom: 3px solid transparent; border-inline-start: 1px solid #d4d4d4; background: transparent; font-size: 13px; }
+.center .nav button:hover { background: #e6e6e6; }
+.center .nav button.on { background: #fff; color: #1d6f42; font-weight: 700; border-bottom-width: 3px; box-shadow: 0 -1px 0 #fff; }
+#zoom { padding: 3px 6px; }
+
+/* selection action bar + multi-select */
+.center { position: relative; }
+.selbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px; z-index: 20; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; background: #263238; color: #fff; padding: 7px 12px; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,.3); max-width: 96%; }
+.selbar .act { padding: 4px 12px; background: #fff; }
+.selbar .act.undo { background: transparent; color: #cfd8dc; border-color: #546e7a; }
+.selbar .n { margin-inline-end: 4px; }
+table.sheet thead th:not(.rh), table.sheet th.rh { cursor: pointer; }
+
+/* find-the-cell helpers */
+@keyframes flashcell { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,61,0,0); } 20%, 60% { box-shadow: 0 0 0 5px rgba(255,61,0,.75), 0 0 18px 6px rgba(255,61,0,.45); } 40%, 80% { box-shadow: 0 0 0 2px rgba(255,61,0,.9); } }
+td.flash { animation: flashcell 2.1s ease-out; z-index: 6 !important; outline: 3px solid #ff3d00 !important; outline-offset: -1px; }
+small.ctx { display: block; color: #78909c; font-size: 11.5px; margin: 1px 0 3px; }
+.panel h3 + small.ctx { margin: -4px 0 8px; font-size: 12.5px; }
+
+/* Excel-style selection: one tinted box with a thick border (no per-cell borders), no text selection while dragging */
+table.sheet, table.sheet th, table.sheet td { -webkit-user-select: none; user-select: none; }
+td.rng::before { display: none !important; }
+.selrect { position: absolute; pointer-events: none; z-index: 2; box-sizing: border-box; border: 2px solid #217346; background: rgba(33,115,70,.11); }
+.selrect::after { content: ""; position: absolute; right: -5px; bottom: -5px; width: 7px; height: 7px; background: #217346; border: 1px solid #fff; }
+
+/* the selection bar is a status bar under the sheet (reserved space): it never covers cells and never shifts the grid */
+.selbar { position: static !important; transform: none !important; left: auto; bottom: auto; flex: none; min-height: 46px; width: 100%; max-width: none; border-radius: 0; box-shadow: none; background: #eef3f5; color: var(--text); border-top: 1px solid #c6c6c6; justify-content: flex-start; padding: 6px 12px; }
+.selbar .n.muted { color: #66777f; font-size: 13px; }
+.selbar .act.undo { background: #fff; color: #546e7a; border-color: #b0bec5; }
+.selbar .act { padding: 4px 12px; }
+
+.selrect.nl { border-left-width: 0; } .selrect.nt { border-top-width: 0; } .selrect.nr { border-right-width: 0; } .selrect.nb { border-bottom-width: 0; }
+.selrect.nr::after, .selrect.nb::after { display: none; }
+
+/* highlighting a header must never change its size (border / font changes re-layout the whole table) */
+table.sheet th.hl { font-weight: 400 !important; border-bottom: 1px solid #ababab !important; border-right: 1px solid #ababab !important; background: #d2e5d9 !important; color: #1d6f42; box-shadow: inset 0 -2px 0 #217346; }
+table.sheet th.rh.hl { box-shadow: inset -2px 0 0 #217346; }
+
+/* the active cell frame is an overlay (no class on the td) */
+td.sel { outline: none !important; }
+.selcell { position: absolute; pointer-events: none; z-index: 2; box-sizing: border-box; border: 2px solid #217346; }
+
+/* only marked cells are positioned (for the checker triangle / flash): a positioned box on every one of ~10k cells makes layout and paint 4x slower */
+table.sheet td.iss-error, table.sheet td.iss-warn, table.sheet td.iss-info, table.sheet td.flash { position: relative; }

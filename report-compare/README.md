@@ -11,13 +11,34 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - **Review** – each changed cell is outlined in the sheet. *Keep* = this week's value stays. *Reject* = the cell goes back to
   **last week's** value in the final report. Or type your own value (number, `50%`, date `22/10/2026`, text, `=formula`; empty clears).
   Any cell can be edited, changed or not. Keys: `N`/`P` next/previous change, `I` next issue, `A` keep, `R` reject.
-- **Checker** – flags what does not make sense (red = error, orange = warning): last-week blocks that do not match last week's report,
-  cumulative values that go down, totals that do not add up, report date / project week / calendar week not advancing, forecast in the
-  past, dates in the wrong order, overdue items, text copied unchanged from last week, formula errors, numbers stored as text,
-  formulas overwritten by values, large jumps. It re-runs after every decision; most findings have a one-click fix.
-- **Download** – the file is **this week's original package** with only the rejected / edited cells rewritten, so charts, pictures,
-  formats and conditional formatting are untouched. Excel recalculates on open (`fullCalcOnLoad`); formula results shown by other
-  viewers may be stale until then. A CSV change log is also available. Pending changes stay as in this week's file.
+- **Formulas** – type an Excel formula (`=+D49+H50`, `=IF(B5>B6,"x","y")`, `='6. IPC Status'!C10/C8` …) in "Your own value": it is calculated at once
+  (live "Result" under the box), shown in the sheet, used by the checker and by other typed formulas, and written to the file as a real formula
+  with its result cached. Supported: arithmetic, `& = <> < >`, `%`, SUM AVERAGE MIN MAX COUNT COUNTA IF IFERROR IFNA AND OR NOT ROUND/UP/DOWN ABS INT MOD POWER SQRT
+  SUMIF COUNTIF SUMPRODUCT INDEX MATCH VLOOKUP XLOOKUP TEXT LEFT RIGHT MID LEN UPPER LOWER TRIM CONCAT(ENATE) DATE YEAR MONTH DAY WEEKDAY TODAY and more.
+  Any other function is still saved and Excel calculates it when the report is opened. Formulas already in the report that depend on a changed cell are
+  refreshed by Excel on open (the web view keeps their old results).
+- **Excel look** – the sheet opens like in Excel: name box, `ƒx` formula bar, column/row headers (highlighted for the selection), gridlines (hidden when the
+  sheet hides them), sheet tabs at the bottom in their own colours, and a zoom box. Column widths, row heights, fonts, fills, borders, merged cells and text
+  that spills into empty neighbours follow the file (a wrapped cell is clipped to its row height, as in Excel).
+  Name box: type `B5` or `B5:C9` + Enter. Arrow keys / Tab move (Shift extends), `F2`/Enter edits in the formula bar, double-click a cell edits it.
+- **Pick cells from the sheet** – while a formula is being typed (in the formula bar or "Your own value"), click a cell or drag a range in the sheet and its
+  reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
+- **Keyboard selection like Excel** – `Shift`+arrows extend, `Ctrl`+arrows jump to the edge of the filled block, `Ctrl`+`Shift`+arrows select up to it, `Ctrl`+`Space` selects the
+  column, `Shift`+`Space` the row, `Home` / `Ctrl`+`Home` go to the start of the row / the sheet (with `Shift` they select). Mouse: `Shift`+click extends, `Ctrl`+click adds,
+  `Ctrl`+`Shift`+click extends while keeping the other areas.
+- **Speed on big sheets** – the grid is indexed once per render; selection, the active-cell frame, the ruler and the checker marks are overlays / incremental updates, so moving
+  the selection never re-styles the table (only marked cells carry a `position`), and the ruler and selection boxes are clipped to the part of the sheet that is on screen.
+- **Find the cell** – clicking any item in the Changes or Checker list (or the name box) opens its sheet, scrolls the cell to the middle of the grid (and brings the
+  grid on screen in a narrow window) and flashes it. List items also show where the cell is: `← row label · ↑ column header`. The list keeps its scroll position
+  while you keep / reject items.
+- **Ruler** – a horizontal and a vertical band follow the selected cell/range (strong) and the mouse (light), and the row/column headers light up, so tables are easy
+  to follow. Toggle with the "ruler" box.
+- **Select several cells, then Keep or Reject** – drag a range, `Shift`+click to extend, **`Ctrl`+click** (Cmd on Mac) to add single cells or `Ctrl`+drag to add more ranges
+  (Ctrl+click a selected cell to remove it), click a column/row header to select it, `Ctrl+A` for the whole sheet, or type areas in the name box (`C7,K1:M1`).
+  The selection looks like Excel's (one thick green box per area; dragging never selects text and scrolls at the edges). A status bar under the sheet shows
+  "N changed cells selected · ✔ Keep · ↺ Reject · Undo" (keys `A` / `R`, `Esc` clears); it never covers cells. The same buttons are in the Cell tab.
+  Also: *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and *Keep / Reject all listed* in the Changes tab.
+  Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
 - The review is saved in the browser (per pair of files) and restored when the same two files are loaded again.
 
 ## Limits
@@ -26,8 +47,12 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - Checker rules are written for the NSR weekly report template (sheet names `1. Progress Status` … `10-13. Data Input`);
   the generic rules (errors, dates, text-as-number, formula overwritten, large jumps) apply to any workbook.
 
+## Versions
+The page header shows `Version X.Y · build <commit>`. Every update bumps the version and adds an entry to [`CHANGELOG.md`](CHANGELOG.md); the test fails if they differ.
+
 ## Files
 - `js/xl.js` – xlsx reader (values, formulas incl. shared formulas, styles, number formats, merges).
+- `js/formula.js` – the formula engine for typed formulas.
 - `js/diff.js` – comparison, typing rules, the view after decisions.
 - `js/checks.js` – the checker rules.
 - `js/writer.js` – patches this week's package, change log.

@@ -5,7 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = {
     slots: { prev: null, cur: null }, prev: null, cur: null, cmp: null, dec: {}, dismissed: {}, view: null, issues: [], issueMap: {},
-    sheet: '__overview', sel: null, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
+    sheet: '__overview', sel: null, range: null, extra: [], tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
   };
   var xfCache = {};
 
@@ -82,7 +82,8 @@
       if (f.b) css.push('font-weight:700');
       if (f.i) css.push('font-style:italic');
       if (f.u) css.push('text-decoration:underline');
-      if (f.sz && f.sz !== 11) css.push('font-size:' + Math.min(30, Math.round(f.sz * 1.18)) + 'px');
+      if (f.sz) css.push('font-size:' + (Math.min(40, f.sz) * 4 / 3).toFixed(2) + 'px');
+      if (f.name && !/^calibri$/i.test(f.name)) css.push('font-family:"' + f.name.replace(/"/g, '') + '",Calibri,Carlito,Arial,sans-serif');
       var al = x.h === 'centerContinuous' ? 'center' : (x.h === 'general' ? '' : x.h);
       if (al) css.push('text-align:' + al);
       if (x.v) css.push('vertical-align:' + (x.v === 'center' ? 'middle' : x.v));
@@ -91,11 +92,18 @@
     }
     return (xfCache[i] = css.join(';'));
   }
+  /* a date typed into a cell that is not date-formatted is shown (and written) as a date */
+  function fmtTyped(c) {
+    var probe = { k: c.k, v: c.v, s: c.s };
+    if (c.date && c.k === 'n' && !Xl.isDateCell(probe, S.cur.wb.styles)) return Xl.formatNumber(c.v, 'dd-mmm-yyyy');
+    return Xl.formatCell(probe, S.cur.wb.styles);
+  }
   function displayCell(sheet, a) {
     var ec = S.view.eff(sheet, a);
     if (!ec) return '';
+    if (ec.k === '' && ec.f != null) return 'ƒ ' + short(ec.f, 40);
     var cc = S.cur.wb.byName[sheet].cells.get(a);
-    return Xl.formatCell({ k: ec.k, v: ec.v, s: cc ? cc.s : 0 }, S.cur.wb.styles);
+    return fmtTyped({ k: ec.k, v: ec.v, s: cc ? cc.s : 0, date: ec.date });
   }
   function showCellVal(c, wb) { if (!c || (c.k === '' && c.f == null)) return ''; return Xl.formatCell(c, wb.styles); }
   function editText(c, sheet) {
@@ -113,18 +121,20 @@
   /* ---------- sheet grid ---------- */
   function colPx(sh) {
     var w = [], c;
-    for (c = 1; c <= sh.maxC; c++) w[c] = Math.round(sh.defW * 7 + 5);
-    sh.cols.forEach(function (d) { for (c = d.min; c <= Math.min(d.max, sh.maxC); c++) w[c] = d.hidden ? 0 : Math.round(d.w * 7 + 5); });
+    for (c = 1; c <= sh.maxC; c++) w[c] = Math.round(sh.defW * 7);
+    sh.cols.forEach(function (d) { for (c = d.min; c <= Math.min(d.max, sh.maxC); c++) w[c] = d.hidden ? 0 : Math.round(d.w * 7); });
     return w;
   }
   function renderGrid(name) {
     var sh = S.cur.wb.byName[name], w = colPx(sh), out = [], r, c;
     var top = {}, covered = {};
+    function rowH(r) { var q = sh.rows.get(r); return q && q.hidden ? 0 : Math.round(((q && q.ht) || sh.defH) * 4 / 3); }
     sh.merges.forEach(function (g) {
       top[Xl.addr(g.c1, g.r1)] = g;
       for (var rr = g.r1; rr <= g.r2; rr++) for (var cc = g.c1; cc <= g.c2; cc++) if (rr !== g.r1 || cc !== g.c1) covered[Xl.addr(cc, rr)] = true;
     });
-    out.push('<table class="sheet"><colgroup><col style="width:44px">');
+    var totalW = 44; for (c = 1; c <= sh.maxC; c++) totalW += w[c];
+    out.push('<table class="sheet" style="width:' + totalW + 'px"><colgroup><col style="width:44px">');
     for (c = 1; c <= sh.maxC; c++) out.push(w[c] ? '<col style="width:' + w[c] + 'px">' : '<col style="width:0">');
     out.push('</colgroup><thead><tr><th class="rh"></th>');
     for (c = 1; c <= sh.maxC; c++) if (w[c]) out.push('<th>' + Xl.numToCol(c) + '</th>'); else out.push('<th style="width:0;padding:0;border:0"></th>');
@@ -132,7 +142,7 @@
     for (r = 1; r <= sh.maxR; r++) {
       var ri = sh.rows.get(r);
       if (ri && ri.hidden) continue;
-      var ht = Math.round(((ri && ri.ht) || sh.defH) * 4 / 3);
+      var ht = rowH(r);
       out.push('<tr style="height:' + ht + 'px"><th class="rh">' + r + '</th>');
       for (c = 1; c <= sh.maxC; c++) {
         var a = Xl.addr(c, r);
@@ -141,13 +151,17 @@
         var g = top[a], span = g ? ' colspan="' + (g.c2 - g.c1 + 1) + '" rowspan="' + (g.r2 - g.r1 + 1) + '"' : '';
         var ec = S.view.eff(name, a), txt = ec ? displayCell(name, a) : '';
         var num = ec && ec.k === 'n' && !(xf && xf.h && xf.h !== 'general');
-        out.push('<td data-a="' + a + '"' + span + (xf && xf.wrap ? ' class="wrap"' : '') + ' style="' + xfCss(cell ? cell.s : 0) + (num ? ';text-align:right' : '') + '">' + h(txt) + '</td>');
+        var wrapCell = !!(xf && xf.wrap), inner = h(txt), extra = '';
+        if (wrapCell) { var hh = 0; if (g) { for (var q = g.r1; q <= g.r2; q++) hh += rowH(q); } else hh = ht; inner = '<div class="c" style="max-height:' + Math.max(8, hh - 2) + 'px">' + inner + '</div>'; }
+        else if (!g && ec && ec.k === 's' && (!xf || !xf.h || xf.h === 'general' || xf.h === 'left') && w[c + 1] && c < sh.maxC && !covered[Xl.addr(c + 1, r)] && !S.view.eff(name, Xl.addr(c + 1, r))) extra = ';overflow:visible;text-overflow:clip';   /* text spills into the empty cell on its right, as in Excel */
+        out.push('<td data-a="' + a + '"' + span + (wrapCell ? ' class="wrap"' : '') + ' style="' + xfCss(cell ? cell.s : 0) + (num ? ';text-align:right' : '') + extra + '">' + inner + '</td>');
       }
       out.push('</tr>');
     }
     out.push('</tbody></table>');
     return out.join('');
   }
+  function setTdText(td, t) { var c = td.firstChild && td.firstChild.nodeType === 1 && td.firstChild.className === 'c' ? td.firstChild : td; if (c.textContent !== t) c.textContent = t; }
   function cls(sheet, a) {
     var k = key(sheet, a), d = S.dec[k], ch = S.cmp.byKey[k], c = [];
     if (ch && !ch.auto) c.push(!d ? 'pending' : d.m === 'accept' ? 'accept' : d.m === 'reject' ? 'reject' : 'custom');
@@ -155,17 +169,89 @@
     else if (ch && ch.auto) c.push('auto');
     var is = S.issueMap[k];
     if (is) c.push('iss-' + (is.some(function (i) { return i.sev === 'error'; }) ? 'error' : is.some(function (i) { return i.sev === 'warn'; }) ? 'warn' : 'info'));
-    if (S.sel && S.sel.sheet === sheet && S.sel.a === a) c.push('sel');
     return c.join(' ');
   }
-  function paintMarks() {
-    if (S.sheet === '__overview') return;
-    var name = S.sheet, tds = $('gridWrap').querySelectorAll('td[data-a]');
-    for (var i = 0; i < tds.length; i++) {
-      var td = tds[i], a = td.getAttribute('data-a'), k = key(name, a), nc = cls(name, a);
-      if (td.className.replace('wrap', '').trim() !== nc) td.className = (td.classList.contains('wrap') ? 'wrap ' : '') + nc;
-      if (S.cmp.byKey[k] || S.dec[k]) { var t = displayCell(name, a); if (td.textContent !== t) td.textContent = t; }
+  /* ----- ruler: a horizontal and a vertical band follow the selection (strong) and the mouse (light) ----- */
+  var hoverTd = null, hoverRaf = 0;
+  function ensureBands() {
+    ['selH', 'selV', 'hovH', 'hovV'].forEach(function (n) { var d = document.createElement('div'); d.className = 'band ' + n; $('gridWrap').appendChild(d); });
+  }
+  /* The ruler bands are clipped to the part of the sheet that is on screen (a band as tall as a 800-row table makes the browser paint huge layers),
+     and re-placed when the sheet scrolls. */
+  function place(wrapRect, wrap, tbl, tds, hEl, vEl) {
+    var l = 1e9, t = 1e9, r = -1, b = -1;
+    tds.forEach(function (td) { var q = td.getBoundingClientRect(); l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom); });
+    if (r < 0) { hEl.style.display = vEl.style.display = 'none'; return; }
+    l = l - wrapRect.left + wrap.scrollLeft; r = r - wrapRect.left + wrap.scrollLeft; t = t - wrapRect.top + wrap.scrollTop; b = b - wrapRect.top + wrap.scrollTop;
+    var vl = wrap.scrollLeft, vt = wrap.scrollTop, vw = wrap.clientWidth, vh = wrap.clientHeight, ct = Math.max(t, vt), cb = Math.min(b, vt + vh), cl = Math.max(l, vl), cr = Math.min(r, vl + vw);
+    if (cb > ct) hEl.style.cssText = 'display:block;left:' + vl + 'px;width:' + vw + 'px;top:' + ct + 'px;height:' + (cb - ct) + 'px'; else hEl.style.display = 'none';
+    if (cr > cl) vEl.style.cssText = 'display:block;top:' + vt + 'px;height:' + vh + 'px;left:' + cl + 'px;width:' + (cr - cl) + 'px'; else vEl.style.display = 'none';
+  }
+  /* Index of the rendered grid: address -> td, row/column header cells. Built once per sheet render so that nothing has to search the DOM. */
+  var GRID = { tds: Object.create(null), rowTh: {}, colTh: {}, keys: [], marked: {}, hl: [], pt: [], prevSel: null };
+  function tdOf(a) { return GRID.tds[a] || null; }
+  function indexGrid(name) {
+    var wrap = $('gridWrap'), tbl = wrap.querySelector('table.sheet'), i;
+    GRID.tds = Object.create(null); GRID.rowTh = {}; GRID.colTh = {}; GRID.marked = {}; GRID.hl = []; GRID.pt = []; GRID.prevSel = null;
+    var tds = wrap.querySelectorAll('td[data-a]');
+    for (i = 0; i < tds.length; i++) GRID.tds[tds[i].getAttribute('data-a')] = tds[i];
+    if (tbl) {
+      var hc = tbl.tHead.rows[0].cells; for (i = 1; i < hc.length; i++) GRID.colTh[i] = hc[i];
+      var rows = tbl.tBodies[0].rows; for (i = 0; i < rows.length; i++) GRID.rowTh[parseInt(rows[i].firstChild.textContent, 10)] = rows[i].firstChild;
     }
+    GRID.keys = [];
+    S.cmp.changes.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
+    S.cmp.auto.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
+  }
+  /* first / last rendered cell of a rectangle (a merged-away corner is skipped) */
+  function cornerTd(g, rev) {
+    for (var i = 0; i <= Math.min(60, g.r2 - g.r1); i++) {
+      var r = rev ? g.r2 - i : g.r1 + i;
+      for (var j = 0; j <= Math.min(60, g.c2 - g.c1); j++) { var td = GRID.tds[Xl.addr(rev ? g.c2 - j : g.c1 + j, r)]; if (td) return td; }
+    }
+    return null;
+  }
+  function updateRuler() {
+    var wrap = $('gridWrap'), bands = wrap.querySelectorAll('.band');
+    if (S.sheet === '__overview' || bands.length < 4) return;
+    var tbl = wrap.querySelector('table.sheet'), on = $('optRuler').checked;
+    GRID.hl.forEach(function (t) { t.classList.remove('hl'); }); GRID.hl = [];
+    if (!on || !tbl || !S.sel || S.sel.sheet !== S.sheet) { bands[0].style.display = bands[1].style.display = 'none'; return; }
+    var g = S.range && S.range.sheet === S.sheet ? S.range : cellRect(S.sel.a), a = cornerTd(g, false), b = cornerTd(g, true);
+    if (!a || !b) { bands[0].style.display = bands[1].style.display = 'none'; return; }
+    place(wrap.getBoundingClientRect(), wrap, tbl, [a, b], bands[0], bands[1]);
+    var r, c;
+    for (r = g.r1; r <= Math.min(g.r2, g.r1 + 5000); r++) if (GRID.rowTh[r]) { GRID.rowTh[r].classList.add('hl'); GRID.hl.push(GRID.rowTh[r]); }
+    for (c = g.c1; c <= Math.min(g.c2, g.c1 + 500); c++) if (GRID.colTh[c]) { GRID.colTh[c].classList.add('hl'); GRID.hl.push(GRID.colTh[c]); }
+  }
+  function updateHover() {
+    hoverRaf = 0;
+    var wrap = $('gridWrap'), bands = wrap.querySelectorAll('.band'), tbl = wrap.querySelector('table.sheet');
+    if (bands.length < 4 || !tbl) return;
+    if (!hoverTd || !$('optRuler').checked) { bands[2].style.display = bands[3].style.display = 'none'; return; }
+    place(wrap.getBoundingClientRect(), wrap, tbl, [hoverTd], bands[2], bands[3]);
+  }
+  function paintMarks(withText) {
+    paintCells(withText); updateRuler(); paintSelRects();
+  }
+  /* Repaint only the cells that carry (or carried) a mark: changed cells, decisions, checker findings, the selection. Never the whole grid. */
+  function paintCells(withText) {
+    if (S.sheet === '__overview') return;
+    RECTS = selRects();
+    var name = S.sheet, todo = Object.create(null), i, a, prefix = name + '!';
+    GRID.keys.forEach(function (x) { todo[x] = 1; });
+    Object.keys(GRID.marked).forEach(function (x) { todo[x] = 1; });
+    Object.keys(S.dec).forEach(function (k) { if (k.indexOf(prefix) === 0) todo[k.slice(prefix.length)] = 1; });
+    S.issues.forEach(function (it) { if (it.sheet === name) todo[it.a] = 1; });
+    var marked = Object.create(null);
+    for (a in todo) {
+      var td = GRID.tds[a]; if (!td) continue;
+      var k = key(name, a), nc = cls(name, a);
+      if (td._nc !== nc) { td.className = (td.classList.contains('wrap') ? 'wrap ' : '') + nc; td._nc = nc; }
+      if (withText) setTdText(td, displayCell(name, a));   /* values only need refreshing after a decision / render, not when the selection moves */
+      if (nc) marked[a] = 1;
+    }
+    GRID.marked = marked; GRID.prevSel = S.sel && S.sel.sheet === name ? S.sel.a : null;
   }
 
   /* ---------- navigation ---------- */
@@ -179,25 +265,25 @@
     var out = ['<button type="button" data-s="__overview" class="' + (S.sheet === '__overview' ? 'on' : '') + '"><span class="nm">▦ Overview <span class="ar">ملخص</span></span></button>'];
     S.cur.wb.sheets.forEach(function (sh) {
       var st = sheetStats(sh.name), on = S.sheet === sh.name;
-      out.push('<button type="button" data-s="' + h(sh.name) + '" class="' + (on ? 'on ' : '') + (sh.state !== 'visible' ? 'hid' : '') + '" title="' + h(sh.name) + (sh.state !== 'visible' ? ' (hidden sheet)' : '') + '"><span class="nm">' + h(sh.name) + '</span>' +
+      out.push('<button type="button" data-s="' + h(sh.name) + '" class="' + (on ? 'on ' : '') + (sh.state !== 'visible' ? 'hid' : '') + '" style="border-bottom-color:' + (sh.tabColor || 'transparent') + '" title="' + h(sh.name) + (sh.state !== 'visible' ? ' (hidden sheet)' : '') + '"><span class="nm">' + h(sh.name) + '</span>' +
         (st.pending ? '<span class="pill ch" title="changes to review">' + st.pending + '</span>' : (st.changes ? '<span class="pill ok" title="all reviewed">✓</span>' : '')) +
         (st.err ? '<span class="pill er" title="checker errors">' + st.err + '</span>' : '') + (st.warn ? '<span class="pill wr" title="checker warnings">' + st.warn + '</span>' : '') + '</button>');
     });
     $('nav').innerHTML = out.join('');
   }
   function showSheet(name, keepSel) {
-    S.sheet = name;
+    S.sheet = name; S.range = null; S.extra = [];
     if (!keepSel) S.sel = null;
     renderNav();
     var wrap = $('gridWrap'), isOv = name === '__overview';
     $('sheetTitle').innerHTML = isOv ? 'Overview <span class="ar">ملخص المراجعة</span>' : h(name);
-    ['btnPrevCh', 'btnNextCh', 'btnNextIss', 'btnAcceptSheet'].forEach(function (id) { $(id).hidden = isOv && id === 'btnAcceptSheet'; });
-    $('legend').hidden = isOv;
+    ['btnPrevCh', 'btnNextCh', 'btnNextIss', 'btnAcceptSheet', 'btnRejectSheet'].forEach(function (id) { $(id).hidden = isOv && /Sheet/.test(id); });
+    $('legend').hidden = isOv; $('fbar').hidden = isOv; $('zoom').hidden = isOv;
     if (isOv) { wrap.className = 'grid-wrap'; wrap.innerHTML = renderOverview(); }
     else {
       wrap.innerHTML = renderGrid(name);
-      wrap.className = 'grid-wrap' + ($('optAuto').checked ? '' : ' noauto') + ($('optIssues').checked ? '' : ' noiss');
-      paintMarks();
+      wrap.className = 'grid-wrap' + ($('optAuto').checked ? '' : ' noauto') + ($('optIssues').checked ? '' : ' noiss') + (S.cur.wb.byName[name].showGrid ? '' : ' nogrid');
+      indexGrid(name); ensureBands(); applyZoom(); paintMarks(true);
     }
     wrap.scrollTop = 0; wrap.scrollLeft = 0;
     refreshSide();
@@ -217,23 +303,49 @@
     o.push('<div class="btnrow"><button class="act accept" id="ovAccept" type="button">✔ Accept all remaining changes <span class="ar">وافق على الباقي</span></button><button class="act undo" id="ovReset" type="button">Reset all decisions <span class="ar">إلغاء كل القرارات</span></button></div>');
     o.push('<p class="note"><b>How it works · إزاي بتشتغل:</b> a changed cell is outlined in <b>amber</b>. <b>Keep</b> = the new value stays; <b>Reject</b> = the cell goes back to last week’s value in the final report; or type your own value. Pending cells are kept as in this week’s file. Formula results are recalculated by Excel when you open the downloaded file. Charts, pictures and formatting are not touched. <span class="ar">الخلية المتغيرة بتتلون برتقالي. وافق = القيمة الجديدة تفضل · ارفض = ترجع لقيمة الأسبوع الماضي · أو اكتب قيمتك. اللي مش هتراجعه بيفضل زي ما هو في ملف الأسبوع الحالي.</span></p>');
     if (S.cmp.onlyCur.length || S.cmp.onlyPrev.length) o.push('<p class="note">Sheets not in both files: ' + h(S.cmp.onlyCur.concat(S.cmp.onlyPrev).join(', ')) + ' (not compared). <span class="ar">شيتات مش موجودة في الملفين.</span></p>');
-    o.push('<table class="ovt"><tr><th>Sheet · الشيت</th><th>Changes</th><th>To review</th><th>Errors</th><th>Warnings</th><th>Auto</th></tr>');
+    o.push('<table class="ovt"><tr><th>Sheet · الشيت</th><th>Changes</th><th>To review</th><th>Errors</th><th>Warnings</th><th>Auto</th><th>Decide for the whole sheet · قرار للشيت كله</th></tr>');
     S.cur.wb.sheets.forEach(function (sh) {
       var st = sheetStats(sh.name), info = S.cmp.sheets[sh.name] || { auto: 0 };
-      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (sh.state !== 'visible' ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td></tr>');
+      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (sh.state !== 'visible' ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td><td class="n">' + (st.changes ? '<button class="mini fix" data-bulk="accept" data-sheet="' + h(sh.name) + '" type="button">✔ Keep all</button> <button class="mini" data-bulk="reject" data-sheet="' + h(sh.name) + '" type="button">↺ Reject all</button>' : '') + '</td></tr>');
     });
     o.push('</table></div>');
     return o.join('');
   }
 
   function selectCell(sheet, a, scroll) {
+    S.range = null; S.extra = [];
     if (S.sheet !== sheet) { S.sel = { sheet: sheet, a: a }; showSheet(sheet, true); }
     else { S.sel = { sheet: sheet, a: a }; paintMarks(); refreshSide(); }
     if (scroll !== false) {
-      var td = $('gridWrap').querySelector('td[data-a="' + a + '"]');
-      if (td) td.scrollIntoView({ block: 'center', inline: 'center' });
+      var td = tdOf(a);
+      if (td) revealCell(td, scroll === 'nearest');
     }
   }
+  /* Bring the cell into view inside the sheet (centred), make sure the sheet itself is on screen, and flash the cell so the eye finds it. */
+  function revealCell(td, nearest) {
+    var wrap = $('gridWrap');
+    if (nearest) td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    else {
+      var wr = wrap.getBoundingClientRect(), tr = td.getBoundingClientRect();
+      wrap.scrollTo({ left: Math.max(0, wrap.scrollLeft + tr.left - wr.left - (wr.width - tr.width) / 2), top: Math.max(0, wrap.scrollTop + tr.top - wr.top - (wr.height - tr.height) / 2) });
+      var pr = wrap.getBoundingClientRect();
+      if (pr.bottom < 120 || pr.top > window.innerHeight - 120) wrap.scrollIntoView({ block: 'start' });   /* stacked (narrow) layout: the sheet is off-screen */
+    }
+    td.classList.remove('flash'); void td.offsetWidth; td.classList.add('flash');
+    clearTimeout(revealCell.t); revealCell.t = setTimeout(function () { td.classList.remove('flash'); }, 2200);
+  }
+  /* what row / column a cell belongs to: the first filled cell to its left, and the nearest bold/filled text above it */
+  function cellCtx(sheet, a) {
+    var sh = S.cur.wb.byName[sheet]; if (!sh) return '';
+    var p = Xl.parseAddr(a), st = S.cur.wb.styles, row = '', col = '', c, r, ec;
+    for (c = 1; c < p.c; c++) { var ad = Xl.addr(c, p.r); ec = S.view.eff(sheet, ad); if (ec && ec.k !== '' && String(ec.v).trim() !== '') { row = displayCell(sheet, ad); break; } }
+    for (r = p.r - 1; r >= Math.max(1, p.r - 80); r--) {
+      var cc = sh.cells.get(Xl.addr(p.c, r));
+      if (cc && cc.k === 's' && cc.v.trim()) { var xf = st.xfs[cc.s]; if (xf && ((xf.font && xf.font.b) || xf.fill)) { col = cc.v.trim().replace(/\s+/g, ' '); break; } }
+    }
+    return [row && ('← ' + short(row, 30)), col && ('↑ ' + short(col, 30))].filter(Boolean).join('  ·  ');
+  }
+  function ctxHtml(sheet, a) { var t = cellCtx(sheet, a); return t ? '<small class="ctx">' + h(t) + '</small>' : ''; }
   function jump(list, dir) {
     if (!list.length) { toast('Nothing to jump to. (مفيش حاجة)'); return; }
     var idx = -1;
@@ -250,7 +362,7 @@
   }
 
   /* ---------- decisions ---------- */
-  function afterChange() { save(); recompute(); renderNav(); paintMarks(); refreshSide(); if (S.sheet === '__overview') $('gridWrap').innerHTML = renderOverview(); }
+  function afterChange() { save(); recompute(); renderNav(); paintMarks(true); refreshSide(); if (S.sheet === '__overview') $('gridWrap').innerHTML = renderOverview(); }
   function setDec(sheet, a, m, v, advance) {
     var k = key(sheet, a);
     if (!m) delete S.dec[k]; else S.dec[k] = m === 'custom' ? { m: m, v: v } : { m: m };
@@ -263,14 +375,117 @@
     S.cmp.changes.forEach(function (ch) { if ((!sheet || ch.sheet === sheet) && !S.dec[ch.id]) { S.dec[ch.id] = { m: 'accept' }; n++; } });
     afterChange(); toast(n + ' change(s) accepted. (' + n + ' تغيير اتوافق عليه)');
   }
+  /* Bulk keep / reject. Earlier keep/reject decisions are overwritten; the reviewer's own typed values are never touched. */
+  function bulk(list, m) {
+    var n = 0, skipped = 0;
+    list.forEach(function (ch) { var d = S.dec[ch.id]; if (d && d.m === 'custom') { skipped++; return; } S.dec[ch.id] = { m: m }; n++; });
+    afterChange();
+    toast(n + ' change(s) ' + (m === 'accept' ? 'kept' : 'rejected → last week’s value') + (skipped ? ' · ' + skipped + ' of your own edits left as they are' : '') + '. (' + n + (m === 'accept' ? ' اتوافق عليها' : ' اترفضت') + ')', 5000);
+  }
+  function bulkSheet(sheet, m) {
+    var list = S.cmp.changes.filter(function (c) { return c.sheet === sheet; });
+    if (!list.length) { toast('No changes in this sheet. (مفيش تغييرات)'); return; }
+    if (m === 'reject' && !window.confirm('Reject all ' + list.length + ' change(s) in "' + sheet + '"? Every cell goes back to last week’s value (you can undo per cell, or use Start over).\n(ترفض كل التغييرات في الشيت دي وترجّعها لقيمة الأسبوع الماضي؟)')) return;
+    bulk(list, m);
+  }
+  /* ----- cell range selection (drag, or shift+click) ----- */
+  /* The selection = the active rectangle (S.range, or just S.sel) + S.extra: rectangles added with Ctrl+click / Ctrl+drag. */
+  var RECTS = [];
+  function inRect(g, r, c) { return r >= g.r1 && r <= g.r2 && c >= g.c1 && c <= g.c2; }
+  function rectOfAddrs(a1, a2) { var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2); return { sheet: S.sheet, r1: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
+  function cellRect(a) { var p = Xl.parseAddr(a); return { sheet: S.sheet, r1: p.r, r2: p.r, c1: p.c, c2: p.c }; }
+  function selRects() {
+    var out = S.extra.filter(function (g) { return g.sheet === S.sheet; });
+    if (S.extra.length) { if (S.range && S.range.sheet === S.sheet) out.push(S.range); else if (S.sel && S.sel.sheet === S.sheet) out.push(cellRect(S.sel.a)); }
+    else if (S.range && S.range.sheet === S.sheet) out.push(S.range);
+    return out;
+  }
+  function inRange(sheet, a) {
+    if (sheet !== S.sheet || !RECTS.length) return false;
+    var p = Xl.parseAddr(a); return RECTS.some(function (g) { return inRect(g, p.r, p.c); });
+  }
+  function setRange(a1, a2) {
+    var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2);
+    S.rangeEnd = a2;
+    S.range = (a1 === a2) ? null : { sheet: S.sheet, r1: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) };
+    paintRange();
+  }
+  function paintRange() { RECTS = selRects(); paintSelRects(); }
+  /* The selection is drawn like in Excel: one tinted box with a thick green border around each selected rectangle. */
+  function paintSelRects() {
+    var wrap = $('gridWrap');
+    wrap.querySelectorAll('.selrect, .selcell').forEach(function (n) { n.parentNode.removeChild(n); });
+    if (S.sheet === '__overview' || !wrap.querySelector('table.sheet')) return;
+    var wr = wrap.getBoundingClientRect();
+    /* the active cell: a green frame drawn on top (an overlay, so moving the selection never touches the table's own styles) */
+    var act = S.sel && S.sel.sheet === S.sheet ? tdOf(S.sel.a) : null;
+    if (act) { var q = act.getBoundingClientRect(), cd = document.createElement('div'); cd.className = 'selcell'; cd.style.cssText = 'left:' + (q.left - wr.left + wrap.scrollLeft - 1) + 'px;top:' + (q.top - wr.top + wrap.scrollTop - 1) + 'px;width:' + (q.width + 1) + 'px;height:' + (q.height + 1) + 'px'; wrap.appendChild(cd); }
+    var rects = selRects(); if (!rects.length) return;
+    rects.forEach(function (g) {
+      var a = cornerTd(g, false), b = cornerTd(g, true); if (!a || !b) return;
+      var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      var L = Math.min(ra.left, rb.left) - wr.left + wrap.scrollLeft - 1, T = Math.min(ra.top, rb.top) - wr.top + wrap.scrollTop - 1;
+      var R = Math.max(ra.right, rb.right) - wr.left + wrap.scrollLeft, B = Math.max(ra.bottom, rb.bottom) - wr.top + wrap.scrollTop, d = document.createElement('div');
+      var vl = wrap.scrollLeft - 40, vt = wrap.scrollTop - 40, vr = wrap.scrollLeft + wrap.clientWidth + 40, vb = wrap.scrollTop + wrap.clientHeight + 40;
+      var l2 = Math.max(L, vl), t2 = Math.max(T, vt), r2 = Math.min(R, vr), b2 = Math.min(B, vb);
+      if (r2 <= l2 || b2 <= t2) return;                                   /* off screen */
+      d.className = 'selrect' + (L < vl ? ' nl' : '') + (T < vt ? ' nt' : '') + (R > vr ? ' nr' : '') + (B > vb ? ' nb' : '');   /* a clipped side gets no border */
+      d.style.cssText = 'left:' + l2 + 'px;top:' + t2 + 'px;width:' + (r2 - l2) + 'px;height:' + (b2 - t2) + 'px';
+      wrap.appendChild(d);
+    });
+  }
+  function clearSelection() { S.range = null; S.extra = []; paintRange(); }
+  function describeSel() {
+    if (!S.sel) return '';
+    var rects = selRects(); if (!rects.length) return S.sel.a;
+    return rects.map(function (g) { return g.r1 === g.r2 && g.c1 === g.c2 ? Xl.addr(g.c1, g.r1) : Xl.addr(g.c1, g.r1) + ':' + Xl.addr(g.c2, g.r2); }).join(',');
+  }
+  /* changed cells inside the selection (or the single selected cell) */
+  function selectedChanges() {
+    var rects = selRects();
+    if (!rects.length) { if (!S.sel || S.sel.sheet !== S.sheet) return []; var ch = S.cmp.byKey[key(S.sel.sheet, S.sel.a)]; return ch && !ch.auto ? [ch] : []; }
+    return S.cmp.changes.filter(function (c) { return c.sheet === S.sheet && rects.some(function (g) { return inRect(g, c.r, c.c); }); });
+  }
+  function changesInRange() { return selectedChanges(); }
+  function selBlock() {
+    var rects = selRects(); if (!rects.length) return '';
+    var list = selectedChanges(), pend = list.filter(function (c) { return !S.dec[c.id]; }).length, dis = list.length ? '' : ' disabled';
+    var cells = rects.reduce(function (n, g) { return n + (g.r2 - g.r1 + 1) * (g.c2 - g.c1 + 1); }, 0);
+    return '<div class="selbox"><b>Selection ' + h(describeSel()) + '</b> <span class="ar">التحديد</span><br>' + cells + ' cell(s) · ' + list.length + ' changed, ' + pend + ' still to review <span class="ar">(' + list.length + ' خلية متغيرة)</span>' +
+      '<div class="btnrow"><button class="act accept" id="bSelAccept" type="button"' + dis + '>✔ Keep all <span class="ar">وافق على التحديد</span></button><button class="act reject" id="bSelReject" type="button"' + dis + '>↺ Reject all <span class="ar">ارفض التحديد</span></button><button class="act undo" id="bSelUndo" type="button"' + dis + '>Undo</button></div></div>';
+  }
+  /* floating action bar next to the sheet: appears whenever the selection contains changed cells */
+  function updateSelBar() {
+    var bar = $('selbar'), list = S.sheet === '__overview' ? [] : selectedChanges();
+    if (S.sheet === '__overview') { bar.hidden = true; return; }
+    bar.hidden = false;
+    if (!list.length) {
+      var cells = selRects().reduce(function (n, g) { return n + (g.r2 - g.r1 + 1) * (g.c2 - g.c1 + 1); }, 0);
+      bar.innerHTML = '<span class="n muted">' + (S.sel && S.sel.sheet === S.sheet ? 'Selected <b>' + h(describeSel()) + '</b>' + (cells > 1 ? ' · ' + cells + ' cells' : '') + ' · no changed cells in the selection' : 'Click a cell or drag to select · Ctrl+click adds · click a column/row header · Ctrl+A = all · Esc clears') + ' <span class="ar">لا توجد تغييرات في التحديد</span></span>';
+      return;
+    }
+    var pend = list.filter(function (c) { return !S.dec[c.id]; }).length;
+    bar.innerHTML = '<span class="n"><b>' + list.length + '</b> changed cell' + (list.length > 1 ? 's' : '') + ' selected · ' + pend + ' to review <span class="ar">محدد</span></span>' +
+      '<button class="act accept" data-selbar="accept" type="button">✔ Keep <span class="ar">وافق</span></button><button class="act reject" data-selbar="reject" type="button">↺ Reject <span class="ar">ارفض</span></button>' +
+      '<button class="act undo" data-selbar="undo" type="button">Undo</button><button class="act undo" data-selbar="clear" type="button" title="Clear the selection (Esc)">✕</button>';
+  }
+  function selBarAction(act) {
+    var list = selectedChanges();
+    if (act === 'clear') { clearSelection(); refreshSide(); return; }
+    if (!list.length) return;
+    if (act === 'undo') { list.forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
+    if (list.length === 1) setDec(list[0].sheet, list[0].a, act, null, true); else bulk(list, act);
+  }
 
   /* ---------- side panel ---------- */
   function refreshSide() {
+    updateFbar(); updateSelBar();
     var pend = S.counts.pending, er = S.issues.filter(function (i) { return i.sev === 'error'; }).length;
     $('cntChanges').textContent = pend || ''; $('cntChecks').textContent = er || '';
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === S.tab); });
-    var p = $('panel');
+    var p = $('panel'), keepTop = S.tab !== 'cell' && S.lastTab === S.tab ? p.scrollTop : 0;
     p.innerHTML = S.tab === 'cell' ? panelCell() : S.tab === 'changes' ? panelChanges() : panelChecks();
+    p.scrollTop = keepTop; S.lastTab = S.tab;
     var inp = $('custIn'); if (inp && S.focusEdit) { inp.focus(); inp.select(); S.focusEdit = false; }
   }
   function panelCell() {
@@ -279,7 +494,7 @@
     var pc = S.view.prevCell(sheet, a), cc = S.view.curCell(sheet, a), ec = S.view.eff(sheet, a);
     function cellTd(c, wb, extra) { var v = h(showCellVal(c, wb)); if (!v && !(c && c.f != null)) v = '<small>(empty · فاضي)</small>'; return '<td' + (extra || '') + '>' + v + (c && c.f != null ? '<span class="f">=' + h(short(c.f, 160)) + '</span>' : '') + '</td>'; }
     var kinds = { modified: 'Value changed', added: 'New entry', removed: 'Entry removed', formula: 'Formula changed', type: 'Formula ↔ typed value', auto: 'Auto-calculated result' };
-    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>'];
+    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>' + ctxHtml(sheet, a), selBlock()];
     if (ch) o.push('<p class="hint"><b>' + kinds[ch.kind] + '</b>' + (ch.auto ? ' — recalculated by Excel, no decision needed.' : '') + '</p>');
     else o.push('<p class="hint">No change in this cell this week. You can still edit it. <span class="ar">مفيش تغيير.</span></p>');
     var differs = ch && !ch.auto;
@@ -290,23 +505,26 @@
       '<button class="act reject' + (d && d.m === 'reject' ? ' on' : '') + '" id="bReject" type="button"' + (differs ? '' : ' disabled') + '>↺ Reject — last week’s <span class="ar">ارفض</span></button>' +
       (d ? '<button class="act undo" id="bUndo" type="button">Undo decision</button>' : '') + '</div>');
     o.push('<h4>Your own value · قيمتك</h4><div class="edit"><input id="custIn" type="text" value="' + h(d && d.m === 'custom' ? d.v : editText(ec, sheet)) + '" aria-label="New value for ' + a + '"><button id="bApply" type="button">Apply</button></div>' +
-      '<p class="hint">Type a number, <code>50%</code>, a date <code>22/10/2026</code>, text, or a formula starting with <code>=</code>. Leave empty to clear the cell. <span class="ar">اكتب رقم أو نسبة أو تاريخ أو نص أو معادلة.</span></p>');
+      '<p class="hint">Type a number, <code>50%</code>, a date <code>22/10/2026</code>, text, or a formula starting with <code>=</code>. Leave empty to clear the cell. <span class="ar">اكتب رقم أو نسبة أو تاريخ أو نص أو معادلة.</span></p><div class="preview" id="custPrev">' + previewText(d && d.m === 'custom' ? d.v : null) + '</div>');
     var is = S.issuesAll.filter(function (i) { return i.sheet === sheet && i.a === a; });
     if (is.length) { o.push('<h4>Checker · الفاحص</h4>'); is.forEach(function (i) { o.push(issueHtml(i, false)); }); }
     return o.join('');
   }
   function issueHtml(i, withLoc) {
     var dis = !!S.dismissed[i.id];
-    return '<div class="item' + (dis ? ' dim' : '') + '" data-sheet="' + h(i.sheet) + '" data-a="' + i.a + '" style="' + (dis ? 'opacity:.55' : '') + '"><span class="dot s-' + i.sev + '"></span><div class="body">' +
-      (withLoc ? '<span class="loc">' + h(i.sheet) + ' ▸ ' + i.a + '</span> ' : '') + '<span class="msg">' + h(i.en) + '</span><span class="msg ar">' + arHtml(i.ar) + '</span><div class="row">' +
+    var curI = S.sel && S.sel.sheet === i.sheet && S.sel.a === i.a;
+    return '<div class="item' + (dis ? ' dim' : '') + (curI ? ' cur' : '') + '" data-sheet="' + h(i.sheet) + '" data-a="' + i.a + '" style="' + (dis ? 'opacity:.55' : '') + '"><span class="dot s-' + i.sev + '"></span><div class="body">' +
+      (withLoc ? '<span class="loc">' + h(i.sheet) + ' ▸ ' + i.a + '</span> ' + ctxHtml(i.sheet, i.a) : '') + '<span class="msg">' + h(i.en) + '</span><span class="msg ar">' + arHtml(i.ar) + '</span><div class="row">' +
       (i.fix && !dis ? '<button class="mini fix" data-fix="' + h(i.id) + '" type="button">✔ ' + h(i.fix.label) + '</button>' : '') +
       '<button class="mini" data-dismiss="' + h(i.id) + '" type="button">' + (dis ? 'Restore' : 'Ignore') + '</button></div></div></div>';
   }
   var DOT = { pending: 'pending', accept: 'accept', reject: 'reject', custom: 'custom' };
+  function listedChanges() { return S.cmp.changes.filter(function (c) { return (S.scope.changes === 'all' || c.sheet === S.sheet) && (!S.pendingOnly || !S.dec[c.id]); }); }
   function panelChanges() {
-    var sc = S.scope.changes, list = S.cmp.changes.filter(function (c) { return (sc === 'all' || c.sheet === S.sheet) && (!S.pendingOnly || !S.dec[c.id]); });
+    var sc = S.scope.changes, list = listedChanges();
     var o = ['<div class="btnrow"><button class="chip' + (sc === 'sheet' ? ' ok' : '') + '" data-scope="sheet" type="button">This sheet</button><button class="chip' + (sc === 'all' ? ' ok' : '') + '" data-scope="all" type="button">All sheets</button>' +
-      '<label class="chk"><input type="checkbox" id="optPend"' + (S.pendingOnly ? ' checked' : '') + '> to review only</label></div>'];
+      '<label class="chk"><input type="checkbox" id="optPend"' + (S.pendingOnly ? ' checked' : '') + '> to review only</label></div>',
+      '<div class="btnrow"><button class="act accept" data-bulkl="accept" type="button">✔ Keep all listed (' + list.length + ')</button><button class="act reject" data-bulkl="reject" type="button">↺ Reject all listed</button></div>'];
     if (!list.length) { o.push('<div class="empty">' + (S.sheet === '__overview' && sc === 'sheet' ? 'Pick a sheet, or switch to “All sheets”.' : 'No changes here. (مفيش تغييرات)') + '</div>'); return o.join(''); }
     var lastSheet = null;
     list.slice(0, 400).forEach(function (c) {
@@ -315,7 +533,7 @@
       var pv = showCellVal(c.prev, S.prev.wb) || '(empty)', cv = showCellVal(c.cur, S.cur.wb) || '(empty)';
       if (c.prev && c.prev.f != null && c.kind === 'formula') { pv = '=' + c.prev.f; cv = '=' + (c.cur && c.cur.f); }
       var on = S.sel && S.sel.sheet === c.sheet && S.sel.a === c.a;
-      o.push('<div class="item' + (on ? ' cur' : '') + '" data-sheet="' + h(c.sheet) + '" data-a="' + c.a + '"><span class="dot ' + st + '"></span><div class="body"><span class="loc">' + c.a + '</span> ' + h(short(pv, 38)) + ' <span class="arrow">→</span> <b>' + h(short(cv, 38)) + '</b>' +
+      o.push('<div class="item' + (on ? ' cur' : '') + '" data-sheet="' + h(c.sheet) + '" data-a="' + c.a + '"><span class="dot ' + st + '"></span><div class="body"><span class="loc">' + c.a + '</span> ' + h(short(pv, 38)) + ' <span class="arrow">→</span> <b>' + h(short(cv, 38)) + '</b>' + ctxHtml(c.sheet, c.a) +
         '<div class="row"><button class="mini fix" data-act="accept" data-k="' + h(c.id) + '" type="button">✔ Keep</button><button class="mini" data-act="reject" data-k="' + h(c.id) + '" type="button">↺ Reject</button></div></div></div>');
     });
     if (list.length > 400) o.push('<p class="hint">Showing the first 400 of ' + list.length + ' changes — use “to review only”, or Accept all in sheet.</p>');
@@ -355,14 +573,78 @@
 
   /* ---------- events ---------- */
   function wire() {
-    $('nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-s]'); if (b) showSheet(b.getAttribute('data-s')); });
+    $('nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-s]'); if (b) showSheet(b.getAttribute('data-s'), !!pointInput() || S.editing); });
+    $('nav').addEventListener('mousedown', function (e) { if (pointInput()) e.preventDefault(); });
     $('gridWrap').addEventListener('click', function (e) {
+      var bb = e.target.closest('[data-bulk]'); if (bb) { bulkSheet(bb.getAttribute('data-sheet'), bb.getAttribute('data-bulk')); return; }
       var tr = e.target.closest('tr.go'); if (tr) { showSheet(tr.getAttribute('data-s')); return; }
       if (e.target.id === 'ovAccept') { acceptAll(); return; }
       if (e.target.id === 'ovReset') { if (window.confirm('Remove all your decisions and edits?\n(تمسح كل قراراتك وتعديلاتك؟)')) { S.dec = {}; S.dismissed = {}; afterChange(); } return; }
-      var td = e.target.closest('td[data-a]'); if (td) { S.sel = { sheet: S.sheet, a: td.getAttribute('data-a') }; paintMarks(); S.tab = 'cell'; refreshSide(); }
     });
-    $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td) { S.tab = 'cell'; S.focusEdit = true; refreshSide(); } });
+    var drag = false;
+    $('gridWrap').addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      var th = e.target.closest('th');
+      if (th && !pointInput() && S.sheet !== '__overview') {   /* click a column / row header: select the whole column / row */
+        var shh = S.cur.wb.byName[S.sheet], multiH = e.ctrlKey || e.metaKey, ha1, ha2;
+        if (th.parentNode.parentNode.tagName === 'THEAD' && th.cellIndex > 0) { ha1 = Xl.addr(th.cellIndex, 1); ha2 = Xl.addr(th.cellIndex, shh.maxR); }
+        else if (th.classList.contains('rh') && /^\d+$/.test(th.textContent)) { ha1 = Xl.addr(1, +th.textContent); ha2 = Xl.addr(shh.maxC, +th.textContent); }
+        if (ha1) {
+          if (multiH && S.sel && S.sel.sheet === S.sheet) S.extra.push(S.range || cellRect(S.sel.a)); else if (!e.shiftKey) S.extra = [];
+          S.sel = { sheet: S.sheet, a: ha1 }; setRange(ha1, ha2); S.tab = 'cell'; paintMarks(); refreshSide(); e.preventDefault(); return;
+        }
+      }
+      var td = e.target.closest('td[data-a]'); if (!td) return;
+      var a = td.getAttribute('data-a'), pin = pointInput();
+      if (pin) { S.pdrag = { sheet: S.sheet, a1: a }; pointInsert(pin, a, a, S.sheet); e.preventDefault(); return; }   /* editing a formula: the click inserts a reference */
+      if (e.shiftKey && S.sel && S.sel.sheet === S.sheet) setRange(S.sel.a, a);
+      else if ((e.ctrlKey || e.metaKey) && S.sel && S.sel.sheet === S.sheet) {   /* Ctrl+click / Ctrl+drag: add to the selection */
+        var pi = Xl.parseAddr(a), idx = -1;
+        S.extra.forEach(function (g, i) { if (g.sheet === S.sheet && g.r1 === pi.r && g.r2 === pi.r && g.c1 === pi.c && g.c2 === pi.c) idx = i; });
+        if (idx >= 0) { S.extra.splice(idx, 1); S.tab = 'cell'; paintMarks(); refreshSide(); }   /* Ctrl+click on a selected single cell removes it */
+        else { S.extra.push(S.range || cellRect(S.sel.a)); S.sel = { sheet: S.sheet, a: a }; S.range = null; drag = true; }
+        paintRange();
+      }
+      else { S.sel = { sheet: S.sheet, a: a }; S.range = null; S.extra = []; drag = true; paintRange(); }
+      e.preventDefault();
+    });
+    $('gridWrap').addEventListener('mouseover', function (e) {
+      var td = e.target.closest('td[data-a]');
+      if (td && td !== hoverTd) { hoverTd = td; if (!hoverRaf) hoverRaf = requestAnimationFrame(updateHover); }
+      if (S.pdrag && td && S.pdrag.sheet === S.sheet) { var pin2 = pointInput(); if (pin2) pointInsert(pin2, S.pdrag.a1, td.getAttribute('data-a'), S.sheet); }
+      if (drag && td) { setRange(S.sel.a, td.getAttribute('data-a')); updateRuler(); }
+    });
+    var scrollRaf = 0;
+    $('gridWrap').addEventListener('scroll', function () { if (scrollRaf) return; scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; updateRuler(); updateHover(); paintSelRects(); }); });
+    $('gridWrap').addEventListener('mouseleave', function () { hoverTd = null; updateHover(); });
+    $('optRuler').addEventListener('change', function () { updateRuler(); updateHover(); });
+    window.addEventListener('resize', function () { updateRuler(); });
+    /* a drag over the sheet selects cells, never text; dragging past an edge scrolls like Excel */
+    $('gridWrap').addEventListener('selectstart', function (e) { var n = e.target.nodeType === 3 ? e.target.parentNode : e.target; if (n && n.closest && n.closest('table.sheet')) e.preventDefault(); });
+    $('gridWrap').addEventListener('dragstart', function (e) { e.preventDefault(); });
+    var lastPt = null, dragTimer = null;
+    document.addEventListener('mousemove', function (e) {
+      if (!drag) return;
+      lastPt = { x: e.clientX, y: e.clientY };
+      if (!dragTimer) dragTimer = setInterval(function () {
+        if (!drag || !lastPt) return;
+        var wrap = $('gridWrap'), wr = wrap.getBoundingClientRect(), m = 26, dx = 0, dy = 0;
+        if (lastPt.x > wr.right - m) dx = Math.min(60, (lastPt.x - (wr.right - m)) / 2 + 10); else if (lastPt.x < wr.left + 44 + m) dx = -Math.min(60, ((wr.left + 44 + m) - lastPt.x) / 2 + 10);
+        if (lastPt.y > wr.bottom - m) dy = Math.min(60, (lastPt.y - (wr.bottom - m)) / 2 + 10); else if (lastPt.y < wr.top + 24 + m) dy = -Math.min(60, ((wr.top + 24 + m) - lastPt.y) / 2 + 10);
+        if (!dx && !dy) return;
+        wrap.scrollBy(dx, dy);
+        var el = document.elementFromPoint(Math.min(Math.max(lastPt.x, wr.left + 52), wr.right - 24), Math.min(Math.max(lastPt.y, wr.top + 30), wr.bottom - 24)), td = el && el.closest && el.closest('td[data-a]');
+        if (td) setRange(S.sel.a, td.getAttribute('data-a'));
+      }, 40);
+    });
+    document.addEventListener('mouseup', function () {
+      clearInterval(dragTimer); dragTimer = null; lastPt = null;
+      S.pdrag = null; if (!drag) return; drag = false;
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      S.tab = 'cell'; paintMarks(); refreshSide();
+    });
+    $('gridWrap').addEventListener('click', function (e) { if (e.shiftKey && e.target.closest('td[data-a]')) { S.tab = 'cell'; paintMarks(); refreshSide(); } });
+    $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td && !pointInput()) { $('fbIn').focus(); $('fbIn').select(); } });
     document.querySelector('.tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) { S.tab = t.getAttribute('data-tab'); refreshSide(); } });
     $('panel').addEventListener('click', function (e) {
       var t = e.target;
@@ -370,10 +652,15 @@
       if (fix) { var iss = S.issuesAll.filter(function (i) { return i.id === fix.getAttribute('data-fix'); })[0]; if (iss && iss.fix) { setDec(iss.sheet, iss.a, 'custom', iss.fix.text); toast('Fixed ' + iss.sheet + ' ▸ ' + iss.a); } return; }
       if (dis) { var id = dis.getAttribute('data-dismiss'); if (S.dismissed[id]) delete S.dismissed[id]; else S.dismissed[id] = 1; afterChange(); return; }
       if (act) { var ch = S.cmp.byKey[act.getAttribute('data-k')]; setDec(ch.sheet, ch.a, act.getAttribute('data-act'), null, false); return; }
+      var bl = t.closest('[data-bulkl]');
+      if (bl) { var ls = listedChanges(); if (!ls.length) return; if (bl.getAttribute('data-bulkl') === 'reject' && !window.confirm('Reject all ' + ls.length + ' listed change(s)?\n(ترفض كل التغييرات المعروضة؟)')) return; bulk(ls, bl.getAttribute('data-bulkl')); return; }
       if (sc) { S.scope.changes = sc.getAttribute('data-scope'); refreshSide(); return; }
       if (scc) { S.scope.checks = scc.getAttribute('data-scopec'); refreshSide(); return; }
       if (t.id === 'optPend') { S.pendingOnly = t.checked; refreshSide(); return; }
       if (t.id === 'optDis') { S.showDismissed = t.checked; refreshSide(); return; }
+      if (t.closest('#bSelAccept')) return bulk(changesInRange(), 'accept');
+      if (t.closest('#bSelReject')) return bulk(changesInRange(), 'reject');
+      if (t.closest('#bSelUndo')) { changesInRange().forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
       var sel = S.sel;
       if (t.closest('#bAccept')) return setDec(sel.sheet, sel.a, 'accept', null, true);
       if (t.closest('#bReject')) return setDec(sel.sheet, sel.a, 'reject', null, true);
@@ -382,31 +669,154 @@
       var item = t.closest('.item[data-a]');
       if (item && !t.closest('button')) selectCell(item.getAttribute('data-sheet'), item.getAttribute('data-a'));
     });
+    $('panel').addEventListener('input', function (e) { if (e.target.id === 'custIn') $('custPrev').innerHTML = previewText(e.target.value); });
     $('panel').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'custIn') applyCustom(); });
+    $('selbar').addEventListener('click', function (e) { var b = e.target.closest('[data-selbar]'); if (b) selBarAction(b.getAttribute('data-selbar')); });
+    $('selbar').addEventListener('mousedown', function (e) { e.preventDefault(); });
     $('btnNextCh').addEventListener('click', function () { jump(S.cmp.changes, 1); });
     $('btnPrevCh').addEventListener('click', function () { jump(S.cmp.changes, -1); });
     $('btnNextIss').addEventListener('click', function () { jump(S.issues, 1); });
-    $('btnAcceptSheet').addEventListener('click', function () { acceptAll(S.sheet); });
+    $('btnAcceptSheet').addEventListener('click', function () { bulkSheet(S.sheet, 'accept'); });
+    $('btnRejectSheet').addEventListener('click', function () { bulkSheet(S.sheet, 'reject'); });
     $('optAuto').addEventListener('change', function () { $('gridWrap').classList.toggle('noauto', !this.checked); });
     $('optIssues').addEventListener('change', function () { $('gridWrap').classList.toggle('noiss', !this.checked); });
     $('btnDownload').addEventListener('click', downloadReport);
     $('btnLog').addEventListener('click', function () { download(S.cur.name.replace(/\.(xlsx|xlsm)$/i, '') + '_change_log.csv', Writer.changeLog(S.cmp, S.dec, S.view, S.cur.wb.styles), 'text/csv;charset=utf-8'); });
     $('btnReset').addEventListener('click', function () { if (window.confirm('Close this comparison and choose new files?\n(الجلسة بتتحفظ تلقائيًا لنفس الملفين)')) location.reload(); });
     document.addEventListener('keydown', function (e) {
+      if (selectionKeys(e)) { e.preventDefault(); return; }
+      if (!$('app').hidden && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName || '') && S.sheet !== '__overview') {   /* Ctrl+A: select the whole sheet */
+        var sha = S.cur.wb.byName[S.sheet]; if (!S.sel || S.sel.sheet !== S.sheet) S.sel = { sheet: S.sheet, a: 'A1' };
+        S.extra = []; setRange('A1', Xl.addr(sha.maxC, sha.maxR)); S.tab = 'cell'; paintMarks(); refreshSide(); e.preventDefault(); return;
+      }
       if ($('app').hidden || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || '')) || e.ctrlKey || e.metaKey || e.altKey) return;
       var k = e.key.toLowerCase();
+      if (S.sheet !== '__overview' && S.sel && S.sel.sheet === S.sheet) {
+        var mv = { arrowup: [-1, 0], arrowdown: [1, 0], arrowleft: [0, -1], arrowright: [0, 1], tab: [0, e.shiftKey ? -1 : 1] }[k];
+        if (mv) { moveSel(mv[0], mv[1], e.shiftKey && k !== 'tab'); e.preventDefault(); return; }
+        if (k === 'f2' || k === 'enter') { $('fbIn').focus(); $('fbIn').select(); e.preventDefault(); return; }
+      }
       if (k === 'n') jump(S.cmp.changes, 1); else if (k === 'p') jump(S.cmp.changes, -1); else if (k === 'i') jump(S.issues, 1);
+      else if ((k === 'a' || k === 'r') && selRects().length && selectedChanges().length) bulk(selectedChanges(), k === 'a' ? 'accept' : 'reject');
+      else if (k === 'escape' && (S.range || S.extra.length)) { clearSelection(); refreshSide(); }
       else if ((k === 'a' || k === 'r') && S.sel && S.cmp.byKey[key(S.sel.sheet, S.sel.a)] && !S.cmp.byKey[key(S.sel.sheet, S.sel.a)].auto) setDec(S.sel.sheet, S.sel.a, k === 'a' ? 'accept' : 'reject', null, true);
       else return;
       e.preventDefault();
     });
   }
-  function applyCustom() {
-    var sel = S.sel, v = $('custIn').value, base = S.view.curCell(sel.sheet, sel.a);
+  /* ----- Excel-style bar: name box, formula bar, point mode, keyboard ----- */
+  function pointInput() {
+    var ae = document.activeElement;
+    return ae && (ae.id === 'fbIn' || ae.id === 'custIn') && /^\s*=/.test(ae.value) && S.edit ? ae : null;
+  }
+  function qsheet(n) { return /^[A-Za-z_][\w.]*$/.test(n) ? n : "'" + n.replace(/'/g, "''") + "'"; }
+  function pointInsert(inp, a1, a2, sheet) {
+    var ref = (a1 === a2 ? a1 : a1 + ':' + a2);
+    if (sheet !== S.edit.sheet) ref = qsheet(sheet) + '!' + ref;
+    var st = inp.selectionStart, en = inp.selectionEnd;
+    if (S.pt && S.pt.inp === inp && st === S.pt.end && en === S.pt.end) st = S.pt.start;   /* dragging replaces the reference just inserted */
+    inp.value = inp.value.slice(0, st) + ref + inp.value.slice(en);
+    var pos = st + ref.length; inp.setSelectionRange(pos, pos);
+    S.pt = { inp: inp, start: st, end: pos };
+    paintPoint(sheet, a1, a2);
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function paintPoint(sheet, a1, a2) {
+    GRID.pt.forEach(function (t) { t.classList.remove('pt'); }); GRID.pt = [];
+    if (!a1 || sheet !== S.sheet) return;
+    var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2), r1 = Math.min(p.r, q.r), r2 = Math.max(p.r, q.r), c1 = Math.min(p.c, q.c), c2 = Math.max(p.c, q.c);
+    for (var r = r1; r <= Math.min(r2, r1 + 400); r++) for (var c = c1; c <= Math.min(c2, c1 + 60); c++) { var td = GRID.tds[Xl.addr(c, r)]; if (td) { td.classList.add('pt'); GRID.pt.push(td); } }
+  }
+  function updateFbar() {
+    var ov = S.sheet === '__overview'; $('fbar').hidden = ov; if (ov) return;
+    var nb = $('nameBox'), fi = $('fbIn');
+    if (document.activeElement !== nb) nb.value = describeSel();
+    if (!S.editing && document.activeElement.id !== 'custIn') {
+      fi.disabled = !S.sel; fi.value = S.sel ? editText(S.view.eff(S.sel.sheet, S.sel.a), S.sel.sheet) : ''; $('fbRes').innerHTML = '';
+    }
+  }
+  function hasVal(r, c) { var e = S.view.eff(S.sheet, Xl.addr(c, r)); return !!e && (e.k !== '' || e.f != null); }
+  function moveSel(dr, dc, extend, edge) {
+    var sh = S.cur.wb.byName[S.sheet], base = extend && S.range ? Xl.parseAddr(S.rangeEnd) : Xl.parseAddr(S.sel.a), r = base.r, c = base.c, a, i;
+    function inB(rr, cc) { return rr >= 1 && cc >= 1 && rr <= sh.maxR && cc <= sh.maxC; }
+    if (edge) {                                   /* Ctrl+arrow: to the edge of the block of filled cells, or to the next filled cell */
+      if (hasVal(r, c) && inB(r + dr, c + dc) && hasVal(r + dr, c + dc)) { while (inB(r + dr, c + dc) && hasVal(r + dr, c + dc)) { r += dr; c += dc; } }
+      else { do { r += dr; c += dc; } while (inB(r, c) && !hasVal(r, c)); if (!inB(r, c)) { r = Math.min(Math.max(1, r), sh.maxR); c = Math.min(Math.max(1, c), sh.maxC); } }
+      a = Xl.addr(c, r);
+    } else {
+      for (i = 0; i < 60; i++) { r = Math.min(Math.max(1, r + dr), sh.maxR); c = Math.min(Math.max(1, c + dc), sh.maxC); a = Xl.addr(c, r); if (tdOf(a)) break; }
+    }
+    var td = tdOf(a); if (!td) return;
+    if (extend) { setRange(S.sel.a, a); S.tab = 'cell'; updateRuler(); refreshSide(); td.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+    else selectCell(S.sheet, a, 'nearest');
+  }
+  /* Excel keyboard selection: Ctrl+arrows (jump), Ctrl+Shift+arrows (select to the edge), Shift+arrows, Ctrl+Space / Shift+Space (column / row), Home, Ctrl+Home */
+  function selectionKeys(e) {
+    if ($('app').hidden || S.sheet === '__overview' || !S.sel || S.sel.sheet !== S.sheet || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName || '')) return false;
+    var sh = S.cur.wb.byName[S.sheet], ctrl = e.ctrlKey || e.metaKey, dirs = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }, p = Xl.parseAddr(S.sel.a), kk = e.key;
+    if (ctrl && dirs[kk]) { moveSel(dirs[kk][0], dirs[kk][1], e.shiftKey, true); return true; }
+    if (kk === ' ' && ctrl) { S.extra = []; setRange(Xl.addr(p.c, 1), Xl.addr(p.c, sh.maxR)); S.tab = 'cell'; paintMarks(); refreshSide(); return true; }
+    if (kk === ' ' && e.shiftKey) { S.extra = []; setRange(Xl.addr(1, p.r), Xl.addr(sh.maxC, p.r)); S.tab = 'cell'; paintMarks(); refreshSide(); return true; }
+    if (kk === 'Home') { var home = ctrl ? 'A1' : Xl.addr(1, p.r); if (e.shiftKey) { setRange(S.sel.a, home); S.tab = 'cell'; updateRuler(); refreshSide(); } else selectCell(S.sheet, home, 'nearest'); return true; }
+    return false;
+  }
+  function wireBar() {
+    var fi = $('fbIn'), nb = $('nameBox');
+    document.addEventListener('focusin', function (e) {
+      var id = e.target.id;
+      if ((id === 'fbIn' || id === 'custIn') && S.sel) { S.edit = { sheet: S.sel.sheet, a: S.sel.a }; S.pt = null; if (id === 'fbIn') S.editing = true; }
+    });
+    document.addEventListener('focusout', function (e) {
+      var id = e.target.id;
+      if (id === 'fbIn') S.editing = false;
+      if (id === 'fbIn' || id === 'custIn') paintPoint(null);
+    });
+    fi.addEventListener('input', function () { $('fbRes').innerHTML = S.edit ? previewText(fi.value) : ''; });
+    fi.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var t = S.edit; if (!t) return;
+        e.preventDefault(); paintPoint(null);
+        if (fi.value !== editText(S.view.eff(t.sheet, t.a), t.sheet)) applyCustom(t, fi.value);
+        S.editing = false; fi.blur(); updateFbar();
+        var p = Xl.parseAddr(t.a); selectCell(t.sheet, Xl.addr(p.c, p.r + 1), 'nearest');
+      } else if (e.key === 'Escape') { S.editing = false; paintPoint(null); fi.blur(); updateFbar(); }
+    });
+    nb.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var parts = nb.value.split(','), items = parts.map(function (x) { return /^\s*\$?([A-Za-z]+)\$?(\d+)(?::\$?([A-Za-z]+)\$?(\d+))?\s*$/.exec(x); });
+      if (S.sheet === '__overview' || !items.length || items.some(function (m) { return !m; })) { toast('Type a cell like B5, a range like B5:C9, or several separated by commas: B5,B8:C9. (اكتب خلية أو نطاق)'); return; }
+      var firstM = items[0], a1 = (firstM[1] + firstM[2]).toUpperCase();
+      selectCell(S.sheet, a1, true);
+      items.slice(1).forEach(function (m) { S.extra.push(rectOfAddrs((m[1] + m[2]).toUpperCase(), m[3] ? (m[3] + m[4]).toUpperCase() : (m[1] + m[2]).toUpperCase())); });
+      if (firstM[3]) setRange(a1, (firstM[3] + firstM[4]).toUpperCase());
+      S.tab = 'cell'; paintMarks(); refreshSide();
+      nb.blur();
+    });
+    $('zoom').addEventListener('change', applyZoom);
+  }
+  function applyZoom() { var t = $('gridWrap').querySelector('table.sheet'); if (t) { t.style.zoom = $('zoom').value; updateRuler(); paintSelRects(); } }
+
+  /* what the typed text will become: the result of a formula, or the type Excel will give it */
+  function previewText(text) {
+    var sel = S.sel; if (!sel || text == null || text === '') return '';
+    var c = S.view.evalText(sel.sheet, sel.a, text);
+    if (!c) return 'Empty — the cell will be cleared. <span class="ar">الخلية هتتفضّى.</span>';
+    var shown = c.k === '' ? '' : '<b>' + h(fmtTyped(c)) + '</b>';
+    if (c.f != null) {
+      if (c.syntax) return '<span class="bad">⚠ This formula could not be read — check brackets, commas and quotes.</span>';
+      if (c.unsupported) return '<span class="warn">⚠ ' + h(c.fn) + ' is not calculated in this preview. The formula is saved and Excel calculates it when you open the file.</span>';
+      return 'Result · النتيجة: ' + shown;
+    }
+    return 'Saved as ' + (c.k === 'n' ? (Xl.isDateCell({ k: 'n', v: c.v, s: c.s }, S.cur.wb.styles) || c.date ? 'date' : 'number') : c.k === 'b' ? 'TRUE/FALSE' : 'text') + ': ' + shown;
+  }
+  function applyCustom(target, text) {
+    var sel = target || S.sel, v = text != null ? text : $('custIn').value, base = S.view.curCell(sel.sheet, sel.a);
     if (v === editText(base, sel.sheet) && !S.dec[key(sel.sheet, sel.a)]) { toast('Same value as this week — nothing to apply. (نفس القيمة)'); return; }
+    var pv = /^\s*=./.test(v) ? S.view.evalText(sel.sheet, sel.a, v) : null;
+    if (pv && pv.syntax && !window.confirm('The preview cannot read this formula. If it is not valid Excel syntax, Excel may repair the file when you open it.\nSave it anyway?\n(المعادلة مش مفهومة للمعاينة — تحفظها برضه؟)')) return;
     setDec(sel.sheet, sel.a, 'custom', v);
     toast('Saved your value for ' + sel.a + '. Download the report to get it in the file. (اتحفظت)');
   }
 
-  wireDrop(); wire();
+  wireDrop(); wire(); wireBar();
 })();
