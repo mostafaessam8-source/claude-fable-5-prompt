@@ -11,6 +11,14 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - **Review** – each changed cell is outlined in the sheet. *Keep* = this week's value stays. *Reject* = the cell goes back to
   **last week's** value in the final report. Or type your own value (number, `50%`, date `22/10/2026`, text, `=formula`; empty clears).
   Any cell can be edited, changed or not. Keys: `N`/`P` next/previous change, `I` next issue, `A` keep, `R` reject.
+- **Formulas** – type an Excel formula (`=+D49+H50`, `=IF(B5>B6,"x","y")`, `='6. IPC Status'!C10/C8` …) in "Your own value": it is calculated at once
+  (live "Result" under the box), shown in the sheet, used by the checker and by other typed formulas, and written to the file as a real formula
+  with its result cached. Supported: arithmetic, `& = <> < >`, `%`, SUM AVERAGE MIN MAX COUNT COUNTA IF IFERROR IFNA AND OR NOT ROUND/UP/DOWN ABS INT MOD POWER SQRT
+  SUMIF COUNTIF SUMPRODUCT INDEX MATCH VLOOKUP XLOOKUP TEXT LEFT RIGHT MID LEN UPPER LOWER TRIM CONCAT(ENATE) DATE YEAR MONTH DAY WEEKDAY TODAY and more.
+  Any other function is still saved and Excel calculates it when the report is opened. Formulas already in the report that depend on a changed cell are
+  refreshed by Excel on open (the web view keeps their old results).
+- **Ruler** – a horizontal and a vertical band follow the selected cell/range (strong) and the mouse (light), and the row/column headers light up, so tables are easy
+  to follow. Toggle with the "ruler" box.
 - **Bulk decisions** – drag over cells (or click, then Shift+click) to select a range, then *Keep all* / *Reject all* for the changed
   cells inside it (also `A` / `R`). *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and
   *Keep / Reject all listed* in the Changes tab. Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
@@ -31,6 +39,7 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 
 ## Files
 - `js/xl.js` – xlsx reader (values, formulas incl. shared formulas, styles, number formats, merges).
+- `js/formula.js` – the formula engine for typed formulas.
 - `js/diff.js` – comparison, typing rules, the view after decisions.
 - `js/checks.js` – the checker rules.
 - `js/writer.js` – patches this week's package, change log.

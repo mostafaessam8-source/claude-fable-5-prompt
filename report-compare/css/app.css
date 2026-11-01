@@ -170,3 +170,15 @@ td.rng::before { content: ""; position: absolute; inset: 0; background: rgba(0,1
 table.sheet td { user-select: none; }
 .selbox { background: var(--teal-s); border: 1px solid #9ec7cf; border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; font-size: 13px; }
 .selbox .btnrow { margin: 8px 0 0; }
+
+/* ruler */
+.band { position: absolute; pointer-events: none; z-index: 2; display: none; }
+.band.selH, .band.selV { background: rgba(0,119,139,.10); border: 0 solid rgba(0,119,139,.6); }
+.band.selH { border-top-width: 1px; border-bottom-width: 1px; }
+.band.selV { border-left-width: 1px; border-right-width: 1px; }
+.band.hovH, .band.hovV { background: rgba(230,154,0,.09); border: 0 solid rgba(230,154,0,.45); }
+.band.hovH { border-top-width: 1px; border-bottom-width: 1px; }
+.band.hovV { border-left-width: 1px; border-right-width: 1px; }
+table.sheet th.hl { background: #bfe0e7 !important; color: #004a58; }
+.preview { min-height: 20px; margin: 4px 0; font-size: 13px; }
+.preview .warn { color: #8a5a00; } .preview .bad { color: var(--red); }

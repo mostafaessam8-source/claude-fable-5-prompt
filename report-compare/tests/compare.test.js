@@ -39,6 +39,20 @@ async function small() {
   assert.strictEqual(sh.cells.get('B1').v, 'mine');
   assert.strictEqual(sh.cells.get('C2').f, 'A2*3');
   assert.strictEqual(sh.cells.get('C3').f, 'A3*2', 'shared child kept its formula');
+  const dec2 = { 'S1!B1': { m: 'custom', v: '=SUM(A2:A3)*2+A1' }, 'S1!C1': { m: 'custom', v: '=XLOOKUP(5,A2:A3,A2:A3)' } };
+  const out2 = await Writer.build(JSZip, await cz.generateAsync({ type: 'uint8array' }), prev, cur, dec2);
+  const x2 = await JSZip.loadAsync(out2.bytes), xml2 = await x2.file('xl/worksheets/sheet1.xml').async('string');
+  assert(/<c r="B1"><f>SUM\(A2:A3\)\*2\+A1<\/f><v>24<\/v><\/c>/.test(xml2), 'typed formula is evaluated and its result cached: ' + xml2);
+  assert(/<f>_xlfn\.XLOOKUP\(5,A2:A3,A2:A3\)<\/f><v>5<\/v>/.test(xml2), 'new functions get the _xlfn. prefix');
+  assert.strictEqual(Diff.makeView(prev, cur, dec2).num('S1', 'B1'), 24);
+  // a typed date in a General cell gets a date style
+  const dz = tiny({ a: 1, b: 'x' });
+  dz.file('xl/styles.xml', '<?xml version="1.0"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>');
+  dz.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  const dbytes = await dz.generateAsync({ type: 'uint8array' }), dwb = await Xl.readWorkbook(await JSZip.loadAsync(dbytes));
+  const dout = await Writer.build(JSZip, dbytes, dwb, dwb, { 'S1!A1': { m: 'custom', v: '22/10/2026' } });
+  const dback = await Xl.readWorkbook(await JSZip.loadAsync(dout.bytes)), dc = dback.byName.S1.cells.get('A1');
+  assert.strictEqual(dc.v, 46317); assert(Xl.isDateCell(dc, dback.styles), 'typed date is shown as a date');
   assert.strictEqual(Diff.parseInput('50%').v, 0.5);
   assert.strictEqual(Diff.parseInput('1,250.5').v, 1250.5);
   assert.strictEqual(Diff.parseInput('22/10/2026').v, 46317);

@@ -91,11 +91,18 @@
     }
     return (xfCache[i] = css.join(';'));
   }
+  /* a date typed into a cell that is not date-formatted is shown (and written) as a date */
+  function fmtTyped(c) {
+    var probe = { k: c.k, v: c.v, s: c.s };
+    if (c.date && c.k === 'n' && !Xl.isDateCell(probe, S.cur.wb.styles)) return Xl.formatNumber(c.v, 'dd-mmm-yyyy');
+    return Xl.formatCell(probe, S.cur.wb.styles);
+  }
   function displayCell(sheet, a) {
     var ec = S.view.eff(sheet, a);
     if (!ec) return '';
+    if (ec.k === '' && ec.f != null) return 'ƒ ' + short(ec.f, 40);
     var cc = S.cur.wb.byName[sheet].cells.get(a);
-    return Xl.formatCell({ k: ec.k, v: ec.v, s: cc ? cc.s : 0 }, S.cur.wb.styles);
+    return fmtTyped({ k: ec.k, v: ec.v, s: cc ? cc.s : 0, date: ec.date });
   }
   function showCellVal(c, wb) { if (!c || (c.k === '' && c.f == null)) return ''; return Xl.formatCell(c, wb.styles); }
   function editText(c, sheet) {
@@ -159,7 +166,47 @@
     if (inRange(sheet, a)) c.push('rng');
     return c.join(' ');
   }
+  /* ----- ruler: a horizontal and a vertical band follow the selection (strong) and the mouse (light) ----- */
+  var hoverTd = null, hoverRaf = 0;
+  function ensureBands() {
+    ['selH', 'selV', 'hovH', 'hovV'].forEach(function (n) { var d = document.createElement('div'); d.className = 'band ' + n; $('gridWrap').appendChild(d); });
+  }
+  function place(wrapRect, wrap, tbl, tds, hEl, vEl) {
+    var l = 1e9, t = 1e9, r = -1, b = -1;
+    tds.forEach(function (td) { var q = td.getBoundingClientRect(); l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom); });
+    if (r < 0) { hEl.style.display = vEl.style.display = 'none'; return; }
+    l = l - wrapRect.left + wrap.scrollLeft; r = r - wrapRect.left + wrap.scrollLeft; t = t - wrapRect.top + wrap.scrollTop; b = b - wrapRect.top + wrap.scrollTop;
+    hEl.style.cssText = 'display:block;left:0;width:' + tbl.offsetWidth + 'px;top:' + t + 'px;height:' + (b - t) + 'px';
+    vEl.style.cssText = 'display:block;top:0;height:' + tbl.offsetHeight + 'px;left:' + l + 'px;width:' + (r - l) + 'px';
+  }
+  function updateRuler() {
+    var wrap = $('gridWrap'), bands = wrap.querySelectorAll('.band');
+    if (S.sheet === '__overview' || bands.length < 4) return;
+    var tbl = wrap.querySelector('table.sheet'), on = $('optRuler').checked;
+    wrap.querySelectorAll('th.hl').forEach(function (t) { t.classList.remove('hl'); });
+    if (!on || !tbl || !S.sel || S.sel.sheet !== S.sheet) { bands[0].style.display = bands[1].style.display = 'none'; return; }
+    var tds = [];
+    if (S.range && S.range.sheet === S.sheet) wrap.querySelectorAll('td.rng').forEach(function (t) { tds.push(t); });
+    if (!tds.length) { var one = wrap.querySelector('td[data-a="' + S.sel.a + '"]'); if (one) tds.push(one); }
+    place(wrap.getBoundingClientRect(), wrap, tbl, tds, bands[0], bands[1]);
+    var head = tbl.tHead.rows[0], seenR = {}, seenC = {};
+    tds.forEach(function (td) {
+      var p = Xl.parseAddr(td.getAttribute('data-a')), ri = td.parentNode.firstChild;
+      if (!seenR[p.r]) { seenR[p.r] = 1; ri.classList.add('hl'); }
+      for (var c = p.c; c < p.c + (td.colSpan || 1); c++) if (!seenC[c]) { seenC[c] = 1; if (head.cells[c]) head.cells[c].classList.add('hl'); }
+    });
+  }
+  function updateHover() {
+    hoverRaf = 0;
+    var wrap = $('gridWrap'), bands = wrap.querySelectorAll('.band'), tbl = wrap.querySelector('table.sheet');
+    if (bands.length < 4 || !tbl) return;
+    if (!hoverTd || !$('optRuler').checked) { bands[2].style.display = bands[3].style.display = 'none'; return; }
+    place(wrap.getBoundingClientRect(), wrap, tbl, [hoverTd], bands[2], bands[3]);
+  }
   function paintMarks() {
+    paintCells(); updateRuler();
+  }
+  function paintCells() {
     if (S.sheet === '__overview') return;
     var name = S.sheet, tds = $('gridWrap').querySelectorAll('td[data-a]');
     for (var i = 0; i < tds.length; i++) {
@@ -198,7 +245,7 @@
     else {
       wrap.innerHTML = renderGrid(name);
       wrap.className = 'grid-wrap' + ($('optAuto').checked ? '' : ' noauto') + ($('optIssues').checked ? '' : ' noiss');
-      paintMarks();
+      ensureBands(); paintMarks();
     }
     wrap.scrollTop = 0; wrap.scrollLeft = 0;
     refreshSide();
@@ -329,7 +376,7 @@
       '<button class="act reject' + (d && d.m === 'reject' ? ' on' : '') + '" id="bReject" type="button"' + (differs ? '' : ' disabled') + '>↺ Reject — last week’s <span class="ar">ارفض</span></button>' +
       (d ? '<button class="act undo" id="bUndo" type="button">Undo decision</button>' : '') + '</div>');
     o.push('<h4>Your own value · قيمتك</h4><div class="edit"><input id="custIn" type="text" value="' + h(d && d.m === 'custom' ? d.v : editText(ec, sheet)) + '" aria-label="New value for ' + a + '"><button id="bApply" type="button">Apply</button></div>' +
-      '<p class="hint">Type a number, <code>50%</code>, a date <code>22/10/2026</code>, text, or a formula starting with <code>=</code>. Leave empty to clear the cell. <span class="ar">اكتب رقم أو نسبة أو تاريخ أو نص أو معادلة.</span></p>');
+      '<p class="hint">Type a number, <code>50%</code>, a date <code>22/10/2026</code>, text, or a formula starting with <code>=</code>. Leave empty to clear the cell. <span class="ar">اكتب رقم أو نسبة أو تاريخ أو نص أو معادلة.</span></p><div class="preview" id="custPrev">' + previewText(d && d.m === 'custom' ? d.v : null) + '</div>');
     var is = S.issuesAll.filter(function (i) { return i.sheet === sheet && i.a === a; });
     if (is.length) { o.push('<h4>Checker · الفاحص</h4>'); is.forEach(function (i) { o.push(issueHtml(i, false)); }); }
     return o.join('');
@@ -412,7 +459,14 @@
       else { S.sel = { sheet: S.sheet, a: a }; S.range = null; drag = true; }
       e.preventDefault();
     });
-    $('gridWrap').addEventListener('mouseover', function (e) { if (!drag) return; var td = e.target.closest('td[data-a]'); if (td) setRange(S.sel.a, td.getAttribute('data-a')); });
+    $('gridWrap').addEventListener('mouseover', function (e) {
+      var td = e.target.closest('td[data-a]');
+      if (td && td !== hoverTd) { hoverTd = td; if (!hoverRaf) hoverRaf = requestAnimationFrame(updateHover); }
+      if (drag && td) { setRange(S.sel.a, td.getAttribute('data-a')); updateRuler(); }
+    });
+    $('gridWrap').addEventListener('mouseleave', function () { hoverTd = null; updateHover(); });
+    $('optRuler').addEventListener('change', function () { updateRuler(); updateHover(); });
+    window.addEventListener('resize', function () { updateRuler(); });
     document.addEventListener('mouseup', function () { if (!drag) return; drag = false; S.tab = 'cell'; paintMarks(); refreshSide(); });
     $('gridWrap').addEventListener('click', function (e) { if (e.shiftKey && e.target.closest('td[data-a]')) { S.tab = 'cell'; paintMarks(); refreshSide(); } });
     $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td) { S.tab = 'cell'; S.focusEdit = true; refreshSide(); } });
@@ -440,6 +494,7 @@
       var item = t.closest('.item[data-a]');
       if (item && !t.closest('button')) selectCell(item.getAttribute('data-sheet'), item.getAttribute('data-a'));
     });
+    $('panel').addEventListener('input', function (e) { if (e.target.id === 'custIn') $('custPrev').innerHTML = previewText(e.target.value); });
     $('panel').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'custIn') applyCustom(); });
     $('btnNextCh').addEventListener('click', function () { jump(S.cmp.changes, 1); });
     $('btnPrevCh').addEventListener('click', function () { jump(S.cmp.changes, -1); });
@@ -461,9 +516,24 @@
       e.preventDefault();
     });
   }
+  /* what the typed text will become: the result of a formula, or the type Excel will give it */
+  function previewText(text) {
+    var sel = S.sel; if (!sel || text == null || text === '') return '';
+    var c = S.view.evalText(sel.sheet, sel.a, text);
+    if (!c) return 'Empty — the cell will be cleared. <span class="ar">الخلية هتتفضّى.</span>';
+    var shown = c.k === '' ? '' : '<b>' + h(fmtTyped(c)) + '</b>';
+    if (c.f != null) {
+      if (c.syntax) return '<span class="bad">⚠ This formula could not be read — check brackets, commas and quotes.</span>';
+      if (c.unsupported) return '<span class="warn">⚠ ' + h(c.fn) + ' is not calculated in this preview. The formula is saved and Excel calculates it when you open the file.</span>';
+      return 'Result · النتيجة: ' + shown;
+    }
+    return 'Saved as ' + (c.k === 'n' ? (Xl.isDateCell({ k: 'n', v: c.v, s: c.s }, S.cur.wb.styles) || c.date ? 'date' : 'number') : c.k === 'b' ? 'TRUE/FALSE' : 'text') + ': ' + shown;
+  }
   function applyCustom() {
     var sel = S.sel, v = $('custIn').value, base = S.view.curCell(sel.sheet, sel.a);
     if (v === editText(base, sel.sheet) && !S.dec[key(sel.sheet, sel.a)]) { toast('Same value as this week — nothing to apply. (نفس القيمة)'); return; }
+    var pv = /^\s*=./.test(v) ? S.view.evalText(sel.sheet, sel.a, v) : null;
+    if (pv && pv.syntax && !window.confirm('The preview cannot read this formula. If it is not valid Excel syntax, Excel may repair the file when you open it.\nSave it anyway?\n(المعادلة مش مفهومة للمعاينة — تحفظها برضه؟)')) return;
     setDec(sel.sheet, sel.a, 'custom', v);
     toast('Saved your value for ' + sel.a + '. Download the report to get it in the file. (اتحفظت)');
   }
