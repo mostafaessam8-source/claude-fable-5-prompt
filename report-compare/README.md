@@ -47,6 +47,9 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - Checker rules are written for the NSR weekly report template (sheet names `1. Progress Status` … `10-13. Data Input`);
   the generic rules (errors, dates, text-as-number, formula overwritten, large jumps) apply to any workbook.
 
+## Versions
+The page header shows `Version X.Y · build <commit>`. Every update bumps the version and adds an entry to [`CHANGELOG.md`](CHANGELOG.md); the test fails if they differ.
+
 ## Files
 - `js/xl.js` – xlsx reader (values, formulas incl. shared formulas, styles, number formats, merges).
 - `js/formula.js` – the formula engine for typed formulas.

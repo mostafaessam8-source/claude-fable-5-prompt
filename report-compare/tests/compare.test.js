@@ -114,7 +114,16 @@ async function real(file) {
   console.log('real workbook: ok');
 }
 
+function versionCheck() {   // the version shown in the page must be the newest entry of CHANGELOG.md
+  const html = fs.readFileSync(require('path').join(__dirname, '../index.html'), 'utf8'), log = fs.readFileSync(require('path').join(__dirname, '../CHANGELOG.md'), 'utf8');
+  const shown = /Version (\d+\.\d+) · build/.exec(html), newest = /^## (\d+\.\d+) — /m.exec(log);
+  assert(shown && newest, 'version markers found');
+  assert.strictEqual(shown[1], newest[1], 'index.html shows version ' + shown[1] + ' but the newest CHANGELOG entry is ' + newest[1] + ' — bump both on every update');
+  console.log('version ' + shown[1] + ': ok');
+}
+
 (async () => {
+  versionCheck();
   await small();
   const f = process.argv[2] || process.env.SAR_REPORT;
   if (f) await real(f);
