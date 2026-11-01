@@ -53,6 +53,9 @@ async function small() {
   const dout = await Writer.build(JSZip, dbytes, dwb, dwb, { 'S1!A1': { m: 'custom', v: '22/10/2026' } });
   const dback = await Xl.readWorkbook(await JSZip.loadAsync(dout.bytes)), dc = dback.byName.S1.cells.get('A1');
   assert.strictEqual(dc.v, 46317); assert(Xl.isDateCell(dc, dback.styles), 'typed date is shown as a date');
+  assert.strictEqual(Writer.setTabColor('<worksheet><sheetPr><tabColor rgb="FF92D050"/><pageSetUpPr/></sheetPr></worksheet>', '#FF0000'), '<worksheet><sheetPr><tabColor rgb="FFFF0000"/><pageSetUpPr/></sheetPr></worksheet>');
+  assert.strictEqual(Writer.setTabColor('<worksheet a="1"><dimension/></worksheet>', '#0070C0'), '<worksheet a="1"><sheetPr><tabColor rgb="FF0070C0"/></sheetPr><dimension/></worksheet>');
+  assert.strictEqual(Writer.setTabColor('<worksheet><sheetPr codeName="S"><tabColor theme="4"/></sheetPr></worksheet>', null), '<worksheet><sheetPr codeName="S"></sheetPr></worksheet>');
   assert.strictEqual(Diff.parseInput('50%').v, 0.5);
   assert.strictEqual(Diff.parseInput('1,250.5').v, 1250.5);
   assert.strictEqual(Diff.parseInput('22/10/2026').v, 46317);
@@ -105,6 +108,12 @@ async function real(file) {
   const cmp2 = Diff.compare(cur, back);
   console.log('cells that differ between this week and the output:', cmp2.changes.map(c => c.id).join(', '));
   assert.deepStrictEqual(cmp2.changes.map(c => c.id).sort(), [NC + '!B5', SF + '!B11'].sort());
+  // sheet properties: hide / unhide, tab colour, the active tab stays visible
+  const ops = { hidden: { 'List': false, [PS]: true }, color: { [NC]: '#FF0000', [SF]: null } };
+  const oo = await Writer.build(JSZip, bytes, prev, cur, {}, ops), ob = await Xl.readWorkbook(await JSZip.loadAsync(oo.bytes));
+  assert.strictEqual(ob.byName['List'].state, 'visible'); assert.strictEqual(ob.byName[PS].state, 'hidden'); assert.strictEqual(ob.byName[NC].tabColor, '#FF0000'); assert.strictEqual(ob.byName[SF].tabColor, null);
+  const oz = await JSZip.loadAsync(oo.bytes), tabSel = []; for (const sh of ob.sheets) if (/tabSelected="1"/.test(await oz.file(sh.path).async('string'))) tabSel.push(sh.name);
+  assert.strictEqual(tabSel.length, 1); assert(ob.byName[tabSel[0]].state === 'visible', 'the selected tab is a visible sheet');
   const z2 = await JSZip.loadAsync(out.bytes);
   assert(!z2.file('xl/calcChain.xml'), 'calc chain removed');
   assert(/fullCalcOnLoad="1"/.test(await z2.file('xl/workbook.xml').async('string')));

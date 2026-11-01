@@ -12,7 +12,7 @@
       <span class="logo" aria-hidden="true"></span>
       <div>
         <h1>Weekly Report <b>Compare</b> <span class="ar">مقارنة التقرير الأسبوعي</span></h1>
-        <p>Programme Controls · <span class="ver" id="ver">Version 2.1 · build __BUILD__</span></p>
+        <p>Programme Controls · <span class="ver" id="ver">Version 2.2 · build __BUILD__</span></p>
       </div>
     </div>
     <div class="top-actions" id="topActions" hidden>
@@ -83,7 +83,12 @@
         </div>
         <div class="grid-wrap" id="gridWrap" tabindex="-1"></div>
         <div class="selbar" id="selbar" hidden></div>
-        <nav class="nav" id="nav" aria-label="Sheets"></nav>
+        <div class="tabbar">
+          <div class="tabarrows" id="tabArrows" title="Right-click: list of all sheets · انقر يمين لعرض كل الشيتات">
+            <button id="tabFirst" type="button" title="First tab · أول تبويب" aria-label="First sheet tab">⏮</button><button id="tabPrev" type="button" title="Previous tab · السابق" aria-label="Scroll tabs left">◀</button><button id="tabNext" type="button" title="Next tab · التالي" aria-label="Scroll tabs right">▶</button><button id="tabLast" type="button" title="Last tab · آخر تبويب" aria-label="Last sheet tab">⏭</button>
+          </div>
+          <nav class="nav" id="nav" aria-label="Sheets"></nav>
+        </div>
       </div>
       <aside class="side">
         <div class="tabs" role="tablist">
