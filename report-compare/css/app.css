@@ -164,3 +164,9 @@ td.sel { outline: 3px solid #111 !important; outline-offset: -2px; z-index: 2; }
   .two { grid-template-columns: 1fr; }
 }
 @media print { .top, .nav, .side, .toolbar, .legend { display: none; } #app { display: block; height: auto; } }
+
+/* range selection */
+td.rng::before { content: ""; position: absolute; inset: 0; background: rgba(0,119,139,.2); border: 1px solid rgba(0,119,139,.65); pointer-events: none; z-index: 1; }
+table.sheet td { user-select: none; }
+.selbox { background: var(--teal-s); border: 1px solid #9ec7cf; border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; font-size: 13px; }
+.selbox .btnrow { margin: 8px 0 0; }

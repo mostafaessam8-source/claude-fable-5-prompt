@@ -11,6 +11,9 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - **Review** – each changed cell is outlined in the sheet. *Keep* = this week's value stays. *Reject* = the cell goes back to
   **last week's** value in the final report. Or type your own value (number, `50%`, date `22/10/2026`, text, `=formula`; empty clears).
   Any cell can be edited, changed or not. Keys: `N`/`P` next/previous change, `I` next issue, `A` keep, `R` reject.
+- **Bulk decisions** – drag over cells (or click, then Shift+click) to select a range, then *Keep all* / *Reject all* for the changed
+  cells inside it (also `A` / `R`). *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and
+  *Keep / Reject all listed* in the Changes tab. Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
 - **Checker** – flags what does not make sense (red = error, orange = warning): last-week blocks that do not match last week's report,
   cumulative values that go down, totals that do not add up, report date / project week / calendar week not advancing, forecast in the
   past, dates in the wrong order, overdue items, text copied unchanged from last week, formula errors, numbers stored as text,

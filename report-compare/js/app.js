@@ -5,7 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = {
     slots: { prev: null, cur: null }, prev: null, cur: null, cmp: null, dec: {}, dismissed: {}, view: null, issues: [], issueMap: {},
-    sheet: '__overview', sel: null, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
+    sheet: '__overview', sel: null, range: null, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
   };
   var xfCache = {};
 
@@ -156,6 +156,7 @@
     var is = S.issueMap[k];
     if (is) c.push('iss-' + (is.some(function (i) { return i.sev === 'error'; }) ? 'error' : is.some(function (i) { return i.sev === 'warn'; }) ? 'warn' : 'info'));
     if (S.sel && S.sel.sheet === sheet && S.sel.a === a) c.push('sel');
+    if (inRange(sheet, a)) c.push('rng');
     return c.join(' ');
   }
   function paintMarks() {
@@ -186,12 +187,12 @@
     $('nav').innerHTML = out.join('');
   }
   function showSheet(name, keepSel) {
-    S.sheet = name;
+    S.sheet = name; S.range = null;
     if (!keepSel) S.sel = null;
     renderNav();
     var wrap = $('gridWrap'), isOv = name === '__overview';
     $('sheetTitle').innerHTML = isOv ? 'Overview <span class="ar">ملخص المراجعة</span>' : h(name);
-    ['btnPrevCh', 'btnNextCh', 'btnNextIss', 'btnAcceptSheet'].forEach(function (id) { $(id).hidden = isOv && id === 'btnAcceptSheet'; });
+    ['btnPrevCh', 'btnNextCh', 'btnNextIss', 'btnAcceptSheet', 'btnRejectSheet'].forEach(function (id) { $(id).hidden = isOv && /Sheet/.test(id); });
     $('legend').hidden = isOv;
     if (isOv) { wrap.className = 'grid-wrap'; wrap.innerHTML = renderOverview(); }
     else {
@@ -217,16 +218,17 @@
     o.push('<div class="btnrow"><button class="act accept" id="ovAccept" type="button">✔ Accept all remaining changes <span class="ar">وافق على الباقي</span></button><button class="act undo" id="ovReset" type="button">Reset all decisions <span class="ar">إلغاء كل القرارات</span></button></div>');
     o.push('<p class="note"><b>How it works · إزاي بتشتغل:</b> a changed cell is outlined in <b>amber</b>. <b>Keep</b> = the new value stays; <b>Reject</b> = the cell goes back to last week’s value in the final report; or type your own value. Pending cells are kept as in this week’s file. Formula results are recalculated by Excel when you open the downloaded file. Charts, pictures and formatting are not touched. <span class="ar">الخلية المتغيرة بتتلون برتقالي. وافق = القيمة الجديدة تفضل · ارفض = ترجع لقيمة الأسبوع الماضي · أو اكتب قيمتك. اللي مش هتراجعه بيفضل زي ما هو في ملف الأسبوع الحالي.</span></p>');
     if (S.cmp.onlyCur.length || S.cmp.onlyPrev.length) o.push('<p class="note">Sheets not in both files: ' + h(S.cmp.onlyCur.concat(S.cmp.onlyPrev).join(', ')) + ' (not compared). <span class="ar">شيتات مش موجودة في الملفين.</span></p>');
-    o.push('<table class="ovt"><tr><th>Sheet · الشيت</th><th>Changes</th><th>To review</th><th>Errors</th><th>Warnings</th><th>Auto</th></tr>');
+    o.push('<table class="ovt"><tr><th>Sheet · الشيت</th><th>Changes</th><th>To review</th><th>Errors</th><th>Warnings</th><th>Auto</th><th>Decide for the whole sheet · قرار للشيت كله</th></tr>');
     S.cur.wb.sheets.forEach(function (sh) {
       var st = sheetStats(sh.name), info = S.cmp.sheets[sh.name] || { auto: 0 };
-      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (sh.state !== 'visible' ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td></tr>');
+      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (sh.state !== 'visible' ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td><td class="n">' + (st.changes ? '<button class="mini fix" data-bulk="accept" data-sheet="' + h(sh.name) + '" type="button">✔ Keep all</button> <button class="mini" data-bulk="reject" data-sheet="' + h(sh.name) + '" type="button">↺ Reject all</button>' : '') + '</td></tr>');
     });
     o.push('</table></div>');
     return o.join('');
   }
 
   function selectCell(sheet, a, scroll) {
+    S.range = null;
     if (S.sheet !== sheet) { S.sel = { sheet: sheet, a: a }; showSheet(sheet, true); }
     else { S.sel = { sheet: sheet, a: a }; paintMarks(); refreshSide(); }
     if (scroll !== false) {
@@ -263,6 +265,43 @@
     S.cmp.changes.forEach(function (ch) { if ((!sheet || ch.sheet === sheet) && !S.dec[ch.id]) { S.dec[ch.id] = { m: 'accept' }; n++; } });
     afterChange(); toast(n + ' change(s) accepted. (' + n + ' تغيير اتوافق عليه)');
   }
+  /* Bulk keep / reject. Earlier keep/reject decisions are overwritten; the reviewer's own typed values are never touched. */
+  function bulk(list, m) {
+    var n = 0, skipped = 0;
+    list.forEach(function (ch) { var d = S.dec[ch.id]; if (d && d.m === 'custom') { skipped++; return; } S.dec[ch.id] = { m: m }; n++; });
+    afterChange();
+    toast(n + ' change(s) ' + (m === 'accept' ? 'kept' : 'rejected → last week’s value') + (skipped ? ' · ' + skipped + ' of your own edits left as they are' : '') + '. (' + n + (m === 'accept' ? ' اتوافق عليها' : ' اترفضت') + ')', 5000);
+  }
+  function bulkSheet(sheet, m) {
+    var list = S.cmp.changes.filter(function (c) { return c.sheet === sheet; });
+    if (!list.length) { toast('No changes in this sheet. (مفيش تغييرات)'); return; }
+    if (m === 'reject' && !window.confirm('Reject all ' + list.length + ' change(s) in "' + sheet + '"? Every cell goes back to last week’s value (you can undo per cell, or use Start over).\n(ترفض كل التغييرات في الشيت دي وترجّعها لقيمة الأسبوع الماضي؟)')) return;
+    bulk(list, m);
+  }
+  /* ----- cell range selection (drag, or shift+click) ----- */
+  function inRange(sheet, a) {
+    var g = S.range; if (!g || g.sheet !== sheet) return false;
+    var p = Xl.parseAddr(a); return p.r >= g.r1 && p.r <= g.r2 && p.c >= g.c1 && p.c <= g.c2;
+  }
+  function setRange(a1, a2) {
+    var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2);
+    S.range = (a1 === a2) ? null : { sheet: S.sheet, r1: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) };
+    paintRange();
+  }
+  function paintRange() {
+    var tds = $('gridWrap').querySelectorAll('td[data-a]');
+    for (var i = 0; i < tds.length; i++) tds[i].classList.toggle('rng', inRange(S.sheet, tds[i].getAttribute('data-a')));
+  }
+  function changesInRange() {
+    var g = S.range; if (!g || g.sheet !== S.sheet) return [];
+    return S.cmp.changes.filter(function (c) { return c.sheet === g.sheet && c.r >= g.r1 && c.r <= g.r2 && c.c >= g.c1 && c.c <= g.c2; });
+  }
+  function selBlock() {
+    var g = S.range; if (!g || g.sheet !== S.sheet) return '';
+    var list = changesInRange(), pend = list.filter(function (c) { return !S.dec[c.id]; }).length, dis = list.length ? '' : ' disabled';
+    return '<div class="selbox"><b>Selection ' + Xl.addr(g.c1, g.r1) + ':' + Xl.addr(g.c2, g.r2) + '</b> <span class="ar">التحديد</span><br>' + list.length + ' changed cell(s), ' + pend + ' still to review <span class="ar">(' + list.length + ' خلية متغيرة)</span>' +
+      '<div class="btnrow"><button class="act accept" id="bSelAccept" type="button"' + dis + '>✔ Keep all <span class="ar">وافق على التحديد</span></button><button class="act reject" id="bSelReject" type="button"' + dis + '>↺ Reject all <span class="ar">ارفض التحديد</span></button><button class="act undo" id="bSelUndo" type="button"' + dis + '>Undo</button></div></div>';
+  }
 
   /* ---------- side panel ---------- */
   function refreshSide() {
@@ -279,7 +318,7 @@
     var pc = S.view.prevCell(sheet, a), cc = S.view.curCell(sheet, a), ec = S.view.eff(sheet, a);
     function cellTd(c, wb, extra) { var v = h(showCellVal(c, wb)); if (!v && !(c && c.f != null)) v = '<small>(empty · فاضي)</small>'; return '<td' + (extra || '') + '>' + v + (c && c.f != null ? '<span class="f">=' + h(short(c.f, 160)) + '</span>' : '') + '</td>'; }
     var kinds = { modified: 'Value changed', added: 'New entry', removed: 'Entry removed', formula: 'Formula changed', type: 'Formula ↔ typed value', auto: 'Auto-calculated result' };
-    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>'];
+    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>', selBlock()];
     if (ch) o.push('<p class="hint"><b>' + kinds[ch.kind] + '</b>' + (ch.auto ? ' — recalculated by Excel, no decision needed.' : '') + '</p>');
     else o.push('<p class="hint">No change in this cell this week. You can still edit it. <span class="ar">مفيش تغيير.</span></p>');
     var differs = ch && !ch.auto;
@@ -303,10 +342,12 @@
       '<button class="mini" data-dismiss="' + h(i.id) + '" type="button">' + (dis ? 'Restore' : 'Ignore') + '</button></div></div></div>';
   }
   var DOT = { pending: 'pending', accept: 'accept', reject: 'reject', custom: 'custom' };
+  function listedChanges() { return S.cmp.changes.filter(function (c) { return (S.scope.changes === 'all' || c.sheet === S.sheet) && (!S.pendingOnly || !S.dec[c.id]); }); }
   function panelChanges() {
-    var sc = S.scope.changes, list = S.cmp.changes.filter(function (c) { return (sc === 'all' || c.sheet === S.sheet) && (!S.pendingOnly || !S.dec[c.id]); });
+    var sc = S.scope.changes, list = listedChanges();
     var o = ['<div class="btnrow"><button class="chip' + (sc === 'sheet' ? ' ok' : '') + '" data-scope="sheet" type="button">This sheet</button><button class="chip' + (sc === 'all' ? ' ok' : '') + '" data-scope="all" type="button">All sheets</button>' +
-      '<label class="chk"><input type="checkbox" id="optPend"' + (S.pendingOnly ? ' checked' : '') + '> to review only</label></div>'];
+      '<label class="chk"><input type="checkbox" id="optPend"' + (S.pendingOnly ? ' checked' : '') + '> to review only</label></div>',
+      '<div class="btnrow"><button class="act accept" data-bulkl="accept" type="button">✔ Keep all listed (' + list.length + ')</button><button class="act reject" data-bulkl="reject" type="button">↺ Reject all listed</button></div>'];
     if (!list.length) { o.push('<div class="empty">' + (S.sheet === '__overview' && sc === 'sheet' ? 'Pick a sheet, or switch to “All sheets”.' : 'No changes here. (مفيش تغييرات)') + '</div>'); return o.join(''); }
     var lastSheet = null;
     list.slice(0, 400).forEach(function (c) {
@@ -357,11 +398,23 @@
   function wire() {
     $('nav').addEventListener('click', function (e) { var b = e.target.closest('button[data-s]'); if (b) showSheet(b.getAttribute('data-s')); });
     $('gridWrap').addEventListener('click', function (e) {
+      var bb = e.target.closest('[data-bulk]'); if (bb) { bulkSheet(bb.getAttribute('data-sheet'), bb.getAttribute('data-bulk')); return; }
       var tr = e.target.closest('tr.go'); if (tr) { showSheet(tr.getAttribute('data-s')); return; }
       if (e.target.id === 'ovAccept') { acceptAll(); return; }
       if (e.target.id === 'ovReset') { if (window.confirm('Remove all your decisions and edits?\n(تمسح كل قراراتك وتعديلاتك؟)')) { S.dec = {}; S.dismissed = {}; afterChange(); } return; }
-      var td = e.target.closest('td[data-a]'); if (td) { S.sel = { sheet: S.sheet, a: td.getAttribute('data-a') }; paintMarks(); S.tab = 'cell'; refreshSide(); }
     });
+    var drag = false;
+    $('gridWrap').addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      var td = e.target.closest('td[data-a]'); if (!td) return;
+      var a = td.getAttribute('data-a');
+      if (e.shiftKey && S.sel && S.sel.sheet === S.sheet) setRange(S.sel.a, a);
+      else { S.sel = { sheet: S.sheet, a: a }; S.range = null; drag = true; }
+      e.preventDefault();
+    });
+    $('gridWrap').addEventListener('mouseover', function (e) { if (!drag) return; var td = e.target.closest('td[data-a]'); if (td) setRange(S.sel.a, td.getAttribute('data-a')); });
+    document.addEventListener('mouseup', function () { if (!drag) return; drag = false; S.tab = 'cell'; paintMarks(); refreshSide(); });
+    $('gridWrap').addEventListener('click', function (e) { if (e.shiftKey && e.target.closest('td[data-a]')) { S.tab = 'cell'; paintMarks(); refreshSide(); } });
     $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td) { S.tab = 'cell'; S.focusEdit = true; refreshSide(); } });
     document.querySelector('.tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) { S.tab = t.getAttribute('data-tab'); refreshSide(); } });
     $('panel').addEventListener('click', function (e) {
@@ -370,10 +423,15 @@
       if (fix) { var iss = S.issuesAll.filter(function (i) { return i.id === fix.getAttribute('data-fix'); })[0]; if (iss && iss.fix) { setDec(iss.sheet, iss.a, 'custom', iss.fix.text); toast('Fixed ' + iss.sheet + ' ▸ ' + iss.a); } return; }
       if (dis) { var id = dis.getAttribute('data-dismiss'); if (S.dismissed[id]) delete S.dismissed[id]; else S.dismissed[id] = 1; afterChange(); return; }
       if (act) { var ch = S.cmp.byKey[act.getAttribute('data-k')]; setDec(ch.sheet, ch.a, act.getAttribute('data-act'), null, false); return; }
+      var bl = t.closest('[data-bulkl]');
+      if (bl) { var ls = listedChanges(); if (!ls.length) return; if (bl.getAttribute('data-bulkl') === 'reject' && !window.confirm('Reject all ' + ls.length + ' listed change(s)?\n(ترفض كل التغييرات المعروضة؟)')) return; bulk(ls, bl.getAttribute('data-bulkl')); return; }
       if (sc) { S.scope.changes = sc.getAttribute('data-scope'); refreshSide(); return; }
       if (scc) { S.scope.checks = scc.getAttribute('data-scopec'); refreshSide(); return; }
       if (t.id === 'optPend') { S.pendingOnly = t.checked; refreshSide(); return; }
       if (t.id === 'optDis') { S.showDismissed = t.checked; refreshSide(); return; }
+      if (t.closest('#bSelAccept')) return bulk(changesInRange(), 'accept');
+      if (t.closest('#bSelReject')) return bulk(changesInRange(), 'reject');
+      if (t.closest('#bSelUndo')) { changesInRange().forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
       var sel = S.sel;
       if (t.closest('#bAccept')) return setDec(sel.sheet, sel.a, 'accept', null, true);
       if (t.closest('#bReject')) return setDec(sel.sheet, sel.a, 'reject', null, true);
@@ -386,7 +444,8 @@
     $('btnNextCh').addEventListener('click', function () { jump(S.cmp.changes, 1); });
     $('btnPrevCh').addEventListener('click', function () { jump(S.cmp.changes, -1); });
     $('btnNextIss').addEventListener('click', function () { jump(S.issues, 1); });
-    $('btnAcceptSheet').addEventListener('click', function () { acceptAll(S.sheet); });
+    $('btnAcceptSheet').addEventListener('click', function () { bulkSheet(S.sheet, 'accept'); });
+    $('btnRejectSheet').addEventListener('click', function () { bulkSheet(S.sheet, 'reject'); });
     $('optAuto').addEventListener('change', function () { $('gridWrap').classList.toggle('noauto', !this.checked); });
     $('optIssues').addEventListener('change', function () { $('gridWrap').classList.toggle('noiss', !this.checked); });
     $('btnDownload').addEventListener('click', downloadReport);
@@ -396,6 +455,7 @@
       if ($('app').hidden || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || '')) || e.ctrlKey || e.metaKey || e.altKey) return;
       var k = e.key.toLowerCase();
       if (k === 'n') jump(S.cmp.changes, 1); else if (k === 'p') jump(S.cmp.changes, -1); else if (k === 'i') jump(S.issues, 1);
+      else if ((k === 'a' || k === 'r') && S.range && changesInRange().length) bulk(changesInRange(), k === 'a' ? 'accept' : 'reject');
       else if ((k === 'a' || k === 'r') && S.sel && S.cmp.byKey[key(S.sel.sheet, S.sel.a)] && !S.cmp.byKey[key(S.sel.sheet, S.sel.a)].auto) setDec(S.sel.sheet, S.sel.a, k === 'a' ? 'accept' : 'reject', null, true);
       else return;
       e.preventDefault();
