@@ -218,3 +218,9 @@ td.pt { outline: 2px dashed #217346 !important; outline-offset: -2px; background
 .selbar .act.undo { background: transparent; color: #cfd8dc; border-color: #546e7a; }
 .selbar .n { margin-inline-end: 4px; }
 table.sheet thead th:not(.rh), table.sheet th.rh { cursor: pointer; }
+
+/* find-the-cell helpers */
+@keyframes flashcell { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,61,0,0); } 20%, 60% { box-shadow: 0 0 0 5px rgba(255,61,0,.75), 0 0 18px 6px rgba(255,61,0,.45); } 40%, 80% { box-shadow: 0 0 0 2px rgba(255,61,0,.9); } }
+td.flash { animation: flashcell 2.1s ease-out; z-index: 6 !important; outline: 3px solid #ff3d00 !important; outline-offset: -1px; }
+small.ctx { display: block; color: #78909c; font-size: 11.5px; margin: 1px 0 3px; }
+.panel h3 + small.ctx { margin: -4px 0 8px; font-size: 12.5px; }

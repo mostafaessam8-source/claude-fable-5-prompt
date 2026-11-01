@@ -288,9 +288,34 @@
     else { S.sel = { sheet: sheet, a: a }; paintMarks(); refreshSide(); }
     if (scroll !== false) {
       var td = $('gridWrap').querySelector('td[data-a="' + a + '"]');
-      if (td) td.scrollIntoView(scroll === 'nearest' ? { block: 'nearest', inline: 'nearest' } : { block: 'center', inline: 'center' });
+      if (td) revealCell(td, scroll === 'nearest');
     }
   }
+  /* Bring the cell into view inside the sheet (centred), make sure the sheet itself is on screen, and flash the cell so the eye finds it. */
+  function revealCell(td, nearest) {
+    var wrap = $('gridWrap');
+    if (nearest) td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    else {
+      var wr = wrap.getBoundingClientRect(), tr = td.getBoundingClientRect();
+      wrap.scrollTo({ left: Math.max(0, wrap.scrollLeft + tr.left - wr.left - (wr.width - tr.width) / 2), top: Math.max(0, wrap.scrollTop + tr.top - wr.top - (wr.height - tr.height) / 2) });
+      var pr = wrap.getBoundingClientRect();
+      if (pr.bottom < 120 || pr.top > window.innerHeight - 120) wrap.scrollIntoView({ block: 'start' });   /* stacked (narrow) layout: the sheet is off-screen */
+    }
+    td.classList.remove('flash'); void td.offsetWidth; td.classList.add('flash');
+    clearTimeout(revealCell.t); revealCell.t = setTimeout(function () { td.classList.remove('flash'); }, 2200);
+  }
+  /* what row / column a cell belongs to: the first filled cell to its left, and the nearest bold/filled text above it */
+  function cellCtx(sheet, a) {
+    var sh = S.cur.wb.byName[sheet]; if (!sh) return '';
+    var p = Xl.parseAddr(a), st = S.cur.wb.styles, row = '', col = '', c, r, ec;
+    for (c = 1; c < p.c; c++) { var ad = Xl.addr(c, p.r); ec = S.view.eff(sheet, ad); if (ec && ec.k !== '' && String(ec.v).trim() !== '') { row = displayCell(sheet, ad); break; } }
+    for (r = p.r - 1; r >= Math.max(1, p.r - 80); r--) {
+      var cc = sh.cells.get(Xl.addr(p.c, r));
+      if (cc && cc.k === 's' && cc.v.trim()) { var xf = st.xfs[cc.s]; if (xf && ((xf.font && xf.font.b) || xf.fill)) { col = cc.v.trim().replace(/\s+/g, ' '); break; } }
+    }
+    return [row && ('← ' + short(row, 30)), col && ('↑ ' + short(col, 30))].filter(Boolean).join('  ·  ');
+  }
+  function ctxHtml(sheet, a) { var t = cellCtx(sheet, a); return t ? '<small class="ctx">' + h(t) + '</small>' : ''; }
   function jump(list, dir) {
     if (!list.length) { toast('Nothing to jump to. (مفيش حاجة)'); return; }
     var idx = -1;
@@ -404,8 +429,9 @@
     var pend = S.counts.pending, er = S.issues.filter(function (i) { return i.sev === 'error'; }).length;
     $('cntChanges').textContent = pend || ''; $('cntChecks').textContent = er || '';
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === S.tab); });
-    var p = $('panel');
+    var p = $('panel'), keepTop = S.tab !== 'cell' && S.lastTab === S.tab ? p.scrollTop : 0;
     p.innerHTML = S.tab === 'cell' ? panelCell() : S.tab === 'changes' ? panelChanges() : panelChecks();
+    p.scrollTop = keepTop; S.lastTab = S.tab;
     var inp = $('custIn'); if (inp && S.focusEdit) { inp.focus(); inp.select(); S.focusEdit = false; }
   }
   function panelCell() {
@@ -414,7 +440,7 @@
     var pc = S.view.prevCell(sheet, a), cc = S.view.curCell(sheet, a), ec = S.view.eff(sheet, a);
     function cellTd(c, wb, extra) { var v = h(showCellVal(c, wb)); if (!v && !(c && c.f != null)) v = '<small>(empty · فاضي)</small>'; return '<td' + (extra || '') + '>' + v + (c && c.f != null ? '<span class="f">=' + h(short(c.f, 160)) + '</span>' : '') + '</td>'; }
     var kinds = { modified: 'Value changed', added: 'New entry', removed: 'Entry removed', formula: 'Formula changed', type: 'Formula ↔ typed value', auto: 'Auto-calculated result' };
-    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>', selBlock()];
+    var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>' + ctxHtml(sheet, a), selBlock()];
     if (ch) o.push('<p class="hint"><b>' + kinds[ch.kind] + '</b>' + (ch.auto ? ' — recalculated by Excel, no decision needed.' : '') + '</p>');
     else o.push('<p class="hint">No change in this cell this week. You can still edit it. <span class="ar">مفيش تغيير.</span></p>');
     var differs = ch && !ch.auto;
@@ -432,8 +458,9 @@
   }
   function issueHtml(i, withLoc) {
     var dis = !!S.dismissed[i.id];
-    return '<div class="item' + (dis ? ' dim' : '') + '" data-sheet="' + h(i.sheet) + '" data-a="' + i.a + '" style="' + (dis ? 'opacity:.55' : '') + '"><span class="dot s-' + i.sev + '"></span><div class="body">' +
-      (withLoc ? '<span class="loc">' + h(i.sheet) + ' ▸ ' + i.a + '</span> ' : '') + '<span class="msg">' + h(i.en) + '</span><span class="msg ar">' + arHtml(i.ar) + '</span><div class="row">' +
+    var curI = S.sel && S.sel.sheet === i.sheet && S.sel.a === i.a;
+    return '<div class="item' + (dis ? ' dim' : '') + (curI ? ' cur' : '') + '" data-sheet="' + h(i.sheet) + '" data-a="' + i.a + '" style="' + (dis ? 'opacity:.55' : '') + '"><span class="dot s-' + i.sev + '"></span><div class="body">' +
+      (withLoc ? '<span class="loc">' + h(i.sheet) + ' ▸ ' + i.a + '</span> ' + ctxHtml(i.sheet, i.a) : '') + '<span class="msg">' + h(i.en) + '</span><span class="msg ar">' + arHtml(i.ar) + '</span><div class="row">' +
       (i.fix && !dis ? '<button class="mini fix" data-fix="' + h(i.id) + '" type="button">✔ ' + h(i.fix.label) + '</button>' : '') +
       '<button class="mini" data-dismiss="' + h(i.id) + '" type="button">' + (dis ? 'Restore' : 'Ignore') + '</button></div></div></div>';
   }
@@ -452,7 +479,7 @@
       var pv = showCellVal(c.prev, S.prev.wb) || '(empty)', cv = showCellVal(c.cur, S.cur.wb) || '(empty)';
       if (c.prev && c.prev.f != null && c.kind === 'formula') { pv = '=' + c.prev.f; cv = '=' + (c.cur && c.cur.f); }
       var on = S.sel && S.sel.sheet === c.sheet && S.sel.a === c.a;
-      o.push('<div class="item' + (on ? ' cur' : '') + '" data-sheet="' + h(c.sheet) + '" data-a="' + c.a + '"><span class="dot ' + st + '"></span><div class="body"><span class="loc">' + c.a + '</span> ' + h(short(pv, 38)) + ' <span class="arrow">→</span> <b>' + h(short(cv, 38)) + '</b>' +
+      o.push('<div class="item' + (on ? ' cur' : '') + '" data-sheet="' + h(c.sheet) + '" data-a="' + c.a + '"><span class="dot ' + st + '"></span><div class="body"><span class="loc">' + c.a + '</span> ' + h(short(pv, 38)) + ' <span class="arrow">→</span> <b>' + h(short(cv, 38)) + '</b>' + ctxHtml(c.sheet, c.a) +
         '<div class="row"><button class="mini fix" data-act="accept" data-k="' + h(c.id) + '" type="button">✔ Keep</button><button class="mini" data-act="reject" data-k="' + h(c.id) + '" type="button">↺ Reject</button></div></div></div>');
     });
     if (list.length > 400) o.push('<p class="hint">Showing the first 400 of ' + list.length + ' changes — use “to review only”, or Accept all in sheet.</p>');

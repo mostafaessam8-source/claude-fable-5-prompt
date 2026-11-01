@@ -23,6 +23,9 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   Name box: type `B5` or `B5:C9` + Enter. Arrow keys / Tab move (Shift extends), `F2`/Enter edits in the formula bar, double-click a cell edits it.
 - **Pick cells from the sheet** – while a formula is being typed (in the formula bar or "Your own value"), click a cell or drag a range in the sheet and its
   reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
+- **Find the cell** – clicking any item in the Changes or Checker list (or the name box) opens its sheet, scrolls the cell to the middle of the grid (and brings the
+  grid on screen in a narrow window) and flashes it. List items also show where the cell is: `← row label · ↑ column header`. The list keeps its scroll position
+  while you keep / reject items.
 - **Ruler** – a horizontal and a vertical band follow the selected cell/range (strong) and the mouse (light), and the row/column headers light up, so tables are easy
   to follow. Toggle with the "ruler" box.
 - **Select several cells, then Keep or Reject** – drag a range, `Shift`+click to extend, **`Ctrl`+click** (Cmd on Mac) to add single cells or `Ctrl`+drag to add more ranges
