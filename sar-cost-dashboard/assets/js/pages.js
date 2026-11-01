@@ -965,6 +965,18 @@
    * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
    * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
    */
+  /* the project's figures of the two spend charts (full year · year to date), as ordered boxes under its Gantt row */
+  function ivKpis(o, cut) {
+    var R = hasRev(), M = function (x) { return x == null ? "—" : fmt.m(x, 2); };
+    function box(lab, val, cls, sub) { return '<div class="iv-k ' + (cls || "") + '"><span>' + lab + "</span><b>" + M(val) + "</b>" + (sub ? "<em>" + sub + "</em>" : "") + "</div>"; }
+    var vFY = o.landing - o.base, vY = o.act - o.baseYtd, pc = function (a, b) { return b ? fmt.pct(a / b, 1) : ""; };
+    var sign = function (x) { return Math.abs(x) < 5000 ? "0.00 M" : (x > 0 ? "+" : "") + fmt.m(x, 2) + " M"; };
+    var fy = box(R ? "Original Plan" : "Spend Plan", o.plan, "k-plan") + (R ? box("Rev Plan", o.rev, "k-rev") : "") + box("Forecast Plan", o.landing, "k-fc", pc(o.landing, o.base) + " of " + (R ? "Rev" : "plan")) +
+      box("Variance", null, "k-var " + (vFY < -0.5 ? "neg" : vFY > 0.5 ? "pos" : ""), "").replace("<b>—</b>", "<b>" + sign(vFY) + "</b>");
+    var yt = box(R ? "Original Plan" : "Plan", o.planYtd, "k-plan") + (R ? box("Rev Plan", o.revYtd, "k-rev") : "") + box("Forecast Plan", o.fcYtd, "k-fc") +
+      box("Actual", o.act, "k-act " + (o.act < o.baseYtd ? "neg" : "pos"), pc(o.act, o.baseYtd) + " of " + (R ? "Rev" : "plan"));
+    return '<div class="iv-kpis"><div class="iv-kg"><i>Full year 2026 · M SAR</i><div class="iv-kr">' + fy + '</div></div><div class="iv-kg"><i>Year to date · to ' + esc(fmt.month(cut)) + ' · M SAR</i><div class="iv-kr">' + yt + "</div></div></div>";
+  }
   function invoiceGantt(host, list, months, cut, onProj) {
     var items = [];
     list.forEach(function (o) {
@@ -992,9 +1004,8 @@
       var nMiss = inv.filter(function (a) { return a.miss; }).length;
       var msH = it.ms.map(function (x) { return '<b class="pg-dia iv-ms" style="left:' + left(months.indexOf(x.m) + 0.5) + '" title="' + esc("Milestone · " + fmt.month(x.m) + " · " + x.label) + '"></b>'; }).join("");
       h += '<div class="iv-row iv-p" data-p="' + pi + '" title="Click to filter by this project"><div><b>' + esc(o.name) + '</b> <span class="muted">' + esc(o.ID) + "</span> " + U.badge(o.status) +
-        '<small>' + inv.length + " invoice activities · plan " + fmt.m(o.plan, 1) + " M" + (hasRev() ? " · Rev plan " + fmt.m(o.rev, 1) + " M" : "") + " · Forecast Plan " + fmt.m(o.landing, 1) + " M · YTD " + (hasRev() ? "Rev " : "") + "Plan " + fmt.m(o.baseYtd, 1) +
-          " M · YTD Actual " + '<b class="' + (o.act < o.baseYtd ? "neg" : "pos") + '">' + fmt.m(o.act, 1) + " M</b>" + (o.baseYtd ? " (" + fmt.pct(o.act / o.baseYtd, 1) + ")" : "") +
-          (nMiss ? ' · <b class="iv-miss-n">✕ ' + nMiss + " past activit" + (nMiss > 1 ? "ies" : "y") + " not invoiced</b>" : "") + '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div></div>";
+        '<small>' + inv.length + " invoice activities" + (nMiss ? ' · <b class="iv-miss-n">✕ ' + nMiss + " past activit" + (nMiss > 1 ? "ies" : "y") + " not invoiced</b>" : "") +
+          '</small></div><div></div><div class="num"></div><div class="g-track">' + gridL + msH + "</div>" + ivKpis(o, cut) + "</div>";
       it.acts.forEach(function (a) {
         var i = months.indexOf(a.m), idx = all.push(a) - 1;
         var tip = a.label + " | " + fmt.month(a.m) + " | Plan " + fmt.money(a.c.plan) + " · Forecast Plan " + fmt.money(a.c.fc) + (a.c.past ? " · Actual " + fmt.money(a.c.act) : "");

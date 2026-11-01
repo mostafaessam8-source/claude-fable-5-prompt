@@ -646,6 +646,21 @@ body.printing .pg-row.g-head { position: static; }
 .iv-p small { flex-basis: 100%; color: var(--slate); font-size: 11px; }
 .iv-p .badge { font-size: 10px; padding: 1px 6px; }
 .iv-p:hover b { text-decoration: underline; }
+/* the project's spend figures (full year · year to date) under its row, in ordered boxes */
+.iv-p > .iv-kpis { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 2px 8px 8px; align-items: stretch; }
+.iv-kg { display: flex; flex-direction: column; gap: 3px; }
+.iv-kg > i { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--slate); }
+.iv-kr { display: flex; gap: 6px; flex-wrap: wrap; }
+.iv-k { display: flex; flex-direction: column; min-width: 92px; padding: 4px 8px; background: var(--white); border: 1px solid var(--tint-10); border-left: 4px solid var(--cool-gray); border-radius: 4px; line-height: 1.2; }
+.iv-k span { font-size: 10px; color: var(--slate); white-space: nowrap; }
+.iv-p .iv-k b { font-size: 14px; color: var(--sar-black); text-decoration: none !important; font-variant-numeric: tabular-nums; }
+.iv-k em { font-style: normal; font-size: 10px; color: var(--slate); }
+.iv-k.k-plan { border-left-color: var(--sar-blue); }
+.iv-k.k-rev { border-left-color: var(--sar-black); }
+.iv-k.k-fc { border-left: 4px dashed #8A9298; }
+.iv-k.k-act { border-left-color: var(--yellow); }
+.iv-p .iv-k.neg b { color: var(--red); }
+.iv-p .iv-k.pos b { color: var(--green, #2E7D32); }
 .iv-a { cursor: pointer; }
 .iv-a:hover > div:not(.g-track) { background: var(--tint-5); }
 .iv-lab { padding-left: 22px !important; display: block !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; }
