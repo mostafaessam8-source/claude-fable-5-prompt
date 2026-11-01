@@ -4,6 +4,12 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 2.2 — 2026-11-01
+- Sheet tabs like Excel: scroll arrows (first / previous / next / last), mouse-wheel scrolling, the active tab is kept in view.
+- Right-click the arrows (or the empty part of the tab bar) for the list of all sheets — one click to go there (hidden sheets are listed to unhide).
+- Right-click a tab: open, keep / reject all changes of the sheet, show its changed cells / checker findings, **tab colour**, **hide**, **unhide…**
+  (Insert, Delete, Rename, Move or Copy, Protect are shown greyed: they need Excel). Hide and tab colour are applied to the downloaded report too (and listed in the change log CSV).
+
 ## 2.1 — 2026-11-01
 - The numbers on the sheet tabs now say what they are: `✎ n` changed cells to review, `✖ n` checker errors, `⚠ n` checker warnings (tooltips in English / Arabic). Clicking one opens
   that list for the sheet and shows the first cell.

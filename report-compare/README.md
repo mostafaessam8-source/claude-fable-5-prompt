@@ -21,6 +21,10 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   sheet hides them), sheet tabs at the bottom in their own colours, and a zoom box. Column widths, row heights, fonts, fills, borders, merged cells and text
   that spills into empty neighbours follow the file (a wrapped cell is clipped to its row height, as in Excel).
   Name box: type `B5` or `B5:C9` + Enter. Arrow keys / Tab move (Shift extends), `F2`/Enter edits in the formula bar, double-click a cell edits it.
+- **Sheet tabs like Excel** – arrows ⏮ ◀ ▶ ⏭ scroll the tabs (the mouse wheel too, the active tab is kept in view). **Right-click the arrows** (or the empty part of the bar) for the list of all
+  sheets and jump to any of them; hidden sheets are listed at the bottom to unhide. **Right-click a tab**: open, keep / reject all its changes, show its changed cells / checker findings,
+  **tab colour**, **Hide**, **Unhide…**. Hide / unhide and tab colour are written to the downloaded report (and listed in the change log). Insert, Delete, Rename, Move or Copy and Protect are shown greyed —
+  they change the structure of the workbook (formulas, charts, names) and need Excel.
 - **Pick cells from the sheet** – while a formula is being typed (in the formula bar or "Your own value"), click a cell or drag a range in the sheet and its
   reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
 - **Keyboard selection like Excel** – `Shift`+arrows extend, `Ctrl`+arrows jump to the edge of the filled block, `Ctrl`+`Shift`+arrows select up to it, `Ctrl`+`Space` selects the

@@ -5,7 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = {
     slots: { prev: null, cur: null }, prev: null, cur: null, cmp: null, dec: {}, dismissed: {}, view: null, issues: [], issueMap: {},
-    sheet: '__overview', sel: null, range: null, extra: [], tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
+    sheet: '__overview', sel: null, range: null, extra: [], ops: { hidden: {}, color: {} }, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
   };
   var xfCache = {};
 
@@ -52,14 +52,14 @@
     S.prev = S.slots.prev; S.cur = S.slots.cur;
     S.cmp = Diff.compare(S.prev.wb, S.cur.wb);
     S.session = 'rc.v1.' + [S.prev.name, S.prev.size, S.cur.name, S.cur.size].join('|');
-    S.dec = {}; S.dismissed = {};
-    try { var saved = JSON.parse(localStorage.getItem(S.session) || 'null'); if (saved) { S.dec = saved.dec || {}; S.dismissed = saved.dismissed || {}; if (Object.keys(S.dec).length) toast('Restored your earlier review of these two files. (اتسترجع التقييم السابق)'); } } catch (e) { /* no storage */ }
+    S.dec = {}; S.dismissed = {}; S.ops = { hidden: {}, color: {} };
+    try { var saved = JSON.parse(localStorage.getItem(S.session) || 'null'); if (saved) { S.dec = saved.dec || {}; S.dismissed = saved.dismissed || {}; S.ops = saved.ops || { hidden: {}, color: {} }; if (Object.keys(S.dec).length) toast('Restored your earlier review of these two files. (اتسترجع التقييم السابق)'); } } catch (e) { /* no storage */ }
     S.sheet = '__overview'; S.sel = null; S.tab = 'cell';
     $('upload').hidden = true; $('app').hidden = false; $('topActions').hidden = false;
     recompute(); renderNav(); showSheet('__overview');
   }
 
-  function save() { try { localStorage.setItem(S.session, JSON.stringify({ dec: S.dec, dismissed: S.dismissed })); } catch (e) { /* ignore */ } }
+  function save() { try { localStorage.setItem(S.session, JSON.stringify({ dec: S.dec, dismissed: S.dismissed, ops: S.ops })); } catch (e) { /* ignore */ } }
 
   function recompute() {
     S.view = Diff.makeView(S.prev.wb, S.cur.wb, S.dec);
@@ -261,15 +261,131 @@
     S.issues.forEach(function (i) { if (i.sheet === name) { if (i.sev === 'error') st.err++; else if (i.sev === 'warn') st.warn++; } });
     return st;
   }
+  /* ---------- sheet tabs (like Excel's) ---------- */
+  function isHidden(sh) { var v = S.ops.hidden[sh.name]; return v != null ? !!v : sh.state !== 'visible'; }
+  function tabColorOf(sh) { return Object.prototype.hasOwnProperty.call(S.ops.color, sh.name) ? S.ops.color[sh.name] : sh.tabColor; }
+  function visibleSheets() { return S.cur.wb.sheets.filter(function (s) { return !isHidden(s); }); }
   function renderNav() {
     var out = ['<button type="button" data-s="__overview" class="' + (S.sheet === '__overview' ? 'on' : '') + '"><span class="nm">▦ Overview <span class="ar">ملخص</span></span></button>'];
-    S.cur.wb.sheets.forEach(function (sh) {
+    visibleSheets().forEach(function (sh) {
       var st = sheetStats(sh.name), on = S.sheet === sh.name;
-      out.push('<button type="button" data-s="' + h(sh.name) + '" class="' + (on ? 'on ' : '') + (sh.state !== 'visible' ? 'hid' : '') + '" style="border-bottom-color:' + (sh.tabColor || 'transparent') + '" title="' + h(sh.name) + (sh.state !== 'visible' ? ' (hidden sheet)' : '') + '"><span class="nm">' + h(sh.name) + '</span>' +
+      out.push('<button type="button" data-s="' + h(sh.name) + '" class="' + (on ? 'on' : '') + '" style="border-bottom-color:' + (tabColorOf(sh) || 'transparent') + '" title="' + h(sh.name) + ' — right-click for the sheet menu · انقر يمين"><span class="nm">' + h(sh.name) + '</span>' +
         (st.pending ? '<span class="pill ch" data-pill="changes" title="' + st.pending + ' changed cell(s) to review — click to see them · خلايا متغيرة للمراجعة">✎ ' + st.pending + '</span>' : (st.changes ? '<span class="pill ok" title="all changes in this sheet reviewed">✓</span>' : '')) +
         (st.err ? '<span class="pill er" data-pill="errors" title="' + st.err + ' checker error(s) — click to see them · أخطاء من الفاحص">✖ ' + st.err + '</span>' : '') + (st.warn ? '<span class="pill wr" data-pill="warnings" title="' + st.warn + ' checker warning(s) — click to see them · تنبيهات من الفاحص">⚠ ' + st.warn + '</span>' : '') + '</button>');
     });
     $('nav').innerHTML = out.join('');
+    scrollActiveTab(); updateTabArrows();
+  }
+  function scrollActiveTab() {
+    var nav = $('nav'), on = nav.querySelector('button.on'); if (!on) return;
+    if (on.offsetLeft < nav.scrollLeft) nav.scrollLeft = on.offsetLeft - 4;
+    else if (on.offsetLeft + on.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = on.offsetLeft + on.offsetWidth - nav.clientWidth + 4;
+  }
+  function updateTabArrows() {
+    var nav = $('nav'), atStart = nav.scrollLeft <= 0, atEnd = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 1;
+    $('tabFirst').disabled = $('tabPrev').disabled = atStart; $('tabNext').disabled = $('tabLast').disabled = atEnd;
+  }
+  function tabScroll(dir) {
+    var nav = $('nav'), btns = [].slice.call(nav.querySelectorAll('button')), i, b;
+    if (dir === 'first') nav.scrollLeft = 0;
+    else if (dir === 'last') nav.scrollLeft = nav.scrollWidth;
+    else if (dir === 'next') { for (i = 0; i < btns.length; i++) { b = btns[i]; if (b.offsetLeft + b.offsetWidth > nav.scrollLeft + nav.clientWidth + 1) { nav.scrollLeft = b.offsetLeft + b.offsetWidth - nav.clientWidth + 2; break; } } }
+    else { for (i = btns.length - 1; i >= 0; i--) { b = btns[i]; if (b.offsetLeft < nav.scrollLeft - 1) { nav.scrollLeft = b.offsetLeft - 2; break; } } }
+    updateTabArrows();
+  }
+  function setHidden(name, val) {
+    if (val && visibleSheets().length <= 1) { toast('At least one sheet must stay visible. (لازم يفضل شيت واحد ظاهر)'); return; }
+    var sh = S.cur.wb.byName[name];
+    if (val === (sh.state !== 'visible')) delete S.ops.hidden[name]; else S.ops.hidden[name] = val;
+    save();
+    if (val && S.sheet === name) showSheet('__overview'); else renderNav();
+    toast('"' + name + '" ' + (val ? 'hidden' : 'shown') + ' — the downloaded report gets the same. (' + (val ? 'اتخفى' : 'اتظهر') + ')');
+  }
+  function setTabColor(name, hex) {
+    var sh = S.cur.wb.byName[name];
+    if ((hex || null) === (sh.tabColor || null)) delete S.ops.color[name]; else S.ops.color[name] = hex;
+    save(); renderNav();
+  }
+
+  /* ----- context menus ----- */
+  var menuEl = null;
+  function closeMenu() { if (menuEl) { menuEl.parentNode.removeChild(menuEl); menuEl = null; } }
+  function showMenu(items, x, y) {
+    closeMenu();
+    var m = document.createElement('div'); m.className = 'ctxmenu'; m.setAttribute('role', 'menu');
+    function lab(parent, it) { var sp = document.createElement('span'); sp.className = 'ml'; sp.textContent = (it.checked ? '✓ ' : '') + it.label; if (it.italic) sp.style.fontStyle = 'italic'; parent.appendChild(sp); if (it.ar) { var a = document.createElement('span'); a.className = 'ar'; a.textContent = it.ar; parent.appendChild(a); } if (it.hint) { var hn = document.createElement('small'); hn.className = 'mh2'; hn.textContent = it.hint; parent.appendChild(hn); } }
+    items.forEach(function (it) {
+      var el;
+      if (it.t === 'sep') { el = document.createElement('div'); el.className = 'msep'; }
+      else if (it.t === 'head') { el = document.createElement('div'); el.className = 'mhead'; el.textContent = it.label; }
+      else if (it.t === 'colors') {
+        el = document.createElement('div'); el.className = 'mcolors';
+        var t = document.createElement('div'); t.className = 'mct'; t.textContent = 'Tab color · لون التبويب'; el.appendChild(t);
+        var row = document.createElement('div'); row.className = 'mcrow';
+        it.colors.forEach(function (c) { var b = document.createElement('button'); b.type = 'button'; b.className = 'sw' + (c === it.current ? ' on' : ''); b.style.background = c; b.title = c; b.addEventListener('click', function () { closeMenu(); it.fn(c); }); row.appendChild(b); });
+        var none = document.createElement('button'); none.type = 'button'; none.className = 'sw none' + (!it.current ? ' on' : ''); none.textContent = '∅'; none.title = 'No color · بدون لون'; none.addEventListener('click', function () { closeMenu(); it.fn(null); }); row.appendChild(none);
+        el.appendChild(row);
+      } else {
+        el = document.createElement('button'); el.type = 'button'; el.className = 'mi'; lab(el, it);
+        if (it.disabled) { el.disabled = true; if (it.title) el.title = it.title; } else el.addEventListener('click', function () { closeMenu(); it.fn(); });
+      }
+      m.appendChild(el);
+    });
+    document.body.appendChild(m); menuEl = m;
+    var r = m.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(x, window.innerWidth - r.width - 8)) + 'px';
+    m.style.top = Math.max(8, (y + r.height > window.innerHeight - 8) ? y - r.height : y) + 'px';
+    var f = m.querySelector('.mi:not([disabled])'); if (f) f.focus();
+  }
+  function sheetBadges(name) { var st = sheetStats(name), p = []; if (st.pending) p.push('✎' + st.pending); if (st.err) p.push('✖' + st.err); if (st.warn) p.push('⚠' + st.warn); return p.join(' '); }
+  /* Excel's "Activate" list: every sheet, one click to go there */
+  function sheetListItems() {
+    var items = [{ t: 'head', label: 'Go to sheet · اذهب إلى شيت' }, { label: '▦ Overview', ar: 'ملخص', checked: S.sheet === '__overview', fn: function () { showSheet('__overview'); } }];
+    visibleSheets().forEach(function (sh) { items.push({ label: sh.name, hint: sheetBadges(sh.name), checked: S.sheet === sh.name, fn: function () { showSheet(sh.name); } }); });
+    var hid = S.cur.wb.sheets.filter(isHidden);
+    if (hid.length) {
+      items.push({ t: 'sep' }, { t: 'head', label: 'Hidden sheets — click to unhide · شيتات مخفية' });
+      hid.forEach(function (sh) { items.push({ label: sh.name, italic: true, fn: function () { setHidden(sh.name, false); showSheet(sh.name); } }); });
+    }
+    return items;
+  }
+  var TAB_COLORS = ['#C00000', '#FF0000', '#FFC000', '#FFFF00', '#92D050', '#00B050', '#00B0F0', '#0070C0', '#002060', '#7030A0'];
+  function tabMenuItems(name) {
+    var sh = S.cur.wb.byName[name], st = sheetStats(name), hid = S.cur.wb.sheets.filter(isHidden), xl = 'Excel only: this tool changes cell values, tab colour and visibility. Insert, delete, rename, move and protect need Excel.';
+    var items = [{ t: 'head', label: name }];
+    if (S.sheet !== name) items.push({ label: 'Open this sheet', ar: 'افتح', fn: function () { showSheet(name); } });
+    items.push({ t: 'sep' },
+      { label: 'Keep all changes in this sheet', ar: 'وافق على الكل', hint: st.changes ? String(st.changes) : '', disabled: !st.changes, fn: function () { bulkSheet(name, 'accept'); } },
+      { label: 'Reject all changes in this sheet', ar: 'ارفض الكل', hint: st.changes ? String(st.changes) : '', disabled: !st.changes, fn: function () { bulkSheet(name, 'reject'); } },
+      { label: 'Show the changed cells', ar: 'اعرض الخلايا المتغيرة', hint: st.changes ? '✎ ' + st.changes : '', disabled: !st.changes, fn: function () { showSheet(name); S.tab = 'changes'; S.scope.changes = 'sheet'; refreshSide(); var c = S.cmp.changes.filter(function (x) { return x.sheet === name; })[0]; if (c) selectCell(name, c.a); } },
+      { label: 'Show the checker findings', ar: 'اعرض ملاحظات الفاحص', hint: (st.err || st.warn) ? ((st.err ? '✖ ' + st.err + ' ' : '') + (st.warn ? '⚠ ' + st.warn : '')) : '', disabled: !(st.err || st.warn), fn: function () { showSheet(name); S.tab = 'checks'; S.scope.checks = 'sheet'; refreshSide(); var i = S.issues.filter(function (x) { return x.sheet === name; })[0]; if (i) selectCell(name, i.a); } },
+      { t: 'sep' },
+      { t: 'colors', colors: TAB_COLORS, current: tabColorOf(sh), fn: function (c) { setTabColor(name, c); } },
+      { t: 'sep' },
+      { label: 'Hide', ar: 'إخفاء', disabled: visibleSheets().length <= 1, title: 'At least one sheet must stay visible', fn: function () { setHidden(name, true); } });
+    if (hid.length) items.push({ label: 'Unhide…', ar: 'إظهار', hint: String(hid.length), fn: function () {
+      var r = $('nav').getBoundingClientRect(); showMenu([{ t: 'head', label: 'Unhide sheet · إظهار شيت' }].concat(hid.map(function (x) { return { label: x.name, fn: function () { setHidden(x.name, false); showSheet(x.name); } }; })), r.left + 40, r.top - 4);
+    } });
+    items.push({ t: 'sep' }, { label: 'Insert…', disabled: true, title: xl }, { label: 'Delete', disabled: true, title: xl }, { label: 'Rename…', disabled: true, title: xl }, { label: 'Move or Copy…', disabled: true, title: xl }, { label: 'Protect Sheet…', disabled: true, title: xl });
+    return items;
+  }
+  function wireTabs() {
+    $('tabFirst').addEventListener('click', function () { tabScroll('first'); });
+    $('tabPrev').addEventListener('click', function () { tabScroll('prev'); });
+    $('tabNext').addEventListener('click', function () { tabScroll('next'); });
+    $('tabLast').addEventListener('click', function () { tabScroll('last'); });
+    $('nav').addEventListener('scroll', updateTabArrows);
+    $('nav').addEventListener('wheel', function (e) { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { $('nav').scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    window.addEventListener('resize', updateTabArrows);
+    $('tabArrows').addEventListener('contextmenu', function (e) { e.preventDefault(); showMenu(sheetListItems(), e.clientX, e.clientY); });
+    $('nav').addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      var b = e.target.closest('button[data-s]');
+      if (b && b.getAttribute('data-s') !== '__overview') showMenu(tabMenuItems(b.getAttribute('data-s')), e.clientX, e.clientY); else showMenu(sheetListItems(), e.clientX, e.clientY);
+    });
+    document.addEventListener('mousedown', function (e) { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }, true);
+    document.addEventListener('keydown', function (e) { if (menuEl && e.key === 'Escape') { closeMenu(); e.stopPropagation(); } }, true);
+    window.addEventListener('blur', closeMenu); window.addEventListener('resize', closeMenu);
   }
   function showSheet(name, keepSel) {
     S.sheet = name; S.range = null; S.extra = [];
@@ -306,7 +422,7 @@
     o.push('<table class="ovt"><tr><th>Sheet · الشيت</th><th>Changes</th><th>To review</th><th>Errors</th><th>Warnings</th><th>Auto</th><th>Decide for the whole sheet · قرار للشيت كله</th></tr>');
     S.cur.wb.sheets.forEach(function (sh) {
       var st = sheetStats(sh.name), info = S.cmp.sheets[sh.name] || { auto: 0 };
-      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (sh.state !== 'visible' ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td><td class="n">' + (st.changes ? '<button class="mini fix" data-bulk="accept" data-sheet="' + h(sh.name) + '" type="button">✔ Keep all</button> <button class="mini" data-bulk="reject" data-sheet="' + h(sh.name) + '" type="button">↺ Reject all</button>' : '') + '</td></tr>');
+      o.push('<tr class="go" data-s="' + h(sh.name) + '"><td>' + h(sh.name) + (isHidden(sh) ? ' <small>(hidden)</small>' : '') + '</td><td class="n">' + st.changes + '</td><td class="n">' + (st.pending || '') + '</td><td class="n">' + (st.err || '') + '</td><td class="n">' + (st.warn || '') + '</td><td class="n">' + (info.auto || '') + '</td><td class="n">' + (st.changes ? '<button class="mini fix" data-bulk="accept" data-sheet="' + h(sh.name) + '" type="button">✔ Keep all</button> <button class="mini" data-bulk="reject" data-sheet="' + h(sh.name) + '" type="button">↺ Reject all</button>' : '') + '</td></tr>');
     });
     o.push('</table></div>');
     return o.join('');
@@ -568,7 +684,7 @@
     if ((errs || pend) && !window.confirm((errs ? errs + ' checker error(s) are still open. ' : '') + (pend ? pend + ' change(s) are not reviewed yet (they stay as in this week’s file). ' : '') + '\n\nDownload anyway?\n(لسه فيه ملاحظات/تغييرات ما اتراجعتش — تنزّل برضه؟)')) return;
     var btn = $('btnDownload'); btn.disabled = true;
     try {
-      var out = await Writer.build(JSZip, S.cur.bytes, S.prev.wb, S.cur.wb, S.dec);
+      var out = await Writer.build(JSZip, S.cur.bytes, S.prev.wb, S.cur.wb, S.dec, S.ops);
       var base = S.cur.name.replace(/\.(xlsx|xlsm)$/i, '');
       download(base + '_reviewed.xlsx', out.bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       toast('Downloaded ' + base + '_reviewed.xlsx — ' + out.patched + ' cell(s) rewritten. (اتنزّل)');
@@ -701,7 +817,7 @@
     $('optAuto').addEventListener('change', function () { $('gridWrap').classList.toggle('noauto', !this.checked); });
     $('optIssues').addEventListener('change', function () { $('gridWrap').classList.toggle('noiss', !this.checked); });
     $('btnDownload').addEventListener('click', downloadReport);
-    $('btnLog').addEventListener('click', function () { download(S.cur.name.replace(/\.(xlsx|xlsm)$/i, '') + '_change_log.csv', Writer.changeLog(S.cmp, S.dec, S.view, S.cur.wb.styles), 'text/csv;charset=utf-8'); });
+    $('btnLog').addEventListener('click', function () { download(S.cur.name.replace(/\.(xlsx|xlsm)$/i, '') + '_change_log.csv', Writer.changeLog(S.cmp, S.dec, S.view, S.cur.wb.styles, S.ops), 'text/csv;charset=utf-8'); });
     $('btnReset').addEventListener('click', function () { if (window.confirm('Close this comparison and choose new files?\n(الجلسة بتتحفظ تلقائيًا لنفس الملفين)')) location.reload(); });
     document.addEventListener('keydown', function (e) {
       if (selectionKeys(e)) { e.preventDefault(); return; }
@@ -838,5 +954,5 @@
     toast('Saved your value for ' + sel.a + '. Download the report to get it in the file. (اتحفظت)');
   }
 
-  wireDrop(); wire(); wireBar();
+  wireDrop(); wire(); wireBar(); wireTabs();
 })();

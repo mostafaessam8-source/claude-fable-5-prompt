@@ -77,7 +77,47 @@
     var all = m[0].replace(/<cellXfs\b([^>]*?)count="\d+"/, '<cellXfs$1count="' + (xfs.length + 1) + '"').replace('</cellXfs>', nx + '</cellXfs>');
     return { xml: stylesXml.replace(m[0], all), index: xfs.length };
   }
-  async function build(JSZip, curBytes, prev, cur, dec) {
+  /* tab colour: '#RRGGBB' sets it, null removes it (<tabColor> must be the first child of <sheetPr>) */
+  function setTabColor(xml, hex) {
+    var tag = hex ? '<tabColor rgb="FF' + hex.slice(1).toUpperCase() + '"/>' : '';
+    if (/<sheetPr\b[^>]*\/>/.test(xml)) return xml.replace(/<sheetPr\b([^>]*)\/>/, tag ? '<sheetPr$1>' + tag + '</sheetPr>' : '<sheetPr$1/>');
+    if (/<sheetPr\b/.test(xml)) {
+      if (/<tabColor\b[^>]*\/>/.test(xml)) return xml.replace(/<tabColor\b[^>]*\/>/, tag);
+      return tag ? xml.replace(/(<sheetPr\b[^>]*>)/, '$1' + tag) : xml;
+    }
+    return tag ? xml.replace(/(<worksheet\b[^>]*>)/, '$1<sheetPr>' + tag + '</sheetPr>') : xml;
+  }
+  /* sheet properties chosen in the page: ops = { hidden: {name: true|false}, color: {name: '#RRGGBB'|null} } */
+  async function applySheetOps(zip, cur, ops) {
+    var hidden = ops.hidden || {}, colors = ops.color || {}, any = Object.keys(hidden).length || Object.keys(colors).length;
+    if (!any) return;
+    var wb = await Xl.readText(zip, 'xl/workbook.xml'), finalHidden = {};
+    cur.sheets.forEach(function (sh) { finalHidden[sh.name] = hidden[sh.name] != null ? !!hidden[sh.name] : sh.state !== 'visible'; });
+    wb = wb.replace(/<sheet\b([^>]*?)\/>/g, function (m, at) {
+      var a = Xl.attrs(at); if (!(a.name in hidden)) return m;
+      var want = !!hidden[a.name], has = !!a.state && a.state !== 'visible';
+      if (want === has) return m;
+      at = at.replace(/\sstate="[^"]*"/, '') + (want ? ' state="hidden"' : '');
+      return '<sheet' + at + '/>';
+    });
+    // the active tab must stay a visible sheet
+    var av = /<workbookView\b[^>]*?\sactiveTab="(\d+)"/.exec(wb), activeIdx = av ? +av[1] : 0, active = cur.sheets[activeIdx];
+    if (active && finalHidden[active.name]) {
+      var ni = -1; cur.sheets.forEach(function (sh, i) { if (ni < 0 && !finalHidden[sh.name]) ni = i; });
+      if (ni >= 0) {
+        wb = wb.replace(/(<workbookView\b[^>]*?\sactiveTab=")\d+(")/, '$1' + ni + '$2').replace(/(<workbookView\b[^>]*?\sfirstSheet=")\d+(")/, '$1' + ni + '$2');
+        var oldXml = await Xl.readText(zip, active.path); zip.file(active.path, oldXml.replace(/\stabSelected="1"/, ''));
+        var nxt = cur.sheets[ni], nxml = await Xl.readText(zip, nxt.path);
+        if (!/tabSelected="1"/.test(nxml)) zip.file(nxt.path, nxml.replace(/<sheetView\b/, '<sheetView tabSelected="1"'));
+      }
+    }
+    zip.file('xl/workbook.xml', wb);
+    for (var name in colors) {
+      var sh = cur.byName[name]; if (!sh) continue;
+      var x = await Xl.readText(zip, sh.path); zip.file(sh.path, setTabColor(x, colors[name]));
+    }
+  }
+  async function build(JSZip, curBytes, prev, cur, dec, ops) {
     var view = Diff.makeView(prev, cur, dec), bySheet = {}, n = 0;
     Object.keys(dec).forEach(function (k) {
       var d = dec[k];
@@ -103,6 +143,7 @@
       var sh = cur.byName[name], xml = await Xl.readText(zip, sh.path);
       zip.file(sh.path, patchSheet(xml, bySheet[name], sh));
     }
+    if (ops) await applySheetOps(zip, cur, ops);
     // recalculate on open; drop the calculation chain (it lists formula cells that may no longer be formulas)
     var wb = await Xl.readText(zip, 'xl/workbook.xml');
     if (/<calcPr\b/.test(wb)) wb = wb.replace(/<calcPr\b([^>]*?)(\/?)>/, function (_, at, sl) { return '<calcPr' + at.replace(/\sfullCalcOnLoad="[^"]*"/, '') + ' fullCalcOnLoad="1"' + sl + '>'; });
@@ -122,7 +163,7 @@
   function csvCell(v) { v = v == null ? '' : String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function show(c, st) { if (!c || (c.k === '' && c.f == null)) return ''; return c.f != null ? '=' + c.f + (c.k !== '' ? '  → ' + Xl.formatCell(c, st) : '') : Xl.formatCell(c, st); }
   /* The change log as CSV (UTF-8 with BOM so Excel reads Arabic text correctly). */
-  function changeLog(cmp, dec, view, st) {
+  function changeLog(cmp, dec, view, st, ops) {
     var rows = [['Sheet', 'Cell', 'Change', 'Last week', 'This week', 'Decision', 'Final value']];
     cmp.changes.forEach(function (ch) {
       var d = dec[ch.id], m = d ? d.m : 'pending', fin = view.eff(ch.sheet, ch.a);
@@ -133,8 +174,12 @@
       var i = k.lastIndexOf('!'), sheet = k.slice(0, i), a = k.slice(i + 1);
       rows.push([sheet, a, 'manual edit', show(view.prevCell(sheet, a), st), show(view.curCell(sheet, a), st), 'custom', show(view.eff(sheet, a), st)]);
     });
+    if (ops) {
+      Object.keys(ops.hidden || {}).forEach(function (n) { rows.push([n, '', 'sheet property', '', '', 'custom', ops.hidden[n] ? 'hidden' : 'visible']); });
+      Object.keys(ops.color || {}).forEach(function (n) { rows.push([n, '', 'sheet property', '', '', 'custom', 'tab colour ' + (ops.color[n] || 'none')]); });
+    }
     return '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
   }
 
-  return { build: build, patchSheet: patchSheet, cellXml: cellXml, changeLog: changeLog };
+  return { setTabColor: setTabColor, build: build, patchSheet: patchSheet, cellXml: cellXml, changeLog: changeLog };
 });
