@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly Report Compare</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>Weekly Report <b>Compare</b> <span class="ar">مقارنة التقرير الأسبوعي</span></h1>
+        <p>Programme Controls · <span class="ver" id="ver">Version 1.0 · build __BUILD__</span></p>
+      </div>
+    </div>
+    <div class="top-actions" id="topActions" hidden>
+      <button class="btn ghost" id="btnLog" type="button" title="Every change and the decision taken, as a CSV file">Change log <span class="ar">سجل التغييرات</span></button>
+      <button class="btn ghost" id="btnReset" type="button">Start over <span class="ar">ابدأ من جديد</span></button>
+      <button class="btn primary" id="btnDownload" type="button">Download reviewed report <span class="ar">نزّل التقرير النهائي</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="upload">
+      <div class="two">
+        <div class="drop-box" data-slot="prev" tabindex="0" role="button" aria-label="Choose last week's report">
+          <input type="file" accept=".xlsx,.xlsm" hidden>
+          <span class="badge">1</span>
+          <h2>Last week’s report <span class="ar">تقرير الأسبوع الماضي</span></h2>
+          <p class="fname" data-for="prev">Drop the <code>.xlsx</code> here, or click to choose</p>
+          <p class="ar-note">اسحب الملف هنا أو اضغط للاختيار</p>
+        </div>
+        <div class="drop-box" data-slot="cur" tabindex="0" role="button" aria-label="Choose this week's report">
+          <input type="file" accept=".xlsx,.xlsm" hidden>
+          <span class="badge">2</span>
+          <h2>This week’s report <span class="ar">تقرير الأسبوع الحالي</span></h2>
+          <p class="fname" data-for="cur">Drop the <code>.xlsx</code> here, or click to choose</p>
+          <p class="ar-note">اسحب الملف هنا أو اضغط للاختيار</p>
+        </div>
+      </div>
+      <p class="privacy">The files are read in your browser only — nothing is uploaded to any server. <span class="ar">الملفات بتتعالج على جهازك بس — مفيش حاجة بتترفع لأي سيرفر.</span></p>
+      <ol class="steps">
+        <li><b>1</b> Upload both weeks <small>ارفع النسختين</small></li>
+        <li><b>2</b> Review every change — keep it, reject it (back to last week’s value) or type your own <small>راجع كل تغيير: وافق / ارفض / عدّل</small></li>
+        <li><b>3</b> Fix what the checker flags <small>صحّح ملاحظات الفاحص</small></li>
+        <li><b>4</b> Download the final report <small>نزّل التقرير النهائي</small></li>
+      </ol>
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <section id="app" hidden>
+      <nav class="nav" id="nav" aria-label="Sheets"></nav>
+      <div class="center">
+        <div class="toolbar" id="toolbar">
+          <h2 id="sheetTitle"></h2>
+          <div class="tb-btns">
+            <button class="chip" id="btnPrevCh" type="button" title="Previous change (P)">◀ Change</button>
+            <button class="chip" id="btnNextCh" type="button" title="Next change (N)">Change ▶</button>
+            <button class="chip" id="btnNextIss" type="button" title="Next issue (I)">Issue ▶</button>
+            <label class="chk"><input type="checkbox" id="optAuto"> auto-calculated <small>محسوبة تلقائيًا</small></label>
+            <label class="chk"><input type="checkbox" id="optIssues" checked> checker marks <small>علامات الفاحص</small></label>
+            <button class="chip ok" id="btnAcceptSheet" type="button">Accept all in sheet <small>وافق على الكل</small></button>
+          </div>
+        </div>
+        <div class="legend" id="legend">
+          <span><i class="k pending"></i>changed — to review <small>تغيير للمراجعة</small></span>
+          <span><i class="k accept"></i>kept <small>موافق</small></span>
+          <span><i class="k reject"></i>rejected (last week’s value) <small>مرفوض</small></span>
+          <span><i class="k custom"></i>edited by you <small>عدّلته</small></span>
+          <span><i class="k auto"></i>auto-calculated <small>محسوب</small></span>
+          <span><i class="k err"></i>checker: error <small>خطأ</small></span>
+          <span><i class="k warn"></i>checker: warning <small>تنبيه</small></span>
+        </div>
+        <div class="grid-wrap" id="gridWrap" tabindex="-1"></div>
+      </div>
+      <aside class="side">
+        <div class="tabs" role="tablist">
+          <button class="tab on" data-tab="cell" role="tab" type="button">Cell <small>الخلية</small></button>
+          <button class="tab" data-tab="changes" role="tab" type="button">Changes <small>التغييرات</small> <b class="cnt" id="cntChanges"></b></button>
+          <button class="tab" data-tab="checks" role="tab" type="button">Checker <small>الفاحص</small> <b class="cnt err" id="cntChecks"></b></button>
+        </div>
+        <div class="panel" id="panel"></div>
+      </aside>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="vendor/jszip.min.js"></script>
+  <script src="js/xl.js"></script>
+  <script src="js/diff.js"></script>
+  <script src="js/checks.js"></script>
+  <script src="js/writer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

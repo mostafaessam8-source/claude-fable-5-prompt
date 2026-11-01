@@ -71,6 +71,15 @@ jobs:
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/design-gantt/index.html
           sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/design-gantt/index.html
+      # Report Compare: upload last week's and this week's weekly report .xlsx, review the changes (keep / reject / edit), run the checker, download (static, no build) at /report-compare/
+      - name: Add the Report Compare site
+        run: |
+          node report-compare/tests/compare.test.js
+          cp -r report-compare dist/report-compare
+          rm -rf dist/report-compare/tests dist/report-compare/package.json dist/report-compare/README.md
+          V="${GITHUB_SHA::7}"
+          sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/report-compare/index.html
+          sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/report-compare/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
