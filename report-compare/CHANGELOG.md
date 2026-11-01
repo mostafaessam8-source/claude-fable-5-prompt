@@ -4,6 +4,15 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 3.0 — 2026-11-01
+The sheet is now editable like Excel — formatting, tables and layout are written into the downloaded report.
+- **Ribbon** with Excel's tabs: File, Home, Insert, Page Layout, Formulas, Data, Review, View. What the tool can really do is live; the rest is greyed with the reason (it needs Excel).
+- **Home**: Paste (values / formulas / formats), Cut, Copy, Format Painter · font, size, Bold / Italic / Underline, **fill colour, font colour**, borders · alignment, wrap, indent, **merge & center** · number formats, %, comma, decimals ·
+  **Format as Table** (real Excel tables, 8 styles) and Cell Styles · row height / column width / autofit / hide / unhide · AutoSum (Sum, Average, Count, Max, Min), Clear, Sort A→Z / Z→A, Find / Replace.
+- **Insert**: Table (`Ctrl+T`). **Formulas**: Insert Function (supported functions), Show Formulas. **Data**: Sort. **View**: Gridlines / Headings / Formula Bar, Zoom, **Freeze Panes** (written to the file).
+- Undo / Redo (`Ctrl+Z` / `Ctrl+Y`) for every decision, edit, format and layout change; `Ctrl+C/X/V`, `Ctrl+B/I/U`, `Ctrl+F/H` work in the sheet.
+- Existing tables of the report are drawn with their style; frozen panes of the report are kept.
+
 ## 2.4 — 2026-11-01
 - Zoom like Excel's, bottom right: `−`, a slider (25 %–400 %), `+` and the percentage (click it = back to 100 %). `Ctrl` + mouse wheel (or a trackpad pinch) zooms around the pointer. The zoom is remembered.
 

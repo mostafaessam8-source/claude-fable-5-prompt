@@ -5,9 +5,10 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = {
     slots: { prev: null, cur: null }, prev: null, cur: null, cmp: null, dec: {}, dismissed: {}, view: null, issues: [], issueMap: {},
-    sheet: '__overview', sel: null, range: null, extra: [], ops: { hidden: {}, color: {} }, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
+    sheet: '__overview', sel: null, range: null, extra: [], ops: { hidden: {}, color: {} }, fmt: {}, lay: emptyLay(), undo: [], redo: [], showFormulas: false, hideGrid: null, hideHeads: false, clip: null, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
   };
   var xfCache = {};
+  function emptyLay() { return { merges: {}, colw: {}, colHidden: {}, rowh: {}, rowHidden: {}, freeze: {}, tables: [] }; }
 
   function h(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function key(sheet, a) { return sheet + '!' + a; }
@@ -52,14 +53,55 @@
     S.prev = S.slots.prev; S.cur = S.slots.cur;
     S.cmp = Diff.compare(S.prev.wb, S.cur.wb);
     S.session = 'rc.v1.' + [S.prev.name, S.prev.size, S.cur.name, S.cur.size].join('|');
-    S.dec = {}; S.dismissed = {}; S.ops = { hidden: {}, color: {} };
-    try { var saved = JSON.parse(localStorage.getItem(S.session) || 'null'); if (saved) { S.dec = saved.dec || {}; S.dismissed = saved.dismissed || {}; S.ops = saved.ops || { hidden: {}, color: {} }; if (Object.keys(S.dec).length) toast('Restored your earlier review of these two files. (اتسترجع التقييم السابق)'); } } catch (e) { /* no storage */ }
+    S.dec = {}; S.dismissed = {}; S.ops = { hidden: {}, color: {} }; S.fmt = {}; S.lay = emptyLay(); S.undo = []; S.redo = []; baseStyleCache = {};
+    try { var saved = JSON.parse(localStorage.getItem(S.session) || 'null'); if (saved) { S.dec = saved.dec || {}; S.dismissed = saved.dismissed || {}; S.ops = saved.ops || { hidden: {}, color: {} }; S.fmt = saved.fmt || {}; S.lay = Object.assign(emptyLay(), saved.lay || {}); if (Object.keys(S.dec).length) toast('Restored your earlier review of these two files. (اتسترجع التقييم السابق)'); } } catch (e) { /* no storage */ }
     S.sheet = '__overview'; S.sel = null; S.tab = 'cell';
     $('upload').hidden = true; $('app').hidden = false; $('topActions').hidden = false;
-    recompute(); renderNav(); showSheet('__overview');
+    growFromEdits(); recompute(); renderNav(); showSheet('__overview');
   }
 
-  function save() { try { localStorage.setItem(S.session, JSON.stringify({ dec: S.dec, dismissed: S.dismissed, ops: S.ops })); } catch (e) { /* ignore */ } }
+  function save() { try { localStorage.setItem(S.session, JSON.stringify({ dec: S.dec, dismissed: S.dismissed, ops: S.ops, fmt: S.fmt, lay: S.lay })); } catch (e) { /* ignore */ } }
+
+  /* ---------- undo / redo (every decision, edit, format and layout change) ---------- */
+  function snap() { return JSON.stringify({ dec: S.dec, fmt: S.fmt, lay: S.lay, ops: S.ops, dismissed: S.dismissed }); }
+  function pushUndo() { S.undo.push(snap()); if (S.undo.length > 100) S.undo.shift(); S.redo = []; if (window.Ribbon && Ribbon.update) Ribbon.update(); }
+  function restoreSnap(j) {
+    var o = JSON.parse(j); S.dec = o.dec; S.fmt = o.fmt; S.lay = Object.assign(emptyLay(), o.lay); S.ops = o.ops; S.dismissed = o.dismissed;
+    growFromEdits(); save(); recompute(); renderNav();
+    if (S.sheet === '__overview') showSheet('__overview'); else rerenderSheet();
+  }
+  /* the grid must be big enough for cells the reviewer filled / formatted outside the original used range */
+  function grow(sheet, r, c) { var sh = S.cur.wb.byName[sheet]; if (!sh) return; if (r > sh.maxR) sh.maxR = Math.min(r, 20000); if (c > sh.maxC) sh.maxC = Math.min(c, 300); }
+  function growFromEdits() {
+    Object.keys(S.dec).forEach(function (k) { var i = k.lastIndexOf('!'), p = Xl.parseAddr(k.slice(i + 1)); if (p) grow(k.slice(0, i), p.r, p.c); });
+    Object.keys(S.fmt).forEach(function (sn) { Object.keys(S.fmt[sn]).forEach(function (a) { var p = Xl.parseAddr(a); if (p) grow(sn, p.r, p.c); }); });
+    Object.keys(S.lay.merges).forEach(function (sn) { (S.lay.merges[sn].add || []).forEach(function (g) { grow(sn, g.r2, g.c2); }); });
+  }
+  function undo() { if (!S.undo.length) { toast('Nothing to undo. (مفيش حاجة للتراجع)'); return; } S.redo.push(snap()); restoreSnap(S.undo.pop()); }
+  function redo() { if (!S.redo.length) { toast('Nothing to redo. (مفيش حاجة للإعادة)'); return; } S.undo.push(snap()); restoreSnap(S.redo.pop()); }
+  /* draw the sheet again keeping the scroll position and the selection */
+  function rerenderSheet() {
+    if (S.sheet === '__overview') return;
+    var w = $('gridWrap'), sl = w.scrollLeft, st = w.scrollTop, rng = S.range, ex = S.extra;
+    showSheet(S.sheet, true); S.range = rng; S.extra = ex; w.scrollLeft = sl; w.scrollTop = st; paintMarks(); refreshSide();
+  }
+  /* cheap refresh after a style-only change; falls back to a full redraw when the structure of a cell changes (wrap, frozen cells) */
+  function refreshCells(sheet, addrs) {
+    if (sheet !== S.sheet) return;
+    var sh = S.cur.wb.byName[sheet], tables = tablesOf(sh), fr = freezeOf(sh), full = false;
+    addrs.forEach(function (a) {
+      var td = tdOf(a); if (!td || full) return;
+      var p = Xl.parseAddr(a), cell = sh.cells.get(a), ec = S.view.eff(sheet, a), ts = tdStyleFor(sheet, a, cell, ec, tables);
+      if (ts.wrap !== td.classList.contains('wrap') || (fr && (p.r < fr.r || p.c < fr.c))) { full = true; return; }
+    });
+    if (full) { rerenderSheet(); return; }
+    addrs.forEach(function (a) {
+      var td = tdOf(a); if (!td) return;
+      var cell = sh.cells.get(a), ec = S.view.eff(sheet, a), ts = tdStyleFor(sheet, a, cell, ec, tables);
+      td.style.cssText = ts.css; setTdText(td, displayCell(sheet, a));
+    });
+    paintSelRects(); updateRuler();
+  }
 
   function recompute() {
     S.view = Diff.makeView(S.prev.wb, S.cur.wb, S.dec);
@@ -103,8 +145,10 @@
   function displayCell(sheet, a) {
     var ec = S.view.eff(sheet, a);
     if (!ec) return '';
+    if (S.showFormulas && ec.f != null) return '=' + ec.f;
     if (ec.k === '' && ec.f != null) return 'ƒ ' + short(ec.f, 40);
-    var cc = S.cur.wb.byName[sheet].cells.get(a);
+    var cc = S.cur.wb.byName[sheet].cells.get(a), d = deltaOf(sheet, a);
+    if (d && ec.k === 'n' && (d.nf || d.reset)) return Xl.formatNumber(ec.v, d.nf || 'General');       /* number format chosen in the ribbon */
     return fmtTyped({ k: ec.k, v: ec.v, s: cc ? cc.s : 0, date: ec.date });
   }
   function showCellVal(c, wb) { if (!c || (c.k === '' && c.f == null)) return ''; return Xl.formatCell(c, wb.styles); }
@@ -120,50 +164,108 @@
     return String(c.v);
   }
 
+  /* ---------- formatting state: base style of the cell + the reviewer's delta (+ table look) ---------- */
+  var baseStyleCache = {};
+  function baseStyle(i) { return baseStyleCache[i] || (baseStyleCache[i] = Fmt.fromXf(S.cur.wb.styles, i)); }
+  function deltaOf(sheet, a) { var m = S.fmt[sheet]; return m ? m[a] : undefined; }
+  function sameRect(p, q) { return p.r1 === q.r1 && p.c1 === q.c1 && p.r2 === q.r2 && p.c2 === q.c2; }
+  function mergesOf(sh) { var o = S.lay.merges[sh.name]; return !o ? sh.merges : sh.merges.filter(function (g) { return !(o.remove || []).some(function (r) { return sameRect(r, g); }); }).concat(o.add || []); }
+  function freezeOf(sh) { return Object.prototype.hasOwnProperty.call(S.lay.freeze, sh.name) ? S.lay.freeze[sh.name] : (sh.freeze || null); }
+  function refRect(ref) { var p = ref.split(':'), a1 = Xl.parseAddr(p[0]), a2 = Xl.parseAddr(p[1] || p[0]); return { r1: Math.min(a1.r, a2.r), c1: Math.min(a1.c, a2.c), r2: Math.max(a1.r, a2.r), c2: Math.max(a1.c, a2.c) }; }
+  function tablesOf(sh) {
+    var out = [];
+    (sh.tables || []).forEach(function (t) { if (t.ref) out.push(Object.assign(refRect(t.ref), { name: t.name, style: t.style, stripes: t.stripes, headers: t.headers, fromFile: true })); });
+    S.lay.tables.forEach(function (t) { if (t.sheet === sh.name) out.push(Object.assign(refRect(t.ref), { name: t.name, style: t.style, stripes: t.stripes !== false, headers: t.headers !== false })); });
+    return out;
+  }
+  function tableLookAt(tables, r, c) {
+    for (var i = 0; i < tables.length; i++) {
+      var t = tables[i]; if (r < t.r1 || r > t.r2 || c < t.c1 || c > t.c2) continue;
+      var ts = Fmt.tableStyleById(t.style); if (!ts) return t.headers && r === t.r1 ? { glyph: true } : null;
+      var look = Fmt.tableLook(ts, r - t.r1, t.headers); if (!t.stripes && !(t.headers && r === t.r1)) delete look.fill;
+      if (t.headers && r === t.r1) look.glyph = true;
+      return look;
+    }
+    return null;
+  }
+  /* the style object a cell is drawn with (null = just its workbook style) */
+  function styleObjFor(sheet, a, tables) {
+    var d = deltaOf(sheet, a), look = tables && tables.length ? tableLookAt(tables, Xl.parseAddr(a).r, Xl.parseAddr(a).c) : null;
+    if (!d && !(look && (look.fill || look.color || look.b))) return null;
+    var cell = S.cur.wb.byName[sheet].cells.get(a), o = Fmt.clone(baseStyle(d && d.reset ? 0 : (cell ? cell.s : 0)));
+    if (look) { if (look.fill && !o.fill) o.fill = look.fill; if (look.color && !o.color) o.color = look.color; if (look.b) o.b = true; }
+    if (d) { var dd = Object.assign({}, d); delete dd.reset; o = Fmt.apply(o, dd); }
+    return o;
+  }
+  function tdStyleFor(sheet, a, cell, ec, tables) {
+    var o = styleObjFor(sheet, a, tables), xf = S.cur.wb.styles.xfs[cell ? cell.s : 0], css = o ? Fmt.cssOf(o) : xfCss(cell ? cell.s : 0);
+    var h0 = o ? o.h : (xf && xf.h && xf.h !== 'general' ? xf.h : '');
+    return { css: css + (ec && ec.k === 'n' && !h0 ? ';text-align:right' : ''), wrap: o ? !!o.wrap : !!(xf && xf.wrap), h: h0 };
+  }
+
   /* ---------- sheet grid ---------- */
   function colPx(sh) {
-    var w = [], c;
+    var w = [], c, ov = S.lay.colw[sh.name] || {}, hid = S.lay.colHidden[sh.name] || {};
     for (c = 1; c <= sh.maxC; c++) w[c] = Math.round(sh.defW * 7);
     sh.cols.forEach(function (d) { for (c = d.min; c <= Math.min(d.max, sh.maxC); c++) w[c] = d.hidden ? 0 : Math.round(d.w * 7); });
+    for (c = 1; c <= sh.maxC; c++) { if (ov[c] != null) w[c] = Math.round(ov[c] * 7); if (hid[c] != null) w[c] = hid[c] ? 0 : (w[c] || Math.round((ov[c] || sh.defW) * 7)); }
     return w;
   }
+  function rowHFor(sh) {
+    var ov = S.lay.rowh[sh.name] || {}, hid = S.lay.rowHidden[sh.name] || {};
+    return function (r) {
+      var q = sh.rows.get(r), hidden = hid[r] != null ? !!hid[r] : !!(q && q.hidden);
+      return hidden ? 0 : Math.round(((ov[r] != null ? ov[r] : (q && q.ht)) || sh.defH) * 4 / 3);
+    };
+  }
   function renderGrid(name) {
-    var sh = S.cur.wb.byName[name], w = colPx(sh), out = [], r, c;
-    var top = {}, covered = {};
-    function rowH(r) { var q = sh.rows.get(r); return q && q.hidden ? 0 : Math.round(((q && q.ht) || sh.defH) * 4 / 3); }
-    sh.merges.forEach(function (g) {
+    var sh = S.cur.wb.byName[name], w = colPx(sh), out = [], r, c, merges = mergesOf(sh), tables = tablesOf(sh), fr = freezeOf(sh);
+    var top = {}, covered = {}, rowH = rowHFor(sh);
+    merges.forEach(function (g) {
       top[Xl.addr(g.c1, g.r1)] = g;
       for (var rr = g.r1; rr <= g.r2; rr++) for (var cc = g.c1; cc <= g.c2; cc++) if (rr !== g.r1 || cc !== g.c1) covered[Xl.addr(cc, rr)] = true;
     });
     var totalW = 44; for (c = 1; c <= sh.maxC; c++) totalW += w[c];
+    // offsets of the frozen rows / columns (sticky cells)
+    var topOff = [], leftOff = [], acc = 0;
+    if (fr) { for (r = 1; r < fr.r; r++) { topOff[r] = acc; acc += rowH(r); } acc = 0; for (c = 1; c < fr.c; c++) { leftOff[c] = acc; acc += w[c]; } }
     out.push('<table class="sheet" style="width:' + totalW + 'px"><colgroup><col style="width:44px">');
     for (c = 1; c <= sh.maxC; c++) out.push(w[c] ? '<col style="width:' + w[c] + 'px">' : '<col style="width:0">');
     out.push('</colgroup><thead><tr><th class="rh"></th>');
     for (c = 1; c <= sh.maxC; c++) if (w[c]) out.push('<th>' + Xl.numToCol(c) + '</th>'); else out.push('<th style="width:0;padding:0;border:0"></th>');
     out.push('</tr></thead><tbody>');
     for (r = 1; r <= sh.maxR; r++) {
-      var ri = sh.rows.get(r);
-      if (ri && ri.hidden) continue;
       var ht = rowH(r);
+      if (!ht) continue;
       out.push('<tr style="height:' + ht + 'px"><th class="rh">' + r + '</th>');
       for (c = 1; c <= sh.maxC; c++) {
         var a = Xl.addr(c, r);
         if (covered[a] || !w[c]) { if (!w[c]) out.push('<td style="padding:0;border:0"></td>'); continue; }
-        var cell = sh.cells.get(a), xf = S.cur.wb.styles.xfs[cell ? cell.s : 0];
+        var cell = sh.cells.get(a);
         var g = top[a], span = g ? ' colspan="' + (g.c2 - g.c1 + 1) + '" rowspan="' + (g.r2 - g.r1 + 1) + '"' : '';
         var ec = S.view.eff(name, a), txt = ec ? displayCell(name, a) : '';
-        var num = ec && ec.k === 'n' && !(xf && xf.h && xf.h !== 'general');
-        var wrapCell = !!(xf && xf.wrap), inner = h(txt), extra = '';
-        if (wrapCell) { var hh = 0; if (g) { for (var q = g.r1; q <= g.r2; q++) hh += rowH(q); } else hh = ht; inner = '<div class="c" style="max-height:' + Math.max(8, hh - 2) + 'px">' + inner + '</div>'; }
-        else if (!g && ec && ec.k === 's' && (!xf || !xf.h || xf.h === 'general' || xf.h === 'left') && w[c + 1] && c < sh.maxC && !covered[Xl.addr(c + 1, r)] && !S.view.eff(name, Xl.addr(c + 1, r))) extra = ';overflow:visible;text-overflow:clip';   /* text spills into the empty cell on its right, as in Excel */
-        out.push('<td data-a="' + a + '"' + span + (wrapCell ? ' class="wrap"' : '') + ' style="' + xfCss(cell ? cell.s : 0) + (num ? ';text-align:right' : '') + extra + '">' + inner + '</td>');
+        var ts = tdStyleFor(name, a, cell, ec, tables), css = ts.css, classes = [], look = tables.length ? tableLookAt(tables, r, c) : null;
+        var wrapCell = ts.wrap, inner = h(txt), extra = '';
+        if (wrapCell) { var hh = 0; if (g) { for (var q = g.r1; q <= g.r2; q++) hh += rowH(q); } else hh = ht; inner = '<div class="c" style="max-height:' + Math.max(8, hh - 2) + 'px">' + inner + '</div>'; classes.push('wrap'); }
+        else if (!g && ec && ec.k === 's' && (!ts.h || ts.h === 'left') && w[c + 1] && c < sh.maxC && !covered[Xl.addr(c + 1, r)] && !S.view.eff(name, Xl.addr(c + 1, r))) extra = ';overflow:visible;text-overflow:clip';
+        if (look && look.glyph) { inner += '<span class="tf">▾</span>'; classes.push('tblh'); }
+        if (fr && (r < fr.r || c < fr.c)) {   /* frozen pane: sticky cells with an opaque background */
+          var fz = (r < fr.r ? 'top:calc(var(--hh,21px) + ' + topOff[r] + 'px);' : '') + (c < fr.c ? 'left:calc(var(--rhw,44px) + ' + leftOff[c] + 'px);' : '');
+          css = (css.indexOf('background-color') < 0 ? 'background-color:#fff;' : '') + css + ';position:sticky;' + fz + 'z-index:' + (r < fr.r && c < fr.c ? 3 : 2);
+          classes.push('frz'); if (r === fr.r - 1) classes.push('frzb'); if (c === fr.c - 1) classes.push('frzr');
+        }
+        out.push('<td data-a="' + a + '"' + span + (classes.length ? ' class="' + classes.join(' ') + '"' : '') + ' style="' + css + extra + '">' + inner + '</td>');
       }
       out.push('</tr>');
     }
     out.push('</tbody></table>');
     return out.join('');
   }
-  function setTdText(td, t) { var c = td.firstChild && td.firstChild.nodeType === 1 && td.firstChild.className === 'c' ? td.firstChild : td; if (c.textContent !== t) c.textContent = t; }
+  function setTdText(td, t) {
+    var c = td.firstChild && td.firstChild.nodeType === 1 && td.firstChild.className === 'c' ? td.firstChild : td, g = td.querySelector && td.querySelector('.tf');
+    if (g) { var f0 = td.firstChild; if (f0 && f0.nodeType === 1 && f0.className === 'c') f0.textContent = t; else if (f0 && f0.nodeType === 3) f0.nodeValue = t; else td.insertBefore(document.createTextNode(t), f0); return; }
+    if (c.textContent !== t) c.textContent = t;
+  }
   function cls(sheet, a) {
     var k = key(sheet, a), d = S.dec[k], ch = S.cmp.byKey[k], c = [];
     if (ch && !ch.auto) c.push(!d ? 'pending' : d.m === 'accept' ? 'accept' : d.m === 'reject' ? 'reject' : 'custom');
@@ -202,6 +304,7 @@
       var hc = tbl.tHead.rows[0].cells; for (i = 1; i < hc.length; i++) GRID.colTh[i] = hc[i];
       var rows = tbl.tBodies[0].rows; for (i = 0; i < rows.length; i++) GRID.rowTh[parseInt(rows[i].firstChild.textContent, 10)] = rows[i].firstChild;
     }
+    if (tbl) { tbl.style.setProperty('--hh', (tbl.tHead.rows[0].offsetHeight || 21) + 'px'); tbl.style.setProperty('--rhw', S.hideHeads ? '0px' : '44px'); }
     GRID.keys = [];
     S.cmp.changes.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
     S.cmp.auto.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
@@ -299,14 +402,14 @@
   }
   function setHidden(name, val) {
     if (val && visibleSheets().length <= 1) { toast('At least one sheet must stay visible. (لازم يفضل شيت واحد ظاهر)'); return; }
-    var sh = S.cur.wb.byName[name];
+    var sh = S.cur.wb.byName[name]; pushUndo();
     if (val === (sh.state !== 'visible')) delete S.ops.hidden[name]; else S.ops.hidden[name] = val;
     save();
     if (val && S.sheet === name) showSheet('__overview'); else renderNav();
     toast('"' + name + '" ' + (val ? 'hidden' : 'shown') + ' — the downloaded report gets the same. (' + (val ? 'اتخفى' : 'اتظهر') + ')');
   }
   function setTabColor(name, hex) {
-    var sh = S.cur.wb.byName[name];
+    var sh = S.cur.wb.byName[name]; pushUndo();
     if ((hex || null) === (sh.tabColor || null)) delete S.ops.color[name]; else S.ops.color[name] = hex;
     save(); renderNav();
   }
@@ -321,6 +424,7 @@
     items.forEach(function (it) {
       var el;
       if (it.t === 'sep') { el = document.createElement('div'); el.className = 'msep'; }
+      else if (it.t === 'node') { el = it.el; }
       else if (it.t === 'head') { el = document.createElement('div'); el.className = 'mhead'; el.textContent = it.label; }
       else if (it.t === 'colors') {
         el = document.createElement('div'); el.className = 'mcolors';
@@ -402,7 +506,7 @@
     if (isOv) { wrap.className = 'grid-wrap'; wrap.innerHTML = renderOverview(); }
     else {
       wrap.innerHTML = renderGrid(name);
-      wrap.className = 'grid-wrap' + ($('optAuto').checked ? '' : ' noauto') + ($('optIssues').checked ? '' : ' noiss') + (S.cur.wb.byName[name].showGrid ? '' : ' nogrid');
+      wrap.className = 'grid-wrap' + ($('optAuto').checked ? '' : ' noauto') + ($('optIssues').checked ? '' : ' noiss') + ((S.hideGrid === null ? S.cur.wb.byName[name].showGrid : !S.hideGrid) ? '' : ' nogrid') + (S.hideHeads ? ' nohead' : '');
       indexGrid(name); ensureBands(); applyZoom(); paintMarks(true);
     }
     wrap.scrollTop = 0; wrap.scrollLeft = 0;
@@ -485,19 +589,20 @@
   function afterChange() { save(); recompute(); renderNav(); paintMarks(true); refreshSide(); if (S.sheet === '__overview') $('gridWrap').innerHTML = renderOverview(); }
   function setDec(sheet, a, m, v, advance) {
     var k = key(sheet, a);
+    pushUndo();
     if (!m) delete S.dec[k]; else S.dec[k] = m === 'custom' ? { m: m, v: v } : { m: m };
     var from = S.sel;
     afterChange();
     if (advance) { var nx = nextPending(from || { sheet: sheet, a: a }); if (nx) selectCell(nx.sheet, nx.a); else toast('All changes reviewed ✔ (خلصت مراجعة كل التغييرات)'); }
   }
   function acceptAll(sheet) {
-    var n = 0;
+    var n = 0; pushUndo();
     S.cmp.changes.forEach(function (ch) { if ((!sheet || ch.sheet === sheet) && !S.dec[ch.id]) { S.dec[ch.id] = { m: 'accept' }; n++; } });
     afterChange(); toast(n + ' change(s) accepted. (' + n + ' تغيير اتوافق عليه)');
   }
   /* Bulk keep / reject. Earlier keep/reject decisions are overwritten; the reviewer's own typed values are never touched. */
   function bulk(list, m) {
-    var n = 0, skipped = 0;
+    var n = 0, skipped = 0; pushUndo();
     list.forEach(function (ch) { var d = S.dec[ch.id]; if (d && d.m === 'custom') { skipped++; return; } S.dec[ch.id] = { m: m }; n++; });
     afterChange();
     toast(n + ' change(s) ' + (m === 'accept' ? 'kept' : 'rejected → last week’s value') + (skipped ? ' · ' + skipped + ' of your own edits left as they are' : '') + '. (' + n + (m === 'accept' ? ' اتوافق عليها' : ' اترفضت') + ')', 5000);
@@ -540,6 +645,10 @@
     /* the active cell: a green frame drawn on top (an overlay, so moving the selection never touches the table's own styles) */
     var act = S.sel && S.sel.sheet === S.sheet ? tdOf(S.sel.a) : null;
     if (act) { var q = act.getBoundingClientRect(), cd = document.createElement('div'); cd.className = 'selcell'; cd.style.cssText = 'left:' + (q.left - wr.left + wrap.scrollLeft - 1) + 'px;top:' + (q.top - wr.top + wrap.scrollTop - 1) + 'px;width:' + (q.width + 1) + 'px;height:' + (q.height + 1) + 'px'; wrap.appendChild(cd); }
+    if (S.clip && S.clip.sheet === S.sheet) {   /* copied / cut range: dashed outline */
+      var cg = S.clip.rect, ca = cornerTd(cg, false), cb = cornerTd(cg, true);
+      if (ca && cb) { var qa = ca.getBoundingClientRect(), qb = cb.getBoundingClientRect(), cdv = document.createElement('div'); cdv.className = 'selrect copy'; cdv.style.cssText = 'left:' + (Math.min(qa.left, qb.left) - wr.left + wrap.scrollLeft - 1) + 'px;top:' + (Math.min(qa.top, qb.top) - wr.top + wrap.scrollTop - 1) + 'px;width:' + (Math.max(qa.right, qb.right) - Math.min(qa.left, qb.left) + 1) + 'px;height:' + (Math.max(qa.bottom, qb.bottom) - Math.min(qa.top, qb.top) + 1) + 'px'; wrap.appendChild(cdv); }
+    }
     var rects = selRects(); if (!rects.length) return;
     rects.forEach(function (g) {
       var a = cornerTd(g, false), b = cornerTd(g, true); if (!a || !b) return;
@@ -593,13 +702,13 @@
     var list = selectedChanges();
     if (act === 'clear') { clearSelection(); refreshSide(); return; }
     if (!list.length) return;
-    if (act === 'undo') { list.forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
+    if (act === 'undo') { pushUndo(); list.forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
     if (list.length === 1) setDec(list[0].sheet, list[0].a, act, null, true); else bulk(list, act);
   }
 
   /* ---------- side panel ---------- */
   function refreshSide() {
-    updateFbar(); updateSelBar();
+    updateFbar(); updateSelBar(); if (window.Ribbon && Ribbon.update) Ribbon.update();
     var pend = S.counts.pending, er = S.issues.filter(function (i) { return i.sev === 'error'; }).length;
     $('cntChanges').textContent = pend || ''; $('cntChecks').textContent = er || '';
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === S.tab); });
@@ -689,7 +798,7 @@
     if ((errs || pend) && !window.confirm((errs ? errs + ' checker error(s) are still open. ' : '') + (pend ? pend + ' change(s) are not reviewed yet (they stay as in this week’s file). ' : '') + '\n\nDownload anyway?\n(لسه فيه ملاحظات/تغييرات ما اتراجعتش — تنزّل برضه؟)')) return;
     var btn = $('btnDownload'); btn.disabled = true;
     try {
-      var out = await Writer.build(JSZip, S.cur.bytes, S.prev.wb, S.cur.wb, S.dec, S.ops);
+      var out = await Writer.build(JSZip, S.cur.bytes, S.prev.wb, S.cur.wb, S.dec, S.ops, { fmt: S.fmt, layout: S.lay });
       var base = S.cur.name.replace(/\.(xlsx|xlsm)$/i, '');
       download(base + '_reviewed.xlsx', out.bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       toast('Downloaded ' + base + '_reviewed.xlsx — ' + out.patched + ' cell(s) rewritten. (اتنزّل)');
@@ -719,7 +828,7 @@
       var bb = e.target.closest('[data-bulk]'); if (bb) { bulkSheet(bb.getAttribute('data-sheet'), bb.getAttribute('data-bulk')); return; }
       var tr = e.target.closest('tr.go'); if (tr) { showSheet(tr.getAttribute('data-s')); return; }
       if (e.target.id === 'ovAccept') { acceptAll(); return; }
-      if (e.target.id === 'ovReset') { if (window.confirm('Remove all your decisions and edits?\n(تمسح كل قراراتك وتعديلاتك؟)')) { S.dec = {}; S.dismissed = {}; afterChange(); } return; }
+      if (e.target.id === 'ovReset') { if (window.confirm('Remove all your decisions and edits?\n(تمسح كل قراراتك وتعديلاتك؟)')) { pushUndo(); S.dec = {}; S.dismissed = {}; S.fmt = {}; S.lay = emptyLay(); afterChange(); } return; }
     });
     var drag = false;
     $('gridWrap').addEventListener('mousedown', function (e) {
@@ -803,7 +912,7 @@
       if (t.id === 'optDis') { S.showDismissed = t.checked; refreshSide(); return; }
       if (t.closest('#bSelAccept')) return bulk(changesInRange(), 'accept');
       if (t.closest('#bSelReject')) return bulk(changesInRange(), 'reject');
-      if (t.closest('#bSelUndo')) { changesInRange().forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
+      if (t.closest('#bSelUndo')) { pushUndo(); changesInRange().forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
       var sel = S.sel;
       if (t.closest('#bAccept')) return setDec(sel.sheet, sel.a, 'accept', null, true);
       if (t.closest('#bReject')) return setDec(sel.sheet, sel.a, 'reject', null, true);
@@ -995,4 +1104,14 @@
   }
 
   wireDrop(); wire(); wireBar(); wireTabs();
+  /* the pieces the ribbon (ribbon.js) and the editing commands (edit.js) work with */
+  window.RC = {
+    S: S, grow: grow, $: $, h: h, key: key, toast: toast, short: short, save: save, pushUndo: pushUndo, undo: undo, redo: redo, recompute: recompute, afterChange: afterChange, rerenderSheet: rerenderSheet, refreshCells: refreshCells,
+    showSheet: showSheet, selectCell: selectCell, setRange: setRange, selRects: selRects, selectedChanges: selectedChanges, cellRect: cellRect, rectOfAddrs: rectOfAddrs, describeSel: describeSel, clearSelection: clearSelection,
+    bulk: bulk, bulkSheet: bulkSheet, jump: jump, setZoom: setZoom, showMenu: showMenu, closeMenu: closeMenu, tdOf: tdOf, deltaOf: deltaOf, styleObjFor: styleObjFor, baseStyle: baseStyle, mergesOf: mergesOf,
+    freezeOf: freezeOf, tablesOf: tablesOf, refRect: refRect, sameRect: sameRect, editText: editText, displayCell: displayCell, paintMarks: paintMarks, refreshSide: refreshSide, renderNav: renderNav,
+    downloadReport: downloadReport, visibleSheets: visibleSheets, sheetStats: sheetStats, emptyLay: emptyLay, updateRuler: updateRuler, paintSelRects: paintSelRects, setDec: setDec,
+    csv: function () { $('btnLog').click(); }, reset: function () { $('btnReset').click(); }
+  };
+
 })();
