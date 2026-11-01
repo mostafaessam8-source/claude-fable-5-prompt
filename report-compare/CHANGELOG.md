@@ -4,6 +4,10 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 2.3 — 2026-11-01
+- Cells whose saved result is `#NAME?` (the Excel that saved the file did not know a function such as `XLOOKUP`) are now calculated by the tool itself, so the numbers show instead of the error
+  (marked with a green underline and explained in the Cell tab). Cells that still cannot be calculated keep the saved value and are flagged by the checker with a clearer message.
+
 ## 2.2 — 2026-11-01
 - Sheet tabs like Excel: scroll arrows (first / previous / next / last), mouse-wheel scrolling, the active tab is kept in view.
 - Right-click the arrows (or the empty part of the tab bar) for the list of all sheets — one click to go there (hidden sheets are listed to unhide).

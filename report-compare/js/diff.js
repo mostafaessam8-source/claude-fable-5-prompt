@@ -108,7 +108,24 @@
         try { memo[k] = customCell(sheet, a, d.v); } finally { busy[k] = false; }
         return memo[k];
       }
+      if (c && c.f != null && c.k === 'e' && c.v === '#NAME?' && !c.derived) return recalc(sheet, a, c);
       return hasContent(c) ? c : null;
+    }
+    /* The workbook was saved by an Excel that did not know a function (e.g. XLOOKUP in Excel 2019) and stored #NAME?.
+       The tool calculates such a cell itself with its own engine; if it cannot either, the saved value stays. */
+    var rmemo = {}, rbusy = {};
+    function recalc(sheet, a, c) {
+      var k = key(sheet, a);
+      if (rmemo[k] !== undefined) return rmemo[k];
+      if (rbusy[k]) return c;
+      rbusy[k] = true;
+      var out = c;
+      try {
+        var res = Formula.evaluate(c.f, { sheet: sheet, get: fctx.get, bounds: fctx.bounds });
+        if (!res.unsupported && res.k !== '') out = { k: res.k, v: res.v, f: c.f, fk: c.fk, s: c.s, a: c.a, r: c.r, c: c.c, recalc: true, saved: c.v };
+      } catch (e) { /* keep the saved value */ }
+      rbusy[k] = false; rmemo[k] = out;
+      return out;
     }
     function val(sheet, a) { var c = eff(sheet, a); if (!c || c.k === '') return null; return c.k === 'e' ? { err: c.v } : c.v; }
     return {

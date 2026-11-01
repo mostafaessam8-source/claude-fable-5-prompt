@@ -63,6 +63,8 @@
 
   function recompute() {
     S.view = Diff.makeView(S.prev.wb, S.cur.wb, S.dec);
+    S.recalcCells = {};
+    S.cur.wb.sheets.forEach(function (sh) { sh.cells.forEach(function (c, a) { if (c.f != null && c.k === 'e' && c.v === '#NAME?') { var e = S.view.eff(sh.name, a); if (e && e.recalc) S.recalcCells[key(sh.name, a)] = c.v; } }); });
     S.issuesAll = Checks.run(S.cmp, S.cur.wb, S.prev.wb, S.view, {});
     S.issues = S.issuesAll.filter(function (i) { return !S.dismissed[i.id]; });
     S.issueMap = {};
@@ -167,6 +169,7 @@
     if (ch && !ch.auto) c.push(!d ? 'pending' : d.m === 'accept' ? 'accept' : d.m === 'reject' ? 'reject' : 'custom');
     else if (d && d.m === 'custom') c.push('custom');
     else if (ch && ch.auto) c.push('auto');
+    if (S.recalcCells[k]) c.push('recalc');
     var is = S.issueMap[k];
     if (is) c.push('iss-' + (is.some(function (i) { return i.sev === 'error'; }) ? 'error' : is.some(function (i) { return i.sev === 'warn'; }) ? 'warn' : 'info'));
     return c.join(' ');
@@ -202,6 +205,7 @@
     GRID.keys = [];
     S.cmp.changes.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
     S.cmp.auto.forEach(function (c) { if (c.sheet === name) GRID.keys.push(c.a); });
+    S.cur.wb.byName[name].cells.forEach(function (c, a) { if (c.f != null && c.k === 'e' && c.v === '#NAME?') GRID.keys.push(a); });   /* cells the tool recalculates itself */
   }
   /* first / last rendered cell of a rectangle (a merged-away corner is skipped) */
   function cornerTd(g, rev) {
@@ -611,6 +615,7 @@
     function cellTd(c, wb, extra) { var v = h(showCellVal(c, wb)); if (!v && !(c && c.f != null)) v = '<small>(empty · فاضي)</small>'; return '<td' + (extra || '') + '>' + v + (c && c.f != null ? '<span class="f">=' + h(short(c.f, 160)) + '</span>' : '') + '</td>'; }
     var kinds = { modified: 'Value changed', added: 'New entry', removed: 'Entry removed', formula: 'Formula changed', type: 'Formula ↔ typed value', auto: 'Auto-calculated result' };
     var o = ['<h3>' + h(sheet) + ' ▸ ' + a + '</h3>' + ctxHtml(sheet, a), selBlock()];
+    if (S.recalcCells[k]) o.push('<p class="hint" style="background:#e8f5e9;padding:6px 10px;border-radius:6px">ƒ The workbook saved <b>#NAME?</b> in this cell (the Excel that saved it did not know a function such as XLOOKUP). The tool calculated it itself: <b>' + h(displayCell(sheet, a)) + '</b>. <span class="ar">الأداة حسبتها بنفسها.</span></p>');
     if (ch) o.push('<p class="hint"><b>' + kinds[ch.kind] + '</b>' + (ch.auto ? ' — recalculated by Excel, no decision needed.' : '') + '</p>');
     else o.push('<p class="hint">No change in this cell this week. You can still edit it. <span class="ar">مفيش تغيير.</span></p>');
     var differs = ch && !ch.auto;
