@@ -241,7 +241,7 @@
       sh.cells.forEach(function (cell, a) {
         var e = view.eff(sh.name, a);
         if (!e) return;
-        if (e.k === 'e' && e.v !== '#N/A') add('GE1', 'error', sh.name, a, 'Formula error ' + e.v + '.', 'خطأ في المعادلة ' + e.v + '.');
+        if (e.k === 'e' && e.v !== '#N/A') add('GE1', 'error', sh.name, a, e.v === '#NAME?' ? 'Formula error #NAME? — the Excel that saved the file did not know a function in it (' + String(e.f || '').replace(/_xlfn\./g, '').slice(0, 40) + '…) and the tool could not calculate it either.' : 'Formula error ' + e.v + '.', e.v === '#NAME?' ? 'خطأ #NAME? — نسخة الإكسيل اللي حفظت الملف مش بتعرف دالة في المعادلة، والأداة ما قدرتش تحسبها برضه.' : 'خطأ في المعادلة ' + e.v + '.');
         else if (e.f != null && /#REF!/.test(e.f)) add('GE2', 'error', sh.name, a, 'Formula refers to a deleted cell (#REF!).', 'المعادلة بتشير لخلية محذوفة (#REF!).');
         else if (e.f == null && e.k === 'n' && e.v !== 0 && Xl.isDateCell(e, curWb.styles) && (e.v < 36526 || e.v > 73050)) add('GE3', 'error', sh.name, a, 'Date ' + dt(e.v) + ' looks wrong (year ' + Xl.serialToParts(e.v).y + ').', 'التاريخ ' + dt(e.v) + ' شكله غلط (سنة ' + Xl.serialToParts(e.v).y + ').');
         else if (e.k === 's' && e.f == null && /^\s*[-+]?\d[\d,]*(\.\d+)?\s*%?\s*$/.test(e.v) && view.prevCell(sh.name, a) && view.prevCell(sh.name, a).k === 'n') add('GE4', 'warn', sh.name, a, 'Number "' + e.v.trim() + '" is stored as text (it was a number last week) — formulas will ignore it.', 'الرقم "' + e.v.trim() + '" متخزن كنص (كان رقم الأسبوع الماضي) — المعادلات هتتجاهله.', { text: e.v.trim(), label: 'Convert to a number' });

@@ -56,6 +56,12 @@ async function small() {
   assert.strictEqual(Writer.setTabColor('<worksheet><sheetPr><tabColor rgb="FF92D050"/><pageSetUpPr/></sheetPr></worksheet>', '#FF0000'), '<worksheet><sheetPr><tabColor rgb="FFFF0000"/><pageSetUpPr/></sheetPr></worksheet>');
   assert.strictEqual(Writer.setTabColor('<worksheet a="1"><dimension/></worksheet>', '#0070C0'), '<worksheet a="1"><sheetPr><tabColor rgb="FF0070C0"/></sheetPr><dimension/></worksheet>');
   assert.strictEqual(Writer.setTabColor('<worksheet><sheetPr codeName="S"><tabColor theme="4"/></sheetPr></worksheet>', null), '<worksheet><sheetPr codeName="S"></sheetPr></worksheet>');
+  // a function the saving Excel did not know: stored as #NAME?, calculated by the tool
+  const nz = tiny({ a: 1, b: 'x' });
+  nz.file('xl/worksheets/sheet1.xml', '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>20</v></c><c r="B1"><v>5</v></c></row><row r="2"><c r="A2"><v>21</v></c><c r="B2"><v>7</v></c><c r="C2" t="e"><f>_xlfn.XLOOKUP(A2,A1:A2,B1:B2,1,0)</f><v>#NAME?</v></c><c r="D2" t="e"><f>FOO(1)</f><v>#NAME?</v></c></row></sheetData></worksheet>');
+  const nwb = await Xl.readWorkbook(nz), nview = Diff.makeView(nwb, nwb, {});
+  assert.strictEqual(nview.num('S1', 'C2'), 7, 'XLOOKUP stored as #NAME? is calculated'); assert(nview.eff('S1', 'C2').recalc);
+  assert.strictEqual(nview.eff('S1', 'D2').k, 'e', 'an unknown function keeps the saved error');
   assert.strictEqual(Diff.parseInput('50%').v, 0.5);
   assert.strictEqual(Diff.parseInput('1,250.5').v, 1250.5);
   assert.strictEqual(Diff.parseInput('22/10/2026').v, 46317);

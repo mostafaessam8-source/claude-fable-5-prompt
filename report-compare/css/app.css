@@ -270,3 +270,6 @@ table.sheet td.iss-error, table.sheet td.iss-warn, table.sheet td.iss-info, tabl
 .ctxmenu .mcrow { display: flex; gap: 5px; flex-wrap: wrap; }
 .ctxmenu .sw { width: 20px; height: 20px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25); padding: 0; cursor: pointer; font-size: 12px; line-height: 1; color: #66777f; background: #fff; }
 .ctxmenu .sw.on { outline: 2px solid #217346; outline-offset: 1px; } .ctxmenu .sw:hover { transform: scale(1.12); }
+
+/* a cell the tool calculated itself because the file only stored #NAME? */
+table.sheet td.recalc { box-shadow: inset 0 -2px 0 #2e7d32; }
