@@ -287,6 +287,7 @@
     var sh = { showGrid: !/<sheetView\b[^>]*showGridLines="(0|false)"/.test(xml), cells: new Map(), maxR: 0, maxC: 0, cols: [], rows: new Map(), merges: [], arrays: [], defW: 8.43, defH: 15, hasDrawing: /<drawing\b/.test(xml) };
     var m, a;
     if ((m = /<sheetFormatPr\b([^>]*)\/?>/.exec(xml))) { a = attrs(m[1]); if (a.defaultColWidth) sh.defW = +a.defaultColWidth; else sh.defW = a.baseColWidth ? (+a.baseColWidth * 7 + 5) / 7 + 0.43 : 9.140625; if (a.defaultRowHeight) sh.defH = +a.defaultRowHeight; }
+    if ((m = /<pane\b([^>]*)\/?>/.exec(xml))) { a = attrs(m[1]); if (a.state === 'frozen' || a.state === 'frozenSplit') sh.freeze = { r: 1 + Math.round(+a.ySplit || 0), c: 1 + Math.round(+a.xSplit || 0) }; }
     var colsXml = section(xml, 'cols'), cre = /<col\b([^>]*)\/?>/g;
     while ((m = cre.exec(colsXml))) { a = attrs(m[1]); sh.cols.push({ min: +a.min, max: +a.max, w: a.width ? +a.width : sh.defW, hidden: a.hidden === '1' || a.hidden === 'true' }); }
     var mre = /<mergeCell\b[^>]*ref="([^"]+)"/g;
@@ -357,6 +358,22 @@
       var sh = parseSheet(xml, sst), tc = /<tabColor\b[^>]*\/>/.exec(xml);
       sh.tabColor = tc ? resolveColor(tc[0], theme) : null;
       sh.name = sa.name; sh.path = path; sh.state = sa.state || 'visible';
+      sh.tables = [];
+      var relPath = path.replace(/([^\/]+)$/, '_rels/$1.rels'), srels = await readText(zip, relPath);
+      if (srels) {
+        var rr = /<Relationship\b([^>]*)\/?>/g, rm;
+        while ((rm = rr.exec(srels))) {
+          var ra = attrs(rm[1]);
+          if (!/\/table$/.test(ra.Type || '')) continue;
+          var tpath = ra.Target.charAt(0) === '/' ? ra.Target.slice(1) : path.replace(/[^\/]+$/, '') + ra.Target, tp = tpath.split('/'), stack = [];
+          tp.forEach(function (seg) { if (seg === '..') stack.pop(); else if (seg !== '.') stack.push(seg); });
+          tpath = stack.join('/');
+          var txml = await readText(zip, tpath);
+          if (!txml) continue;
+          var ta = attrs((/<table\b([^>]*)>/.exec(txml) || [0, ''])[1]);
+          sh.tables.push({ id: +ta.id || 0, name: ta.name || ta.displayName || '', ref: ta.ref || '', path: tpath, style: (/<tableStyleInfo\b[^>]*\sname="([^"]*)"/.exec(txml) || [0, ''])[1], stripes: !/showRowStripes="(0|false)"/.test(txml), headers: !/headerRowCount="0"/.test(txml) });
+        }
+      }
       out.sheets.push(sh);
     }
     out.byName = {}; out.sheets.forEach(function (s) { out.byName[s.name] = s; });

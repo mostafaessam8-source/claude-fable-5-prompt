@@ -17,6 +17,14 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   SUMIF COUNTIF SUMPRODUCT INDEX MATCH VLOOKUP XLOOKUP TEXT LEFT RIGHT MID LEN UPPER LOWER TRIM CONCAT(ENATE) DATE YEAR MONTH DAY WEEKDAY TODAY and more.
   Any other function is still saved and Excel calculates it when the report is opened. Formulas already in the report that depend on a changed cell are
   refreshed by Excel on open (the web view keeps their old results).
+- **Ribbon (Excel's tabs)** – File · Home · Insert · Page Layout · Formulas · Data · Review · View. What the tool can really do is live and is **written into the downloaded report**; everything else is shown greyed
+  (hover for the reason: it changes the structure of the workbook and needs Excel).
+  - *Home*: Paste (all / values / formulas / formatting), Cut, Copy, Format Painter · font, size, **Bold / Italic / Underline**, **fill colour**, **font colour**, borders · alignment, wrap, indent, **merge & center** ·
+    number format, %, comma, decimals · **Format as Table** (8 styles, real Excel tables) and Cell Styles · Format (row height, column width, autofit, hide / unhide) · AutoSum (Sum, Average, Count, Max, Min), Clear, Sort A→Z / Z→A, Find / Replace.
+  - *Insert*: Table (`Ctrl+T`). *Formulas*: Insert Function, AutoSum, Show Formulas. *Data*: Sort. *Review*: the change-review buttons of this tool. *View*: Gridlines, Headings, Formula Bar, Ruler, Zoom, **Freeze Panes**.
+  - Undo / Redo (`Ctrl+Z`, `Ctrl+Y`) cover every decision, edit, format and layout change. `Ctrl+C/X/V`, `Ctrl+B/I/U`, `Ctrl+F`, `Ctrl+H` work in the sheet; pasting text from another program works.
+  - Formatting is stored as a *delta* on the cell's existing style and becomes a new style in `xl/styles.xml` on download (the original styles are never modified). Table / merge / width / height / freeze edits are written to the sheet XML.
+  - **Not available** (greyed): insert / delete rows and columns, charts, pictures, shapes, PivotTables, conditional formatting, data validation, filters, comments, named ranges, page setup / printing, protection, macros, rename / move sheets.
 - **Excel look** – the sheet opens like in Excel: name box, `ƒx` formula bar, column/row headers (highlighted for the selection), gridlines (hidden when the
   sheet hides them), sheet tabs at the bottom in their own colours, and a zoom box. Column widths, row heights, fonts, fills, borders, merged cells and text
   that spills into empty neighbours follow the file (a wrapped cell is clipped to its row height, as in Excel).
@@ -57,6 +65,10 @@ The page header shows `Version X.Y · build <commit>`. Every update bumps the ve
 ## Files
 - `js/xl.js` – xlsx reader (values, formulas incl. shared formulas, styles, number formats, merges).
 - `js/formula.js` – the formula engine for typed formulas.
+- `js/format.js` – style objects, deltas, CSS, number formats, table styles, cell styles.
+- `js/xlsxfmt.js` – writes formats (StyleBook), merges, widths, heights, freeze panes and real tables into the package.
+- `js/edit.js` – the editing commands (format, merge, layout, tables, clipboard, AutoSum, sort, find / replace).
+- `js/ribbon.js` – the ribbon.
 - `js/diff.js` – comparison, typing rules, the view after decisions.
 - `js/checks.js` – the checker rules.
 - `js/writer.js` – patches this week's package, change log.

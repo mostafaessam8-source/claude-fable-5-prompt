@@ -9,6 +9,7 @@ const Xl = require('../js/xl.js');
 const Diff = require('../js/diff.js');
 const Checks = require('../js/checks.js');
 const Writer = require('../js/writer.js');
+const Fmt = require('../js/format.js');
 
 function tiny(vals) {
   const z = new JSZip();
@@ -62,6 +63,14 @@ async function small() {
   const nwb = await Xl.readWorkbook(nz), nview = Diff.makeView(nwb, nwb, {});
   assert.strictEqual(nview.num('S1', 'C2'), 7, 'XLOOKUP stored as #NAME? is calculated'); assert(nview.eff('S1', 'C2').recalc);
   assert.strictEqual(nview.eff('S1', 'D2').k, 'e', 'an unknown function keeps the saved error');
+  // format helpers
+  assert.strictEqual(Fmt.bumpDecimals('0.00', 1), '0.000'); assert.strictEqual(Fmt.bumpDecimals('0.00', -1), '0.0'); assert.strictEqual(Fmt.bumpDecimals('General', 1), '0.0'); assert.strictEqual(Fmt.bumpDecimals('dd/mm/yyyy', 1), 'dd/mm/yyyy');
+  assert.strictEqual(Fmt.bumpDecimals('#,##0.00;[Red](#,##0.00)', -1), '#,##0.0;[Red](#,##0.0)');
+  const base = { name: 'Calibri', sz: 11, b: false, i: false, u: false, color: null, fill: null, h: '', v: '', wrap: false, indent: 0, nf: 'General', bd: { l: null, r: null, t: null, b: null } };
+  const styled = Fmt.apply(base, { b: true, fill: '#FFFF00', bd: { b: { s: 'thick', c: '#4472C4' } } });
+  assert(styled.b && styled.fill === '#FFFF00' && styled.bd.b.s === 'thick' && base.b === false, 'apply does not change the base');
+  assert.deepStrictEqual(Fmt.mergeDelta({ b: true, bd: { l: { s: 'thin', c: '#000' } } }, { b: false, bd: { l: null, r: { s: 'thin', c: '#000' } } }), { b: false, bd: { l: null, r: { s: 'thin', c: '#000' } } });
+  assert(/background-color:#FFFF00/.test(Fmt.cssOf(styled)) && /border-bottom:3px solid #4472C4/.test(Fmt.cssOf(styled)));
   assert.strictEqual(Diff.parseInput('50%').v, 0.5);
   assert.strictEqual(Diff.parseInput('1,250.5').v, 1250.5);
   assert.strictEqual(Diff.parseInput('22/10/2026').v, 46317);
@@ -120,6 +129,23 @@ async function real(file) {
   assert.strictEqual(ob.byName['List'].state, 'visible'); assert.strictEqual(ob.byName[PS].state, 'hidden'); assert.strictEqual(ob.byName[NC].tabColor, '#FF0000'); assert.strictEqual(ob.byName[SF].tabColor, null);
   const oz = await JSZip.loadAsync(oo.bytes), tabSel = []; for (const sh of ob.sheets) if (/tabSelected="1"/.test(await oz.file(sh.path).async('string'))) tabSel.push(sh.name);
   assert.strictEqual(tabSel.length, 1); assert(ob.byName[tabSel[0]].state === 'visible', 'the selected tab is a visible sheet');
+  // formatting, merge, widths, heights, hidden, freeze panes and a real Excel table are written into the package
+  const RK = 'Risk', fedits = {
+    fmt: { [NC]: { B5: { fill: '#FFFF00', b: true, color: '#C00000', sz: 14, name: 'Arial', h: 'center', nf: '0.00%', bd: { b: { s: 'thick', c: '#0070C0' } } }, B6: { reset: true, i: true } } },
+    layout: { merges: { [NC]: { add: [{ r1: 12, c1: 1, r2: 12, c2: 3 }], remove: [] } }, colw: { [NC]: { 1: 30 } }, rowh: { [NC]: { 5: 40 } }, rowHidden: { [NC]: { 13: true } }, colHidden: { [NC]: { 7: true } }, freeze: { [NC]: { r: 3, c: 2 }, 'S-Curve Data': null },
+      tables: [{ sheet: RK, ref: 'A1:K5', name: 'RiskTbl', style: 'TableStyleMedium2', headers: true, stripes: true, cols: ['Report Date', 'Project Code', 'No', 'Risk', 'Risk Description', 'Impact', 'Probability', 'Owner', 'Mitigation', 'Date Raised', 'Status'] }] }
+  };
+  const fo = await Writer.build(JSZip, bytes, prev, cur, {}, null, fedits), fz = await JSZip.loadAsync(fo.bytes), fb = await Xl.readWorkbook(fz);
+  const s5 = Fmt.fromXf(fb.styles, fb.byName[NC].cells.get('B5').s);
+  assert(s5.b && s5.fill === '#FFFF00' && s5.color === '#C00000' && s5.sz === 14 && s5.name === 'Arial' && s5.h === 'center' && s5.nf === '0.00%' && s5.bd.b && s5.bd.b.s === 'thick', 'cell format written: ' + JSON.stringify(s5));
+  assert(Fmt.fromXf(fb.styles, fb.byName[NC].cells.get('B6').s).i, 'reset + italic');
+  assert(fb.byName[NC].merges.some(g => g.r1 === 12 && g.c1 === 1 && g.r2 === 12 && g.c2 === 3), 'merge written');
+  assert(fb.byName[NC].cols.some(d => d.min <= 1 && d.max >= 1 && Math.abs(d.w - 30) < 0.01) && fb.byName[NC].cols.some(d => d.min <= 7 && d.max >= 7 && d.hidden), 'column width + hidden column');
+  assert.strictEqual(fb.byName[NC].rows.get(5).ht, 40); assert(fb.byName[NC].rows.get(13).hidden, 'row height + hidden row');
+  assert.deepStrictEqual(fb.byName[NC].freeze, { r: 3, c: 2 }); assert.strictEqual(fb.byName['S-Curve Data'].freeze, undefined, 'unfreeze');
+  assert.deepStrictEqual(fb.byName[RK].tables.map(t => [t.name, t.ref, t.style]), [['RiskTbl', 'A1:K5', 'TableStyleMedium2']], 'table written');
+  assert.strictEqual(fb.byName['10-13. Data Input'].tables.length, 4, 'existing tables are kept');
+  const ct = await fz.file('[Content_Types].xml').async('string'); assert(/tables\/table6\.xml/.test(ct), 'table content type');
   const z2 = await JSZip.loadAsync(out.bytes);
   assert(!z2.file('xl/calcChain.xml'), 'calc chain removed');
   assert(/fullCalcOnLoad="1"/.test(await z2.file('xl/workbook.xml').async('string')));

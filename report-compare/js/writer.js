@@ -4,9 +4,9 @@
  * Excel is told to recalculate on open, because the cached results of formulas fed by changed cells are stale.
  */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./xl.js'), require('./diff.js'));
-  else root.Writer = factory(root.Xl, root.Diff);
-})(typeof self !== 'undefined' ? self : this, function (Xl, Diff) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./xl.js'), require('./diff.js'), require('./xlsxfmt.js'));
+  else root.Writer = factory(root.Xl, root.Diff, root.XlsxFmt);
+})(typeof self !== 'undefined' ? self : this, function (Xl, Diff, XF) {
   'use strict';
 
   /* functions added to Excel after 2007 are stored with an _xlfn. prefix */
@@ -40,8 +40,8 @@
     });
   }
 
-  function patchSheet(xml, patches, curSheet) {
-    xml = unshare(xml, curSheet);
+  function patchSheet(xml, patches, curSheet, rowEdits) {
+    if (patches.length) xml = unshare(xml, curSheet);
     var m = /<sheetData\b[^>]*?(?:\/>|>([\s\S]*?)<\/sheetData>)/.exec(xml);
     if (!m) return xml;
     var rows = [], re = /<row\b([^>]*?)(\/>|>([\s\S]*?)<\/row>)/g, x;
@@ -56,15 +56,16 @@
         var ca = Xl.attrs(cm[1]);
         cells.push({ c: Xl.parseAddr(ca.r).c, a: ca.r, s: ca.s, xml: cm[0] });
       }
-      cells.forEach(function (c) { if (c.a === p.a) { c.xml = cellXml(p.a, p.forceS ? p.s : (p.s != null && !c.s ? p.s : c.s), p.t); found = true; } });
-      if (!found) cells.push({ c: pa.c, a: p.a, xml: cellXml(p.a, p.s, p.t) });
+      cells.forEach(function (c) { if (c.a === p.a) { c.xml = p.styleOnly ? XF.setStyleAttr(c.xml, p.s) : cellXml(p.a, p.forceS ? p.s : (p.s != null && !c.s ? p.s : c.s), p.t); found = true; } });
+      if (!found) cells.push({ c: pa.c, a: p.a, xml: cellXml(p.a, p.s, p.styleOnly ? null : p.t) });
       cells.sort(function (u, v) { return u.c - v.c; });
       row.body = cells.map(function (c) { return c.xml; }).join('');
       row.open = row.open.replace(/\sspans="[^"]*"/, '');
     });
     rows.sort(function (u, v) { return u.r - v.r; });
     var sd = '<sheetData>' + rows.map(function (r) { return '<row' + r.open + '>' + r.body + '</row>'; }).join('') + '</sheetData>';
-    return xml.slice(0, m.index) + sd + xml.slice(m.index + m[0].length);
+    xml = xml.slice(0, m.index) + sd + xml.slice(m.index + m[0].length);
+    return rowEdits && Object.keys(rowEdits).length ? XF.editRows(xml, rowEdits) : xml;
   }
 
   /* A copy of cell style `base` with the date number format (id 14); returns its index. */
@@ -117,7 +118,9 @@
       var x = await Xl.readText(zip, sh.path); zip.file(sh.path, setTabColor(x, colors[name]));
     }
   }
-  async function build(JSZip, curBytes, prev, cur, dec, ops) {
+  function rectRef(g) { return Xl.addr(g.c1, g.r1) + ':' + Xl.addr(g.c2, g.r2); }
+  function sameRect(a, b) { return a.r1 === b.r1 && a.c1 === b.c1 && a.r2 === b.r2 && a.c2 === b.c2; }
+  async function build(JSZip, curBytes, prev, cur, dec, ops, edits) {
     var view = Diff.makeView(prev, cur, dec), bySheet = {}, n = 0;
     Object.keys(dec).forEach(function (k) {
       var d = dec[k];
@@ -139,9 +142,38 @@
       if (dstyle[base] >= 0) { p.s = dstyle[base]; p.forceS = true; }
     });
     if (stylesDirty) zip.file('xl/styles.xml', stylesXml);
-    for (var name in bySheet) {
-      var sh = cur.byName[name], xml = await Xl.readText(zip, sh.path);
-      zip.file(sh.path, patchSheet(xml, bySheet[name], sh));
+    // formatting + layout edits chosen in the page (see xlsxfmt.js)
+    edits = edits || {}; var fmt = edits.fmt || {}, lay = edits.layout || {}, rowEdits = {};
+    if (Object.keys(fmt).some(function (s) { return Object.keys(fmt[s]).length; })) {
+      var sb = new XF.StyleBook(await Xl.readText(zip, 'xl/styles.xml'));
+      Object.keys(fmt).forEach(function (sn) {
+        var sh0 = cur.byName[sn]; if (!sh0) return;
+        Object.keys(fmt[sn]).forEach(function (a) {
+          var d = fmt[sn][a]; if (!d || !Object.keys(d).length) return;
+          var arr = bySheet[sn] = bySheet[sn] || [], p = arr.filter(function (x) { return x.a === a; })[0], cell = sh0.cells.get(a);
+          var idx = sb.derive(p && p.forceS ? p.s : (cell ? cell.s : 0), d);
+          if (p) { p.s = idx; p.forceS = true; } else arr.push({ a: a, styleOnly: true, s: idx });
+        });
+      });
+      zip.file('xl/styles.xml', sb.serialize());
+    }
+    ['rowh', 'rowHidden'].forEach(function (k) { Object.keys(lay[k] || {}).forEach(function (sn) { Object.keys(lay[k][sn]).forEach(function (r) { var e = (rowEdits[sn] = rowEdits[sn] || {})[r] = rowEdits[sn][r] || {}; if (k === 'rowh') e.ht = lay[k][sn][r]; else e.hidden = !!lay[k][sn][r]; }); }); });
+    var touched = {};
+    [bySheet, lay.merges, lay.colw, lay.colHidden, lay.freeze, rowEdits].forEach(function (m) { Object.keys(m || {}).forEach(function (sn) { touched[sn] = 1; }); });
+    (lay.tables || []).forEach(function (t) { touched[t.sheet] = 1; });
+    for (var name in touched) {
+      var sh = cur.byName[name]; if (!sh) continue;
+      var xml = patchSheet(await Xl.readText(zip, sh.path), bySheet[name] || [], sh, rowEdits[name]);
+      if (lay.merges && lay.merges[name]) {
+        var mg = lay.merges[name], keep = sh.merges.filter(function (g) { return !(mg.remove || []).some(function (r) { return sameRect(r, g); }); }).concat(mg.add || []);
+        xml = XF.setMerges(xml, keep.map(rectRef));
+      }
+      Object.keys((lay.colw || {})[name] || {}).forEach(function (c) { xml = XF.setCol(xml, +c, { width: lay.colw[name][c] }); });
+      Object.keys((lay.colHidden || {})[name] || {}).forEach(function (c) { xml = XF.setCol(xml, +c, { hidden: !!lay.colHidden[name][c] }); });
+      if (lay.freeze && Object.prototype.hasOwnProperty.call(lay.freeze, name)) xml = XF.setFreeze(xml, lay.freeze[name]);
+      var holder = { xml: xml };
+      for (var ti = 0; ti < (lay.tables || []).length; ti++) if (lay.tables[ti].sheet === name) await XF.addTable(zip, cur, name, lay.tables[ti], holder);
+      zip.file(sh.path, holder.xml);
     }
     if (ops) await applySheetOps(zip, cur, ops);
     // recalculate on open; drop the calculation chain (it lists formula cells that may no longer be formulas)
