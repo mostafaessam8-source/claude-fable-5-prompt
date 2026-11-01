@@ -25,16 +25,11 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   reference is inserted (`=B5+B6`, `=SUM(B5:B6)`); you can switch to another sheet's tab meanwhile and the reference gets the sheet name (`'6. IPC Status'!C8`).
 - **Ruler** – a horizontal and a vertical band follow the selected cell/range (strong) and the mouse (light), and the row/column headers light up, so tables are easy
   to follow. Toggle with the "ruler" box.
-- **Bulk decisions** – drag over cells (or click, then Shift+click) to select a range, then *Keep all* / *Reject all* for the changed
-  cells inside it (also `A` / `R`). *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and
-  *Keep / Reject all listed* in the Changes tab. Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
-- **Checker** – flags what does not make sense (red = error, orange = warning): last-week blocks that do not match last week's report,
-  cumulative values that go down, totals that do not add up, report date / project week / calendar week not advancing, forecast in the
-  past, dates in the wrong order, overdue items, text copied unchanged from last week, formula errors, numbers stored as text,
-  formulas overwritten by values, large jumps. It re-runs after every decision; most findings have a one-click fix.
-- **Download** – the file is **this week's original package** with only the rejected / edited cells rewritten, so charts, pictures,
-  formats and conditional formatting are untouched. Excel recalculates on open (`fullCalcOnLoad`); formula results shown by other
-  viewers may be stale until then. A CSV change log is also available. Pending changes stay as in this week's file.
+- **Select several cells, then Keep or Reject** – drag a range, `Shift`+click to extend, **`Ctrl`+click** (Cmd on Mac) to add single cells or `Ctrl`+drag to add more ranges
+  (Ctrl+click a selected cell to remove it), click a column/row header to select it, `Ctrl+A` for the whole sheet, or type areas in the name box (`C7,K1:M1`).
+  A bar appears next to the sheet — "N changed cells selected · ✔ Keep · ↺ Reject · Undo" (keys `A` / `R`, `Esc` clears) — and the same buttons are in the Cell tab.
+  Also: *Keep all / Reject all in sheet* in the toolbar, per-sheet buttons in the Overview, and *Keep / Reject all listed* in the Changes tab.
+  Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
 - The review is saved in the browser (per pair of files) and restored when the same two files are loaded again.
 
 ## Limits

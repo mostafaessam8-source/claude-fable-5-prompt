@@ -5,7 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = {
     slots: { prev: null, cur: null }, prev: null, cur: null, cmp: null, dec: {}, dismissed: {}, view: null, issues: [], issueMap: {},
-    sheet: '__overview', sel: null, range: null, tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
+    sheet: '__overview', sel: null, range: null, extra: [], tab: 'cell', scope: { changes: 'sheet', checks: 'all' }, pendingOnly: false, showDismissed: false, session: ''
   };
   var xfCache = {};
 
@@ -193,7 +193,7 @@
     wrap.querySelectorAll('th.hl').forEach(function (t) { t.classList.remove('hl'); });
     if (!on || !tbl || !S.sel || S.sel.sheet !== S.sheet) { bands[0].style.display = bands[1].style.display = 'none'; return; }
     var tds = [];
-    if (S.range && S.range.sheet === S.sheet) wrap.querySelectorAll('td.rng').forEach(function (t) { tds.push(t); });
+    if (S.range && S.range.sheet === S.sheet) wrap.querySelectorAll('td[data-a]').forEach(function (t) { var p = Xl.parseAddr(t.getAttribute('data-a')); if (inRect(S.range, p.r, p.c)) tds.push(t); });
     if (!tds.length) { var one = wrap.querySelector('td[data-a="' + S.sel.a + '"]'); if (one) tds.push(one); }
     place(wrap.getBoundingClientRect(), wrap, tbl, tds, bands[0], bands[1]);
     var head = tbl.tHead.rows[0], seenR = {}, seenC = {};
@@ -215,6 +215,7 @@
   }
   function paintCells() {
     if (S.sheet === '__overview') return;
+    RECTS = selRects();
     var name = S.sheet, tds = $('gridWrap').querySelectorAll('td[data-a]');
     for (var i = 0; i < tds.length; i++) {
       var td = tds[i], a = td.getAttribute('data-a'), k = key(name, a), nc = cls(name, a);
@@ -241,7 +242,7 @@
     $('nav').innerHTML = out.join('');
   }
   function showSheet(name, keepSel) {
-    S.sheet = name; S.range = null;
+    S.sheet = name; S.range = null; S.extra = [];
     if (!keepSel) S.sel = null;
     renderNav();
     var wrap = $('gridWrap'), isOv = name === '__overview';
@@ -282,7 +283,7 @@
   }
 
   function selectCell(sheet, a, scroll) {
-    S.range = null;
+    S.range = null; S.extra = [];
     if (S.sheet !== sheet) { S.sel = { sheet: sheet, a: a }; showSheet(sheet, true); }
     else { S.sel = { sheet: sheet, a: a }; paintMarks(); refreshSide(); }
     if (scroll !== false) {
@@ -333,9 +334,20 @@
     bulk(list, m);
   }
   /* ----- cell range selection (drag, or shift+click) ----- */
+  /* The selection = the active rectangle (S.range, or just S.sel) + S.extra: rectangles added with Ctrl+click / Ctrl+drag. */
+  var RECTS = [];
+  function inRect(g, r, c) { return r >= g.r1 && r <= g.r2 && c >= g.c1 && c <= g.c2; }
+  function rectOfAddrs(a1, a2) { var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2); return { sheet: S.sheet, r1: Math.min(p.r, q.r), r2: Math.max(p.r, q.r), c1: Math.min(p.c, q.c), c2: Math.max(p.c, q.c) }; }
+  function cellRect(a) { var p = Xl.parseAddr(a); return { sheet: S.sheet, r1: p.r, r2: p.r, c1: p.c, c2: p.c }; }
+  function selRects() {
+    var out = S.extra.filter(function (g) { return g.sheet === S.sheet; });
+    if (S.extra.length) { if (S.range && S.range.sheet === S.sheet) out.push(S.range); else if (S.sel && S.sel.sheet === S.sheet) out.push(cellRect(S.sel.a)); }
+    else if (S.range && S.range.sheet === S.sheet) out.push(S.range);
+    return out;
+  }
   function inRange(sheet, a) {
-    var g = S.range; if (!g || g.sheet !== sheet) return false;
-    var p = Xl.parseAddr(a); return p.r >= g.r1 && p.r <= g.r2 && p.c >= g.c1 && p.c <= g.c2;
+    if (sheet !== S.sheet || !RECTS.length) return false;
+    var p = Xl.parseAddr(a); return RECTS.some(function (g) { return inRect(g, p.r, p.c); });
   }
   function setRange(a1, a2) {
     var p = Xl.parseAddr(a1), q = Xl.parseAddr(a2);
@@ -344,23 +356,51 @@
     paintRange();
   }
   function paintRange() {
+    RECTS = selRects();
     var tds = $('gridWrap').querySelectorAll('td[data-a]');
     for (var i = 0; i < tds.length; i++) tds[i].classList.toggle('rng', inRange(S.sheet, tds[i].getAttribute('data-a')));
   }
-  function changesInRange() {
-    var g = S.range; if (!g || g.sheet !== S.sheet) return [];
-    return S.cmp.changes.filter(function (c) { return c.sheet === g.sheet && c.r >= g.r1 && c.r <= g.r2 && c.c >= g.c1 && c.c <= g.c2; });
+  function clearSelection() { S.range = null; S.extra = []; paintRange(); }
+  function describeSel() {
+    if (!S.sel) return '';
+    var rects = selRects(); if (!rects.length) return S.sel.a;
+    return rects.map(function (g) { return g.r1 === g.r2 && g.c1 === g.c2 ? Xl.addr(g.c1, g.r1) : Xl.addr(g.c1, g.r1) + ':' + Xl.addr(g.c2, g.r2); }).join(',');
   }
+  /* changed cells inside the selection (or the single selected cell) */
+  function selectedChanges() {
+    var rects = selRects();
+    if (!rects.length) { if (!S.sel || S.sel.sheet !== S.sheet) return []; var ch = S.cmp.byKey[key(S.sel.sheet, S.sel.a)]; return ch && !ch.auto ? [ch] : []; }
+    return S.cmp.changes.filter(function (c) { return c.sheet === S.sheet && rects.some(function (g) { return inRect(g, c.r, c.c); }); });
+  }
+  function changesInRange() { return selectedChanges(); }
   function selBlock() {
-    var g = S.range; if (!g || g.sheet !== S.sheet) return '';
-    var list = changesInRange(), pend = list.filter(function (c) { return !S.dec[c.id]; }).length, dis = list.length ? '' : ' disabled';
-    return '<div class="selbox"><b>Selection ' + Xl.addr(g.c1, g.r1) + ':' + Xl.addr(g.c2, g.r2) + '</b> <span class="ar">التحديد</span><br>' + list.length + ' changed cell(s), ' + pend + ' still to review <span class="ar">(' + list.length + ' خلية متغيرة)</span>' +
+    var rects = selRects(); if (!rects.length) return '';
+    var list = selectedChanges(), pend = list.filter(function (c) { return !S.dec[c.id]; }).length, dis = list.length ? '' : ' disabled';
+    var cells = rects.reduce(function (n, g) { return n + (g.r2 - g.r1 + 1) * (g.c2 - g.c1 + 1); }, 0);
+    return '<div class="selbox"><b>Selection ' + h(describeSel()) + '</b> <span class="ar">التحديد</span><br>' + cells + ' cell(s) · ' + list.length + ' changed, ' + pend + ' still to review <span class="ar">(' + list.length + ' خلية متغيرة)</span>' +
       '<div class="btnrow"><button class="act accept" id="bSelAccept" type="button"' + dis + '>✔ Keep all <span class="ar">وافق على التحديد</span></button><button class="act reject" id="bSelReject" type="button"' + dis + '>↺ Reject all <span class="ar">ارفض التحديد</span></button><button class="act undo" id="bSelUndo" type="button"' + dis + '>Undo</button></div></div>';
+  }
+  /* floating action bar next to the sheet: appears whenever the selection contains changed cells */
+  function updateSelBar() {
+    var bar = $('selbar'), list = S.sheet === '__overview' ? [] : selectedChanges();
+    if (!list.length) { bar.hidden = true; return; }
+    var pend = list.filter(function (c) { return !S.dec[c.id]; }).length;
+    bar.innerHTML = '<span class="n"><b>' + list.length + '</b> changed cell' + (list.length > 1 ? 's' : '') + ' selected · ' + pend + ' to review <span class="ar">محدد</span></span>' +
+      '<button class="act accept" data-selbar="accept" type="button">✔ Keep <span class="ar">وافق</span></button><button class="act reject" data-selbar="reject" type="button">↺ Reject <span class="ar">ارفض</span></button>' +
+      '<button class="act undo" data-selbar="undo" type="button">Undo</button><button class="act undo" data-selbar="clear" type="button" title="Clear the selection (Esc)">✕</button>';
+    bar.hidden = false;
+  }
+  function selBarAction(act) {
+    var list = selectedChanges();
+    if (act === 'clear') { clearSelection(); refreshSide(); return; }
+    if (!list.length) return;
+    if (act === 'undo') { list.forEach(function (c) { var d = S.dec[c.id]; if (d && d.m !== 'custom') delete S.dec[c.id]; }); afterChange(); return; }
+    if (list.length === 1) setDec(list[0].sheet, list[0].a, act, null, true); else bulk(list, act);
   }
 
   /* ---------- side panel ---------- */
   function refreshSide() {
-    updateFbar();
+    updateFbar(); updateSelBar();
     var pend = S.counts.pending, er = S.issues.filter(function (i) { return i.sev === 'error'; }).length;
     $('cntChanges').textContent = pend || ''; $('cntChecks').textContent = er || '';
     document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === S.tab); });
@@ -463,11 +503,28 @@
     var drag = false;
     $('gridWrap').addEventListener('mousedown', function (e) {
       if (e.button !== 0) return;
+      var th = e.target.closest('th');
+      if (th && !pointInput() && S.sheet !== '__overview') {   /* click a column / row header: select the whole column / row */
+        var shh = S.cur.wb.byName[S.sheet], multiH = e.ctrlKey || e.metaKey, ha1, ha2;
+        if (th.parentNode.parentNode.tagName === 'THEAD' && th.cellIndex > 0) { ha1 = Xl.addr(th.cellIndex, 1); ha2 = Xl.addr(th.cellIndex, shh.maxR); }
+        else if (th.classList.contains('rh') && /^\d+$/.test(th.textContent)) { ha1 = Xl.addr(1, +th.textContent); ha2 = Xl.addr(shh.maxC, +th.textContent); }
+        if (ha1) {
+          if (multiH && S.sel && S.sel.sheet === S.sheet) S.extra.push(S.range || cellRect(S.sel.a)); else if (!e.shiftKey) S.extra = [];
+          S.sel = { sheet: S.sheet, a: ha1 }; setRange(ha1, ha2); S.tab = 'cell'; paintMarks(); refreshSide(); e.preventDefault(); return;
+        }
+      }
       var td = e.target.closest('td[data-a]'); if (!td) return;
       var a = td.getAttribute('data-a'), pin = pointInput();
       if (pin) { S.pdrag = { sheet: S.sheet, a1: a }; pointInsert(pin, a, a, S.sheet); e.preventDefault(); return; }   /* editing a formula: the click inserts a reference */
       if (e.shiftKey && S.sel && S.sel.sheet === S.sheet) setRange(S.sel.a, a);
-      else { S.sel = { sheet: S.sheet, a: a }; S.range = null; drag = true; }
+      else if ((e.ctrlKey || e.metaKey) && S.sel && S.sel.sheet === S.sheet) {   /* Ctrl+click / Ctrl+drag: add to the selection */
+        var pi = Xl.parseAddr(a), idx = -1;
+        S.extra.forEach(function (g, i) { if (g.sheet === S.sheet && g.r1 === pi.r && g.r2 === pi.r && g.c1 === pi.c && g.c2 === pi.c) idx = i; });
+        if (idx >= 0) { S.extra.splice(idx, 1); S.tab = 'cell'; paintMarks(); refreshSide(); }   /* Ctrl+click on a selected single cell removes it */
+        else { S.extra.push(S.range || cellRect(S.sel.a)); S.sel = { sheet: S.sheet, a: a }; S.range = null; drag = true; }
+        paintRange();
+      }
+      else { S.sel = { sheet: S.sheet, a: a }; S.range = null; S.extra = []; drag = true; paintRange(); }
       e.preventDefault();
     });
     $('gridWrap').addEventListener('mouseover', function (e) {
@@ -508,6 +565,8 @@
     });
     $('panel').addEventListener('input', function (e) { if (e.target.id === 'custIn') $('custPrev').innerHTML = previewText(e.target.value); });
     $('panel').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'custIn') applyCustom(); });
+    $('selbar').addEventListener('click', function (e) { var b = e.target.closest('[data-selbar]'); if (b) selBarAction(b.getAttribute('data-selbar')); });
+    $('selbar').addEventListener('mousedown', function (e) { e.preventDefault(); });
     $('btnNextCh').addEventListener('click', function () { jump(S.cmp.changes, 1); });
     $('btnPrevCh').addEventListener('click', function () { jump(S.cmp.changes, -1); });
     $('btnNextIss').addEventListener('click', function () { jump(S.issues, 1); });
@@ -519,6 +578,10 @@
     $('btnLog').addEventListener('click', function () { download(S.cur.name.replace(/\.(xlsx|xlsm)$/i, '') + '_change_log.csv', Writer.changeLog(S.cmp, S.dec, S.view, S.cur.wb.styles), 'text/csv;charset=utf-8'); });
     $('btnReset').addEventListener('click', function () { if (window.confirm('Close this comparison and choose new files?\n(الجلسة بتتحفظ تلقائيًا لنفس الملفين)')) location.reload(); });
     document.addEventListener('keydown', function (e) {
+      if (!$('app').hidden && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName || '') && S.sheet !== '__overview') {   /* Ctrl+A: select the whole sheet */
+        var sha = S.cur.wb.byName[S.sheet]; if (!S.sel || S.sel.sheet !== S.sheet) S.sel = { sheet: S.sheet, a: 'A1' };
+        S.extra = []; setRange('A1', Xl.addr(sha.maxC, sha.maxR)); S.tab = 'cell'; paintMarks(); refreshSide(); e.preventDefault(); return;
+      }
       if ($('app').hidden || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || '')) || e.ctrlKey || e.metaKey || e.altKey) return;
       var k = e.key.toLowerCase();
       if (S.sheet !== '__overview' && S.sel && S.sel.sheet === S.sheet) {
@@ -527,7 +590,8 @@
         if (k === 'f2' || k === 'enter') { $('fbIn').focus(); $('fbIn').select(); e.preventDefault(); return; }
       }
       if (k === 'n') jump(S.cmp.changes, 1); else if (k === 'p') jump(S.cmp.changes, -1); else if (k === 'i') jump(S.issues, 1);
-      else if ((k === 'a' || k === 'r') && S.range && changesInRange().length) bulk(changesInRange(), k === 'a' ? 'accept' : 'reject');
+      else if ((k === 'a' || k === 'r') && selRects().length && selectedChanges().length) bulk(selectedChanges(), k === 'a' ? 'accept' : 'reject');
+      else if (k === 'escape' && (S.range || S.extra.length)) { clearSelection(); refreshSide(); }
       else if ((k === 'a' || k === 'r') && S.sel && S.cmp.byKey[key(S.sel.sheet, S.sel.a)] && !S.cmp.byKey[key(S.sel.sheet, S.sel.a)].auto) setDec(S.sel.sheet, S.sel.a, k === 'a' ? 'accept' : 'reject', null, true);
       else return;
       e.preventDefault();
@@ -560,7 +624,7 @@
   function updateFbar() {
     var ov = S.sheet === '__overview'; $('fbar').hidden = ov; if (ov) return;
     var nb = $('nameBox'), fi = $('fbIn');
-    if (document.activeElement !== nb) nb.value = S.sel ? (S.range && S.range.sheet === S.sheet ? Xl.addr(S.range.c1, S.range.r1) + ':' + Xl.addr(S.range.c2, S.range.r2) : S.sel.a) : '';
+    if (document.activeElement !== nb) nb.value = describeSel();
     if (!S.editing && document.activeElement.id !== 'custIn') {
       fi.disabled = !S.sel; fi.value = S.sel ? editText(S.view.eff(S.sel.sheet, S.sel.a), S.sel.sheet) : ''; $('fbRes').innerHTML = '';
     }
@@ -598,10 +662,13 @@
     });
     nb.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
-      var m = /^\s*\$?([A-Za-z]+)\$?(\d+)(?::\$?([A-Za-z]+)\$?(\d+))?\s*$/.exec(nb.value);
-      if (!m || S.sheet === '__overview') { toast('Type a cell like B5 or a range like B5:C9. (اكتب خلية أو نطاق)'); return; }
-      var a1 = (m[1] + m[2]).toUpperCase(); selectCell(S.sheet, a1, true);
-      if (m[3]) { setRange(a1, (m[3] + m[4]).toUpperCase()); S.tab = 'cell'; updateRuler(); refreshSide(); }
+      var parts = nb.value.split(','), items = parts.map(function (x) { return /^\s*\$?([A-Za-z]+)\$?(\d+)(?::\$?([A-Za-z]+)\$?(\d+))?\s*$/.exec(x); });
+      if (S.sheet === '__overview' || !items.length || items.some(function (m) { return !m; })) { toast('Type a cell like B5, a range like B5:C9, or several separated by commas: B5,B8:C9. (اكتب خلية أو نطاق)'); return; }
+      var firstM = items[0], a1 = (firstM[1] + firstM[2]).toUpperCase();
+      selectCell(S.sheet, a1, true);
+      items.slice(1).forEach(function (m) { S.extra.push(rectOfAddrs((m[1] + m[2]).toUpperCase(), m[3] ? (m[3] + m[4]).toUpperCase() : (m[1] + m[2]).toUpperCase())); });
+      if (firstM[3]) setRange(a1, (firstM[3] + firstM[4]).toUpperCase());
+      S.tab = 'cell'; paintMarks(); refreshSide();
       nb.blur();
     });
     $('zoom').addEventListener('change', applyZoom);
