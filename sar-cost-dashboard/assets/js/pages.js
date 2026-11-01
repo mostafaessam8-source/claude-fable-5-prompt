@@ -976,14 +976,13 @@
       box("Variance", null, "k-var " + (vFY < -0.5 ? "neg" : vFY > 0.5 ? "pos" : ""), "").replace("<b>—</b>", "<b>" + sign(vFY) + "</b>");
     var yt = box(R ? "Original Plan" : "Plan", o.planYtd, "k-plan") + (R ? box("Rev Plan", o.revYtd, "k-rev") : "") + box("Forecast Plan", o.fcYtd, "k-fc") +
       box("Actual", o.act, "k-act " + (o.act < o.baseYtd ? "neg" : "pos"), of(o.act, o.baseYtd));
-    // remaining = the months after the actuals cut-off to the year end
-    var vR = o.fcRem - (R ? o.revRem : o.planRem);
-    var rm = box(R ? "Original Plan" : "Plan", o.planRem, "k-plan") + (R ? box("Rev Plan", o.revRem, "k-rev") : "") + box("Forecast", o.fcRem, "k-fc", of(o.fcRem, R ? o.revRem : o.planRem)) +
+    // remaining = full year − the actual spent to the cut-off (user rule): what is left of each plan / of the forecast
+    var lp = o.plan - o.act, lr = o.rev - o.act, lf = o.landing - o.act, vR = lf - (R ? lr : lp);
+    var rm = box(R ? "Original Plan" : "Plan", lp, "k-plan") + (R ? box("Rev Plan", lr, "k-rev") : "") + box("Forecast", lf, "k-fc", of(lf, R ? lr : lp)) +
       box("Variance", null, "k-var " + (vR < -0.5 ? "neg" : vR > 0.5 ? "pos" : ""), "").replace("<b>—</b>", "<b>" + sign(vR) + "</b>");
-    var nx = cut ? (function () { var y = +cut.slice(0, 4), m = +cut.slice(5, 7); return m === 12 ? null : y + "-" + ("0" + (m + 1)).slice(-2); })() : null;
     var grp = function (t, body) { return '<div class="iv-kg"><i>' + t + '</i><div class="iv-kr">' + body + "</div></div>"; };
     return '<div class="iv-kpis">' + grp("Full year 2026 · M SAR", fy) + grp("Year to date · to " + esc(fmt.month(cut)) + " · M SAR", yt) +
-      grp("Remaining · " + (nx ? esc(fmt.month(nx)) + " – Dec" : "after " + esc(fmt.month(cut))) + " · M SAR", rm) + "</div>";
+      grp("Remaining · full year − actual to " + esc(fmt.month(cut)) + " · M SAR", rm) + "</div>";
   }
   function invoiceGantt(host, list, months, cut, onProj) {
     var items = [];
