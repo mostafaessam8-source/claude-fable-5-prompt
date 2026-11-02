@@ -52,17 +52,17 @@
       file: "EPBU 2026 Delivery Plan-v2 (Milestone & forecast) - PBI file new dashboard.xlsx",
       tables: {
         KPI_Summary: ["KPI Code", "KPI SN", "KPI Filter", "Objective/ KPIs", "KPI Weight (%)",
-          "NSR Spend Plan 2026 as per Budgeting", "NSR V2 Forecast 2026 shared to PC", "FTY Variance",
-          "YTD Spend Plan 2026 as per Budgeting", "YTD V2 Forecast 2026", "YTD Actual", "YTD Variance", "% Achieved", "KPI Result"],
+          "NSR Spend Plan 2026 as per Budgeting",
+          "YTD Spend Plan 2026 as per Budgeting", "YTD Actual", "YTD Variance", "% Achieved", "KPI Result"],
         KPI_Projects_Data: ["Code", "Project Name", "KPI Code", "KPI Filter", "Objective/ KPIs",
-          "Spend Plan as per Budgeting (M) FTY 2026", "Spend Plan as per V2 Forecast (M) FTY 2026", "Variance (M)",
-          "YTD Spend Plan as per Budgeting (M)", "YTD Plan as per V2 Forecast (M)2", "YTD Actual (M)",
-          "Variance (M)2 w.r.t. Budgeting Spending Plan", "Variance (M)2 w.r.t. V2 forecast Plan"],
+          "Spend Plan as per Budgeting (M) FTY 2026",
+          "YTD Spend Plan as per Budgeting (M)", "YTD Actual (M)",
+          "Variance (M)2 w.r.t. Budgeting Spending Plan"],
         NSR_Project_Data: ["SN", "Fund Type", "PROG", "PO Number", "ID", "Project Name", "Full Cost", "Contract Value",
           "WC 2025", "WC 2026", "Total WC", "Paid from CV as per ERP (Gross value)", "Remaining WC",
           "Start Date", "End Date", "Project Phase", "Remarks/Concern"],
         Spending_Plan: ["Month", "Fund Type", "ID", "Project Name", "Project Phase",
-          "Spend Plan as per Budgeting (Incr)", "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Incr)3",
+          "Spend Plan as per Budgeting (Incr)",
           "Actual Spend (Incr)4", "Forecast as per Contractor cashflow / updated Progress / Program(Incr)5",
           "Invoice Related actvities"],
         Delivery_KPI: ["Project Code", "NSR Plan", "Target Completion Date"],
@@ -132,17 +132,17 @@
       sheetHeader: true,
       tables: { KPI_Targets: ["Perspective", "Objective", "KPI", "Unit", "Target", "KPI Weight", "Data Source", "Formula", "Remarks"] }
     },
-    // "EPBU_Weekly_KPI_<date>.xlsx" sheet "Spend Recovery Tracker" (PC / Projects): per project the 2026 plan, year-end
-    // forecast, YTD actual, in-process, Nov / Dec forecast and the amount at risk (geopolitical / other) with its root
-    // causes — a project may have several risk lines (rows under it with no code). Found by its header row; values in SAR M
-    // are stored in SAR. Feeds "Spend at risk" on the Cost page.
+    // "EPBU_Weekly_KPI_<date>.xlsx" sheet "Spend Recovery Tracker" (PC / Projects): per project the 2026 plan, YTD actual,
+    // in-process and the amount at risk (geopolitical / other) with its root causes — a project may have several risk lines
+    // (rows under it with no code). Its own forecasts (year-end, Nov / Dec, risk-adjusted) are NOT kept: the only forecast is
+    // the contractor's (Monthly Plan). Found by its header row; values in SAR M are stored in SAR. Feeds "Spend at risk".
     risk: {
       label: "Spend Recovery Tracker (Amount at Risk)",
       file: "EPBU_Weekly_KPI_<date>.xlsx",
       sheetHeader: true,
       tables: {
-        Spend_Risk: ["Code", "Program", "Project Name", "2026 Plan", "Year-End Forecast", "YTD Actuals", "Remaining", "In-Process",
-          "Next Month Forecast", "Month After Forecast", "At Risk Geopolitical", "At Risk Other", "Total At Risk", "Risk-Adj Forecast", "Budget Reprofiling"],
+        Spend_Risk: ["Code", "Program", "Project Name", "2026 Plan", "YTD Actuals", "In-Process", "At Risk Geopolitical", "At Risk Other",
+          "Total At Risk", "Budget Reprofiling"],
         Spend_Risk_Items: ["Code", "Root Cause", "Risk Description", "Required Action"]
       }
     },
@@ -670,7 +670,8 @@
         if (cur && (rec["Root Cause"] || rec["Risk Description"])) items.push({ Code: cur.Code, "Root Cause": rec["Root Cause"], "Risk Description": rec["Risk Description"], "Required Action": rec["Required Action"] });
       }
       if (!rows.length) continue;
-      var have = cols.map(function (h) { return h.key; });
+      rows.forEach(function (x) { ["Year-End Forecast", "Remaining", "Next Month Forecast", "Month After Forecast", "Risk-Adj Forecast", "Next Month", "Month After"].forEach(function (k) { delete x[k]; }); });
+      var have = cols.map(function (h) { return h.key; }).filter(function (k) { return !/forecast|^remaining$/i.test(k); });
       var missing = SOURCES.risk.tables.Spend_Risk.filter(function (k) { return have.indexOf(k) < 0; });
       return { source: "risk", label: SOURCES.risk.label, title: head[0] || null, tables: { Spend_Risk: rows, Spend_Risk_Items: items },
         report: [{ table: "Spend_Risk", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name },
@@ -873,6 +874,7 @@
       out[tname] = rows;
       report.push({ table: tname, rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: via });
     });
+    if (source === "plan") noAltForecast(out);
     var res = { source: source, label: spec.label, tables: out, report: report };
     // the combined "EPBU NSR Projects Database" workbook = weekly query tables + the delivery plan in normalized tables
     if (source === "weekly" && isCombined(names)) {
@@ -899,6 +901,15 @@
   /* row with the old (original) column names */
   function rec(o) { var r = {}; Object.keys(o).forEach(function (k) { r[normKey(k)] = o[k] === undefined ? null : o[k]; }); return r; }
 
+  /* Only one spend forecast is used: the contractor's (user rule, Nov 2026). The V0 / V2 forecast columns of the old
+     Delivery Plan are dropped when it is read. */
+  var ALT_FC = /(^|[^a-z])(v0|v2)([^a-z0-9]|$)/i;
+  function noAltForecast(tables) {
+    Object.keys(tables).forEach(function (t) {
+      (tables[t] || []).forEach(function (r) { Object.keys(r).forEach(function (k) { if (ALT_FC.test(k)) delete r[k]; }); });
+    });
+  }
+
   function planFromCombined(XLSX, wb, meta) {
     function T(n) { return tableRows(XLSX, wb, meta, n); }
     function g(row, k) { var v = row[normKey(k)]; return v === undefined ? null : v; }
@@ -923,19 +934,14 @@
           "Start Date": g(p, "Start Date"), "End Date": g(p, "End Date"), "Project Phase": g(p, "Project Phase"),
           "Total Project Spend Plan as per Budgeting FTY 2026": i === 0 ? g(p, "Budget Plan FY (SAR)") : null,
           "Spend Plan as per Budgeting (Incr)": g(m, "Budget Plan (Incr)"),
-          "Plan as per V0 Forecast in Jan-26 (Shared with PC) (Incr)2": g(m, "V0 Forecast Jan-26 (Incr)"),
-          "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Incr)3": g(m, "V2 Forecast Mar-26 (Incr)"),
           "Actual Spend (Incr)4": g(m, "Actual Spend (Incr)"),
           "Forecast as per Contractor cashflow / updated Progress / Program(Incr)5": g(m, "Contractor Forecast (Incr)"),
           "Invoice Related actvities": g(m, "Invoice-related Activities"),
           "Spend Plan as per Budgeting (Cum)": g(m, "Budget Plan (Cum)"),
-          "Plan as per V0 Forecast in Jan-26 (Shared with PC) (Cum)2": g(m, "V0 Forecast (Cum)"),
-          "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Cum)3": g(m, "V2 Forecast (Cum)"),
           "Actual Spend(Cum)4": g(m, "Actual Spend (Cum)"),
           "Forecast as per Contractor cashflow / updated Progress / Program(Cum)5": g(m, "Contractor Forecast (Cum)"),
           "Milestones": g(m, "Milestones"),
           "YTD Spend Plan as per Budgeting": ytd ? num(g(m, "Budget Plan (Incr)")) || 0 : null,
-          "YTD Plan as per V2 Forecast": ytd ? num(g(m, "V2 Forecast Mar-26 (Incr)")) || 0 : null,
           "YTD Actual": ytd ? num(g(m, "Actual Spend (Incr)")) || 0 : null,
           "Remarks/Concern": g(m, "Remarks / Concern")
         }));
@@ -951,13 +957,11 @@
       return rec({
         "Code": g(p, "Code"), "Project Name": g(p, "Short Name"), "KPI Code": g(p, "KPI Code"), "KPI Filter": g(k, "Perspective"),
         "Objective/ KPIs": g(k, "Objective / KPI"), "Category Type": g(p, "Fund Type"),
-        "Spend Plan as per Budgeting (M) FTY 2026": g(p, "Budget Plan FY (SAR)"), "Spend Plan as per V2 Forecast (M) FTY 2026": g(p, "V2 Forecast FY (SAR)"),
-        "Variance (M)": g(p, "FY Variance Budget − V2 (SAR)"),
+        "Spend Plan as per Budgeting (M) FTY 2026": g(p, "Budget Plan FY (SAR)"),
         "Forecast as per Contractor cashflow / updated Progress / Program": g(p, "Contractor Forecast FY (SAR)"),
-        "YTD Spend Plan as per Budgeting (M)": yb, "YTD Plan as per V2 Forecast (M)2": g(p, "YTD V2 Forecast (SAR)"), "YTD Actual (M)": ya,
-        "Variance (M)2 w.r.t. Budgeting Spending Plan": g(p, "YTD Variance vs Budget (SAR)"), "Variance (M)2 w.r.t. V2 forecast Plan": g(p, "YTD Variance vs V2 (SAR)"),
+        "YTD Spend Plan as per Budgeting (M)": yb, "YTD Actual (M)": ya,
+        "Variance (M)2 w.r.t. Budgeting Spending Plan": g(p, "YTD Variance vs Budget (SAR)"),
         "%Variance w.r.t. Budgeting Spending Plan": g(p, "YTD % Variance vs Budget"),
-        "Interval Plan as per V2 Forecast for next month": g(p, "Next Month V2 Forecast (SAR)"),
         "Interval Forecast as per Contractor cashflow for next month": g(p, "Next Month Contractor Forecast (SAR)"), "Remarks": null
       });
     });
@@ -979,8 +983,8 @@
 
     var summary = KS.map(function (k) {
       return rec({ "KPI Code": g(k, "KPI Code"), "KPI SN": g(k, "KPI Code"), "KPI Filter": g(k, "Perspective"), "Objective/ KPIs": g(k, "Objective / KPI"),
-        "KPI Weight (%)": g(k, "KPI Weight"), "NSR Spend Plan 2026 as per Budgeting": g(k, "FY Target / Plan"), "NSR V2 Forecast 2026 shared to PC": g(k, "FY V2 Forecast"),
-        "FTY Variance": g(k, "FY Variance"), "YTD Spend Plan 2026 as per Budgeting": g(k, "YTD Target / Plan"), "YTD V2 Forecast 2026": g(k, "YTD V2 Forecast"),
+        "KPI Weight (%)": g(k, "KPI Weight"), "NSR Spend Plan 2026 as per Budgeting": g(k, "FY Target / Plan"),
+        "YTD Spend Plan 2026 as per Budgeting": g(k, "YTD Target / Plan"),
         "YTD Actual": g(k, "YTD Actual"), "YTD Variance": g(k, "YTD Variance"), "% Achieved": g(k, "% Achieved"), "KPI Result": g(k, "KPI Result"),
         "Indicator": g(k, "Indicator"), "Remarks": g(k, "Remarks") });
     });

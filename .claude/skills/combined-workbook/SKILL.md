@@ -31,6 +31,10 @@ file. Never remove the old import path.
   (fatalities + major/10 + minor/200 + near misses/1000) ÷ man-hours × 1e6 with major = Lost Time + Restricted
   Work-Day, minor = Medical Treatment + First Aid (cumulative figures). "Better When" = Lower → % achieved = target ÷ actual.
 - One YTD cut-off (`Settings!B6`, name `cfg_YTDMonth`); next month = cut-off + 1; report date = latest weekly Report Date.
+- **Only one spend forecast: the contractor's** (Monthly Plan › Contractor Forecast (Incr); user rule Nov 2026:
+  "مش عايز فوركاست تاني غير اللي بيجي من المقاول"). No V0 / V2 forecast columns in Monthly Plan, Projects, KPI Scorecard
+  or the Dashboard; the site drops V0 / V2 columns of the old Delivery Plan too, and does not keep the PC tracker's
+  own forecasts (year-end, Nov / Dec, risk-adjusted). Never add another forecast without asking.
 - Every finding in *Review Notes* gives its source as file › sheet › cells (user rule: always show the source).
 - Cached values come from LibreOffice (`recalc.py` of the xlsx skill) on the standalone build, then merge.py writes
   them into the formula cells; `fullCalcOnLoad="1"` makes Excel recalc on open. libreoffice-calc may need
@@ -46,6 +50,17 @@ file. Never remove the old import path.
 5. `merge.py weekly.xlsx new.xlsx new_calc.xlsx outdir "EPBU NSR Projects Database.xlsx"`.
 6. `node cmp.js <site dir> <old plan.xlsx> <combined.xlsx> <old weekly.xlsx>`: weekly tables must be identical; plan table
    differences must only be the intended fixes (V0 cum, next month, YTD cut-off, stale caches).
+
+## Rebuild an existing combined file (keeps everything typed in it)
+Use this to change the plan sheets' layout after the user has worked in the file (e.g. v0.2 → v0.3, V0/V2 removed):
+1. `extract_combined.py combined.xlsx model.json` → the input (blue) cells of Projects, Monthly Plan (=E<row> "takes the
+   actual" and hand-typed sums kept), KPI Scorecard, Delivery KPI, Settings (year, cut-off, folder, status, lists,
+   glossary) and Review Notes.
+2. `build.py model.json combined.xlsx new.xlsx`, then LibreOffice → new_calc.xlsx (0 errors).
+3. `strip.py combined.xlsx weekly_only.xlsx` (removes the sheets with sheetId ≥ 101 and their parts + calc chain).
+4. `merge.py weekly_only.xlsx new.xlsx new_calc.xlsx outdir out.xlsx`.
+5. Check: every kept column of Projects / Monthly Plan / KPI Scorecard / Delivery KPI / Data Checks has the same value as
+   before, and every weekly part (sheets, customXml, model, connections) is byte-identical (merge.py keeps CRLF).
 
 ## Site
 `importer.js`: `isCombined(names)` (tables Projects + Monthly_Plan + KPI_Scorecard) → `res.extra = [planFromCombined(...)]`.

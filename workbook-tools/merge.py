@@ -15,10 +15,10 @@ if os.path.exists(out_dir): shutil.rmtree(out_dir)
 with zipfile.ZipFile(wk_p) as z: z.extractall(out_dir)
 nz = zipfile.ZipFile(new_p)
 def nread(p): return nz.read(p).decode("utf8")
-def rd(p): return open(os.path.join(out_dir, p), encoding="utf8").read()
+def rd(p): return open(os.path.join(out_dir, p), encoding="utf8", newline="").read()   # keep CRLF as is
 def wr(p, s):
     os.makedirs(os.path.dirname(os.path.join(out_dir, p)), exist_ok=True)
-    open(os.path.join(out_dir, p), "w", encoding="utf8").write(s)
+    open(os.path.join(out_dir, p), "w", encoding="utf8", newline="").write(s)
 def attr(tag, name):
     m = re.search(r'\b%s="([^"]*)"' % re.escape(name), tag); return m.group(1) if m else None
 def children(xml, parent, child):

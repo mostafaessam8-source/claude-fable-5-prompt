@@ -299,6 +299,10 @@ It is still under test: the two old files keep working and either can be importe
   *from the combined workbook*. Importing the old Delivery Plan file later replaces the plan tables again.
 * Build tools (no data inside): `workbook-tools/` in the repo root. Rules: `.claude/skills/combined-workbook/SKILL.md`.
 
+**One forecast only.** The workbook (v0.3) and the site use one spend forecast: the contractor's (Monthly Plan ›
+Contractor Forecast). The V0 / V2 forecast columns were removed from Monthly Plan, Projects, KPI Scorecard and the
+Dashboard, the site drops them when it reads an old Delivery Plan, and the PC tracker's own forecasts are not kept.
+
 ## Baseline data (optional)
 
 `data/default-data.js` is the dataset the site shows before anyone imports. It's built from the Excel

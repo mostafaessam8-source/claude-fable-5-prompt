@@ -6,11 +6,9 @@
   /* Normalised column names used across pages */
   var SP = {
     plan: "Spend Plan as per Budgeting (Incr)",
-    fc: "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Incr)3",
     act: "Actual Spend (Incr)4",
     inv: "Forecast as per Contractor cashflow / updated Progress / Program (Incr)5",
     planC: "Spend Plan as per Budgeting (Cum)",
-    fcC: "Plan as per V2 Forecast in Mar-26 (Shared with PC) (Cum)3",
     actC: "Actual Spend (Cum)4",
     invC: "Forecast as per Contractor cashflow / updated Progress / Program (Cum)5",
     rev: "Rev Spend Plan (Incr)"          // revised spend plan from Budget 2026 (joined in app.js)
@@ -806,20 +804,20 @@
     if (RR.length) {
       var rk = RR.filter(function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length || (!st.proj.length && /nsr/i.test(r.Program || "")); });
       var sd = RR[0]["Status Date"];
-      sec("c-risk", "Spend at risk", "PC Spend Recovery Tracker" + (sd ? " · status " + esc(fmt.date(sd)) : "") + " · NSR projects · year-end forecast, in-process invoices and the amount at risk with its root causes");
+      sec("c-risk", "Spend at risk", "PC Spend Recovery Tracker" + (sd ? " · status " + esc(fmt.date(sd)) : "") + " · NSR projects · in-process invoices and the amount at risk with its root causes, against the contractor forecast");
       var RS = function (k) { return rk.reduce(function (a, r) { return a + (r[k] || 0); }, 0); };
       var gr = grid(v, "g-5");
-      gr.innerHTML = mTile("Tracker year-end forecast", RS("Year-End Forecast"), "slate", "vs 2026 plan " + fmt.m(RS("2026 Plan"), 1) + " M") + mTile("YTD actual (tracker)", RS("YTD Actuals"), "yellow") +
-        mTile("In-process", RS("In-Process"), "mid", "invoices / WC under processing") + mTile("Total at risk", RS("Total At Risk"), "red", "geopolitical " + fmt.m(RS("At Risk Geopolitical"), 1) + " M · other " + fmt.m(RS("At Risk Other"), 1) + " M") +
-        mTile("Risk-adjusted forecast", RS("Risk-Adj Forecast"), "black", "year-end forecast − at risk");
       var site = function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length ? m.reduce(function (a, o) { return a + (o.landing || 0); }, 0) : null; };
-      var nx = (rk[0] || {})["Next Month"] || "Next month", na = (rk[0] || {})["Month After"] || "Month after";
+      var SF = rk.reduce(function (a, r) { return a + (site(r) || 0); }, 0);
+      gr.innerHTML = mTile("Contractor forecast 2026", SF, "slate", "the projects in the tracker · Monthly Plan") + mTile("YTD actual (tracker)", RS("YTD Actuals"), "yellow") +
+        mTile("In-process", RS("In-Process"), "mid", "invoices / WC under processing") + mTile("Total at risk", RS("Total At Risk"), "red", "geopolitical " + fmt.m(RS("At Risk Geopolitical"), 1) + " M · other " + fmt.m(RS("At Risk Other"), 1) + " M") +
+        mTile("Forecast − at risk", SF - RS("Total At Risk"), "black", "contractor forecast less the amount at risk");
       var trows = rk.map(function (r) {
         var it = riskItems(r.Code), sf = site(r);
-        return Object.assign({}, r, { siteFc: sf, diff: sf == null ? null : sf - (r["Year-End Forecast"] || 0),
+        return Object.assign({}, r, { siteFc: sf, adj: sf == null ? null : sf - (r["Total At Risk"] || 0),
           why: it.map(function (x) { return x["Root Cause"] || ""; }).filter(Boolean).join(" · "), items: it });
       }).sort(function (a, b) { return (b["Total At Risk"] || 0) - (a["Total At Risk"] || 0); });
-      tableIn(panelIn(v, "Amount at risk by project", "Tracker values · “Site forecast” = the contractor Forecast Plan in the Monthly Plan (this site) · the difference shows where the two disagree"),
+      tableIn(panelIn(v, "Amount at risk by project", "Amounts at risk, in-process and YTD actual from the PC tracker · the only forecast is the contractor's (Monthly Plan)"),
         { rows: trows, autoHeight: true, totals: true, exportName: "Spend_at_Risk", rowClass: function (r) { return r["Total At Risk"] > 0 ? "risk-row" : ""; },
           rowTitle: "Click for the risk description and the required action", onRow: function (r) {
             U.modal(r.Code + " · " + (r["Project Name"] || "") + " — amount at risk " + fmt.m(r["Total At Risk"] || 0, 2) + " M SAR",
@@ -830,12 +828,10 @@
           columns: [{ key: "Code", label: "Code" }, { key: "Project Name", label: "Project", wrap: true }, { key: "Total At Risk", label: "Total At Risk", type: "money", total: "sum",
               render: function (x) { return x > 0 ? '<b class="neg">' + fmt.money(x) + "</b>" : fmt.money(x || 0); } },
             { key: "why", label: "Root cause", wrap: true }, { key: "2026 Plan", label: "2026 Plan", type: "money", total: "sum" },
-            { key: "Year-End Forecast", label: "Tracker YE Forecast", type: "money", total: "sum" }, { key: "siteFc", label: "Site Forecast Plan", type: "money", total: "sum" },
-            { key: "diff", label: "Site − Tracker", type: "money", signed: true, total: "sum" }, { key: "YTD Actuals", label: "YTD Actual", type: "money", total: "sum" },
-            { key: "In-Process", label: "In-Process", type: "money", total: "sum" }, { key: "Next Month Forecast", label: nx + " Forecast", type: "money", total: "sum" },
-            { key: "Month After Forecast", label: na + " Forecast", type: "money", total: "sum" }, { key: "At Risk Geopolitical", label: "At Risk · Geopolitical", type: "money", total: "sum" },
+            { key: "siteFc", label: "Contractor Forecast 2026", type: "money", total: "sum" }, { key: "YTD Actuals", label: "YTD Actual", type: "money", total: "sum" },
+            { key: "In-Process", label: "In-Process", type: "money", total: "sum" }, { key: "At Risk Geopolitical", label: "At Risk · Geopolitical", type: "money", total: "sum" },
             { key: "At Risk Other", label: "At Risk · Operational", type: "money", total: "sum" },
-            { key: "Risk-Adj Forecast", label: "Risk-Adj. Forecast", type: "money", total: "sum" }, { key: "Budget Reprofiling", label: "Reprofiling" }] });
+            { key: "adj", label: "Forecast − At Risk", type: "money", total: "sum" }, { key: "Budget Reprofiling", label: "Reprofiling" }] });
     }
 
     /* 4 · Invoice schedule */
@@ -1018,7 +1014,8 @@
     function box(lab, val, cls, sub) { return '<div class="iv-k ' + (cls || "") + '"><span>' + lab + "</span><b>" + M(val) + "</b>" + (sub ? "<em>" + esc(sub) + "</em>" : "") + "</div>"; }
     var why = riskItems(r.Code).filter(function (x) { return x["Root Cause"] && !/^n\/?a$/i.test(x["Root Cause"]) && !/^complete/i.test(x["Root Cause"]); }).map(function (x) { return x["Root Cause"]; }).join(" · ");
     var body = box("In-Process", r["In-Process"], "k-fc") + box("Total at risk", tot, "k-risk " + (tot > 0 ? "neg" : "")) +
-      (r["At Risk Geopolitical"] ? box("Geopolitical", r["At Risk Geopolitical"], "k-risk") : "") + box("Risk-adj. forecast", r["Risk-Adj Forecast"], "k-fc", "tracker YE " + M(r["Year-End Forecast"]));
+      (r["At Risk Geopolitical"] ? box("Geopolitical", r["At Risk Geopolitical"], "k-risk") : "") +
+      (r.whole ? "" : box("Forecast − at risk", (o.landing || 0) - tot, "k-fc", "contractor forecast less the risk"));
     return '<div class="iv-kg iv-kg-risk"><i>At risk · PC tracker ' + esc(r["Status Date"] ? fmt.date(r["Status Date"]) : "") + (r.whole ? " · whole " + esc(r.Code) : "") + ' · M SAR</i><div class="iv-kr">' + body + "</div>" +
       (why ? '<div class="iv-why">' + esc(why) + "</div>" : "") + "</div>";
   }
