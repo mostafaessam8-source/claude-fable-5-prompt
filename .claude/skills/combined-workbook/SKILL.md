@@ -5,8 +5,20 @@ description: Rules for the combined "EPBU NSR Projects Database" Excel workbook 
 
 # Combined workbook: weekly report + delivery plan
 
-Status: **test version for discussion**. The old two files must keep working on the site until the user approves the new
-file. Never remove the old import path.
+Status: **final** (Nov 2026, user: "خلي دا الملف النهائي"): `EPBU NSR Projects Database.xlsx` is the one file that feeds
+the site. It replaces the PBI Weekly Report, the Delivery Plan, Budget 2026 (Rev Spend Plan), Contract details and the PC
+Spend Recovery Tracker. The old import paths stay working (never remove them), but the data repo index points to this
+file only for those sources.
+
+## What lives where (final file)
+- Monthly Plan: Budget Plan · **Rev Spend Plan** (was Budget 2026 › Curve › Spending Plan (VP); budget codes 0674C → 0674,
+  0674D → 0674C) · Actual · Contractor Forecast (the only forecast).
+- Projects: master data + **PR Number, Contractor, Owner (BU), Budget (PMO), Scope** (was Contract details; PINI design =
+  0674C, Heet design = 6203A) + calc Rev FY / YTD Rev, In-Process and Amount at Risk (from Spend Risk by Weekly Report Code).
+  Codes: TSMG 0134, Zulfi station **C001** (not 0000). Full Cost kept; Budget (PMO) is its own column.
+- **Spend Risk** sheet (input, NSR only): one row per risk line — amounts on the project's first line, root cause,
+  description, action, reprofiling, status date. No PC forecasts.
+- The site splits the file into the sources weekly + plan + budget + contract + risk (`extrasFromCombined` in importer.js).
 
 ## Hard rules
 - The base is the **PBI Weekly Report** package. Its Power Query (customXml DataMashup), connections.xml, queryTables,

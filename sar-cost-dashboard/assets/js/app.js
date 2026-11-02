@@ -388,7 +388,7 @@
       }).join("");
       grid.appendChild(U.el('<div class="src-card' + (src ? " loaded" : "") + '"><h4>' + esc(spec.label) + '</h4><div class="fname">' +
         (src ? esc(src.fileName || "") + " · " + (src.imported ? "imported " : "baseline ") + esc(src.importedAt ? new Date(src.importedAt).toLocaleString("en-GB") : "") : "Not loaded") +
-        (src && src.combinedWith ? '<br><span class="badge" title="This source was read from the combined workbook (test version)">from the combined workbook</span>' : "") +
+        (src && src.combinedWith ? '<br><span class="badge" title="This source was read from the combined workbook (EPBU NSR Projects Database)">from the combined workbook</span>' : "") +
         '</div><div class="fname">Expected file: ' + esc(spec.file) + "</div><ul>" + li + "</ul>" +
         (src && (src.imported || cloudIx.sources[k]) ? '<button type="button" class="icon-btn ghost src-dl" data-src="' + esc(src.combinedWith || k) + '" title="Download the file you imported, update it in Excel and import it again">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span>Download imported file</span></button>' +

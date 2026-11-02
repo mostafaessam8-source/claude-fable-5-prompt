@@ -36,10 +36,10 @@ def ddate(s): return datetime.datetime.strptime(s, "%Y-%m-%d") if s else None
 
 wb = openpyxl.Workbook()
 wb.remove(wb.active)
-ORDER = ["Read Me", "Dashboard", "Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Data Checks", "Review Notes", "Data Sources", "Settings"]
+ORDER = ["Read Me", "Dashboard", "Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Data Checks", "Review Notes", "Data Sources", "Settings"]
 S = {n: wb.create_sheet(n) for n in ORDER}
 for n in ORDER:
-    S[n].sheet_properties.tabColor = TEAL if n in ("Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Settings") else DARK
+    S[n].sheet_properties.tabColor = TEAL if n in ("Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Settings") else DARK
     S[n].sheet_view.showGridLines = False
 
 def title(ws, text, sub, width_to=8):
@@ -142,6 +142,7 @@ title(pj, "Projects – one row per project (master data)",
       "Blue headers = type here · Dark headers = calculated, do not type · Green headers = read from the weekly project files (Refresh All). Row 3 says where each column comes from.")
 MP = "'Monthly Plan'"
 def mp(col): return "%s!$%s$5:$%s$2000" % (MP, col, col)
+MB, MR, MA, MF = "D", "E", "F", "G"      # Monthly Plan: Budget, Rev Spend Plan, Actual, Contractor Forecast
 PCOLS = [  # key, header, kind, width, fmt, note
     ("code", "Code", "in", 9, "@", "Input · key"),
     ("short", "Short Name", "in", 16, None, "Input"),
@@ -159,6 +160,11 @@ PCOLS = [  # key, header, kind, width, fmt, note
     ("wc_prev", "WC Previous Years (SAR)", "in", 15, NUM, "Input"),
     ("paid", "Paid from CV as per ERP (SAR)", "in", 15, NUM, "Input"),
     ("wcode", "Weekly Report Code", "in", 9, "@", "Input · code used in the weekly file"),
+    ("pr", "PR Number", "in", 12, "@", "Input · was Contract details › NSR"),
+    ("contractor", "Contractor", "in", 26, None, "Input · was Contract details"),
+    ("owner", "Owner (BU)", "in", 18, None, "Input · was Contract details"),
+    ("budget_pmo", "Budget (PMO) (SAR)", "in", 15, NUM, "Input · was Contract details › NSR"),
+    ("scope", "Scope", "in", 50, None, "Input · was Contract details"),
     ("remarks", "Remarks / Concern", "in", 40, None, "Input"),
     ("wc_cur", "WC Current Year (SAR)", "f", 14, NUM, "Calc: Monthly Plan actuals"),
     ("wc_tot", "Total WC (SAR)", "f", 14, NUM, "Calc: previous + current"),
@@ -166,12 +172,16 @@ PCOLS = [  # key, header, kind, width, fmt, note
     ("wc_rem", "Remaining WC (SAR)", "f", 14, NUM, "Calc: Contract − Total WC"),
     ("pend", "Pending Payment (SAR)", "f", 14, NUM, "Calc: Total WC − Paid"),
     ("fy_b", "Budget Plan FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
+    ("fy_r", "Rev Spend Plan FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
     ("fy_f", "Contractor Forecast FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
     ("ytd_b", "YTD Budget Plan (SAR)", "f", 14, NUM, "Calc: Monthly Plan ≤ cut-off"),
+    ("ytd_r", "YTD Rev Spend Plan (SAR)", "f", 14, NUM, "Calc: Monthly Plan ≤ cut-off"),
     ("ytd_a", "YTD Actual (SAR)", "f", 14, NUM, "Calc: Monthly Plan ≤ cut-off"),
     ("ytd_vb", "YTD Variance vs Budget (SAR)", "f", 14, NUM, "Calc: YTD Budget − Actual"),
     ("ytd_pct", "YTD % Variance vs Budget", "f", 9, PCT, "Calc: (Actual − Budget) ÷ Budget"),
     ("nm_f", "Next Month Contractor Forecast (SAR)", "f", 14, NUM, "Calc: Monthly Plan, next month"),
+    ("inproc", "In-Process (SAR)", "f", 14, NUM, "Calc: Spend Risk"),
+    ("risk", "Amount at Risk (SAR)", "f", 14, NUM, "Calc: Spend Risk"),
     ("w_src", "Weekly Source File", "wk", 34, None, "Source.Name"),
     ("w_date", "Weekly Report Date", "wk", 12, DATE, "Report Date"),
     ("w_pl", "Planned % (cum)", "wk", 9, PCT, "Planned (%) - Cumulative"),
@@ -189,18 +199,22 @@ for i, p in enumerate(M["projects"]):
     r = P0 + i
     A = "$%s%d" % (PC["code"], r)
     f = {
-        "wc_cur": "=SUMIFS(%s,%s,%s)" % (mp("E"), mp("A"), A),
+        "wc_cur": "=SUMIFS(%s,%s,%s)" % (mp(MA), mp("A"), A),
         "wc_tot": "=%s%d+%s%d" % (PC["wc_prev"], r, PC["wc_cur"], r),
         "wc_pct": "=IFERROR(%s%d/%s%d,0)" % (PC["wc_tot"], r, PC["cv"], r),
         "wc_rem": "=%s%d-%s%d" % (PC["cv"], r, PC["wc_tot"], r),
         "pend": "=%s%d-%s%d" % (PC["wc_tot"], r, PC["paid"], r),
-        "fy_b": "=SUMIFS(%s,%s,%s)" % (mp("D"), mp("A"), A),
-        "fy_f": "=SUMIFS(%s,%s,%s)" % (mp("F"), mp("A"), A),
-        "ytd_b": '=SUMIFS(%s,%s,%s,%s,"<="&cfg_YTDMonth)' % (mp("D"), mp("A"), A, mp("B")),
-        "ytd_a": '=SUMIFS(%s,%s,%s,%s,"<="&cfg_YTDMonth)' % (mp("E"), mp("A"), A, mp("B")),
+        "fy_b": "=SUMIFS(%s,%s,%s)" % (mp(MB), mp("A"), A),
+        "fy_r": "=SUMIFS(%s,%s,%s)" % (mp(MR), mp("A"), A),
+        "fy_f": "=SUMIFS(%s,%s,%s)" % (mp(MF), mp("A"), A),
+        "ytd_b": '=SUMIFS(%s,%s,%s,%s,"<="&cfg_YTDMonth)' % (mp(MB), mp("A"), A, mp("B")),
+        "ytd_r": '=SUMIFS(%s,%s,%s,%s,"<="&cfg_YTDMonth)' % (mp(MR), mp("A"), A, mp("B")),
+        "ytd_a": '=SUMIFS(%s,%s,%s,%s,"<="&cfg_YTDMonth)' % (mp(MA), mp("A"), A, mp("B")),
         "ytd_vb": "=%s%d-%s%d" % (PC["ytd_b"], r, PC["ytd_a"], r),
         "ytd_pct": "=IFERROR((%s%d-%s%d)/%s%d,0)" % (PC["ytd_a"], r, PC["ytd_b"], r, PC["ytd_b"], r),
-        "nm_f": "=SUMIFS(%s,%s,%s,%s,cfg_NextMonth)" % (mp("F"), mp("A"), A, mp("B")),
+        "nm_f": "=SUMIFS(%s,%s,%s,%s,cfg_NextMonth)" % (mp(MF), mp("A"), A, mp("B")),
+        "inproc": "=SUMIFS('Spend Risk'!$D$5:$D$200,'Spend Risk'!$A$5:$A$200,$%s%d)" % (PC["wcode"], r),
+        "risk": "=SUMIFS('Spend Risk'!$G$5:$G$200,'Spend Risk'!$A$5:$A$200,$%s%d)" % (PC["wcode"], r),
         "w_var": '=IF(AND(ISNUMBER(%s%d),ISNUMBER(%s%d)),%s%d-%s%d,"")' % (PC["w_pl"], r, PC["w_ac"], r, PC["w_ac"], r, PC["w_pl"], r),
         "chk": "=IFERROR(INDEX('Data Checks'!$T$5:$T$200,MATCH(%s,'Data Checks'!$A$5:$A$200,0)),\"\")" % A,
     }
@@ -226,12 +240,13 @@ dv = DataValidation(type="list", formula1="='KPI Scorecard'!$A$5:$A$40", allow_b
 # ------------------------------------------------------------------ Monthly Plan
 mpw = S["Monthly Plan"]
 title(mpw, "Monthly Plan 2026 – one row per project per month",
-      "Type the monthly amounts in the blue columns. The only forecast is the contractor's (cash flow / progress). A cell showing =E<row> takes the Actual of that month (used for closed months). Cumulative and YTD columns are calculated.")
+      "Type the monthly amounts in the blue columns. The only forecast is the contractor's (cash flow / progress). A cell showing =F<row> takes the Actual of that month (used for closed months). Cumulative and YTD columns are calculated.")
 MCOLS = [
     ("Code", "in", 9, "@", "Input · Projects code"),
     ("Month", "in", 11, MON, "Input · 1st of month"),
     ("Project", "f", 16, None, "Calc: Projects"),
     ("Budget Plan (Incr)", "in", 14, NUM, "Input · Spend Plan as per Budgeting"),
+    ("Rev Spend Plan (Incr)", "in", 14, NUM, "Input · revised plan (was Budget 2026 › Spending Plan (VP))"),
     ("Actual Spend (Incr)", "in", 14, NUM, "Input · work confirmed"),
     ("Contractor Forecast (Incr)", "in", 14, NUM, "Input · cash flow / progress"),
     ("Invoice-related Activities", "in", 30, None, "Input"),
@@ -239,26 +254,27 @@ MCOLS = [
     ("Remarks / Concern", "in", 30, None, "Input"),
     ("In YTD?", "f", 7, None, "Calc: Month ≤ cut-off"),
     ("Budget Plan (Cum)", "f", 14, NUM, "Calc: running total"),
+    ("Rev Spend Plan (Cum)", "f", 14, NUM, "Calc: running total"),
     ("Actual Spend (Cum)", "f", 14, NUM, "Calc: running total"),
     ("Contractor Forecast (Cum)", "f", 14, NUM, "Calc: running total"),
 ]
 header_row(mpw, 4, MCOLS)
 def mval(v, r):
-    if v == "=ACT": return "=E%d" % r
+    if v == "=ACT": return "=%s%d" % (MA, r)
     return v
 for i, m in enumerate(M["monthly"]):
     r = 5 + i
     put(mpw, r, 1, m["code"], "in", "@"); put(mpw, r, 2, ddate(m["month"]), "in", MON)
     put(mpw, r, 3, '=IFERROR(INDEX(Projects!$B$5:$B$500,MATCH($A%d,Projects!$A$5:$A$500,0)),"Not in Projects")' % r, "f")
-    for c, k in zip(range(4, 7), ("budget", "actual", "fcst")):
-        put(mpw, r, c, mval(m[k], r), "in", NUM)
-    for c, k in zip(range(7, 10), ("invoice", "milestone", "remarks")):
+    for c, k in zip(range(4, 8), ("budget", "rev", "actual", "fcst")):
+        put(mpw, r, c, mval(m.get(k), r), "in", NUM)
+    for c, k in zip(range(8, 11), ("invoice", "milestone", "remarks")):
         put(mpw, r, c, m[k], "in", wrap=False)
-    put(mpw, r, 10, '=IF($B%d<=cfg_YTDMonth,"Yes","No")' % r, "f")
-    for c, src in zip(range(11, 14), "DEF"):
+    put(mpw, r, 11, '=IF($B%d<=cfg_YTDMonth,"Yes","No")' % r, "f")
+    for c, src in zip(range(12, 16), "DEFG"):
         put(mpw, r, c, '=SUMIFS($%s$5:$%s$2000,$A$5:$A$2000,$A%d,$B$5:$B$2000,"<="&$B%d)' % (src, src, r, r), "f", NUM)
 MN = 4 + len(M["monthly"])
-add_table(mpw, "Monthly_Plan", "A4:M%d" % MN)
+add_table(mpw, "Monthly_Plan", "A4:O%d" % MN)
 mpw.freeze_panes = "D5"
 dv = DataValidation(type="list", formula1="=Projects!$A$5:$A$500", allow_blank=False); dv.add("A5:A3000"); mpw.add_data_validation(dv)
 dv = DataValidation(type="list", formula1="=" + LIST_REF["List_Month"], allow_blank=False); dv.add("B5:B3000"); mpw.add_data_validation(dv)
@@ -388,6 +404,32 @@ DN = 4 + len(M["delivery"])
 add_table(dk, "Delivery_Targets", "A4:M%d" % DN)
 dv = DataValidation(type="list", formula1="=Projects!$A$5:$A$500"); dv.add("A5:A200"); dk.add_data_validation(dv)
 
+# ------------------------------------------------------------------ Spend Risk (was the PC Spend Recovery Tracker)
+sr = S["Spend Risk"]
+title(sr, "Spend Risk – amount at risk of the 2026 spend (NSR projects)",
+      "One row per risk line (a project may have several). Was: EPBU_Weekly_KPI › Spend Recovery Tracker (PC). Type the amounts on the project's first line only. No forecast here: the only forecast is the contractor's (Monthly Plan).")
+RCOLS = [
+    ("Code", "in", 9, "@", "Input · Weekly Report Code (6203 = whole Heet project)"), ("Project", "f", 26, None, "Calc: Projects"),
+    ("Status Date", "in", 12, DATE, "Input · date of the PC tracker"),
+    ("In-Process (SAR)", "in", 14, NUM, "Input · invoices / WC under processing"), ("At Risk · Geopolitical (SAR)", "in", 14, NUM, "Input"),
+    ("At Risk · Operational (SAR)", "in", 14, NUM, "Input"), ("Total At Risk (SAR)", "f", 14, NUM, "Calc: geopolitical + operational"),
+    ("Root Cause", "in", 24, None, "Input"), ("Risk Description", "in", 60, None, "Input"), ("Required Action", "in", 44, None, "Input"),
+    ("Budget Reprofiling", "in", 11, None, "Input: Yes / No"),
+]
+header_row(sr, 4, RCOLS)
+RK = M.get("risk", [])
+for i, x in enumerate(RK):
+    r = 5 + i
+    put(sr, r, 1, x["code"], "in", "@")
+    put(sr, r, 2, '=IFERROR(INDEX(Projects!$B$5:$B$500,MATCH($A%d,Projects!$%s$5:$%s$500,0)),"")' % (r, PC["wcode"], PC["wcode"]), "f")
+    put(sr, r, 3, ddate(x.get("date")), "in", DATE)
+    for c, k in ((4, "inproc"), (5, "geo"), (6, "other")): put(sr, r, c, x.get(k), "in", NUM)
+    put(sr, r, 7, "=N(E%d)+N(F%d)" % (r, r), "f", NUM)
+    for c, k in ((8, "cause"), (9, "desc"), (10, "action"), (11, "reprof")): put(sr, r, c, x.get(k), "in", wrap=c in (9, 10))
+    sr.row_dimensions[r].height = 45
+add_table(sr, "Spend_Risk", "A4:K%d" % (4 + max(1, len(RK))))
+sr.freeze_panes = "C5"
+
 # ------------------------------------------------------------------ Data Checks (live)
 dc = S["Data Checks"]
 title(dc, "Data Checks – the plan (Projects) compared with the weekly project files",
@@ -403,7 +445,7 @@ CCOLS = [
 ]
 header_row(dc, 4, CCOLS)
 def pref(k, r): return "Projects!$%s%d" % (PC[k], r)
-NCHK = 40
+NCHK = 45
 for i in range(NCHK):
     r, pr = 5 + i, 5 + i
     blank = 'IF($A%d="","",' % r
@@ -464,10 +506,11 @@ PQ = "Power Query"
 CAT = [
     ("Read Me", "–", "How the file works, colour code, update steps", "Guide", "–", "–", "Active"),
     ("Dashboard", "–", "One-page summary: tiles, portfolio table, monthly spend, scorecard", "Report (formulas)", "Projects, Monthly Plan, KPI Scorecard, Data Checks", "Nothing to type", "Active"),
-    ("Projects", "Projects", "Master data: one row per project (codes, names, PO, cost, contract, WC, paid, dates, phase) + calculated plan and weekly figures", "Manual input + formulas", "Was: Delivery Plan › Spending Plan (G:Q repeated 12× per project), NSR Project Data, Abbreviation", "Type in the blue columns", "Active"),
-    ("Monthly Plan", "Monthly_Plan", "Monthly budget plan, actual and contractor forecast per project (the only forecast)", "Manual input + formulas", "Was: Delivery Plan › Spending Plan (S:AD)", "Type in the blue columns; add 12 rows for a new project", "Active"),
+    ("Projects", "Projects", "Master data: one row per project (codes, names, PO, cost, contract, WC, paid, dates, phase) + calculated plan and weekly figures", "Manual input + formulas", "Was: Delivery Plan › Spending Plan (G:Q repeated 12× per project), NSR Project Data, Abbreviation + Contract details", "Type in the blue columns", "Active"),
+    ("Monthly Plan", "Monthly_Plan", "Monthly budget plan, Rev spend plan, actual and contractor forecast per project (the only forecast)", "Manual input + formulas", "Was: Delivery Plan › Spending Plan (S:AD) + Budget 2026 › Curve (Spending Plan (VP))", "Type in the blue columns; add 12 rows for a new project", "Active"),
     ("KPI Scorecard", "KPI_Scorecard", "KPI weights, targets, actuals and scorecard result", "Manual input + formulas", "Was: Delivery Plan › KPI_Summary + KPI Projects_Data (rows 24-33)", "Type manual KPIs; spend KPIs calculate", "Active"),
     ("Delivery KPI", "Delivery_Targets", "Target completion dates vs weekly forecast finish", "Manual input + formulas", "Was: Delivery Plan › Delivery KPI", "Type code + target date", "Active"),
+    ("Spend Risk", "Spend_Risk", "Amount at risk of the 2026 spend, in-process invoices, root causes and actions (NSR)", "Manual input", "Was: EPBU_Weekly_KPI › Spend Recovery Tracker (PC)", "Update when PC sends the tracker", "Active"),
     ("Data Checks", "Data_Checks", "Live comparison plan vs weekly + plan sanity rules", "Formulas", "Projects + Weekly Report Updates", "Nothing to type – fix the source", "Active"),
     ("Review Notes", "Review_Notes", "Findings from the merge, with source cells and the decisions needed", "Notes", "Both old files", "Take the decisions, then delete the sheet", "Temporary"),
     ("Settings", "List_*, Glossary", "Report date, YTD cut-off, drop-down lists, glossary", "Manual input", "Was: Delivery Plan › List, Abbreviation (right table)", "Change the YTD cut-off monthly", "Active"),
@@ -557,7 +600,7 @@ for j, (h, k, fmt) in enumerate(PORT):
     c = db.cell(R0 + 1, 2 + j, h); c.font = font(bold=True, color="FFFFFF", size=9); c.fill = fill(DARK)
     c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True); c.border = BOX
 db.row_dimensions[R0 + 1].height = 30
-NP = 30
+NP = 45
 for i in range(NP):
     r, pr = R0 + 2 + i, 5 + i
     code = "Projects!$A%d" % pr
@@ -586,22 +629,22 @@ db.freeze_panes = "A4"
 R1 = RL + 3
 db.cell(R1, 2, "Monthly spend 2026 – all projects").font = font(bold=True, size=12, color=TEAL)
 l = db.cell(R1, 6, "Source: Monthly Plan ▸"); link(l, "Monthly Plan", "A4"); l.font = font(size=8, color="0563C1", underline="single")
-MH = ["Month", "Budget Plan", "Actual", "Contractor Fcst", "Budget (Cum)", "Actual (Cum)", "Fcst (Cum)"]
+MH = ["Month", "Budget Plan", "Rev Plan", "Actual", "Contractor Fcst", "Budget (Cum)", "Rev (Cum)", "Actual (Cum)", "Fcst (Cum)"]
 for j, h in enumerate(MH):
     c = db.cell(R1 + 1, 2 + j, h); c.font = font(bold=True, color="FFFFFF", size=9); c.fill = fill(DARK); c.alignment = Alignment(horizontal="center", wrap_text=True); c.border = BOX
 for i in range(12):
     r = R1 + 2 + i
     c = db.cell(r, 2, "=DATE(cfg_Year,%d,1)" % (i + 1)); c.number_format = "mmm"; c.font = font(size=9); c.border = BOX
-    for j, src in enumerate("DEF"):
+    for j, src in enumerate("DEFG"):
         c = db.cell(r, 3 + j, "=SUMIFS(%s,%s,$B%d)" % (mp(src), mp("B"), r)); c.number_format = MLN; c.font = font(size=9); c.border = BOX
-    for j in range(3):
+    for j in range(4):
         col = CL(3 + j)
-        c = db.cell(r, 6 + j, "=SUM(%s$%d:%s%d)" % (col, R1 + 2, col, r)); c.number_format = MLN; c.font = font(size=9); c.border = BOX
+        c = db.cell(r, 7 + j, "=SUM(%s$%d:%s%d)" % (col, R1 + 2, col, r)); c.number_format = MLN; c.font = font(size=9); c.border = BOX
 ch = BarChart(); ch.type = "col"; ch.grouping = "clustered"; ch.title = "Monthly spend 2026 (SAR)"; ch.y_axis.title = None
 ch.y_axis.numFmt = '#,##0,,"M"'; ch.height = 7.5; ch.width = 17
-ch.add_data(Reference(db, min_col=3, max_col=5, min_row=R1 + 1, max_row=R1 + 13), titles_from_data=True)
+ch.add_data(Reference(db, min_col=3, max_col=6, min_row=R1 + 1, max_row=R1 + 13), titles_from_data=True)
 ch.set_categories(Reference(db, min_col=2, min_row=R1 + 2, max_row=R1 + 13))
-for s, col in zip(ch.series, ("BFBFBF", TEAL, "F4B183")):
+for s, col in zip(ch.series, ("BFBFBF", DARK, TEAL, "F4B183")):
     s.graphicalProperties.solidFill = col; s.graphicalProperties.line.solidFill = col
 ch.legend.position = "b"
 db.add_chart(ch, "K%d" % (R1 + 1))
@@ -648,7 +691,7 @@ rm["B3"] = "=Settings!$B$9"; rm["B3"].font = font(size=10, bold=True, color="C00
 blocks = [
     ("How the file works", [
         ("1 · Weekly data", "The green-tab sheets (Weekly Report Updates, S-Curve, Milestones, …) are built by Power Query from every project file in the weekly folder. Do not type in them. Data ▸ Refresh All updates them."),
-        ("2 · Plan data", "The teal-tab sheets are typed by the cost control team: Projects (one row per project), Monthly Plan (one row per project per month), KPI Scorecard, Delivery KPI, Settings."),
+        ("2 · Plan data", "The teal-tab sheets are typed by the cost control team: Projects (one row per project, with its contract), Monthly Plan (one row per project per month: budget, Rev plan, actual, contractor forecast), KPI Scorecard, Delivery KPI, Spend Risk, Settings. This one file replaces the PBI Weekly Report, the Delivery Plan, Budget 2026, Contract details and the PC spend tracker on the website."),
         ("3 · Reports", "Dashboard, Data Checks and Data Sources only calculate. They link the plan and the weekly data through the project code (Projects ▸ Weekly Report Code = weekly file 'Project Code')."),
         ("4 · Find the source", "Every report cell has a source: click a tile's 'Source ▸' link, a project code on the Dashboard, or a sheet name in Data Sources. Row 3 of every input sheet says where each column comes from."),
     ]),
@@ -699,6 +742,7 @@ for n in ORDER[1:]:
     a = rm.cell(r, 2, n); link(a, n, "A1"); a.border = BOX
     rm.cell(r, 3, {"Dashboard": "One-page summary", "Projects": "Project master data (input)", "Monthly Plan": "Monthly spend plan and actuals (input)",
                    "KPI Scorecard": "KPIs and scorecard result (input + calc)", "Delivery KPI": "Target completion dates (input)",
+                   "Spend Risk": "Amount at risk of the 2026 spend (input)",
                    "Data Checks": "Plan vs weekly comparison (live)", "Review Notes": "Merge findings and decisions needed (temporary)", "Data Sources": "Where every table comes from",
                    "Settings": "Report date, YTD cut-off, lists, glossary"}[n]).border = BOX
     rm.cell(r, 3).font = font(size=10); r += 1

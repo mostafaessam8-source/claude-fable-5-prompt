@@ -299,6 +299,11 @@ It is still under test: the two old files keep working and either can be importe
   *from the combined workbook*. Importing the old Delivery Plan file later replaces the plan tables again.
 * Build tools (no data inside): `workbook-tools/` in the repo root. Rules: `.claude/skills/combined-workbook/SKILL.md`.
 
+**Final file.** `EPBU NSR Projects Database.xlsx` is the one file for the site: besides the weekly reports and the
+delivery plan it holds the Rev Spend Plan (Monthly Plan), the contract data (Projects › PR / Contractor / Owner / Budget
+(PMO) / Scope) and the spend risk (Spend Risk sheet). Importing it fills the sources Weekly, Delivery Plan, Budget 2026,
+Contract Details and Spend Recovery Tracker at once (each marked "from the combined workbook").
+
 **One forecast only.** The workbook (v0.3) and the site use one spend forecast: the contractor's (Monthly Plan ›
 Contractor Forecast). The V0 / V2 forecast columns were removed from Monthly Plan, Projects, KPI Scorecard and the
 Dashboard, the site drops them when it reads an old Delivery Plan, and the PC tracker's own forecasts are not kept.

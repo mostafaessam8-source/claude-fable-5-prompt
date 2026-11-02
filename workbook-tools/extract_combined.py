@@ -33,7 +33,8 @@ def rows(name, key="Code"):
 PIN = {"Code": "code", "Short Name": "short", "Project Name": "name", "Program": "program", "Section": "section", "Fund Type": "fund",
        "PO Number": "po", "KPI Code": "kpi", "Project Phase": "phase", "Start Date": "start", "End Date": "end", "Full Cost (SAR)": "full_cost",
        "Contract Value (SAR)": "cv", "WC Previous Years (SAR)": "wc_prev", "Paid from CV as per ERP (SAR)": "paid",
-       "Weekly Report Code": "wcode", "Remarks / Concern": "remarks"}
+       "Weekly Report Code": "wcode", "Remarks / Concern": "remarks", "PR Number": "pr", "Contractor": "contractor",
+       "Owner (BU)": "owner", "Budget (PMO) (SAR)": "budget_pmo", "Scope": "scope"}
 projects = []
 for r, h, ws, wv in rows("Projects"):
     p = {}
@@ -47,13 +48,14 @@ for r, h, ws, wv in rows("Projects"):
     projects.append(p)
 
 # ---------------------------------------------------------------- Monthly Plan (input columns)
-MIN = {"Budget Plan (Incr)": "budget", "Actual Spend (Incr)": "actual", "Contractor Forecast (Incr)": "fcst",
+MIN = {"Budget Plan (Incr)": "budget", "Rev Spend Plan (Incr)": "rev", "Actual Spend (Incr)": "actual", "Contractor Forecast (Incr)": "fcst",
        "Invoice-related Activities": "invoice", "Milestones": "milestone", "Remarks / Concern": "remarks"}
 monthly = []
 for r, h, ws, wv in rows("Monthly Plan"):
     act_col = openpyxl.utils.get_column_letter(h["Actual Spend (Incr)"])
     m = {"code": str(ws.cell(r, h["Code"]).value), "month": d(wv.cell(r, h["Month"]).value)}
     for head, k in MIN.items():
+        if head not in h: continue
         c = h[head]; f = ws.cell(r, c).value; v = wv.cell(r, c).value
         if isinstance(f, str) and f.startswith("="):
             if re.fullmatch(r"=\$?%s\$?%d" % (act_col, r), f.strip()): v = "=ACT"           # takes the month's actual
@@ -75,6 +77,15 @@ for r, h, ws, wv in rows("Delivery KPI", "Project Code"):
     delivery.append(dict(code=str(wv.cell(r, h["Project Code"]).value), target=d(wv.cell(r, h["Target Completion Date"]).value),
                          remarks=wv.cell(r, h["Remarks"]).value))
 
+# ---------------------------------------------------------------- Spend Risk
+risk = []
+if "Spend Risk" in F.sheetnames:
+    for r, h, ws, wv in rows("Spend Risk"):
+        g = lambda head: wv.cell(r, h[head]).value if head in h else None
+        risk.append(dict(code=str(g("Code")), date=d(g("Status Date")), inproc=g("In-Process (SAR)"), geo=g("At Risk · Geopolitical (SAR)"),
+                         other=g("At Risk · Operational (SAR)"), cause=g("Root Cause"), desc=g("Risk Description"), action=g("Required Action"),
+                         reprof=g("Budget Reprofiling")))
+
 # ---------------------------------------------------------------- Settings, lists, glossary
 st = V["Settings"]
 settings = dict(year=st["B5"].value, cutoff=d(st["B6"].value), folder=st["B8"].value, status=st["B9"].value)
@@ -94,6 +105,6 @@ for r in range(5, rn.max_row + 1):
     findings.append([rn.cell(r, c).value for c in range(2, 7)])
 
 json.dump(dict(projects=projects, monthly=monthly, kpis=kpis, delivery=delivery, glossary=glossary, findings=findings,
-               settings=settings, lists=lists), open(out, "w"), indent=1, default=str)
+               settings=settings, lists=lists, risk=risk), open(out, "w"), indent=1, default=str)
 print(len(projects), "projects", len(monthly), "monthly rows", len(kpis), "kpis", len(delivery), "delivery", len(glossary), "glossary",
       len(findings), "findings", settings)

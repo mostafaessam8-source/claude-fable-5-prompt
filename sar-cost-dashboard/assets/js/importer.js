@@ -878,7 +878,7 @@
     var res = { source: source, label: spec.label, tables: out, report: report };
     // the combined "EPBU NSR Projects Database" workbook = weekly query tables + the delivery plan in normalized tables
     if (source === "weekly" && isCombined(names)) {
-      res.extra = [planFromCombined(XLSX, wb, meta)];
+      res.extra = [planFromCombined(XLSX, wb, meta)].concat(extrasFromCombined(XLSX, wb, meta));
       res.combined = true;
     }
     return res;
@@ -908,6 +908,48 @@
     Object.keys(tables).forEach(function (t) {
       (tables[t] || []).forEach(function (r) { Object.keys(r).forEach(function (k) { if (ALT_FC.test(k)) delete r[k]; }); });
     });
+  }
+
+  /* The final combined file also holds what used to come from Budget 2026 (Rev Spend Plan column of Monthly Plan),
+     Contract details (contract columns of Projects) and the PC spend tracker (Spend Risk sheet). Each becomes its own
+     source, as if that file had been imported. */
+  function extrasFromCombined(XLSX, wb, meta) {
+    function T(n) { return tableRows(XLSX, wb, meta, n); }
+    function g(row, k) { var v = row[normKey(k)]; return v === undefined ? null : v; }
+    function ok(name, rows, src) { return { table: name, rows: rows.length, status: rows.length ? "ok" : "missing", missing: [], via: "combined workbook › " + src }; }
+    var out = [], P = T("Projects"), MP = T("Monthly_Plan");
+    if (MP.length && normKey("Rev Spend Plan (Incr)") in MP[0]) {
+      var rev = MP.map(function (m) { return rec({ "ID": String(g(m, "Code")), "Month": g(m, "Month"), "Rev Spend Plan": g(m, "Rev Spend Plan (Incr)") }); });
+      out.push({ source: "budget", label: SOURCES.budget.label, tables: { Rev_Spend_Plan: rev }, report: [ok("Rev_Spend_Plan", rev, "Monthly Plan › Rev Spend Plan (Incr)")] });
+    }
+    if (P.length && normKey("Contractor") in P[0]) {
+      var cd = P.filter(function (p) { return g(p, "Contractor"); }).map(function (p, i) {
+        return rec({ "Ref": i + 1, "Code": String(g(p, "Code")), "Contract": g(p, "Project Name"), "Contractor": g(p, "Contractor"), "Scope": g(p, "Scope"),
+          "Value (SAR)": g(p, "Contract Value (SAR)"), "Stage": g(p, "Project Phase"), "Owner": g(p, "Owner (BU)"), "PR": g(p, "PR Number"),
+          "Budget (PMO)": g(p, "Budget (PMO) (SAR)") });
+      });
+      out.push({ source: "contract", label: SOURCES.contract.label, tables: { Contract_Details: cd }, report: [ok("Contract_Details", cd, "Projects › Contractor / Scope / Owner")] });
+    }
+    var SR = T("Spend_Risk");
+    if (SR.length) {
+      var byW = {};
+      P.forEach(function (p) { var w = String(g(p, "Weekly Report Code") || g(p, "Code")), o = byW[w] || (byW[w] = { plan: 0, act: 0, name: null, prog: g(p, "Program") });
+        o.plan += +g(p, "Budget Plan FY (SAR)") || 0; o.act += +g(p, "YTD Actual (SAR)") || 0; o.name = o.name || g(p, "Project Name"); });
+      var rows = [], items = [], seen = {};
+      SR.forEach(function (x) {
+        var c = String(g(x, "Code")), w = byW[c] || {};
+        if (!seen[c]) { seen[c] = rows.push(rec({ "Code": c, "Program": w.prog || "NSR", "Project Name": g(x, "Project") || w.name, "2026 Plan": w.plan, "YTD Actuals": w.act,
+          "In-Process": 0, "At Risk Geopolitical": 0, "At Risk Other": 0, "Total At Risk": 0, "Budget Reprofiling": null, "Status Date": g(x, "Status Date") })); }
+        var r = rows[seen[c] - 1];
+        r["In-Process"] += +g(x, "In-Process (SAR)") || 0; r["At Risk Geopolitical"] += +g(x, "At Risk · Geopolitical (SAR)") || 0;
+        r["At Risk Other"] += +g(x, "At Risk · Operational (SAR)") || 0; r["Total At Risk"] = r["At Risk Geopolitical"] + r["At Risk Other"];
+        if (g(x, "Budget Reprofiling")) r["Budget Reprofiling"] = g(x, "Budget Reprofiling");
+        if (g(x, "Root Cause") || g(x, "Risk Description")) items.push(rec({ "Code": c, "Root Cause": g(x, "Root Cause"), "Risk Description": g(x, "Risk Description"), "Required Action": g(x, "Required Action") }));
+      });
+      out.push({ source: "risk", label: SOURCES.risk.label, tables: { Spend_Risk: rows, Spend_Risk_Items: items },
+        report: [ok("Spend_Risk", rows, "Spend Risk"), ok("Spend_Risk_Items", items, "Spend Risk")] });
+    }
+    return out;
   }
 
   function planFromCombined(XLSX, wb, meta) {
