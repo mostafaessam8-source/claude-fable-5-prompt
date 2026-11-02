@@ -88,6 +88,15 @@
   function mTile(label, v, color, note) { return U.tile({ value: fmt.m(v), unit: "M SAR", label: label, color: color, note: note || fmt.money(v) + " SAR" }); }
   function isKPI(code) { return function (r) { return code.indexOf(N(r["KPI Code"])) >= 0; }; }
   function hasRev() { return !!window.SARApp.D.hasRev; }
+  /* PC "Spend Recovery Tracker" (risk source): the tracker row of a site project — same code, or the code without its
+     letter suffix (6203A → 6203: the tracker gives the whole project) */
+  function riskRows() { try { return window.SARApp.D.t("Spend_Risk") || []; } catch (e) { return []; } }
+  function riskOf(id) {
+    id = String(id || ""); var rr = riskRows(), hit = rr.filter(function (r) { return r.Code === id; })[0];
+    if (!hit && /[A-Z]$/.test(id)) { hit = rr.filter(function (r) { return r.Code === id.slice(0, -1); })[0]; if (hit) hit = Object.assign({ whole: true }, hit); }
+    return hit || null;
+  }
+  function riskItems(code) { try { return (window.SARApp.D.t("Spend_Risk_Items") || []).filter(function (x) { return x.Code === code; }); } catch (e) { return []; } }
   /* SPI colour rule for the whole site (as in the weekly PPT): at or above the SPI KPI target green, below red */
   var SPI_GREEN = "#1E8A44";
   function spiTgt() { var k = window.SARApp.D.t("KPI_Summary").filter(function (r) { return /schedule performance/i.test(r["Objective/ KPIs"] || ""); })[0] || {}; return N(k["NSR Spend Plan 2026 as per Budgeting"]) || 0.91; }
@@ -685,7 +694,7 @@
     var rowsF = spAll.filter(function (r) { var o = byId[String(r.ID)]; return o && proj.indexOf(o) >= 0; });
 
     // in-page navigation: one page, five sections
-    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"], ["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]];
+    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"]].concat(riskRows().length ? [["c-risk", "Spend at risk"]] : []).concat([["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]]);
     var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
     nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
     function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
@@ -791,6 +800,43 @@
     hbar(vb, vn, [U.barDs("Year-end variance", byV.map(function (o) { return o.variance; }),
       byV.map(function (o) { var c0 = o.variance < 0 ? C.red : C.blue; return st.proj.length && st.proj.indexOf(o.name) < 0 ? U.fade(c0) : c0; }), { maxBarThickness: 18 })],
       function (i, e) { pick(ctx, "proj", vn[i], e); });
+
+    /* 3b · Spend at risk — PC Spend Recovery Tracker (risk source) */
+    var RR = riskRows();
+    if (RR.length) {
+      var rk = RR.filter(function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length || (!st.proj.length && /nsr/i.test(r.Program || "")); });
+      var sd = RR[0]["Status Date"];
+      sec("c-risk", "Spend at risk", "PC Spend Recovery Tracker" + (sd ? " · status " + esc(fmt.date(sd)) : "") + " · NSR projects · year-end forecast, in-process invoices and the amount at risk with its root causes");
+      var RS = function (k) { return rk.reduce(function (a, r) { return a + (r[k] || 0); }, 0); };
+      var gr = grid(v, "g-5");
+      gr.innerHTML = mTile("Tracker year-end forecast", RS("Year-End Forecast"), "slate", "vs 2026 plan " + fmt.m(RS("2026 Plan"), 1) + " M") + mTile("YTD actual (tracker)", RS("YTD Actuals"), "yellow") +
+        mTile("In-process", RS("In-Process"), "mid", "invoices / WC under processing") + mTile("Total at risk", RS("Total At Risk"), "red", "geopolitical " + fmt.m(RS("At Risk Geopolitical"), 1) + " M · other " + fmt.m(RS("At Risk Other"), 1) + " M") +
+        mTile("Risk-adjusted forecast", RS("Risk-Adj Forecast"), "black", "year-end forecast − at risk");
+      var site = function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length ? m.reduce(function (a, o) { return a + (o.landing || 0); }, 0) : null; };
+      var nx = (rk[0] || {})["Next Month"] || "Next month", na = (rk[0] || {})["Month After"] || "Month after";
+      var trows = rk.map(function (r) {
+        var it = riskItems(r.Code), sf = site(r);
+        return Object.assign({}, r, { siteFc: sf, diff: sf == null ? null : sf - (r["Year-End Forecast"] || 0),
+          why: it.map(function (x) { return x["Root Cause"] || ""; }).filter(Boolean).join(" · "), items: it });
+      }).sort(function (a, b) { return (b["Total At Risk"] || 0) - (a["Total At Risk"] || 0); });
+      tableIn(panelIn(v, "Amount at risk by project", "Tracker values · “Site forecast” = the contractor Forecast Plan in the Monthly Plan (this site) · the difference shows where the two disagree"),
+        { rows: trows, autoHeight: true, totals: true, exportName: "Spend_at_Risk", rowClass: function (r) { return r["Total At Risk"] > 0 ? "risk-row" : ""; },
+          rowTitle: "Click for the risk description and the required action", onRow: function (r) {
+            U.modal(r.Code + " · " + (r["Project Name"] || "") + " — amount at risk " + fmt.m(r["Total At Risk"] || 0, 2) + " M SAR",
+              (r.items.length ? r.items.map(function (x) { return '<div class="risk-it"><b>' + esc(x["Root Cause"] || "Risk") + "</b><p>" + esc(x["Risk Description"] || "") + "</p>" +
+                (x["Required Action"] ? '<p class="muted"><b>Required action:</b> ' + esc(x["Required Action"]) + "</p>" : "") + "</div>"; }).join("") : '<div class="muted">No risk lines.</div>') +
+              '<div class="muted" style="margin-top:10px">Source: PC Spend Recovery Tracker' + (r["Status Date"] ? " · status " + esc(fmt.date(r["Status Date"])) : "") + "</div>", true);
+          },
+          columns: [{ key: "Code", label: "Code" }, { key: "Project Name", label: "Project", wrap: true }, { key: "Total At Risk", label: "Total At Risk", type: "money", total: "sum",
+              render: function (x) { return x > 0 ? '<b class="neg">' + fmt.money(x) + "</b>" : fmt.money(x || 0); } },
+            { key: "why", label: "Root cause", wrap: true }, { key: "2026 Plan", label: "2026 Plan", type: "money", total: "sum" },
+            { key: "Year-End Forecast", label: "Tracker YE Forecast", type: "money", total: "sum" }, { key: "siteFc", label: "Site Forecast Plan", type: "money", total: "sum" },
+            { key: "diff", label: "Site − Tracker", type: "money", signed: true, total: "sum" }, { key: "YTD Actuals", label: "YTD Actual", type: "money", total: "sum" },
+            { key: "In-Process", label: "In-Process", type: "money", total: "sum" }, { key: "Next Month Forecast", label: nx + " Forecast", type: "money", total: "sum" },
+            { key: "Month After Forecast", label: na + " Forecast", type: "money", total: "sum" }, { key: "At Risk Geopolitical", label: "At Risk · Geopolitical", type: "money", total: "sum" },
+            { key: "At Risk Other", label: "At Risk · Operational", type: "money", total: "sum" },
+            { key: "Risk-Adj Forecast", label: "Risk-Adj. Forecast", type: "money", total: "sum" }, { key: "Budget Reprofiling", label: "Reprofiling" }] });
+    }
 
     /* 4 · Invoice schedule */
     sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
@@ -965,6 +1011,17 @@
    * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
    * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
    */
+  /* amount at risk of the project, from the PC Spend Recovery Tracker (when imported) */
+  function riskGrp(o) {
+    var r = riskOf(o.ID); if (!r) return "";
+    var M = function (x) { return x == null ? "—" : fmt.m(x, 2); }, tot = r["Total At Risk"] || 0;
+    function box(lab, val, cls, sub) { return '<div class="iv-k ' + (cls || "") + '"><span>' + lab + "</span><b>" + M(val) + "</b>" + (sub ? "<em>" + esc(sub) + "</em>" : "") + "</div>"; }
+    var why = riskItems(r.Code).filter(function (x) { return x["Root Cause"] && !/^n\/?a$/i.test(x["Root Cause"]) && !/^complete/i.test(x["Root Cause"]); }).map(function (x) { return x["Root Cause"]; }).join(" · ");
+    var body = box("In-Process", r["In-Process"], "k-fc") + box("Total at risk", tot, "k-risk " + (tot > 0 ? "neg" : "")) +
+      (r["At Risk Geopolitical"] ? box("Geopolitical", r["At Risk Geopolitical"], "k-risk") : "") + box("Risk-adj. forecast", r["Risk-Adj Forecast"], "k-fc", "tracker YE " + M(r["Year-End Forecast"]));
+    return '<div class="iv-kg iv-kg-risk"><i>At risk · PC tracker ' + esc(r["Status Date"] ? fmt.date(r["Status Date"]) : "") + (r.whole ? " · whole " + esc(r.Code) : "") + ' · M SAR</i><div class="iv-kr">' + body + "</div>" +
+      (why ? '<div class="iv-why">' + esc(why) + "</div>" : "") + "</div>";
+  }
   /* the project's figures of the two spend charts (full year · year to date), as ordered boxes under its Gantt row */
   function ivKpis(o, cut) {
     var R = hasRev(), M = function (x) { return x == null ? "—" : fmt.m(x, 2); };
@@ -982,7 +1039,7 @@
       box("Variance", null, "k-var " + (vR < -0.5 ? "neg" : vR > 0.5 ? "pos" : ""), "").replace("<b>—</b>", "<b>" + sign(vR) + "</b>");
     var grp = function (t, body) { return '<div class="iv-kg"><i>' + t + '</i><div class="iv-kr">' + body + "</div></div>"; };
     return '<div class="iv-kpis">' + grp("Full year 2026 · M SAR", fy) + grp("Year to date · to " + esc(fmt.month(cut)) + " · M SAR", yt) +
-      grp("Remaining · full year − actual to " + esc(fmt.month(cut)) + " · M SAR", rm) + "</div>";
+      grp("Remaining · full year − actual to " + esc(fmt.month(cut)) + " · M SAR", rm) + riskGrp(o) + "</div>";
   }
   function invoiceGantt(host, list, months, cut, onProj) {
     var items = [];

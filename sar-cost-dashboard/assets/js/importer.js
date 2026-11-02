@@ -132,6 +132,20 @@
       sheetHeader: true,
       tables: { KPI_Targets: ["Perspective", "Objective", "KPI", "Unit", "Target", "KPI Weight", "Data Source", "Formula", "Remarks"] }
     },
+    // "EPBU_Weekly_KPI_<date>.xlsx" sheet "Spend Recovery Tracker" (PC / Projects): per project the 2026 plan, year-end
+    // forecast, YTD actual, in-process, Nov / Dec forecast and the amount at risk (geopolitical / other) with its root
+    // causes — a project may have several risk lines (rows under it with no code). Found by its header row; values in SAR M
+    // are stored in SAR. Feeds "Spend at risk" on the Cost page.
+    risk: {
+      label: "Spend Recovery Tracker (Amount at Risk)",
+      file: "EPBU_Weekly_KPI_<date>.xlsx",
+      sheetHeader: true,
+      tables: {
+        Spend_Risk: ["Code", "Program", "Project Name", "2026 Plan", "Year-End Forecast", "YTD Actuals", "Remaining", "In-Process",
+          "Next Month Forecast", "Month After Forecast", "At Risk Geopolitical", "At Risk Other", "Total At Risk", "Risk-Adj Forecast", "Budget Reprofiling"],
+        Spend_Risk_Items: ["Code", "Root Cause", "Risk Description", "Required Action"]
+      }
+    },
     // Monthly "EP - NSR Projects <Mon><YY>.xlsx": one sheet per project ("<code>_Project Card").
     // The Issue Register is built from section 12.1 "Issue Log" of every card (see parseProjectCards).
     cards: {
@@ -605,6 +619,66 @@
     return null;
   }
 
+  function parseRisk(XLSX, wb) {
+    var MAP = [["Code", /^code$/i], ["Program", /^program/i], ["Project Name", /^project name/i], ["2026 Plan", /^\d{4}\s*plan/i],
+      ["Year-End Forecast", /^year.?end\s*forecast/i], ["YTD Actuals", /^ytd\s*actual/i], ["Remaining", /^remaining/i], ["In-Process", /^in.?process/i],
+      ["At Risk Geopolitical", /^at risk\s*geo/i], ["At Risk Other", /^at risk\s*other/i], ["Total At Risk", /^total\s*at risk/i],
+      ["Risk-Adj Forecast", /^risk.?adj/i], ["Root Cause", /^root cause/i], ["Risk Description", /^risk description/i], ["Required Action", /^required action/i],
+      ["Budget Reprofiling", /reprofil/i]];
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1, cols = [], fc = [];
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 15) && hdr < 0; r++) {
+        var hs = [];
+        for (var c = rg.s.c; c <= rg.e.c; c++) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })]; hs.push({ c: c, key: cl ? normKey(String(cl.v).replace(/\(SAR M\)/i, "")) : "" }); }
+        var low = hs.map(function (h) { return h.key.toLowerCase(); });
+        if (low.indexOf("code") >= 0 && low.some(function (t) { return /^total\s*at risk/.test(t); }) && low.some(function (t) { return /^in.?process/.test(t); })) {
+          hdr = r;
+          hs.forEach(function (h) {
+            var m = MAP.filter(function (x) { return x[1].test(h.key); })[0];
+            if (m) cols.push({ c: h.c, key: m[0] });
+            else if (/forecast/i.test(h.key) && /^[a-z]{3}/i.test(h.key)) fc.push({ c: h.c, label: h.key.replace(/\s*forecast.*/i, "") });   // "Nov'26 Forecast"
+          });
+        }
+      }
+      if (hdr < 0) continue;
+      if (fc[0]) cols.push({ c: fc[0].c, key: "Next Month Forecast" }); if (fc[1]) cols.push({ c: fc[1].c, key: "Month After Forecast" });
+      var head = [];
+      for (var tr = rg.s.r; tr < hdr; tr++) { var tc = ws[XLSX.utils.encode_cell({ r: tr, c: rg.s.c })]; if (tc && tc.v) head.push(String(tc.v)); }
+      var sd = /status date:\s*([0-9]{1,2}-[A-Za-z]{3}-[0-9]{2,4})/i.exec(head.join(" ")), statusDate = null;
+      if (sd) { var dd = new Date(sd[1].replace(/-(\d{2})$/, "-20$1") + " UTC"); if (!isNaN(dd)) statusDate = dd.toISOString().slice(0, 10); }
+      var M = { "2026 Plan": 1, "Year-End Forecast": 1, "YTD Actuals": 1, "Remaining": 1, "In-Process": 1, "Next Month Forecast": 1, "Month After Forecast": 1,
+        "At Risk Geopolitical": 1, "At Risk Other": 1, "Total At Risk": 1, "Risk-Adj Forecast": 1 };
+      var rows = [], items = [], cur = null;
+      for (var rr = hdr + 1; rr <= rg.e.r; rr++) {
+        var rec = {}, any = false;
+        cols.forEach(function (h) {
+          var x = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: h.c })]);
+          if (typeof x === "string") { x = x.replace(/\s+/g, " ").trim(); if (!x) x = null; }
+          if (x != null) any = true;
+          if (M[h.key] && typeof x === "number") x = Math.round(x * 1e6 * 100) / 100;
+          rec[h.key] = x;
+        });
+        if (!any) { if (cur) cur = null; continue; }
+        if (/^total/i.test(String(cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: rg.s.c })]) || "")) || /^total/i.test(String(rec.Code || ""))) break;
+        if (rec.Code != null) {
+          rec.Code = String(rec.Code).trim(); rec["Status Date"] = statusDate; rec["Next Month"] = fc[0] ? fc[0].label : null; rec["Month After"] = fc[1] ? fc[1].label : null;
+          cur = {}; Object.keys(rec).forEach(function (k) { if (!/^(Root Cause|Risk Description|Required Action)$/.test(k)) cur[k] = rec[k]; });
+          rows.push(cur);
+        }
+        if (cur && (rec["Root Cause"] || rec["Risk Description"])) items.push({ Code: cur.Code, "Root Cause": rec["Root Cause"], "Risk Description": rec["Risk Description"], "Required Action": rec["Required Action"] });
+      }
+      if (!rows.length) continue;
+      var have = cols.map(function (h) { return h.key; });
+      var missing = SOURCES.risk.tables.Spend_Risk.filter(function (k) { return have.indexOf(k) < 0; });
+      return { source: "risk", label: SOURCES.risk.label, title: head[0] || null, tables: { Spend_Risk: rows, Spend_Risk_Items: items },
+        report: [{ table: "Spend_Risk", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name },
+          { table: "Spend_Risk_Items", rows: items.length, status: "ok", missing: [], via: "sheet " + name }] };
+    }
+    return null;
+  }
+
   function parseClosing(XLSX, wb) {
     for (var si = 0; si < wb.SheetNames.length; si++) {
       var name = wb.SheetNames[si], ws = wb.Sheets[name];
@@ -756,6 +830,8 @@
     }
     if (!source) {
       var swb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
+      var rk = parseRisk(XLSX, swb);
+      if (rk) return rk;
       var bl = parseBlockades(XLSX, swb);
       if (bl) return bl;
       var pd = parsePdData(XLSX, swb);

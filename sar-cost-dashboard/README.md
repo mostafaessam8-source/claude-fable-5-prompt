@@ -229,6 +229,12 @@ card's own day in the update month.
    * `Budget 2026.xlsx` (sheet *Curve*; the **Spending Plan (VP)** row of every project is the **Rev Spend Plan**. The
      original Spend Plan stays as it is and both are shown on the Overview and the
      Cost & KPI Dashboard; variances and the year-end outlook are measured against the Rev plan once it is loaded)
+   * `EPBU_Weekly_KPI_<date>.xlsx` (PC e-mail; sheet *Spend Recovery Tracker*, found by its header row *Code · In-Process ·
+     Total At Risk*). Per project: year-end forecast, YTD actual, in-process, next two months' forecast and the **amount at
+     risk** (geopolitical / operational) with its root causes and required action (several lines per project). Feeds
+     **Spend at risk** on the Cost & KPI Dashboard and the *At risk* boxes of each project in the invoice schedule
+     (6203A / 6203B take the tracker's 6203 row). The site's own forecast stays the Monthly Plan; the table shows the
+     difference with the tracker.
    * **Weekly report files → progress photos**: a `.rar` (WinRAR) or `.zip` holding the per-project weekly report
      workbooks (`NSR_<code>_<name>.xlsx`), or those `.xlsx` files themselves. The pictures on each workbook's
      **Progress Photo** sheet (floating or placed in cells; logos and icons skipped) are scaled down and kept in this
