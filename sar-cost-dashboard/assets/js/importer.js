@@ -1020,7 +1020,11 @@
         "ID": g(p, "Code"), "Project Name": g(p, "Short Name"), "Full Cost": g(p, "Full Cost (SAR)"), "Contract Value": g(p, "Contract Value (SAR)"),
         "WC 2025": g(p, "WC Previous Years (SAR)"), "WC 2026": g(p, "WC Current Year (SAR)"), "Total WC": g(p, "Total WC (SAR)"), "Total WC %": g(p, "Total WC %"),
         "Paid from CV as per ERP (Gross value)": g(p, "Paid from CV as per ERP (SAR)"), "Remaining WC": g(p, "Remaining WC (SAR)"),
-        "Start Date": g(p, "Start Date"), "End Date": g(p, "End Date"), "Project Phase": g(p, "Project Phase"), "Remarks/Concern": g(p, "Remarks / Concern") });
+        "Start Date": g(p, "Start Date"), "End Date": g(p, "End Date"), "Project Phase": g(p, "Project Phase"), "Remarks/Concern": g(p, "Remarks / Concern"),
+        // IPC status summary (QS e-mail) — only in the final combined file
+        "Change": g(p, "Change (SAR)"), "Revised Contract Value": g(p, "Revised Contract Value (SAR)"), "IPC Certified Gross": g(p, "IPC Certified Gross (SAR)"),
+        "IPC To Be Paid": g(p, "IPC To Be Paid (SAR)"), "Contract Outstanding": g(p, "Contract Outstanding (SAR)"), "IPC Status Date": g(p, "IPC Status Date"),
+        "Project Manager (IPC)": g(p, "Project Manager (IPC)"), "IPC Comments": g(p, "IPC Comments") });
     });
 
     var summary = KS.map(function (k) {

@@ -165,12 +165,20 @@ PCOLS = [  # key, header, kind, width, fmt, note
     ("owner", "Owner (BU)", "in", 18, None, "Input · was Contract details"),
     ("budget_pmo", "Budget (PMO) (SAR)", "in", 15, NUM, "Input · was Contract details › NSR"),
     ("scope", "Scope", "in", 50, None, "Input · was Contract details"),
+    ("cv_change", "Change (SAR)", "in", 14, NUM, "Input · IPC status summary (QS)"),
+    ("cv_rev", "Revised Contract Value (SAR)", "in", 15, NUM, "Input · IPC status summary (QS)"),
+    ("ipc_cert", "IPC Certified Gross (SAR)", "in", 15, NUM, "Input · IPC status summary (QS)"),
+    ("ipc_date", "IPC Status Date", "in", 12, DATE, "Input · date of the IPC summary"),
+    ("pm", "Project Manager (IPC)", "in", 22, None, "Input · IPC status summary (QS)"),
+    ("ipc_note", "IPC Comments", "in", 26, None, "Input · IPC status summary (QS)"),
     ("remarks", "Remarks / Concern", "in", 40, None, "Input"),
     ("wc_cur", "WC Current Year (SAR)", "f", 14, NUM, "Calc: Monthly Plan actuals"),
     ("wc_tot", "Total WC (SAR)", "f", 14, NUM, "Calc: previous + current"),
     ("wc_pct", "Total WC %", "f", 8, PCT, "Calc: Total WC ÷ Contract"),
     ("wc_rem", "Remaining WC (SAR)", "f", 14, NUM, "Calc: Contract − Total WC"),
     ("pend", "Pending Payment (SAR)", "f", 14, NUM, "Calc: Total WC − Paid"),
+    ("ipc_tbp", "IPC To Be Paid (SAR)", "f", 14, NUM, "Calc: IPC certified − Paid"),
+    ("ipc_out", "Contract Outstanding (SAR)", "f", 14, NUM, "Calc: revised contract − IPC certified"),
     ("fy_b", "Budget Plan FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
     ("fy_r", "Rev Spend Plan FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
     ("fy_f", "Contractor Forecast FY (SAR)", "f", 14, NUM, "Calc: Monthly Plan"),
@@ -190,6 +198,7 @@ PCOLS = [  # key, header, kind, width, fmt, note
     ("w_st", "Performance Status", "wk", 12, None, "Performance Status"),
     ("w_fin", "Forecast Finish", "wk", 12, DATE, "End Date\n(Forecast/Actual)"),
     ("w_spi", "SPI", "wk", 7, "0.00", "SPI"),
+    ("w_pm", "Project Manager (weekly)", "wk", 22, None, "Project Manager"),
     ("chk", "Data Checks", "f", 22, None, "Calc: Data Checks sheet"),
 ]
 PC = {k: CL(i + 1) for i, (k, *_r) in enumerate(PCOLS)}
@@ -204,6 +213,8 @@ for i, p in enumerate(M["projects"]):
         "wc_pct": "=IFERROR(%s%d/%s%d,0)" % (PC["wc_tot"], r, PC["cv"], r),
         "wc_rem": "=%s%d-%s%d" % (PC["cv"], r, PC["wc_tot"], r),
         "pend": "=%s%d-%s%d" % (PC["wc_tot"], r, PC["paid"], r),
+        "ipc_tbp": '=IF(%s%d="","",%s%d-N(%s%d))' % (PC["ipc_cert"], r, PC["ipc_cert"], r, PC["paid"], r),
+        "ipc_out": '=IF(%s%d="","",IF(N(%s%d)>0,%s%d,N(%s%d))-%s%d)' % (PC["ipc_cert"], r, PC["cv_rev"], r, PC["cv_rev"], r, PC["cv"], r, PC["ipc_cert"], r),
         "fy_b": "=SUMIFS(%s,%s,%s)" % (mp(MB), mp("A"), A),
         "fy_r": "=SUMIFS(%s,%s,%s)" % (mp(MR), mp("A"), A),
         "fy_f": "=SUMIFS(%s,%s,%s)" % (mp(MF), mp("A"), A),
@@ -445,6 +456,9 @@ CCOLS = [
 ]
 header_row(dc, 4, CCOLS)
 def pref(k, r): return "Projects!$%s%d" % (PC[k], r)
+def pmkey(x):   # first 3 letters of the first name + of the last name without "Al": "Moaaz A. Alamoudi" = "Moaaz Al Amoudi"
+    lw = 'TRIM(RIGHT(SUBSTITUTE(TRIM(LOWER(%s))," ",REPT(" ",60)),60))' % x
+    return 'LEFT(TRIM(LOWER(%s)),3)&LEFT(IF(LEFT(%s,2)="al",MID(%s,3,60),%s),3)' % (x, lw, lw, lw)
 NCHK = 45
 for i in range(NCHK):
     r, pr = 5 + i, 5 + i
@@ -464,8 +478,11 @@ for i in range(NCHK):
                     'IF(AND(N({cv})>N({fc}),N({fc})>0),"Contract value > full cost",""),'
                     'IF({st}="","No start date",""),'
                     'IF(AND(ISNUMBER({en}),{en}<cfg_ReportDate,OR({ph}="Execution",{ph}="On hold")),"End date passed but phase is "&{ph},""),'
-                    'IF(AND({st}<>"",{en}<>"",N({en})<N({st})),"End before start","")))').format(
-        r=r, cv=pref("cv", pr), fc=pref("full_cost", pr), st=pref("start", pr), en=pref("end", pr), ph=pref("phase", pr)), "f")
+                    'IF(AND({st}<>"",{en}<>"",N({en})<N({st})),"End before start",""),'
+                    'IF(AND(ISNUMBER({ic}),ABS(N({wt})-N({ic}))>1),"Total WC ≠ IPC certified ("&TEXT({ic},"#,##0")&")",""),'
+                    'IF(AND({pm}<>"",{wp}<>"",{kp}<>{kw}),"PM differs from the weekly file","")))').format(
+        r=r, cv=pref("cv", pr), fc=pref("full_cost", pr), st=pref("start", pr), en=pref("end", pr), ph=pref("phase", pr),
+        ic=pref("ipc_cert", pr), wt=pref("wc_tot", pr), pm=pref("pm", pr), wp=pref("w_pm", pr), kp=pmkey(pref("pm", pr)), kw=pmkey(pref("w_pm", pr))), "f")
     put(dc, r, 20, '=IF($A{r}="","",IF(COUNTIF(D{r}:R{r},"Mismatch")>0,COUNTIF(D{r}:R{r},"Mismatch")&" mismatch(es) with weekly",'
                    'IF(S{r}<>"","Check plan data",IF($C{r}="Yes","OK","OK (no weekly file)"))))'.format(r=r), "f")
 add_table(dc, "Data_Checks", "A4:T%d" % (4 + NCHK))

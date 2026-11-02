@@ -34,7 +34,9 @@ PIN = {"Code": "code", "Short Name": "short", "Project Name": "name", "Program":
        "PO Number": "po", "KPI Code": "kpi", "Project Phase": "phase", "Start Date": "start", "End Date": "end", "Full Cost (SAR)": "full_cost",
        "Contract Value (SAR)": "cv", "WC Previous Years (SAR)": "wc_prev", "Paid from CV as per ERP (SAR)": "paid",
        "Weekly Report Code": "wcode", "Remarks / Concern": "remarks", "PR Number": "pr", "Contractor": "contractor",
-       "Owner (BU)": "owner", "Budget (PMO) (SAR)": "budget_pmo", "Scope": "scope"}
+       "Owner (BU)": "owner", "Budget (PMO) (SAR)": "budget_pmo", "Scope": "scope", "Change (SAR)": "cv_change",
+       "Revised Contract Value (SAR)": "cv_rev", "IPC Certified Gross (SAR)": "ipc_cert", "IPC Status Date": "ipc_date",
+       "Project Manager (IPC)": "pm", "IPC Comments": "ipc_note"}
 projects = []
 for r, h, ws, wv in rows("Projects"):
     p = {}

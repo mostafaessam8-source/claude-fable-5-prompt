@@ -16,6 +16,11 @@ file only for those sources.
 - Projects: master data + **PR Number, Contractor, Owner (BU), Budget (PMO), Scope** (was Contract details; PINI design =
   0674C, Heet design = 6203A) + calc Rev FY / YTD Rev, In-Process and Amount at Risk (from Spend Risk by Weekly Report Code).
   Codes: TSMG 0134, Zulfi station **C001** (not 0000). Full Cost kept; Budget (PMO) is its own column.
+- Projects also holds the **QS IPC status summary** (monthly e-mail): Paid = the summary's Paid Amount (user, Nov 2026),
+  Change, Revised Contract Value, IPC Certified Gross, IPC Status Date, Project Manager (IPC), IPC Comments (inputs) and
+  IPC To Be Paid = certified − paid, Contract Outstanding = revised (else contract) − certified (calc). Data Checks › Plan
+  Sanity flags "Total WC ≠ IPC certified" and "PM differs from the weekly file" (first 3 letters of first + last name,
+  "Al" dropped, so spellings of the same person match). Match the summary by PO (14178 = 0674C, 14622 = 6203A).
 - **Spend Risk** sheet (input, NSR only): one row per risk line — amounts on the project's first line, root cause,
   description, action, reprofiling, status date. No PC forecasts.
 - The site splits the file into the sources weekly + plan + budget + contract + risk (`extrasFromCombined` in importer.js).

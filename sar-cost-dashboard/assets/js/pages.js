@@ -719,6 +719,21 @@
     });
 
 
+    /* 1b · IPC status (QS IPC status summary, from the combined file) */
+    var ipc = nsr.filter(function (r) { return r["IPC Certified Gross"] != null; });
+    if (ipc.length) {
+      var idt = ipc.map(function (r) { return r["IPC Status Date"]; }).filter(Boolean).sort().pop();
+      var gi = grid(v, "g-4");
+      gi.innerHTML = mTile("IPC certified (gross)", U.sum(ipc, "IPC Certified Gross"), "mid", "all certified IPCs · " + ipc.length + " contracts") + mTile("Paid", U.sum(ipc, PAID), "slate", "IPC summary" + (idt ? " · " + fmt.date(idt) : "")) +
+        mTile("To be paid", U.sum(ipc, "IPC To Be Paid"), "yellow", "certified − paid") + mTile("Contract outstanding", U.sum(ipc, "Contract Outstanding"), "black", "revised contract − certified");
+      tableIn(panelIn(v, "IPC status by contract", "QS IPC status summary" + (idt ? " · " + esc(fmt.date(idt)) : "") + " · Revised contract = contract value + change"), { rows: ipc, autoHeight: true, totals: true, exportName: "IPC_Status",
+        columns: [{ key: "ID", label: "Code" }, { key: "Project Name", label: "Project" }, { key: "PO Number", label: "PO" }, { key: "Contract Value", label: "Contract Value", type: "money", total: "sum" },
+          { key: "Change", label: "Change", type: "money", signed: true, total: "sum" }, { key: "Revised Contract Value", label: "Revised Contract", type: "money", total: "sum" },
+          { key: "IPC Certified Gross", label: "IPC Certified", type: "money", total: "sum" }, { key: PAID, label: "Paid", type: "money", total: "sum" },
+          { key: "IPC To Be Paid", label: "To Be Paid", type: "money", total: "sum" }, { key: "Contract Outstanding", label: "Outstanding", type: "money", total: "sum" },
+          { key: "Project Manager (IPC)", label: "PM" }, { key: "IPC Comments", label: "Comments", wrap: true }] });
+    }
+
     /* 2 · KPI position — headline tiles (once) + one KPI table (cost summary and year-end closing together) */
     sec("c-kpi", "Cost KPI position", "Year-end = contractor Forecast Plan (invoicing plan) vs the " + baseLbl + " · CAPEX Variance target: year-end spend ≥ " + T95 + " of plan · actual to " + esc(fmt.month(cut)) + " for reference");
     spendTiles(v, { orig: T.plan, rev: T.rev, fc: T.landing, yOrig: T.planYtd, yRev: T.revYtd, yAct: T.act, toCut: toCut,
