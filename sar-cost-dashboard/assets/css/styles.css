@@ -660,8 +660,6 @@ body.printing .pg-row.g-head { position: static; }
 .iv-k.k-rev { border-left-color: var(--sar-black); }
 .iv-k.k-fc { border-left: 4px dashed #8A9298; }
 .iv-k.k-act { border-left-color: var(--yellow); }
-.iv-k.k-risk { border-left-color: var(--red); }
-.iv-kg-risk .iv-why { font-size: 10.5px; color: var(--red); max-width: 520px; line-height: 1.3; }
 table.dt tbody tr.risk-row td:first-child { box-shadow: inset 4px 0 0 var(--red); }
 .risk-it { padding: 8px 0; border-bottom: 1px solid var(--tint-10); }
 .risk-it b { color: var(--red); }

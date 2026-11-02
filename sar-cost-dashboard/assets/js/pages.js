@@ -1022,18 +1022,6 @@
    * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
    * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
    */
-  /* amount at risk of the project, from the PC Spend Recovery Tracker (when imported) */
-  function riskGrp(o) {
-    var r = riskOf(o.ID); if (!r) return "";
-    var M = function (x) { return x == null ? "—" : fmt.m(x, 2); }, tot = r["Total At Risk"] || 0;
-    function box(lab, val, cls, sub) { return '<div class="iv-k ' + (cls || "") + '"><span>' + lab + "</span><b>" + M(val) + "</b>" + (sub ? "<em>" + esc(sub) + "</em>" : "") + "</div>"; }
-    var why = riskItems(r.Code).filter(function (x) { return x["Root Cause"] && !/^n\/?a$/i.test(x["Root Cause"]) && !/^complete/i.test(x["Root Cause"]); }).map(function (x) { return x["Root Cause"]; }).join(" · ");
-    var body = box("In-Process", r["In-Process"], "k-fc") + box("Total at risk", tot, "k-risk " + (tot > 0 ? "neg" : "")) +
-      (r["At Risk Geopolitical"] ? box("Geopolitical", r["At Risk Geopolitical"], "k-risk") : "") +
-      (r.whole ? "" : box("Forecast − at risk", (o.landing || 0) - tot, "k-fc", "contractor forecast less the risk"));
-    return '<div class="iv-kg iv-kg-risk"><i>At risk · PC tracker ' + esc(r["Status Date"] ? fmt.date(r["Status Date"]) : "") + (r.whole ? " · whole " + esc(r.Code) : "") + ' · M SAR</i><div class="iv-kr">' + body + "</div>" +
-      (why ? '<div class="iv-why">' + esc(why) + "</div>" : "") + "</div>";
-  }
   /* the project's figures of the two spend charts (full year · year to date), as ordered boxes under its Gantt row */
   function ivKpis(o, cut) {
     var R = hasRev(), M = function (x) { return x == null ? "—" : fmt.m(x, 2); };
@@ -1051,7 +1039,7 @@
       box("Variance", null, "k-var " + (vR < -0.5 ? "neg" : vR > 0.5 ? "pos" : ""), "").replace("<b>—</b>", "<b>" + sign(vR) + "</b>");
     var grp = function (t, body) { return '<div class="iv-kg"><i>' + t + '</i><div class="iv-kr">' + body + "</div></div>"; };
     return '<div class="iv-kpis">' + grp("Full year 2026 · M SAR", fy) + grp("Year to date · to " + esc(fmt.month(cut)) + " · M SAR", yt) +
-      grp("Remaining · full year − actual to " + esc(fmt.month(cut)) + " · M SAR", rm) + riskGrp(o) + "</div>";
+      grp("Remaining · full year − actual to " + esc(fmt.month(cut)) + " · M SAR", rm) + "</div>";
   }
   function invoiceGantt(host, list, months, cut, onProj) {
     var items = [];
