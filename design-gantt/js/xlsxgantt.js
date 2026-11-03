@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -327,7 +327,7 @@
       cell(rw, 1, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.mute } }),
         'IF(' + Kc + '="P",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P"),IF(' + Kc + '="E",COUNTIF(' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"P")&"."&COUNTIFS(' + hl(H.PID) + '$' + R0 + ':' + hl(H.PID) + rw + ',' + PIDc + ',' + hl(H.KIND) + '$' + R0 + ':' + hl(H.KIND) + rw + ',"E"),""))');
       cell(rw, 2, '', Object.assign({}, base, { h: 'left', indent: 1, wrap: true }),
-        'IF(' + Kc + '="P",IF(' + CODE_ + '="","",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
+        'IF(' + Kc + '="P",IF(OR(' + CODE_ + '="",' + CODE_ + '="-"),"",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
       cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MINIFS', OPS, 'C'));
       cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MAXIFS', OPA, 'D'));
       // Priority: read from the Tracker's Priority column
