@@ -121,7 +121,9 @@
     if (!g.name) throw new Error('Could not find the "Project / Element" column.');
     if (!g.pa) throw new Error('Could not find the "Approval Date" column next to "Submission Date".');
     // the SAR review code that belongs to these two dates: the nearest "SAR code" column to the left of Submission Date
-    for (c = g.ps - 1; c >= 1; c--) if (/^sar code/.test(norm(cells[numToCol(c) + hdrRow]))) { g.sar = c; break; }
+    // (the "final" code is the code of the last design stage that has one, so all SAR code columns left of it are kept, nearest first)
+    g.sars = [];
+    for (c = g.ps - 1; c >= 1; c--) if (/^sar code/.test(norm(cells[numToCol(c) + hdrRow]))) { g.sars.push(c); if (!g.sar) g.sar = c; }
     return { hdrRow: hdrRow, g: g };
   }
 
@@ -180,12 +182,13 @@
     meta.sheetName = chosen.name;
     function txt(col, r) { var v = col ? cells[numToCol(col) + r] : undefined; return v == null || typeof v === 'object' ? '' : typeof v === 'number' ? String(v) : String(v).trim(); }
     function dt(col, r) { var v = col ? cells[numToCol(col) + r] : undefined; return isNum(v) && v > 20000 && v < 80000 ? Math.round(v) : null; } // 2024–2118
+    function finalCode(r) { for (var i = 0; i < (G.sars || []).length; i++) { var v = txt(G.sars[i], r).toUpperCase(); if (v) return v; } return ''; }
     var lastRow = 0;
     Object.keys(cells).forEach(function (k) { var rn = +k.replace(/\D/g, ''); if (rn > lastRow) lastRow = rn; });
     var projects = [], cur = null, chain = false;
     for (var r = layout.hdrRow + 1; r <= lastRow; r++) {
       var lvl = txt(G.lvl, r).toUpperCase(), prog = txt(G.programme, r), name = txt(G.name, r), pcode = txt(G.code, r);
-      var line = { row: r, name: name, notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: txt(G.sar, r).toUpperCase(), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
+      var line = { row: r, name: name, notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: finalCode(r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
       if (lvl === 'P' || (lvl !== 'E' && !!prog)) {
         if (!name && !pcode) { cur = null; chain = false; continue; } // a bare "NSR" row is only a separator
         // a "project" row with no project code straight under another project is really one of its lines (e.g. the 0583 packages)
@@ -199,7 +202,7 @@
     }
     var lastContent = layout.hdrRow;
     for (var rc = layout.hdrRow + 1; rc <= lastRow; rc++) if (txt(G.name, rc) || txt(G.programme, rc) || txt(G.code, rc)) lastContent = rc;
-    var model = { meta: meta, projects: projects, layout: { hdrRow: layout.hdrRow, lastContent: lastContent, lastRow: lastRow, sheet: chosen.name, g: (function () { var o = {}; Object.keys(G).forEach(function (k) { o[k] = numToCol(G[k]); }); return o; })() } };
+    var model = { meta: meta, projects: projects, layout: { hdrRow: layout.hdrRow, lastContent: lastContent, lastRow: lastRow, sheet: chosen.name, g: (function () { var o = {}; Object.keys(G).forEach(function (k) { if (!Array.isArray(G[k])) o[k] = numToCol(G[k]); }); o.sars = (G.sars || []).map(function (x) { return numToCol(x); }); return o; })() } };
     var cut = opts.dataDate != null ? opts.dataDate : meta.dataDate;
     if (!isNum(cut)) cut = dateToSerial(new Date());
     meta.workbookDataDate = meta.dataDate;
