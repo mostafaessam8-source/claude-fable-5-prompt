@@ -183,8 +183,8 @@
    * or a new project / element) appears by itself. Only Submission Date and Approval Date are used (actual up to the data date,
    * forecast after it).
    */
-  var TL0 = 9; // first timeline column
-  var WIDTHS = [7, 54, 13, 13, 7, 9, 12, 58];
+  var TL0 = 6; // first timeline column
+  var WIDTHS = [7, 56, 13, 13, 11];
   var HEAD_ROWS = 9;
   var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5 };
   var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row'];
@@ -206,7 +206,7 @@
     function merge(r1, c1, r2, c2) { if (r1 !== r2 || c1 !== c2) merges.push(numToCol(c1) + r1 + ':' + numToCol(c2) + r2); }
     function rowH(r, h) { rowMeta[r] = { h: h }; }
     var thin = function (col) { return ['thin', col]; };
-    var DD = '$C$7', firstTl = numToCol(TL0), lastTl = numToCol(lastCol), START = '$G$7';
+    var DD = '$C$7', firstTl = numToCol(TL0), lastTl = numToCol(lastCol), START = '$E$7';
     function UE(col) { return scale === 'month' ? 'EOMONTH(' + col + '$9,0)' : col + '$9' + (scale === 'week' ? '+6' : ''); }
 
     // Gantt row i  <->  Tracker row (header row + 1 + i)
@@ -214,7 +214,7 @@
     var nRows = Math.max(1, Math.min(lay.lastRow, lay.lastContent + SPARE_ROWS) - lay.hdrRow);
     var lastData = R0 + nRows - 1;
     function colRange(col) { return '$' + col + '$' + R0 + ':$' + col + '$' + lastData; }
-    var K = colRange(hl(H.KIND)), FST = colRange('G'), PSr = colRange('C'), PAr = colRange('D'), PIDr = colRange(hl(H.PID));
+    var PIDr = colRange(hl(H.PID));
     var codeCol = TR + '$' + g_.code + '$1:$' + g_.code + '$2000', progCol = TR + '$' + g_.programme + '$1:$' + g_.programme + '$2000';
 
     /* title, KPI cards, legend */
@@ -224,31 +224,10 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
-    var cnt = function (stt) { return 'COUNTIFS(' + K + ',"E",' + FST + ',"' + stt + '")'; };
-    var CODE_R = colRange('F');
-    var cards = [
-      [1, 2, 'PROJECTS  /  ELEMENTS', 'COUNTIF(' + K + ',"P")&"  /  "&COUNTIF(' + K + ',"E")', st.projects + '  /  ' + st.elements, C.black],
-      [3, 3, 'ACTUAL', cnt('Actual'), st.counts['Actual'], STATUS_COL['Actual'][0]],
-      [4, 4, 'IN PROGRESS', cnt('In progress'), st.counts['In progress'], STATUS_COL['In progress'][0]],
-      [5, 6, 'FORECAST', cnt('Forecast'), st.counts['Forecast'], STATUS_COL['Forecast'][0]],
-      [7, 7, 'NO DATES', cnt('No dates'), st.counts['No dates'], '78909C'],
-      [8, 8, 'SAR CODES (elements)', '"A "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")&"  ·  B "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")&"  ·  C "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")&"  ·  D "&COUNTIFS(' + K + ',"E",' + CODE_R + ',"D")&"  ·  none "&(COUNTIF(' + K + ',"E")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"A")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"B")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"C")-COUNTIFS(' + K + ',"E",' + CODE_R + ',"D"))', '', C.teal]
-    ];
-    cards.forEach(function (cd) {
-      var lab = { font: { sz: 8, b: true, color: C.white }, fill: cd[5], h: 'center', border: { left: thin(C.white), right: thin(C.white) } };
-      var val = { font: { sz: cd[0] === 8 ? 11 : 20, b: true, color: cd[5] }, fill: C.band, h: 'center', border: { left: thin(C.white), right: thin(C.white), bottom: ['medium', cd[5]] } };
-      for (var cc = cd[0]; cc <= cd[1]; cc++) { styleOnly(4, cc, lab); styleOnly(5, cc, val); }
-      cell(4, cd[0], cd[2], lab); cell(5, cd[0], cd[4], val, cd[3]); merge(4, cd[0], 4, cd[1]); merge(5, cd[0], 5, cd[1]);
-    });
-    rowH(4, 15); rowH(5, 30);
-    var info = { font: { sz: 8.5, color: C.mute, i: true }, h: 'left', indent: 1 };
-    var badRows = 'SUMPRODUCT(ISNUMBER(' + PSr + ')*ISNUMBER(' + PAr + ')*(' + PAr + '<' + PSr + '))';
-    cell(6, 1, 'Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead', info,
-      '"Actual = approval date reached by the data date   ·   In progress = submitted, approval still ahead   ·   Forecast = submission still ahead   ·   First submission "&IF(COUNT(' + PSr + ')=0,"—",TEXT(MIN(' + PSr + '),"dd-mmm-yy"))&"   ·   Last approval "&IF(COUNT(' + PAr + ')=0,"—",TEXT(MAX(' + PAr + '),"dd-mmm-yy"))&"   ·   Rows with Approval before Submission: "&' + badRows);
-    merge(6, 1, 6, 8); rowH(6, 14);
+    rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
     var legend = [
       ['◆ Submission (actual)', { fill: C.sub }, C.white], ['◇ Submission (forecast)', { fill: C.subSoft }, C.sub],
@@ -270,14 +249,14 @@
     var dt0 = M.serialToDate(cut);
     cell(7, 3, cut, { font: { sz: 10, b: true, color: C.white }, fill: C.red, h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true },
       'TODAY()'); // the data date is always today; type a date over it to look at another day
-    cell(7, 5, 'CHART START ▶', { font: { sz: 9, b: true, color: C.teal }, h: 'right' }); merge(7, 5, 7, 6);
+    cell(7, 4, 'CHART START ▶', { font: { sz: 9, b: true, color: C.teal }, h: 'right' });
     // chart start: 4 weeks before the earliest date (or the data date), fixed when generated so the month bands can be merged
     var lo = cut;
     model.projects.forEach(function (p) { [p.eps, p.epa, p.ps, p.pa].concat(p.elements.reduce(function (acc, e) { return acc.concat([e.ps, e.pa]); }, [])).forEach(function (d) { if (isNum(d) && d < lo) lo = d; }); });
     var startD = lo - 28, wd = M.serialToDate(startD).getUTCDay();
     if (scale === 'week') startD -= wd; // Sunday
     if (scale === 'month') { var sd = M.serialToDate(startD); startD = M.dateToSerial(new Date(Date.UTC(sd.getUTCFullYear(), sd.getUTCMonth(), 1))); }
-    cell(7, 7, startD, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } });
+    cell(7, 5, startD, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } });
     function unitDate(u) {
       if (scale === 'week') return startD + 7 * u;
       if (scale === 'day') return startD + u;
@@ -287,10 +266,10 @@
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
-    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date', 'Days', 'SAR code', 'Status', 'Remarks'].forEach(function (h, i) {
+    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date', 'Priority'].forEach(function (h, i) {
       var cc = i + 1;
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
-      cell(8, cc, h, i === 1 || i === 7 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
+      cell(8, cc, h, i === 1 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
     });
     var groups = [];
     for (var u = 0; u < N_UNITS; u++) {
@@ -340,7 +319,7 @@
         var p = rw < lastData ? 'IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below(cCol) + ',">0")>0,_xlfn.' + fn + '(' + below(cCol) + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),' + own + ')' : own;
         return 'IF(' + Kc + '="E",' + own + ',IF(' + Kc + '="P",' + p + ',""))';
       }
-      for (c = 1; c <= 8; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 || c === 8 ? 'left' : 'center' }));
+      for (c = 1; c <= 5; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 ? 'left' : 'center' }));
       var Cc = '$C' + rw, Dc = '$D' + rw;
       var cnt0 = 'COUNT(' + Cc + ',' + Dc + ')';
       cell(rw, 1, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.mute } }),
@@ -349,11 +328,8 @@
         'IF(' + Kc + '="P",IF(' + CODE_ + '="","",' + CODE_ + '&" — ")&' + NAME + ',IF(' + Kc + '="E",' + NAME + ',""))');
       cell(rw, 3, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MINIFS', OPS, 'C'));
       cell(rw, 4, '', Object.assign({}, base, { h: 'center', fmt: dFmt, unlocked: true, font: { sz: 9, b: true, color: C.text } }), rollup('MAXIFS', OPA, 'D'));
-      cell(rw, 5, '', Object.assign({}, base, { h: 'center', fmt: '0' }), 'IF(' + cnt0 + '=2,' + Dc + '-' + Cc + ',"")');
-      cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.sar ? 'IF(' + Kc + '="","",UPPER(TRIM(' + TR + g_.sar + t + '&"")))' : '""');
-      cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.white } }),
-        'IF(' + Kc + '="","",IF(' + cnt0 + '=0,"No dates",IF(AND(ISNUMBER(' + Dc + '),' + Dc + '<=' + DD + '),"Actual",IF(AND(ISNUMBER(' + Cc + '),' + Cc + '<=' + DD + '),"In progress","Forecast"))))');
-      cell(rw, 8, '', Object.assign({}, base, { h: 'left', indent: 1, wrap: true, font: { sz: 9, color: C.text } }), g_.notes ? 'IF(' + Kc + '="","",' + TR + g_.notes + t + '&"")' : '""');
+      // Priority: read from the Tracker's Priority column
+      cell(rw, 5, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.pri ? 'IF(' + Kc + '="","",' + TR + g_.pri + t + '&"")' : '""');
       // milestones: ◆/◇ submission (actual / forecast), ●/○ approval
       for (var uu = 0; uu < N_UNITS; uu++) {
         var col = numToCol(TL0 + uu);
@@ -384,29 +360,15 @@
     cf(TLr, kc + '="P"', sb.dxf({ fill: C.band }));
     cf(firstTl + '7:' + lastTl + '7', ddTest, sb.dxf({ fill: C.red }));
     cf(firstTl + '9:' + lastTl + '9', ddTest, sb.dxf({ fill: C.red, font: { b: true, color: C.white } }));
-    var TBL = 'A' + R0 + ':H' + lastData;
+    var TBL = 'A' + R0 + ':E' + lastData;
     cf(TBL, kc + '="P"', sb.dxf({ fill: C.black, font: { b: true, color: C.white } }));
     // date cells carry the milestone colours: solid = actual, pale = forecast
     cf('C' + R0 + ':C' + lastData, 'AND(ISNUMBER(C' + R0 + '),C' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.sub, font: { b: true, color: C.white } }));
     cf('C' + R0 + ':C' + lastData, 'ISNUMBER(C' + R0 + ')', sb.dxf({ fill: C.subSoft, font: { b: true, color: C.sub } }));
     cf('D' + R0 + ':D' + lastData, 'AND(ISNUMBER(D' + R0 + '),D' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.app, font: { b: true, color: C.white } }));
     cf('D' + R0 + ':D' + lastData, 'ISNUMBER(D' + R0 + ')', sb.dxf({ fill: C.appSoft, font: { b: true, color: C.app } }));
-    ['A', 'B', 'C', 'D'].forEach(function (k) { cf('F' + R0 + ':F' + lastData, '"' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } }), 'cellIs', 'equal'); });
-    Object.keys(STATUS_COL).forEach(function (k) { cf('G' + R0 + ':G' + lastData, '"' + k + '"', sb.dxf({ fill: STATUS_COL[k][0], font: { b: true, color: STATUS_COL[k][1] } }), 'cellIs', 'equal'); });
-    cf('E' + R0 + ':E' + lastData, 'AND(ISNUMBER(E' + R0 + '),E' + R0 + '<0)', sb.dxf({ font: { b: true, color: C.red } }));
 
-    /* notes under the chart */
-    var r = lastData + 2;
-    [
-      'HOW THIS SHEET WORKS',
-      'Every row below mirrors the same row of the ' + lay.sheet + ' sheet (this chart watches ' + nRows + ' rows, ' + SPARE_ROWS + ' of them empty spares). Columns C and D (Submission / Approval Date) are open for typing: a date typed there overrides the link to the Tracker for that row (to restore the link, copy the cell from a neighbouring row; the other columns are protected without a password). A date typed in ANY of those Tracker rows — also a row that had no dates, or a new project / element — and the milestone appears by itself. Helper columns sit in the grouped columns right of the chart (click + above them).',
-      'Submission Date and Approval Date are milestones, not activities. On or before the data date they are ACTUAL (solid ◆ / ●), after it FORECAST (hollow ◇ / ○). A level-1 project is a BAR for its whole period: Submission = MIN of its elements\u2019 submission dates, Approval = MAX of their approval dates (follows dates typed in C / D of its elements). The SAR code (A/B/C/D) is read from the Tracker’s SAR code column.',
-      'The time axis starts at the yellow "Chart starts" cell (fixed when generated: 4 weeks before the earliest date or the data date; the merged month bands do not move if you change it) and covers about ' + (scale === 'week' ? '18 months' : scale === 'day' ? '9 months' : '2.5 years') + '. If the Tracker grows past row ' + (T0 + nRows - 1) + ', re-run the site.'
-    ].forEach(function (txt, k) {
-      cell(r, 1, txt, k === 0 ? { font: { sz: 9, b: true, color: C.teal }, h: 'left', indent: 1 } : { font: { sz: 8.5, color: C.mute }, h: 'left', wrap: true, indent: 1, v: 'top' });
-      merge(r, 1, r, 8); rowH(r, k === 0 ? 15 : 38); r++;
-    });
-    var lastRow = r - 1;
+    var lastRow = lastData;
 
     /* serialise */
     var xml = [], rowNums = Object.keys(rows).map(Number).sort(function (a, b) { return a - b; });

@@ -102,7 +102,7 @@
   /* ---------- header detection ---------- */
   var GLOBAL_LABELS = [
     [/^programme/, 'programme'], [/^project code/, 'code'], [/^project\s*\/\s*element|^element|^project name/, 'name'],
-    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
+    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
   ];
 
   function detectLayout(sheet) {
