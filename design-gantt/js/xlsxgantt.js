@@ -450,21 +450,25 @@
   }
 
   /* ---------- write revised dates into the Tracker sheet itself ---------- */
+  // Write one Tracker cell: a number (null = empty it) or, when `value` is a string, a text cell. Keeps the cell's style.
   function setNumberCell(xml, ref, value, styleFallback) {
     var m = /^([A-Z]+)(\d+)$/.exec(ref), col = M.colToNum(m[1]), rn = m[2];
+    function build(st) {
+      var s_ = st ? ' s="' + st + '"' : '';
+      if (value == null) return '<c r="' + ref + '"' + s_ + '/>';
+      if (typeof value === 'string') return '<c r="' + ref + '"' + s_ + ' t="inlineStr"><is><t xml:space="preserve">' + esc(clean(value)) + '</t></is></c>';
+      return '<c r="' + ref + '"' + s_ + '><v>' + value + '</v></c>';
+    }
     var cellRe = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>[\\s\\S]*?</c>)');
     var ex = cellRe.exec(xml);
-    if (ex) {
-      var st = /\bs="(\d+)"/.exec(ex[1]);
-      return xml.replace(cellRe, '<c r="' + ref + '"' + (st ? ' s="' + st[1] + '"' : '') + (value == null ? '/>' : '><v>' + value + '</v></c>'));
-    }
+    if (ex) { var st = /\bs="(\d+)"/.exec(ex[1]); return xml.replace(cellRe, function () { return build(st ? st[1] : ''); }); }
     if (value == null) return xml; // nothing to clear
     var rowRe = new RegExp('(<row r="' + rn + '"[^>]*?)(/>|>([\\s\\S]*?)</row>)'), rm = rowRe.exec(xml);
     if (!rm) return xml; // row missing: leave the tracker untouched rather than guess
-    var cell = '<c r="' + ref + '"' + (styleFallback ? ' s="' + styleFallback + '"' : '') + '><v>' + value + '</v></c>', body = rm[3] || '', pos = body.length, cr = /<c r="([A-Z]+)\d+"/g, c;
+    var body = rm[3] || '', pos = body.length, cr = /<c r="([A-Z]+)\d+"/g, c;
     while ((c = cr.exec(body))) if (M.colToNum(c[1]) > col) { pos = c.index; break; }
-    var open = rm[1].replace(/\s*spans="[^"]*"/, '');
-    return xml.replace(rowRe, open + '>' + body.slice(0, pos) + cell + body.slice(pos) + '</row>');
+    var open = rm[1].replace(/\s*spans="[^"]*"/, ''), cell = build(styleFallback);
+    return xml.replace(rowRe, function () { return open + '>' + body.slice(0, pos) + cell + body.slice(pos) + '</row>'; });
   }
   async function patchTracker(zip, loc, model) {
     var edits = model.revised && model.revised.edits;
@@ -529,5 +533,5 @@
     return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData, patched: patched };
   }
 
-  return { build: build, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
+  return { build: build, setCell: setNumberCell, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
 });
