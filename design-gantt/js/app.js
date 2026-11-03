@@ -274,5 +274,15 @@
     wireTip();
   }
   init();
+  // The site opens with the latest tracker already loaded (the workflow publishes tracker-latest/ as latest.xlsx next to this page).
+  (async function autoLoad() {
+    try {
+      var res = await fetch('latest.xlsx', { cache: 'no-store' });
+      if (!res.ok) return;
+      var blob = await res.blob();
+      await loadFile(new File([blob], 'SAR_ESS_Design_Submission_Tracker_LATEST.xlsx'));
+      if (S.model) $('fileName').textContent = 'Latest tracker from the repository (tracker-latest) — ' + S.name;
+    } catch (e) { /* no latest file here (e.g. opened locally): the upload box stays */ }
+  })();
   window.__designGantt = { S: S, loadFile: loadFile };
 })();

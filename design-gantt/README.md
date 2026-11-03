@@ -15,6 +15,9 @@ Published at `/design-gantt/` by `.github/workflows/pages.yml` (after the change
   milestones). Dates typed in any Tracker row — also rows that were empty, or new elements — appear without re-running the site.
   The chart watches the filled rows plus 60 spare rows; re-run the site only if the Tracker grows beyond that.
 
+## Opens with the latest file (v5.1)
+The workflow publishes `tracker-latest/…LATEST_Gantt.xlsx` as `latest.xlsx` next to the page, and the page loads it on open; "change file" lets you upload another workbook.
+
 ## Revised schedule (v5.0)
 `js/revised.js` holds the *Revised Detailed Design Submission Schedule — NSR Mitigation Measures Phase 2* (18 culverts, issued 26-Oct-2026).
 On upload each line is matched to the Tracker element of the same name; its Submission Date replaces the workbook's, the Approval Date is kept when it

@@ -68,6 +68,8 @@ jobs:
           node design-gantt/tests/gantt.test.js
           cp -r design-gantt dist/design-gantt
           rm -rf dist/design-gantt/tests dist/design-gantt/package.json dist/design-gantt/README.md
+          # the page opens with the newest tracker (tracker-latest/) already loaded
+          cp tracker-latest/SAR_ESS_Design_Submission_Tracker_LATEST_Gantt.xlsx dist/design-gantt/latest.xlsx
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/design-gantt/index.html
           sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/design-gantt/index.html
