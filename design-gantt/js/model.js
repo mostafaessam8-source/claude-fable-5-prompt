@@ -266,7 +266,7 @@
         var a = els.map(function (e) { return e.ps; }).filter(isNum), b = els.map(function (e) { return e.pa; }).filter(isNum);
         ps = a.length ? Math.min.apply(null, a) : null; pa = b.length ? Math.max.apply(null, b) : null;
       }
-      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
+      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code && p.code !== '-' ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
       els.forEach(function (e, ei) {
         items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), segs: [], notes: e.notes, trow: e.row });
       });
