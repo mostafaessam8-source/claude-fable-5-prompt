@@ -186,8 +186,8 @@
   var TL0 = 7; // first timeline column
   var WIDTHS = [7, 56, 13, 13, 11, 12];
   var HEAD_ROWS = 9;
-  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5 };
-  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row'];
+  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, LAST: 6 };
+  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Last date'];
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
   var UNITS = { day: 270, week: 80, month: 30 };
   var SPARE_ROWS = 60; // empty Tracker rows below the last filled one that the chart already watches
@@ -224,8 +224,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -266,7 +266,7 @@
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
-    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date', 'Priority', 'SAR code (final)'].forEach(function (h, i) {
+    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date (design dept.)', 'Priority', 'SAR code (final)'].forEach(function (h, i) {
       var cc = i + 1;
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
       cell(8, cc, h, i === 1 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
@@ -319,6 +319,8 @@
         var p = rw < lastData ? 'IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below(cCol) + ',">0")>0,_xlfn.' + fn + '(' + below(cCol) + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),' + own + ')' : own;
         return 'IF(' + Kc + '="E",' + own + ',IF(' + Kc + '="P",' + p + ',""))';
       }
+      var lastF = 'IF(' + Kc + '="P",IF(MAX($C' + rw + ',$D' + rw + (rw < lastData ? ',IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below('C') + ',">0")>0,_xlfn.MAXIFS(' + below('C') + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),0)' : '') + ')=0,"",MAX($C' + rw + ',$D' + rw + (rw < lastData ? ',IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below('C') + ',">0")>0,_xlfn.MAXIFS(' + below('C') + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),0)' : '') + ')),"")';
+      hput(H.LAST, lastF, dFmt);
       for (c = 1; c <= 6; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 ? 'left' : 'center' }));
       var Cc = '$C' + rw, Dc = '$D' + rw;
       var cnt0 = 'COUNT(' + Cc + ',' + Dc + ')';
@@ -352,9 +354,9 @@
     }
     var TLr = firstTl + R0 + ':' + lastTl + lastData, cc0 = firstTl + R0, kc = '$' + hl(H.KIND) + R0;
     // level-1 project: one BAR for its whole period (MIN submission -> MAX approval); solid up to the data date, hatched after it
-    var lo_ = 'MIN($C' + R0 + ',$D' + R0 + ')', hi_ = 'MAX($C' + R0 + ',$D' + R0 + ')', T0c = firstTl;
-    cf(TLr, 'AND(' + kc + '="P",COUNT($C' + R0 + ',$D' + R0 + ')>0,' + lo_ + '<=' + DD + ',' + lo_ + '<=' + UE(T0c) + ',MIN(' + hi_ + ',' + DD + ')>=' + T0c + '$9)', sb.dxf({ fill: C.black }));
-    cf(TLr, 'AND(' + kc + '="P",COUNT($C' + R0 + ',$D' + R0 + ')>0,' + hi_ + '>' + DD + ',MAX(' + lo_ + ',' + DD + '+1)<=' + UE(T0c) + ',' + hi_ + '>=' + T0c + '$9)', sb.dxf({ fill: { pattern: 'lightUp', fg: C.black, bg: 'C9CED1' } }));
+    var lo_ = '$C' + R0, hi_ = '$' + hl(H.LAST) + R0, T0c = firstTl;
+    cf(TLr, 'AND(' + kc + '="P",ISNUMBER($C' + R0 + '),ISNUMBER(' + hi_ + '),' + lo_ + '<=' + DD + ',' + lo_ + '<=' + UE(T0c) + ',MIN(' + hi_ + ',' + DD + ')>=' + T0c + '$9)', sb.dxf({ fill: C.black }));
+    cf(TLr, 'AND(' + kc + '="P",ISNUMBER($C' + R0 + '),ISNUMBER(' + hi_ + '),' + hi_ + '>' + DD + ',MAX(' + lo_ + ',' + DD + '+1)<=' + UE(T0c) + ',' + hi_ + '>=' + T0c + '$9)', sb.dxf({ fill: { pattern: 'lightUp', fg: C.black, bg: 'C9CED1' } }));
     cf(TLr, 'OR(' + cc0 + '="◆",' + cc0 + '="◇")', sb.dxf({ font: { b: true, color: C.sub } }));
     cf(TLr, 'OR(' + cc0 + '="●",' + cc0 + '="○")', sb.dxf({ font: { b: true, color: C.app } }));
     var ddTest = 'AND(' + DD + '>=' + firstTl + '$9,' + DD + '<=' + UE(firstTl) + ')';
@@ -391,7 +393,7 @@
       });
       parts.push('</row>'); xml.push(parts.join(''));
     });
-    var lastHelper = hc(H.PID), cols = ['<cols>'];
+    var lastHelper = hc(H.LAST), cols = ['<cols>'];
     WIDTHS.forEach(function (w, k) { cols.push('<col min="' + (k + 1) + '" max="' + (k + 1) + '" width="' + w + '" customWidth="1"/>'); });
     cols.push('<col min="' + TL0 + '" max="' + lastCol + '" width="' + unitW + '" customWidth="1"/>');
     cols.push('<col min="' + (lastCol + 1) + '" max="' + (lastCol + 1) + '" width="2.5" customWidth="1" collapsed="1"/>');

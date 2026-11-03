@@ -71,7 +71,7 @@ async function check(zip, label) {
     { sr: 2, name: 'Element 3', rev: 'A0', sub: '2026-10-16', status: 'Under SAR Review' },
     { sr: 3, name: 'Nope', rev: 'A0', sub: '2026-10-16', status: 'Under SAR Review' }] });
   assert.strictEqual(rv.changes.length, 2); assert.strictEqual(rv.unmatched.length, 1);
-  assert.strictEqual(m.projects[0].elements[0].ps, D(2026, 11, 6)); assert.strictEqual(m.projects[0].elements[0].pa, D(2026, 11, 21)); // assumed +15 d
+  assert.strictEqual(m.projects[0].elements[0].ps, D(2026, 11, 6)); assert.strictEqual(m.projects[0].elements[0].pa, null); // never assumed: the design department adds it
   assert.strictEqual(m.projects[0].elements[2].pa, D(2026, 10, 20)); // under review with an existing approval that still follows: kept
   const zr = await JSZip.loadAsync(tinyWorkbook().generateAsync ? await tinyWorkbook().generateAsync({ type: 'uint8array' }) : null);
   const outR = await X.build(zr, m, { scale: 'week' });

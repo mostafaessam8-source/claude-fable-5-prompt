@@ -240,7 +240,7 @@
     model.projects.forEach(function (p) {
       [{ row: p.row, name: p.name, ps: p.ps, pa: p.pa }].concat(p.elements).forEach(function (e) {
         if (isNum(e.ps) && isNum(e.pa) && e.pa < e.ps) add('error', p, e, 'Approval Date (' + fmtDate(e.pa) + ') is before Submission Date (' + fmtDate(e.ps) + ').');
-        else if (isNum(e.ps) !== isNum(e.pa) && (isNum(e.ps) || isNum(e.pa))) add('warn', p, e, 'Only the ' + (isNum(e.ps) ? 'Submission' : 'Approval') + ' Date is filled — shown as a single-day marker.');
+        else if (isNum(e.pa) && !isNum(e.ps)) add('warn', p, e, 'Approval Date is filled but the Submission Date is empty.');
         if (e.code && !/^[ABCD]$/.test(e.code)) add('warn', p, e, 'SAR code "' + e.code + '" is not A, B, C or D.');
         if (e.strPs) add('info', p, e, 'Submission Date contains text, not a date.');
       });
@@ -293,10 +293,8 @@
       if (!hit) { out.unmatched.push(it); return; }
       var e = hit.e, newPs = isoSerial(it.sub), oldPs = e.ps, oldPa = e.pa, prior = out.changes.filter(function (c) { return c.row === e.row; })[0];
       if (prior) newPs = Math.min(newPs, prior.newPs); // one tracker row covering several culverts (e.g. "ZRL 3+700 & 3+750")
-      // Approval Date: keep the workbook's when it still follows the new submission. Otherwise, for a line still to be re-submitted assume
-      // the review period; for a line already under SAR review leave it empty (nobody knows the approval date yet).
-      var keep = isNum(oldPa) && oldPa >= newPs, underReview = /under/i.test(it.status);
-      var newPa = keep ? oldPa : (underReview ? null : newPs + (rev.reviewDays || 15));
+      // Approval Date: never assumed — the design department adds it. A date already in the workbook is kept while it still follows the new submission.
+      var keep = isNum(oldPa) && oldPa >= newPs, newPa = keep ? oldPa : null;
       e.ps = newPs; e.pa = newPa; e.strPs = false;
       e.rev = { sr: it.sr, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method };
       var rec = { sr: String(it.sr), name: it.name, element: e.name, project: hit.p.code || hit.p.name, row: e.row, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method,
