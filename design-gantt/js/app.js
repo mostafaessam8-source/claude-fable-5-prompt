@@ -3,7 +3,7 @@
   'use strict';
   var M = window.Model, X = window.XlsxGantt;
   var $ = function (id) { return document.getElementById(id); };
-  var HC = { 'Actual': '#2e7d32', 'In progress': '#1e6fd9', 'Forecast': '#7e57c2', 'No dates': '#b0bec5' };
+  var HC = { 'Not Submitted': '#e57373', 'Partialy Submitted': '#f5a300', 'Submitted': '#00778b', 'Under Review': '#1e6fd9', 'Approved': '#2e7d32', 'No status': '#b0bec5' }; // submittal status colours
   var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
@@ -82,12 +82,13 @@
     var stack = Object.keys(HC).map(function (k) { return '<i title="' + k + ' ' + st.counts[k] + '" style="width:' + (tot ? st.counts[k] / tot * 100 : 0) + '%;background:' + HC[k] + '"></i>'; }).join('');
     $('kpis').innerHTML =
       kpi('Projects / elements', st.projects + ' / ' + st.elements, 'lines in the chart', '#3d3935') +
-      kpi('Actual', st.counts['Actual'], 'approval date reached', HC['Actual']) +
-      kpi('In progress', st.counts['In progress'], 'submitted, approval ahead', HC['In progress']) +
-      kpi('Forecast', st.counts['Forecast'], 'submission still ahead', HC['Forecast']) +
+      kpi('Approved', st.counts['Approved'], 'submittal approved', HC['Approved']) +
+      kpi('Under review', st.counts['Under Review'], 'with SAR now', HC['Under Review']) +
+      kpi('Submitted / partial', (st.counts['Submitted'] || 0) + (st.counts['Partialy Submitted'] || 0), 'sent, not yet in review', HC['Submitted']) +
+      kpi('Not submitted', st.counts['Not Submitted'], 'still to be sent', HC['Not Submitted']) +
       kpi('SAR codes', ['A', 'B', 'C', 'D'].map(function (k) { return '<b style="color:' + CODE[k] + '">' + k + '</b> ' + st.codes[k]; }).join(' · '), st.codes.none + ' elements without a code', '#00778b').replace('class="v"', 'class="v" style="font-size:20px"') +
       kpi('Programme span', st.first ? M.fmtDate(st.first) : '–', st.last ? 'to ' + M.fmtDate(st.last) : 'no dates', '#00778b') +
-      '<div class="kpi wide"><div class="l">Elements by status · data date ' + M.fmtDate(m.cut) + '</div><div class="stack">' + stack + '</div><div class="s" style="margin-top:6px">' +
+      '<div class="kpi wide"><div class="l">Elements by submittal status · data date ' + M.fmtDate(m.cut) + '</div><div class="stack">' + stack + '</div><div class="s" style="margin-top:6px">' +
       Object.keys(HC).map(function (k) { return '<span style="margin-right:12px"><b style="color:' + HC[k] + '">●</b> ' + k + ' ' + st.counts[k] + '</span>'; }).join('') + '</div></div>';
   }
   function kpi(l, v, s, c) { return '<div class="kpi" style="border-top-color:' + c + '"><div class="l">' + l + '</div><div class="v" style="color:' + c + '">' + v + '</div><div class="s">' + s + '</div></div>'; }
@@ -138,7 +139,7 @@
         var x = X_(g.d) + ppd / 2, top = it.kind === 'project' ? 9 : 8;
         bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
       });
-      var pill = '<span class="pill" style="background:' + HC[it.status] + '">' + it.status + '</span>';
+      var pill = it.status ? '<span class="pill" style="background:' + HC[it.status] + (it.status === 'Not Submitted' ? ';color:#8a1c1c' : it.status === 'Partialy Submitted' ? ';color:#3d2a00' : '') + '">' + it.status + '</span>' : '<span></span>';
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
       out.push('<div class="g-row ' + cls + '" style="height:30px" data-i="' + ix + '"><div class="g-left" style="padding-left:' + it.lvl * 14 + 'px">' +
         '<div class="g-name"><div class="t">' + tog + '<span title="' + h(it.label) + '">' + h(it.label) + '</span></div></div>' + pill +
@@ -170,14 +171,14 @@
     var m = S.model.meta;
     $('rules').innerHTML =
       '<li>Only the <b>Submission Date</b> and <b>Approval Date</b> columns are used. Each is either an actual or a forecast date: up to the data date it is actual, after it it is forecast.</li>' +
-      '<li><b>Actual</b>: approval date reached. <b>In progress</b>: submission date reached, approval still ahead. <b>Forecast</b>: submission date still ahead.</li>' +
+      '<li><b>Submittal status</b> is the one typed in the Tracker\u2019s <b>Status</b> column (Not Submitted, Partialy Submitted, Submitted, Under Review, Approved), colour coded. A milestone is solid when its date is on or before the data date, hollow after it.</li>' +
       '<li>A project shows the dates typed on its own row; if there are none, the span from its first submission to its last approval.</li>' +
       '<li>Data date used: <b>' + M.fmtDate(m.cut) + '</b> (workbook says ' + M.fmtDate(m.workbookDataDate) + '). Change it above to see the position on another date.</li>';
   }
 
   /* ---------- tooltip ---------- */
   function tipText(it) {
-    var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', it.status + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
+    var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', (it.status ? 'Status: ' + it.status : 'Project') + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
     L.push('Submission date: ' + (f(it.ps) || '–') + (M.isNum(it.ps) ? (it.ps <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     L.push('Approval date: ' + (f(it.pa) || '–') + (M.isNum(it.pa) ? (it.pa <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     L.push('SAR code: ' + (it.code || 'none yet'));

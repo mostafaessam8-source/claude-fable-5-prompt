@@ -183,11 +183,12 @@
    * or a new project / element) appears by itself. Only Submission Date and Approval Date are used (actual up to the data date,
    * forecast after it).
    */
-  var TL0 = 7; // first timeline column
-  var WIDTHS = [7, 56, 13, 13, 11, 12];
+  var TL0 = 8; // first timeline column
+  var WIDTHS = [7, 56, 13, 13, 11, 17, 12];
   var HEAD_ROWS = 9;
   var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, LAST: 6 };
   var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Last date'];
+  var SUBMITTAL_COL = { 'Not Submitted': ['F8D7DA', '8A1C1C'], 'Partialy Submitted': ['F5A300', '3D2A00'], 'Submitted': ['00778B', 'FFFFFF'], 'Under Review': ['1E6FD9', 'FFFFFF'], 'Approved': ['2E7D32', 'FFFFFF'] };
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
   var UNITS = { day: 270, week: 80, month: 30 };
   var SPARE_ROWS = 60; // empty Tracker rows below the last filled one that the chart already watches
@@ -224,8 +225,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v5.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.0   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -266,7 +267,7 @@
 
     /* headers */
     var hSpec = { font: { sz: 9, b: true, color: C.white }, fill: C.teal, h: 'center', wrap: true, border: { left: thin(C.white), right: thin(C.white), bottom: thin(C.white) } };
-    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date (design dept.)', 'Priority', 'SAR code (final)'].forEach(function (h, i) {
+    ['ID', 'Project  /  Element', 'Submission Date', 'Approval Date (design dept.)', 'Priority', 'Submittal status', 'SAR code (final)'].forEach(function (h, i) {
       var cc = i + 1;
       styleOnly(8, cc, hSpec); styleOnly(9, cc, hSpec);
       cell(8, cc, h, i === 1 ? Object.assign({}, hSpec, { h: 'left', indent: 1 }) : hSpec); merge(8, cc, 9, cc);
@@ -321,7 +322,7 @@
       }
       var lastF = 'IF(' + Kc + '="P",IF(MAX($C' + rw + ',$D' + rw + (rw < lastData ? ',IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below('C') + ',">0")>0,_xlfn.MAXIFS(' + below('C') + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),0)' : '') + ')=0,"",MAX($C' + rw + ',$D' + rw + (rw < lastData ? ',IF(COUNTIFS(' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E",' + below('C') + ',">0")>0,_xlfn.MAXIFS(' + below('C') + ',' + below(hl(H.PID)) + ',' + PIDc + ',' + below(hl(H.KIND)) + ',"E"),0)' : '') + ')),"")';
       hput(H.LAST, lastF, dFmt);
-      for (c = 1; c <= 6; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 ? 'left' : 'center' }));
+      for (c = 1; c <= 7; c++) cell(rw, c, '', Object.assign({}, base, { h: c === 2 ? 'left' : 'center' }));
       var Cc = '$C' + rw, Dc = '$D' + rw;
       var cnt0 = 'COUNT(' + Cc + ',' + Dc + ')';
       cell(rw, 1, '', Object.assign({}, base, { h: 'center', font: { sz: 8.5, b: true, color: C.mute } }),
@@ -335,7 +336,8 @@
       // final SAR code: the code of the last design stage that has one (Detailed, else Preliminary, else Concept)
       var sarRefs = (g_.sars || []).map(function (l) { return 'TRIM(' + TR + l + t + '&"")'; });
       var finalF = sarRefs.length ? sarRefs.slice(0, -1).reduceRight(function (acc, ref) { return 'IF(' + ref + '<>"",' + ref + ',' + acc + ')'; }, sarRefs[sarRefs.length - 1]) : '""';
-      cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), 'IF(' + Kc + '="","",UPPER(' + finalF + '))');
+      cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 9, b: true, color: C.text } }), g_.subst ? 'IF(' + Kc + '="","",TRIM(' + TR + g_.subst + t + '&""))' : '""');
+      cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), 'IF(' + Kc + '="","",UPPER(' + finalF + '))');
       // milestones: ◆/◇ submission (actual / forecast), ●/○ approval
       for (var uu = 0; uu < N_UNITS; uu++) {
         var col = numToCol(TL0 + uu);
@@ -366,9 +368,10 @@
     cf(TLr, kc + '="P"', sb.dxf({ fill: C.band }));
     cf(firstTl + '7:' + lastTl + '7', ddTest, sb.dxf({ fill: C.red }));
     cf(firstTl + '9:' + lastTl + '9', ddTest, sb.dxf({ fill: C.red, font: { b: true, color: C.white } }));
-    var TBL = 'A' + R0 + ':F' + lastData;
+    var TBL = 'A' + R0 + ':G' + lastData;
     cf(TBL, kc + '="P"', sb.dxf({ fill: C.black, font: { b: true, color: C.white } }));
-    ['A', 'B', 'C', 'D'].forEach(function (k) { cf('F' + R0 + ':F' + lastData, '"' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } }), 'cellIs', 'equal'); });
+    Object.keys(SUBMITTAL_COL).forEach(function (k) { cf('F' + R0 + ':F' + lastData, '"' + k + '"', sb.dxf({ fill: SUBMITTAL_COL[k][0], font: { b: true, color: SUBMITTAL_COL[k][1] } }), 'cellIs', 'equal'); });
+    ['A', 'B', 'C', 'D'].forEach(function (k) { cf('G' + R0 + ':G' + lastData, '"' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } }), 'cellIs', 'equal'); });
     // date cells carry the milestone colours: solid = actual, pale = forecast
     cf('C' + R0 + ':C' + lastData, 'AND(ISNUMBER(C' + R0 + '),C' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.sub, font: { b: true, color: C.white } }));
     cf('C' + R0 + ':C' + lastData, 'ISNUMBER(C' + R0 + ')', sb.dxf({ fill: C.subSoft, font: { b: true, color: C.sub } }));
@@ -452,6 +455,24 @@
     return n;
   }
 
+  /* ---------- colour code the Status (submittal) column of the Tracker sheet ---------- */
+  async function colourTrackerStatus(zip, loc, model, sb) {
+    var col = model.layout.g.subst, sh = loc.sheets.filter(function (x) { return x.name === model.layout.sheet; })[0];
+    if (!col || !sh) return false;
+    var xml = await M.readText(zip, sh.path), r0 = model.layout.hdrRow + 1, r1 = model.layout.lastRow;
+    xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + col + r0 + ':' + col + r1 + '">[\\s\\S]*?</conditionalFormatting>', 'g'), ''); // idempotent
+    var rules = Object.keys(SUBMITTAL_COL).map(function (k, i) {
+      return '<cfRule type="cellIs" dxfId="' + sb.dxf({ fill: SUBMITTAL_COL[k][0], font: { b: true, color: SUBMITTAL_COL[k][1] } }) + '" priority="' + (900 + i) + '" operator="equal"><formula>"' + k + '"</formula></cfRule>';
+    }).join('');
+    var block = '<conditionalFormatting sqref="' + col + r0 + ':' + col + r1 + '">' + rules + '</conditionalFormatting>';
+    // conditional formats come before the data validations in a worksheet part
+    var at = xml.search(/<dataValidations\b/);
+    if (at < 0) at = xml.search(/<hyperlinks\b|<printOptions\b|<pageMargins\b/);
+    if (at < 0) return false;
+    zip.file(sh.path, xml.slice(0, at) + block + xml.slice(at));
+    return true;
+  }
+
   /* ---------- put the sheet into the workbook package ---------- */
   async function build(zip, model, opts) {
     opts = opts || {};
@@ -461,6 +482,7 @@
     var stylesXml = await M.readText(zip, 'xl/styles.xml');
     var sb = new StyleBook(stylesXml);
     var res = buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName });
+    await colourTrackerStatus(zip, loc, model, sb);
 
     var wbXml = loc.workbookXml, relsXml = loc.relsXml;
     var target = loc.sheets.filter(function (s) { return /^gantt/i.test(s.name); })[0], sheetIndex, sheetName;
@@ -502,5 +524,5 @@
     return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData, patched: patched };
   }
 
-  return { build: build, setCell: setNumberCell, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
+  return { build: build, setCell: setNumberCell, SUBMITTAL_COL: SUBMITTAL_COL, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
 });
