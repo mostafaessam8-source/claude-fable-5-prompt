@@ -102,7 +102,7 @@
   /* ---------- header detection ---------- */
   var GLOBAL_LABELS = [
     [/^programme/, 'programme'], [/^project code/, 'code'], [/^project\s*\/\s*element|^element|^project name/, 'name'],
-    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
+    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
   ];
 
   function detectLayout(sheet) {
@@ -132,6 +132,14 @@
     for (var r = 1; r < hdrRow; r++)
       if (/^data date/.test(norm(cells['A' + r])) && isNum(cells['C' + r])) { meta.dataDate = cells['C' + r]; meta.refs.dd = 'C' + r; }
     return meta;
+  }
+
+  /* The submittal status typed in the Tracker's "Status" column (a drop-down). */
+  var SUBMITTAL = ['Not Submitted', 'Partialy Submitted', 'Submitted', 'Under Review', 'Approved'];
+  function canonStatus(v) {
+    var k = norm(v).replace(/partially/, 'partialy');
+    for (var i = 0; i < SUBMITTAL.length; i++) if (norm(SUBMITTAL[i]) === k) return SUBMITTAL[i];
+    return v ? String(v).trim() : '';
   }
 
   /* ---------- status by data date ----------
@@ -188,12 +196,12 @@
     var projects = [], cur = null, chain = false;
     for (var r = layout.hdrRow + 1; r <= lastRow; r++) {
       var lvl = txt(G.lvl, r).toUpperCase(), prog = txt(G.programme, r), name = txt(G.name, r), pcode = txt(G.code, r);
-      var line = { row: r, name: name, notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: finalCode(r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
+      var line = { row: r, name: name, subst: canonStatus(txt(G.subst, r)), notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: finalCode(r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
       if (lvl === 'P' || (lvl !== 'E' && !!prog)) {
         if (!name && !pcode) { cur = null; chain = false; continue; } // a bare "NSR" row is only a separator
         // a "project" row with no project code straight under another project is really one of its lines (e.g. the 0583 packages)
         if (chain && cur && !pcode && prog === cur.programme) { cur.elements.push(line); continue; }
-        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, sar: line.code, elements: [] };
+        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, sar: line.code, subst: line.subst, elements: [] };
         projects.push(cur); chain = !!pcode;
         continue;
       }
@@ -213,22 +221,22 @@
   function recalc(model, cut) {
     model.meta.cut = cut;
     model.projects.forEach(function (p) {
-      p.elements.forEach(function (e) { e.status = statusOf(e.ps, e.pa, cut); });
+      p.elements.forEach(function (e) { e.dateStatus = statusOf(e.ps, e.pa, cut); e.status = e.subst || 'No status'; });
       // level 1 (the project): Submission = MIN of its elements' submission dates, Approval = MAX of their approval dates;
       // a project without dated elements keeps the dates typed on its own row
       var ps = p.elements.map(function (e) { return e.ps; }).filter(isNum), pa = p.elements.map(function (e) { return e.pa; }).filter(isNum);
       p.eps = ps.length ? Math.min.apply(null, ps) : (isNum(p.ps) ? p.ps : null);
       p.epa = pa.length ? Math.max.apply(null, pa) : (isNum(p.pa) ? p.pa : null);
-      p.status = statusOf(p.eps, p.epa, cut);
+      p.status = '';
     });
     model.stats = computeStats(model);
     model.checks = runChecks(model);
   }
 
   function computeStats(model) {
-    var st = { projects: model.projects.length, elements: 0, codes: { A: 0, B: 0, C: 0, D: 0, none: 0 }, counts: { 'Actual': 0, 'In progress': 0, 'Forecast': 0, 'No dates': 0 }, first: null, last: null };
+    var st = { projects: model.projects.length, elements: 0, codes: { A: 0, B: 0, C: 0, D: 0, none: 0 }, counts: { 'Not Submitted': 0, 'Partialy Submitted': 0, 'Submitted': 0, 'Under Review': 0, 'Approved': 0, 'No status': 0 }, first: null, last: null };
     model.projects.forEach(function (p) {
-      p.elements.forEach(function (e) { st.elements++; st.counts[e.status]++; st.codes[/^[ABCD]$/.test(e.code) ? e.code : 'none']++; });
+      p.elements.forEach(function (e) { st.elements++; st.counts[e.status] = (st.counts[e.status] || 0) + 1; st.codes[/^[ABCD]$/.test(e.code) ? e.code : 'none']++; });
       [p.eps, p.epa].forEach(function (d) { if (isNum(d)) { st.first = st.first == null ? d : Math.min(st.first, d); st.last = st.last == null ? d : Math.max(st.last, d); } });
     });
     return st;
@@ -266,7 +274,7 @@
         var a = els.map(function (e) { return e.ps; }).filter(isNum), b = els.map(function (e) { return e.pa; }).filter(isNum);
         ps = a.length ? Math.min.apply(null, a) : null; pa = b.length ? Math.max.apply(null, b) : null;
       }
-      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code && p.code !== '-' ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: statusOf(ps, pa, cut), ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
+      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code && p.code !== '-' ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: '', ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
       els.forEach(function (e, ei) {
         items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), segs: [], notes: e.notes, trow: e.row });
       });
@@ -320,7 +328,7 @@
 
   return {
     EPOCH: EPOCH, isNum: isNum, numToCol: numToCol, colToNum: colToNum, fmtDate: fmtDate, serialToDate: serialToDate, dateToSerial: dateToSerial, norm: norm,
-    readWorkbook: readWorkbook, recalc: recalc, applyRevised: applyRevised, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, milestones: milestones,
+    readWorkbook: readWorkbook, recalc: recalc, applyRevised: applyRevised, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, SUBMITTAL: SUBMITTAL, milestones: milestones,
     parseSheet: parseSheet, parseSharedStrings: parseSharedStrings, locateSheets: locateSheets, readText: readText, unesc: unesc
   };
 });

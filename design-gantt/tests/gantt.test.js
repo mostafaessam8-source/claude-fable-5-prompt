@@ -19,12 +19,12 @@ function tinyWorkbook() {
   const s = (r, t) => `<c r="${r}" t="inlineStr"><is><t>${t}</t></is></c>`, n = (r, v) => `<c r="${r}"><v>${v}</v></c>`;
   const rows = [];
   rows.push(`<row r="5">${s('A5', 'DATA DATE (cut-off)')}${n('C5', D(2026, 8, 31))}</row>`);
-  rows.push(`<row r="17">${s('A17', 'Programme')}${s('B17', 'Project Code')}${s('C17', 'Project / Element — Package')}${s('D17', 'Submission Date')}${s('E17', 'Approval Date')}${s('F17', 'Main challenges / notes')}${s('G17', 'Lvl')}</row>`);
-  rows.push(`<row r="18">${s('A18', 'NSR')}${s('B18', '9001')}${s('C18', 'Test Project')}${s('G18', 'P')}</row>`);
-  rows.push(`<row r="19">${s('C19', 'Element 1')}${n('D19', D(2026, 8, 1))}${n('E19', D(2026, 8, 20))}${s('F19', 'a note')}${s('G19', 'E')}</row>`);
-  rows.push(`<row r="20">${s('C20', 'Element 2')}${n('D20', D(2026, 8, 20))}${n('E20', D(2026, 9, 20))}${s('G20', 'E')}</row>`);
-  rows.push(`<row r="21">${s('C21', 'Element 3')}${n('D21', D(2026, 10, 1))}${n('E21', D(2026, 10, 20))}${s('G21', 'E')}</row>`);
-  rows.push(`<row r="22">${s('C22', 'Element 4')}${n('D22', D(2026, 10, 20))}${n('E22', D(2026, 10, 1))}${s('G22', 'E')}</row>`);
+  rows.push(`<row r="17">${s('A17', 'Programme')}${s('B17', 'Project Code')}${s('C17', 'Project / Element — Package')}${s('D17', 'Submission Date')}${s('E17', 'Approval Date')}${s('F17', 'Status')}${s('G17', 'Main challenges / notes')}${s('H17', 'Lvl')}</row>`);
+  rows.push(`<row r="18">${s('A18', 'NSR')}${s('B18', '9001')}${s('C18', 'Test Project')}${s('H18', 'P')}</row>`);
+  rows.push(`<row r="19">${s('C19', 'Element 1')}${n('D19', D(2026, 8, 1))}${n('E19', D(2026, 8, 20))}${s('F19', 'approved')}${s('G19', 'a note')}${s('H19', 'E')}</row>`);
+  rows.push(`<row r="20">${s('C20', 'Element 2')}${n('D20', D(2026, 8, 20))}${n('E20', D(2026, 9, 20))}${s('F20', 'Under review')}${s('H20', 'E')}</row>`);
+  rows.push(`<row r="21">${s('C21', 'Element 3')}${n('D21', D(2026, 10, 1))}${n('E21', D(2026, 10, 20))}${s('F21', 'Not Submitted')}${s('H21', 'E')}</row>`);
+  rows.push(`<row r="22">${s('C22', 'Element 4')}${n('D22', D(2026, 10, 20))}${n('E22', D(2026, 10, 1))}${s('H22', 'E')}</row>`);
   z.file('xl/worksheets/sheet1.xml', `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.join('')}</sheetData></worksheet>`);
   return z;
 }
@@ -43,13 +43,14 @@ async function check(zip, label) {
   const t = await check(tinyWorkbook(), 'tiny.xlsx');
   const m = t.model, els = m.projects[0].elements;
   assert.strictEqual(m.projects.length, 1); assert.strictEqual(els.length, 4);
-  assert.deepStrictEqual(els.map(e => e.status), ['Actual', 'In progress', 'Forecast', 'Forecast']);
+  assert.deepStrictEqual(els.map(e => e.dateStatus), ['Actual', 'In progress', 'Forecast', 'Forecast']);
+  assert.deepStrictEqual(els.map(e => e.status), ['Approved', 'Under Review', 'Not Submitted', 'No status']); // the Tracker's own Status column (drop-down), not computed
   assert.strictEqual(m.projects[0].eps, D(2026, 8, 1)); assert.strictEqual(m.projects[0].epa, D(2026, 10, 20));
   assert(m.checks.some(c => c.sev === 'error' && c.element === 'Element 4'), 'approval before submission is flagged');
   const ms = M.buildItems(m).find(i => i.label === 'Element 2').ms; // milestones, not bars
   assert.deepStrictEqual(ms.map(g => [g.t, g.actual]), [['sub', true], ['app', false]]);
   M.recalc(m, D(2026, 10, 10));
-  assert.deepStrictEqual(m.projects[0].elements.map(e => e.status), ['Actual', 'Actual', 'In progress', 'Actual']);
+  assert.deepStrictEqual(m.projects[0].elements.map(e => e.dateStatus), ['Actual', 'Actual', 'In progress', 'Actual']);
 
   // 2. the written workbook: a new Gantt sheet whose numbers are formulas and whose bars are conditional formats
   const xml = await t.z2.file(t.names.find(n => /worksheets\/sheet\d+\.xml$/.test(n) && n !== 'xl/worksheets/sheet1.xml')).async('string');
