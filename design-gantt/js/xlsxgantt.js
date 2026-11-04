@@ -225,8 +225,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.4   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -480,7 +480,7 @@
     if (g.fcode) { // drop-down list A / B / C / D on the Code column (unless it already has a validation)
       var sqv = g.fcode + r0 + ':' + g.fcode + r1;
       if (!new RegExp('<dataValidation [^>]*sqref="[^"]*\\b' + g.fcode + r0 + '\\b').test(xml)) {
-        var dv = '<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" errorTitle="Invalid entry" error="Choose the SAR code: A, B, C or D." promptTitle="SAR code" prompt="A, B, C or D (decided from the notes)" sqref="' + sqv + '"><formula1>"A,B,C,D"</formula1></dataValidation>';
+        var dv = '<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Invalid entry" error="Choose the SAR code: A, B, C or D." sqref="' + sqv + '"><formula1>"A,B,C,D"</formula1></dataValidation>';
         if (/<dataValidations\b[^>]*count="(\d+)"/.test(xml)) xml = xml.replace(/(<dataValidations\b[^>]*count=")(\d+)(")/, function (m0, a, n, b) { return a + (+n + 1) + b; }).replace('</dataValidations>', dv + '</dataValidations>');
         else xml = xml.replace(/<pageMargins\b|<printOptions\b|<hyperlinks\b/, '<dataValidations count="1">' + dv + '</dataValidations>$&');
       }
