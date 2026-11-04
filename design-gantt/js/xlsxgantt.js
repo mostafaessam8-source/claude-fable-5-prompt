@@ -225,8 +225,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -458,20 +458,34 @@
 
   /* ---------- colour code the Status (submittal) column of the Tracker sheet ---------- */
   async function colourTrackerStatus(zip, loc, model, sb) {
-    var col = model.layout.g.subst, sh = loc.sheets.filter(function (x) { return x.name === model.layout.sheet; })[0];
-    if (!col || !sh) return false;
-    var xml = await M.readText(zip, sh.path), r0 = model.layout.hdrRow + 1, r1 = model.layout.lastRow;
-    xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + col + r0 + ':' + col + r1 + '">[\\s\\S]*?</conditionalFormatting>', 'g'), ''); // idempotent
-    var rules = Object.keys(SUBMITTAL_COL).map(function (k, i) {
-      return '<cfRule type="cellIs" dxfId="' + sb.dxf({ fill: SUBMITTAL_COL[k][0], font: { b: true, color: SUBMITTAL_COL[k][1] } }) + '" priority="' + (900 + i) + '" operator="equal"><formula>"' + k + '"</formula></cfRule>';
-    }).join('');
-    var block = '<conditionalFormatting sqref="' + col + r0 + ':' + col + r1 + '">' + rules + '</conditionalFormatting>';
+    var g = model.layout.g, sh = loc.sheets.filter(function (x) { return x.name === model.layout.sheet; })[0];
+    if (!sh || (!g.subst && !g.fcode)) return false;
+    var xml = await M.readText(zip, sh.path), r0 = model.layout.hdrRow + 1, r1 = model.layout.lastRow, pri = 900, blocks = '';
+    function block(col, pal, fontOf) {
+      if (!col) return;
+      var sq = col + r0 + ':' + col + r1;
+      xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + sq + '">[\\s\\S]*?</conditionalFormatting>', 'g'), ''); // idempotent
+      blocks += '<conditionalFormatting sqref="' + sq + '">' + Object.keys(pal).map(function (k) {
+        return '<cfRule type="cellIs" dxfId="' + sb.dxf({ fill: pal[k][0], font: { b: true, color: pal[k][1] } }) + '" priority="' + (pri++) + '" operator="equal"><formula>"' + k + '"</formula></cfRule>';
+      }).join('') + '</conditionalFormatting>';
+    }
+    block(g.subst, SUBMITTAL_COL);
+    var codePal = {}; Object.keys(CODE).forEach(function (k) { codePal[k] = [CODE[k], 'FFFFFF']; });
+    block(g.fcode, codePal); // the final SAR code (A / B / C / D)
     // conditional formats come before the data validations in a worksheet part
     var at = xml.search(/<dataValidations\b/);
     if (at < 0) at = xml.search(/<hyperlinks\b|<printOptions\b|<pageMargins\b/);
     if (at < 0) return false;
-    zip.file(sh.path, xml.slice(0, at) + block + xml.slice(at));
+    zip.file(sh.path, xml.slice(0, at) + blocks + xml.slice(at));
     return true;
+  }
+
+  /* Colour coding only (no Gantt sheet): for a workbook that is going back online as it is. */
+  async function colourTrackerOnly(zip, model) {
+    var loc = await M.locateSheets(zip), sb = new StyleBook(await M.readText(zip, 'xl/styles.xml'));
+    var ok = await colourTrackerStatus(zip, loc, model, sb);
+    zip.file('xl/styles.xml', sb.toXml());
+    return ok;
   }
 
   /* ---------- put the sheet into the workbook package ---------- */
@@ -525,5 +539,5 @@
     return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData, patched: patched };
   }
 
-  return { build: build, setCell: setNumberCell, SUBMITTAL_COL: SUBMITTAL_COL, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
+  return { build: build, colourTrackerOnly: colourTrackerOnly, setCell: setNumberCell, SUBMITTAL_COL: SUBMITTAL_COL, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
 });
