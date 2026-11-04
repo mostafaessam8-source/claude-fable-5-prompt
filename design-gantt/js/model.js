@@ -190,7 +190,7 @@
     meta.sheetName = chosen.name;
     function txt(col, r) { var v = col ? cells[numToCol(col) + r] : undefined; return v == null || typeof v === 'object' ? '' : typeof v === 'number' ? String(v) : String(v).trim(); }
     function dt(col, r) { var v = col ? cells[numToCol(col) + r] : undefined; return isNum(v) && v > 20000 && v < 80000 ? Math.round(v) : null; } // 2024–2118
-    function finalCode(r) { for (var i = 0; i < (G.sars || []).length; i++) { var v = txt(G.sars[i], r).toUpperCase(); if (v) return v; } return ''; }
+    function finalCode(r) { var own = txt(G.fcode, r).toUpperCase(); if (own) return own; for (var i = 0; i < (G.sars || []).length; i++) { var v = txt(G.sars[i], r).toUpperCase(); if (v) return v; } return ''; }
     var lastRow = 0;
     Object.keys(cells).forEach(function (k) { var rn = +k.replace(/\D/g, ''); if (rn > lastRow) lastRow = rn; });
     var projects = [], cur = null, chain = false;
