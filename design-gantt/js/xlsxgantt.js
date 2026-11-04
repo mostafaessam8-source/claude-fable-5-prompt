@@ -428,6 +428,7 @@
     function build(st) {
       var s_ = st ? ' s="' + st + '"' : '';
       if (value == null) return '<c r="' + ref + '"' + s_ + '/>';
+      if (value && typeof value === 'object') return '<c r="' + ref + '"' + s_ + ' t="str"><f>' + esc(value.f) + '</f><v>' + esc(clean(value.v == null ? '' : value.v)) + '</v></c>'; // formula with its cached value
       if (typeof value === 'string') return '<c r="' + ref + '"' + s_ + ' t="inlineStr"><is><t xml:space="preserve">' + esc(clean(value)) + '</t></is></c>';
       return '<c r="' + ref + '"' + s_ + '><v>' + value + '</v></c>';
     }
