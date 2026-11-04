@@ -26,13 +26,18 @@ jobs:
         run: |
           URL="$(tr -d '\r\n ' < tracker-source.txt)"
           mkdir -p "$RUNNER_TEMP/dl"
+          # direct-download form of a "/:x:/g/personal/<user>/<id>" sharing link
+          HOST="$(echo "$URL" | sed -E 's#^(https://[^/]+)/.*#\1#')"
+          USERPATH="$(echo "$URL" | sed -E 's#^https://[^/]+/:[a-z]:/[a-z]/(personal/[^/]+)/.*#\1#')"
+          ID="$(echo "$URL" | sed -E 's#.*/([^/?]+)(\?.*)?$#\1#')"
           ok=0
-          for u in "${URL}?download=1" "${URL}&download=1"; do
-            curl -fsSL -A "Mozilla/5.0" -o "$RUNNER_TEMP/dl/src.xlsx" "$u" || continue
-            if [ "$(head -c 2 "$RUNNER_TEMP/dl/src.xlsx")" = "PK" ]; then ok=1; break; fi
+          for u in "${URL}?download=1" "${URL}&download=1" "${HOST}/${USERPATH}/_layouts/15/download.aspx?share=${ID}"; do
+            code="$(curl -sSL -A 'Mozilla/5.0' -o "$RUNNER_TEMP/dl/src.xlsx" -w '%{http_code} %{content_type}' "$u" || true)"
+            echo "attempt: ${u%%\?*}... -> HTTP/type: $code, first bytes: $(head -c 4 "$RUNNER_TEMP/dl/src.xlsx" 2>/dev/null | tr -c '[:print:]' '.')"
+            if [ "$(head -c 2 "$RUNNER_TEMP/dl/src.xlsx" 2>/dev/null)" = "PK" ]; then ok=1; break; fi
           done
           if [ "$ok" != 1 ]; then
-            echo "::error::Could not download the online workbook as an Excel file. Check that the link is shared as 'Anyone with the link can view'."
+            echo "::error::Could not download the online workbook as an Excel file (see the attempts above). Check that the link is shared as 'Anyone with the link can view'."
             exit 1
           fi
           sha256sum "$RUNNER_TEMP/dl/src.xlsx" | cut -d' ' -f1 > "$RUNNER_TEMP/dl/src.sha"
