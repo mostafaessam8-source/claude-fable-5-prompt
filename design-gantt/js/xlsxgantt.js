@@ -479,7 +479,7 @@
     xml = xml.slice(0, at) + blocks + xml.slice(at);
     if (g.fcode) { // drop-down list A / B / C / D on the Code column (unless it already has a validation)
       var sqv = g.fcode + r0 + ':' + g.fcode + r1;
-      if (xml.indexOf('sqref="' + sqv + '"') < 0 && !new RegExp('<dataValidation [^>]*sqref="[^"]*\\b' + g.fcode + r0 + '\\b').test(xml)) {
+      if (!new RegExp('<dataValidation [^>]*sqref="[^"]*\\b' + g.fcode + r0 + '\\b').test(xml)) {
         var dv = '<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" errorTitle="Invalid entry" error="Choose the SAR code: A, B, C or D." promptTitle="SAR code" prompt="A, B, C or D (decided from the notes)" sqref="' + sqv + '"><formula1>"A,B,C,D"</formula1></dataValidation>';
         if (/<dataValidations\b[^>]*count="(\d+)"/.test(xml)) xml = xml.replace(/(<dataValidations\b[^>]*count=")(\d+)(")/, function (m0, a, n, b) { return a + (+n + 1) + b; }).replace('</dataValidations>', dv + '</dataValidations>');
         else xml = xml.replace(/<pageMargins\b|<printOptions\b|<hyperlinks\b/, '<dataValidations count="1">' + dv + '</dataValidations>$&');
