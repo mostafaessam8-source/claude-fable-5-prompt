@@ -1,0 +1,57 @@
+name: Sync tracker from the online workbook
+
+# The online (SharePoint) workbook is the final tracker. Every 15 minutes this downloads it, regenerates the live Gantt sheet and
+# commits tracker-latest/ when the online file changed. The Design Gantt site loads that file straight from the repository.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-tracker
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download the online workbook
+        run: |
+          URL="$(tr -d '\r\n ' < tracker-source.txt)"
+          mkdir -p "$RUNNER_TEMP/dl"
+          ok=0
+          for u in "${URL}?download=1" "${URL}&download=1"; do
+            curl -fsSL -A "Mozilla/5.0" -o "$RUNNER_TEMP/dl/src.xlsx" "$u" || continue
+            if [ "$(head -c 2 "$RUNNER_TEMP/dl/src.xlsx")" = "PK" ]; then ok=1; break; fi
+          done
+          if [ "$ok" != 1 ]; then
+            echo "::error::Could not download the online workbook as an Excel file. Check that the link is shared as 'Anyone with the link can view'."
+            exit 1
+          fi
+          sha256sum "$RUNNER_TEMP/dl/src.xlsx" | cut -d' ' -f1 > "$RUNNER_TEMP/dl/src.sha"
+      - name: Regenerate tracker-latest when the online file changed
+        id: gen
+        run: |
+          NEW="$(cat "$RUNNER_TEMP/dl/src.sha")"
+          OLD="$(cat tracker-latest/source.sha256 2>/dev/null || true)"
+          if [ "$NEW" = "$OLD" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; echo "Online workbook unchanged."; exit 0; fi
+          node design-gantt/tools/sync.js "$RUNNER_TEMP/dl/src.xlsx" "$RUNNER_TEMP/dl/out.xlsx"
+          cp "$RUNNER_TEMP/dl/out.xlsx" tracker-latest/SAR_ESS_Design_Submission_Tracker_LATEST_Gantt.xlsx
+          echo "$NEW" > tracker-latest/source.sha256
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Commit
+        if: steps.gen.outputs.changed == 'true'
+        run: |
+          git config user.name "tracker-sync"
+          git config user.email "tracker-sync@users.noreply.github.com"
+          git add tracker-latest
+          git commit -m "Sync tracker from the online workbook"
+          git pull --rebase origin main
+          git push origin HEAD:main

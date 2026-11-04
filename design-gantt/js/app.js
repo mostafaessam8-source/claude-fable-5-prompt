@@ -17,12 +17,12 @@
   /* ---------- loading ---------- */
   function showError(msg) { var e = $('error'); e.textContent = msg; e.hidden = !msg; }
 
-  async function loadFile(file) {
+  async function loadFile(file, o) {
     showError('');
     try {
       if (!/\.xls[xm]$/i.test(file.name)) throw new Error('Please choose an Excel .xlsx workbook (this one is "' + file.name + '").');
       var buf = await file.arrayBuffer();
-      S.buf = buf; S.name = file.name; S.useRevised = true;
+      S.buf = buf; S.name = file.name; S.useRevised = !!(o && o.revised);
       var model = await buildModel(null);
       S.model = model; S.collapsed = {}; S.status = {}; S.project = ''; S.q = '';
       $('fileName').textContent = file.name;
@@ -275,15 +275,24 @@
     wireTip();
   }
   init();
-  // The site opens with the latest tracker already loaded (the workflow publishes tracker-latest/ as latest.xlsx next to this page).
+  // The site opens with the latest tracker already loaded. The newest file is the one the sync workflow keeps in the repository
+  // (copied from the online SharePoint workbook every 15 minutes); latest.xlsx next to this page is the fallback.
+  var LATEST = [
+    'https://raw.githubusercontent.com/mostafaessam8-source/claude-fable-5-prompt/main/tracker-latest/SAR_ESS_Design_Submission_Tracker_LATEST_Gantt.xlsx',
+    'latest.xlsx'
+  ];
   (async function autoLoad() {
-    try {
-      var res = await fetch('latest.xlsx', { cache: 'no-store' });
-      if (!res.ok) return;
-      var blob = await res.blob();
-      await loadFile(new File([blob], 'SAR_ESS_Design_Submission_Tracker_LATEST.xlsx'));
-      if (S.model) $('fileName').textContent = 'Latest tracker from the repository (tracker-latest) — ' + S.name;
-    } catch (e) { /* no latest file here (e.g. opened locally): the upload box stays */ }
+    for (var i = 0; i < LATEST.length; i++) {
+      try {
+        var res = await fetch(LATEST[i] + (i === 0 ? '?t=' + Date.now() : ''), { cache: 'no-store' });
+        if (!res.ok) continue;
+        var blob = await res.blob();
+        S.useRevised = false;
+        await loadFile(new File([blob], 'SAR_ESS_Design_Submission_Tracker_LATEST.xlsx'), { revised: false });
+        if (S.model) $('fileName').textContent = 'Latest tracker — synced from the online workbook (' + (i === 0 ? 'repository' : 'site copy') + ')';
+        return;
+      } catch (e) { /* try the next source; if none works the upload box stays */ }
+    }
   })();
   window.__designGantt = { S: S, loadFile: loadFile };
 })();
