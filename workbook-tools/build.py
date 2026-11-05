@@ -36,10 +36,10 @@ def ddate(s): return datetime.datetime.strptime(s, "%Y-%m-%d") if s else None
 
 wb = openpyxl.Workbook()
 wb.remove(wb.active)
-ORDER = ["Read Me", "Dashboard", "Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Data Checks", "Review Notes", "Data Sources", "Settings"]
+ORDER = ["Read Me", "Dashboard", "Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Shutdown Plan", "Shutdown Spend", "Data Checks", "Review Notes", "Data Sources", "Settings"]
 S = {n: wb.create_sheet(n) for n in ORDER}
 for n in ORDER:
-    S[n].sheet_properties.tabColor = TEAL if n in ("Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Settings") else DARK
+    S[n].sheet_properties.tabColor = TEAL if n in ("Projects", "Monthly Plan", "KPI Scorecard", "Delivery KPI", "Spend Risk", "Shutdown Plan", "Shutdown Spend", "Settings") else DARK
     S[n].sheet_view.showGridLines = False
 
 def title(ws, text, sub, width_to=8):
@@ -441,6 +441,48 @@ for i, x in enumerate(RK):
 add_table(sr, "Spend_Risk", "A4:K%d" % (4 + max(1, len(RK))))
 sr.freeze_panes = "C5"
 
+# ------------------------------------------------------------------ Shutdown Plan + Shutdown Spend (multi-year, per track shutdown)
+sp_ = S["Shutdown Plan"]
+title(sp_, "Shutdown Plan – track shutdowns (possessions) per project, with their value and what is claimed",
+      "One row per shutdown. Value = BOQ of the culverts in the shutdown; claimed = contractor's latest IPC. The monthly spend is on 'Shutdown Spend' (scheduled works linked to each shutdown).")
+SCOLS = [
+    ("Code", "in", 9, "@", "Input · Weekly Report Code"), ("Project", "f", 22, None, "Calc: Projects"), ("Shutdown", "in", 10, None, "Input · e.g. SD-05"),
+    ("Culverts", "in", 9, "0", "Input · number"), ("Culvert IDs", "in", 34, None, "Input"), ("Possession Start", "in", 12, DATE, "Input · track possession"),
+    ("Possession End", "in", 12, DATE, "Input"), ("Possession Days", "f", 10, "0", "Calc: end − start + 1"), ("Status", "in", 22, None, "Input"),
+    ("Value (SAR)", "in", 14, NUM, "Input · BOQ of the culverts"), ("Claimed to Date (SAR)", "in", 14, NUM, "Input · latest IPC"), ("Claim Ref", "in", 18, None, "Input"),
+    ("Remaining (SAR)", "f", 14, NUM, "Calc: value − claimed"), ("Spend 2027 (SAR)", "f", 14, NUM, "Calc: Shutdown Spend, 2027"),
+    ("Schedule Source", "in", 26, None, "Input"), ("Notes", "in", 50, None, "Input"),
+]
+header_row(sp_, 4, SCOLS)
+SH = M.get("shutdowns", [])
+for i, x in enumerate(SH):
+    r = 5 + i
+    put(sp_, r, 1, x["code"], "in", "@")
+    put(sp_, r, 2, '=IFERROR(INDEX(Projects!$B$5:$B$500,MATCH($A%d,Projects!$%s$5:$%s$500,0)),"")' % (r, PC["wcode"], PC["wcode"]), "f")
+    put(sp_, r, 3, x["sd"], "in"); put(sp_, r, 4, x.get("n"), "in", "0"); put(sp_, r, 5, x.get("culv"), "in", wrap=True)
+    put(sp_, r, 6, ddate(x.get("start")), "in", DATE); put(sp_, r, 7, ddate(x.get("end")), "in", DATE)
+    put(sp_, r, 8, '=IF(AND(ISNUMBER(F%d),ISNUMBER(G%d)),G%d-F%d+1,"")' % (r, r, r, r), "f", "0")
+    put(sp_, r, 9, x.get("status"), "in"); put(sp_, r, 10, x.get("boq"), "in", NUM); put(sp_, r, 11, x.get("claimed"), "in", NUM)
+    put(sp_, r, 12, x.get("ref"), "in"); put(sp_, r, 13, "=N(J%d)-N(K%d)" % (r, r), "f", NUM)
+    put(sp_, r, 14, "=SUMIFS('Shutdown Spend'!$D$5:$D$2000,'Shutdown Spend'!$A$5:$A$2000,$A%d,'Shutdown Spend'!$B$5:$B$2000,$C%d,'Shutdown Spend'!$E$5:$E$2000,2027)" % (r, r), "f", NUM)
+    put(sp_, r, 15, x.get("source"), "in", wrap=True); put(sp_, r, 16, x.get("notes"), "in", wrap=True)
+    sp_.row_dimensions[r].height = 30
+add_table(sp_, "Shutdown_Plan", "A4:P%d" % (4 + max(1, len(SH))))
+sp_.freeze_panes = "D5"
+ss_ = S["Shutdown Spend"]
+title(ss_, "Shutdown Spend – scheduled spend per shutdown and month",
+      "All scheduled works (design, permits, material, mobilization, construction, close-out) linked to the shutdown they serve, by month. Type the amounts; the year calculates.")
+XCOLS = [("Code", "in", 9, "@", "Input · Weekly Report Code"), ("Shutdown", "in", 10, None, "Input · as in Shutdown Plan"), ("Month", "in", 12, MON, "Input · first day of the month"),
+         ("Spend (SAR)", "in", 14, NUM, "Input"), ("Year", "f", 8, "0", "Calc: year of the month"), ("Basis", "in", 70, None, "Input · how the amount was derived")]
+header_row(ss_, 4, XCOLS)
+SX = M.get("shutdown_spend", [])
+for i, x in enumerate(SX):
+    r = 5 + i
+    put(ss_, r, 1, x["code"], "in", "@"); put(ss_, r, 2, x["sd"], "in"); put(ss_, r, 3, ddate(x["month"]), "in", MON)
+    put(ss_, r, 4, x.get("amount"), "in", NUM); put(ss_, r, 5, '=IF(ISNUMBER(C%d),YEAR(C%d),"")' % (r, r), "f", "0"); put(ss_, r, 6, x.get("basis"), "in")
+add_table(ss_, "Shutdown_Spend", "A4:F%d" % (4 + max(1, len(SX))))
+ss_.freeze_panes = "A5"
+
 # ------------------------------------------------------------------ Data Checks (live)
 dc = S["Data Checks"]
 title(dc, "Data Checks – the plan (Projects) compared with the weekly project files",
@@ -528,6 +570,8 @@ CAT = [
     ("KPI Scorecard", "KPI_Scorecard", "KPI weights, targets, actuals and scorecard result", "Manual input + formulas", "Was: Delivery Plan › KPI_Summary + KPI Projects_Data (rows 24-33)", "Type manual KPIs; spend KPIs calculate", "Active"),
     ("Delivery KPI", "Delivery_Targets", "Target completion dates vs weekly forecast finish", "Manual input + formulas", "Was: Delivery Plan › Delivery KPI", "Type code + target date", "Active"),
     ("Spend Risk", "Spend_Risk", "Amount at risk of the 2026 spend, in-process invoices, root causes and actions (NSR)", "Manual input", "Was: EPBU_Weekly_KPI › Spend Recovery Tracker (PC)", "Update when PC sends the tracker", "Active"),
+    ("Shutdown Plan", "Shutdown_Plan", "Track shutdowns per project: possession dates, culverts, value, claimed to date, 2027 spend", "Manual input + formulas", "Contractor BL (P6, cost-loaded) + latest IPC", "Update with each new programme / IPC", "Active"),
+    ("Shutdown Spend", "Shutdown_Spend", "Scheduled spend per shutdown and month (all works linked to the shutdown)", "Manual input", "Contractor BL (P6, cost-loaded) spread by month", "Update with each new programme", "Active"),
     ("Data Checks", "Data_Checks", "Live comparison plan vs weekly + plan sanity rules", "Formulas", "Projects + Weekly Report Updates", "Nothing to type – fix the source", "Active"),
     ("Review Notes", "Review_Notes", "Findings from the merge, with source cells and the decisions needed", "Notes", "Both old files", "Take the decisions, then delete the sheet", "Temporary"),
     ("Settings", "List_*, Glossary", "Report date, YTD cut-off, drop-down lists, glossary", "Manual input", "Was: Delivery Plan › List, Abbreviation (right table)", "Change the YTD cut-off monthly", "Active"),
@@ -760,6 +804,7 @@ for n in ORDER[1:]:
     rm.cell(r, 3, {"Dashboard": "One-page summary", "Projects": "Project master data (input)", "Monthly Plan": "Monthly spend plan and actuals (input)",
                    "KPI Scorecard": "KPIs and scorecard result (input + calc)", "Delivery KPI": "Target completion dates (input)",
                    "Spend Risk": "Amount at risk of the 2026 spend (input)",
+                   "Shutdown Plan": "Track shutdowns: dates, value, claimed, 2027 spend (input)", "Shutdown Spend": "Spend per shutdown and month (input)",
                    "Data Checks": "Plan vs weekly comparison (live)", "Review Notes": "Merge findings and decisions needed (temporary)", "Data Sources": "Where every table comes from",
                    "Settings": "Report date, YTD cut-off, lists, glossary"}[n]).border = BOX
     rm.cell(r, 3).font = font(size=10); r += 1

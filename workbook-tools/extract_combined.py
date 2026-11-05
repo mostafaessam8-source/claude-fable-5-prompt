@@ -88,6 +88,18 @@ if "Spend Risk" in F.sheetnames:
                          other=g("At Risk · Operational (SAR)"), cause=g("Root Cause"), desc=g("Risk Description"), action=g("Required Action"),
                          reprof=g("Budget Reprofiling")))
 
+# ---------------------------------------------------------------- Shutdown Plan / Shutdown Spend
+shutdowns, shutdown_spend = [], []
+if "Shutdown Plan" in F.sheetnames:
+    for r, h, ws, wv in rows("Shutdown Plan"):
+        g = lambda head: wv.cell(r, h[head]).value if head in h else None
+        shutdowns.append(dict(code=str(g("Code")), sd=g("Shutdown"), n=g("Culverts"), culv=g("Culvert IDs"), start=d(g("Possession Start")), end=d(g("Possession End")),
+                              status=g("Status"), boq=g("Value (SAR)"), claimed=g("Claimed to Date (SAR)"), ref=g("Claim Ref"), source=g("Schedule Source"), notes=g("Notes")))
+if "Shutdown Spend" in F.sheetnames:
+    for r, h, ws, wv in rows("Shutdown Spend"):
+        g = lambda head: wv.cell(r, h[head]).value if head in h else None
+        shutdown_spend.append(dict(code=str(g("Code")), sd=g("Shutdown"), month=d(g("Month")), amount=g("Spend (SAR)"), basis=g("Basis")))
+
 # ---------------------------------------------------------------- Settings, lists, glossary
 st = V["Settings"]
 settings = dict(year=st["B5"].value, cutoff=d(st["B6"].value), folder=st["B8"].value, status=st["B9"].value)
@@ -107,6 +119,6 @@ for r in range(5, rn.max_row + 1):
     findings.append([rn.cell(r, c).value for c in range(2, 7)])
 
 json.dump(dict(projects=projects, monthly=monthly, kpis=kpis, delivery=delivery, glossary=glossary, findings=findings,
-               settings=settings, lists=lists, risk=risk), open(out, "w"), indent=1, default=str)
+               settings=settings, lists=lists, risk=risk, shutdowns=shutdowns, shutdown_spend=shutdown_spend), open(out, "w"), indent=1, default=str)
 print(len(projects), "projects", len(monthly), "monthly rows", len(kpis), "kpis", len(delivery), "delivery", len(glossary), "glossary",
       len(findings), "findings", settings)

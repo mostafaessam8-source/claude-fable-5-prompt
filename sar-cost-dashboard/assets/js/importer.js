@@ -146,6 +146,18 @@
         Spend_Risk_Items: ["Code", "Root Cause", "Risk Description", "Required Action"]
       }
     },
+    // Combined database › sheets "Shutdown Plan" + "Shutdown Spend": the track shutdowns (possessions) of a project from the
+    // contractor's cost-loaded BL — dates, culverts, value, claimed to date — and the scheduled spend per shutdown and month
+    // (all works linked to the shutdown). Only read from the combined workbook. Feeds "Shutdown plan" on the Cost page.
+    shutdown: {
+      label: "Shutdown Plan (track possessions & spend)",
+      file: "EPBU NSR Projects Database.xlsx",
+      sheetHeader: true,
+      tables: {
+        Shutdown_Plan: ["Code", "Shutdown", "Culverts", "Culvert IDs", "Possession Start", "Possession End", "Status", "Value", "Claimed", "Claim Ref", "Source", "Notes"],
+        Shutdown_Spend: ["Code", "Shutdown", "Month", "Spend", "Basis"]
+      }
+    },
     // Monthly "EP - NSR Projects <Mon><YY>.xlsx": one sheet per project ("<code>_Project Card").
     // The Issue Register is built from section 12.1 "Issue Log" of every card (see parseProjectCards).
     cards: {
@@ -948,6 +960,15 @@
       });
       out.push({ source: "risk", label: SOURCES.risk.label, tables: { Spend_Risk: rows, Spend_Risk_Items: items },
         report: [ok("Spend_Risk", rows, "Spend Risk"), ok("Spend_Risk_Items", items, "Spend Risk")] });
+    }
+    var SP = T("Shutdown_Plan"), SX = T("Shutdown_Spend");
+    if (SP.length) {
+      var pl = SP.map(function (x) { return rec({ "Code": String(g(x, "Code")), "Shutdown": g(x, "Shutdown"), "Culverts": g(x, "Culverts"), "Culvert IDs": g(x, "Culvert IDs"),
+        "Possession Start": g(x, "Possession Start"), "Possession End": g(x, "Possession End"), "Status": g(x, "Status"), "Value": g(x, "Value (SAR)"),
+        "Claimed": g(x, "Claimed to Date (SAR)"), "Claim Ref": g(x, "Claim Ref"), "Source": g(x, "Schedule Source"), "Notes": g(x, "Notes") }); });
+      var spd = SX.map(function (x) { return rec({ "Code": String(g(x, "Code")), "Shutdown": g(x, "Shutdown"), "Month": g(x, "Month"), "Spend": g(x, "Spend (SAR)"), "Basis": g(x, "Basis") }); });
+      out.push({ source: "shutdown", label: SOURCES.shutdown.label, tables: { Shutdown_Plan: pl, Shutdown_Spend: spd },
+        report: [ok("Shutdown_Plan", pl, "Shutdown Plan"), ok("Shutdown_Spend", spd, "Shutdown Spend")] });
     }
     return out;
   }

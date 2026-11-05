@@ -1179,3 +1179,27 @@ details.ds-reg[open] > summary { margin-bottom: 10px; }
 .dq-where b { color: var(--sar-black); font-size: 12px; }
 .dq-from { color: var(--sar-blue); margin-top: 2px; }
 .dq-inline .dq-where { max-width: none; margin-left: 2px; }
+
+/* Shutdown plan (Cost page) */
+.sd-years { display: flex; gap: 6px; margin: 4px 0 10px; }
+.sd-gantt { font-size: 12px; }
+.sd-row { display: grid; grid-template-columns: 260px 1fr 110px; align-items: center; border-bottom: 1px solid var(--line, #E1E6E8); min-height: 46px; cursor: pointer; }
+.sd-row:hover { background: rgba(0, 119, 139, .05); }
+.sd-head { min-height: 30px; background: var(--teal, #00778B); color: #fff; font-weight: 700; cursor: default; }
+.sd-head:hover { background: var(--teal, #00778B); }
+.sd-l { padding: 4px 10px; line-height: 1.25; }
+.sd-l b { color: var(--teal, #00778B); }
+.sd-head .sd-l, .sd-head .sd-v { color: #fff; }
+.sd-l span { font-size: 10.5px; color: var(--muted, #6E6E6E); }
+.sd-l em { display: block; font-style: normal; font-size: 11px; color: var(--text, #3D3935); }
+.sd-t { position: relative; height: 100%; min-height: 30px; }
+.sd-m { display: grid; grid-template-columns: repeat(12, 1fr); text-align: center; align-items: center; }
+.sd-h { position: absolute; inset: 9px 0; display: grid; grid-template-columns: repeat(12, 1fr); gap: 1px; }
+.sd-h i { background: var(--teal, #00778B); border-radius: 2px; }
+.sd-dm { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #C00000; border: 1.5px solid #fff; transform: rotate(45deg); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.sd-v { text-align: right; padding: 4px 10px; line-height: 1.2; }
+.sd-v b { display: block; font-size: 14px; color: var(--teal, #00778B); }
+.sd-v span { font-size: 10.5px; color: var(--muted, #6E6E6E); }
+.sd-sub { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; color: var(--muted, #6E6E6E); }
+.sd-other .sd-h i { background: #9FD3DA; }
+@media (max-width: 760px) { .sd-row { grid-template-columns: 130px 1fr 74px; } .sd-l span { display: none; } }

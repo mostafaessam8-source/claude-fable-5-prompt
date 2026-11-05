@@ -88,6 +88,9 @@
   function hasRev() { return !!window.SARApp.D.hasRev; }
   /* PC "Spend Recovery Tracker" (risk source): the tracker row of a site project — same code, or the code without its
      letter suffix (6203A → 6203: the tracker gives the whole project) */
+  /* track shutdowns (possessions) + scheduled spend per shutdown and month (combined database › Shutdown Plan / Spend) */
+  function shutRows() { try { return window.SARApp.D.t("Shutdown_Plan") || []; } catch (e) { return []; } }
+  function shutSpend() { try { return window.SARApp.D.t("Shutdown_Spend") || []; } catch (e) { return []; } }
   function riskRows() { try { return window.SARApp.D.t("Spend_Risk") || []; } catch (e) { return []; } }
   function riskOf(id) {
     id = String(id || ""); var rr = riskRows(), hit = rr.filter(function (r) { return r.Code === id; })[0];
@@ -692,7 +695,7 @@
     var rowsF = spAll.filter(function (r) { var o = byId[String(r.ID)]; return o && proj.indexOf(o) >= 0; });
 
     // in-page navigation: one page, five sections
-    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"]].concat(riskRows().length ? [["c-risk", "Spend at risk"]] : []).concat([["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]]);
+    var secs = [["c-con", "Contract & payments"], ["c-kpi", "KPI position"], ["c-out", "Year-end outlook"]].concat(riskRows().length ? [["c-risk", "Spend at risk"]] : []).concat(shutRows().length ? [["c-sd", "Shutdown plan"]] : []).concat([["c-inv", "Invoice schedule"], ["c-det", "Project details"], ["c-mx", "Monthly spending plan"]]);
     var nav = add(v, '<nav class="sec-nav">' + secs.map(function (s) { return '<a href="#" data-s="' + s[0] + '">' + esc(s[1]) + "</a>"; }).join("") + "</nav>");
     nav.addEventListener("click", function (e) { var a = e.target.closest("a[data-s]"); if (!a) return; e.preventDefault(); var t = document.getElementById(a.getAttribute("data-s")); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); });
     function sec(id, title, sub) { var h = secHead(v, title, sub); h.id = id; return h; }
@@ -848,6 +851,10 @@
             { key: "At Risk Other", label: "At Risk · Operational", type: "money", total: "sum" },
             { key: "adj", label: "Forecast − At Risk", type: "money", total: "sum" }, { key: "Budget Reprofiling", label: "Reprofiling" }] });
     }
+
+    /* 3c · Shutdown plan — track possessions and the spend linked to each (combined database › Shutdown Plan / Spend) */
+    var SHP = shutRows().filter(function (r) { return proj.some(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); });
+    if (SHP.length) shutdownSection(v, sec, SHP, shutSpend(), ctx);
 
     /* 4 · Invoice schedule */
     sec("c-inv", "Invoice schedule 2026", "One bar per invoice-related activity, grouped by project · click a bar for details, a project heading to filter");
@@ -1022,6 +1029,63 @@
    * Up to the actuals cut-off a bar shows the actual spend (yellow); a past activity with no actual is flagged
    * "not invoiced". After the cut-off it shows the contractor Forecast Plan (slate). Milestones sit on the project row.
    */
+  /* Shutdown plan: tiles, a one-year possession timeline (one row per shutdown) and the monthly spend stacked by shutdown */
+  function shutdownSection(v, sec, SHP, SX, ctx) {
+    var codes = {}; SHP.forEach(function (r) { codes[r.Code] = 1; });
+    SX = SX.filter(function (x) { return codes[x.Code]; });
+    var yrs = {}; SX.forEach(function (x) { var y = String(x.Month || "").slice(0, 4); if (y) yrs[y] = (yrs[y] || 0) + (+x.Spend || 0); });
+    var now = String(new Date().getFullYear()), ys = Object.keys(yrs).sort();
+    var Y = shutdownSection.year && yrs[shutdownSection.year] ? shutdownSection.year : (ys.filter(function (y) { return y > now; })[0] || ys[ys.length - 1] || now);
+    var inY = function (d) { return String(d || "").slice(0, 4) === Y; };
+    var key = function (r) { return r.Code + "|" + r.Shutdown; };
+    var spY = {}; SX.forEach(function (x) { if (inY(x.Month)) { var k = x.Code + "|" + x.Shutdown, m = +String(x.Month).slice(5, 7) - 1; (spY[k] = spY[k] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[m] += +x.Spend || 0; } });
+    var rows = SHP.filter(function (r) { return inY(r["Possession Start"]); }), other = SHP.filter(function (r) { return !inY(r["Possession Start"]) && spY[key(r)]; });
+    var sum = function (a) { return a ? a.reduce(function (p, c) { return p + c; }, 0) : 0; };
+    var totY = SHP.reduce(function (a, r) { return a + sum(spY[key(r)]); }, 0), claimed = SHP.reduce(function (a, r) { return a + (+r.Claimed || 0); }, 0);
+    var days = rows.reduce(function (a, r) { var s = new Date(r["Possession Start"]), e = new Date(r["Possession End"] || r["Possession Start"]); return a + Math.round((e - s) / 864e5) + 1; }, 0);
+    var cul = rows.reduce(function (a, r) { return a + (+r.Culverts || 0); }, 0);
+    var src = SHP.map(function (r) { return r.Source; }).filter(Boolean)[0] || "", ref = SHP.map(function (r) { return r["Claim Ref"]; }).filter(Boolean)[0] || "";
+    sec("c-sd", "Shutdown plan " + Y, "Track shutdowns (possessions) and all scheduled works linked to them · " + esc(src) + (ref ? " · claimed: " + esc(ref) : ""));
+    var bar = add(v, '<div class="sd-years">' + ys.map(function (y) { return '<button class="btn sm' + (y === Y ? " primary" : "") + '" data-y="' + y + '">' + y + "</button>"; }).join("") + "</div>");
+    bar.addEventListener("click", function (e) { var b = e.target.closest("button[data-y]"); if (!b) return; shutdownSection.year = b.getAttribute("data-y"); ctx.rerender(); });
+    var gr = grid(v, "g-5");
+    gr.innerHTML = U.tile({ value: String(rows.length), unit: "", label: "Shutdowns in " + Y, color: "", note: rows.map(function (r) { return r.Shutdown; }).join(" · ") }) +
+      U.tile({ value: String(cul), unit: "", label: "Culverts to install", color: "mid", note: "in the " + Y + " shutdowns" }) +
+      U.tile({ value: String(days), unit: "days", label: "Track possession", color: "slate", note: "sum of the possession windows" }) +
+      mTile("Spend " + Y + " · all works", totY, "red", "design, material, construction and close-out linked to the shutdowns") +
+      mTile("Claimed to date", claimed, "yellow", ref || "latest IPC");
+    var p = panelIn(v, "Possession timeline " + Y, "One row per shutdown · diamond = track possession · shading = months with linked spend · click a row for the detail");
+    var mx = 0; Object.keys(spY).forEach(function (k) { spY[k].forEach(function (x) { mx = Math.max(mx, x); }); });
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var pos = function (d) { var t = new Date(d), y0 = new Date(Y + "-01-01"), y1 = new Date((+Y + 1) + "-01-01"); return Math.max(0, Math.min(100, (t - y0) / (y1 - y0) * 100)); };
+    var line = function (r, cls) {
+      var a = spY[key(r)] || [], cells = a.length ? a.map(function (x) { return '<i style="opacity:' + (x > 0 ? (0.18 + 0.82 * x / (mx || 1)).toFixed(2) : 0) + '"></i>'; }).join("") : "";
+      var dm = inY(r["Possession Start"]) ? '<b class="sd-dm" style="left:' + pos(r["Possession Start"]).toFixed(2) + '%" title="Possession ' + esc(fmt.date(r["Possession Start"])) + '"></b>' : "";
+      return '<div class="sd-row ' + (cls || "") + '" data-k="' + esc(key(r)) + '"><div class="sd-l"><b>' + esc(r.Shutdown) + "</b> <span>" + esc(r.Status || "") + "</span><em>" +
+        (inY(r["Possession Start"]) ? esc(fmt.date(r["Possession Start"])) + (r["Possession End"] && r["Possession End"] !== r["Possession Start"] ? " – " + esc(fmt.date(r["Possession End"])) : "") + " · " : "") +
+        esc(String(r.Culverts || "")) + " culverts</em></div><div class=\"sd-t\"><div class=\"sd-h\">" + cells + "</div>" + dm + "</div>" +
+        '<div class="sd-v"><b>' + fmt.m(sum(a), 2) + '</b><span>of ' + fmt.m(+r.Value || 0, 2) + " M</span></div></div>";
+    };
+    var h = '<div class="sd-gantt"><div class="sd-row sd-head"><div class="sd-l">Shutdown</div><div class="sd-t sd-m">' + months.map(function (m) { return "<span>" + m + "</span>"; }).join("") +
+      '</div><div class="sd-v">Spend ' + Y + "</div></div>" + rows.map(function (r) { return line(r); }).join("") +
+      (other.length ? '<div class="sd-sub">Works in ' + Y + " for shutdowns in other years</div>" + other.map(function (r) { return line(r, "sd-other"); }).join("") : "") + "</div>";
+    var box = add(p, h);
+    box.addEventListener("click", function (e) {
+      var row = e.target.closest(".sd-row[data-k]"); if (!row) return;
+      var r = SHP.filter(function (x) { return key(x) === row.getAttribute("data-k"); })[0], a = spY[key(r)] || [];
+      U.modal((r.Code || "") + " · " + r.Shutdown + " — " + (r.Status || ""),
+        '<p><b>Culverts:</b> ' + esc(r["Culvert IDs"] || "") + "</p><p><b>Possession:</b> " + esc(fmt.date(r["Possession Start"])) + (r["Possession End"] ? " – " + esc(fmt.date(r["Possession End"])) : "") +
+        "</p><p><b>Value:</b> " + fmt.money(+r.Value || 0) + " SAR · <b>claimed:</b> " + fmt.money(+r.Claimed || 0) + " SAR · <b>" + Y + ":</b> " + fmt.money(sum(a)) + " SAR</p>" +
+        (a.length ? "<p>" + a.map(function (x, i) { return x > 0 ? months[i] + " " + fmt.m(x, 2) + " M" : null; }).filter(Boolean).join(" · ") + "</p>" : "") +
+        (r.Notes ? '<p class="muted">' + esc(r.Notes) + "</p>" : "") + '<p class="muted">Source: ' + esc(r.Source || "") + "</p>", true);
+    });
+    var pal = ["#00778B", "#4FB3C2", "#9FD3DA", "#005566", "#3D3935", "#D98E04", "#B4B4B4", "#CFC8BF", "#7FA7B0", "#C00000", "#6E6E6E", "#E6C27A"];
+    var withSp = SHP.filter(function (r) { return sum(spY[key(r)]) > 0; });
+    var cb = chartBox(panelIn(v, "Monthly spend " + Y + " by shutdown", "SAR · all scheduled works linked to each shutdown · total " + fmt.m(totY, 2) + " M"), "tall");
+    U.chart(cb, { type: "bar", data: { labels: months, datasets: withSp.map(function (r, i) { return U.barDs(r.Shutdown, spY[key(r)], pal[i % pal.length]); }) },
+      options: { plugins: { legend: { display: true } }, scales: { x: Object.assign(U.catAxis(), { stacked: true }), y: { stacked: true, beginAtZero: true, ticks: { callback: function (x) { return fmt.m(x, 0) + " M"; } } } } } });
+  }
+
   /* the project's figures of the two spend charts (full year · year to date), as ordered boxes under its Gantt row */
   function ivKpis(o, cut) {
     var R = hasRev(), M = function (x) { return x == null ? "—" : fmt.m(x, 2); };
