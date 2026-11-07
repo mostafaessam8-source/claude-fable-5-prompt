@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1222">
+<title>صقر-١ | سيارة طائرة هجينة بالبنزين</title>
+<style>
+:root{
+  --bg:#0a1222;--bg2:#0f1b33;--card:#13213d;--line:#243556;--tx:#e7edf8;--mut:#93a4c4;
+  --struct:#60a5fa;--power:#fb923c;--flight:#34d399;--road:#f472b6;--cabin:#fbbf24;--acc:#38bdf8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,"Noto Naskh Arabic",sans-serif;line-height:1.7;font-size:15px;padding-bottom:env(safe-area-inset-bottom)}
+header{padding:18px 16px 10px;background:linear-gradient(180deg,#0f2147,var(--bg));border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:22px;letter-spacing:.2px}
+header h1 small{display:block;font-size:12.5px;color:var(--acc);font-weight:500;margin-top:2px}
+header p{margin:6px 0 0;color:var(--mut);font-size:13.5px}
+.wrap{max-width:820px;margin:0 auto;padding:0 14px}
+section{margin:18px 0}
+h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+h2::before{content:"";width:4px;height:18px;background:var(--acc);border-radius:2px}
+.stagebox{background:var(--bg2);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+#stage{display:block;width:100%;height:auto;max-height:78vh;touch-action:manipulation;direction:ltr}
+.part{cursor:pointer;transition:opacity .25s}
+.part .s{fill:var(--c);fill-opacity:.2;stroke:var(--c);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;pointer-events:all}
+.part .s.f{fill-opacity:.08}
+.part .s.n{fill:none}
+.part .l{fill:none;stroke:var(--c);stroke-width:1.2;stroke-linecap:round;pointer-events:none}
+.part .k{stroke-width:2.6}
+.part .badge circle{fill:#0a1222;stroke:var(--c);stroke-width:1.2}
+.part .badge text{fill:#fff;font:700 8.5px system-ui,sans-serif;text-anchor:middle;pointer-events:none}
+.part.dim{opacity:.16}
+.has-sel .part:not(.sel){opacity:.3}
+.has-sel .part.dim:not(.sel){opacity:.12}
+.part.sel .s{stroke-width:2.6;fill-opacity:.38;filter:drop-shadow(0 0 4px var(--c))}
+.nobadge .badge{display:none}
+.ctrl{padding:12px;display:grid;gap:10px;border-top:1px solid var(--line)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row label{font-size:13px;color:var(--mut);min-width:64px}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--acc);height:32px}
+.seg{display:flex;background:#0a1530;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:none;border:0;color:var(--mut);padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.seg button.on{background:var(--acc);color:#04202e;font-weight:700}
+.btn{background:#16305c;border:1px solid #2a4a82;color:var(--tx);padding:8px 14px;border-radius:12px;font:inherit;font-size:14px;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:#0c1a33;color:var(--tx);padding:6px 12px;border-radius:99px;font:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c,#fff);display:inline-block}
+.chip.on{border-color:var(--c,var(--acc));background:#17305a}
+.hint{font-size:12.5px;color:var(--mut);padding:0 12px 10px}
+.list{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:560px){.list{grid-template-columns:1fr 1fr}}
+.card{display:flex;align-items:center;gap:10px;text-align:right;background:var(--card);border:1px solid var(--line);border-right:4px solid var(--c);border-radius:12px;padding:10px 12px;color:var(--tx);font:inherit;cursor:pointer;width:100%}
+.card:active{background:#1a2d52}
+.card .num{flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--c);display:grid;place-items:center;font-size:12.5px;font-weight:700}
+.card .nm{flex:1;font-size:14px;line-height:1.4}
+.card .nm small{display:block;color:var(--mut);font-size:11.5px;direction:ltr;text-align:right}
+.card .pr{flex:none;font-size:13px;color:#cde;font-weight:700;direction:ltr}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field label{display:block;font-size:12.5px;color:var(--mut)}
+.field input{width:100%;background:#0a1530;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:9px 10px;font:inherit;font-size:15px;direction:ltr;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+td.v{direction:ltr;text-align:left;white-space:nowrap}
+tr.tot td{font-weight:800;font-size:16px;color:var(--acc);border-bottom:0}
+.bars{display:grid;gap:8px;margin-top:12px}
+.bar{display:grid;grid-template-columns:96px 1fr 64px;gap:8px;align-items:center;font-size:12.5px}
+.bar .t{height:10px;background:#0a1530;border-radius:6px;overflow:hidden}
+.bar .t b{display:block;height:100%;background:var(--c);border-radius:6px}
+.bar span:last-child{direction:ltr;text-align:left;color:var(--mut)}
+.spec{display:grid;gap:0}
+.spec div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.spec div b{color:var(--mut);font-weight:500;flex:none}
+.spec div span{text-align:left;direction:rtl}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.flow em{font-style:normal;background:#0a1530;border:1px solid var(--line);padding:5px 10px;border-radius:10px}
+.flow u{text-decoration:none;color:var(--acc)}
+.warn{background:#2a1c10;border:1px solid #6b4220;color:#ffd7b0;border-radius:12px;padding:12px;font-size:13.5px}
+.warn li{margin:4px 0}
+footer{color:var(--mut);font-size:12px;text-align:center;padding:10px 16px 120px}
+/* bottom sheet */
+.sheet{position:fixed;inset:auto 0 0 0;max-height:64vh;background:#101e3a;border-top:2px solid var(--c,var(--acc));border-radius:20px 20px 0 0;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:50;display:flex;flex-direction:column;box-shadow:0 -10px 40px #000a;max-width:820px;margin:0 auto}
+.sheet.open{transform:none}
+.grab{padding:8px 0 4px;touch-action:none;cursor:grab}
+.grab i{display:block;width:44px;height:5px;border-radius:3px;background:#3a4f7c;margin:0 auto}
+.sh-head{display:flex;align-items:flex-start;gap:10px;padding:4px 16px 10px;border-bottom:1px solid var(--line)}
+.sh-head .num{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid var(--c);display:grid;place-items:center;font-weight:800}
+.sh-head h3{margin:0;font-size:17px;line-height:1.35}
+.sh-head small{color:var(--mut);direction:ltr;display:block;text-align:right}
+.sh-head .x{margin-right:auto;background:#1b2e55;border:0;color:#fff;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;flex:none}
+.sh-body{overflow:auto;padding:6px 16px 18px;-webkit-overflow-scrolling:touch}
+.sh-body h4{margin:16px 0 4px;color:var(--c);font-size:14.5px}
+.sh-body p{margin:0}
+.sh-body ol{margin:0;padding-right:20px}
+.sh-body li{margin:3px 0}
+.cost{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.cost div{background:#0a1530;border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
+.cost small{display:block;color:var(--mut);font-size:11.5px}
+.cost b{font-size:15px;direction:ltr;display:block}
+.cost em{font-style:normal;font-size:11.5px;color:var(--mut);direction:rtl;display:block}
+.buy a{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0a1530;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:6px 0;color:var(--tx);text-decoration:none}
+.buy a span{color:var(--mut);font-size:12px;direction:ltr}
+.nav{display:flex;gap:8px;margin-top:16px}
+.nav button{flex:1}
+.note{font-size:13px;color:#ffd7b0;background:#2a1c10;border-radius:10px;padding:8px 10px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>صقر-١ <small>SAQR-1 · سيارة رياضية طائرة · هجين بنزين تسلسلي</small></h1>
+    <p>اسحب شريط «التفكيك» لترى كل قطعة منفصلة، ثم اضغط على أي قطعة (أو رقمها) لتعرف فائدتها وطريقة عملها وتركيبها وأين تشتريها وكم تكلفتها.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section>
+  <h2>الرسم الهيكلي التفاعلي</h2>
+  <div class="stagebox">
+    <svg id="stage" viewBox="0 100 400 185" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="رسم هيكلي للسيارة الطائرة">
+      <defs>
+        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#1a2c50" stroke-width=".6"/></pattern>
+      </defs>
+      <rect x="-200" y="-400" width="800" height="1200" fill="url(#grid)"/>
+      <line id="ground" x1="-200" x2="600" y1="270" y2="270" stroke="#2f4a7f" stroke-dasharray="4 4"/>
+      <line x1="200" x2="200" y1="-400" y2="800" stroke="#1f3562" stroke-dasharray="2 5"/>
+      <g id="parts"></g>
+    </svg>
+    <div class="ctrl">
+      <div class="row"><label for="ex">تفكيك</label><input id="ex" type="range" min="0" max="100" value="0" aria-label="تفكيك الهيكل"></div>
+      <div class="row">
+        <div class="seg" id="mode"><button data-m="0">🚗 طريق</button><button data-m="1" class="on">🛸 طيران</button></div>
+        <button class="btn" id="auto">فكّك تلقائياً</button>
+        <button class="btn" id="nums">الأرقام: تعمل</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="hint">وضع «طريق»: الأذرع والمراوح مطويّة داخل الجسم. وضع «طيران»: تنفتح الأذرع الأربعة خلال ≈ 30 ثانية.</div>
+  </div>
+</section>
+
+<section>
+  <h2>القطع (<span id="cnt">24</span>)</h2>
+  <div class="list" id="list"></div>
+</section>
+
+<section>
+  <h2>التكلفة الإجمالية</h2>
+  <div class="panel">
+    <div class="grid2">
+      <div class="field"><label>سعر الدولار (ج.م)</label><input id="rate" type="number" inputmode="decimal" value="50"></div>
+      <div class="field"><label>أجر الفني ($/ساعة)</label><input id="labor" type="number" inputmode="decimal" value="30"></div>
+      <div class="field"><label>شحن وجمارك (%)</label><input id="ship" type="number" inputmode="decimal" value="15"></div>
+      <div class="field"><label>احتياطي أخطاء (%)</label><input id="cont" type="number" inputmode="decimal" value="10"></div>
+    </div>
+    <table id="sum" style="margin-top:12px"></table>
+    <div class="bars" id="bars"></div>
+    <p style="color:var(--mut);font-size:12.5px;margin:12px 0 0">الأسعار تقديرية لقطع جديدة/مستعملة جيدة وقت كتابة الملف، وتتغيّر بالسوق. عدّل الأرقام أعلاه لتحصل على حسابك. <b>لا تشمل</b> الاعتماد والترخيص واختبارات الطيران والتأمين.</p>
+  </div>
+</section>
+
+<section>
+  <h2>المواصفات التصميمية</h2>
+  <div class="panel spec">
+    <div><b>النوع</b><span>مركبة VTOL ذات مقعدين، هجين تسلسلي (Series Hybrid)</span></div>
+    <div><b>الأبعاد (طريق)</b><span>طول 4.0 م · عرض 1.85 م · ارتفاع 1.15 م</span></div>
+    <div><b>الأبعاد (طيران)</b><span>عرض ≈ 5.4 م بالأذرع المفتوحة</span></div>
+    <div><b>الوزن</b><span>فارغ ≈ 880 كجم · أقصى إقلاع 1,050 كجم</span></div>
+    <div><b>المحرك</b><span>بنزين 1.5 لتر ثلاثي، دورة أتكينسون، ≈ 67 كيلوواط، كفاءة حرارية ≈ 40%</span></div>
+    <div><b>المولد / البطارية</b><span>62 كيلوواط مستمر / 20 كيلوواط·ساعة (قدرة ذروة ≈ 140 كيلوواط)</span></div>
+    <div><b>أداء الطريق</b><span>محركا عجلات 2×50 كيلوواط · 0-100 كم/س ≈ 7 ث · قصوى 180 كم/س</span></div>
+    <div><b>استهلاك الوقود</b><span>≈ 3.5–4 لتر/100 كم · خزان 30 لتراً ⇒ مدى ≈ 750–850 كم</span></div>
+    <div><b>الطيران</b><span>4 مراوح قطر 2.0 م · ذروة 240 كيلوواط · سرعة ≈ 80 كم/س · سقف 300 م</span></div>
+    <div><b>التحمّل في الجو</b><span>تحويم ≈ 6 دقائق · طيران أمامي ≈ 10–12 دقيقة (≈ 12–15 كم)</span></div>
+    <div><b>الأمان</b><span>مظلة بالستية · 3 حاسبات طيران · قفص كروم-مولي · كابلات DC معزولة بفيوزات</span></div>
+  </div>
+  <div class="panel" style="margin-top:10px">
+    <b style="font-size:14px">لماذا هذه الأرقام؟ (حساب مختصر)</b>
+    <p style="margin:6px 0 0;color:var(--mut);font-size:13.5px">قدرة التحويم المثالية P = T<sup>1.5</sup> / √(2·ρ·A). مع وزن إقلاع 1,050 كجم (T ≈ 10.3 كيلونيوتن) ومساحة أقراص المراوح A ≈ 12.6 م² (4 مراوح قطر 2 م): P ≈ 175 كيلوواط، وبكفاءة إجمالية ≈ 75% يلزم ≈ 230–240 كيلوواط. المولد وحده (62 كيلوواط) لا يكفي، فتسدّ البطارية الفرق (≈ 170 كيلوواط) لبضع دقائق. لذلك صُمّمت كطائرة «قفزات قصيرة» لا طائرة رحلات طويلة؛ أما على الطريق فالكفاءة العالية للمحرك الأتكينسوني تعطي استهلاكاً قريباً من سيارات الهجين.</p>
+  </div>
+  <div class="panel" style="margin-top:10px">
+    <b style="font-size:14px">مسار الطاقة</b>
+    <div class="flow" style="margin-top:8px"><em>خزان بنزين</em><u>◀</u><em>محرك أتكينسون</em><u>◀</u><em>مولد</em><u>◀</u><em>ناقل DC ‏400V</em><u>⇄</u><em>بطارية 20kWh</em></div>
+    <div class="flow" style="margin-top:8px"><em>ناقل DC</em><u>◀</u><em>4 محوّلات</em><u>◀</u><em>4 محركات رفع</em><u>|</u><em>محوّلان</em><u>◀</u><em>محركا العجلات</em></div>
+  </div>
+</section>
+
+<section>
+  <h2>تنبيهات هندسية وقانونية</h2>
+  <div class="warn"><ul style="margin:0;padding-right:18px">
+    <li>هذا <b>تصميم مفاهيمي</b> بحسابات تقريبية؛ قبل التنفيذ يلزم تحليل عناصر محدودة (FEA) وديناميكا هوائية (CFD) واختبار اهتزازات ومراجعة مهندس طيران.</li>
+    <li>الطيران بمركبة مأهولة يحتاج تسجيلاً وتصريحاً من سلطة الطيران المدني في بلدك (في مصر: سلطة الطيران المدني)، وغالباً تصنيف «تجريبية/مبنية ذاتياً»، كما أن السير بها على الطريق يحتاج ترخيص مركبات.</li>
+    <li>مسار الاختبار الآمن: حامل ثابت ومقيّد بالحبال ← طيران بلا ركاب ← ارتفاعات منخفضة فوق منطقة مفتوحة ← ثم المأهول.</li>
+    <li>فقدان محرك رفع واحد في هذا الإصدار = هبوط بالمظلة (لا يوجد تكرار كامل للمحركات). المظلة غير فعّالة تحت ≈ 60 م.</li>
+    <li>بطاريات الليثيوم والبنزين معاً تتطلب فصلاً حرارياً ونظام إطفاء وفحصاً دورياً.</li>
+  </ul></div>
+</section>
+
+</main>
+<footer>صقر-١ · تصميم مفاهيمي تعليمي · الأسعار والمواصفات تقديرية</footer>
+
+<aside class="sheet" id="sheet" aria-live="polite">
+  <div class="grab" id="grab"><i></i></div>
+  <div class="sh-head" id="shHead"></div>
+  <div class="sh-body" id="shBody"></div>
+</aside>
+
+<script>
+const G={
+  struct:{n:'الهيكل والجسم',c:'var(--struct)'},
+  power:{n:'الطاقة والوقود',c:'var(--power)'},
+  flight:{n:'منظومة الطيران',c:'var(--flight)'},
+  road:{n:'منظومة الطريق',c:'var(--road)'},
+  cabin:{n:'المقصورة',c:'var(--cabin)'}
+};
+
+/* ex,ey = إزاحة التفكيك · b = مكان الرقم · fold = مقدار نزول القطعة عند طيّها (وضع الطريق) */
+const P=[
+{id:'tub',g:'struct',n:'الهيكل الأحادي من الكربون',en:'Carbon Monocoque Tub',price:11000,hrs:160,ex:0,ey:0,b:[76,212],
+ svg:`<path class="s" d="M70 226 L70 208 Q72 200 86 198 L330 198 Q344 200 346 208 L346 226 Z"/><path class="l" d="M110 198V226M300 198V226"/>`,
+ use:'هو العمود الفقري للمركبة: يحمل المحرك والبطارية وأذرع المراوح ويحمي الركاب عند الصدمة، بوزن ≈ 70 كجم فقط مع صلابة أعلى من الصلب. الخفة هنا تعني طاقة أقل في الطيران ووقوداً أقل على الطريق.',
+ how:'طبقات من قماش ألياف الكربون المشرّب بالراتنج (Prepreg) تُفرش باتجاهات 0° و90° و±45° حول قلب خفيف من خلية العسل (Honeycomb)، ثم تُخبز تحت تفريغ هواء فتتحول إلى قشرة صلبة لا تتشوّه. الألياف تتحمل الشد والقلب يمنع الانبعاج.',
+ inst:['اصنع نموذجاً من الرغوة (Plug) ثم قالباً منه (أو اطلب قالباً جاهزاً من ورشة كربون).','افرش الطبقات حسب مخطط الألياف مع قلب الخلية العسلية في الأرضية والجدران.','غلّف بكيس تفريغ واخبز (فرن 120°م أو Autoclave) حسب مواصفة الراتنج.','ثبّت إدخالات ألمونيوم (Inserts) في نقاط تحميل المحرك والأذرع والمقاعد والأحزمة.','افحص بالطرق (Tap Test) واختبر الحمل قبل تركيب أي شيء عليه.'],
+ buy:[['Easy Composites (خامات وقوالب)','https://www.easycomposites.co.uk'],['Rock West Composites','https://www.rockwestcomposites.com'],['Composites One','https://www.compositesone.com'],['ورش تصنيع كربون محلية (طلب مخصص)','']],
+ note:'السعر يشمل الخامات والقالب؛ التشغيل في ورشة متخصصة. الهيكل هو أخطر قطعة من ناحية السلامة، لا تتساهل في جودته.'},
+
+{id:'body',g:'struct',n:'ألواح الجسم الأيروديناميكي',en:'Aero Body Panels',price:3800,hrs:40,ex:0,ey:-109,b:[64,200],
+ svg:`<path class="s f" d="M52 214 Q50 196 72 190 L150 184 L306 184 L352 192 Q362 202 356 214 Z"/><path class="l" d="M150 184 L306 184"/>`,
+ use:'يعطي الشكل الرياضي المنخفض ويقلل مقاومة الهواء (Cd ≈ 0.26) وهو أكبر سبب لتوفير الوقود في السرعات العالية. كما يولّد ضغطاً للأسفل فيثبّت السيارة على الطريق.',
+ how:'خطوط انسيابية تجعل الهواء يلتصق بالجسم بدل أن يتفكك لدوامات. الأرضية المسطحة والناشر الخلفي (Diffuser) يسرّعان الهواء تحت السيارة فيقل ضغطه ويشدّها للأرض.',
+ inst:['اضبط الألواح على الهيكل بمسامير مؤقتة وتحقق من الفواصل (3–4 مم).','ثبّت بمفصلات سريعة (Dzus) أو براغي ألمونيوم لتسهيل فتح الصيانة.','اقطع فتحات الإضاءة والتبريد والأذرع.','جهّز السطح (معجون، صنفرة) ثم اطلِ بدهان مناسب أو اترك الكربون ظاهراً بورنيش UV.','وازن الجسم وتأكد أن الأذرع المطويّة لا تلمسه.'],
+ buy:[['Easy Composites','https://www.easycomposites.co.uk'],['Seibon Carbon','https://www.seibon.com'],['ورش بودي كربون محلية','']],
+ note:'يمكنك البدء بقوالب فايبرجلاس رخيصة للنموذج التجريبي ثم التحول للكربون في النسخة النهائية.'},
+
+{id:'cage',g:'struct',n:'قفص الأمان (كروم-مولي)',en:'4130 Chromoly Safety Cage',price:1500,hrs:30,ex:0,ey:-58,b:[196,172],
+ svg:`<path class="s n k" d="M172 200 L196 166 L262 166 L292 200"/><path class="l" d="M196 166V200M262 166V200M196 183H262"/>`,
+ use:'يحمي الراكبين من الانقلاب والسحق، ويوفّر نقاط تثبيت قوية لأحزمة المقاعد ومظلة الإنقاذ والأذرع.',
+ how:'أنابيب فولاذ كروم-مولي 4130 خفيفة وعالية المتانة، تُشكَّل على شكل قوس وتُلحم TIG. عند الصدمة تتشوّه وتمتص الطاقة بدل أن تنتقل للجسم.',
+ inst:['اطبع نموذجاً (Template) وثنِّ الأنابيب على ماكينة ثني.','قصّ الوصلات بزوايا دقيقة (Fish-mouth) وثبّتها بنقاط لحام.','لحام TIG كامل بواسطة لحّام معتمد ثم اختبار بالصبغة الاختراقية.','ثبّت القفص في الهيكل بصفائح تقوية (Backing Plates) وبراغي AN.'],
+ buy:[['Aircraft Spruce','https://www.aircraftspruce.com'],['Wicks Aircraft','https://www.wicksaircraft.com'],['Summit Racing','https://www.summitracing.com']]},
+
+{id:'canopy',g:'struct',n:'الغطاء الزجاجي والأبواب الجناحية',en:'Gull-wing Canopy',price:2400,hrs:20,ex:0,ey:-124,b:[214,158],
+ svg:`<path class="s" d="M150 184 Q172 150 214 144 L262 146 Q298 160 318 184 Z"/><path class="l" d="M236 146 L240 184M172 170 Q200 152 230 150"/>`,
+ use:'يحمي من الهواء والمطر ويعطي رؤية 360° وهي ضرورية للطيران، كما يفتح للأعلى لتسهيل الدخول في الأماكن الضيقة ويمثّل مخرج طوارئ.',
+ how:'بولي كربونات مقاوم للكسر (أخف 50% من الزجاج) بطبقة مقاومة للخدش وUV. تدعم الأبواب مساعدات غاز (Gas Struts) تفتحها للأعلى وتبقيها مفتوحة.',
+ inst:['شكّل الصفيحة بالحرارة على قالب أو اشترِ غطاء جاهزاً.','قصّ الأبواب وثبّت المفصلات العلوية.','ركّب مساعدات الغاز بزاوية تعطي فتحاً كاملاً دون ثقل.','ثبّت قفلاً مزدوجاً + مقبض طوارئ داخلياً وخارجياً.','اختبر منع تسرّب الماء بشريط مطاطي.'],
+ buy:[['Aircraft Spruce (Lexan / Plexiglass)','https://www.aircraftspruce.com'],['McMaster-Carr (مساعدات غاز ومفصلات)','https://www.mcmaster.com'],['موردو بولي كربونات محليون','']]},
+
+{id:'engine',g:'power',n:'محرك البنزين أتكينسون 1.5 لتر',en:'Atkinson-cycle 1.5L Engine',price:3200,hrs:24,ex:-30,ey:36,b:[140,208],
+ svg:`<rect class="s" x="122" y="190" width="44" height="30" rx="4"/><rect class="s" x="126" y="182" width="8" height="8"/><rect class="s" x="138" y="182" width="8" height="8"/><rect class="s" x="150" y="182" width="8" height="8"/><path class="l k" d="M122 212 L108 218"/>`,
+ use:'يعمل كمحطة كهرباء متنقلة: يدير المولد دائماً عند أفضل نقطة كفاءة (≈ 40%) ولا يتصل بالعجلات، فيوفّر وقوداً أكثر بكثير من المحرك التقليدي الذي يتغير حمله باستمرار.',
+ how:'دورة أتكينسون تؤخّر إغلاق صمام السحب فتصبح نسبة التمدد أكبر من الانضغاط، فتُستخرج طاقة أكبر من نفس الوقود مقابل قدرة أقل. وحقن البنزين المباشر مع إعادة تدوير العادم (EGR) يرفع الكفاءة أكثر.',
+ inst:['ثبّت المحرك على حوامل مطاطية (Engine Mounts) مرتبطة بالهيكل.','اربط عمود المرفق بالمولد بوصلة مرنة (Flex Coupling) أو غلاف جاهز.','ركّب العادم والمحول الحفاز (Catalytic Converter) لتوافق الانبعاثات.','وصّل خراطيم الوقود والتبريد والهواء.','برمج وحدة تحكم المحرك (ECU) ليعمل عند 3,000–3,500 دورة/د ثابتة وحمل كامل.'],
+ buy:[['وكلاء تويوتا (محركات/قطع)','https://www.toyota.com'],['Car-Part.com (مستعمل)','https://www.car-part.com'],['eBay Motors','https://www.ebay.com/b/Car-Truck-Engines/33615'],['بديل طيران معتمد: Rotax 912 iS (≈ 28 ألف $)','https://www.flyrotax.com']],
+ note:'أرخص بديل: محرك هجين مستعمل. الأفضل للثقة: Rotax 912 iS لكنه أغلى بكثير.'},
+
+{id:'gen',g:'power',n:'المولد الكهربائي + المحوّل',en:'Generator + Inverter',price:2800,hrs:12,ex:-8,ey:22,b:[177,208],
+ svg:`<rect class="s" x="168" y="196" width="18" height="24" rx="3"/><path class="l" d="M172 200V216M177 200V216M182 200V216"/>`,
+ use:'يحوّل دوران المحرك إلى كهرباء DC (‏400V تقريباً) تغذّي البطارية ومحركات الطيران والعجلات.',
+ how:'مولد مغناطيس دائم (PMSM) ينتج تياراً متردداً ثلاثي الأطوار، ويقوم المحوّل (Inverter) بتقويمه وضبطه بتقنية التحكم الموجّه بالمجال (FOC) ليعطي جهداً ثابتاً يتناسب مع الحمل.',
+ inst:['حاذِ عمود المولد مع المحرك بدقة (انحراف < 0.1 مم).','ثبّت المحوّل في مكان مبرَّد وقريب لتقصير الكابلات.','وصّل الكابلات البرتقالية عالية الجهد بموصلات مغلقة وفيوز رئيسي.','وصّل دائرة تبريد المولد/المحوّل.','برمج منحنى الشحن عبر ناقل CAN مع وحدة التحكم.'],
+ buy:[['Cascadia Motion','https://www.cascadiamotion.com'],['EV West','https://www.evwest.com'],['Thunderstruck Motors','https://www.thunderstruck-ev.com']]},
+
+{id:'battery',g:'power',n:'حزمة بطاريات ليثيوم 20 كيلوواط·ساعة',en:'High-power Li-ion Pack',price:9500,hrs:28,ex:0,ey:30,b:[205,217],
+ svg:`<rect class="s" x="190" y="210" width="106" height="14" rx="3"/><path class="l" d="M205 210V224M220 210V224M235 210V224M250 210V224M265 210V224M280 210V224"/>`,
+ use:'تمنح دفعة قدرة كبيرة (≈ 140 كيلوواط) أثناء الإقلاع والتحويم ثم تُعاد تعبئتها من المولد أثناء الطريق والكبح الاسترجاعي. هي ما يجعل الطيران ممكناً بمولد صغير.',
+ how:'حوالي 1,300 خلية 21700 عالية التفريغ (مثل Molicel P42A) بتوصيل 108 على التوالي × 12 على التوازي (≈ 400V). نظام BMS يراقب الجهد والحرارة لكل مجموعة ويوازنها ويقطع التيار عند الخطر.',
+ inst:['اشترِ خلايا جديدة أصلية فقط وافحص السعة والمقاومة الداخلية لكل خلية.','لحّم شرائح النيكل بالنقطة (Spot Welding) وركّب فيوز لكل خلية أو مجموعة.','جمّع الوحدات (Modules) داخل صندوق ألمونيوم/كربون مع عزل حراري ولوح تبريد.','ركّب الـ BMS ومستشعرات الحرارة وملامسات الأمان (Contactors).','اشحن أولاً ببطء واختبر التفريغ المتحكَّم به قبل أول استخدام.'],
+ buy:[['Nkon (خلايا Molicel)','https://www.nkon.nl'],['Battery Hookup','https://www.batteryhookup.com'],['Orion BMS','https://www.orionbms.com'],['مصنّعو حزم مخصصة (Alibaba)','https://www.alibaba.com']],
+ note:'خطر حريق: يجب ألّا يقوم بالتجميع إلا من له خبرة. يمكنك شراء حزمة جاهزة بسعر أعلى بنحو 40%.'},
+
+{id:'fuel',g:'power',n:'خزان الوقود 30 لتراً + المضخة',en:'Fuel Cell 30 L',price:700,hrs:8,ex:-28,ey:40,b:[74,212],
+ svg:`<rect class="s" x="56" y="204" width="36" height="18" rx="5"/><path class="l" d="M64 204V199H72V204"/>`,
+ use:'يخزّن البنزين بشكل آمن؛ مدى الطريق ≈ 800 كم من 30 لتراً. الشكل المسطح يحافظ على مركز الثقل منخفضاً.',
+ how:'مثانة مطاطية مقاومة للانفجار والتسرب داخل صندوق ألمونيوم (Fuel Cell). مضخة كهربائية ترفع الوقود لمحرك الحقن، وصمام يمنع التسرب عند الانقلاب.',
+ inst:['ثبّت الصندوق في أبعد نقطة عن المقصورة وخلف المحور الخلفي مع حماية من الصدم.','ركّب الخراطيم المقواة (AN-6) وصمام عدم الرجوع.','اربط التهوية بنقطة آمنة بصمام قلب.','اختبر التسرب بضغط هواء قبل التعبئة.'],
+ buy:[['FuelSafe','https://www.fuelsafe.com'],['ATL Fuel Cells','https://www.atlinc.com'],['Aircraft Spruce','https://www.aircraftspruce.com']]},
+
+{id:'pdu',g:'power',n:'وحدة توزيع الطاقة (PDU) + DC-DC',en:'Power Distribution Unit',price:1800,hrs:20,ex:26,ey:24,b:[315,211],
+ svg:`<rect class="s" x="300" y="202" width="30" height="16" rx="2"/><circle class="l" cx="308" cy="210" r="2.5"/><circle class="l" cx="316" cy="210" r="2.5"/><circle class="l" cx="324" cy="210" r="2.5"/>`,
+ use:'توزّع الكهرباء على 6 محركات والبطارية والإلكترونيات، وتحمي الدارة بفيوزات وملامسات تقطع الدائرة فوراً عند أي خلل.',
+ how:'ناقل DC (Busbar) نحاسي يربط البطارية والمولد والمحوّلات، مع ملامسات (Contactors) يتحكم بها نظام السلامة، ومحول DC-DC يخفض 400V إلى 12V لتشغيل الحاسبات والإضاءة.',
+ inst:['ثبّت اللوحة بعيدة عن الماء وقريبة من البطارية.','وصّل الكابلات بمقاسات مناسبة للتيار (≥ 350 أمبير للرفع) مع طرفيات مضغوطة.','ركّب فيوزات DC لكل فرع وملامس مسبق الشحن (Precharge).','اختبر العزل (Insulation Test) قبل أي تشغيل.'],
+ buy:[['Gigavac (ملامسات)','https://www.gigavac.com'],['EV West','https://www.evwest.com'],['TE Connectivity','https://www.te.com']]},
+
+{id:'cool',g:'power',n:'نظام التبريد السائل',en:'Liquid Cooling Loops',price:1300,hrs:14,ex:34,ey:14,b:[339,209],
+ svg:`<rect class="s" x="334" y="198" width="10" height="22" rx="2"/><path class="l" d="M334 204H344M334 209H344M334 214H344"/>`,
+ use:'يمنع ارتفاع حرارة المحرك والمولد والبطارية والمحوّلات، وهي سبب أول لتعطل المركبات الكهربائية عالية القدرة.',
+ how:'دائرتان: واحدة للمحرك/المولد وأخرى للبطارية والمحوّلات، تدور فيها مضخات كهربائية بسائل مضاد للتجمد عبر رادياتير أمامي. مراوح الرادياتير تعمل حسب الحرارة.',
+ inst:['ثبّت الرادياتير في مقدمة الجسم أمام فتحة هواء.','وصّل الخراطيم بين الدوائر وتحقق من اتجاه تدفق المضخات.','ركّب حساسات حرارة على المحرك والبطارية.','املأ النظام وأخرج فقاعات الهواء (Bleeding).'],
+ buy:[['Mishimoto','https://www.mishimoto.com'],['Davies Craig','https://www.daviescraig.com'],['Summit Racing','https://www.summitracing.com']]},
+
+{id:'liftm',g:'flight',n:'4 محركات رفع 60 كيلوواط',en:'Lift Motors ×4',price:15200,hrs:24,ex:0,ey:-144,fold:58,b:[0,0],
+ svg:`<g class="fold" data-cx="95"><rect class="s" x="86" y="124" width="18" height="14" rx="3"/><path class="l" d="M95 118V124"/></g><g class="fold" data-cx="305"><rect class="s" x="296" y="124" width="18" height="14" rx="3"/><path class="l" d="M305 118V124"/></g>`,
+ bpos:[[95,140],[305,140]],
+ use:'تدير المراوح الأربع وتولّد قوة الرفع. بتغيير سرعة كل محرك تتحكم الحاسبة في الميل والدوران والارتفاع تماماً كطائرة الدرون.',
+ how:'محركات بدون فرش (PMSM) ذات كثافة قدرة عالية (≈ 8 كيلوواط/كجم). يتم التحكم في عزم كل محرك مئات المرات في الثانية فتتولى الحاسبة موازنة المركبة.',
+ inst:['ثبّت كل محرك على حامله الكربوني بأربعة براغي مع مانع ارتخاء (Loctite).','وازن المحرك والمروحة معاً ديناميكياً.','مرّر ثلاثة أسلاك طور + حساس موضع (Encoder/Hall) في قناة الذراع.','اختبر على الحامل الثابت بأقل قدرة ثم ارفع تدريجياً.'],
+ buy:[['Emrax (فئة 188/228)','https://www.emrax.com'],['T-Motor','https://store.tmotor.com'],['موردو محركات صناعية (Alibaba)','https://www.alibaba.com']],
+ note:'السعر 3,800$ للمحرك الواحد؛ محركات الفئة الأولى مثل Emrax قد تكون أغلى. ابحث عن بدائل موثّقة.'},
+
+{id:'props',g:'flight',n:'4 مراوح كربون قطر 2 م',en:'Carbon Rotors ×4',price:4800,hrs:8,ex:0,ey:-151,fold:58,b:[0,0],
+ svg:`<g class="fold" data-cx="95"><ellipse class="s" cx="95" cy="118" rx="72" ry="7"/><path class="l" d="M25 118H165"/></g><g class="fold" data-cx="305"><ellipse class="s" cx="305" cy="118" rx="72" ry="7"/><path class="l" d="M235 118H375"/></g>`,
+ bpos:[[40,112],[360,112]],
+ use:'تحوّل دوران المحرك إلى قوة دفع للأعلى. قطرها الكبير (2 م) يقلل القدرة اللازمة للرفع لأن قوة الرفع لكل كيلوواط تزيد بزيادة مساحة القرص.',
+ how:'ريشتان بمقطع جناح (Airfoil) تدفعان الهواء للأسفل (القانون الثالث لنيوتن). بعض المراوح تدور باتجاه معاكس لإلغاء عزم الدوران.',
+ inst:['ثبّت المروحة على محور المحرك بالعزم المحدد (Torque Wrench).','تأكد من محاذاة مستوى الدوران (Tracking) ضمن 1 مم.','وازن المروحة على ميزان موازنة.','ركّب غطاء حماية/حلقة (Guard) إن أمكن.'],
+ buy:[['Mejzlik (مراوح كربون كبيرة)','https://www.mejzlik.eu'],['T-Motor Props','https://store.tmotor.com'],['تصنيع مخصص في ورش الكربون','']]},
+
+{id:'esc',g:'flight',n:'4 محوّلات تحكم (ESC) 60 كيلوواط',en:'Motor Inverters ×4',price:6400,hrs:16,ex:-62,ey:-36,b:[0,0],
+ svg:`<rect class="s" x="118" y="164" width="22" height="14" rx="2"/><rect class="s" x="144" y="164" width="22" height="14" rx="2"/><rect class="s" x="118" y="148" width="22" height="14" rx="2"/><rect class="s" x="144" y="148" width="22" height="14" rx="2"/>`,
+ bpos:[[142,156]],
+ use:'تحوّل كهرباء الناقل (DC) إلى تيار ثلاثي الأطوار يتحكم بسرعة وعزم كل محرك بدقة مللي ثانية.',
+ how:'ترانزستورات SiC سريعة تقطّع الجهد آلاف المرات في الثانية (PWM). تتلقى أمر العزم من حاسبة الطيران عبر CAN وتغذّيها بالقراءات.',
+ inst:['ثبّتها على لوحة تبريد قريبة من كل محرك.','وصّل ناقل DC بكابلات قصيرة ومتساوية.','وصّل خطوط CAN بمقاومة نهاية (120Ω) لكل طرف.','عايِر المحرك (Auto-tune) قبل أول دوران.'],
+ buy:[['Cascadia Motion','https://www.cascadiamotion.com'],['Emsiso','https://www.emsiso.eu'],['Alibaba (مصنّعون)','https://www.alibaba.com']]},
+
+{id:'arms',g:'flight',n:'أذرع الطي بالمحركات الخطية',en:'Folding Arms + Actuators',price:5200,hrs:60,ex:0,ey:-138,fold:38,b:[0,0],
+ svg:`<g class="fold" data-cx="95"><path class="l k" d="M95 138 L108 186"/><circle class="s" cx="108" cy="186" r="4"/></g><g class="fold" data-cx="305"><path class="l k" d="M305 138 L296 186"/><circle class="s" cx="296" cy="186" r="4"/></g>`,
+ bpos:[[104,162],[298,162]],
+ use:'تُبقي المراوح داخل عرض السيارة على الطريق (1.85 م) ثم تفتح أذرعاً بطول ≈ 1.8 م للطيران.',
+ how:'أنابيب كربون مجوّفة تدور على مفاصل مع مشغّل خطي كهربائي (Linear Actuator). عند الفتح يدخل قفل ميكانيكي مزدوج (Pin) ويعطي إشارة تأكيد للحاسبة؛ لا تسمح الحاسبة بالإقلاع قبل تأكيد الأقفال الأربعة.',
+ inst:['ثبّت المفصل (Hinge) على تقوية في الهيكل مصنوعة من ألمونيوم 7075.','ركّب المشغّل الخطي ونقطتي تثبيته بزاوية تعطي مشوار كاملاً.','ركّب الأقفال المزدوجة وحساسات نهاية المشوار.','اختبر 500 دورة فتح/طي قبل التحميل.','افحص التآكل وعزم البراغي دورياً.'],
+ buy:[['Firgelli','https://www.firgelliauto.com'],['Progressive Automations','https://www.progressiveautomations.com'],['DragonPlate (أنابيب كربون)','https://www.dragonplate.com']],
+ note:'هذه من أخطر القطع ميكانيكياً: فشل قفل واحد = فقدان السيطرة. صمّمها بمعامل أمان ≥ 2.'},
+
+{id:'fc',g:'flight',n:'حاسبات الطيران (3 مكررة)',en:'Flight Controllers ×3',price:4200,hrs:40,ex:-4,ey:28,b:[246,203],
+ svg:`<rect class="s" x="232" y="199" width="28" height="9" rx="2"/><path class="l" d="M238 203H254"/>`,
+ use:'«عقل» المركبة: تثبّت الوضع في الهواء وتنفّذ أوامر السائق (عصا/توجيه) وتنفذ الهبوط الآمن تلقائياً عند الأعطال.',
+ how:'3 وحدات تقيس الميل والتسارع (IMU) والموقع (GPS-RTK) والضغط، وتقارنها بالتصويت (2 من 3)، ثم تحسب سرعة كل محرك بخوارزمية PID 400 مرة/ث. برنامج مفتوح المصدر (ArduPilot) يدعم VTOL رباعي.',
+ inst:['ثبّتها على وسادات عزل اهتزاز في وسط الكتلة.','وصّل GPS بعيداً عن الكابلات عالية الجهد.','برمج الهيكل (Quad-X) واضبط معاملات PID أولاً على جهاز اختبار (Rig) مقيد.','اختبر كل أنماط الفشل (فقدان GPS، انخفاض البطارية، فقد الاتصال).'],
+ buy:[['CubePilot','https://www.cubepilot.com'],['Holybro','https://www.holybro.com'],['ArduPilot (البرنامج مجاني)','https://ardupilot.org']],
+ note:'تحتاج خبرة برمجية وتحكمية؛ ابدأ على درون صغير بنفس الإعداد قبل المركبة الكبيرة.'},
+
+{id:'chute',g:'flight',n:'مظلة إنقاذ بالستية',en:'Ballistic Parachute (BRS)',price:6500,hrs:12,ex:-70,ey:-150,b:[138,176],
+ svg:`<rect class="s" x="124" y="170" width="28" height="12" rx="3"/><path class="l" d="M130 170Q138 160 146 170"/>`,
+ use:'حبل النجاة الأخير: عند فشل المحركات أو فقد السيطرة تنفجر المظلة فتهبط المركبة بسرعة آمنة (≈ 7 م/ث) ولو من ارتفاع منخفض نسبياً.',
+ how:'صاروخ صغير يدفع المظلة الكبيرة خارج الحاوية خلال أقل من ثانية، فتنفتح وتحمل كامل وزن المركبة عبر حبال مثبتة في القفص. تُفعَّل يدوياً أو تلقائياً من الحاسبة.',
+ inst:['ثبّت الحاوية على القفص أعلى مركز الثقل بحبال مصممة لحمل 6×الوزن.','وجّه مسار الإطلاق بعيداً عن المراوح.','ركّب مقبض التفعيل داخل المقصورة بسلك آمن من الضغط غير المقصود.','سجّل تاريخ الصلاحية؛ تُعاد تعبئة الصاروخ كل 6–10 سنوات.'],
+ buy:[['BRS Aerospace','https://www.brsaerospace.com'],['Galaxy Rescue Systems','https://galaxysky.com'],['محلات معدات طيران شراعي معتمدة','']]},
+
+{id:'sens',g:'flight',n:'حساسات الارتفاع والعوائق',en:'Radar Altimeter + LiDAR + Air Data',price:1900,hrs:10,ex:34,ey:-60,b:[333,180],
+ svg:`<circle class="s" cx="336" cy="184" r="6"/><path class="l" d="M336 184m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0"/><rect class="s" x="322" y="187" width="12" height="5" rx="1"/>`,
+ use:'تعطي قياساً دقيقاً للارتفاع فوق الأرض وتكشف العوائق أثناء الهبوط (أسلاك، أشجار، أشخاص) وتقيس سرعة الهواء.',
+ how:'رادار ارتفاع (FMCW) يقيس زمن عودة الموجة حتى 100 م، وLiDAR للعوائق القريبة، وأنبوب بيتو (Pitot) يقيس فرق الضغط لحساب سرعة الهواء.',
+ inst:['ثبّت الرادار موجهاً للأسفل بعيداً عن الأجزاء المعدنية.','ركّب اللايدار في المقدمة بزاوية أمامية-سفلية.','ركّب أنبوب بيتو خارج تدفق المراوح.','عايِر الحساسات في الحاسبة وتحقق من القراءة على الأرض وفي الجو.'],
+ buy:[['Ainstein','https://ainstein.ai'],['Garmin (LIDAR)','https://www.garmin.com'],['Holybro','https://www.holybro.com']]},
+
+{id:'rmot',g:'road',n:'محركا الدفع للعجلات الخلفية',en:'Rear Drive Motors 2×50 kW',price:6400,hrs:20,ex:-30,ey:45,b:[110,246],
+ svg:`<rect class="s" x="98" y="240" width="24" height="12" rx="3"/><path class="l" d="M104 240V252M110 240V252M116 240V252"/>`,
+ use:'تحرّك السيارة على الطريق بعزم فوري يعطي تسارعاً رياضياً (0-100 كم/س ≈ 7 ث)، وتعيد شحن البطارية عند الكبح.',
+ how:'محرك لكل عجلة مع مخفض تروس صغير (نسبة ≈ 9:1) بتحكم مستقل بالعزم (Torque Vectoring) يحسّن الثبات في المنعطفات. لا يوجد ناقل حركة تقليدي أو عمود دوران.',
+ inst:['ثبّت المحرك والمخفض على المحور الخلفي بحامل مرتبط بالتعليق.','وصّل عمود إدارة (CV) بالعجلة.','ركّب المحوّل واربطه بناقل DC وبدائرة التبريد.','اضبط منحنى العزم والحد الأقصى للكبح الاسترجاعي.'],
+ buy:[['EV West','https://www.evwest.com'],['Thunderstruck Motors','https://www.thunderstruck-ev.com'],['Alibaba (مصنّعون)','https://www.alibaba.com']]},
+
+{id:'susp',g:'road',n:'التعليق المستقل والمكابح',en:'Double-wishbone Suspension + Brakes',price:4800,hrs:40,ex:0,ey:55,b:[121,238],
+ svg:`<path class="s n k" d="M110 226 l-5 4 l10 4 l-10 4 l10 4 l-5 4 L110 246"/><path class="s n k" d="M300 226 l-5 4 l10 4 l-10 4 l10 4 l-5 4 L300 246"/><path class="l" d="M88 244H132M278 244H322"/>`,
+ use:'يمتص صدمات الطريق ويثبّت الإطارات على الأرض للتحكم والأمان، وفي الطيران يمتص صدمة الهبوط (حتى 2 م/ث). المكابح توقف 1 طن من 100 كم/س.',
+ how:'ذراعان لكل عجلة (Double Wishbone) مع نابض ومخمد (Coilover)، وكاليبر مكابح ذات ٤ مكابس على قرص مهوّى. الأذرع كربونية لتقليل الوزن غير المعلَّق.',
+ inst:['ثبّت نقاط التعليق على الهيكل ثم اضبط الزوايا (Camber/Caster/Toe) على جهاز محاذاة.','ركّب الكويل-أوفر واضبط الارتفاع.','ركّب الأقراص والكاليبرات وأنابيب الفرامل المضفرة.','فرّغ الفرامل (Bleed) واختبر الضغط.'],
+ buy:[['KW Suspensions','https://www.kwsuspensions.com'],['Öhlins','https://www.ohlins.com'],['Wilwood (مكابح)','https://www.wilwood.com']]},
+
+{id:'wheels',g:'road',n:'جنوط وإطارات 17 بوصة',en:'Forged Wheels + Tires',price:1600,hrs:4,ex:0,ey:110,b:[132,262],
+ svg:`<circle class="s" cx="110" cy="246" r="24"/><circle class="s" cx="110" cy="246" r="13"/><path class="l" d="M97 246H123M110 233V259"/><circle class="s" cx="300" cy="246" r="24"/><circle class="s" cx="300" cy="246" r="13"/><path class="l" d="M287 246H313M300 233V259"/>`,
+ use:'نقطة الاتصال الوحيدة بالطريق: الجنوط المطروقة الخفيفة تقلل الوزن الدوار فيزداد التسارع وتقلّ استهلاك الطاقة، والإطارات منخفضة المقاومة تُنقص الوقود 3–5%.',
+ how:'إطارات سباقية-طريق ذات مقاومة دحرجة منخفضة (Low Rolling Resistance) على جنوط ألمنيوم مطروق. يتحمل الإطار وزن الهبوط عند الإنزال المفاجئ.',
+ inst:['ركّب الإطارات على الجنوط وازنها ديناميكياً.','ثبّت الجنوط بعزم 110 نيوتن·م بنمط النجمة.','اضبط ضغط الهواء (2.3 بار) وأعد الفحص بعد 50 كم.'],
+ buy:[['Tire Rack','https://www.tirerack.com'],['Enkei','https://www.enkei.com'],['وكلاء ميشلان المحليون','']]},
+
+{id:'steer',g:'road',n:'نظام التوجيه الكهربائي',en:'Electric Power Steering',price:1100,hrs:10,ex:0,ey:34,b:[270,236],
+ svg:`<path class="s n k" d="M268 236 L332 236"/><circle class="s" cx="268" cy="236" r="3"/><circle class="s" cx="332" cy="236" r="3"/><path class="l" d="M300 236L286 206"/>`,
+ use:'يوجه العجلات الأمامية بخفة وبدون هيدروليك، ويستهلك طاقة فقط عند الدوران فيوفر وقوداً.',
+ how:'عمود توجيه يحرّك مجرى مسنن (Rack)، ومحرك كهربائي يضيف عزماً مساعداً بحسب السرعة (خفيف في السرعات المنخفضة وثقيل في العالية).',
+ inst:['ثبّت المجرى في الهيكل بالارتفاع الصحيح مع عدم تعارضه مع التعليق.','ركّب عمود التوجيه بوصلات كاردان.','وصّل وحدة التحكم (ECU) وحساس عزم العجلة.','اضبط التقارب (Toe) بعد التركيب.'],
+ buy:[['Flaming River','https://www.flamingriver.com'],['Summit Racing','https://www.summitracing.com'],['مجرى توجيه كهربائي مستعمل من هوندا/تويوتا','']]},
+
+{id:'seats',g:'cabin',n:'مقعدان كربونيان + أحزمة 5 نقاط',en:'Carbon Racing Seats',price:1800,hrs:8,ex:0,ey:-16,b:[200,180],
+ svg:`<path class="s" d="M190 200 L190 178 Q190 172 198 172 Q206 172 206 180 L208 192 L232 192 L232 200 Z"/>`,
+ use:'يثبّتان الراكبين بقوة أثناء الانعطاف والتسارع والهبوط، ويحميان العمود الفقري عند الاصطدام بالأرض. الوزن ≈ 6 كجم للمقعد.',
+ how:'قوقعة كربونية بحماية جانبية وأحزمة 5 نقاط تمنع الانزلاق تحت الحزام. تُضبط الأحزمة حسب جسم كل راكب.',
+ inst:['ثبّت القضبان على الهيكل بصفائح تقوية.','اضبط المقعد ليسمح بالرؤية الجيدة والوصول للمقود والعصا.','ثبّت الأحزمة في نقاط القفص وليس في المقعد.','اختبر القفل والفك السريع.'],
+ buy:[['Sparco','https://www.sparco-official.com'],['OMP','https://www.omp.it'],['Schroth','https://www.schroth.com']]},
+
+{id:'dash',g:'cabin',n:'لوحة القيادة وشاشات الطيران',en:'Dash + Flight Displays',price:1700,hrs:14,ex:30,ey:-16,b:[283,170],
+ svg:`<path class="s" d="M268 200 L270 176 Q286 172 298 180 L300 200 Z"/><rect class="l" x="274" y="180" width="16" height="9" rx="1"/><path class="l k" d="M262 192 L274 180"/>`,
+ use:'تعرض السرعة والبطارية والوقود وارتفاع الطيران وحالة الأذرع والمظلة، مع زر تبديل وضع (طريق/طيران) وأزرار التحكم بالرفع.',
+ how:'شاشتان تعرضان بيانات الحاسبة عبر CAN وبرنامج مخصص. عصا طيران (Joystick) للتحكم عند الطيران ومقود للقيادة.',
+ inst:['صمّم حامل الشاشات بالكربون وركّبه مواجهاً للسائق.','وصّل الشاشات بناقل CAN والحاسبة.','ركّب أزرار الأمان (قطع الطاقة، تفعيل المظلة) بأغطية واقية.','برمج الشاشة لعرض الإنذارات حسب الأولوية.'],
+ buy:[['Garmin G3X (حل جاهز)','https://www.garmin.com'],['Waveshare (شاشات صناعية)','https://www.waveshare.com'],['MoTeC (لوحات سباق)','https://www.motec.com.au']]},
+
+{id:'lights',g:'cabin',n:'إضاءة LED وإضاءة الملاحة',en:'LED + Navigation Lights',price:900,hrs:8,ex:26,ey:-14,b:[342,185],
+ svg:`<path class="s" d="M328 190 L352 194 L352 201 L326 199 Z"/><circle class="l" cx="344" cy="196" r="1.8"/>`,
+ use:'إضاءة الطريق الأمامية والخلفية، وإضاءة ملاحة الطيران (أحمر يسار، أخضر يمين، أبيض خلفي) مع ومضات ليلية ليراك الآخرون.',
+ how:'مصابيح LED ذات استهلاك منخفض جداً (≈ 40 واط في الكل). إضاءة الملاحة بألوان قياسية وتشغيل تلقائي مع وضع الطيران.',
+ inst:['ثبّت المصابيح في فتحات الجسم مع منع تسرب الماء.','وصّل الأسلاك بمفتاح الطيران/الطريق عبر مرحل (Relay).','اختبر الرؤية على مسافة 500 م ليلاً.'],
+ buy:[['Whelen (إضاءة طيران)','https://www.whelen.com'],['Aircraft Spruce','https://www.aircraftspruce.com']]}
+];
+
+const $=s=>document.querySelector(s);
+const S={t:0,f:1,sel:null,grp:'all',nums:true,rate:50,labor:30,ship:15,cont:10};
+try{const r=JSON.parse(localStorage.getItem('saqr1')||'{}');['rate','labor','ship','cont'].forEach(k=>{if(r[k]>=0)S[k]=r[k]})}catch(e){}
+const svg=$('#stage');
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const usd=n=>'$'+fmt(n);
+const egp=n=>fmt(n*S.rate)+' ج.م';
+
+/* بناء الرسم */
+P.forEach((p,i)=>{
+  p.i=i+1;
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','part');g.dataset.id=p.id;g.style.setProperty('--c',G[p.g].c);
+  const pts=p.bpos||[p.b];
+  g.innerHTML=p.svg+pts.map(b=>`<g class="badge" transform="translate(${b[0]} ${b[1]})"><circle r="7.5"/><text y="3">${p.i}</text></g>`).join('');
+  $('#parts').appendChild(g);p.el=g;
+});
+
+function render(){
+  const t=S.t,f=S.f;
+  P.forEach(p=>{
+    p.el.setAttribute('transform',`translate(${p.ex*t} ${p.ey*t})`);
+    if(p.fold){
+      const sx=.15+.85*f,ty=(1-f)*p.fold;
+      p.el.querySelectorAll('.fold').forEach(k=>{
+        const cx=+k.dataset.cx;
+        k.setAttribute('transform',`translate(${cx} 0) scale(${sx} 1) translate(${-cx} 0) translate(0 ${ty})`);
+        k.style.opacity=.25+.75*f;
+      });
+    }
+  });
+  const top=100-155*t,bot=285+105*t;
+  svg.setAttribute('viewBox',`0 ${top} 400 ${bot-top}`);
+  $('#ground').style.opacity=1-.6*t;
+}
+const raf={};
+function tween(key,to,ms,cb){
+  cancelAnimationFrame(raf[key]);
+  const from=S[key],t0=performance.now();
+  const step=now=>{
+    let k=Math.min(1,(now-t0)/ms);k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    S[key]=from+(to-from)*k;render();if(cb)cb();
+    if(k<1)raf[key]=requestAnimationFrame(step);
+  };
+  raf[key]=requestAnimationFrame(step);
+}
+const ex=$('#ex');
+ex.addEventListener('input',()=>{cancelAnimationFrame(raf.t);S.t=ex.value/100;render();syncAuto()});
+function syncAuto(){$('#auto').textContent=S.t>.5?'جمّع':'فكّك تلقائياً'}
+$('#auto').onclick=()=>{const to=S.t>.5?0:1;tween('t',to,1100,()=>{ex.value=S.t*100;syncAuto()})};
+$('#mode').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  [...$('#mode').children].forEach(x=>x.classList.toggle('on',x===b));
+  tween('f',+b.dataset.m,700);
+});
+$('#nums').onclick=()=>{S.nums=!S.nums;svg.classList.toggle('nobadge',!S.nums);$('#nums').textContent='الأرقام: '+(S.nums?'تعمل':'مخفية')};
+
+/* التصفية */
+const chips=$('#chips');
+chips.innerHTML=`<button class="chip on" data-g="all">الكل</button>`+Object.entries(G).map(([k,v])=>`<button class="chip" data-g="${k}" style="--c:${v.c}"><i></i>${v.n}</button>`).join('');
+chips.addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  S.grp=b.dataset.g;[...chips.children].forEach(x=>x.classList.toggle('on',x===b));applyFilter();
+});
+function applyFilter(){
+  P.forEach(p=>{
+    const hide=S.grp!=='all'&&p.g!==S.grp;
+    p.el.classList.toggle('dim',hide);p.card.hidden=hide;
+  });
+  svg.classList.toggle('has-sel',!!S.sel||S.grp!=='all');
+}
+
+/* قائمة القطع */
+const list=$('#list');
+P.forEach(p=>{
+  const b=document.createElement('button');b.className='card';b.style.setProperty('--c',G[p.g].c);
+  b.innerHTML=`<span class="num">${p.i}</span><span class="nm">${p.n}<small>${p.en}</small></span><span class="pr">${usd(p.price)}</span>`;
+  b.onclick=()=>select(p.id);list.appendChild(b);p.card=b;
+});
+$('#cnt').textContent=P.length;
+
+svg.addEventListener('click',e=>{
+  const g=e.target.closest('.part');
+  if(g&&!g.classList.contains('dim'))select(g.dataset.id);else if(!g)closeSheet();
+});
+
+/* الصفحة السفلية */
+const sheet=$('#sheet');
+const byId=id=>P.find(p=>p.id===id);
+function select(id){
+  const p=byId(id);S.sel=id;
+  P.forEach(q=>q.el.classList.toggle('sel',q.id===id));
+  applyFilter();
+  const lab=p.hrs*S.labor,tot=p.price+lab;
+  sheet.style.setProperty('--c',G[p.g].c);
+  $('#shHead').innerHTML=`<span class="num" style="--c:${G[p.g].c}">${p.i}</span><div><h3>${p.n}</h3><small>${p.en}</small></div><button class="x" aria-label="إغلاق" onclick="closeSheet()">✕</button>`;
+  $('#shBody').style.setProperty('--c',G[p.g].c);
+  $('#shBody').innerHTML=`
+    <h4>💰 التكلفة</h4>
+    <div class="cost">
+      <div><small>سعر القطعة</small><b>${usd(p.price)}</b><em>${egp(p.price)}</em></div>
+      <div><small>التركيب (${p.hrs} ساعة)</small><b>${usd(lab)}</b><em>${egp(lab)}</em></div>
+      <div><small>الإجمالي</small><b>${usd(tot)}</b><em>${egp(tot)}</em></div>
+    </div>
+    <h4>🎯 ما فائدتها؟</h4><p>${p.use}</p>
+    <h4>⚙️ كيف تعمل؟</h4><p>${p.how}</p>
+    <h4>🔧 طريقة التركيب</h4><ol>${p.inst.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <h4>🛒 من أين تشتريها؟</h4><div class="buy">${p.buy.map(([n,u])=>u?`<a href="${u}" target="_blank" rel="noopener noreferrer"><b>${n}</b><span>${u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]} ↗</span></a>`:`<a style="pointer-events:none"><b>${n}</b></a>`).join('')}</div>
+    ${p.note?`<div class="note">⚠️ ${p.note}</div>`:''}
+    <div class="nav"><button class="btn" onclick="step(1)">◀ التالية</button><button class="btn" onclick="step(-1)">السابقة ▶</button></div>`;
+  $('#shBody').scrollTop=0;
+  sheet.classList.add('open');
+}
+function step(d){const i=(P.findIndex(p=>p.id===S.sel)+d+P.length)%P.length;select(P[i].id)}
+function closeSheet(){S.sel=null;sheet.classList.remove('open');P.forEach(q=>q.el.classList.remove('sel'));applyFilter()}
+/* سحب لأسفل لإغلاق الصفحة */
+(()=>{let y0=null;const gr=$('#grab');
+  gr.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+  gr.addEventListener('touchmove',e=>{if(y0!==null&&e.touches[0].clientY-y0>60){y0=null;closeSheet()}},{passive:true});
+  gr.addEventListener('click',closeSheet);
+})();
+
+/* التكلفة الإجمالية */
+function summary(){
+  const parts=P.reduce((a,p)=>a+p.price,0),hrs=P.reduce((a,p)=>a+p.hrs,0);
+  const ship=parts*S.ship/100,lab=hrs*S.labor,sub=parts+ship+lab,cont=sub*S.cont/100,tot=sub+cont;
+  const row=(a,b,c,cls)=>`<tr class="${cls||''}"><td>${a}</td><td class="v">${usd(b)}</td><td class="v">${c}</td></tr>`;
+  $('#sum').innerHTML=
+    row(`القطع (${P.length})`,parts,egp(parts))+
+    row(`شحن وجمارك ${S.ship}%`,ship,egp(ship))+
+    row(`تركيب وتصنيع (${hrs} ساعة)`,lab,egp(lab))+
+    row(`احتياطي ${S.cont}%`,cont,egp(cont))+
+    row('الإجمالي التقريبي',tot,egp(tot),'tot');
+  const sums={};P.forEach(p=>sums[p.g]=(sums[p.g]||0)+p.price);
+  $('#bars').innerHTML=Object.entries(G).map(([k,v])=>`<div class="bar" style="--c:${v.c}"><span>${v.n}</span><div class="t"><b style="width:${sums[k]/parts*100}%"></b></div><span>${Math.round(sums[k]/parts*100)}%</span></div>`).join('');
+  if(S.sel)select(S.sel);
+}
+['rate','labor','ship','cont'].forEach(k=>{
+  const el=$('#'+k);el.value=S[k];
+  el.addEventListener('input',()=>{const v=parseFloat(el.value);S[k]=v>=0?v:0;
+    try{localStorage.setItem('saqr1',JSON.stringify({rate:S.rate,labor:S.labor,ship:S.ship,cont:S.cont}))}catch(e){}
+    summary()});
+});
+summary();render();
+</script>
+</body>
+</html>
