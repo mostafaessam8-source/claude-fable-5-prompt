@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>لوحة كانبان لتصاريح العمل</title>
+<style>
+/* Layout: A0 landscape (1189 x 841 mm). Header band, 3 swimlanes (permit type) x 6 stage columns,
+   each cell holds a 2x2 grid of 76 mm sticky-note slots, footer with rules, colour key and quick notes. */
+@font-face{font-family:"Plex";font-weight:400;src:url(assets/plex-400.ttf)}
+@font-face{font-family:"Plex";font-weight:500;src:url(assets/plex-500.ttf)}
+@font-face{font-family:"Plex";font-weight:600;src:url(assets/plex-600.ttf)}
+@font-face{font-family:"Plex";font-weight:700;src:url(assets/plex-700.ttf)}
+:root{
+  --teal:#00778B; --teal-deep:#005A6A; --teal-soft:#72B0C6; --mist:#EEF4F6; --mist-2:#D9E9EE;
+  --ink:#3D3935; --ink-2:#6B6761; --line:#BFD0D6; --amber:#F2B134; --red:#C8282D; --paper:#FFFFFF;
+  --y:#FFE76B; --b:#8FD3F4; --g:#A8E6A1; --p:#FFB3C7;
+  --font:"Plex","IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
+}
+@page{size:1189mm 841mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1189mm;height:841mm}
+body{font-family:var(--font);color:var(--ink);background:var(--paper);overflow:hidden;position:relative;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.en{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.sheet{position:absolute;inset:0;padding:16mm 22mm 14mm;display:flex;flex-direction:column;gap:7mm}
+
+/* ---------- header ---------- */
+.head{height:92mm;display:flex;align-items:stretch;gap:14mm;position:relative}
+.logo{height:36mm;align-self:flex-start;margin-top:2mm}
+.titles{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3mm;padding-inline-start:8mm;border-inline-start:2.2mm solid var(--teal)}
+.titles h1{font-size:30mm;line-height:1.05;font-weight:700;color:var(--teal);letter-spacing:-.2mm}
+.titles .sub{font-size:11mm;font-weight:500;color:var(--ink)}
+.titles .meta{font-size:6.2mm;color:var(--ink-2);font-weight:500}
+.tally{display:grid;grid-template-columns:repeat(4,54mm);gap:5mm;align-self:flex-end}
+.tally div{border:.7mm solid var(--ink);border-radius:2mm;height:56mm;display:flex;flex-direction:column;justify-content:space-between;padding:5mm 5mm 3mm;background:var(--paper)}
+.tally b{font-size:8mm;line-height:1.2;font-weight:700}
+.tally small{font-size:5.4mm;color:var(--ink-2);font-weight:500;display:block}
+.tally i{display:block;border-top:.5mm dashed var(--ink-2);height:0;margin-top:auto}
+.tally .od{border-color:var(--red)}
+.tally .od b{color:var(--red)}
+.upd{position:absolute;inset-inline-end:0;top:0;display:flex;gap:10mm;font-size:6.4mm;font-weight:600;align-items:center}
+.upd span{display:flex;align-items:center;gap:2.5mm}
+.upd u{display:inline-block;width:60mm;border-bottom:.6mm solid var(--ink);height:7mm}
+.band{position:absolute;inset-inline:0;bottom:-3mm;height:3mm;background:var(--teal);
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%)}
+.band::after{content:"";position:absolute;inset-inline-end:0;top:0;height:100%;width:260mm;background:var(--amber);
+  clip-path:polygon(0 0,100% 0,100% 100%,8mm 100%)}
+html[dir=rtl] .band::after{clip-path:polygon(0 0,100% 0,calc(100% - 8mm) 100%,0 100%)}
+
+/* ---------- board ---------- */
+.board{display:grid;grid-template-columns:114mm repeat(6,1fr);grid-template-rows:52mm repeat(3,162mm);gap:3mm;margin-top:3mm}
+.corner{display:flex;flex-direction:column;justify-content:flex-end;gap:1.5mm;padding-bottom:2mm}
+.corner b{font-size:9mm;font-weight:700;color:var(--teal)}
+.corner span{font-size:5.6mm;color:var(--ink-2);font-weight:500;line-height:1.35}
+.col{position:relative;padding:3.2mm 15mm 3mm 11mm;display:flex;flex-direction:column;gap:1.2mm;color:#fff;
+  clip-path:polygon(0 50%,10mm 0,100% 0,100% 100%,10mm 100%)}
+.col .n{position:absolute;inset-inline-start:3.5mm;top:3.5mm;width:10mm;height:10mm;border-radius:50%;background:var(--amber);color:var(--ink);
+  font-weight:700;font-size:6.4mm;display:flex;align-items:center;justify-content:center}
+.col h2{font-size:11mm;line-height:1.05;font-weight:700}
+.col .e{font-size:7mm;font-weight:600;opacity:.95}
+.col p{font-size:5.6mm;line-height:1.3;font-weight:500;opacity:.95}
+.col .wip{margin-top:auto;font-size:5.6mm;font-weight:600;display:flex;align-items:center;gap:2mm}
+.col .wip s{display:inline-block;width:18mm;height:8mm;border:.6mm solid currentColor;border-radius:1mm;background:rgba(255,255,255,.9)}
+.c1{background:var(--mist-2);color:var(--ink)}
+.c2{background:var(--teal-soft);color:var(--ink)}
+.c3{background:var(--teal)}
+.c4{background:var(--amber);color:var(--ink)}
+.c5{background:var(--teal-deep)}
+.c6{background:var(--red)}
+.c1 .n,.c2 .n,.c3 .n{background:var(--amber)}
+.c4 .n{background:var(--ink);color:#fff}
+.c5 .n,.c6 .n{background:#fff;color:var(--ink)}
+.c4 .e,.c4 p,.c1 .e,.c1 p,.c2 .e,.c2 p{opacity:1}
+
+.lane{background:var(--mist);border:.6mm solid var(--line);border-inline-end:none;display:flex;flex-direction:column;padding:6mm 8mm 5mm 6mm;gap:3mm;position:relative}
+.lane::before{content:"";position:absolute;inset-inline-end:0;top:0;bottom:0;width:3.2mm;background:var(--lc)}
+.lane .top{display:flex;gap:5mm;align-items:flex-start}
+.chip{flex:none;width:24mm;height:24mm;background:var(--lc);box-shadow:0 .8mm 1.6mm rgba(0,0,0,.22);transform:rotate(-3deg);position:relative}
+.chip::after{content:"";position:absolute;left:0;bottom:0;width:6mm;height:6mm;background:linear-gradient(135deg,rgba(0,0,0,.14) 50%,rgba(255,255,255,0) 50%)}
+.lane h3{font-size:11mm;line-height:1.1;font-weight:700;color:var(--ink)}
+.lane .e{font-size:6.6mm;font-weight:600;color:var(--teal)}
+.lane h4{font-size:5.8mm;font-weight:700;color:var(--teal);letter-spacing:.2mm;margin-top:1mm}
+.lane ul{list-style:none;display:flex;flex-direction:column;gap:1.4mm}
+.lane li{font-size:6.4mm;line-height:1.3;font-weight:600;padding-inline-start:6mm;position:relative}
+.lane li::before{content:"";position:absolute;inset-inline-start:0;top:2.4mm;width:2.6mm;height:2.6mm;background:var(--teal)}
+.path{font-size:6.2mm;line-height:1.5;font-weight:500;color:var(--ink)}
+.path em{font-style:normal;color:var(--teal);font-weight:700;padding:0 1.2mm}
+.lane .note{margin-top:auto;font-size:5.4mm;line-height:1.35;font-weight:500;color:var(--ink-2);border-top:.5mm solid var(--line);padding-top:2.4mm}
+
+.cell{background:var(--paper);border:.6mm solid var(--line);position:relative;display:grid;grid-template-columns:76mm 76mm;grid-template-rows:76mm 76mm;
+  justify-content:space-evenly;align-content:space-evenly}
+.cell i{display:block;width:76mm;height:76mm;border:.45mm dashed #CBD8DC;background:
+  linear-gradient(#E6EEF1,#E6EEF1) 3mm 3mm/6mm .35mm no-repeat,
+  linear-gradient(#E6EEF1,#E6EEF1) 3mm 3mm/.35mm 6mm no-repeat}
+.cell.rej{background:#FFF8F8;border-color:#E8B9BB}
+.cell.rej i{border-color:#EBC6C8}
+.cell.act{background:#FFFBF0;border-color:#EBD39C}
+.cell.act i{border-color:#EBD9AE}
+.flow{position:absolute;inset-inline:0;bottom:-0.3mm}
+
+/* ---------- footer ---------- */
+.foot{flex:1;display:grid;grid-template-columns:395mm 280mm 1fr;gap:8mm;min-height:0;margin-top:1mm}
+.box{border-top:1.4mm solid var(--teal);background:var(--mist);padding:5mm 6mm;display:flex;flex-direction:column;gap:3mm;min-width:0}
+.box h5{font-size:9mm;font-weight:700;color:var(--teal);line-height:1.1}
+.box h5 small{font-size:6mm;font-weight:600;color:var(--ink-2);margin-inline-start:3mm}
+.rules{display:grid;grid-template-columns:1fr 82mm;gap:6mm;flex:1;min-height:0}
+.rules ol{list-style:none;display:flex;flex-direction:column;gap:3mm;counter-reset:r}
+.rules li{counter-increment:r;font-size:6mm;line-height:1.3;font-weight:500;padding-inline-start:12mm;position:relative}
+.rules li::before{content:counter(r);position:absolute;inset-inline-start:0;top:.3mm;width:9mm;height:9mm;border-radius:50%;background:var(--teal);color:#fff;
+  font-weight:700;font-size:5.6mm;display:flex;align-items:center;justify-content:center}
+.sample{width:76mm;height:76mm;direction:rtl;background:var(--y);box-shadow:0 1.2mm 3mm rgba(0,0,0,.28);transform:rotate(2deg);padding:5mm 5mm 4mm;
+  display:flex;flex-direction:column;gap:1.6mm;font-size:4.6mm;font-weight:500;position:relative;align-self:center;color:#2f2b27}
+.sample b{font-size:6.2mm;font-weight:700;line-height:1.1}
+.sample .ln{border-bottom:.35mm solid rgba(0,0,0,.35);padding-bottom:.6mm;line-height:1.2;white-space:nowrap;font-size:4.4mm}
+.sample .ln span{color:rgba(0,0,0,.5);font-size:3.9mm}
+.sample::before{content:"مثال";position:absolute;inset-inline-end:3mm;top:-5mm;background:var(--ink);color:#fff;font-size:4mm;font-weight:600;padding:.6mm 3mm;border-radius:1mm}
+.sample::after{content:"";position:absolute;right:0;bottom:0;width:11mm;height:11mm;background:linear-gradient(135deg,rgba(0,0,0,.13) 50%,rgba(255,255,255,0) 50%)}
+.dot{position:absolute;left:4mm;top:4mm;width:9mm;height:9mm;border-radius:50%;background:var(--red);box-shadow:0 .5mm 1mm rgba(0,0,0,.3)}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:5mm 4mm;flex:1;align-content:space-evenly}
+.key{display:flex;gap:4mm;align-items:center;font-size:6.2mm;line-height:1.25;font-weight:600}
+.key span{display:block;font-weight:500;font-size:5mm;color:var(--ink-2)}
+.sw{flex:none;width:19mm;height:19mm;box-shadow:0 .6mm 1.4mm rgba(0,0,0,.22);transform:rotate(-3deg)}
+.sw.r{border-radius:50%;width:13mm;height:13mm;margin:3mm}
+.qn{display:grid;grid-template-columns:1fr 1fr;gap:5mm;flex:1;min-height:0}
+.qn section{background:var(--paper);border:.5mm solid var(--line);padding:3.6mm 4.4mm;display:flex;flex-direction:column;gap:2mm}
+.qn h6{font-size:7.2mm;font-weight:700;color:var(--ink);line-height:1.15}
+.qn h6 .en{font-size:5.4mm;color:var(--teal);font-weight:600}
+.qn ol{list-style:none;display:flex;flex-wrap:wrap;gap:1.6mm 2mm;align-items:center}
+.qn ol li{font-size:5.8mm;font-weight:500;background:var(--mist-2);padding:1mm 3.4mm;border-radius:1mm;line-height:1.3}
+.qn ol li+li::before{content:none}
+.tips{grid-column:1/-1;align-items:center;background:var(--paper);border:.5mm solid var(--line);border-inline-start:2.2mm solid var(--amber);padding:3.4mm 5mm;display:flex;gap:8mm;font-size:5.6mm;font-weight:500;line-height:1.3}
+.tips b{color:var(--teal);font-weight:700}
+.tips div{flex:1}
+.legalfoot{position:absolute;inset-inline:22mm;bottom:4mm;display:flex;justify-content:space-between;font-size:4mm;color:var(--ink-2);font-weight:500}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="head">
+    <img class="logo" src="assets/sar-logo.png" alt="SAR">
+    <div class="titles">
+      <h1>لوحة كانبان لتصاريح العمل</h1>
+      <div class="sub">Work Permit Portal &nbsp;·&nbsp; Kanban Board</div>
+      <div class="meta">إدارة المشاريع – NSR &nbsp;|&nbsp; Projects Department – NSR &nbsp;|&nbsp; 2026</div>
+    </div>
+    <div class="tally" aria-label="عدادات يدوية">
+      <div><b>إجمالي الطلبات<small>My Submitted Requests</small></b><i></i></div>
+      <div><b>قيد المعالجة<small>In Process</small></b><i></i></div>
+      <div><b>مكتملة<small>Completed</small></b><i></i></div>
+      <div class="od"><b>متأخرة عن SLA<small>Overdue</small></b><i></i></div>
+    </div>
+    <div class="upd">
+      <span>آخر تحديث / Last update: <u></u></span>
+      <span>بواسطة / By: <u></u></span>
+    </div>
+    <div class="band"></div>
+  </header>
+
+  <main class="board">
+    <div class="corner"><b>نوع الطلب</b><span>Permit type · ضع الملاحظة في الصف المطابق<br>ثم حرّكها نحو اليسار مع تقدّم الحالة</span></div>
+
+    <div class="col c1"><span class="n">1</span><h2>بانتظار المستندات</h2><div class="e en">Awaiting Documents</div><p>اطلب كل المستندات اللازمة من المقاول</p><div class="wip en">WIP ≤ <s></s></div></div>
+    <div class="col c2"><span class="n">2</span><h2>جاري الإعداد</h2><div class="e en">Preparing</div><p>إدخال البيانات وإرفاق المستندات في البوابة</p><div class="wip en">WIP ≤ <s></s></div></div>
+    <div class="col c3"><span class="n">3</span><h2>تم الإرسال</h2><div class="e en">Submitted · In Process</div><p>الطلب قيد المعالجة في «طلباتي»</p><div class="wip en">WIP ≤ <s></s></div></div>
+    <div class="col c4"><span class="n">4</span><h2>مطلوب إجراء</h2><div class="e en">Action Required</div><p>مهامي ← عرض ← إضافة تفاصيل ← إرسال، وراقب موعد SLA</p><div class="wip en">WIP ≤ <s></s></div></div>
+    <div class="col c5"><span class="n">5</span><h2>معتمد</h2><div class="e en">Approved · Active</div><p>التصريح صادر وساري، أو اكتمل التمديد / التحديث</p></div>
+    <div class="col c6"><span class="n">6</span><h2>مرفوض</h2><div class="e en">Rejected</div><p>راجع سبب الرفض ثم أعد التقديم – يعود إلى الخطوة 2</p></div>
+
+    <!-- Lane A -->
+    <div class="lane" style="--lc:var(--y)">
+      <div class="top"><div class="chip"></div><div><h3>إنشاء تصريح عمل جديد</h3><div class="e en">New Work Permit</div></div></div>
+      <h4>مسار البوابة</h4>
+      <div class="path">البوابة<em>←</em>طلباتي<em>←</em>طلب تصريح عمل جديد</div>
+      <h4>المستندات المطلوبة</h4>
+      <ul><li>جميع المستندات الداعمة من المقاول</li></ul>
+      <div class="note">اطلب من المقاول تزويدك بكل المستندات اللازمة قبل البدء.</div>
+    </div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell act"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell rej"><i></i><i></i><i></i><i></i></div>
+
+    <!-- Lane B -->
+    <div class="lane" style="--lc:var(--b)">
+      <div class="top"><div class="chip"></div><div><h3>تمديد تصريح عمل قائم</h3><div class="e en">Extend a Work Permit</div></div></div>
+      <h4>مسار البوابة</h4>
+      <div class="path">التصاريح الصادرة<em>←</em>اختيار التصريح<em>←</em>تمديد</div>
+      <h4>المستندات المطلوبة</h4>
+      <ul><li>تقرير تقدّم المشروع</li><li>وثيقة التأمين المحدّثة</li><li>TTF02</li></ul>
+      <div class="note">تاريخ التمديد حسب تاريخ انتهاء التأمين المحدّث. خيار «تغيير نطاق العمل» الافتراضي: لا.</div>
+    </div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell act"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell rej"><i></i><i></i><i></i><i></i></div>
+
+    <!-- Lane C -->
+    <div class="lane" style="--lc:var(--g)">
+      <div class="top"><div class="chip"></div><div><h3>تحديث نموذج TTF02</h3><div class="e en">Update the TTF</div></div></div>
+      <h4>مسار البوابة</h4>
+      <div class="path">التصاريح الصادرة<em>←</em>اختيار التصريح<em>←</em>تحديث<em>←</em>نوع التحديث: <span class="en">Update TTF</span></div>
+      <h4>المستندات المطلوبة</h4>
+      <ul><li>TTF02</li><li>شهادات PICOP</li><li>بطاقات PTS</li></ul>
+      <div class="note">اذكر سبب التحديث ثم ارفع المستندات (حتى 10 ملفات).</div>
+    </div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell act"><i></i><i></i><i></i><i></i></div>
+    <div class="cell"><i></i><i></i><i></i><i></i></div>
+    <div class="cell rej"><i></i><i></i><i></i><i></i></div>
+  </main>
+
+  <footer class="foot">
+    <div class="box">
+      <h5>طريقة التحديث بالملاحظات اللاصقة <small class="en">How to update with sticky notes</small></h5>
+      <div class="rules">
+        <ol>
+          <li>اكتب على الملاحظة: رقم الطلب، مرجع التصريح (WP Ref)، اسم المقاول، المسؤول، والتاريخ.</li>
+          <li>اختر لون الملاحظة حسب نوع الطلب، وضعها في الصف المطابق.</li>
+          <li>عند تغيّر الحالة في البوابة، انقل الملاحظة إلى العمود التالي نحو اليسار.</li>
+          <li>ألصق نقطة حمراء عند تجاوز موعد SLA، وانقل الملاحظة المنتظرة المقاول إلى العمود 1 بلون وردي.</li>
+          <li>حدّث العدادات وتاريخ آخر تحديث أعلى اللوحة في نهاية كل يوم.</li>
+        </ol>
+        <div class="sample">
+          <span class="dot"></span>
+          <b style="margin-top:9mm">طلب <span class="en">#31-2026</span></b>
+          <div class="ln"><span>WP Ref:</span> <span class="en">WP-SAR-31-2026</span></div>
+          <div class="ln"><span>المقاول:</span> <span class="en">Al Omair Contracting</span></div>
+          <div class="ln"><span>المسؤول:</span> ____________</div>
+          <div class="ln"><span>التاريخ:</span> <span class="en">20-09-2026</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h5>دليل الألوان <small class="en">Colour key</small></h5>
+      <div class="keys">
+        <div class="key"><div class="sw" style="background:var(--y)"></div><div>أصفر<span>تصريح جديد</span></div></div>
+        <div class="key"><div class="sw" style="background:var(--b)"></div><div>أزرق<span>تمديد تصريح</span></div></div>
+        <div class="key"><div class="sw" style="background:var(--g)"></div><div>أخضر<span>تحديث TTF02</span></div></div>
+        <div class="key"><div class="sw" style="background:var(--p)"></div><div>وردي<span>معلّق بانتظار المقاول</span></div></div>
+        <div class="key"><div class="sw r" style="background:var(--red)"></div><div>نقطة حمراء<span>متأخر عن SLA</span></div></div>
+        <div class="key"><div class="sw" style="background:#fff;border:.5mm dashed #9DB0B7;transform:none;box-shadow:none"></div><div>مربع منقّط<span>مكان ملاحظة 76×76 مم</span></div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h5>تذكير سريع <small class="en">Quick reference</small></h5>
+      <div class="qn">
+        <section>
+          <h6>الرد على المهام <span class="en">Respond to Tasks</span></h6>
+          <ol><li>البوابة</li><li>مهامي</li><li>عرض</li><li>إضافة تفاصيل</li><li>المرفقات</li><li>إرسال</li></ol>
+        </section>
+        <section>
+          <h6>متابعة حالة التصريح <span class="en">Monitor Status</span></h6>
+          <ol><li>البوابة</li><li>طلباتي</li><li>اختيار التصريح</li><li>عرض</li></ol>
+          <p style="font-size:5.4mm;font-weight:500;color:var(--ink-2);line-height:1.3">الحالات: معتمد <span class="en">Approved</span> أو مرفوض <span class="en">Rejected</span></p>
+        </section>
+        <div class="tips">
+          <div><b>التمديد:</b> بعد تحديد تاريخ التمديد، أكّد هل تغيّر نطاق العمل، ثم ارفع المستندات وأرسل.</div>
+          <div><b>الدعم:</b> دليل المستخدم الكامل: بوابة تصاريح العمل – إدارة المشاريع NSR.</div>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+<div class="legalfoot"><span>SAR.COM.SA</span><span>Internal</span><span>Work Permit Portal | Kanban Board 2026</span></div>
+</body>
+</html>
