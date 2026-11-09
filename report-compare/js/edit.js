@@ -231,6 +231,8 @@
     S.lay.tables = keep; RC.save(); RC.rerenderSheet();
   };
 
+  function fullDelta(st) { return Object.assign({ reset: true }, { name: st.name, sz: st.sz, b: st.b, i: st.i, u: st.u, color: st.color, fill: st.fill, h: st.h, v: st.v, wrap: st.wrap, indent: st.indent, nf: st.nf, bd: Fmt.clone(st.bd) }); }
+
   /* ---------- clipboard ---------- */
   function tsvOf(cells, g) {
     var rows = []; for (var r = g.r1; r <= g.r2; r++) { var row = []; for (var c = g.c1; c <= g.c2; c++) row.push(RC.displayCell(S.sheet, Xl.addr(c, r)).replace(/[\t\r\n]+/g, ' ')); rows.push(row.join('\t')); }
@@ -245,7 +247,8 @@
     }
     var text = tsvOf(cells, g);
     S.clip = { sheet: s.sheet, rect: { r1: g.r1, c1: g.c1, r2: g.r2, c2: g.c2 }, cells: cells, cut: !!cut, text: text };
-    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function () { /* ignore */ }); } catch (e) { /* ignore */ }
+    var mine = S.clip; mine.sysOk = null;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { mine.sysOk = true; }, function () { mine.sysOk = false; }); else mine.sysOk = false; } catch (e) { mine.sysOk = false; }
     RC.paintSelRects(); RC.toast((cut ? 'Cut' : 'Copied') + ' ' + cells.length + ' cell(s) — click where to paste and press Ctrl+V. (' + (cut ? 'قص' : 'نسخ') + ')');
   };
   E.cut = function () { E.copy(true); };
@@ -268,8 +271,7 @@
         setValue(S.sheet, a, text);
       }
       if (mode === 'all' || mode === 'formats') {
-        var st = it.st, d = { name: st.name, sz: st.sz, b: st.b, i: st.i, u: st.u, color: st.color, fill: st.fill, h: st.h, v: st.v, wrap: st.wrap, indent: st.indent, nf: st.nf, bd: Fmt.clone(st.bd) };
-        fm[a] = Object.assign({ reset: true }, d);
+        fm[a] = fullDelta(it.st);
       }
       addrs.push(a);
     });
@@ -290,6 +292,106 @@
     RC.recompute(); RC.save(); RC.afterChange(); RC.rerenderSheet();
     RC.toast('Pasted ' + rows.length + ' row(s). (اتلصق)');
   };
+
+  /* ---------- fill: the handle at the corner of the selection, Ctrl+D / Ctrl+R, Home > Fill ---------- */
+  /* g = the source rectangle, dir = down | up | right | left, n = how many rows / columns to fill, copyOnly = no series */
+  E.fill = function (g, dir, n, copyOnly) {
+    var sheet = S.sheet; n = Math.floor(n); if (!(n >= 1)) return null;
+    var vertical = dir === 'down' || dir === 'up', forward = dir === 'down' || dir === 'right';
+    var lines = vertical ? g.c2 - g.c1 + 1 : g.r2 - g.r1 + 1, len = vertical ? g.r2 - g.r1 + 1 : g.c2 - g.c1 + 1;
+    if (lines * n > CAP) { RC.toast('That is too much to fill at once. (كبير قوي)'); return null; }
+    RC.pushUndo();
+    var fm = S.fmt[sheet] = S.fmt[sheet] || {};
+    for (var li = 0; li < lines; li++) {
+      var cells = [], pos = [];
+      for (var k = 0; k < len; k++) {   // the source line, in the order of the fill (bottom-up for Up, right-to-left for Left)
+        var idx = forward ? k : len - 1 - k, r = vertical ? g.r1 + idx : g.r1 + li, c = vertical ? g.c1 + li : g.c1 + idx, a = Xl.addr(c, r), e = S.view.eff(sheet, a);
+        cells.push(e ? { k: e.k, v: e.v, f: e.f, a: e.a || a } : { k: '', v: null, f: null, a: a }); pos.push({ r: r, c: c, a: a });
+      }
+      Fill.fillVector(cells, n, copyOnly).forEach(function (p, i) {
+        var tr = vertical ? (forward ? g.r2 + 1 + i : g.r1 - 1 - i) : pos[0].r, tc = vertical ? pos[0].c : (forward ? g.c2 + 1 + i : g.c1 - 1 - i);
+        if (tr < 1 || tc < 1 || tr > 20000 || tc > 300) return;
+        var ta = Xl.addr(tc, tr), src = pos[p.src], sc = cells[p.src], text = '';
+        RC.grow(sheet, tr, tc);
+        if (p.value) text = p.value.k === 'n' ? RC.editText({ k: 'n', v: p.value.v, a: sc.a }, sheet) : "'" + p.value.v;
+        else if (sc.f != null) text = '=' + Xl.shiftFormula(sc.f, tr - src.r, tc - src.c);      // relative references move with the cell, like Excel
+        else if (sc.k !== '') text = RC.editText(sc, sheet);
+        setValue(sheet, ta, text);
+        fm[ta] = fullDelta(E.styleAt(sheet, src.a));
+      });
+    }
+    var ng = { r1: g.r1, c1: g.c1, r2: g.r2, c2: g.c2 };
+    if (dir === 'down') ng.r2 = g.r2 + n; else if (dir === 'up') ng.r1 = Math.max(1, g.r1 - n); else if (dir === 'right') ng.c2 = g.c2 + n; else ng.c1 = Math.max(1, g.c1 - n);
+    RC.recompute(); RC.save(); RC.afterChange(); RC.rerenderSheet();
+    RC.setRange(Xl.addr(ng.c1, ng.r1), Xl.addr(ng.c2, ng.r2)); RC.paintMarks(); RC.refreshSide();
+    return ng;
+  };
+  /* Ctrl+D / Ctrl+R and Home > Fill: fill the selection from its first row / column (a single row / column is filled from the one before it) */
+  E.fillSel = function (dir) {
+    var s = sel(); if (!s) return noSel(); var g = s.rects[0], h0 = g.r2 - g.r1 + 1, w0 = g.c2 - g.c1 + 1, src, n, copy = true;
+    if (dir === 'down') { if (h0 === 1) { if (g.r1 === 1) { RC.toast('There is no row above to fill from. (مفيش صف فوق)'); return; } src = { r1: g.r1 - 1, r2: g.r1 - 1, c1: g.c1, c2: g.c2 }; n = 1; } else { src = { r1: g.r1, r2: g.r1, c1: g.c1, c2: g.c2 }; n = h0 - 1; } }
+    else if (dir === 'right') { if (w0 === 1) { if (g.c1 === 1) { RC.toast('There is no column to the left to fill from. (مفيش عمود على اليسار)'); return; } src = { r1: g.r1, r2: g.r2, c1: g.c1 - 1, c2: g.c1 - 1 }; n = 1; } else { src = { r1: g.r1, r2: g.r2, c1: g.c1, c2: g.c1 }; n = w0 - 1; } }
+    else if (dir === 'up') { if (h0 === 1) { RC.toast('Select two or more rows to fill up. (حدد أكتر من صف)'); return; } src = { r1: g.r2, r2: g.r2, c1: g.c1, c2: g.c2 }; n = h0 - 1; }
+    else { if (w0 === 1) { RC.toast('Select two or more columns to fill left. (حدد أكتر من عمود)'); return; } src = { r1: g.r1, r2: g.r2, c1: g.c2, c2: g.c2 }; n = w0 - 1; }
+    // fill() works on the cells that FOLLOW the source: for Up / Left the source is the last row / column
+    var ng = E.fill(src, dir, n, copy);
+    if (ng) { RC.setRange(Xl.addr(g.c1, g.r1), Xl.addr(g.c2, g.r2)); RC.paintMarks(); RC.refreshSide(); }
+  };
+
+  /* the fill handle (the small square at the bottom-right corner of the selection) */
+  var fd = null, fdTimer = null, fdPt = null;
+  function previewRect(g, dir, n) { var t = { r1: g.r1, r2: g.r2, c1: g.c1, c2: g.c2 }; if (dir === 'down') { t.r1 = g.r2 + 1; t.r2 = g.r2 + n; } else if (dir === 'up') { t.r2 = g.r1 - 1; t.r1 = g.r1 - n; } else if (dir === 'right') { t.c1 = g.c2 + 1; t.c2 = g.c2 + n; } else { t.c2 = g.c1 - 1; t.c1 = g.c1 - n; } return t; }
+  function clearPreview() { var w = $('gridWrap'); w.querySelectorAll('.fillprev').forEach(function (n) { n.parentNode.removeChild(n); }); }
+  function drawPreview() {
+    clearPreview(); if (!fd || !fd.dir || !fd.n) return;
+    var t = previewRect(fd.g, fd.dir, fd.n), a = RC.tdOf(Xl.addr(t.c1, t.r1)), b = RC.tdOf(Xl.addr(t.c2, t.r2)); if (!a || !b) return;
+    var w = $('gridWrap'), wr = w.getBoundingClientRect(), qa = a.getBoundingClientRect(), qb = b.getBoundingClientRect(), d = document.createElement('div');
+    d.className = 'selrect fillprev';
+    d.style.cssText = 'left:' + (Math.min(qa.left, qb.left) - wr.left + w.scrollLeft - 1) + 'px;top:' + (Math.min(qa.top, qb.top) - wr.top + w.scrollTop - 1) + 'px;width:' + (Math.max(qa.right, qb.right) - Math.min(qa.left, qb.left) + 1) + 'px;height:' + (Math.max(qa.bottom, qb.bottom) - Math.min(qa.top, qb.top) + 1) + 'px';
+    w.appendChild(d);
+  }
+  function fdUpdate() {
+    if (!fd || !fdPt) return;
+    var w = $('gridWrap'), wr = w.getBoundingClientRect(), x = Math.min(Math.max(fdPt.x, wr.left + 52), wr.right - 6), y = Math.min(Math.max(fdPt.y, wr.top + 28), wr.bottom - 6);
+    var el = document.elementFromPoint(x, y), td = el && el.closest ? el.closest('td[data-a]') : null; if (!td) return;
+    var p = Xl.parseAddr(td.getAttribute('data-a')), g = fd.g, dn = p.r - g.r2, up = g.r1 - p.r, rt = p.c - g.c2, lf = g.c1 - p.c, best = Math.max(dn, up, rt, lf);
+    if (best <= 0) { fd.dir = null; fd.n = 0; } else if (best === dn) { fd.dir = 'down'; fd.n = dn; } else if (best === up) { fd.dir = 'up'; fd.n = Math.min(up, g.r1 - 1); } else if (best === rt) { fd.dir = 'right'; fd.n = rt; } else { fd.dir = 'left'; fd.n = Math.min(lf, g.c1 - 1); }
+    drawPreview();
+  }
+  function fdStop() { clearInterval(fdTimer); fdTimer = null; fdPt = null; document.body.classList.remove('filling'); clearPreview(); }
+  function adjacentCount(g) {   // double-click on the handle: fill down as far as the neighbouring column has data (Excel's rule)
+    var sh = S.cur.wb.byName[S.sheet], cols = [g.c1 - 1, g.c2 + 1].filter(function (c) { return c >= 1 && c <= sh.maxC; });
+    for (var i = 0; i < cols.length; i++) { var c = cols[i]; if (!hasVal(S.sheet, g.r2, c)) continue; var r = g.r2; while (r + 1 <= sh.maxR && hasVal(S.sheet, r + 1, c)) r++; if (r > g.r2) return r - g.r2; }
+    return 0;
+  }
+  $('gridWrap').addEventListener('mousedown', function (e) {
+    var hnd = e.target.closest && e.target.closest('.fillh'); if (!hnd || e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    var s = sel(); if (!s || S.extra.length) return;
+    fd = { g: { r1: s.rects[0].r1, c1: s.rects[0].c1, r2: s.rects[0].r2, c2: s.rects[0].c2 }, dir: null, n: 0 };
+    document.body.classList.add('filling');
+    fdTimer = setInterval(function () {   // scroll while the pointer is near an edge
+      if (!fd || !fdPt) return;
+      var w = $('gridWrap'), wr = w.getBoundingClientRect(), m = 26, dx = 0, dy = 0;
+      if (fdPt.x > wr.right - m) dx = Math.min(60, (fdPt.x - (wr.right - m)) / 2 + 10); else if (fdPt.x < wr.left + 44 + m) dx = -Math.min(60, ((wr.left + 44 + m) - fdPt.x) / 2 + 10);
+      if (fdPt.y > wr.bottom - m) dy = Math.min(60, (fdPt.y - (wr.bottom - m)) / 2 + 10); else if (fdPt.y < wr.top + 24 + m) dy = -Math.min(60, ((wr.top + 24 + m) - fdPt.y) / 2 + 10);
+      if (dx || dy) { w.scrollBy(dx, dy); fdUpdate(); }
+    }, 40);
+  }, true);
+  document.addEventListener('mousemove', function (e) { if (!fd) return; fdPt = { x: e.clientX, y: e.clientY }; fdUpdate(); });
+  document.addEventListener('mouseup', function (e) {
+    if (!fd) return;
+    var d = fd; fd = null; fdStop();
+    if (d.dir && d.n > 0) E.fill(d.g, d.dir, d.n, e.ctrlKey || e.metaKey);     // Ctrl = copy only (no series), like Excel
+  }, true);
+  $('gridWrap').addEventListener('dblclick', function (e) {
+    var hnd = $('gridWrap').querySelector('.fillh'); if (!hnd) return;   /* by position: the handle is redrawn between the two clicks */
+    var hr = hnd.getBoundingClientRect(); if (e.clientX < hr.left - 6 || e.clientX > hr.right + 6 || e.clientY < hr.top - 6 || e.clientY > hr.bottom + 6) return;
+    e.preventDefault(); e.stopPropagation(); fd = null; fdStop();
+    var s = sel(); if (!s) return; var g = s.rects[0], n = adjacentCount(g);
+    if (!n) { RC.toast('Nothing next to the selection to fill down to. (مفيش بيانات جنب التحديد)'); return; }
+    E.fill({ r1: g.r1, c1: g.c1, r2: g.r2, c2: g.c2 }, 'down', n, false);
+  }, true);
 
   /* ---------- AutoSum and the other quick functions ---------- */
   E.autosum = function (fn) {
@@ -414,6 +516,8 @@
     else if (k === 'u') { E.toggle('u'); e.preventDefault(); }
     else if (k === 'c') { E.copy(false); e.preventDefault(); }
     else if (k === 'x') { E.copy(true); e.preventDefault(); }
+    else if (k === 'd') { E.fillSel('down'); e.preventDefault(); }
+    else if (k === 'r') { E.fillSel('right'); e.preventDefault(); }
     else if (k === 'f') { E.findDialog(false); e.preventDefault(); }
     else if (k === 'h') { E.findDialog(true); e.preventDefault(); }
     else if (k === 't') { E.tableDialog(); e.preventDefault(); }
@@ -422,6 +526,7 @@
     if ($('app').hidden || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
     var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
     e.preventDefault();
-    if (S.clip && (!text || text.replace(/\r\n?/g, '\n').replace(/\n$/, '') === S.clip.text)) E.paste('all'); else E.pasteText(text);
+    /* the tool's own copy (formats, formulas) is used unless something else was copied to the system clipboard after it */
+    if (S.clip && (!text || S.clip.sysOk !== true || text.replace(/\r\n?/g, '\n').replace(/\n$/, '') === S.clip.text)) E.paste('all'); else E.pasteText(text);
   });
 })();

@@ -4,6 +4,12 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 3.1 — 2026-11-09
+- **Fill handle** like Excel's: drag the small green square at the corner of the selection down / up / right / left to repeat the cell. Formulas keep working (`=D63+E64` becomes `=D64+E65`, …), formats are copied too.
+  Series continue (`1, 2` → `3, 4, 5`, dates, `PW-104` → `PW-105`), a single number or text is copied; hold `Ctrl` to copy only. **Double-click** the handle to fill down as far as the next column has data.
+- `Ctrl+D` fill down, `Ctrl+R` fill right, and Home › **Fill** (Down / Right / Up / Left).
+- Copy / paste from cell to cell (`Ctrl+C` / `Ctrl+V`) always uses the tool's own copy — formulas shift, formats come along — unless you copied something else after it.
+
 ## 3.0 — 2026-11-01
 The sheet is now editable like Excel — formatting, tables and layout are written into the downloaded report.
 - **Ribbon** with Excel's tabs: File, Home, Insert, Page Layout, Formulas, Data, Review, View. What the tool can really do is live; the rest is greyed with the reason (it needs Excel).

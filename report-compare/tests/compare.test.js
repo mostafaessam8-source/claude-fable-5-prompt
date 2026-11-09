@@ -10,6 +10,7 @@ const Diff = require('../js/diff.js');
 const Checks = require('../js/checks.js');
 const Writer = require('../js/writer.js');
 const Fmt = require('../js/format.js');
+const Fill = require('../js/fill.js');
 
 function tiny(vals) {
   const z = new JSZip();
@@ -63,6 +64,13 @@ async function small() {
   const nwb = await Xl.readWorkbook(nz), nview = Diff.makeView(nwb, nwb, {});
   assert.strictEqual(nview.num('S1', 'C2'), 7, 'XLOOKUP stored as #NAME? is calculated'); assert(nview.eff('S1', 'C2').recalc);
   assert.strictEqual(nview.eff('S1', 'D2').k, 'e', 'an unknown function keeps the saved error');
+  // fill handle: series continue, single values / formulas are copied, text with a number counts up
+  const fn = v => ({ k: 'n', v: v, f: null }), fs = v => ({ k: 's', v: v, f: null }), fv = (vec, n, c) => Fill.fillVector(vec, n, c).map(x => x.value ? x.value.v : 'copy' + x.src);
+  assert.deepStrictEqual(fv([fn(1), fn(2)], 3), [3, 4, 5]); assert.deepStrictEqual(fv([fn(10), fn(20), fn(30)], 2), [40, 50]);
+  assert.deepStrictEqual(fv([fn(5)], 2), ['copy0', 'copy0']); assert.deepStrictEqual(fv([fn(1), fn(2)], 3, true), ['copy0', 'copy1', 'copy0']);
+  assert.deepStrictEqual(fv([fs('PW-104')], 2), ['PW-105', 'PW-106']); assert.deepStrictEqual(fv([fs('Week 09')], 2), ['Week 10', 'Week 11']);
+  assert.deepStrictEqual(fv([fn(0.1), fn(0.2)], 2), [0.3, 0.4]); assert.deepStrictEqual(fv([fs('Closed')], 2), ['copy0', 'copy0']);
+  assert.strictEqual(Xl.shiftFormula('D63+E64', 1, 0), 'D64+E65'); assert.strictEqual(Xl.shiftFormula("'Sheet 1'!$A1*B$2", 2, 1), "'Sheet 1'!$A3*C$2");
   // format helpers
   assert.strictEqual(Fmt.bumpDecimals('0.00', 1), '0.000'); assert.strictEqual(Fmt.bumpDecimals('0.00', -1), '0.0'); assert.strictEqual(Fmt.bumpDecimals('General', 1), '0.0'); assert.strictEqual(Fmt.bumpDecimals('dd/mm/yyyy', 1), 'dd/mm/yyyy');
   assert.strictEqual(Fmt.bumpDecimals('#,##0.00;[Red](#,##0.00)', -1), '#,##0.0;[Red](#,##0.0)');
