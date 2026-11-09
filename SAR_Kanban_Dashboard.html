@@ -9,7 +9,7 @@
   --blue:#00778B; --black:#3D3935; --slate:#768692; --sky:#59CBE8; --mid:#71B2C9; --gray:#C8C9C7;
   --red:#CB2C30; --yellow:#F1B434; --tint:#F2F8F9; --tint2:#E6F1F4;
   --font:"Diodrum Arabic","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-  --dw:190px; --lw:150px; --colmin:270px;
+  --pw:200px; --colmin:270px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:#fff;color:var(--black);font-family:var(--font);font-size:14px;line-height:1.4}
@@ -52,17 +52,18 @@ body:not(.edit) [contenteditable]{cursor:default}
 .board{display:grid;border-top:1px solid var(--gray);border-left:1px solid var(--gray);min-width:max-content}
 .board>*{border-right:1px solid var(--gray);border-bottom:1px solid var(--gray)}
 .hcorner{background:var(--black);color:#fff;font-weight:700;padding:10px 12px;display:flex;align-items:center;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
-.ph{background:var(--blue);color:#fff;font-weight:700;font-size:18px;padding:10px 12px;display:flex;align-items:center;gap:8px;position:relative;min-width:var(--colmin)}
+.ph{background:var(--blue);color:#fff;font-weight:700;font-size:19px;padding:10px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;position:relative;min-width:var(--colmin)}
 .ph .nm{flex:1;min-width:0;word-break:break-word}
 .ctl{display:none;gap:2px}
 body.edit .ctl{display:inline-flex}
+.ctl button.t{width:auto;padding:0 8px;font-size:11px;font-weight:600}
 .ctl button{border:0;background:rgba(255,255,255,.2);color:#fff;width:24px;height:24px;display:grid;place-items:center;font-size:12px;padding:0}
 .ctl button:hover{background:var(--yellow);color:var(--black)}
 .dlabel{background:var(--blue);color:#fff;padding:12px;display:flex;flex-direction:column;gap:8px;justify-content:flex-start;position:sticky;left:0;z-index:3}
 .dlabel .nm{font-size:19px;font-weight:700;line-height:1.2;word-break:break-word}
 .dlabel .ctl{flex-wrap:wrap}
 .dlabel .ctl button.t{width:auto;padding:0 8px;font-size:11px;font-weight:600}
-.llabel{background:var(--tint2);padding:10px;font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:6px;position:sticky;left:var(--dw);z-index:3}
+.llabel{background:var(--tint2);padding:10px;font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:6px;justify-content:center;text-align:center}
 .llabel .ctl button{background:var(--blue);width:22px;height:22px}
 .llabel .ctl button:hover{background:var(--red)}
 .cell{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:84px;background:#fff;min-width:var(--colmin)}
@@ -195,7 +196,7 @@ function fresh(){
    {lane:L(3),proj:P(1),title:'Sample: route study',status:'done',note:''},
    {lane:L(4),proj:P(3),title:'Sample: HSE audit',status:'track',note:''}
   ].map(c=>({id:uid(),...c}));
-  return {title:'Projects Kanban Dashboard',sub:'Departments × Projects',asof:'As of: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),projects,depts,cards,zoom:1};
+  return {title:'Projects Kanban Dashboard',sub:'Projects × Departments',asof:'As of: '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),projects,depts,cards,zoom:1};
 }
 let M;
 try{M=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
@@ -206,34 +207,35 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* ---------- render ---------- */
 function render(){
-  document.documentElement.style.setProperty('--zoomv',M.zoom);
   $('.boardwrap').style.zoom=M.zoom;
   $('#hTitle').textContent=M.title;$('#hSub').textContent=M.sub;$('#hAsof').textContent=M.asof;
   $('#legend').innerHTML=STATUS.map(s=>`<span><i style="background:#${s.c}"></i>${s.l}</span>`).join('');
-  const nP=M.projects.length;
+  const lanes=[];M.depts.forEach(d=>d.lanes.forEach(l=>lanes.push({d,l})));
+  const nL=Math.max(1,lanes.length);
+  const hasSub=M.depts.some(d=>d.lanes.length>1||d.lanes[0].name);
+  const hr=hasSub?2:1;
   const b=$('#board');
-  b.style.gridTemplateColumns=`var(--dw) var(--lw) repeat(${nP||1}, minmax(var(--colmin),1fr))`;
-  let h=`<div class="hcorner" style="grid-row:1;grid-column:1/3">Department</div>`;
-  M.projects.forEach((p,i)=>{
-    h+=`<div class="ph" style="grid-row:1;grid-column:${i+3}"><span class="nm" contenteditable spellcheck="false" data-pn="${p.id}">${esc(p.name)}</span><span class="ctl"><button data-pl="${p.id}" title="Move left">◀</button><button data-pr="${p.id}" title="Move right">▶</button><button data-pd="${p.id}" title="Delete project">✕</button></span></div>`;
-  });
-  if(!nP)h+=`<div class="ph" style="grid-row:1;grid-column:3">Add a project</div>`;
-  let row=2;
-  M.depts.forEach((d,di)=>{
+  b.style.gridTemplateColumns=`var(--pw) repeat(${nL}, minmax(var(--colmin),1fr))`;
+  let h=`<div class="hcorner" style="grid-row:1/span ${hr};grid-column:1">Project</div>`;
+  let col=2;
+  M.depts.forEach(d=>{
     const n=d.lanes.length, single=n===1&&!d.lanes[0].name;
-    h+=`<div class="dlabel" style="grid-row:${row}/span ${n};grid-column:1${single?'/3':''}"><span class="nm" contenteditable spellcheck="false" data-dn="${d.id}">${esc(d.name)}</span><span class="ctl"><button data-du="${d.id}" title="Move up">▲</button><button data-dd="${d.id}" title="Move down">▼</button><button class="t" data-ds="${d.id}">+ Sub-section</button><button data-dx="${d.id}" title="Delete department">✕</button></span></div>`;
-    d.lanes.forEach((l,li)=>{
-      if(!single){
-        h+=`<div class="llabel" style="grid-row:${row+li};grid-column:2"><span contenteditable spellcheck="false" data-ln="${d.id}|${l.id}">${esc(l.name)||'(sub-section)'}</span><span class="ctl"><button data-lx="${d.id}|${l.id}" title="Delete sub-section">✕</button></span></div>`;
-      }
-      (nP?M.projects:[{id:'_'}]).forEach((p,pi)=>{
-        const cards=M.cards.filter(c=>c.lane===l.id&&c.proj===p.id);
-        h+=`<div class="cell ${di%2?'alt':''}" data-lane="${l.id}" data-proj="${p.id}" style="grid-row:${row+li};grid-column:${pi+3}">`+
-          cards.map(c=>`<div class="card s-${c.status}" draggable="true" data-card="${c.id}"><div class="ti">${esc(c.title)}</div><div class="st">${SM[c.status].l}</div>${c.note?`<div class="no">${esc(c.note)}</div>`:''}</div>`).join('')+
-          (nP?`<button class="add" data-add="${l.id}|${p.id}">+ Add card</button>`:'')+`</div>`;
-      });
+    h+=`<div class="ph" style="grid-row:1${single&&hasSub?'/span 2':''};grid-column:${col}/span ${n}"><span class="nm" contenteditable spellcheck="false" data-dn="${d.id}">${esc(d.name)}</span><span class="ctl"><button data-du="${d.id}" title="Move left">◀</button><button data-dd="${d.id}" title="Move right">▶</button><button class="t" data-ds="${d.id}">+ Sub-section</button><button data-dx="${d.id}" title="Delete department">✕</button></span></div>`;
+    if(hasSub&&!single)d.lanes.forEach((l,li)=>{
+      h+=`<div class="llabel" style="grid-row:2;grid-column:${col+li}"><span class="nm" contenteditable spellcheck="false" data-ln="${d.id}|${l.id}">${esc(l.name)||'(sub-section)'}</span><span class="ctl"><button data-lx="${d.id}|${l.id}" title="Delete sub-section">✕</button></span></div>`;
     });
-    row+=n;
+    col+=n;
+  });
+  if(!M.depts.length)h+=`<div class="ph" style="grid-row:1;grid-column:2">Add a department</div>`;
+  M.projects.forEach((p,pi)=>{
+    const row=hr+1+pi;
+    h+=`<div class="dlabel" style="grid-row:${row};grid-column:1"><span class="nm" contenteditable spellcheck="false" data-pn="${p.id}">${esc(p.name)}</span><span class="ctl"><button data-pl="${p.id}" title="Move up">▲</button><button data-pr="${p.id}" title="Move down">▼</button><button data-pd="${p.id}" title="Delete project">✕</button></span></div>`;
+    lanes.forEach((L,li)=>{
+      const cards=M.cards.filter(c=>c.lane===L.l.id&&c.proj===p.id);
+      h+=`<div class="cell ${pi%2?'alt':''}" data-lane="${L.l.id}" data-proj="${p.id}" style="grid-row:${row};grid-column:${li+2}">`+
+        cards.map(c=>`<div class="card s-${c.status}" draggable="true" data-card="${c.id}"><div class="ti">${esc(c.title)}</div><div class="st">${SM[c.status].l}</div>${c.note?`<div class="no">${esc(c.note)}</div>`:''}</div>`).join('')+
+        `<button class="add" data-add="${L.l.id}|${p.id}">+ Add card</button></div>`;
+    });
   });
   b.innerHTML=h;
   bind();
@@ -358,82 +360,74 @@ function exportPpt(){
   s.addText('SAR.COM.SA  |  Internal',{x:MX,y:Hh-1.0,w:W-2*MX,h:0.6,fontFace:F,fontSize:20,color:'768692',align:'center',valign:'middle',margin:0});
   s.addShape(pres.ShapeType.rect,{x:MX,y:Hh-1.2,w:W-2*MX,h:0.04,fill:{color:'00778B'},line:{color:'00778B',width:0}});
 
-  /* grid geometry */
+  /* grid geometry: projects = rows (vertical), departments = columns (horizontal) */
   const gx=MX, gy=3.5, gw=W-2*MX, gh=Hh-1.4-gy-0.1;
-  const hasLane=M.depts.some(d=>d.lanes.length>1||d.lanes[0].name);
-  const dw=hasLane?5.2:6.6, lwid=hasLane?4.2:0;
-  const nP=Math.max(1,M.projects.length);
-  const colW=(gw-dw-lwid)/nP;
-  const headH=1.7;
-  const lanes=[];M.depts.forEach((d,di)=>d.lanes.forEach((l,li)=>lanes.push({d,l,di,li,first:li===0})));
-  /* card sizing with scale */
+  const hasSub=M.depts.some(d=>d.lanes.length>1||d.lanes[0].name);
+  const pw=6.6;
+  const lanes=[];M.depts.forEach((d,di)=>d.lanes.forEach(l=>lanes.push({d,l,di})));
+  const nL=Math.max(1,lanes.length);
+  const colW=(gw-pw)/nL;
+  const h1=hasSub?1.9:2.0,h2=hasSub?1.4:0,headH=h1+h2;
   const est=(c,sc)=>{
     const w=colW-0.4-0.55;
-    const cpl=t=>Math.max(8,Math.floor(w/(0.56*t/72)));
+    const cpl=t=>Math.max(8,Math.floor(w/(0.64*t/72)));
     const tp=22*sc, np=16*sc;
     const tl=Math.ceil(c.title.length/cpl(tp)), nl=c.note?Math.ceil(c.note.length/cpl(np)):0;
-    const lines=tl*tp*1.2+ (1*np*1.2) + nl*np*1.2; // title + status line + note
-    return lines/72+0.4;
+    return (tl*tp*1.2+np*1.2+nl*np*1.2)/72+0.4;
   };
   const gap=0.18,pad=0.2,minRow=2.2;
-  const layout=sc=>{
-    return lanes.map(L=>{
-      let mx=0;
-      (M.projects.length?M.projects:[{id:'_'}]).forEach(p=>{
-        const cs=M.cards.filter(c=>c.lane===L.l.id&&c.proj===p.id);
-        const hh=cs.reduce((a,c)=>a+est(c,sc)+gap,0)+pad*2;
-        mx=Math.max(mx,hh);
-      });
-      return Math.max(minRow*Math.min(1,sc+.3),mx);
+  const projs=M.projects;
+  const layout=sc=>projs.map(p=>{
+    let mx=0;
+    lanes.forEach(L=>{
+      const cs=M.cards.filter(c=>c.lane===L.l.id&&c.proj===p.id);
+      mx=Math.max(mx,cs.reduce((a,c)=>a+est(c,sc)+gap,0)+pad*2);
     });
-  };
+    return Math.max(minRow*Math.min(1,sc+.3),mx);
+  });
   const availRows=gh-headH;
-  let sc=1.6,rows=layout(sc);
+  let sc=1.5,rows=layout(sc);
   while(rows.reduce((a,b)=>a+b,0)>availRows&&sc>0.45){sc-=0.05;rows=layout(sc)}
   const tot=rows.reduce((a,b)=>a+b,0);
-  if(tot<availRows){const ex=(availRows-tot)/rows.length;rows=rows.map(r=>r+ex)}
+  if(projs.length&&tot<availRows){const ex=(availRows-tot)/rows.length;rows=rows.map(r=>r+ex)}
   if(sc<=0.45&&tot>availRows)toast('Very dense board: some cards may overflow. Consider fewer cards per cell.');
-
-  /* header row */
-  s.addShape(pres.ShapeType.rect,{x:gx,y:gy,w:dw+lwid,h:headH,fill:{color:'3D3935'},line:{color:'FFFFFF',width:1}});
-  s.addText('DEPARTMENT',{x:gx,y:gy,w:dw+lwid,h:headH,fontFace:F,fontSize:26,bold:true,color:'FFFFFF',align:'center',valign:'middle',charSpacing:2});
-  const projs=M.projects.length?M.projects:[{id:'_',name:''}];
-  projs.forEach((p,i)=>{
-    const x=gx+dw+lwid+i*colW;
-    s.addShape(pres.ShapeType.rect,{x,y:gy,w:colW,h:headH,fill:{color:'00778B'},line:{color:'FFFFFF',width:1}});
-    s.addText(p.name,{x:x+0.2,y:gy,w:colW-0.4,h:headH,fontFace:F,fontSize:36,bold:true,color:'FFFFFF',align:'center',valign:'middle',fit:'shrink',margin:0});
+  const box=(x,y,w,h,fill,line)=>s.addShape(pres.ShapeType.rect,{x,y,w,h,fill:{color:fill},line:{color:line||'FFFFFF',width:1}});
+  /* header */
+  box(gx,gy,pw,headH,'3D3935');
+  s.addText('PROJECT',{x:gx,y:gy,w:pw,h:headH,fontFace:F,fontSize:26,bold:true,color:'FFFFFF',align:'center',valign:'middle',charSpacing:2});
+  let hx=gx+pw;
+  M.depts.forEach(d=>{
+    const n=d.lanes.length,single=n===1&&!d.lanes[0].name,w=n*colW,hh=single?headH:h1;
+    box(hx,gy,w,hh,'00778B');
+    s.addText(d.name,{x:hx+0.15,y:gy,w:w-0.3,h:hh,fontFace:F,fontSize:34,bold:true,color:'FFFFFF',align:'center',valign:'middle',fit:'shrink',margin:0});
+    if(hasSub&&!single)d.lanes.forEach((l,li)=>{
+      box(hx+li*colW,gy+h1,colW,h2,'E6F1F4','C8C9C7');
+      s.addText(l.name||'',{x:hx+li*colW+0.15,y:gy+h1,w:colW-0.3,h:h2,fontFace:F,fontSize:24,bold:true,color:'3D3935',align:'center',valign:'middle',fit:'shrink',margin:0});
+    });
+    hx+=w;
   });
   /* body */
-  let y=gy+headH, ri=0;
-  M.depts.forEach((d,di)=>{
-    const dh=d.lanes.reduce((a,_,k)=>a+rows[ri+k],0);
-    s.addShape(pres.ShapeType.rect,{x:gx,y,w:dw+(hasLane&&d.lanes.length===1&&!d.lanes[0].name?lwid:0),h:dh,fill:{color:'00778B'},line:{color:'FFFFFF',width:1}});
-    s.addText(d.name,{x:gx+0.25,y,w:dw+(hasLane&&d.lanes.length===1&&!d.lanes[0].name?lwid:0)-0.5,h:dh,fontFace:F,fontSize:34,bold:true,color:'FFFFFF',align:'center',valign:'middle',fit:'shrink',margin:0});
-    d.lanes.forEach((l,li)=>{
-      const rh=rows[ri];
-      const single=d.lanes.length===1&&!l.name;
-      if(hasLane&&!single){
-        s.addShape(pres.ShapeType.rect,{x:gx+dw,y,w:lwid,h:rh,fill:{color:'E6F1F4'},line:{color:'C8C9C7',width:1}});
-        s.addText(l.name||'',{x:gx+dw+0.2,y,w:lwid-0.4,h:rh,fontFace:F,fontSize:26,bold:true,color:'3D3935',align:'center',valign:'middle',fit:'shrink',margin:0});
-      }
-      projs.forEach((p,pi)=>{
-        const x=gx+dw+lwid+pi*colW;
-        s.addShape(pres.ShapeType.rect,{x,y,w:colW,h:rh,fill:{color:di%2?'F2F8F9':'FFFFFF'},line:{color:'C8C9C7',width:1}});
-        let cy=y+pad;
-        M.cards.filter(c=>c.lane===l.id&&c.proj===p.id).forEach(c=>{
-          const ch=est(c,sc), st=SM[c.status];
-          const cx=x+0.2, cw=colW-0.4;
-          s.addShape(pres.ShapeType.rect,{x:cx,y:cy,w:cw,h:ch,fill:{color:'FFFFFF'},line:{color:'C8C9C7',width:1}});
-          s.addShape(pres.ShapeType.rect,{x:cx,y:cy,w:0.22,h:ch,fill:{color:st.c},line:{color:st.c,width:0}});
-          const runs=[{text:c.title,options:{bold:true,fontSize:22*sc,color:'3D3935',breakLine:true}},
-                      {text:st.l.toUpperCase(),options:{bold:true,fontSize:16*sc,color:c.status==='risk'?'8A6410':st.c,breakLine:!!c.note}}];
-          if(c.note)runs.push({text:c.note,options:{fontSize:16*sc,color:'768692'}});
-          s.addText(runs,{x:cx+0.38,y:cy,w:cw-0.5,h:ch,fontFace:F,valign:'middle',align:'left',margin:0});
-          cy+=ch+gap;
-        });
+  let y=gy+headH;
+  projs.forEach((p,pi)=>{
+    const rh=rows[pi];
+    box(gx,y,pw,rh,'00778B');
+    s.addText(p.name,{x:gx+0.25,y,w:pw-0.5,h:rh,fontFace:F,fontSize:34,bold:true,color:'FFFFFF',align:'center',valign:'middle',fit:'shrink',margin:0});
+    lanes.forEach((L,li)=>{
+      const x=gx+pw+li*colW;
+      box(x,y,colW,rh,pi%2?'F2F8F9':'FFFFFF','C8C9C7');
+      let cy=y+pad;
+      M.cards.filter(c=>c.lane===L.l.id&&c.proj===p.id).forEach(c=>{
+        const ch=est(c,sc),st=SM[c.status],cx=x+0.2,cw=colW-0.4;
+        box(cx,cy,cw,ch,'FFFFFF','C8C9C7');
+        s.addShape(pres.ShapeType.rect,{x:cx,y:cy,w:0.22,h:ch,fill:{color:st.c},line:{color:st.c,width:0}});
+        const runs=[{text:c.title,options:{bold:true,fontSize:22*sc,color:'3D3935',breakLine:true}},
+                    {text:st.l.toUpperCase(),options:{bold:true,fontSize:16*sc,color:c.status==='risk'?'8A6410':st.c,breakLine:!!c.note}}];
+        if(c.note)runs.push({text:c.note,options:{fontSize:16*sc,color:'768692'}});
+        s.addText(runs,{x:cx+0.38,y:cy,w:cw-0.5,h:ch,fontFace:F,valign:'middle',align:'left',margin:0});
+        cy+=ch+gap;
       });
-      y+=rh;ri++;
     });
+    y+=rh;
   });
   const fn='SAR_Kanban_Dashboard_A0.pptx';
   pres.writeFile({fileName:fn}).then(()=>toast('Exported '+fn+' (A0 landscape, 46.81 × 33.11 in)'));
