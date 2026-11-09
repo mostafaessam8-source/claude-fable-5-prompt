@@ -299,13 +299,13 @@
     rev.items.forEach(function (it) {
       var key = norm2(it.name), hit = byEl.filter(function (x) { return x.cands.indexOf(key) >= 0; })[0];
       if (!hit) { out.unmatched.push(it); return; }
-      var e = hit.e, newPs = isoSerial(it.sub), oldPs = e.ps, oldPa = e.pa, prior = out.changes.filter(function (c) { return c.row === e.row; })[0];
+      var e = hit.e, newPs = isoSerial(it.actual || it.sub), oldPs = e.ps, oldPa = e.pa, prior = out.changes.filter(function (c) { return c.row === e.row; })[0];
       if (prior) newPs = Math.min(newPs, prior.newPs); // one tracker row covering several culverts (e.g. "ZRL 3+700 & 3+750")
       // Approval Date: never assumed — the design department adds it. A date already in the workbook is kept while it still follows the new submission.
       var keep = isNum(oldPa) && oldPa >= newPs, newPa = keep ? oldPa : null;
       e.ps = newPs; e.pa = newPa; e.strPs = false;
-      e.rev = { sr: it.sr, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method };
-      var rec = { sr: String(it.sr), name: it.name, element: e.name, project: hit.p.code || hit.p.name, row: e.row, rev: it.rev, status: it.status, critical: it.critical || '', method: it.method,
+      e.rev = { sr: it.sr, rev: it.rev, status: it.status, critical: it.critical || it.remark || '', method: it.method };
+      var rec = { sr: String(it.sr), name: it.name, element: e.name, project: hit.p.code || hit.p.name, row: e.row, rev: it.rev, status: it.status, critical: it.critical || it.remark || '', method: it.method,
         oldPs: prior ? prior.oldPs : oldPs, newPs: newPs, oldPa: prior ? prior.oldPa : oldPa, newPa: newPa, paKept: keep, paNone: newPa == null };
       if (prior) { rec.sr = prior.sr + ', ' + it.sr; rec.name = prior.name + ' + ' + it.name; }
       out.changes = out.changes.filter(function (c) { return c.row !== e.row; });

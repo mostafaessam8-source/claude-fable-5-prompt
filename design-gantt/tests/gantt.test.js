@@ -81,7 +81,7 @@ async function check(zip, label) {
   assert(new RegExp('<c r="D19"[^>]*><v>' + D(2026, 11, 6) + '</v>').test(tr), 'Element 1 submission written');
 
   // 2c. the bundled schedule
-  assert.strictEqual(REVISED.items.length, 18);
+  assert.strictEqual(REVISED.items.length, 18); assert(REVISED.items.some(i => i.actual), 'actual submission dates carried');
 
   // 3. optional: a real workbook
   if (process.env.SAR_TRACKER) {
