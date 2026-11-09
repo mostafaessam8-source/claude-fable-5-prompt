@@ -637,9 +637,18 @@
   }
   function paintRange() { RECTS = selRects(); paintSelRects(); }
   /* The selection is drawn like in Excel: one tinted box with a thick green border around each selected rectangle. */
+  /* the fill handle: a small square at the bottom-right corner of a single (contiguous) selection */
+  function drawFillHandle(wrap, wr) {
+    if (S.extra.length || !S.sel || S.sel.sheet !== S.sheet) return;
+    var g = S.range && S.range.sheet === S.sheet ? S.range : cellRect(S.sel.a), tb = cornerTd(g, true); if (!tb) return;
+    var q = tb.getBoundingClientRect(), hx = q.right - wr.left + wrap.scrollLeft, hy = q.bottom - wr.top + wrap.scrollTop;
+    if (hx < wrap.scrollLeft + 50 || hx > wrap.scrollLeft + wrap.clientWidth - 6 || hy < wrap.scrollTop + 26 || hy > wrap.scrollTop + wrap.clientHeight - 6) return;
+    var d = document.createElement('div'); d.className = 'fillh'; d.title = 'Drag to fill · اسحب للتعبئة (double-click: fill down · Ctrl: copy only)';
+    d.style.cssText = 'left:' + (hx - 5) + 'px;top:' + (hy - 5) + 'px'; wrap.appendChild(d);
+  }
   function paintSelRects() {
     var wrap = $('gridWrap');
-    wrap.querySelectorAll('.selrect, .selcell').forEach(function (n) { n.parentNode.removeChild(n); });
+    wrap.querySelectorAll('.selrect:not(.fillprev), .selcell, .fillh').forEach(function (n) { n.parentNode.removeChild(n); });
     if (S.sheet === '__overview' || !wrap.querySelector('table.sheet')) return;
     var wr = wrap.getBoundingClientRect();
     /* the active cell: a green frame drawn on top (an overlay, so moving the selection never touches the table's own styles) */
@@ -649,7 +658,9 @@
       var cg = S.clip.rect, ca = cornerTd(cg, false), cb = cornerTd(cg, true);
       if (ca && cb) { var qa = ca.getBoundingClientRect(), qb = cb.getBoundingClientRect(), cdv = document.createElement('div'); cdv.className = 'selrect copy'; cdv.style.cssText = 'left:' + (Math.min(qa.left, qb.left) - wr.left + wrap.scrollLeft - 1) + 'px;top:' + (Math.min(qa.top, qb.top) - wr.top + wrap.scrollTop - 1) + 'px;width:' + (Math.max(qa.right, qb.right) - Math.min(qa.left, qb.left) + 1) + 'px;height:' + (Math.max(qa.bottom, qb.bottom) - Math.min(qa.top, qb.top) + 1) + 'px'; wrap.appendChild(cdv); }
     }
-    var rects = selRects(); if (!rects.length) return;
+    var rects = selRects();
+    drawFillHandle(wrap, wr);
+    if (!rects.length) return;
     rects.forEach(function (g) {
       var a = cornerTd(g, false), b = cornerTd(g, true); if (!a || !b) return;
       var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();

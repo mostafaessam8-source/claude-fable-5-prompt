@@ -363,3 +363,10 @@ table.sheet td.frzb { border-bottom: 2px solid #6b6b6b !important; } table.sheet
 .rg { padding: 0 4px; } .rgb { gap: 2px; } .rb { padding: 0 4px; }
 .rb.big { min-width: 46px; } .rb.big .rl { max-width: 66px; }
 .rtab { padding: 2px 2px 0; }
+
+/* fill handle */
+.selrect::after { display: none !important; }
+.fillh { position: absolute; width: 9px; height: 9px; background: #217346; border: 1px solid #fff; box-sizing: border-box; cursor: crosshair; z-index: 6; pointer-events: auto; }
+.fillh::before { content: ""; position: absolute; inset: -5px; }
+.selrect.fillprev { background: rgba(33,115,70,.07); border: 2px dashed #217346; z-index: 5; }
+body.filling, body.filling .grid-wrap, body.filling .grid-wrap * { cursor: crosshair !important; }

@@ -79,6 +79,7 @@
   function sumMenu() { return [['Sum', 'SUM'], ['Average', 'AVERAGE'], ['Count Numbers', 'COUNT'], ['Max', 'MAX'], ['Min', 'MIN']].map(function (x) { return mi(x[0], '', function () { E.autosum(x[1]); }); }); }
   function clearMenu() { return [mi('Clear All', 'مسح الكل', function () { E.clear('all'); }), mi('Clear Formats', 'مسح التنسيق', function () { E.clear('formats'); }), mi('Clear Contents', 'مسح المحتوى', function () { E.clear('contents'); })]; }
   function sortMenu() { return [mi('Sort A to Z', 'ترتيب تصاعدي', function () { E.sort(true); }), mi('Sort Z to A', 'ترتيب تنازلي', function () { E.sort(false); }), { t: 'sep' }, mi('Filter', 'تصفية', null, { disabled: true, title: NEEDS_XL })]; }
+  function fillMenu() { return [mi('Down  Ctrl+D', 'لتحت', function () { E.fillSel('down'); }), mi('Right  Ctrl+R', 'لليمين', function () { E.fillSel('right'); }), mi('Up', 'لفوق', function () { E.fillSel('up'); }), mi('Left', 'لليسار', function () { E.fillSel('left'); }), { t: 'sep' }, mi('Series…', 'سلسلة', null, { disabled: true, title: 'Drag the fill handle for series: 1,2 → 3,4 · PW-104 → PW-105' })]; }
   function findMenu() { return [mi('Find…  Ctrl+F', 'بحث', function () { E.findDialog(false); }), mi('Replace…  Ctrl+H', 'استبدال', function () { E.findDialog(true); }), mi('Go To…', 'اذهب إلى', function () { var nb = $('nameBox'); nb.focus(); nb.select(); })]; }
   function formatMenu() {
     return [{ t: 'head', label: 'Cell Size · حجم الخلية' }, mi('Row Height…', 'ارتفاع الصف', E.promptRowHeight), mi('AutoFit Row Height', 'ملاءمة الارتفاع', E.autofitRows), mi('Column Width…', 'عرض العمود', E.promptColWidth), mi('AutoFit Column Width', 'ملاءمة العرض', E.autofitCols),
@@ -152,7 +153,7 @@
     t.appendChild(group('Cells', 'الخلايا', [col([menuBtn({ big: true, label: 'Format', icon: '▥', title: 'Format · تنسيق (ارتفاع الصف، عرض العمود، إخفاء)', items: formatMenu })]), col([disabled('Insert', '➕', 'إدراج', false), disabled('Delete', '➖', 'حذف', false)])]));
     // Editing
     var autosum = el('span', 'pbig'); autosum.appendChild(btn({ big: true, label: 'AutoSum', icon: 'Σ', title: 'AutoSum · جمع تلقائي', fn: function () { E.autosum('SUM'); } })); autosum.appendChild(btn({ label: '', menu: true, cls: 'dd', title: 'AutoSum options', fn: function (ev, b) { var r = b.getBoundingClientRect(); RC.showMenu(sumMenu(), r.left, r.bottom + 2); } }));
-    t.appendChild(group('Editing', 'التحرير', [col([autosum]), col([menuBtn({ label: 'Clear', icon: '⌫', title: 'Clear · مسح', items: clearMenu }), menuBtn({ label: 'Sort & Filter', icon: '⇅', title: 'Sort & Filter · ترتيب وتصفية', items: sortMenu }), menuBtn({ label: 'Find & Select', icon: '🔍', title: 'Find & Select · بحث وتحديد', items: findMenu })])]));
+    t.appendChild(group('Editing', 'التحرير', [col([autosum]), col([menuBtn({ label: 'Fill', icon: '⬇', title: 'Fill · تعبئة (اسحب المقبض الأخضر أو Ctrl+D / Ctrl+R)', items: fillMenu }), menuBtn({ label: 'Clear', icon: '⌫', title: 'Clear · مسح', items: clearMenu })]), col([menuBtn({ label: 'Sort & Filter', icon: '⇅', title: 'Sort & Filter · ترتيب وتصفية', items: sortMenu }), menuBtn({ label: 'Find & Select', icon: '🔍', title: 'Find & Select · بحث وتحديد', items: findMenu })])]));
     return t;
   }
   function insertTab() {

@@ -25,6 +25,9 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   - Undo / Redo (`Ctrl+Z`, `Ctrl+Y`) cover every decision, edit, format and layout change. `Ctrl+C/X/V`, `Ctrl+B/I/U`, `Ctrl+F`, `Ctrl+H` work in the sheet; pasting text from another program works.
   - Formatting is stored as a *delta* on the cell's existing style and becomes a new style in `xl/styles.xml` on download (the original styles are never modified). Table / merge / width / height / freeze edits are written to the sheet XML.
   - **Not available** (greyed): insert / delete rows and columns, charts, pictures, shapes, PivotTables, conditional formatting, data validation, filters, comments, named ranges, page setup / printing, protection, macros, rename / move sheets.
+- **Fill handle** – the small green square at the corner of the selection: drag it down / up / right / left and the cells are repeated; relative references move like in Excel (`=D63+E64` → `=D64+E65`),
+  formats come along, series continue (`1, 2` → `3, 4, 5`, dates, `PW-104` → `PW-105`), a single number or text is copied, `Ctrl` while releasing = copy only, **double-click** = fill down as far as the next column has data.
+  `Ctrl+D` / `Ctrl+R` and Home › Fill do the same inside a selection. Copy / paste between cells: `Ctrl+C` / `Ctrl+V` (formulas shift, formats come along).
 - **Excel look** – the sheet opens like in Excel: name box, `ƒx` formula bar, column/row headers (highlighted for the selection), gridlines (hidden when the
   sheet hides them), sheet tabs at the bottom in their own colours, and a zoom box. Column widths, row heights, fonts, fills, borders, merged cells and text
   that spills into empty neighbours follow the file (a wrapped cell is clipped to its row height, as in Excel).
@@ -65,7 +68,7 @@ The page header shows `Version X.Y · build <commit>`. Every update bumps the ve
 ## Files
 - `js/xl.js` – xlsx reader (values, formulas incl. shared formulas, styles, number formats, merges).
 - `js/formula.js` – the formula engine for typed formulas.
-- `js/format.js` – style objects, deltas, CSS, number formats, table styles, cell styles.
+- `js/fill.js` – the fill handle's rules (series / copy), `js/format.js` – style objects, deltas, CSS, number formats, table styles, cell styles.
 - `js/xlsxfmt.js` – writes formats (StyleBook), merges, widths, heights, freeze panes and real tables into the package.
 - `js/edit.js` – the editing commands (format, merge, layout, tables, clipboard, AutoSum, sort, find / replace).
 - `js/ribbon.js` – the ribbon.
