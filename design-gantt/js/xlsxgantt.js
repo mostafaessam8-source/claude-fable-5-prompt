@@ -225,8 +225,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v6.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -334,7 +334,7 @@
       // Priority: read from the Tracker's Priority column
       cell(rw, 5, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), g_.pri ? 'IF(' + Kc + '="","",' + TR + g_.pri + t + '&"")' : '""');
       // final SAR code: the code of the last design stage that has one (Detailed, else Preliminary, else Concept)
-      var sarRefs = (g_.fcode ? [g_.fcode] : []).concat(g_.sars || []).map(function (l) { return 'TRIM(' + TR + l + t + '&"")'; }); // the Tracker's own Code column first
+      var sarRefs = (g_.fcode ? [g_.fcode] : (g_.sars || [])).map(function (l) { return 'TRIM(' + TR + l + t + '&"")'; }); // with a Code column only that column counts (no guessing from the stage codes)
       var finalF = sarRefs.length ? sarRefs.slice(0, -1).reduceRight(function (acc, ref) { return 'IF(' + ref + '<>"",' + ref + ',' + acc + ')'; }, sarRefs[sarRefs.length - 1]) : '""';
       cell(rw, 6, '', Object.assign({}, base, { h: 'center', font: { sz: 9, b: true, color: C.text } }), g_.subst ? 'IF(' + Kc + '="","",TRIM(' + TR + g_.subst + t + '&""))' : '""');
       cell(rw, 7, '', Object.assign({}, base, { h: 'center', font: { sz: 10, b: true, color: C.text } }), 'IF(' + Kc + '="","",UPPER(' + finalF + '))');
