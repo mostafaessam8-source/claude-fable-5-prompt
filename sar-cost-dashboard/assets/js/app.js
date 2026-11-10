@@ -27,6 +27,7 @@
     { id: "cost", group: "Cost", title: "Cost & KPI Dashboard", icon: "cost", sub: "Cost KPIs today and at year-end · 2026 Spend Plan vs Forecast Plan vs Actual · contract & payments · invoice schedule · monthly spending plan" },
     { id: "progress", group: "Progress", title: "Progress Dashboard", icon: "curve", sub: "SPI KPI today and at 31-Dec · portfolio trend · planned vs actual progress of every project · master plan · project dashboard (weekly report card, S-curve, timeline)" },
     { id: "design", group: "Design", title: "Design Review", icon: "design", sub: "Design submissions of every project from the weekly reports' Engineering Drawings sheet — approval status, SAR review time, returned documents and the decisions needed" },
+    { id: "design-tracker", group: "Design", title: "Design Submission Tracker", icon: "gantt", sub: "ESS Design Submission Tracker — every project and element through the Concept, Preliminary and Detailed stages: % earned, health against the baseline, SAR codes, waiting time and a milestone Gantt" },
     { id: "project-cards", group: "Project Cards", title: "Project Cards", icon: "card", sub: "Every project card from the monthly EP – NSR Projects workbook — portfolio view and full card per project" },
     { id: "execution", group: "Project Cards", title: "Projects in Execution", icon: "chart", sub: "Every project card in the execution phase — SPI and progress from card sections 7 & 8, schedule, status, payments and 2026 spend" },
     { id: "portfolio-plan", group: "Project Cards", title: "Portfolio Master Plan", icon: "gantt", sub: "All projects → phases → activities: baseline vs revised baseline vs forecast, with critical path milestones" },
@@ -212,6 +213,7 @@
       else if (!Object.keys(dataset.tables).length) renderNoData(view);
       else if (page.id === "data-checks") SARChecks.page(ctx);
       else if (page.id === "design") SARDesign.page(ctx);
+      else if (page.id === "design-tracker") SARDesignTracker.page(ctx);
       else window.SARPages[page.id](ctx);
     } catch (e) {
       console.error(e);
@@ -363,7 +365,7 @@
 
     var dz = U.el('<label class="dropzone" tabindex="0"><input type="file" accept=".xlsx,.xlsm,.rar,.zip" multiple hidden>' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v4h16v-4"/></svg>' +
-      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx · Budget 2026.xlsx · PD_PPT_Data_Requirement_For_all_Program_&lt;date&gt;.xlsx · EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx · <b>Weekly report files (.rar / .zip, or the project .xlsx files) → progress photos</b></p></label>");
+      "<h3>Drop Excel files here or click to browse</h3><p>PBI Weekly Report.xlsx · EPBU 2026 Delivery Plan … .xlsx · Contract details.xlsx · EP - NSR Projects &lt;Month&gt;.xlsx · Projects in Closing phase.xlsx · Budget 2026.xlsx · PD_PPT_Data_Requirement_For_all_Program_&lt;date&gt;.xlsx · EPBU 2027 Engineering blockades -R&lt;nn&gt;.xlsx · SAR ESS Design Submission Tracker … .xlsx · <b>Weekly report files (.rar / .zip, or the project .xlsx files) → progress photos</b></p></label>");
     var input = dz.querySelector("input");
     ["dragenter", "dragover"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("over"); }); });
     ["dragleave", "drop"].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("over"); }); });

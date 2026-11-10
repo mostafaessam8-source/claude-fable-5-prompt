@@ -112,6 +112,20 @@
           "Total Hrs", "Expected execution (TBC)", "Track kilometer", "Actual works (description)", "Frequencies (daily or weekly)"]
       }
     },
+    // "SAR ESS Design Submission Tracker <…>.xlsx": the Tracker sheet — one row per project (P, has a Project Code) and
+    // per element / package (E) under it, with the Concept / Preliminary / Detailed design stages side by side
+    // (baseline, actual and forecast submission & approval dates, SAR code) and the latest submittal block.
+    // Found by its two header rows; the control panel above them gives the data date and the earned-% rules.
+    designTracker: {
+      label: "ESS Design Submission Tracker",
+      file: "SAR ESS Design Submission Tracker <…>.xlsx",
+      sheetHeader: true,
+      tables: {
+        Design_Tracker: ["Programme", "Project Code", "Project", "Element", "Level", "Concept Baseline Submission", "Preliminary Baseline Submission",
+          "Detailed Baseline Submission", "Detailed Baseline Approval", "Detailed Actual Submission", "Detailed SAR Code", "Detailed Forecast Approval"],
+        Design_Tracker_Info: ["Data Date", "At-Risk Window", "Sheet"]
+      }
+    },
     // "Projects in Closing phase.xlsx": one sheet with a header row (Code · Project Name · … · Closeout Report ·
     // Retention Release · … · Current Status · Action Plan). Found by its header text, not by a table name.
     closing: {
@@ -588,6 +602,77 @@
     return null;
   }
 
+  /* ESS Design Submission Tracker: header row "Programme · Project Code · Project / Element · 1. CONCEPT DESIGN (15%) ·
+     2. PRELIMINARY … · 3. DETAILED …" with the stage fields in the row under it. Columns are found by their text. */
+  var DT_STAGES = [["Concept", /concept/i], ["Preliminary", /prelim/i], ["Detailed", /detail/i]];
+  var DT_FIELDS = [["Baseline Submission", /^baseline\s*submission/i], ["Baseline Approval", /^baseline\s*approval/i], ["Actual Submission", /^actual\s*submission/i],
+    ["Actual Review", /^actual\s*review/i], ["SAR Code", /^sar\s*code/i], ["Forecast Submission", /^forecast.*submission/i], ["Forecast Approval", /^forecast\s*approval/i],
+    ["%", /^%$/], ["Health", /^health/i], ["Var (days)", /^var/i]];
+  var DT_EXTRA = [["Priority", /^priority/i], ["Submittal No", /^submittal/i], ["Submission Date", /^submission\s*date/i], ["Approval Date", /^approval\s*date/i],
+    ["Status", /^status$/i], ["Code (final)", /^code$/i], ["Project End Date", /^project\s*end/i], ["Notes", /challenge|notes/i], ["Lvl", /^lvl$/i]];
+  function parseDesignTracker(XLSX, wb) {
+    function txt(ws, r, c) { var cl = ws[XLSX.utils.encode_cell({ r: r, c: c })]; return cl && cl.v != null ? String(cl.v).replace(/\s+/g, " ").trim() : ""; }
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var name = wb.SheetNames[si], ws = wb.Sheets[name];
+      if (!ws || !ws["!ref"]) continue;
+      var rg = XLSX.utils.decode_range(ws["!ref"]), hdr = -1;
+      for (var r = rg.s.r; r <= Math.min(rg.e.r, rg.s.r + 40) && hdr < 0; r++) {
+        var line = []; for (var c = rg.s.c; c <= Math.min(rg.e.c, 60); c++) line.push(txt(ws, r, c));
+        if (line.some(function (t) { return /^project\s*\/\s*element/i.test(t); }) && line.some(function (t) { return /concept\s*design/i.test(t); })) hdr = r;
+      }
+      if (hdr < 0) continue;
+      var cols = {}, starts = [];
+      for (var c2 = rg.s.c; c2 <= Math.min(rg.e.c, 60); c2++) {
+        var h = txt(ws, hdr, c2);
+        if (/^programme/i.test(h)) cols.prog = c2; else if (/^project\s*code/i.test(h)) cols.code = c2; else if (/^project\s*\/\s*element/i.test(h)) cols.name = c2;
+        DT_STAGES.forEach(function (s) { if (s[1].test(h) && /design/i.test(h)) { var w = /\((\d+(?:\.\d+)?)\s*%\)/.exec(h); starts.push({ c: c2, stage: s[0], weight: w ? +w[1] / 100 : null }); } });
+      }
+      if (cols.name == null || !starts.length) continue;
+      var map = [];   // column → record key
+      for (var c3 = starts[0].c; c3 <= Math.min(rg.e.c, 60); c3++) {
+        var sub = txt(ws, hdr + 1, c3); if (!sub) continue;
+        var ex = DT_EXTRA.filter(function (e) { return e[1].test(sub); })[0];
+        var stg = starts.filter(function (s) { return s.c <= c3; }).pop();
+        var fld = DT_FIELDS.filter(function (f) { return f[1].test(sub); })[0];
+        if (fld && !(ex && stg.stage === "Detailed" && map.some(function (m) { return m.key === stg.stage + " " + fld[0]; }))) map.push({ c: c3, key: stg.stage + " " + fld[0] });
+        else if (ex) map.push({ c: c3, key: ex[0] });
+      }
+      // control panel (above the header): data date, at-risk window, earned % per SAR code
+      var info = { "Sheet": name, "Weights": starts.map(function (s) { return s.stage + "=" + s.weight; }).join(";") };
+      for (var r2 = rg.s.r; r2 < hdr; r2++) {
+        var lab = txt(ws, r2, 0); if (!lab) continue;
+        var vc = null; for (var c4 = 1; c4 <= 4 && vc == null; c4++) { var x = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: r2, c: c4 })]); if (x != null && x !== "") vc = x; }
+        if (/^data date/i.test(lab)) info["Data Date"] = vc;
+        else if (/at.?risk window/i.test(lab)) info["At-Risk Window"] = vc;
+        else { var m = /%\s*earned\s*[—-]\s*(.+)$/i.exec(lab); if (m) info["Earned " + m[1].replace(/code\s*/i, "").trim()] = vc; }
+      }
+      var rows = [], blank = 0, cur = null;
+      for (var rr = hdr + 2; rr <= rg.e.r && blank < 40; rr++) {
+        var nm = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: cols.name })]);
+        nm = typeof nm === "string" ? nm.replace(/ /g, " ").trim() : nm;
+        var code = cols.code != null ? cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: cols.code })]) : null;
+        if (code != null) code = String(code).trim();
+        if (!nm && !code) { blank++; continue; }
+        blank = 0;
+        var isP = !!code;
+        if (isP) cur = { code: code, name: nm || code, prog: cols.prog != null ? cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: cols.prog })]) : null };
+        if (!cur) continue;
+        var rec = { "Programme": cur.prog, "Project Code": cur.code, "Project": cur.name, "Element": nm || cur.name, "Level": isP ? "P" : "E", "Row": rr + 1 };
+        map.forEach(function (mm) {
+          var v = cellValue(XLSX, ws[XLSX.utils.encode_cell({ r: rr, c: mm.c })]);
+          if (typeof v === "string") { v = v.replace(/ /g, " ").trim(); if (v === "" || v === "-") v = null; }
+          if (v != null) rec[mm.key] = v;
+        });
+        rows.push(rec);
+      }
+      var have = {}; rows.forEach(function (r3) { for (var k in r3) have[k] = 1; });
+      var missing = SOURCES.designTracker.tables.Design_Tracker.filter(function (k) { return !have[k]; });
+      return { source: "designTracker", label: SOURCES.designTracker.label, tables: { Design_Tracker: rows, Design_Tracker_Info: [info] },
+        report: [{ table: "Design_Tracker", rows: rows.length, status: missing.length ? "warning" : "ok", missing: missing, via: "sheet " + name }] };
+    }
+    return null;
+  }
+
   function parseBlockades(XLSX, wb) {
     for (var si = 0; si < wb.SheetNames.length; si++) {
       var name = wb.SheetNames[si], ws = wb.Sheets[name];
@@ -843,6 +928,8 @@
     }
     if (!source) {
       var swb = XLSX.read(buffer, { type: "array", cellNF: true, cellDates: false, cellStyles: false, dense: false });
+      var dt = parseDesignTracker(XLSX, swb);
+      if (dt) return dt;
       var rk = parseRisk(XLSX, swb);
       if (rk) return rk;
       var bl = parseBlockades(XLSX, swb);
