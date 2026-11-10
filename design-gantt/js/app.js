@@ -123,7 +123,7 @@
     var months = ax.groups.map(function (g) { var w = (ax.endOf(g.to) + 1 - ax.startOf(g.from)) * ppd; return '<div style="width:' + w + 'px">' + h(g.label) + '</div>'; }).join('');
     var units = '';
     for (i = 0; i < ax.n; i++) units += '<div style="width:' + (ax.endOf(i) + 1 - ax.startOf(i)) * ppd + 'px">' + (S.scale === 'day' || ppd * (ax.endOf(i) - ax.startOf(i) + 1) >= 14 ? ax.subLabel(i) : '') + '</div>';
-    var out = ['<div class="g-head"><div class="g-left"><span>Project / element</span><span>Status</span><span>Pri</span><span>Rev</span><span>Submit</span><span>Appr.</span></div>' +
+    var out = ['<div class="g-head"><div class="g-left"><span>Project / element</span><span>Status</span><span>Pri</span><span>Sub#</span><span>Submit</span><span>Appr.</span></div>' +
       '<div class="g-time" style="width:' + totalW + 'px"><div class="g-months">' + months + '</div><div class="g-units">' + units + '</div></div></div>'];
 
     var grid = ax.groups.map(function (g) { return '<i style="position:absolute;top:0;bottom:0;left:' + X_(ax.startOf(g.from)) + 'px;border-left:1px solid #dfe5e8"></i>'; }).join('');
@@ -181,7 +181,7 @@
     var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', (it.status ? 'Status: ' + it.status : 'Project') + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
     L.push('Submission date: ' + (f(it.ps) || '–') + (M.isNum(it.ps) ? (it.ps <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     L.push('Approval date: ' + (f(it.pa) || '–') + (M.isNum(it.pa) ? (it.pa <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
-    L.push('Priority: ' + (M.isFinite_(it.pri) ? it.pri : '–') + (it.rev ? ' · Rev No ' + it.rev : ''));
+    L.push('Priority: ' + (M.isFinite_(it.pri) ? it.pri : '–') + (it.rev ? ' · Submittal No ' + it.rev : ''));
     L.push('SAR code: ' + (it.code || 'none yet'));
     if (it.notes) L.push('“' + it.notes.replace(/\s+/g, ' ').slice(0, 160) + '”');
     return L.join('\n');

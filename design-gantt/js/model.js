@@ -102,7 +102,7 @@
   /* ---------- header detection ---------- */
   var GLOBAL_LABELS = [
     [/^programme/, 'programme'], [/^project code/, 'code'], [/^project\s*\/\s*element|^element|^project name/, 'name'],
-    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'], [/^rev(ision)?(\s*(no\.?|number))?$/, 'rev'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
+    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'], [/^(rev(ision)?|submittal)(\s*(no\.?|number))?$/, 'rev'], // "Submittal No" (how many times it has been submitted, first = 1); older workbooks call it "Rev No" [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
   ];
 
   function detectLayout(sheet) {
