@@ -52,6 +52,7 @@
   function start() {
     S.prev = S.slots.prev; S.cur = S.slots.cur;
     S.cmp = Diff.compare(S.prev.wb, S.cur.wb);
+    if ($('titleFile')) { $('titleFile').textContent = S.cur.name; document.title = S.cur.name + ' — Weekly Report Compare'; }
     S.session = 'rc.v1.' + [S.prev.name, S.prev.size, S.cur.name, S.cur.size].join('|');
     S.dec = {}; S.dismissed = {}; S.ops = { hidden: {}, color: {} }; S.fmt = {}; S.lay = emptyLay(); S.undo = []; S.redo = []; baseStyleCache = {};
     try { var saved = JSON.parse(localStorage.getItem(S.session) || 'null'); if (saved) { S.dec = saved.dec || {}; S.dismissed = saved.dismissed || {}; S.ops = saved.ops || { hidden: {}, color: {} }; S.fmt = saved.fmt || {}; S.lay = Object.assign(emptyLay(), saved.lay || {}); if (Object.keys(S.dec).length) toast('Restored your earlier review of these two files. (اتسترجع التقييم السابق)'); } } catch (e) { /* no storage */ }
@@ -695,7 +696,20 @@
       '<div class="btnrow"><button class="act accept" id="bSelAccept" type="button"' + dis + '>✔ Keep all <span class="ar">وافق على التحديد</span></button><button class="act reject" id="bSelReject" type="button"' + dis + '>↺ Reject all <span class="ar">ارفض التحديد</span></button><button class="act undo" id="bSelUndo" type="button"' + dis + '>Undo</button></div></div>';
   }
   /* floating action bar next to the sheet: appears whenever the selection contains changed cells */
+  /* Excel's status bar: Average / Count / Sum of the selected numbers */
+  function updateStats() {
+    var el = $('stats'); if (!el) return;
+    if (S.sheet === '__overview' || !S.sel || S.sel.sheet !== S.sheet) { el.textContent = ''; return; }
+    var rects = selRects(); if (!rects.length) { el.textContent = ''; return; }
+    var n = 0, sum = 0, cells = 0, nonEmpty = 0;
+    for (var k = 0; k < rects.length && cells < 30000; k++) { var g = rects[k]; for (var r = g.r1; r <= g.r2 && cells < 30000; r++) for (var c = g.c1; c <= g.c2 && cells < 30000; c++) { cells++; var e = S.view.eff(S.sheet, Xl.addr(c, r)); if (e && (e.k !== '' || e.f != null)) { nonEmpty++; if (e.k === 'n') { n++; sum += e.v; } } } }
+    if (cells < 2 || !nonEmpty) { el.textContent = ''; return; }
+    var cell0 = S.cur.wb.byName[S.sheet].cells.get(S.sel.a), st = S.cur.wb.styles, nf = Fmt.fromXf(st, cell0 ? cell0.s : 0).nf, d = deltaOf(S.sheet, S.sel.a);
+    function f(v) { return Xl.formatNumber(v, (d && d.nf) || (nf === 'General' ? 'General' : nf)); }
+    el.innerHTML = (n ? 'Average: <b>' + h(f(sum / n)) + '</b>' : '') + 'Count: <b>' + nonEmpty + '</b>' + (n ? 'Sum: <b>' + h(f(sum)) + '</b>' : '');
+  }
   function updateSelBar() {
+    updateStats();
     var bar = $('selbar'), list = S.sheet === '__overview' ? [] : selectedChanges();
     if (S.sheet === '__overview') { bar.hidden = true; return; }
     bar.hidden = false;
@@ -729,7 +743,7 @@
     var inp = $('custIn'); if (inp && S.focusEdit) { inp.focus(); inp.select(); S.focusEdit = false; }
   }
   function panelCell() {
-    if (!S.sel) return '<div class="empty">Click any cell in the sheet to see last week’s value, change it, or fix it.<br><span class="ar">اضغط على أي خلية عشان تشوف قيمة الأسبوع الماضي أو تعدّلها.</span><br><br><small>Keys: N / P next / previous change · I next issue · A keep · R reject</small></div>';
+    if (!S.sel) return '<div class="empty">Click any cell in the sheet to see last week’s value, change it, or fix it.<br><span class="ar">اضغط على أي خلية عشان تشوف قيمة الأسبوع الماضي أو تعدّلها.</span><br><br><small>Type to edit · F2 edit in the cell · Enter / Tab move · Alt+N / Alt+P next / previous change · Alt+I next issue · Alt+K keep · Alt+J reject</small></div>';
     var sheet = S.sel.sheet, a = S.sel.a, k = key(sheet, a), ch = S.cmp.byKey[k], d = S.dec[k];
     var pc = S.view.prevCell(sheet, a), cc = S.view.curCell(sheet, a), ec = S.view.eff(sheet, a);
     function cellTd(c, wb, extra) { var v = h(showCellVal(c, wb)); if (!v && !(c && c.f != null)) v = '<small>(empty · فاضي)</small>'; return '<td' + (extra || '') + '>' + v + (c && c.f != null ? '<span class="f">=' + h(short(c.f, 160)) + '</span>' : '') + '</td>'; }
@@ -906,7 +920,7 @@
       S.tab = 'cell'; paintMarks(); refreshSide();
     });
     $('gridWrap').addEventListener('click', function (e) { if (e.shiftKey && e.target.closest('td[data-a]')) { S.tab = 'cell'; paintMarks(); refreshSide(); } });
-    $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td && !pointInput()) { $('fbIn').focus(); $('fbIn').select(); } });
+    $('gridWrap').addEventListener('dblclick', function (e) { var td = e.target.closest('td[data-a]'); if (td && !pointInput() && window.Edit && Edit.startEdit) Edit.startEdit('edit'); });
     document.querySelector('.tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) { S.tab = t.getAttribute('data-tab'); refreshSide(); } });
     $('panel').addEventListener('click', function (e) {
       var t = e.target;
@@ -952,25 +966,30 @@
         var sha = S.cur.wb.byName[S.sheet]; if (!S.sel || S.sel.sheet !== S.sheet) S.sel = { sheet: S.sheet, a: 'A1' };
         S.extra = []; setRange('A1', Xl.addr(sha.maxC, sha.maxR)); S.tab = 'cell'; paintMarks(); refreshSide(); e.preventDefault(); return;
       }
+      if (!$('app').hidden && e.altKey && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName || '')) {   /* review shortcuts: Alt+N / P next / previous change, Alt+I next issue, Alt+K keep, Alt+J reject */
+        var ak = e.key.toLowerCase(), done = true;
+        if (ak === 'n') jump(S.cmp.changes, 1); else if (ak === 'p') jump(S.cmp.changes, -1); else if (ak === 'i') jump(S.issues, 1);
+        else if (ak === 'k' || ak === 'j') { var act = ak === 'k' ? 'accept' : 'reject'; if (selRects().length && selectedChanges().length) bulk(selectedChanges(), act); else if (S.sel && S.cmp.byKey[key(S.sel.sheet, S.sel.a)] && !S.cmp.byKey[key(S.sel.sheet, S.sel.a)].auto) setDec(S.sel.sheet, S.sel.a, act, null, true); else done = false; }
+        else done = false;
+        if (done) { e.preventDefault(); return; }
+      }
       if ($('app').hidden || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || '')) || e.ctrlKey || e.metaKey || e.altKey) return;
       var k = e.key.toLowerCase();
       if (S.sheet !== '__overview' && S.sel && S.sel.sheet === S.sheet) {
         var mv = { arrowup: [-1, 0], arrowdown: [1, 0], arrowleft: [0, -1], arrowright: [0, 1], tab: [0, e.shiftKey ? -1 : 1] }[k];
         if (mv) { moveSel(mv[0], mv[1], e.shiftKey && k !== 'tab'); e.preventDefault(); return; }
-        if (k === 'f2' || k === 'enter') { $('fbIn').focus(); $('fbIn').select(); e.preventDefault(); return; }
+        if (k === 'f2') { if (window.Edit && Edit.startEdit) Edit.startEdit('edit'); e.preventDefault(); return; }
+        if (k === 'enter') { moveSel(e.shiftKey ? -1 : 1, 0, false); e.preventDefault(); return; }
       }
-      if (k === 'n') jump(S.cmp.changes, 1); else if (k === 'p') jump(S.cmp.changes, -1); else if (k === 'i') jump(S.issues, 1);
-      else if ((k === 'a' || k === 'r') && selRects().length && selectedChanges().length) bulk(selectedChanges(), k === 'a' ? 'accept' : 'reject');
-      else if (k === 'escape' && (S.range || S.extra.length)) { clearSelection(); refreshSide(); }
-      else if ((k === 'a' || k === 'r') && S.sel && S.cmp.byKey[key(S.sel.sheet, S.sel.a)] && !S.cmp.byKey[key(S.sel.sheet, S.sel.a)].auto) setDec(S.sel.sheet, S.sel.a, k === 'a' ? 'accept' : 'reject', null, true);
-      else return;
-      e.preventDefault();
+      if (k === 'escape' && (S.range || S.extra.length)) { clearSelection(); refreshSide(); e.preventDefault(); }
     });
   }
   /* ----- Excel-style bar: name box, formula bar, point mode, keyboard ----- */
   function pointInput() {
     var ae = document.activeElement;
-    return ae && (ae.id === 'fbIn' || ae.id === 'custIn') && /^\s*=/.test(ae.value) && S.edit ? ae : null;
+    if (!(ae && (ae.id === 'fbIn' || ae.id === 'custIn' || ae.id === 'cellEd') && S.edit && /^\s*=/.test(ae.value))) return null;
+    var before = ae.value.slice(0, ae.selectionStart).replace(/\s+$/, '');          /* Excel inserts a reference only after "=", an operator, "(" or "," */
+    return /(^=|[-+*\/^&=<>(,;:])$/.test(before) ? ae : null;
   }
   function qsheet(n) { return /^[A-Za-z_][\w.]*$/.test(n) ? n : "'" + n.replace(/'/g, "''") + "'"; }
   function pointInsert(inp, a1, a2, sheet) {
@@ -1028,11 +1047,12 @@
     document.addEventListener('focusin', function (e) {
       var id = e.target.id;
       if ((id === 'fbIn' || id === 'custIn') && S.sel) { S.edit = { sheet: S.sel.sheet, a: S.sel.a }; S.pt = null; if (id === 'fbIn') S.editing = true; }
+      if (id === 'cellEd' && S.sel) S.pt = null;
     });
     document.addEventListener('focusout', function (e) {
       var id = e.target.id;
       if (id === 'fbIn') S.editing = false;
-      if (id === 'fbIn' || id === 'custIn') paintPoint(null);
+      if (id === 'fbIn' || id === 'custIn' || id === 'cellEd') paintPoint(null);
     });
     fi.addEventListener('input', function () { $('fbRes').innerHTML = S.edit ? previewText(fi.value) : ''; });
     fi.addEventListener('keydown', function (e) {
@@ -1105,19 +1125,19 @@
     }
     return 'Saved as ' + (c.k === 'n' ? (Xl.isDateCell({ k: 'n', v: c.v, s: c.s }, S.cur.wb.styles) || c.date ? 'date' : 'number') : c.k === 'b' ? 'TRUE/FALSE' : 'text') + ': ' + shown;
   }
-  function applyCustom(target, text) {
+  function applyCustom(target, text, quiet) {
     var sel = target || S.sel, v = text != null ? text : $('custIn').value, base = S.view.curCell(sel.sheet, sel.a);
-    if (v === editText(base, sel.sheet) && !S.dec[key(sel.sheet, sel.a)]) { toast('Same value as this week — nothing to apply. (نفس القيمة)'); return; }
+    if (v === editText(base, sel.sheet) && !S.dec[key(sel.sheet, sel.a)]) { if (!quiet) toast('Same value as this week — nothing to apply. (نفس القيمة)'); return; }
     var pv = /^\s*=./.test(v) ? S.view.evalText(sel.sheet, sel.a, v) : null;
     if (pv && pv.syntax && !window.confirm('The preview cannot read this formula. If it is not valid Excel syntax, Excel may repair the file when you open it.\nSave it anyway?\n(المعادلة مش مفهومة للمعاينة — تحفظها برضه؟)')) return;
     setDec(sel.sheet, sel.a, 'custom', v);
-    toast('Saved your value for ' + sel.a + '. Download the report to get it in the file. (اتحفظت)');
+    if (!quiet) toast('Saved your value for ' + sel.a + '. Download the report to get it in the file. (اتحفظت)');
   }
 
   wireDrop(); wire(); wireBar(); wireTabs();
   /* the pieces the ribbon (ribbon.js) and the editing commands (edit.js) work with */
   window.RC = {
-    S: S, grow: grow, $: $, h: h, key: key, toast: toast, short: short, save: save, pushUndo: pushUndo, undo: undo, redo: redo, recompute: recompute, afterChange: afterChange, rerenderSheet: rerenderSheet, refreshCells: refreshCells,
+    S: S, grow: grow, applyCustom: applyCustom, moveSel: moveSel, pointInput: pointInput, paintPoint: paintPoint, previewText: previewText, $: $, h: h, key: key, toast: toast, short: short, save: save, pushUndo: pushUndo, undo: undo, redo: redo, recompute: recompute, afterChange: afterChange, rerenderSheet: rerenderSheet, refreshCells: refreshCells,
     showSheet: showSheet, selectCell: selectCell, setRange: setRange, selRects: selRects, selectedChanges: selectedChanges, cellRect: cellRect, rectOfAddrs: rectOfAddrs, describeSel: describeSel, clearSelection: clearSelection,
     bulk: bulk, bulkSheet: bulkSheet, jump: jump, setZoom: setZoom, showMenu: showMenu, closeMenu: closeMenu, tdOf: tdOf, deltaOf: deltaOf, styleObjFor: styleObjFor, baseStyle: baseStyle, mergesOf: mergesOf,
     freezeOf: freezeOf, tablesOf: tablesOf, refRect: refRect, sameRect: sameRect, editText: editText, displayCell: displayCell, paintMarks: paintMarks, refreshSide: refreshSide, renderNav: renderNav,

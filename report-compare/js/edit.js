@@ -64,13 +64,13 @@
   E.cellStyle = function (name) { var cs = Fmt.CELL_STYLES.filter(function (x) { return x.name === name; })[0]; if (!cs) return; E.format(Fmt.clone(cs.d)); };
   /* borders: kind = all | outside | thickOutside | none | top | bottom | left | right | thickBottom | doubleBottom | topBottom */
   var BLK = '#000000';
-  E.borders = function (kind) {
+  E.borders = function (kind, lineStyle, lineColor) {
     var s = sel(); if (!s) return noSel();
     var bounds = s.rects[0];
     E.format(function (a, r, c) {
       var g = null; for (var i = 0; i < s.rects.length; i++) if (r >= s.rects[i].r1 && r <= s.rects[i].r2 && c >= s.rects[i].c1 && c <= s.rects[i].c2) { g = s.rects[i]; break; }
       if (!g) return null;
-      var T = r === g.r1, B = r === g.r2, L = c === g.c1, R = c === g.c2, bd = {}, thin = { s: 'thin', c: BLK }, thick = { s: 'thick', c: BLK };
+      var T = r === g.r1, B = r === g.r2, L = c === g.c1, R = c === g.c2, bd = {}, thin = { s: lineStyle || 'thin', c: lineColor || BLK }, thick = { s: lineStyle && lineStyle !== 'thin' ? lineStyle : 'thick', c: lineColor || BLK };
       switch (kind) {
         case 'all': bd = { l: thin, r: thin, t: thin, b: thin }; break;
         case 'outside': if (L) bd.l = thin; if (R) bd.r = thin; if (T) bd.t = thin; if (B) bd.b = thin; break;

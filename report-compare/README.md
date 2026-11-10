@@ -56,6 +56,13 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
   Bulk actions overwrite earlier keep/reject decisions but never your own typed values.
 - The review is saved in the browser (per pair of files) and restored when the same two files are loaded again.
 
+## Editing like Excel (4.0)
+- Select a cell and just type – it opens an in-cell editor (no formula bar needed). Enter / Tab / arrows commit and move, Esc cancels, F2 or double-click edits the existing text, Delete clears.
+- Formulas: click cells while typing `=B3+` to insert references (Excel point mode).
+- Status bar shows Average / Count / Sum of the selection, plus Ready / Enter / Edit / Point mode.
+- Drag column/row header borders to resize (double-click = AutoFit); right-click cells and headers for the Excel context menu; `Ctrl+1` opens Format Cells.
+- Review shortcuts moved to Alt: Alt+N / Alt+P next/previous change, Alt+I next issue, Alt+K keep, Alt+J reject.
+
 ## Limits
 - Sheets are matched by name and cells by address: inserting rows in a long table shows up as many changes.
 - Charts, pictures and Excel cell notes are preserved in the download but not drawn in the web view or compared.
