@@ -186,8 +186,8 @@
   var TL0 = 9; // first timeline column
   var WIDTHS = [7, 56, 13, 13, 11, 10, 17, 12];
   var HEAD_ROWS = 9;
-  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, LAST: 6 };
-  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Last date'];
+  var H = { OPS: 0, OPA: 1, ISP: 2, BARE: 3, KIND: 4, PID: 5, LAST: 6, MISP: 7, MBARE: 8, MKIND: 9, MPID: 10 };
+  var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Last date', 'Tracker order: is project', 'Tracker order: separator', 'Tracker order: kind', 'Tracker order: project row'];
   var SUBMITTAL_COL = { 'Not Submitted': ['F8D7DA', '8A1C1C'], 'Partialy Submitted': ['F5A300', '3D2A00'], 'Submitted': ['00778B', 'FFFFFF'], 'Under Review': ['1E6FD9', 'FFFFFF'], 'Approved': ['2E7D32', 'FFFFFF'] };
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
   var UNITS = { day: 270, week: 80, month: 30 };
@@ -216,6 +216,13 @@
     var lastData = R0 + nRows - 1;
     function colRange(col) { return '$' + col + '$' + R0 + ':$' + col + '$' + lastData; }
     var PIDr = colRange(hl(H.PID));
+    // Row order: projects by their Priority (1, 2, 3 ...), the elements of each project by their own priority; every other Tracker row follows in Tracker order.
+    var perm = [], seen = {};
+    M.buildItems(model, { sort: true }).forEach(function (it) {
+      var ix = it.trow - T0;
+      if (it.trow && ix >= 0 && ix < nRows && !seen[ix]) { seen[ix] = 1; perm.push(ix); }
+    });
+    for (var pz = 0; pz < nRows; pz++) if (!seen[pz]) perm.push(pz);
     var codeCol = TR + '$' + g_.code + '$1:$' + g_.code + '$2000', progCol = TR + '$' + g_.programme + '$1:$' + g_.programme + '$2000';
 
     /* title, KPI cards, legend */
@@ -225,8 +232,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.1   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -298,21 +305,32 @@
     var dFmt = 'dd\\-mmm\\-yy';
     var base = { font: { sz: 9, color: C.text }, fill: C.white, v: 'center', border: { left: thin(C.line), right: thin(C.line), bottom: thin(C.line) } };
     for (var i = 0; i < nRows; i++) {
-      var rw = R0 + i, t = T0 + i, up = rw - 1;
+      var rw = R0 + i, t = T0 + perm[i], up = rw - 1;
       rowH(rw, 27);
       function T(key) { return g_[key] ? TR + g_[key] + t : null; }
-      var NAME = 'TRIM(' + T('name') + '&"")', PROG = 'TRIM(' + (T('programme') || '""') + '&"")', CODE_ = 'TRIM(' + (T('code') || '""') + '&"")', LVL = T('lvl') ? 'UPPER(TRIM(' + T('lvl') + '&""))' : '""';
+      function refsOf(tt) {
+        function TT(key) { return g_[key] ? TR + g_[key] + tt : null; }
+        return { NAME: 'TRIM(' + TT('name') + '&"")', PROG: 'TRIM(' + (TT('programme') || '""') + '&"")', CODE_: 'TRIM(' + (TT('code') || '""') + '&"")', LVL: TT('lvl') ? 'UPPER(TRIM(' + TT('lvl') + '&""))' : '""' };
+      }
+      var rf = refsOf(t), NAME = rf.NAME, PROG = rf.PROG, CODE_ = rf.CODE_, LVL = rf.LVL;
       var Kc = '$' + hl(H.KIND) + rw, PIDc = '$' + hl(H.PID) + rw, OPS = '$' + hl(H.OPS) + rw, OPA = '$' + hl(H.OPA) + rw;
-      var ISP = '$' + hl(H.ISP) + rw, BARE = '$' + hl(H.BARE) + rw, PIDp = '$' + hl(H.PID) + up;
+      var ISP = '$' + hl(H.ISP) + rw, BARE = '$' + hl(H.BARE) + rw;
       var hs = { font: { sz: 8, color: C.mute }, h: 'center', border: { bottom: thin(C.grid) } };
       function hput(k, f, fmt) { cell(rw, hc(k), '', Object.assign({}, hs, fmt ? { fmt: fmt } : {}), f); }
       hput(H.OPS, 'IF(ISNUMBER(' + TR + g_.ps + t + '),' + TR + g_.ps + t + ',"")', dFmt);
       hput(H.OPA, 'IF(ISNUMBER(' + TR + g_.pa + t + '),' + TR + g_.pa + t + ',"")', dFmt);
       hput(H.ISP, 'OR(' + LVL + '="P",AND(' + LVL + '<>"E",' + PROG + '<>""))');
       hput(H.BARE, 'AND(' + ISP + ',' + NAME + '="",' + CODE_ + '="")');
-      // project / element / nothing. A project row without a code straight under a coded project is one of its lines (e.g. the 0583 packages).
-      hput(H.KIND, 'IF(' + BARE + ',"",IF(' + NAME + '="","",IF(' + ISP + ',IF(' + PIDp + '="","P",IF(AND(' + CODE_ + '="",INDEX(' + codeCol + ',' + PIDp + ')<>"",' + PROG + '=TRIM(INDEX(' + progCol + ',' + PIDp + ')&"")),"E","P")),IF(' + PIDp + '<>"","E",""))))');
-      hput(H.PID, 'IF(' + Kc + '="P",' + t + ',IF(' + BARE + ',"",' + PIDp + '))');
+      // Tracker-order block: the project / element decision is made in Tracker order (a row belongs to the project above it in the Tracker);
+      // the sorted rows above just read their answer from here.
+      var tm = T0 + i, rm = refsOf(tm), MISP = '$' + hl(H.MISP) + rw, MBARE = '$' + hl(H.MBARE) + rw, MK = '$' + hl(H.MKIND) + rw, MPp = '$' + hl(H.MPID) + up;
+      hput(H.MISP, 'OR(' + rm.LVL + '="P",AND(' + rm.LVL + '<>"E",' + rm.PROG + '<>""))');
+      hput(H.MBARE, 'AND(' + MISP + ',' + rm.NAME + '="",' + rm.CODE_ + '="")');
+      hput(H.MKIND, 'IF(' + MBARE + ',"",IF(' + rm.NAME + '="","",IF(' + MISP + ',IF(' + MPp + '="","P",IF(AND(' + rm.CODE_ + '="",INDEX(' + codeCol + ',' + MPp + ')<>"",' + rm.PROG + '=TRIM(INDEX(' + progCol + ',' + MPp + ')&"")),"E","P")),IF(' + MPp + '<>"","E",""))))');
+      hput(H.MPID, 'IF(' + MK + '="P",' + tm + ',IF(' + MBARE + ',"",' + MPp + '))');
+      var mrow = R0 + perm[i];
+      hput(H.KIND, '$' + hl(H.MKIND) + '$' + mrow);
+      hput(H.PID, '$' + hl(H.MPID) + '$' + mrow);
       // dates: an element shows its own; a level-1 project shows MIN of its elements' submission dates and MAX of their approval dates
       // (the rows BELOW it — so typed overrides in C / D of the elements flow up, with no circular reference). No elements: its own dates.
       function below(col) { return '$' + col + '$' + (rw + 1) + ':$' + col + '$' + lastData; }
@@ -397,7 +415,7 @@
       });
       parts.push('</row>'); xml.push(parts.join(''));
     });
-    var lastHelper = hc(H.LAST), cols = ['<cols>'];
+    var lastHelper = hc(H.MPID), cols = ['<cols>'];
     WIDTHS.forEach(function (w, k) { cols.push('<col min="' + (k + 1) + '" max="' + (k + 1) + '" width="' + w + '" customWidth="1"/>'); });
     cols.push('<col min="' + TL0 + '" max="' + lastCol + '" width="' + unitW + '" customWidth="1"/>');
     cols.push('<col min="' + (lastCol + 1) + '" max="' + (lastCol + 1) + '" width="2.5" customWidth="1" collapsed="1"/>');
