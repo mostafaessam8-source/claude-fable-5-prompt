@@ -370,3 +370,28 @@ table.sheet td.frzb { border-bottom: 2px solid #6b6b6b !important; } table.sheet
 .fillh::before { content: ""; position: absolute; inset: -5px; }
 .selrect.fillprev { background: rgba(33,115,70,.07); border: 2px dashed #217346; z-index: 5; }
 body.filling, body.filling .grid-wrap, body.filling .grid-wrap * { cursor: crosshair !important; }
+
+/* ================= 4.0: it should feel like Excel, not a web page ================= */
+.top { background: #217346 !important; padding: 5px max(12px, 1.2vw) !important; }
+.logo { width: 28px; height: 28px; border-radius: 5px; } .logo::before { top: 7px; left: 5px; width: 12px; } .logo::after { top: 16px; left: 10px; width: 13px; }
+.brand h1 { font-size: 15px; } .brand p { font-size: 11px; opacity: .85; }
+.titlefile { font-size: 12px; opacity: .92; margin-top: 1px; font-weight: 600; }
+.top-actions .btn { padding: 5px 10px; font-size: 12.5px; }
+#app { height: calc(100vh - var(--topH, 52px)); }
+.celled { position: absolute; z-index: 8; box-sizing: border-box; border: 2px solid #217346; background: #fff; padding: 0 3px; margin: 0; resize: none; overflow: hidden; outline: none; white-space: pre; line-height: 1.25; font-family: Calibri, Carlito, "Segoe UI", sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,.28); user-select: text; }
+.modeind { padding: 0 14px; font-size: 12.5px; color: #333; min-width: 64px; font-weight: 600; }
+.stats { font-size: 12.5px; color: #333; white-space: nowrap; padding: 0 10px; } .stats b { margin: 0 14px 0 4px; font-weight: 600; }
+body.rsz-col, body.rsz-col * { cursor: col-resize !important; } body.rsz-row, body.rsz-row * { cursor: row-resize !important; }
+.rszg { position: absolute; z-index: 9; pointer-events: none; }
+.rsztip { position: fixed; z-index: 300; background: #fff; border: 1px solid #777; padding: 2px 7px; font-size: 12px; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.dlg.fc { width: 500px; } .fct { display: flex; gap: 2px; border-bottom: 1px solid #ddd; margin-bottom: 8px; }
+.fct button { border: 0; background: none; padding: 6px 14px; cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; } .fct button.on { border-bottom-color: #217346; font-weight: 700; color: #1d6f42; }
+.fcg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: end; }
+.fcb { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; } .fcb button { border: 1.5px solid #c7ccd0; background: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; } .fcb button.on { background: #c9dfd2; border-color: #217346; }
+.fcw { display: grid; grid-template-columns: repeat(10, 22px); gap: 3px; margin-bottom: 8px; } .fcw .sw { width: 22px; height: 22px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; }
+.dlg .pn { border: 1.5px solid #c7ccd0; background: #fff; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.ctxmenu .mi .mh2 { margin-inline-start: auto; }
+
+/* a one-line title bar like Excel's */
+.brand > div { display: flex; align-items: baseline; gap: 4px 14px; flex-wrap: wrap; }
+.brand p { margin: 0; font-size: 11px; opacity: .8; } .titlefile { margin: 0; }

@@ -4,6 +4,17 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 4.0 — 2026-11-09
+Works like Excel: you type in the cell.
+- **Edit in the cell**: select a cell and just type (or `Backspace` to clear and type), `F2` / double-click to edit what is there. `Enter` / `Tab` / arrows finish and move, `Shift` reverses, `Esc` cancels,
+  `Alt+Enter` = new line. While a formula is being typed, click cells (or drag ranges, also on other sheets) to insert references — only after `=`, an operator, `(` or `,`, like Excel. The formula bar follows what you type.
+- `Enter` on a selected cell moves down, `Delete` clears the contents. The single-letter review shortcuts moved to `Alt`: `Alt+N` / `Alt+P` next / previous change, `Alt+I` next issue, `Alt+K` keep, `Alt+J` reject.
+- **Status bar** like Excel's: mode (Ready / Enter / Edit / Point) and **Average · Count · Sum** of the selected numbers.
+- **Drag a column / row header border** to resize it (with the size tooltip), double-click it to AutoFit; applies to all selected columns / rows.
+- **Right-click menu** on cells, columns and rows (Cut, Copy, Paste, Paste Values / Formatting, Fill, Clear, Format Cells, Row Height, Column Width, Hide, and Keep / Reject for changed cells).
+- **Format Cells** (`Ctrl+1`, also Home › Format): Number, Alignment, Font, Border, Fill.
+- Slimmer Excel-green title bar with the file name.
+
 ## 3.1 — 2026-11-09
 - **Fill handle** like Excel's: drag the small green square at the corner of the selection down / up / right / left to repeat the cell. Formulas keep working (`=D63+E64` becomes `=D64+E65`, …), formats are copied too.
   Series continue (`1, 2` → `3, 4, 5`, dates, `PW-104` → `PW-105`), a single number or text is copied; hold `Ctrl` to copy only. **Double-click** the handle to fill down as far as the next column has data.
