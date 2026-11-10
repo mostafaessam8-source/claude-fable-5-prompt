@@ -7,7 +7,7 @@
   var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
-  var S = { buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
+  var S = { sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function iso(n) { return M.serialToDate(n).toISOString().slice(0, 10); }
@@ -111,7 +111,7 @@
   }
 
   function renderGantt() {
-    var m = S.model, items = M.buildItems(m, { filter: passFilter }), box = $('gantt');
+    var m = S.model, items = M.buildItems(m, { filter: passFilter, sort: S.sortPri }), box = $('gantt');
     if (!items.length) { box.innerHTML = '<div class="g-empty">Nothing matches the filters.</div>'; $('rowHint').textContent = ''; return; }
     var ax = X.layout(items, m.meta.cut, S.scale), ppd = PPD[S.scale], x0 = ax.startOf(0), i;
     var totalW = (ax.endOf(ax.n - 1) + 1 - x0) * ppd;
@@ -123,7 +123,7 @@
     var months = ax.groups.map(function (g) { var w = (ax.endOf(g.to) + 1 - ax.startOf(g.from)) * ppd; return '<div style="width:' + w + 'px">' + h(g.label) + '</div>'; }).join('');
     var units = '';
     for (i = 0; i < ax.n; i++) units += '<div style="width:' + (ax.endOf(i) + 1 - ax.startOf(i)) * ppd + 'px">' + (S.scale === 'day' || ppd * (ax.endOf(i) - ax.startOf(i) + 1) >= 14 ? ax.subLabel(i) : '') + '</div>';
-    var out = ['<div class="g-head"><div class="g-left"><span>Project / element</span><span>Status</span><span>Submit</span><span>Appr.</span></div>' +
+    var out = ['<div class="g-head"><div class="g-left"><span>Project / element</span><span>Status</span><span>Pri</span><span>Rev</span><span>Submit</span><span>Appr.</span></div>' +
       '<div class="g-time" style="width:' + totalW + 'px"><div class="g-months">' + months + '</div><div class="g-units">' + units + '</div></div></div>'];
 
     var grid = ax.groups.map(function (g) { return '<i style="position:absolute;top:0;bottom:0;left:' + X_(ax.startOf(g.from)) + 'px;border-left:1px solid #dfe5e8"></i>'; }).join('');
@@ -143,7 +143,7 @@
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
       out.push('<div class="g-row ' + cls + '" style="height:30px" data-i="' + ix + '"><div class="g-left" style="padding-left:' + it.lvl * 14 + 'px">' +
         '<div class="g-name"><div class="t">' + tog + '<span title="' + h(it.label) + '">' + h(it.label) + '</span></div></div>' + pill +
-        '<div class="g-cell">' + (M.isNum(it.ps) ? M.fmtDate(it.ps).slice(0, 6) : '') + '</div><div class="g-cell">' + (M.isNum(it.pa) ? M.fmtDate(it.pa).slice(0, 6) : '') + '</div></div>' +
+        '<div class="g-cell">' + (M.isFinite_(it.pri) ? it.pri : '') + '</div><div class="g-cell">' + h(it.rev || '') + '</div><div class="g-cell">' + (M.isNum(it.ps) ? M.fmtDate(it.ps).slice(0, 6) : '') + '</div><div class="g-cell">' + (M.isNum(it.pa) ? M.fmtDate(it.pa).slice(0, 6) : '') + '</div></div>' +
         '<div class="g-plot" style="width:' + totalW + 'px"><div class="g-grid"></div>' + grid + bars + '</div></div>');
     });
     box.innerHTML = out.join('');
@@ -181,6 +181,7 @@
     var f = M.fmtDate, L = ['<b>' + h(it.label) + '</b>', (it.status ? 'Status: ' + it.status : 'Project') + (M.isNum(it.ps) && M.isNum(it.pa) ? ' · ' + (it.pa - it.ps) + ' days' : '')];
     L.push('Submission date: ' + (f(it.ps) || '–') + (M.isNum(it.ps) ? (it.ps <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
     L.push('Approval date: ' + (f(it.pa) || '–') + (M.isNum(it.pa) ? (it.pa <= S.model.meta.cut ? ' (actual)' : ' (forecast)') : ''));
+    L.push('Priority: ' + (M.isFinite_(it.pri) ? it.pri : '–') + (it.rev ? ' · Rev No ' + it.rev : ''));
     L.push('SAR code: ' + (it.code || 'none yet'));
     if (it.notes) L.push('“' + it.notes.replace(/\s+/g, ' ').slice(0, 160) + '”');
     return L.join('\n');
@@ -261,6 +262,8 @@
       var b = e.target.closest('.chip'); if (!b) return;
       S.sev[b.dataset.sev] = !S.sev[b.dataset.sev]; renderChecks();
     });
+    $('fSort').addEventListener('click', function () { S.sortPri = !S.sortPri; this.classList.toggle('on', S.sortPri); S.collapsed = {}; renderGantt(); });
+    $('fSort').classList.toggle('on', S.sortPri);
     $('btnCollapse').addEventListener('click', function () {
       var items = $('gantt')._items || []; S.collapsed = {};
       items.forEach(function (it, ix) { var nx = items[ix + 1]; if (nx && nx.lvl > it.lvl && it.lvl === 0) S.collapsed[it.id] = true; });

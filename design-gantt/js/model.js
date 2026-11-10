@@ -102,7 +102,7 @@
   /* ---------- header detection ---------- */
   var GLOBAL_LABELS = [
     [/^programme/, 'programme'], [/^project code/, 'code'], [/^project\s*\/\s*element|^element|^project name/, 'name'],
-    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
+    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'], [/^rev(ision)?(\s*(no\.?|number))?$/, 'rev'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
   ];
 
   function detectLayout(sheet) {
@@ -133,6 +133,9 @@
       if (/^data date/.test(norm(cells['A' + r])) && isNum(cells['C' + r])) { meta.dataDate = cells['C' + r]; meta.refs.dd = 'C' + r; }
     return meta;
   }
+
+  /* Priority as a number (1 = highest). A blank or "-" sorts last. */
+  function priNum(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : Infinity; }
 
   /* The submittal status typed in the Tracker's "Status" column (a drop-down). */
   var SUBMITTAL = ['Not Submitted', 'Partialy Submitted', 'Submitted', 'Under Review', 'Approved'];
@@ -197,12 +200,12 @@
     var projects = [], cur = null, chain = false;
     for (var r = layout.hdrRow + 1; r <= lastRow; r++) {
       var lvl = txt(G.lvl, r).toUpperCase(), prog = txt(G.programme, r), name = txt(G.name, r), pcode = txt(G.code, r);
-      var line = { row: r, name: name, subst: canonStatus(txt(G.subst, r)), notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: finalCode(r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
+      var line = { row: r, name: name, rev: txt(G.rev, r), pri: priNum(txt(G.pri, r)), subst: canonStatus(txt(G.subst, r)), notes: txt(G.notes, r), ps: dt(G.ps, r), pa: dt(G.pa, r), code: finalCode(r), strPs: typeof cells[numToCol(G.ps) + r] === 'string' };
       if (lvl === 'P' || (lvl !== 'E' && !!prog)) {
         if (!name && !pcode) { cur = null; chain = false; continue; } // a bare "NSR" row is only a separator
         // a "project" row with no project code straight under another project is really one of its lines (e.g. the 0583 packages)
         if (chain && cur && !pcode && prog === cur.programme) { cur.elements.push(line); continue; }
-        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, sar: line.code, subst: line.subst, elements: [] };
+        cur = { row: r, programme: prog, code: pcode, name: name, notes: line.notes, ps: line.ps, pa: line.pa, sar: line.code, subst: line.subst, rev: line.rev, pri: line.pri, elements: [] };
         projects.push(cur); chain = !!pcode;
         continue;
       }
@@ -262,11 +265,21 @@
   }
 
   /* ---------- Gantt line items ---------- */
+  /* End of a project's bar: its last approval, or (while approvals are still empty) the last submission of the lines shown. */
+  function lastOf(els, pa) {
+    var all = [pa]; els.forEach(function (e) { all.push(e.ps, e.pa); });
+    all = all.filter(isNum); return all.length ? Math.max.apply(null, all) : pa;
+  }
+
   function buildItems(model, o) {
     o = o || {};
     var cut = model.meta.cut, items = [], pi = 0, pass = o.filter || function () { return true; };
-    model.projects.forEach(function (p) {
+    // optional ordering: projects by their priority, and the submittals inside a project by theirs (stable: ties keep the Tracker order)
+    function byPri(list, key) { return list.map(function (x, i) { return { x: x, i: i }; }).sort(function (a, b) { var pa = key(a.x), pb = key(b.x); return pa === pb ? a.i - b.i : pa < pb ? -1 : 1; }).map(function (z) { return z.x; }); }
+    var projects = o.sort ? byPri(model.projects, function (p) { return p.pri; }) : model.projects;
+    projects.forEach(function (p) {
       var els = p.elements.filter(function (e) { return pass(p, e); });
+      if (o.sort) els = byPri(els, function (e) { return e.pri; });
       if (!els.length && !pass(p, null)) return;
       pi++;
       // when filtering, the project bar covers just the lines shown
@@ -275,9 +288,9 @@
         var a = els.map(function (e) { return e.ps; }).filter(isNum), b = els.map(function (e) { return e.pa; }).filter(isNum);
         ps = a.length ? Math.min.apply(null, a) : null; pa = b.length ? Math.max.apply(null, b) : null;
       }
-      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code && p.code !== '-' ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: '', ms: [], segs: segsOf(ps, pa, cut), notes: p.notes, trow: p.row, kids: els.length });
+      items.push({ kind: 'project', lvl: 0, id: String(pi), label: (p.code && p.code !== '-' ? p.code + ' — ' : '') + p.name, project: p, ps: ps, pa: pa, code: p.sar || '', status: '', ms: [], segs: segsOf(ps, lastOf(els, pa), cut), notes: p.notes, trow: p.row, kids: els.length, rev: p.rev || '', pri: p.pri });
       els.forEach(function (e, ei) {
-        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), segs: [], notes: e.notes, trow: e.row });
+        items.push({ kind: 'element', lvl: 1, id: pi + '.' + (ei + 1), label: e.name, project: p, element: e, ps: e.ps, pa: e.pa, code: e.code || '', status: e.status, ms: milestones(e.ps, e.pa, e.code, cut), segs: [], notes: e.notes, trow: e.row, rev: e.rev || '', pri: e.pri });
       });
     });
     return items;
@@ -328,7 +341,7 @@
   }
 
   return {
-    EPOCH: EPOCH, isNum: isNum, numToCol: numToCol, colToNum: colToNum, fmtDate: fmtDate, serialToDate: serialToDate, dateToSerial: dateToSerial, norm: norm,
+    EPOCH: EPOCH, isNum: isNum, isFinite_: function (v) { return typeof v === 'number' && isFinite(v); }, numToCol: numToCol, colToNum: colToNum, fmtDate: fmtDate, serialToDate: serialToDate, dateToSerial: dateToSerial, norm: norm,
     readWorkbook: readWorkbook, recalc: recalc, applyRevised: applyRevised, buildItems: buildItems, chartRange: chartRange, statusOf: statusOf, SUBMITTAL: SUBMITTAL, milestones: milestones,
     parseSheet: parseSheet, parseSharedStrings: parseSharedStrings, locateSheets: locateSheets, readText: readText, unesc: unesc
   };
