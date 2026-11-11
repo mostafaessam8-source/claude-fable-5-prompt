@@ -231,7 +231,7 @@ td.chk,thead th.chk{width:34px;padding-right:0;cursor:default}
 thead th.chk input{accent-color:var(--yellow)}
 tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
 #bulk{display:inline-flex;align-items:center;gap:8px;background:#FFF8E1;border:1px solid #F3E3B5;border-radius:8px;padding:3px 5px 3px 12px;font-size:13px}
-#bulk[hidden],#bSaveNow[hidden]{display:none}
+#bulk[hidden],#bSaveNow[hidden],#mAdd[hidden]{display:none}
 #dView{width:auto;min-width:min(360px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
 #dView .db{padding:0;background:#22292b;display:grid;place-items:center}
 #dView img{max-width:100%;max-height:calc(100vh - 110px);display:block}
@@ -273,6 +273,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
     <button class="btn accent" id="bSaveNow" hidden title="Save changes in this browser (Ctrl+S)">Save now</button>
     <button class="btn accent" id="bNew" title="Add a new item (N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Item</button>
     <button class="btn" id="bXlsx" title="Export to Excel (.xlsx)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Export Excel</button>
+    <button class="btn ghost" id="bImp" title="Import items from an Excel tracker file (.xlsx / .xlsm)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0l-4 4m4-4l4 4M4 17v3h16v-3"/></svg>Import Excel</button>
     <button class="btn ghost" id="bSave" title="Download a copy of this file with all current data and attachments inside"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM8 3v6h7V3M8 21v-7h8v7"/></svg>Save File</button>
     <button class="btn ghost" id="bFull" title="Full screen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullTxt">Full Screen</span></button>
   </div>
@@ -387,6 +388,13 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <div class="dh"><h2 id="aTitle">Please confirm</h2></div>
   <div class="db" id="aMsg"></div>
   <div class="df"><span class="sp"></span><button class="btn line" id="aNo">Cancel</button><button class="btn primary" id="aYes">OK</button></div>
+</dialog>
+
+<!-- import -->
+<dialog id="dImp" class="small">
+  <div class="dh"><h2>Import from Excel</h2><button class="x" id="mX" aria-label="Close">×</button></div>
+  <div class="db"><p id="mMsg" style="margin:0 0 10px;font-weight:600"></p><p id="mNote" class="hint" style="margin:0;font-size:13px"></p></div>
+  <div class="df"><span class="sp"></span><button class="btn line" id="mNo">Cancel</button><button class="btn line" id="mAdd">Add as new items</button><button class="btn danger" id="mRep">Replace current items</button></div>
 </dialog>
 
 <!-- add link -->
@@ -1107,6 +1115,158 @@ function buildXlsx() {
   ]);
 }
 $('bXlsx').onclick = () => { download(buildXlsx(), `SAR_Daily_Tracker_${today()}.xlsx`); toast('Excel file exported'); };
+
+/* ---------- Excel import (self-contained .xlsx / .xlsm reader) ---------- */
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder(), dir = new Map();
+  let e = buf.byteLength - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('not a zip file');
+  for (let p = dv.getUint32(e + 16, true), i = dv.getUint16(e + 10, true); i > 0 && dv.getUint32(p, true) === 0x02014b50; i--) {
+    const nl = dv.getUint16(p + 28, true);
+    dir.set(td.decode(u8.subarray(p + 46, p + 46 + nl)), {method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), at: dv.getUint32(p + 42, true)});
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  return async name => {
+    const f = dir.get(name); if (!f) return null;
+    const start = f.at + 30 + dv.getUint16(f.at + 26, true) + dv.getUint16(f.at + 28, true), raw = u8.subarray(start, start + f.size);
+    if (f.method === 0) return td.decode(raw);
+    if (f.method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('unsupported compression');
+    return new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+}
+const xdoc = s => new DOMParser().parseFromString(s, 'application/xml');
+const xtags = (n, t) => [...n.getElementsByTagNameNS('*', t)];
+async function readWorkbook(file) {
+  const get = await unzip(await file.arrayBuffer());
+  const wbx = await get('xl/workbook.xml'), relx = await get('xl/_rels/workbook.xml.rels');
+  if (!wbx || !relx) throw new Error('not an Excel workbook');
+  const rels = {}; xtags(xdoc(relx), 'Relationship').forEach(r => rels[r.getAttribute('Id')] = r.getAttribute('Target'));
+  const ssx = await get('xl/sharedStrings.xml');
+  const shared = ssx ? xtags(xdoc(ssx), 'si').map(si => xtags(si, 't').filter(x => x.parentNode.localName !== 'rPh').map(x => x.textContent).join('')) : [];
+  const paths = {};
+  xtags(xdoc(wbx), 'sheet').forEach(s => {
+    const tg = rels[s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id')] || '';
+    paths[s.getAttribute('name').trim().toLowerCase()] = tg.startsWith('/') ? tg.slice(1) : 'xl/' + tg;
+  });
+  return {names: Object.keys(paths), async sheet(name) {           // -> Map(rowNumber -> Map(columnNumber -> value))
+    const sx = await get(paths[name]), grid = new Map(); if (!sx) return grid;
+    for (const row of xtags(xdoc(sx), 'row')) {
+      const cells = new Map(); let ci = 0;
+      for (const c of row.children) {
+        if (c.localName !== 'c') continue;
+        const ref = /^([A-Z]+)/.exec(c.getAttribute('r') || '');
+        ci = ref ? [...ref[1]].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) : ci + 1;
+        const ty = c.getAttribute('t'); let v = null;
+        for (const ch of c.children) { if (ch.localName === 'v') v = ch.textContent; else if (ch.localName === 'is') v = xtags(ch, 't').map(x => x.textContent).join(''); }
+        if (v === null || ty === 'e') continue;
+        cells.set(ci, ty === 's' ? shared[+v] ?? '' : (ty === 'inlineStr' || ty === 'str') ? v : ty === 'b' ? v === '1' : (v.trim() !== '' && !isNaN(v)) ? +v : v);
+      }
+      if (cells.size) grid.set(+row.getAttribute('r'), cells);
+    }
+    return grid;
+  }};
+}
+function xDate(v) {
+  if (typeof v === 'number') return v > 20000 && v < 90000 ? numIso(Math.floor(v) - 25569) : '';
+  const s = String(v ?? '').trim(), p2 = x => String(x).padStart(2, '0'); let m;
+  if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))) return `${m[1]}-${p2(m[2])}-${p2(m[3])}`;
+  if ((m = /^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*[-\/ ](\d{2}|\d{4})$/.exec(s))) {
+    const i = MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase());
+    if (i >= 0) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${p2(i + 1)}-${p2(m[1])}`;
+  }
+  if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s))) return `${m[3]}-${p2(m[2])}-${p2(m[1])}`;
+  return '';
+}
+function xProg(v) {
+  const n = typeof v === 'number' ? (v <= 1 ? v * 100 : v) : parseFloat(v);
+  return isNaN(n) ? 0 : Math.max(0, Math.min(100, Math.round(n)));
+}
+async function parseExcel(file) {
+  const wb = await readWorkbook(file), str = v => String(v ?? '').trim();
+  const rowsOf = g => [...g.keys()].sort((a, b) => a - b);
+  const header = (g, need) => {                                   // find the header row and map "header text" -> column
+    for (const r of rowsOf(g).slice(0, 40)) {
+      const h = {}; g.get(r).forEach((v, c) => { const k = str(v).split('\n')[0].trim().toLowerCase(); if (k && !(k in h)) h[k] = c; });
+      if (need.every(n => Object.keys(h).some(k => k.startsWith(n)))) return {r, col: n => { const k = Object.keys(h).find(k => k === n) || Object.keys(h).find(k => k.startsWith(n + ' ')); return k ? h[k] : 0; }};
+    }
+    return null;
+  };
+  let g = null, hd = null;
+  for (const n of [...wb.names].sort((a, b) => (b === 'tracker') - (a === 'tracker'))) {
+    if (n === 'details' || n === 'updates log') continue;
+    g = await wb.sheet(n); hd = header(g, ['id', 'title']); if (hd) break;
+  }
+  if (!hd) return {items: [], updates: 0};
+  const C = {}; for (const [k, n] of Object.entries({id:'id', type:'type', title:'title', project:'project', priority:'priority', status:'status', from:'from', to:'to',
+    start:'start date', due:'due date', closed:'closed date', progress:'progress', desc:'description', output:'expected output', ref:'reference', cc:'support'})) C[k] = hd.col(n);
+  const items = [];
+  for (const r of rowsOf(g)) {
+    if (r <= hd.r) continue;
+    const at = k => C[k] ? g.get(r).get(C[k]) ?? '' : '';
+    if (!str(at('title'))) continue;
+    const it = {id: parseInt(str(at('id')), 10) || r - hd.r, _n: r - hd.r, log: []};
+    for (const k of ['type','title','project','priority','status','from','to','desc','output','ref','cc']) it[k] = str(at(k));
+    for (const k of ['start','due','closed']) it[k] = xDate(at(k));
+    it.progress = xProg(at('progress'));
+    items.push(it);
+  }
+  // detail cards of the Excel tracker ("Details" sheet): card ITEM n belongs to the n-th tracker row
+  if (wb.names.includes('details')) {
+    const d = await wb.sheet('details'), cards = new Map(); let cur = null, inlog = false;
+    for (const r of rowsOf(d)) {
+      const row = d.get(r), b = str(row.get(2)), m = /^ITEM\s+0*(\d+)/i.exec(b);
+      if (m) { cur = {desc: '', output: '', ref: '', cc: '', log: []}; cards.set(+m[1], cur); inlog = false; continue; }
+      if (!cur) continue;
+      if (/^Description/i.test(b)) cur.desc = str(row.get(3));
+      else if (/^Expected Output/i.test(b)) cur.output = str(row.get(3));
+      else if (/^Reference/i.test(b)) { cur.ref = str(row.get(3)); cur.cc = str(row.get(7)); }
+      else if (b === '#') inlog = true;
+      else if (inlog) {
+        const l = {date: xDate(row.get(3)), text: str(row.get(4)), by: str(row.get(8)), next: str(row.get(9)), files: []};
+        if (l.text || l.by || l.next) cur.log.push(l);
+      }
+    }
+    items.forEach(it => { const c = cards.get(it._n); if (c) Object.assign(it, {desc: it.desc || c.desc, output: it.output || c.output, ref: it.ref || c.ref, cc: it.cc || c.cc, log: c.log}); });
+  }
+  // "Updates Log" sheet of a file exported from this tracker
+  if (wb.names.includes('updates log')) {
+    const u = await wb.sheet('updates log'), h = header(u, ['item id', 'update']);
+    if (h) for (const r of rowsOf(u)) {
+      if (r <= h.r) continue;
+      const at = n => h.col(n) ? u.get(r).get(h.col(n)) ?? '' : '', it = items.find(i => i.id === parseInt(str(at('item id')), 10));
+      const l = {date: xDate(at('date')), text: str(at('update')), by: str(at('by')), next: str(at('next step')), files: []};
+      if (it && (l.text || l.by || l.next)) it.log.push(l);
+    }
+  }
+  items.forEach(it => delete it._n);
+  return {items, updates: items.reduce((s, i) => s + i.log.length, 0)};
+}
+$('bImp').onclick = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.xlsm';
+  inp.onchange = async () => {
+    const file = inp.files[0]; if (!file) return;
+    let res;
+    try { res = await parseExcel(file); } catch (err) { toast('Could not read this file — it must be an Excel .xlsx or .xlsm tracker'); return; }
+    if (!res.items.length) { toast('No tracker items were found in this file'); return; }
+    const d = $('dImp'), n = res.items.length, have = db.items.length;
+    $('mMsg').textContent = `Found ${n} item${n > 1 ? 's' : ''} and ${res.updates} update${res.updates === 1 ? '' : 's'} in “${file.name}”.`;
+    $('mNote').textContent = have ? `You have ${have} item${have > 1 ? 's' : ''} now. “Replace” deletes them with their attachments and loads the file instead. “Add as new items” keeps them and adds the imported items after them with new IDs.` : '';
+    $('mAdd').hidden = !have; $('mRep').textContent = have ? 'Replace current items' : 'Import'; $('mRep').className = 'btn ' + (have ? 'danger' : 'primary');
+    const done = mode => {
+      d.close(); if (!mode) return;
+      if (mode === 'rep') {
+        const seen = new Set(); let next = res.items.reduce((m, i) => Math.max(m, i.id), 0);
+        res.items.forEach(it => { if (seen.has(it.id)) it.id = ++next; seen.add(it.id); });
+        db.items = res.items;
+      } else { let next = db.items.reduce((m, i) => Math.max(m, i.id), 0); res.items.forEach(it => { it.id = ++next; db.items.push(it); }); }
+      sel.clear(); gJump = true; commit(`${n} item${n > 1 ? 's' : ''} imported`);
+    };
+    $('mRep').onclick = () => done('rep'); $('mAdd').onclick = () => done('add'); $('mNo').onclick = $('mX').onclick = () => done(null);
+    d.oncancel = e => { e.preventDefault(); done(null); };
+    d.showModal();
+  };
+  inp.click();
+};
 
 /* ---------- shortcuts ---------- */
 document.addEventListener('keydown', e => {
