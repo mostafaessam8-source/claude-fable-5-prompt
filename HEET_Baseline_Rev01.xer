@@ -1,0 +1,3128 @@
+ERMHDR	19.12	2026-11-11	Project	admin	Admin	projectdb	Project Management	SAR
+%T	CURRTYPE
+%F	curr_id	decimal_digit_cnt	curr_symbol	decimal_symbol	digit_group_symbol	pos_curr_fmt_type	neg_curr_fmt_type	curr_type	curr_short_name	group_digit_cnt	base_exch_rate
+%R	1	2	SAR	.	,	#1.1	(#1.1)	Saudi Riyal	SAR	3	1
+%T	OBS
+%F	obs_id	parent_obs_id	guid	obs_name	obs_descr	seq_num
+%R	1			Enterprise	Enterprise root	1
+%T	CALENDAR
+%F	clndr_id	default_flag	clndr_name	proj_id	base_clndr_id	last_chng_date	clndr_type	day_hr_cnt	week_hr_cnt	month_hr_cnt	year_hr_cnt	rsrc_private	clndr_data
+%R	1	Y	SAR Office & Review (Sun-Thu, 8h)			2026-11-11 08:00	CA_Base	8	40	172	2000	N	(0||CalendarData()((0||DaysOfWeek()((0||1()((0||0(s|08:00|f|16:00)())))(0||2()((0||0(s|08:00|f|16:00)())))(0||3()((0||0(s|08:00|f|16:00)())))(0||4()((0||0(s|08:00|f|16:00)())))(0||5()((0||0(s|08:00|f|16:00)())))(0||6()())(0||7()())))(0||VIEW(ShowTotal|Y)())(0||Exceptions()((0||0(d|46440)())(0||1(d|46454)())(0||2(d|46455)())(0||3(d|46456)())(0||4(d|46457)())(0||5(d|46523)())(0||6(d|46524)())(0||7(d|46525)())(0||8(d|46526)())(0||9(d|46653)())))))
+%R	2	N	Field Works (Sun-Thu, 8h)			2026-11-11 08:00	CA_Base	8	40	172	2000	N	(0||CalendarData()((0||DaysOfWeek()((0||1()((0||0(s|08:00|f|16:00)())))(0||2()((0||0(s|08:00|f|16:00)())))(0||3()((0||0(s|08:00|f|16:00)())))(0||4()((0||0(s|08:00|f|16:00)())))(0||5()((0||0(s|08:00|f|16:00)())))(0||6()())(0||7()())))(0||VIEW(ShowTotal|Y)())(0||Exceptions()((0||0(d|46440)())(0||1(d|46454)())(0||2(d|46455)())(0||3(d|46456)())(0||4(d|46457)())(0||5(d|46523)())(0||6(d|46524)())(0||7(d|46525)())(0||8(d|46526)())(0||9(d|46653)())))))
+%R	3	N	Procurement & Shipping (7-day, 8h)			2026-11-11 08:00	CA_Base	8	56	240	2920	N	(0||CalendarData()((0||DaysOfWeek()((0||1()((0||0(s|08:00|f|16:00)())))(0||2()((0||0(s|08:00|f|16:00)())))(0||3()((0||0(s|08:00|f|16:00)())))(0||4()((0||0(s|08:00|f|16:00)())))(0||5()((0||0(s|08:00|f|16:00)())))(0||6()((0||0(s|08:00|f|16:00)())))(0||7()((0||0(s|08:00|f|16:00)())))))(0||VIEW(ShowTotal|Y)())))
+%T	PROJECT
+%F	proj_id	fy_start_month_num	rsrc_self_add_flag	allow_complete_flag	rsrc_multi_assign_flag	checkout_flag	project_flag	step_complete_flag	cost_qty_recalc_flag	batch_sum_flag	name_sep_char	def_complete_pct_type	proj_short_name	clndr_id	task_code_base	task_code_step	priority_num	wbs_max_sum_level	strgy_priority_num	critical_drtn_hr_cnt	def_cost_per_qty	last_recalc_date	plan_start_date	plan_end_date	scd_end_date	add_date	def_duration_type	task_code_prefix	def_qty_type	def_rate_type	def_task_type	critical_path_type	obs_id	guid
+%R	1001	1	Y	Y	Y	N	Y	N	N	Y	.	CP_Drtn	HEET-EXT-BL	1	1000	10	10	0	500	0	0	2027-01-03 08:00	2027-01-03 08:00	2029-01-02 16:00	2029-01-02 16:00	2026-11-11 08:00	DT_FixedDrtn		QT_Hour	Price / Unit	TT_Task	CT_TotFloat	1	HEETEXTBL0000000000000001
+%T	PROJWBS
+%F	wbs_id	proj_id	obs_id	seq_num	est_wt	proj_node_flag	sum_data_flag	status_code	wbs_short_name	wbs_name	phase_id	parent_wbs_id	ev_user_pct	ev_etc_user_value	orig_cost	indep_remain_total_cost	ann_dscnt_rate_pct	dscnt_period_type	indep_remain_work_qty	anticip_start_date	anticip_end_date	ev_compute_type	ev_etc_compute_type
+%R	2000	1001	1	0	1	Y	Y	WS_Open	HEET-EXT	Extension of the Existing Rail Monitoring System in HEET													
+%R	2001	1001	1	10	1	N	Y	WS_Open	1.1	Project Milestones		2000											
+%R	2002	1001	1	20	1	N	Y	WS_Open	1.2	Stage 1 - Mobilization & Design (Month 1)		2000											
+%R	2003	1001	1	30	1	N	Y	WS_Open	1.2.1	Management & Mobilization		2002											
+%R	2004	1001	1	40	1	N	Y	WS_Open	1.2.2	Submittals (Contractor)		2002											
+%R	2005	1001	1	50	1	N	Y	WS_Open	1.2.3	SAR Reviews & Approvals		2002											
+%R	2006	1001	1	60	1	N	Y	WS_Open	1.2.4	Permits & Authority Approvals		2002											
+%R	2007	1001	1	70	1	N	Y	WS_Open	1.2.5	Survey & Assessment		2002											
+%R	2008	1001	1	80	1	N	Y	WS_Open	1.2.6	Design & Engineering		2002											
+%R	2009	1001	1	90	1	N	Y	WS_Open	1.2.7	Procurement & Logistics		2002											
+%R	2010	1001	1	100	1	N	Y	WS_Open	1.3	Stage 2 - Procurement & Construction (Months 2-10)		2000											
+%R	2011	1001	1	110	1	N	Y	WS_Open	1.3.1	Management & Mobilization		2010											
+%R	2012	1001	1	120	1	N	Y	WS_Open	1.3.2	Submittals (Contractor)		2010											
+%R	2013	1001	1	130	1	N	Y	WS_Open	1.3.3	SAR Reviews & Approvals		2010											
+%R	2014	1001	1	140	1	N	Y	WS_Open	1.3.4	Permits & Authority Approvals		2010											
+%R	2015	1001	1	150	1	N	Y	WS_Open	1.3.7	Procurement & Logistics		2010											
+%R	2016	1001	1	160	1	N	Y	WS_Open	1.3.8	Factory Acceptance Testing (FAT)		2010											
+%R	2017	1001	1	170	1	N	Y	WS_Open	1.3.9	Civil & Cable Works by Section (risk-ranked sequence)		2010											
+%R	2018	1001	1	180	1	N	Y	WS_Open	1.3.9.1	Section 1		2017											
+%R	2019	1001	1	190	1	N	Y	WS_Open	1.3.9.2	Section 2		2017											
+%R	2020	1001	1	200	1	N	Y	WS_Open	1.3.9.3	Section 3		2017											
+%R	2021	1001	1	210	1	N	Y	WS_Open	1.3.9.4	Section 4		2017											
+%R	2022	1001	1	220	1	N	Y	WS_Open	1.3.9.5	Section 5		2017											
+%R	2023	1001	1	230	1	N	Y	WS_Open	1.3.10	Station Power, Shelter, Systems, Cloud & Cyber Installation		2010											
+%R	2024	1001	1	240	1	N	Y	WS_Open	1.3.11	Testing, Commissioning & Validation		2010											
+%R	2025	1001	1	250	1	N	Y	WS_Open	1.3.13	Schedule Contingency (Time-Risk Allowance)		2010											
+%R	2026	1001	1	260	1	N	Y	WS_Open	1.4	Stage 3 - System Testing & Commissioning (Month 11)		2000											
+%R	2027	1001	1	270	1	N	Y	WS_Open	1.4.1	Management & Mobilization		2026											
+%R	2028	1001	1	280	1	N	Y	WS_Open	1.4.11	Testing, Commissioning & Validation		2026											
+%R	2029	1001	1	290	1	N	Y	WS_Open	1.4.12	Documentation, Training & Handover		2026											
+%R	2030	1001	1	300	1	N	Y	WS_Open	1.5	Stage 4 - Documentation & Handover (Month 12)		2000											
+%R	2031	1001	1	310	1	N	Y	WS_Open	1.5.2	Submittals (Contractor)		2030											
+%R	2032	1001	1	320	1	N	Y	WS_Open	1.5.3	SAR Reviews & Approvals		2030											
+%R	2033	1001	1	330	1	N	Y	WS_Open	1.5.12	Documentation, Training & Handover		2030											
+%R	2034	1001	1	340	1	N	Y	WS_Open	1.6	Post-Completion - Defects Liability Period (DLP)		2000											
+%T	UNIT
+%F	unit_id	seq_num	unit_name	unit_abbrev
+%R	1	1	SAR	SAR
+%T	RSRC
+%F	rsrc_id	parent_rsrc_id	clndr_id	role_id	shift_id	user_id	pobs_id	guid	rsrc_seq_num	email_addr	employee_code	office_phone	rsrc_name	rsrc_short_name	rsrc_title_name	def_qty_per_hr	cost_qty_type	ot_factor	active_flag	auto_compute_act_flag	def_cost_qty_link_flag	ot_flag	curr_id	unit_id	rsrc_type	location_id	rsrc_notes	load_tasks_flag	level_flag
+%R	3000		1					RS3000	1				Cost Distribution	CD	Cash-flow carrier: planned cost distribution per BoQ mapping	1	QS_Hour	1	Y	Y	N	N	1	1	RT_Mat			N	N
+%R	3001		1					RS3001	2				Protection Officer	PROTECTI	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3002		1					RS3002	3				Civil Crew	CIVIL CR	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3003		1					RS3003	4				Systems Engineers	SYSTEMS 	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3004		1					RS3004	5				Survey Crew	SURVEY C	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3005		1					RS3005	6				Design Engineers	DESIGN E	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3006		1					RS3006	7				Trench Crew	TRENCH C	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3007		1					RS3007	8				Cable Crew	CABLE CR	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3008		1					RS3008	9				Splicing & OTDR Team	SPLICING	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3009		1					RS3009	10				Electrical Crew	ELECTRIC	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3010		1					RS3010	11				Commissioning Team	COMMISSI	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3011		1					RS3011	12				IT/OT Engineers	IT/OT EN	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3012		1					RS3012	13				Document Control / Tech Writers	DOCUMENT	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%R	3013		1					RS3013	14				QA/QC & HSE Engineer	QA/QC & 	Crew / team (no cost - histogram only)	1	QS_Hour	1	Y	Y	Y	N	1		RT_Labor			N	N
+%T	RSRCRATE
+%F	rsrc_rate_id	rsrc_id	max_qty_per_hr	cost_per_qty	start_date	shift_period_id	cost_per_qty2	cost_per_qty3	cost_per_qty4	cost_per_qty5
+%R	4000	3000		1	2026-01-01 00:00					
+%R	4001	3001		0	2026-01-01 00:00					
+%R	4002	3002		0	2026-01-01 00:00					
+%R	4003	3003		0	2026-01-01 00:00					
+%R	4004	3004		0	2026-01-01 00:00					
+%R	4005	3005		0	2026-01-01 00:00					
+%R	4006	3006		0	2026-01-01 00:00					
+%R	4007	3007		0	2026-01-01 00:00					
+%R	4008	3008		0	2026-01-01 00:00					
+%R	4009	3009		0	2026-01-01 00:00					
+%R	4010	3010		0	2026-01-01 00:00					
+%R	4011	3011		0	2026-01-01 00:00					
+%R	4012	3012		0	2026-01-01 00:00					
+%R	4013	3013		0	2026-01-01 00:00					
+%T	ACTVTYPE
+%F	actv_code_type_id	actv_short_len	seq_num	actv_code_type	proj_id	wbs_id	actv_code_type_scope
+%R	5000	20	1	SoW Stage	1001		AS_Project
+%R	5001	20	2	Activity Category	1001		AS_Project
+%R	5002	20	3	Responsible	1001		AS_Project
+%R	5003	20	4	Section	1001		AS_Project
+%R	5004	20	5	System	1001		AS_Project
+%R	5005	20	6	BoQ Item	1001		AS_Project
+%R	5006	20	7	Basis	1001		AS_Project
+%R	5007	20	8	Risk Rank	1001		AS_Project
+%R	5008	20	9	Long Lead	1001		AS_Project
+%T	ACTVCODE
+%F	actv_code_id	parent_actv_code_id	actv_code_type_id	actv_code_name	short_name	seq_num	color	total_assignments
+%R	6000		5000	1 - Mobilization & Design	1 - Mobilization & D	1		0
+%R	6001		5000	2 - Procurement & Construction	2 - Procurement & Co	2		0
+%R	6002		5000	3 - Testing & Commissioning	3 - Testing & Commis	3		0
+%R	6003		5000	4 - Documentation & Handover	4 - Documentation & 	4		0
+%R	6004		5000	P - DLP (post-completion)	P - DLP (post-comple	5		0
+%R	6005		5001	Civil Works	Civil Works	1		0
+%R	6006		5001	Contingency	Contingency	2		0
+%R	6007		5001	DLP	DLP	3		0
+%R	6008		5001	Design	Design	4		0
+%R	6009		5001	Documentation / Training	Documentation / Trai	5		0
+%R	6010		5001	FAT	FAT	6		0
+%R	6011		5001	Handover	Handover	7		0
+%R	6012		5001	Installation	Installation	8		0
+%R	6013		5001	Management	Management	9		0
+%R	6014		5001	Milestone	Milestone	10		0
+%R	6015		5001	Mobilization	Mobilization	11		0
+%R	6016		5001	Permit / Authority	Permit / Authority	12		0
+%R	6017		5001	Procurement	Procurement	13		0
+%R	6018		5001	SAR Approval / Review	SAR Approval / Revie	14		0
+%R	6019		5001	Submittal (Contractor)	Submittal (Contracto	15		0
+%R	6020		5001	Survey	Survey	16		0
+%R	6021		5001	Testing / Commissioning	Testing / Commission	17		0
+%R	6022		5002	Authority	Authority	1		0
+%R	6023		5002	Contractor	Contractor	2		0
+%R	6024		5002	SAR	SAR	3		0
+%R	6025		5002	SEC	SEC	4		0
+%R	6026		5002	STC	STC	5		0
+%R	6027		5002	Supplier	Supplier	6		0
+%R	6028		5002	Third-party auditor	Third-party auditor	7		0
+%R	6029		5003	All	All	1		0
+%R	6030		5003	S1	S1	2		0
+%R	6031		5003	S2	S2	3		0
+%R	6032		5003	S3	S3	4		0
+%R	6033		5003	S4	S4	5		0
+%R	6034		5003	S5	S5	6		0
+%R	6035		5004	Civil	Civil	1		0
+%R	6036		5004	Cloud	Cloud	2		0
+%R	6037		5004	Comms	Comms	3		0
+%R	6038		5004	Cyber	Cyber	4		0
+%R	6039		5004	DAS	DAS	5		0
+%R	6040		5004	DSS	DSS	6		0
+%R	6041		5004	General	General	7		0
+%R	6042		5004	Integration	Integration	8		0
+%R	6043		5004	Power	Power	9		0
+%R	6044		5004	TDR	TDR	10		0
+%R	6045		5004	Weather	Weather	11		0
+%R	6046		5005	-	-	1		0
+%R	6047		5005	01	01	2		0
+%R	6048		5005	02	02	3		0
+%R	6049		5005	03	03	4		0
+%R	6050		5005	04	04	5		0
+%R	6051		5005	05	05	6		0
+%R	6052		5005	06	06	7		0
+%R	6053		5005	07	07	8		0
+%R	6054		5005	08	08	9		0
+%R	6055		5005	09	09	10		0
+%R	6056		5005	10	10	11		0
+%R	6057		5005	11	11	12		0
+%R	6058		5005	12	12	13		0
+%R	6059		5005	13	13	14		0
+%R	6060		5005	14	14	15		0
+%R	6061		5005	15	15	16		0
+%R	6062		5005	16	16	17		0
+%R	6063		5005	17	17	18		0
+%R	6064		5005	18	18	19		0
+%R	6065		5005	19	19	20		0
+%R	6066		5005	20	20	21		0
+%R	6067		5005	21	21	22		0
+%R	6068		5005	22	22	23		0
+%R	6069		5005	23	23	24		0
+%R	6070		5005	24	24	25		0
+%R	6071		5005	25	25	26		0
+%R	6072		5005	26	26	27		0
+%R	6073		5005	27	27	28		0
+%R	6074		5005	28	28	29		0
+%R	6075		5005	29	29	30		0
+%R	6076		5006	Applicability & duration TBC	Applicability & dura	1		0
+%R	6077		5006	Duration assumed - to be confirmed	Duration assumed - t	2		0
+%R	6078		5006	Planned (contractor)	Planned (contractor)	3		0
+%R	6079		5006	Requirement confirmed (SoW / Portal guide)	Requirement confirme	4		0
+%R	6080		5007	-	-	1		0
+%R	6081		5007	R1	R1	2		0
+%R	6082		5007	R2	R2	3		0
+%R	6083		5007	R3	R3	4		0
+%R	6084		5007	R4	R4	5		0
+%R	6085		5007	R5	R5	6		0
+%R	6086		5008	N	N	1		0
+%R	6087		5008	Y	Y	2		0
+%T	TASK
+%F	task_id	proj_id	wbs_id	clndr_id	phys_complete_pct	rev_fdbk_flag	est_wt	lock_plan_flag	auto_compute_act_flag	complete_pct_type	task_type	duration_type	status_code	task_code	task_name	rsrc_id	total_float_hr_cnt	free_float_hr_cnt	remain_drtn_hr_cnt	target_drtn_hr_cnt	early_start_date	early_end_date	late_start_date	late_end_date	target_start_date	target_end_date	cstr_date	cstr_type	priority_type	driving_path_flag	guid
+%R	7000	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_Mile	DT_FixedDrtn	TK_NotStart	MS-001	NTP - Notice to Proceed (assumed date; re-base on actual NTP)		0	0	0	0	2027-01-03 08:00	2027-01-03 08:00	2027-01-03 08:00	2027-01-03 08:00	2027-01-03 08:00	2027-01-03 08:00	2027-01-03 08:00	CS_MSOA	PT_Normal	Y	HEETEXTBL00000000007000
+%R	7001	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1010	Kick-off meeting & project management set-up		0	0	16	16	2027-01-03 08:00	2027-01-04 16:00	2027-01-03 08:00	2027-01-04 16:00	2027-01-03 08:00	2027-01-04 16:00			PT_Normal	Y	HEETEXTBL00000000007001
+%R	7002	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1020	Insurance (CAR / TPL) & performance bond issuance		128	0	32	32	2027-01-05 08:00	2027-01-10 16:00	2027-01-27 08:00	2027-02-01 16:00	2027-01-05 08:00	2027-01-10 16:00			PT_Normal	N	HEETEXTBL00000000007002
+%R	7003	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1030	PTS training & PO induction - batch 1 (initial team)		136	8	24	24	2027-01-05 08:00	2027-01-07 16:00	2027-01-28 08:00	2027-02-01 16:00	2027-01-05 08:00	2027-01-07 16:00			PT_Normal	N	HEETEXTBL00000000007003
+%R	7004	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MGT-1090	Obtain SAR risk scores & confirm Section priority (SAR input)		200	72	24	24	2027-01-05 08:00	2027-01-07 16:00	2027-02-09 08:00	2027-02-11 16:00	2027-01-05 08:00	2027-01-07 16:00			PT_Normal	N	HEETEXTBL00000000007004
+%R	7005	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1110	Prepare & submit WP-01 request in Work Permit Portal (survey & assessment)		128	0	8	8	2027-01-11 08:00	2027-01-11 16:00	2027-02-02 08:00	2027-02-02 16:00	2027-01-11 08:00	2027-01-11 16:00			PT_Normal	N	HEETEXTBL00000000007005
+%R	7006	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1120	SAR review & issue WP-01 (Work Permit Portal)		128	0	40	40	2027-01-12 08:00	2027-01-18 16:00	2027-02-03 08:00	2027-02-09 16:00	2027-01-12 08:00	2027-01-18 16:00			PT_Normal	N	HEETEXTBL00000000007006
+%R	7007	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-WP01	WP-01 issued - site access for survey & assessment		128	0	0	0	2027-01-18 16:00	2027-01-18 16:00	2027-02-09 16:00	2027-02-09 16:00	2027-01-18 16:00	2027-01-18 16:00			PT_Normal	N	HEETEXTBL00000000007007
+%R	7008	1001	2003	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1040	Site establishment - offices & temporary facilities		352	24	64	64	2027-01-19 08:00	2027-01-28 16:00	2027-03-29 08:00	2027-04-07 16:00	2027-01-19 08:00	2027-01-28 16:00			PT_Normal	N	HEETEXTBL00000000007008
+%R	7009	1001	2007	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1210	Existing system, power capacity & shelter assessment (incl. data correlation)		128	0	40	40	2027-01-19 08:00	2027-01-25 16:00	2027-02-10 08:00	2027-02-16 16:00	2027-01-19 08:00	2027-01-25 16:00			PT_Normal	N	HEETEXTBL00000000007009
+%R	7010	1001	2007	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1220	Topographic survey, GPR utilities detection & dilapidation survey (5.5 km route)		128	0	56	56	2027-01-19 08:00	2027-01-27 16:00	2027-02-10 08:00	2027-02-18 16:00	2027-01-19 08:00	2027-01-27 16:00			PT_Normal	N	HEETEXTBL00000000007010
+%R	7011	1001	2008	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1310	Detailed engineering - route, cables, power & shelter (IFC drawings)		128	0	64	64	2027-01-21 08:00	2027-02-01 16:00	2027-02-14 08:00	2027-02-24 16:00	2027-01-21 08:00	2027-02-01 16:00			PT_Normal	N	HEETEXTBL00000000007011
+%R	7012	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1320	IFC package QA check & submission to SAR		128	0	8	8	2027-02-02 08:00	2027-02-02 16:00	2027-02-25 08:00	2027-02-25 16:00	2027-02-02 08:00	2027-02-02 16:00			PT_Normal	N	HEETEXTBL00000000007012
+%R	7013	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1410	QA/QC Plan, HSE Plan & Project Execution Plan - prepare & submit		400	0	40	40	2027-01-05 08:00	2027-01-11 16:00	2027-03-23 08:00	2027-03-29 16:00	2027-01-05 08:00	2027-01-11 16:00			PT_Normal	N	HEETEXTBL00000000007013
+%R	7014	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1420	Method statements & ITPs (survey, trenching, cable laying, OTDR/splicing, track crossing, equipment) - prepare & submit		296	0	64	64	2027-01-05 08:00	2027-01-14 16:00	2027-02-28 08:00	2027-03-15 16:00	2027-01-05 08:00	2027-01-14 16:00			PT_Normal	N	HEETEXTBL00000000007014
+%R	7015	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1430	Material submittal - DSS cable NZS-DSS-C02, 48-core FO cable, TDR coaxial cable		0	0	40	40	2027-01-05 08:00	2027-01-11 16:00	2027-01-05 08:00	2027-01-11 16:00	2027-01-05 08:00	2027-01-11 16:00			PT_Normal	Y	HEETEXTBL00000000007015
+%R	7016	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1440	Material submittal - TDR system, weather station, comms modules/SIM, UPS & electrical panels, cloud hardware		240	0	48	48	2027-01-05 08:00	2027-01-12 16:00	2027-02-16 08:00	2027-02-24 16:00	2027-01-05 08:00	2027-01-12 16:00			PT_Normal	N	HEETEXTBL00000000007016
+%R	7017	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1450	Material submittal - FO closures, handholes/manholes, steel & rigid conduits, marker posts, sweet sand		352	0	40	40	2027-01-05 08:00	2027-01-11 16:00	2027-03-15 08:00	2027-03-21 16:00	2027-01-05 08:00	2027-01-11 16:00			PT_Normal	N	HEETEXTBL00000000007017
+%R	7018	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1470	Cybersecurity (NCA ECC-1/CSCC-1/OTCC-1, SAR OT/ICS) & local-cloud architecture design package		680	0	80	80	2027-01-26 08:00	2027-02-08 16:00	2027-06-07 08:00	2027-06-20 16:00	2027-01-26 08:00	2027-02-08 16:00			PT_Normal	N	HEETEXTBL00000000007018
+%R	7019	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1480	Interface Control Document - existing 1.5 km system & iSiteCentral		1104	0	64	64	2027-01-26 08:00	2027-02-04 16:00	2027-08-19 08:00	2027-08-30 16:00	2027-01-26 08:00	2027-02-04 16:00			PT_Normal	N	HEETEXTBL00000000007019
+%R	7020	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1490	FAT procedures & test plans (TDR, cables, weather, comms, UPS, cloud hardware)		240	0	48	48	2027-01-24 08:00	2027-01-31 16:00	2027-03-14 08:00	2027-03-21 16:00	2027-01-24 08:00	2027-01-31 16:00			PT_Normal	N	HEETEXTBL00000000007020
+%R	7021	1001	2012	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1495	SAT, commissioning & performance-validation procedures		1184	0	48	48	2027-03-02 08:00	2027-03-15 16:00	2027-10-07 08:00	2027-10-14 16:00	2027-03-02 08:00	2027-03-15 16:00			PT_Normal	N	HEETEXTBL00000000007021
+%R	7022	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1510	SAR review & approval - QA/QC, HSE & Execution Plans		400	272	56	56	2027-01-12 08:00	2027-01-20 16:00	2027-03-30 08:00	2027-04-07 16:00	2027-01-12 08:00	2027-01-20 16:00			PT_Normal	N	HEETEXTBL00000000007022
+%R	7023	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1520	SAR review & approval - method statements & ITPs		296	0	56	56	2027-01-17 08:00	2027-01-25 16:00	2027-03-16 08:00	2027-03-24 16:00	2027-01-17 08:00	2027-01-25 16:00			PT_Normal	N	HEETEXTBL00000000007023
+%R	7024	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1530	SAR review - cable materials (DSS, FO, TDR coax)		0	0	56	56	2027-01-12 08:00	2027-01-20 16:00	2027-01-12 08:00	2027-01-20 16:00	2027-01-12 08:00	2027-01-20 16:00			PT_Normal	Y	HEETEXTBL00000000007024
+%R	7025	1001	2004	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1535	Address SAR comments & resubmit cable materials		0	0	24	24	2027-01-21 08:00	2027-01-25 16:00	2027-01-21 08:00	2027-01-25 16:00	2027-01-21 08:00	2027-01-25 16:00			PT_Normal	Y	HEETEXTBL00000000007025
+%R	7026	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1536	SAR final approval - cable materials		0	0	24	24	2027-01-26 08:00	2027-01-28 16:00	2027-01-26 08:00	2027-01-28 16:00	2027-01-26 08:00	2027-01-28 16:00			PT_Normal	Y	HEETEXTBL00000000007026
+%R	7027	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1540	SAR review & approval - equipment materials (TDR, weather, comms, UPS/panels, cloud HW)		240	0	56	56	2027-01-13 08:00	2027-01-21 16:00	2027-02-25 08:00	2027-03-07 16:00	2027-01-13 08:00	2027-01-21 16:00			PT_Normal	N	HEETEXTBL00000000007027
+%R	7028	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1550	SAR review & approval - civil materials (closures, handholes, conduits, markers, sand)		352	0	40	40	2027-01-12 08:00	2027-01-18 16:00	2027-03-22 08:00	2027-03-28 16:00	2027-01-12 08:00	2027-01-18 16:00			PT_Normal	N	HEETEXTBL00000000007028
+%R	7029	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1560	SAR review - IFC design package		128	0	80	80	2027-02-03 08:00	2027-02-16 16:00	2027-02-28 08:00	2027-03-17 16:00	2027-02-03 08:00	2027-02-16 16:00			PT_Normal	N	HEETEXTBL00000000007029
+%R	7030	1001	2012	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1570	Address SAR comments & resubmit IFC package		128	0	32	32	2027-02-17 08:00	2027-02-23 16:00	2027-03-18 08:00	2027-03-23 16:00	2027-02-17 08:00	2027-02-23 16:00			PT_Normal	N	HEETEXTBL00000000007030
+%R	7031	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1580	SAR final approval - IFC package		128	0	32	32	2027-02-24 08:00	2027-03-01 16:00	2027-03-24 08:00	2027-03-29 16:00	2027-02-24 08:00	2027-03-01 16:00			PT_Normal	N	HEETEXTBL00000000007031
+%R	7032	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-020	IFC package approved		128	0	0	0	2027-03-01 16:00	2027-03-01 16:00	2027-03-29 16:00	2027-03-29 16:00	2027-03-01 16:00	2027-03-01 16:00			PT_Normal	N	HEETEXTBL00000000007032
+%R	7033	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1620	SAR IT/OT & cybersecurity review - architecture design		680	0	80	80	2027-02-09 08:00	2027-02-23 16:00	2027-06-21 08:00	2027-07-04 16:00	2027-02-09 08:00	2027-02-23 16:00			PT_Normal	N	HEETEXTBL00000000007033
+%R	7034	1001	2012	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1630	Address SAR comments & resubmit cyber/cloud design		680	0	24	24	2027-02-24 08:00	2027-02-28 16:00	2027-07-05 08:00	2027-07-07 16:00	2027-02-24 08:00	2027-02-28 16:00			PT_Normal	N	HEETEXTBL00000000007034
+%R	7035	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1640	SAR final approval - cyber/cloud design		680	0	24	24	2027-03-01 08:00	2027-03-03 16:00	2027-07-08 08:00	2027-07-12 16:00	2027-03-01 08:00	2027-03-03 16:00			PT_Normal	N	HEETEXTBL00000000007035
+%R	7036	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1650	SAR / system-owner review - Interface Control Document		1104	0	56	56	2027-02-07 08:00	2027-02-15 16:00	2027-08-31 08:00	2027-09-08 16:00	2027-02-07 08:00	2027-02-15 16:00			PT_Normal	N	HEETEXTBL00000000007036
+%R	7037	1001	2005	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1660	SAR review & approval - FAT procedures (SAR witness notice incl.)		240	72	56	56	2027-02-01 08:00	2027-02-09 16:00	2027-03-22 08:00	2027-03-30 16:00	2027-02-01 08:00	2027-02-09 16:00			PT_Normal	N	HEETEXTBL00000000007037
+%R	7038	1001	2013	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1670	SAR review & approval - SAT/commissioning procedures		1184	0	56	56	2027-03-16 08:00	2027-03-24 16:00	2027-10-17 08:00	2027-10-25 16:00	2027-03-16 08:00	2027-03-24 16:00			PT_Normal	N	HEETEXTBL00000000007038
+%R	7039	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-030	All material submittals approved		1368	1368	0	0	2027-01-28 16:00	2027-01-28 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-01-28 16:00	2027-01-28 16:00			PT_Normal	N	HEETEXTBL00000000007039
+%R	7040	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-010	Stage 1 complete - mobilization done & IFC package submitted		1344	1344	0	0	2027-02-02 16:00	2027-02-02 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-02-02 16:00	2027-02-02 16:00			PT_Normal	N	HEETEXTBL00000000007040
+%R	7041	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2105	Prepare TTF02 / Delivery Plan, PICOP certificates & PTS card register		296	0	24	24	2027-01-26 08:00	2027-01-28 16:00	2027-03-25 08:00	2027-03-29 16:00	2027-01-26 08:00	2027-01-28 16:00			PT_Normal	N	HEETEXTBL00000000007041
+%R	7042	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2110	Prepare & submit WP-02 (route construction works, Sections 1-5) in Work Permit Portal		128	0	16	16	2027-03-02 08:00	2027-03-03 16:00	2027-03-30 08:00	2027-03-31 16:00	2027-03-02 08:00	2027-03-03 16:00			PT_Normal	N	HEETEXTBL00000000007042
+%R	7043	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2120	SAR review & issue WP-02		128	0	40	40	2027-03-04 08:00	2027-03-16 16:00	2027-04-01 08:00	2027-04-07 16:00	2027-03-04 08:00	2027-03-16 16:00			PT_Normal	N	HEETEXTBL00000000007043
+%R	7044	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-WP02	WP-02 issued - route construction works		128	0	0	0	2027-03-16 16:00	2027-03-16 16:00	2027-04-07 16:00	2027-04-07 16:00	2027-03-16 16:00	2027-03-16 16:00			PT_Normal	N	HEETEXTBL00000000007044
+%R	7045	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2210	Prepare & submit WP-03 (steel conduits at culverts & track crossings) incl. protection / possession request		232	0	16	16	2027-03-02 08:00	2027-03-03 16:00	2027-04-18 08:00	2027-04-19 16:00	2027-03-02 08:00	2027-03-03 16:00			PT_Normal	N	HEETEXTBL00000000007045
+%R	7046	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2220	SAR review & issue WP-03 (track crossings / possession)		232	0	56	56	2027-03-04 08:00	2027-03-18 16:00	2027-04-20 08:00	2027-04-28 16:00	2027-03-04 08:00	2027-03-18 16:00			PT_Normal	N	HEETEXTBL00000000007046
+%R	7047	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-WP03	WP-03 issued - track crossing & culvert works		232	104	0	0	2027-03-18 16:00	2027-03-18 16:00	2027-04-28 16:00	2027-04-28 16:00	2027-03-18 16:00	2027-03-18 16:00			PT_Normal	N	HEETEXTBL00000000007047
+%R	7048	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2310	Prepare & submit WP-04 (power, shelter & equipment works at monitoring station)		872	0	16	16	2027-03-02 08:00	2027-03-03 16:00	2027-08-12 08:00	2027-08-15 16:00	2027-03-02 08:00	2027-03-03 16:00			PT_Normal	N	HEETEXTBL00000000007048
+%R	7049	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2320	SAR review & issue WP-04		872	0	40	40	2027-03-04 08:00	2027-03-16 16:00	2027-08-16 08:00	2027-08-22 16:00	2027-03-04 08:00	2027-03-16 16:00			PT_Normal	N	HEETEXTBL00000000007049
+%R	7050	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-WP04	WP-04 issued - station works		872	40	0	0	2027-03-16 16:00	2027-03-16 16:00	2027-08-22 16:00	2027-08-22 16:00	2027-03-16 16:00	2027-03-16 16:00			PT_Normal	N	HEETEXTBL00000000007050
+%R	7051	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2410	Submit load / connection request to SEC for power upgrade (applicability TBC)		1000	0	24	24	2027-02-02 08:00	2027-02-04 16:00	2027-08-09 08:00	2027-08-11 16:00	2027-02-02 08:00	2027-02-04 16:00			PT_Normal	N	HEETEXTBL00000000007051
+%R	7052	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2420	SEC review & connection approval (duration TBC)		1000	200	120	120	2027-02-07 08:00	2027-02-28 16:00	2027-08-12 08:00	2027-09-01 16:00	2027-02-07 08:00	2027-02-28 16:00			PT_Normal	N	HEETEXTBL00000000007052
+%R	7053	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2510	Request SIM / data-service activation from STC (primary & backup SIM)		1264	0	16	16	2027-01-24 08:00	2027-01-25 16:00	2027-09-14 08:00	2027-09-15 16:00	2027-01-24 08:00	2027-01-25 16:00			PT_Normal	N	HEETEXTBL00000000007053
+%R	7054	1001	2006	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2520	STC SIM provisioning & activation		1264	432	40	40	2027-01-26 08:00	2027-02-01 16:00	2027-09-16 08:00	2027-09-22 16:00	2027-01-26 08:00	2027-02-01 16:00			PT_Normal	N	HEETEXTBL00000000007054
+%R	7055	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2610	Request access / NOC & outage window - existing system & iSiteCentral owner		1104	0	24	24	2027-02-16 08:00	2027-02-18 16:00	2027-09-09 08:00	2027-09-13 16:00	2027-02-16 08:00	2027-02-18 16:00			PT_Normal	N	HEETEXTBL00000000007055
+%R	7056	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2620	Owner NOC & agreed tie-in / outage window		1104	72	80	80	2027-02-21 08:00	2027-03-07 16:00	2027-09-14 08:00	2027-09-28 16:00	2027-02-21 08:00	2027-03-07 16:00			PT_Normal	N	HEETEXTBL00000000007056
+%R	7057	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS10	Place PO & supplier kick-off - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	24	24	2027-01-31 08:00	2027-02-02 16:00	2027-01-31 08:00	2027-02-02 16:00	2027-01-31 08:00	2027-02-02 16:00			PT_Normal	Y	HEETEXTBL00000000007057
+%R	7058	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS20	Manufacture / supply - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	448	448	2027-02-03 08:00	2027-03-30 16:00	2027-02-03 08:00	2027-03-30 16:00	2027-02-03 08:00	2027-03-30 16:00			PT_Normal	Y	HEETEXTBL00000000007058
+%R	7059	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-DSS	FAT at manufacturer - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	16	16	2027-03-31 08:00	2027-04-01 16:00	2027-03-31 08:00	2027-04-01 16:00	2027-03-31 08:00	2027-04-01 16:00			PT_Normal	Y	HEETEXTBL00000000007059
+%R	7060	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS30	Shipping / import - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	168	168	2027-04-02 08:00	2027-04-22 16:00	2027-04-02 08:00	2027-04-22 16:00	2027-04-02 08:00	2027-04-22 16:00			PT_Normal	Y	HEETEXTBL00000000007060
+%R	7061	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS40	Customs clearance & SABER conformity - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	56	56	2027-04-23 08:00	2027-04-29 16:00	2027-04-23 08:00	2027-04-29 16:00	2027-04-23 08:00	2027-04-29 16:00			PT_Normal	Y	HEETEXTBL00000000007061
+%R	7062	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS50	Delivery to site (Heet) - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	24	24	2027-04-30 08:00	2027-05-02 16:00	2027-04-30 08:00	2027-05-02 16:00	2027-04-30 08:00	2027-05-02 16:00			PT_Normal	Y	HEETEXTBL00000000007062
+%R	7063	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO10	Place PO & supplier kick-off - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	24	24	2027-01-31 08:00	2027-02-02 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-01-31 08:00	2027-02-02 16:00			PT_Normal	N	HEETEXTBL00000000007063
+%R	7064	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO20	Manufacture / supply - Outdoor 48-core FO cable - DAS (5,500 LM)		288	0	280	280	2027-02-03 08:00	2027-03-09 16:00	2027-03-11 08:00	2027-04-14 16:00	2027-02-03 08:00	2027-03-09 16:00			PT_Normal	N	HEETEXTBL00000000007064
+%R	7065	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-FO	FAT at manufacturer - Outdoor 48-core FO cable - DAS (5,500 LM)		288	0	16	16	2027-03-10 08:00	2027-03-11 16:00	2027-04-15 08:00	2027-04-16 16:00	2027-03-10 08:00	2027-03-11 16:00			PT_Normal	N	HEETEXTBL00000000007065
+%R	7066	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO30	Shipping / import - Outdoor 48-core FO cable - DAS (5,500 LM)		288	0	112	112	2027-03-12 08:00	2027-03-25 16:00	2027-04-17 08:00	2027-04-30 16:00	2027-03-12 08:00	2027-03-25 16:00			PT_Normal	N	HEETEXTBL00000000007066
+%R	7067	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO40	Customs clearance & SABER conformity - Outdoor 48-core FO cable - DAS (5,500 LM)		288	0	56	56	2027-03-26 08:00	2027-04-01 16:00	2027-05-01 08:00	2027-05-07 16:00	2027-03-26 08:00	2027-04-01 16:00			PT_Normal	N	HEETEXTBL00000000007067
+%R	7068	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO50	Delivery to site (Heet) - Outdoor 48-core FO cable - DAS (5,500 LM)		288	248	24	24	2027-04-02 08:00	2027-04-04 16:00	2027-05-08 08:00	2027-05-10 16:00	2027-04-02 08:00	2027-04-04 16:00			PT_Normal	N	HEETEXTBL00000000007068
+%R	7069	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC10	Place PO & supplier kick-off - TDR coaxial cable (5,500 LM)		312	0	24	24	2027-01-31 08:00	2027-02-02 16:00	2027-04-01 08:00	2027-04-05 16:00	2027-01-31 08:00	2027-02-02 16:00			PT_Normal	N	HEETEXTBL00000000007069
+%R	7070	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC20	Manufacture / supply - TDR coaxial cable (5,500 LM)		496	0	224	224	2027-02-03 08:00	2027-03-02 16:00	2027-04-06 08:00	2027-05-03 16:00	2027-02-03 08:00	2027-03-02 16:00			PT_Normal	N	HEETEXTBL00000000007070
+%R	7071	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDRC	FAT at manufacturer - TDR coaxial cable (5,500 LM)		496	0	16	16	2027-03-03 08:00	2027-03-04 16:00	2027-05-04 08:00	2027-05-05 16:00	2027-03-03 08:00	2027-03-04 16:00			PT_Normal	N	HEETEXTBL00000000007071
+%R	7072	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC30	Shipping / import - TDR coaxial cable (5,500 LM)		496	0	112	112	2027-03-05 08:00	2027-03-18 16:00	2027-05-06 08:00	2027-05-19 16:00	2027-03-05 08:00	2027-03-18 16:00			PT_Normal	N	HEETEXTBL00000000007072
+%R	7073	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC40	Customs clearance & SABER conformity - TDR coaxial cable (5,500 LM)		496	0	56	56	2027-03-19 08:00	2027-03-25 16:00	2027-05-20 08:00	2027-05-26 16:00	2027-03-19 08:00	2027-03-25 16:00			PT_Normal	N	HEETEXTBL00000000007073
+%R	7074	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC50	Delivery to site (Heet) - TDR coaxial cable (5,500 LM)		496	304	24	24	2027-03-26 08:00	2027-03-28 16:00	2027-05-27 08:00	2027-05-29 16:00	2027-03-26 08:00	2027-03-28 16:00			PT_Normal	N	HEETEXTBL00000000007074
+%R	7075	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR10	Place PO & supplier kick-off - TDR system (interrogator, antenna & accessories)		680	0	24	24	2027-01-24 08:00	2027-01-26 16:00	2027-06-03 08:00	2027-06-07 16:00	2027-01-24 08:00	2027-01-26 16:00			PT_Normal	N	HEETEXTBL00000000007075
+%R	7076	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR20	Manufacture / supply - TDR system (interrogator, antenna & accessories)		1056	0	560	560	2027-01-27 08:00	2027-04-06 16:00	2027-06-08 08:00	2027-08-16 16:00	2027-01-27 08:00	2027-04-06 16:00			PT_Normal	N	HEETEXTBL00000000007076
+%R	7077	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDR	FAT at manufacturer - TDR system (interrogator, antenna & accessories)		1056	0	40	40	2027-04-07 08:00	2027-04-11 16:00	2027-08-17 08:00	2027-08-21 16:00	2027-04-07 08:00	2027-04-11 16:00			PT_Normal	N	HEETEXTBL00000000007077
+%R	7078	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR30	Shipping / import - TDR system (interrogator, antenna & accessories)		1056	0	112	112	2027-04-12 08:00	2027-04-25 16:00	2027-08-22 08:00	2027-09-04 16:00	2027-04-12 08:00	2027-04-25 16:00			PT_Normal	N	HEETEXTBL00000000007078
+%R	7079	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR40	Customs clearance & SABER conformity - TDR system (interrogator, antenna & accessories)		1056	0	56	56	2027-04-26 08:00	2027-05-02 16:00	2027-09-05 08:00	2027-09-11 16:00	2027-04-26 08:00	2027-05-02 16:00			PT_Normal	N	HEETEXTBL00000000007079
+%R	7080	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR50	Delivery to site (Heet) - TDR system (interrogator, antenna & accessories)		1056	0	24	24	2027-05-03 08:00	2027-05-05 16:00	2027-09-12 08:00	2027-09-14 16:00	2027-05-03 08:00	2027-05-05 16:00			PT_Normal	N	HEETEXTBL00000000007080
+%R	7081	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX10	Place PO & supplier kick-off - Weather station sensors		928	0	24	24	2027-01-24 08:00	2027-01-26 16:00	2027-07-18 08:00	2027-07-20 16:00	2027-01-24 08:00	2027-01-26 16:00			PT_Normal	N	HEETEXTBL00000000007081
+%R	7082	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX20	Manufacture / supply - Weather station sensors		1400	0	280	280	2027-01-27 08:00	2027-03-02 16:00	2027-07-21 08:00	2027-08-24 16:00	2027-01-27 08:00	2027-03-02 16:00			PT_Normal	N	HEETEXTBL00000000007082
+%R	7083	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-WX	FAT at manufacturer - Weather station sensors		1400	0	16	16	2027-03-03 08:00	2027-03-04 16:00	2027-08-25 08:00	2027-08-26 16:00	2027-03-03 08:00	2027-03-04 16:00			PT_Normal	N	HEETEXTBL00000000007083
+%R	7084	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX30	Shipping / import - Weather station sensors		1400	0	112	112	2027-03-05 08:00	2027-03-18 16:00	2027-08-27 08:00	2027-09-09 16:00	2027-03-05 08:00	2027-03-18 16:00			PT_Normal	N	HEETEXTBL00000000007084
+%R	7085	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX40	Customs clearance & SABER conformity - Weather station sensors		1400	0	56	56	2027-03-19 08:00	2027-03-25 16:00	2027-09-10 08:00	2027-09-16 16:00	2027-03-19 08:00	2027-03-25 16:00			PT_Normal	N	HEETEXTBL00000000007085
+%R	7086	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX50	Delivery to site (Heet) - Weather station sensors		1400	192	24	24	2027-03-26 08:00	2027-03-28 16:00	2027-09-17 08:00	2027-09-19 16:00	2027-03-26 08:00	2027-03-28 16:00			PT_Normal	N	HEETEXTBL00000000007086
+%R	7087	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM10	Place PO & supplier kick-off - Communication modules & SIM hardware		992	0	24	24	2027-01-24 08:00	2027-01-26 16:00	2027-07-28 08:00	2027-08-01 16:00	2027-01-24 08:00	2027-01-26 16:00			PT_Normal	N	HEETEXTBL00000000007087
+%R	7088	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM20	Manufacture / supply - Communication modules & SIM hardware		1496	0	224	224	2027-01-27 08:00	2027-02-23 16:00	2027-08-02 08:00	2027-08-29 16:00	2027-01-27 08:00	2027-02-23 16:00			PT_Normal	N	HEETEXTBL00000000007088
+%R	7089	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-COM	FAT at manufacturer - Communication modules & SIM hardware		1496	0	16	16	2027-02-24 08:00	2027-02-25 16:00	2027-08-30 08:00	2027-08-31 16:00	2027-02-24 08:00	2027-02-25 16:00			PT_Normal	N	HEETEXTBL00000000007089
+%R	7090	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM30	Shipping / import - Communication modules & SIM hardware		1496	0	80	80	2027-02-26 08:00	2027-03-07 16:00	2027-09-01 08:00	2027-09-10 16:00	2027-02-26 08:00	2027-03-07 16:00			PT_Normal	N	HEETEXTBL00000000007090
+%R	7091	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM40	Customs clearance & SABER conformity - Communication modules & SIM hardware		1496	0	56	56	2027-03-08 08:00	2027-03-14 16:00	2027-09-11 08:00	2027-09-17 16:00	2027-03-08 08:00	2027-03-14 16:00			PT_Normal	N	HEETEXTBL00000000007091
+%R	7092	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM50	Delivery to site (Heet) - Communication modules & SIM hardware		1496	280	24	24	2027-03-15 08:00	2027-03-17 16:00	2027-09-18 08:00	2027-09-20 16:00	2027-03-15 08:00	2027-03-17 16:00			PT_Normal	N	HEETEXTBL00000000007092
+%R	7093	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR10	Place PO & supplier kick-off - UPS (min. 4 h) & electrical panels		744	0	24	24	2027-01-24 08:00	2027-01-26 16:00	2027-06-15 08:00	2027-06-17 16:00	2027-01-24 08:00	2027-01-26 16:00			PT_Normal	N	HEETEXTBL00000000007093
+%R	7094	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR20	Manufacture / supply - UPS (min. 4 h) & electrical panels		1152	0	448	448	2027-01-27 08:00	2027-03-23 16:00	2027-06-20 08:00	2027-08-14 16:00	2027-01-27 08:00	2027-03-23 16:00			PT_Normal	N	HEETEXTBL00000000007094
+%R	7095	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-PWR	FAT at manufacturer - UPS (min. 4 h) & electrical panels		1152	0	24	24	2027-03-24 08:00	2027-03-26 16:00	2027-08-15 08:00	2027-08-17 16:00	2027-03-24 08:00	2027-03-26 16:00			PT_Normal	N	HEETEXTBL00000000007095
+%R	7096	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR30	Shipping / import - UPS (min. 4 h) & electrical panels		1152	0	56	56	2027-03-27 08:00	2027-04-02 16:00	2027-08-18 08:00	2027-08-24 16:00	2027-03-27 08:00	2027-04-02 16:00			PT_Normal	N	HEETEXTBL00000000007096
+%R	7097	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR40	Customs clearance & SABER conformity - UPS (min. 4 h) & electrical panels		1152	0	40	40	2027-04-03 08:00	2027-04-07 16:00	2027-08-25 08:00	2027-08-29 16:00	2027-04-03 08:00	2027-04-07 16:00			PT_Normal	N	HEETEXTBL00000000007097
+%R	7098	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR50	Delivery to site (Heet) - UPS (min. 4 h) & electrical panels		1152	0	24	24	2027-04-08 08:00	2027-04-10 16:00	2027-08-30 08:00	2027-09-01 16:00	2027-04-08 08:00	2027-04-10 16:00			PT_Normal	N	HEETEXTBL00000000007098
+%R	7099	1001	2015	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD10	Place PO & supplier kick-off - Local-cloud hardware & licences (KSA hosted)		680	0	24	24	2027-03-04 08:00	2027-03-14 16:00	2027-07-13 08:00	2027-07-15 16:00	2027-03-04 08:00	2027-03-14 16:00			PT_Normal	N	HEETEXTBL00000000007099
+%R	7100	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD20	Manufacture / supply - Local-cloud hardware & licences (KSA hosted)		992	0	224	224	2027-03-15 08:00	2027-04-11 16:00	2027-07-17 08:00	2027-08-13 16:00	2027-03-15 08:00	2027-04-11 16:00			PT_Normal	N	HEETEXTBL00000000007100
+%R	7101	1001	2016	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-CLD	FAT at manufacturer - Local-cloud hardware & licences (KSA hosted)		992	0	24	24	2027-04-12 08:00	2027-04-14 16:00	2027-08-14 08:00	2027-08-16 16:00	2027-04-12 08:00	2027-04-14 16:00			PT_Normal	N	HEETEXTBL00000000007101
+%R	7102	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD30	Shipping / import - Local-cloud hardware & licences (KSA hosted)		992	0	80	80	2027-04-15 08:00	2027-04-24 16:00	2027-08-17 08:00	2027-08-26 16:00	2027-04-15 08:00	2027-04-24 16:00			PT_Normal	N	HEETEXTBL00000000007102
+%R	7103	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD40	Customs clearance & SABER conformity - Local-cloud hardware & licences (KSA hosted)		992	0	56	56	2027-04-25 08:00	2027-05-01 16:00	2027-08-27 08:00	2027-09-02 16:00	2027-04-25 08:00	2027-05-01 16:00			PT_Normal	N	HEETEXTBL00000000007103
+%R	7104	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD50	Delivery to site (Heet) - Local-cloud hardware & licences (KSA hosted)		992	0	24	24	2027-05-02 08:00	2027-05-04 16:00	2027-09-03 08:00	2027-09-05 16:00	2027-05-02 08:00	2027-05-04 16:00			PT_Normal	N	HEETEXTBL00000000007104
+%R	7105	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS10	Place PO & supplier kick-off - FO closures, splice trays, connectors & pigtails		352	0	24	24	2027-01-19 08:00	2027-01-21 16:00	2027-03-29 08:00	2027-03-31 16:00	2027-01-19 08:00	2027-01-21 16:00			PT_Normal	N	HEETEXTBL00000000007105
+%R	7106	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS20	Manufacture / supply - FO closures, splice trays, connectors & pigtails		552	0	224	224	2027-01-22 08:00	2027-02-18 16:00	2027-04-01 08:00	2027-04-28 16:00	2027-01-22 08:00	2027-02-18 16:00			PT_Normal	N	HEETEXTBL00000000007106
+%R	7107	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS30	Shipping / import - FO closures, splice trays, connectors & pigtails		552	0	112	112	2027-02-19 08:00	2027-03-04 16:00	2027-04-29 08:00	2027-05-12 16:00	2027-02-19 08:00	2027-03-04 16:00			PT_Normal	N	HEETEXTBL00000000007107
+%R	7108	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS40	Customs clearance & SABER conformity - FO closures, splice trays, connectors & pigtails		552	0	56	56	2027-03-05 08:00	2027-03-11 16:00	2027-05-13 08:00	2027-05-19 16:00	2027-03-05 08:00	2027-03-11 16:00			PT_Normal	N	HEETEXTBL00000000007108
+%R	7109	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS50	Delivery to site (Heet) - FO closures, splice trays, connectors & pigtails		552	416	24	24	2027-03-12 08:00	2027-03-14 16:00	2027-05-20 08:00	2027-05-22 16:00	2027-03-12 08:00	2027-03-14 16:00			PT_Normal	N	HEETEXTBL00000000007109
+%R	7110	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH10	Place PO & supplier kick-off - Handholes & manholes (precast)		368	0	24	24	2027-01-19 08:00	2027-01-21 16:00	2027-03-31 08:00	2027-04-04 16:00	2027-01-19 08:00	2027-01-21 16:00			PT_Normal	N	HEETEXTBL00000000007110
+%R	7111	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH20	Manufacture / supply - Handholes & manholes (precast)		584	0	168	168	2027-01-22 08:00	2027-02-11 16:00	2027-04-05 08:00	2027-04-25 16:00	2027-01-22 08:00	2027-02-11 16:00			PT_Normal	N	HEETEXTBL00000000007111
+%R	7112	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH50	Delivery to site (Heet) - Handholes & manholes (precast)		584	408	24	24	2027-02-12 08:00	2027-02-14 16:00	2027-04-26 08:00	2027-04-28 16:00	2027-02-12 08:00	2027-02-14 16:00			PT_Normal	N	HEETEXTBL00000000007112
+%R	7113	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND10	Place PO & supplier kick-off - Steel & rigid conduits		408	0	24	24	2027-01-19 08:00	2027-01-21 16:00	2027-04-07 08:00	2027-04-11 16:00	2027-01-19 08:00	2027-01-21 16:00			PT_Normal	N	HEETEXTBL00000000007113
+%R	7114	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND20	Manufacture / supply - Steel & rigid conduits		640	0	112	112	2027-01-22 08:00	2027-02-04 16:00	2027-04-12 08:00	2027-04-25 16:00	2027-01-22 08:00	2027-02-04 16:00			PT_Normal	N	HEETEXTBL00000000007114
+%R	7115	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND50	Delivery to site (Heet) - Steel & rigid conduits		640	464	24	24	2027-02-05 08:00	2027-02-07 16:00	2027-04-26 08:00	2027-04-28 16:00	2027-02-05 08:00	2027-02-07 16:00			PT_Normal	N	HEETEXTBL00000000007115
+%R	7116	1001	2009	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK10	Place PO & supplier kick-off - Marker posts, warning tape & route markers		1320	0	24	24	2027-01-19 08:00	2027-01-21 16:00	2027-09-20 08:00	2027-09-22 16:00	2027-01-19 08:00	2027-01-21 16:00			PT_Normal	N	HEETEXTBL00000000007116
+%R	7117	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK20	Manufacture / supply - Marker posts, warning tape & route markers		1952	0	112	112	2027-01-22 08:00	2027-02-04 16:00	2027-09-23 08:00	2027-10-06 16:00	2027-01-22 08:00	2027-02-04 16:00			PT_Normal	N	HEETEXTBL00000000007117
+%R	7118	1001	2015	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK50	Delivery to site (Heet) - Marker posts, warning tape & route markers		1952	696	24	24	2027-02-05 08:00	2027-02-07 16:00	2027-10-07 08:00	2027-10-09 16:00	2027-02-05 08:00	2027-02-07 16:00			PT_Normal	N	HEETEXTBL00000000007118
+%R	7119	1001	2009	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-SND10	Arrange sweet-sand source, approval & stockpile at site		632	456	56	56	2027-01-19 08:00	2027-01-25 16:00	2027-04-08 08:00	2027-04-14 16:00	2027-01-19 08:00	2027-01-25 16:00			PT_Normal	N	HEETEXTBL00000000007119
+%R	7120	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-050	All long-lead materials delivered to site		856	856	0	0	2027-05-05 16:00	2027-05-05 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-05-05 16:00	2027-05-05 16:00			PT_Normal	N	HEETEXTBL00000000007120
+%R	7121	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-060	FAT complete (all equipment groups)		976	976	0	0	2027-04-14 16:00	2027-04-14 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-04-14 16:00	2027-04-14 16:00			PT_Normal	N	HEETEXTBL00000000007121
+%R	7122	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-3005	PTS training & PO induction - batch 2 (field crews)		328	200	24	24	2027-01-31 08:00	2027-02-02 16:00	2027-04-05 08:00	2027-04-07 16:00	2027-01-31 08:00	2027-02-02 16:00			PT_Normal	N	HEETEXTBL00000000007122
+%R	7123	1001	2011	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-3010	Mobilize plant, equipment & labour; compound & logistics set-up		128	0	40	40	2027-03-17 08:00	2027-03-23 16:00	2027-04-08 08:00	2027-04-14 16:00	2027-03-17 08:00	2027-03-23 16:00			PT_Normal	N	HEETEXTBL00000000007123
+%R	7124	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-110	Section 1 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		128	0	80	80	2027-03-24 08:00	2027-04-06 16:00	2027-04-15 08:00	2027-04-28 16:00	2027-03-24 08:00	2027-04-06 16:00			PT_Normal	N	HEETEXTBL00000000007124
+%R	7125	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-120	Section 1 - handholes / manholes installation		128	128	16	16	2027-04-07 08:00	2027-04-08 16:00	2027-04-29 08:00	2027-05-02 16:00	2027-04-07 08:00	2027-04-08 16:00			PT_Normal	N	HEETEXTBL00000000007125
+%R	7126	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-130	Section 1 - steel & rigid conduits at culverts / track crossings		128	128	16	16	2027-04-07 08:00	2027-04-08 16:00	2027-04-29 08:00	2027-05-02 16:00	2027-04-07 08:00	2027-04-08 16:00			PT_Normal	N	HEETEXTBL00000000007126
+%R	7127	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-110	Section 1 - Layer 1: lay DSS cable, pre-installed connectors, OTDR test		0	0	32	32	2027-05-03 08:00	2027-05-06 16:00	2027-05-03 08:00	2027-05-06 16:00	2027-05-03 08:00	2027-05-06 16:00			PT_Normal	Y	HEETEXTBL00000000007127
+%R	7128	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-120	Section 1 - backfill & compaction - layer 1		0	0	16	16	2027-05-09 08:00	2027-05-10 16:00	2027-05-09 08:00	2027-05-10 16:00	2027-05-09 08:00	2027-05-10 16:00			PT_Normal	Y	HEETEXTBL00000000007128
+%R	7129	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-130	Section 1 - Layer 2: pull 48-core FO cable (DAS), OTDR test		0	0	32	32	2027-05-11 08:00	2027-05-20 16:00	2027-05-11 08:00	2027-05-20 16:00	2027-05-11 08:00	2027-05-20 16:00			PT_Normal	Y	HEETEXTBL00000000007129
+%R	7130	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SPL-110	Section 1 - fusion splicing (<=0.1 dB), FO closures & OTDR splice-loss test		0	0	24	24	2027-05-23 08:00	2027-05-25 16:00	2027-05-23 08:00	2027-05-25 16:00	2027-05-23 08:00	2027-05-25 16:00			PT_Normal	Y	HEETEXTBL00000000007130
+%R	7131	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-140	Section 1 - backfill & compaction - layer 2		0	0	16	16	2027-05-26 08:00	2027-05-27 16:00	2027-05-26 08:00	2027-05-27 16:00	2027-05-26 08:00	2027-05-27 16:00			PT_Normal	Y	HEETEXTBL00000000007131
+%R	7132	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-150	Section 1 - Layer 3: lay TDR coaxial cable, continuity test		0	0	24	24	2027-05-30 08:00	2027-06-01 16:00	2027-05-30 08:00	2027-06-01 16:00	2027-05-30 08:00	2027-06-01 16:00			PT_Normal	Y	HEETEXTBL00000000007132
+%R	7133	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-160	Section 1 - final backfill, compaction & reinstatement		0	0	16	16	2027-06-02 08:00	2027-06-03 16:00	2027-06-02 08:00	2027-06-03 16:00	2027-06-02 08:00	2027-06-03 16:00			PT_Normal	Y	HEETEXTBL00000000007133
+%R	7134	1001	2018	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-140	Section 1 - marker posts, warning tape & route markers		712	712	8	8	2027-06-06 08:00	2027-06-06 16:00	2027-10-10 08:00	2027-10-10 16:00	2027-06-06 08:00	2027-06-06 16:00			PT_Normal	N	HEETEXTBL00000000007134
+%R	7135	1001	2024	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-110	Section 1 - final OTDR certification & test record		696	640	8	8	2027-06-06 08:00	2027-06-06 16:00	2027-10-06 08:00	2027-10-06 16:00	2027-06-06 08:00	2027-06-06 16:00			PT_Normal	N	HEETEXTBL00000000007135
+%R	7136	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-210	Section 2 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		208	0	80	80	2027-04-07 08:00	2027-04-20 16:00	2027-05-13 08:00	2027-06-01 16:00	2027-04-07 08:00	2027-04-20 16:00			PT_Normal	N	HEETEXTBL00000000007136
+%R	7137	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-220	Section 2 - handholes / manholes installation		208	208	16	16	2027-04-21 08:00	2027-04-22 16:00	2027-06-02 08:00	2027-06-03 16:00	2027-04-21 08:00	2027-04-22 16:00			PT_Normal	N	HEETEXTBL00000000007137
+%R	7138	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-230	Section 2 - steel & rigid conduits at culverts / track crossings		208	208	16	16	2027-04-21 08:00	2027-04-22 16:00	2027-06-02 08:00	2027-06-03 16:00	2027-04-21 08:00	2027-04-22 16:00			PT_Normal	N	HEETEXTBL00000000007138
+%R	7139	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-210	Section 2 - Layer 1: lay DSS cable, pre-installed connectors, OTDR test		0	0	32	32	2027-06-06 08:00	2027-06-09 16:00	2027-06-06 08:00	2027-06-09 16:00	2027-06-06 08:00	2027-06-09 16:00			PT_Normal	Y	HEETEXTBL00000000007139
+%R	7140	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-220	Section 2 - backfill & compaction - layer 1		0	0	16	16	2027-06-10 08:00	2027-06-13 16:00	2027-06-10 08:00	2027-06-13 16:00	2027-06-10 08:00	2027-06-13 16:00			PT_Normal	Y	HEETEXTBL00000000007140
+%R	7141	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-230	Section 2 - Layer 2: pull 48-core FO cable (DAS), OTDR test		0	0	32	32	2027-06-14 08:00	2027-06-17 16:00	2027-06-14 08:00	2027-06-17 16:00	2027-06-14 08:00	2027-06-17 16:00			PT_Normal	Y	HEETEXTBL00000000007141
+%R	7142	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SPL-210	Section 2 - fusion splicing (<=0.1 dB), FO closures & OTDR splice-loss test		0	0	24	24	2027-06-20 08:00	2027-06-22 16:00	2027-06-20 08:00	2027-06-22 16:00	2027-06-20 08:00	2027-06-22 16:00			PT_Normal	Y	HEETEXTBL00000000007142
+%R	7143	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-240	Section 2 - backfill & compaction - layer 2		0	0	16	16	2027-06-23 08:00	2027-06-24 16:00	2027-06-23 08:00	2027-06-24 16:00	2027-06-23 08:00	2027-06-24 16:00			PT_Normal	Y	HEETEXTBL00000000007143
+%R	7144	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-250	Section 2 - Layer 3: lay TDR coaxial cable, continuity test		0	0	24	24	2027-06-27 08:00	2027-06-29 16:00	2027-06-27 08:00	2027-06-29 16:00	2027-06-27 08:00	2027-06-29 16:00			PT_Normal	Y	HEETEXTBL00000000007144
+%R	7145	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-260	Section 2 - final backfill, compaction & reinstatement		0	0	16	16	2027-06-30 08:00	2027-07-01 16:00	2027-06-30 08:00	2027-07-01 16:00	2027-06-30 08:00	2027-07-01 16:00			PT_Normal	Y	HEETEXTBL00000000007145
+%R	7146	1001	2019	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-240	Section 2 - marker posts, warning tape & route markers		552	552	8	8	2027-07-04 08:00	2027-07-04 16:00	2027-10-10 08:00	2027-10-10 16:00	2027-07-04 08:00	2027-07-04 16:00			PT_Normal	N	HEETEXTBL00000000007146
+%R	7147	1001	2024	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-210	Section 2 - final OTDR certification & test record		536	480	8	8	2027-07-04 08:00	2027-07-04 16:00	2027-10-06 08:00	2027-10-06 16:00	2027-07-04 08:00	2027-07-04 16:00			PT_Normal	N	HEETEXTBL00000000007147
+%R	7148	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-310	Section 3 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		64	0	80	80	2027-06-06 08:00	2027-06-17 16:00	2027-06-16 08:00	2027-06-29 16:00	2027-06-06 08:00	2027-06-17 16:00			PT_Normal	N	HEETEXTBL00000000007148
+%R	7149	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-320	Section 3 - handholes / manholes installation		64	64	16	16	2027-06-20 08:00	2027-06-21 16:00	2027-06-30 08:00	2027-07-01 16:00	2027-06-20 08:00	2027-06-21 16:00			PT_Normal	N	HEETEXTBL00000000007149
+%R	7150	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-330	Section 3 - steel & rigid conduits at culverts / track crossings		64	64	16	16	2027-06-20 08:00	2027-06-21 16:00	2027-06-30 08:00	2027-07-01 16:00	2027-06-20 08:00	2027-06-21 16:00			PT_Normal	N	HEETEXTBL00000000007150
+%R	7151	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-310	Section 3 - Layer 1: lay DSS cable, pre-installed connectors, OTDR test		0	0	32	32	2027-07-04 08:00	2027-07-07 16:00	2027-07-04 08:00	2027-07-07 16:00	2027-07-04 08:00	2027-07-07 16:00			PT_Normal	Y	HEETEXTBL00000000007151
+%R	7152	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-320	Section 3 - backfill & compaction - layer 1		0	0	16	16	2027-07-08 08:00	2027-07-11 16:00	2027-07-08 08:00	2027-07-11 16:00	2027-07-08 08:00	2027-07-11 16:00			PT_Normal	Y	HEETEXTBL00000000007152
+%R	7153	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-330	Section 3 - Layer 2: pull 48-core FO cable (DAS), OTDR test		0	0	32	32	2027-07-12 08:00	2027-07-15 16:00	2027-07-12 08:00	2027-07-15 16:00	2027-07-12 08:00	2027-07-15 16:00			PT_Normal	Y	HEETEXTBL00000000007153
+%R	7154	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SPL-310	Section 3 - fusion splicing (<=0.1 dB), FO closures & OTDR splice-loss test		0	0	24	24	2027-07-18 08:00	2027-07-20 16:00	2027-07-18 08:00	2027-07-20 16:00	2027-07-18 08:00	2027-07-20 16:00			PT_Normal	Y	HEETEXTBL00000000007154
+%R	7155	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-340	Section 3 - backfill & compaction - layer 2		0	0	16	16	2027-07-21 08:00	2027-07-22 16:00	2027-07-21 08:00	2027-07-22 16:00	2027-07-21 08:00	2027-07-22 16:00			PT_Normal	Y	HEETEXTBL00000000007155
+%R	7156	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-350	Section 3 - Layer 3: lay TDR coaxial cable, continuity test		0	0	24	24	2027-07-25 08:00	2027-07-27 16:00	2027-07-25 08:00	2027-07-27 16:00	2027-07-25 08:00	2027-07-27 16:00			PT_Normal	Y	HEETEXTBL00000000007156
+%R	7157	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-360	Section 3 - final backfill, compaction & reinstatement		0	0	16	16	2027-07-28 08:00	2027-07-29 16:00	2027-07-28 08:00	2027-07-29 16:00	2027-07-28 08:00	2027-07-29 16:00			PT_Normal	Y	HEETEXTBL00000000007157
+%R	7158	1001	2020	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-340	Section 3 - marker posts, warning tape & route markers		392	392	8	8	2027-08-01 08:00	2027-08-01 16:00	2027-10-10 08:00	2027-10-10 16:00	2027-08-01 08:00	2027-08-01 16:00			PT_Normal	N	HEETEXTBL00000000007158
+%R	7159	1001	2024	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-310	Section 3 - final OTDR certification & test record		376	320	8	8	2027-08-01 08:00	2027-08-01 16:00	2027-10-06 08:00	2027-10-06 16:00	2027-08-01 08:00	2027-08-01 16:00			PT_Normal	N	HEETEXTBL00000000007159
+%R	7160	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-410	Section 4 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		64	0	80	80	2027-07-04 08:00	2027-07-15 16:00	2027-07-14 08:00	2027-07-27 16:00	2027-07-04 08:00	2027-07-15 16:00			PT_Normal	N	HEETEXTBL00000000007160
+%R	7161	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-420	Section 4 - handholes / manholes installation		64	64	16	16	2027-07-18 08:00	2027-07-19 16:00	2027-07-28 08:00	2027-07-29 16:00	2027-07-18 08:00	2027-07-19 16:00			PT_Normal	N	HEETEXTBL00000000007161
+%R	7162	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-430	Section 4 - steel & rigid conduits at culverts / track crossings		64	64	16	16	2027-07-18 08:00	2027-07-19 16:00	2027-07-28 08:00	2027-07-29 16:00	2027-07-18 08:00	2027-07-19 16:00			PT_Normal	N	HEETEXTBL00000000007162
+%R	7163	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-410	Section 4 - Layer 1: lay DSS cable, pre-installed connectors, OTDR test		0	0	32	32	2027-08-01 08:00	2027-08-04 16:00	2027-08-01 08:00	2027-08-04 16:00	2027-08-01 08:00	2027-08-04 16:00			PT_Normal	Y	HEETEXTBL00000000007163
+%R	7164	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-420	Section 4 - backfill & compaction - layer 1		0	0	16	16	2027-08-05 08:00	2027-08-08 16:00	2027-08-05 08:00	2027-08-08 16:00	2027-08-05 08:00	2027-08-08 16:00			PT_Normal	Y	HEETEXTBL00000000007164
+%R	7165	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-430	Section 4 - Layer 2: pull 48-core FO cable (DAS), OTDR test		0	0	32	32	2027-08-09 08:00	2027-08-12 16:00	2027-08-09 08:00	2027-08-12 16:00	2027-08-09 08:00	2027-08-12 16:00			PT_Normal	Y	HEETEXTBL00000000007165
+%R	7166	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SPL-410	Section 4 - fusion splicing (<=0.1 dB), FO closures & OTDR splice-loss test		0	0	24	24	2027-08-15 08:00	2027-08-17 16:00	2027-08-15 08:00	2027-08-17 16:00	2027-08-15 08:00	2027-08-17 16:00			PT_Normal	Y	HEETEXTBL00000000007166
+%R	7167	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-440	Section 4 - backfill & compaction - layer 2		0	0	16	16	2027-08-18 08:00	2027-08-19 16:00	2027-08-18 08:00	2027-08-19 16:00	2027-08-18 08:00	2027-08-19 16:00			PT_Normal	Y	HEETEXTBL00000000007167
+%R	7168	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-450	Section 4 - Layer 3: lay TDR coaxial cable, continuity test		0	0	24	24	2027-08-22 08:00	2027-08-24 16:00	2027-08-22 08:00	2027-08-24 16:00	2027-08-22 08:00	2027-08-24 16:00			PT_Normal	Y	HEETEXTBL00000000007168
+%R	7169	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-460	Section 4 - final backfill, compaction & reinstatement		0	0	16	16	2027-08-25 08:00	2027-08-26 16:00	2027-08-25 08:00	2027-08-26 16:00	2027-08-25 08:00	2027-08-26 16:00			PT_Normal	Y	HEETEXTBL00000000007169
+%R	7170	1001	2021	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-440	Section 4 - marker posts, warning tape & route markers		232	232	8	8	2027-08-29 08:00	2027-08-29 16:00	2027-10-10 08:00	2027-10-10 16:00	2027-08-29 08:00	2027-08-29 16:00			PT_Normal	N	HEETEXTBL00000000007170
+%R	7171	1001	2024	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-410	Section 4 - final OTDR certification & test record		216	160	8	8	2027-08-29 08:00	2027-08-29 16:00	2027-10-06 08:00	2027-10-06 16:00	2027-08-29 08:00	2027-08-29 16:00			PT_Normal	N	HEETEXTBL00000000007171
+%R	7172	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-510	Section 5 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		64	0	80	80	2027-08-01 08:00	2027-08-12 16:00	2027-08-11 08:00	2027-08-24 16:00	2027-08-01 08:00	2027-08-12 16:00			PT_Normal	N	HEETEXTBL00000000007172
+%R	7173	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-520	Section 5 - handholes / manholes installation		64	64	16	16	2027-08-15 08:00	2027-08-16 16:00	2027-08-25 08:00	2027-08-26 16:00	2027-08-15 08:00	2027-08-16 16:00			PT_Normal	N	HEETEXTBL00000000007173
+%R	7174	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-530	Section 5 - steel & rigid conduits at culverts / track crossings		64	64	16	16	2027-08-15 08:00	2027-08-16 16:00	2027-08-25 08:00	2027-08-26 16:00	2027-08-15 08:00	2027-08-16 16:00			PT_Normal	N	HEETEXTBL00000000007174
+%R	7175	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-510	Section 5 - Layer 1: lay DSS cable, pre-installed connectors, OTDR test		0	0	32	32	2027-08-29 08:00	2027-09-01 16:00	2027-08-29 08:00	2027-09-01 16:00	2027-08-29 08:00	2027-09-01 16:00			PT_Normal	Y	HEETEXTBL00000000007175
+%R	7176	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-520	Section 5 - backfill & compaction - layer 1		0	0	16	16	2027-09-02 08:00	2027-09-05 16:00	2027-09-02 08:00	2027-09-05 16:00	2027-09-02 08:00	2027-09-05 16:00			PT_Normal	Y	HEETEXTBL00000000007176
+%R	7177	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-530	Section 5 - Layer 2: pull 48-core FO cable (DAS), OTDR test		0	0	32	32	2027-09-06 08:00	2027-09-09 16:00	2027-09-06 08:00	2027-09-09 16:00	2027-09-06 08:00	2027-09-09 16:00			PT_Normal	Y	HEETEXTBL00000000007177
+%R	7178	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SPL-510	Section 5 - fusion splicing (<=0.1 dB), FO closures & OTDR splice-loss test		0	0	24	24	2027-09-12 08:00	2027-09-14 16:00	2027-09-12 08:00	2027-09-14 16:00	2027-09-12 08:00	2027-09-14 16:00			PT_Normal	Y	HEETEXTBL00000000007178
+%R	7179	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-540	Section 5 - backfill & compaction - layer 2		0	0	16	16	2027-09-15 08:00	2027-09-16 16:00	2027-09-15 08:00	2027-09-16 16:00	2027-09-15 08:00	2027-09-16 16:00			PT_Normal	Y	HEETEXTBL00000000007179
+%R	7180	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-550	Section 5 - Layer 3: lay TDR coaxial cable, continuity test		0	0	24	24	2027-09-19 08:00	2027-09-21 16:00	2027-09-19 08:00	2027-09-21 16:00	2027-09-19 08:00	2027-09-21 16:00			PT_Normal	Y	HEETEXTBL00000000007180
+%R	7181	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-560	Section 5 - final backfill, compaction & reinstatement		56	0	16	16	2027-09-22 08:00	2027-09-26 16:00	2027-10-04 08:00	2027-10-05 16:00	2027-09-22 08:00	2027-09-26 16:00			PT_Normal	N	HEETEXTBL00000000007181
+%R	7182	1001	2022	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-540	Section 5 - marker posts, warning tape & route markers		72	72	8	8	2027-09-27 08:00	2027-09-27 16:00	2027-10-10 08:00	2027-10-10 16:00	2027-09-27 08:00	2027-09-27 16:00			PT_Normal	N	HEETEXTBL00000000007182
+%R	7183	1001	2024	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-510	Section 5 - final OTDR certification & test record		56	0	8	8	2027-09-27 08:00	2027-09-27 16:00	2027-10-06 08:00	2027-10-06 16:00	2027-09-27 08:00	2027-09-27 16:00			PT_Normal	N	HEETEXTBL00000000007183
+%R	7184	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SHL-3410	Shelter expansion - civil works (if required per assessment)		832	32	64	64	2027-03-24 08:00	2027-04-04 16:00	2027-08-23 08:00	2027-09-01 16:00	2027-03-24 08:00	2027-04-04 16:00			PT_Normal	N	HEETEXTBL00000000007184
+%R	7185	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3420	Electrical installation - panels & power upgrade (incl. SEC connection)		800	0	48	48	2027-04-11 08:00	2027-04-18 16:00	2027-09-02 08:00	2027-09-09 16:00	2027-04-11 08:00	2027-04-18 16:00			PT_Normal	N	HEETEXTBL00000000007185
+%R	7186	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3430	UPS installation & 4-hour autonomy test		800	0	24	24	2027-04-19 08:00	2027-04-21 16:00	2027-09-12 08:00	2027-09-14 16:00	2027-04-19 08:00	2027-04-21 16:00			PT_Normal	N	HEETEXTBL00000000007186
+%R	7187	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TDR-3510	TDR system installation - interrogator & antenna		720	720	40	40	2027-05-06 08:00	2027-05-12 16:00	2027-09-15 08:00	2027-09-21 16:00	2027-05-06 08:00	2027-05-12 16:00			PT_Normal	N	HEETEXTBL00000000007187
+%R	7188	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TDR-3520	TDR configuration, calibration & pre-commissioning		0	0	32	32	2027-09-22 08:00	2027-09-28 16:00	2027-09-22 08:00	2027-09-28 16:00	2027-09-22 08:00	2027-09-28 16:00			PT_Normal	Y	HEETEXTBL00000000007188
+%R	7189	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3610	Weather station sensors installation		824	0	24	24	2027-04-22 08:00	2027-04-26 16:00	2027-09-20 08:00	2027-09-22 16:00	2027-04-22 08:00	2027-04-26 16:00			PT_Normal	N	HEETEXTBL00000000007189
+%R	7190	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3620	Weather station integration with data logger		824	824	24	24	2027-04-27 08:00	2027-04-29 16:00	2027-09-26 08:00	2027-09-28 16:00	2027-04-27 08:00	2027-04-29 16:00			PT_Normal	N	HEETEXTBL00000000007190
+%R	7191	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3710	Communication modules installation		832	0	16	16	2027-04-22 08:00	2027-04-25 16:00	2027-09-21 08:00	2027-09-22 16:00	2027-04-22 08:00	2027-04-25 16:00			PT_Normal	N	HEETEXTBL00000000007191
+%R	7192	1001	2023	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3720	SIM activation, alert & e-mail distribution configuration		832	832	24	24	2027-04-26 08:00	2027-04-28 16:00	2027-09-26 08:00	2027-09-28 16:00	2027-04-26 08:00	2027-04-28 16:00			PT_Normal	N	HEETEXTBL00000000007192
+%R	7193	1001	2023	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CLD-3810	Local KSA cloud infrastructure - provisioning & set-up		672	0	64	64	2027-05-05 08:00	2027-05-20 16:00	2027-09-06 08:00	2027-09-15 16:00	2027-05-05 08:00	2027-05-20 16:00			PT_Normal	N	HEETEXTBL00000000007193
+%R	7194	1001	2023	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CLD-3820	Local KSA cloud infrastructure - hardening & connectivity		672	16	64	64	2027-05-23 08:00	2027-06-01 16:00	2027-09-16 08:00	2027-09-28 16:00	2027-05-23 08:00	2027-06-01 16:00			PT_Normal	N	HEETEXTBL00000000007194
+%R	7195	1001	2023	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CYB-3920	Cybersecurity controls implementation & hardening		792	0	80	80	2027-05-23 08:00	2027-06-03 16:00	2027-10-10 08:00	2027-10-21 16:00	2027-05-23 08:00	2027-06-03 16:00			PT_Normal	N	HEETEXTBL00000000007195
+%R	7196	1001	2023	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	INT-4010	Integration with existing system & iSiteCentral - interfaces & data mapping		0	0	64	64	2027-09-29 08:00	2027-10-10 16:00	2027-09-29 08:00	2027-10-10 16:00	2027-09-29 08:00	2027-10-10 16:00			PT_Normal	Y	HEETEXTBL00000000007196
+%R	7197	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2150	Permit extension 1 - progress report, updated insurance policy & TTF02 (Portal)		184	0	16	16	2027-06-08 08:00	2027-06-09 16:00	2027-07-11 08:00	2027-07-12 16:00	2027-06-08 08:00	2027-06-09 16:00			PT_Normal	N	HEETEXTBL00000000007197
+%R	7198	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2160	SAR review & approve permit extension 1		184	0	24	24	2027-06-10 08:00	2027-06-14 16:00	2027-07-13 08:00	2027-07-15 16:00	2027-06-10 08:00	2027-06-14 16:00			PT_Normal	N	HEETEXTBL00000000007198
+%R	7199	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2170	Permit extension 2 - progress report, updated insurance policy & TTF02 (Portal)		184	0	16	16	2027-08-31 08:00	2027-09-01 16:00	2027-10-04 08:00	2027-10-05 16:00	2027-08-31 08:00	2027-09-01 16:00			PT_Normal	N	HEETEXTBL00000000007199
+%R	7200	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2180	SAR review & approve permit extension 2		184	184	24	24	2027-09-02 08:00	2027-09-06 16:00	2027-10-06 08:00	2027-10-10 16:00	2027-09-02 08:00	2027-09-06 16:00			PT_Normal	N	HEETEXTBL00000000007200
+%R	7201	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-070	Stage 2 complete - procurement, construction & installation complete		0	0	0	0	2027-10-10 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-10-10 16:00	2027-10-10 16:00			PT_Normal	Y	HEETEXTBL00000000007201
+%R	7202	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-3110	Prepare & submit WP-05 (testing, commissioning & live-system tie-in) in Work Permit Portal		1184	0	16	16	2027-03-25 08:00	2027-03-28 16:00	2027-10-26 08:00	2027-10-27 16:00	2027-03-25 08:00	2027-03-28 16:00			PT_Normal	N	HEETEXTBL00000000007202
+%R	7203	1001	2014	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-3120	SAR review & issue WP-05		1184	0	40	40	2027-03-29 08:00	2027-04-04 16:00	2027-10-28 08:00	2027-11-03 16:00	2027-03-29 08:00	2027-04-04 16:00			PT_Normal	N	HEETEXTBL00000000007203
+%R	7204	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-WP05	WP-05 issued - testing & commissioning		1184	1184	0	0	2027-04-04 16:00	2027-04-04 16:00	2027-11-03 16:00	2027-11-03 16:00	2027-04-04 16:00	2027-04-04 16:00			PT_Normal	N	HEETEXTBL00000000007204
+%R	7205	1001	2024	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-4110	Full-route OTDR certification report & as-installed test records		56	56	16	16	2027-09-28 08:00	2027-09-29 16:00	2027-10-07 08:00	2027-10-10 16:00	2027-09-28 08:00	2027-09-29 16:00			PT_Normal	N	HEETEXTBL00000000007205
+%R	7206	1001	2025	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CNT-0100	Schedule contingency - time-risk allowance (supplier, weather, Eid-date shift)		0	0	144	144	2027-10-11 08:00	2027-11-03 16:00	2027-10-11 08:00	2027-11-03 16:00	2027-10-11 08:00	2027-11-03 16:00			PT_Normal	Y	HEETEXTBL00000000007206
+%R	7207	1001	2024	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CYB-3930	Third-party cybersecurity audit		792	0	80	80	2027-06-06 08:00	2027-06-17 16:00	2027-10-24 08:00	2027-11-04 16:00	2027-06-06 08:00	2027-06-17 16:00			PT_Normal	N	HEETEXTBL00000000007207
+%R	7208	1001	2024	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CYB-3940	Audit findings closure & verification		792	792	32	32	2027-06-20 08:00	2027-06-23 16:00	2027-11-07 08:00	2027-11-10 16:00	2027-06-20 08:00	2027-06-23 16:00			PT_Normal	N	HEETEXTBL00000000007208
+%R	7209	1001	2028	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-4210	SAT - site acceptance tests (sensors, power, communications, operational)		0	0	40	40	2027-11-04 08:00	2027-11-10 16:00	2027-11-04 08:00	2027-11-10 16:00	2027-11-04 08:00	2027-11-10 16:00			PT_Normal	Y	HEETEXTBL00000000007209
+%R	7210	1001	2028	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	INT-4020	End-to-end integration test with existing system & iSiteCentral (part of SAT)		0	0	40	40	2027-11-04 08:00	2027-11-10 16:00	2027-11-04 08:00	2027-11-10 16:00	2027-11-04 08:00	2027-11-10 16:00			PT_Normal	Y	HEETEXTBL00000000007210
+%R	7211	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-080	SAT complete (incl. integration tests & cyber audit closure)		0	0	0	0	2027-11-10 16:00	2027-11-10 16:00	2027-11-10 16:00	2027-11-10 16:00	2027-11-10 16:00	2027-11-10 16:00			PT_Normal	Y	HEETEXTBL00000000007211
+%R	7212	1001	2028	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CMS-4310	System commissioning & calibration - DAS, DSS, TDR & weather station		0	0	40	40	2027-11-11 08:00	2027-11-17 16:00	2027-11-11 08:00	2027-11-17 16:00	2027-11-11 08:00	2027-11-17 16:00			PT_Normal	Y	HEETEXTBL00000000007212
+%R	7213	1001	2028	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CMS-4320	Trial operation - baseline data collection & performance validation		0	0	80	80	2027-11-18 08:00	2027-12-01 16:00	2027-11-18 08:00	2027-12-01 16:00	2027-11-18 08:00	2027-12-01 16:00			PT_Normal	Y	HEETEXTBL00000000007213
+%R	7214	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-100	Stage 3 complete - commissioning & performance validation complete		0	0	0	0	2027-12-01 16:00	2027-12-01 16:00	2027-12-01 16:00	2027-12-01 16:00	2027-12-01 16:00	2027-12-01 16:00			PT_Normal	Y	HEETEXTBL00000000007214
+%R	7215	1001	2029	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DOC-5010	Technical reports - TDR, DAS (seismic), DSS strain, weather data & alerts		0	0	48	48	2027-12-02 08:00	2027-12-09 16:00	2027-12-02 08:00	2027-12-09 16:00	2027-12-02 08:00	2027-12-09 16:00			PT_Normal	Y	HEETEXTBL00000000007215
+%R	7216	1001	2029	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DOC-5020	As-built drawings (3 sets, hard + soft) - final revision after SAT		80	80	48	48	2027-11-18 08:00	2027-11-25 16:00	2027-12-02 08:00	2027-12-09 16:00	2027-11-18 08:00	2027-11-25 16:00			PT_Normal	N	HEETEXTBL00000000007216
+%R	7217	1001	2029	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DOC-5030	O&M manuals (3 sets) - final revision		80	80	48	48	2027-11-18 08:00	2027-11-25 16:00	2027-12-02 08:00	2027-12-09 16:00	2027-11-18 08:00	2027-11-25 16:00			PT_Normal	N	HEETEXTBL00000000007217
+%R	7218	1001	2029	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DOC-5040	User training for SAR staff (5 days)		168	40	40	40	2027-11-18 08:00	2027-11-24 16:00	2027-12-19 08:00	2027-12-23 16:00	2027-11-18 08:00	2027-11-24 16:00			PT_Normal	N	HEETEXTBL00000000007218
+%R	7219	1001	2031	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DOC-5050	Handover dossier - QA/QC, material test & HSE records, reports - compile & submit		0	0	16	16	2027-12-12 08:00	2027-12-13 16:00	2027-12-12 08:00	2027-12-13 16:00	2027-12-12 08:00	2027-12-13 16:00			PT_Normal	Y	HEETEXTBL00000000007219
+%R	7220	1001	2032	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-5060	SAR review of handover dossier (as-builts, O&M, reports)		0	0	56	56	2027-12-14 08:00	2027-12-22 16:00	2027-12-14 08:00	2027-12-22 16:00	2027-12-14 08:00	2027-12-22 16:00			PT_Normal	Y	HEETEXTBL00000000007220
+%R	7221	1001	2031	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-5070	Address SAR comments & resubmit dossier		0	0	24	24	2027-12-23 08:00	2027-12-27 16:00	2027-12-23 08:00	2027-12-27 16:00	2027-12-23 08:00	2027-12-27 16:00			PT_Normal	Y	HEETEXTBL00000000007221
+%R	7222	1001	2032	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-5080	SAR final acceptance of handover dossier		0	0	24	24	2027-12-28 08:00	2027-12-30 16:00	2027-12-28 08:00	2027-12-30 16:00	2027-12-28 08:00	2027-12-30 16:00			PT_Normal	Y	HEETEXTBL00000000007222
+%R	7223	1001	2027	2	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DEM-5100	Demobilization & site clearance		128	128	40	40	2027-12-02 08:00	2027-12-08 16:00	2027-12-26 08:00	2027-12-30 16:00	2027-12-02 08:00	2027-12-08 16:00			PT_Normal	N	HEETEXTBL00000000007223
+%R	7224	1001	2033	1	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	HND-5090	Formal handover & Taking-Over certificate (SAR)		0	0	8	8	2028-01-02 08:00	2028-01-02 16:00	2028-01-02 08:00	2028-01-02 16:00	2028-01-02 08:00	2028-01-02 16:00			PT_Normal	Y	HEETEXTBL00000000007224
+%R	7225	1001	2001	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-120	Taking-Over - CONTRACT COMPLETION (12 months from NTP)		0	0	0	0	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00			PT_Normal	Y	HEETEXTBL00000000007225
+%R	7226	1001	2003	2	0	N	1	N	Y	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MOB-1050	Site security, fencing & traffic management (LOE)				1776	1776	2027-01-19 08:00	2027-12-08 16:00			2027-01-19 08:00	2027-12-08 16:00			PT_Normal	N	HEETEXTBL00000000007226
+%R	7227	1001	2003	2	0	N	1	N	Y	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MOB-1080	Protection Officer on site during all field works (LOE)				1784	1784	2027-01-18 08:00	2027-12-08 16:00			2027-01-18 08:00	2027-12-08 16:00			PT_Normal	N	HEETEXTBL00000000007227
+%R	7228	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MGT-1060	Project management, QA/QC & HSE supervision and records (LOE)				2008	2008	2027-01-03 08:00	2028-01-02 16:00			2027-01-03 08:00	2028-01-02 16:00			PT_Normal	N	HEETEXTBL00000000007228
+%R	7229	1001	2003	1	0	N	1	N	Y	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MGT-1070	Weekly & monthly progress reporting (LOE)				2008	2008	2027-01-03 08:00	2028-01-02 16:00			2027-01-03 08:00	2028-01-02 16:00			PT_Normal	N	HEETEXTBL00000000007229
+%R	7230	1001	2034	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	DLP-9010	Start of Defects Liability Period (DLP)		0	0	0	0	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00	2028-01-02 16:00			PT_Normal	Y	HEETEXTBL00000000007230
+%R	7231	1001	2034	3	0	N	1	N	Y	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DLP-9020	Defects liability support (12 months after Taking-Over)		0	0	2928	2928	2028-01-03 08:00	2029-01-02 16:00	2028-01-03 08:00	2029-01-02 16:00	2028-01-03 08:00	2029-01-02 16:00			PT_Normal	Y	HEETEXTBL00000000007231
+%R	7232	1001	2034	1	0	N	1	N	Y	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	DLP-9030	End of Defects Liability Period		0	0	0	0	2029-01-02 16:00	2029-01-02 16:00	2029-01-02 16:00	2029-01-02 16:00	2029-01-02 16:00	2029-01-02 16:00			PT_Normal	Y	HEETEXTBL00000000007232
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	proj_id	pred_proj_id	pred_type	lag_hr_cnt	comments	float_path	aref
+%R	8000	7001	7000	1001	1001	PR_FS	0			
+%R	8001	7002	7001	1001	1001	PR_FS	0			
+%R	8002	7003	7001	1001	1001	PR_FS	0			
+%R	8003	7004	7001	1001	1001	PR_FS	0			
+%R	8004	7005	7002	1001	1001	PR_FS	0			
+%R	8005	7005	7003	1001	1001	PR_FS	0			
+%R	8006	7006	7005	1001	1001	PR_FS	0			
+%R	8007	7007	7006	1001	1001	PR_FS	0			
+%R	8008	7008	7007	1001	1001	PR_FS	0			
+%R	8009	7009	7007	1001	1001	PR_FS	0			
+%R	8010	7010	7007	1001	1001	PR_FS	0			
+%R	8011	7011	7009	1001	1001	PR_SS	16			
+%R	8012	7011	7010	1001	1001	PR_SS	16			
+%R	8013	7011	7010	1001	1001	PR_FF	16			
+%R	8014	7011	7004	1001	1001	PR_FS	0			
+%R	8015	7012	7011	1001	1001	PR_FS	0			
+%R	8016	7013	7001	1001	1001	PR_FS	0			
+%R	8017	7014	7001	1001	1001	PR_FS	0			
+%R	8018	7015	7001	1001	1001	PR_FS	0			
+%R	8019	7016	7001	1001	1001	PR_FS	0			
+%R	8020	7017	7001	1001	1001	PR_FS	0			
+%R	8021	7018	7009	1001	1001	PR_FS	0			
+%R	8022	7019	7009	1001	1001	PR_FS	0			
+%R	8023	7020	7027	1001	1001	PR_FS	0			
+%R	8024	7021	7032	1001	1001	PR_FS	0			
+%R	8025	7022	7013	1001	1001	PR_FS	0			
+%R	8026	7023	7014	1001	1001	PR_FS	0			
+%R	8027	7024	7015	1001	1001	PR_FS	0			
+%R	8028	7025	7024	1001	1001	PR_FS	0			
+%R	8029	7026	7025	1001	1001	PR_FS	0			
+%R	8030	7027	7016	1001	1001	PR_FS	0			
+%R	8031	7028	7017	1001	1001	PR_FS	0			
+%R	8032	7029	7012	1001	1001	PR_FS	0			
+%R	8033	7030	7029	1001	1001	PR_FS	0			
+%R	8034	7031	7030	1001	1001	PR_FS	0			
+%R	8035	7032	7031	1001	1001	PR_FS	0			
+%R	8036	7033	7018	1001	1001	PR_FS	0			
+%R	8037	7034	7033	1001	1001	PR_FS	0			
+%R	8038	7035	7034	1001	1001	PR_FS	0			
+%R	8039	7036	7019	1001	1001	PR_FS	0			
+%R	8040	7037	7020	1001	1001	PR_FS	0			
+%R	8041	7038	7021	1001	1001	PR_FS	0			
+%R	8042	7039	7026	1001	1001	PR_FS	0			
+%R	8043	7039	7027	1001	1001	PR_FS	0			
+%R	8044	7039	7028	1001	1001	PR_FS	0			
+%R	8045	7040	7008	1001	1001	PR_FS	0			
+%R	8046	7040	7012	1001	1001	PR_FS	0			
+%R	8047	7040	7013	1001	1001	PR_FS	0			
+%R	8048	7040	7014	1001	1001	PR_FS	0			
+%R	8049	7040	7015	1001	1001	PR_FS	0			
+%R	8050	7040	7016	1001	1001	PR_FS	0			
+%R	8051	7040	7017	1001	1001	PR_FS	0			
+%R	8052	7041	7023	1001	1001	PR_FS	0			
+%R	8053	7041	7003	1001	1001	PR_FS	0			
+%R	8054	7042	7041	1001	1001	PR_FS	0			
+%R	8055	7042	7032	1001	1001	PR_FS	0			
+%R	8056	7043	7042	1001	1001	PR_FS	0			
+%R	8057	7044	7043	1001	1001	PR_FS	0			
+%R	8058	7045	7041	1001	1001	PR_FS	0			
+%R	8059	7045	7032	1001	1001	PR_FS	0			
+%R	8060	7046	7045	1001	1001	PR_FS	0			
+%R	8061	7047	7046	1001	1001	PR_FS	0			
+%R	8062	7048	7041	1001	1001	PR_FS	0			
+%R	8063	7048	7032	1001	1001	PR_FS	0			
+%R	8064	7049	7048	1001	1001	PR_FS	0			
+%R	8065	7050	7049	1001	1001	PR_FS	0			
+%R	8066	7051	7011	1001	1001	PR_FS	0			
+%R	8067	7052	7051	1001	1001	PR_FS	0			
+%R	8068	7053	7027	1001	1001	PR_FS	0			
+%R	8069	7054	7053	1001	1001	PR_FS	0			
+%R	8070	7055	7036	1001	1001	PR_FS	0			
+%R	8071	7056	7055	1001	1001	PR_FS	0			
+%R	8072	7057	7026	1001	1001	PR_FS	0			
+%R	8073	7058	7057	1001	1001	PR_FS	0			
+%R	8074	7059	7058	1001	1001	PR_FS	0			
+%R	8075	7059	7037	1001	1001	PR_FS	0			
+%R	8076	7060	7059	1001	1001	PR_FS	0			
+%R	8077	7061	7060	1001	1001	PR_FS	0			
+%R	8078	7062	7061	1001	1001	PR_FS	0			
+%R	8079	7063	7026	1001	1001	PR_FS	0			
+%R	8080	7064	7063	1001	1001	PR_FS	0			
+%R	8081	7065	7064	1001	1001	PR_FS	0			
+%R	8082	7065	7037	1001	1001	PR_FS	0			
+%R	8083	7066	7065	1001	1001	PR_FS	0			
+%R	8084	7067	7066	1001	1001	PR_FS	0			
+%R	8085	7068	7067	1001	1001	PR_FS	0			
+%R	8086	7069	7026	1001	1001	PR_FS	0			
+%R	8087	7070	7069	1001	1001	PR_FS	0			
+%R	8088	7071	7070	1001	1001	PR_FS	0			
+%R	8089	7071	7037	1001	1001	PR_FS	0			
+%R	8090	7072	7071	1001	1001	PR_FS	0			
+%R	8091	7073	7072	1001	1001	PR_FS	0			
+%R	8092	7074	7073	1001	1001	PR_FS	0			
+%R	8093	7075	7027	1001	1001	PR_FS	0			
+%R	8094	7076	7075	1001	1001	PR_FS	0			
+%R	8095	7077	7076	1001	1001	PR_FS	0			
+%R	8096	7077	7037	1001	1001	PR_FS	0			
+%R	8097	7078	7077	1001	1001	PR_FS	0			
+%R	8098	7079	7078	1001	1001	PR_FS	0			
+%R	8099	7080	7079	1001	1001	PR_FS	0			
+%R	8100	7081	7027	1001	1001	PR_FS	0			
+%R	8101	7082	7081	1001	1001	PR_FS	0			
+%R	8102	7083	7082	1001	1001	PR_FS	0			
+%R	8103	7083	7037	1001	1001	PR_FS	0			
+%R	8104	7084	7083	1001	1001	PR_FS	0			
+%R	8105	7085	7084	1001	1001	PR_FS	0			
+%R	8106	7086	7085	1001	1001	PR_FS	0			
+%R	8107	7087	7027	1001	1001	PR_FS	0			
+%R	8108	7088	7087	1001	1001	PR_FS	0			
+%R	8109	7089	7088	1001	1001	PR_FS	0			
+%R	8110	7089	7037	1001	1001	PR_FS	0			
+%R	8111	7090	7089	1001	1001	PR_FS	0			
+%R	8112	7091	7090	1001	1001	PR_FS	0			
+%R	8113	7092	7091	1001	1001	PR_FS	0			
+%R	8114	7093	7027	1001	1001	PR_FS	0			
+%R	8115	7094	7093	1001	1001	PR_FS	0			
+%R	8116	7095	7094	1001	1001	PR_FS	0			
+%R	8117	7095	7037	1001	1001	PR_FS	0			
+%R	8118	7096	7095	1001	1001	PR_FS	0			
+%R	8119	7097	7096	1001	1001	PR_FS	0			
+%R	8120	7098	7097	1001	1001	PR_FS	0			
+%R	8121	7099	7027	1001	1001	PR_FS	0			
+%R	8122	7099	7035	1001	1001	PR_FS	0			
+%R	8123	7100	7099	1001	1001	PR_FS	0			
+%R	8124	7101	7100	1001	1001	PR_FS	0			
+%R	8125	7101	7037	1001	1001	PR_FS	0			
+%R	8126	7102	7101	1001	1001	PR_FS	0			
+%R	8127	7103	7102	1001	1001	PR_FS	0			
+%R	8128	7104	7103	1001	1001	PR_FS	0			
+%R	8129	7105	7028	1001	1001	PR_FS	0			
+%R	8130	7106	7105	1001	1001	PR_FS	0			
+%R	8131	7107	7106	1001	1001	PR_FS	0			
+%R	8132	7108	7107	1001	1001	PR_FS	0			
+%R	8133	7109	7108	1001	1001	PR_FS	0			
+%R	8134	7110	7028	1001	1001	PR_FS	0			
+%R	8135	7111	7110	1001	1001	PR_FS	0			
+%R	8136	7112	7111	1001	1001	PR_FS	0			
+%R	8137	7113	7028	1001	1001	PR_FS	0			
+%R	8138	7114	7113	1001	1001	PR_FS	0			
+%R	8139	7115	7114	1001	1001	PR_FS	0			
+%R	8140	7116	7028	1001	1001	PR_FS	0			
+%R	8141	7117	7116	1001	1001	PR_FS	0			
+%R	8142	7118	7117	1001	1001	PR_FS	0			
+%R	8143	7119	7028	1001	1001	PR_FS	0			
+%R	8144	7120	7062	1001	1001	PR_FS	0			
+%R	8145	7120	7068	1001	1001	PR_FS	0			
+%R	8146	7120	7074	1001	1001	PR_FS	0			
+%R	8147	7120	7080	1001	1001	PR_FS	0			
+%R	8148	7120	7086	1001	1001	PR_FS	0			
+%R	8149	7120	7092	1001	1001	PR_FS	0			
+%R	8150	7120	7098	1001	1001	PR_FS	0			
+%R	8151	7120	7104	1001	1001	PR_FS	0			
+%R	8152	7120	7109	1001	1001	PR_FS	0			
+%R	8153	7120	7112	1001	1001	PR_FS	0			
+%R	8154	7120	7115	1001	1001	PR_FS	0			
+%R	8155	7120	7118	1001	1001	PR_FS	0			
+%R	8156	7120	7119	1001	1001	PR_FS	0			
+%R	8157	7121	7059	1001	1001	PR_FS	0			
+%R	8158	7121	7065	1001	1001	PR_FS	0			
+%R	8159	7121	7071	1001	1001	PR_FS	0			
+%R	8160	7121	7077	1001	1001	PR_FS	0			
+%R	8161	7121	7083	1001	1001	PR_FS	0			
+%R	8162	7121	7089	1001	1001	PR_FS	0			
+%R	8163	7121	7095	1001	1001	PR_FS	0			
+%R	8164	7121	7101	1001	1001	PR_FS	0			
+%R	8165	7122	7041	1001	1001	PR_FS	0			
+%R	8166	7123	7044	1001	1001	PR_FS	0			
+%R	8167	7123	7023	1001	1001	PR_FS	0			
+%R	8168	7123	7022	1001	1001	PR_FS	0			
+%R	8169	7123	7008	1001	1001	PR_FS	0			
+%R	8170	7123	7122	1001	1001	PR_FS	0			
+%R	8171	7124	7123	1001	1001	PR_FS	0			
+%R	8172	7124	7119	1001	1001	PR_FS	0			
+%R	8173	7124	7004	1001	1001	PR_FS	0			
+%R	8174	7125	7124	1001	1001	PR_FS	0			
+%R	8175	7125	7112	1001	1001	PR_FS	0			
+%R	8176	7126	7124	1001	1001	PR_FS	0			
+%R	8177	7126	7115	1001	1001	PR_FS	0			
+%R	8178	7126	7047	1001	1001	PR_FS	0			
+%R	8179	7127	7125	1001	1001	PR_FS	0			
+%R	8180	7127	7126	1001	1001	PR_FS	0			
+%R	8181	7127	7062	1001	1001	PR_FS	0			
+%R	8182	7128	7127	1001	1001	PR_FS	0			
+%R	8183	7129	7128	1001	1001	PR_FS	0			
+%R	8184	7129	7068	1001	1001	PR_FS	0			
+%R	8185	7130	7129	1001	1001	PR_FS	0			
+%R	8186	7130	7109	1001	1001	PR_FS	0			
+%R	8187	7131	7130	1001	1001	PR_FS	0			
+%R	8188	7132	7131	1001	1001	PR_FS	0			
+%R	8189	7132	7074	1001	1001	PR_FS	0			
+%R	8190	7133	7132	1001	1001	PR_FS	0			
+%R	8191	7134	7133	1001	1001	PR_FS	0			
+%R	8192	7134	7118	1001	1001	PR_FS	0			
+%R	8193	7135	7133	1001	1001	PR_FS	0			
+%R	8194	7136	7124	1001	1001	PR_FS	0			
+%R	8195	7137	7136	1001	1001	PR_FS	0			
+%R	8196	7137	7112	1001	1001	PR_FS	0			
+%R	8197	7138	7136	1001	1001	PR_FS	0			
+%R	8198	7138	7115	1001	1001	PR_FS	0			
+%R	8199	7138	7047	1001	1001	PR_FS	0			
+%R	8200	7139	7137	1001	1001	PR_FS	0			
+%R	8201	7139	7138	1001	1001	PR_FS	0			
+%R	8202	7139	7062	1001	1001	PR_FS	0			
+%R	8203	7139	7133	1001	1001	PR_FS	0			
+%R	8204	7140	7139	1001	1001	PR_FS	0			
+%R	8205	7141	7140	1001	1001	PR_FS	0			
+%R	8206	7141	7068	1001	1001	PR_FS	0			
+%R	8207	7142	7141	1001	1001	PR_FS	0			
+%R	8208	7142	7109	1001	1001	PR_FS	0			
+%R	8209	7143	7142	1001	1001	PR_FS	0			
+%R	8210	7144	7143	1001	1001	PR_FS	0			
+%R	8211	7144	7074	1001	1001	PR_FS	0			
+%R	8212	7145	7144	1001	1001	PR_FS	0			
+%R	8213	7146	7145	1001	1001	PR_FS	0			
+%R	8214	7146	7118	1001	1001	PR_FS	0			
+%R	8215	7147	7145	1001	1001	PR_FS	0			
+%R	8216	7148	7136	1001	1001	PR_FS	0			
+%R	8217	7148	7133	1001	1001	PR_FS	0			
+%R	8218	7149	7148	1001	1001	PR_FS	0			
+%R	8219	7149	7112	1001	1001	PR_FS	0			
+%R	8220	7150	7148	1001	1001	PR_FS	0			
+%R	8221	7150	7115	1001	1001	PR_FS	0			
+%R	8222	7150	7047	1001	1001	PR_FS	0			
+%R	8223	7151	7149	1001	1001	PR_FS	0			
+%R	8224	7151	7150	1001	1001	PR_FS	0			
+%R	8225	7151	7062	1001	1001	PR_FS	0			
+%R	8226	7151	7145	1001	1001	PR_FS	0			
+%R	8227	7152	7151	1001	1001	PR_FS	0			
+%R	8228	7153	7152	1001	1001	PR_FS	0			
+%R	8229	7153	7068	1001	1001	PR_FS	0			
+%R	8230	7154	7153	1001	1001	PR_FS	0			
+%R	8231	7154	7109	1001	1001	PR_FS	0			
+%R	8232	7155	7154	1001	1001	PR_FS	0			
+%R	8233	7156	7155	1001	1001	PR_FS	0			
+%R	8234	7156	7074	1001	1001	PR_FS	0			
+%R	8235	7157	7156	1001	1001	PR_FS	0			
+%R	8236	7158	7157	1001	1001	PR_FS	0			
+%R	8237	7158	7118	1001	1001	PR_FS	0			
+%R	8238	7159	7157	1001	1001	PR_FS	0			
+%R	8239	7160	7148	1001	1001	PR_FS	0			
+%R	8240	7160	7145	1001	1001	PR_FS	0			
+%R	8241	7161	7160	1001	1001	PR_FS	0			
+%R	8242	7161	7112	1001	1001	PR_FS	0			
+%R	8243	7162	7160	1001	1001	PR_FS	0			
+%R	8244	7162	7115	1001	1001	PR_FS	0			
+%R	8245	7162	7047	1001	1001	PR_FS	0			
+%R	8246	7163	7161	1001	1001	PR_FS	0			
+%R	8247	7163	7162	1001	1001	PR_FS	0			
+%R	8248	7163	7062	1001	1001	PR_FS	0			
+%R	8249	7163	7157	1001	1001	PR_FS	0			
+%R	8250	7164	7163	1001	1001	PR_FS	0			
+%R	8251	7165	7164	1001	1001	PR_FS	0			
+%R	8252	7165	7068	1001	1001	PR_FS	0			
+%R	8253	7166	7165	1001	1001	PR_FS	0			
+%R	8254	7166	7109	1001	1001	PR_FS	0			
+%R	8255	7167	7166	1001	1001	PR_FS	0			
+%R	8256	7168	7167	1001	1001	PR_FS	0			
+%R	8257	7168	7074	1001	1001	PR_FS	0			
+%R	8258	7169	7168	1001	1001	PR_FS	0			
+%R	8259	7170	7169	1001	1001	PR_FS	0			
+%R	8260	7170	7118	1001	1001	PR_FS	0			
+%R	8261	7171	7169	1001	1001	PR_FS	0			
+%R	8262	7172	7160	1001	1001	PR_FS	0			
+%R	8263	7172	7157	1001	1001	PR_FS	0			
+%R	8264	7173	7172	1001	1001	PR_FS	0			
+%R	8265	7173	7112	1001	1001	PR_FS	0			
+%R	8266	7174	7172	1001	1001	PR_FS	0			
+%R	8267	7174	7115	1001	1001	PR_FS	0			
+%R	8268	7174	7047	1001	1001	PR_FS	0			
+%R	8269	7175	7173	1001	1001	PR_FS	0			
+%R	8270	7175	7174	1001	1001	PR_FS	0			
+%R	8271	7175	7062	1001	1001	PR_FS	0			
+%R	8272	7175	7169	1001	1001	PR_FS	0			
+%R	8273	7176	7175	1001	1001	PR_FS	0			
+%R	8274	7177	7176	1001	1001	PR_FS	0			
+%R	8275	7177	7068	1001	1001	PR_FS	0			
+%R	8276	7178	7177	1001	1001	PR_FS	0			
+%R	8277	7178	7109	1001	1001	PR_FS	0			
+%R	8278	7179	7178	1001	1001	PR_FS	0			
+%R	8279	7180	7179	1001	1001	PR_FS	0			
+%R	8280	7180	7074	1001	1001	PR_FS	0			
+%R	8281	7181	7180	1001	1001	PR_FS	0			
+%R	8282	7182	7181	1001	1001	PR_FS	0			
+%R	8283	7182	7118	1001	1001	PR_FS	0			
+%R	8284	7183	7181	1001	1001	PR_FS	0			
+%R	8285	7184	7050	1001	1001	PR_FS	0			
+%R	8286	7184	7032	1001	1001	PR_FS	0			
+%R	8287	7184	7123	1001	1001	PR_FS	0			
+%R	8288	7185	7184	1001	1001	PR_FS	0			
+%R	8289	7185	7098	1001	1001	PR_FS	0			
+%R	8290	7185	7052	1001	1001	PR_FS	0			
+%R	8291	7186	7185	1001	1001	PR_FS	0			
+%R	8292	7187	7080	1001	1001	PR_FS	0			
+%R	8293	7187	7186	1001	1001	PR_FS	0			
+%R	8294	7188	7187	1001	1001	PR_FS	0			
+%R	8295	7188	7180	1001	1001	PR_FS	0			
+%R	8296	7189	7086	1001	1001	PR_FS	0			
+%R	8297	7189	7186	1001	1001	PR_FS	0			
+%R	8298	7190	7189	1001	1001	PR_FS	0			
+%R	8299	7191	7092	1001	1001	PR_FS	0			
+%R	8300	7191	7186	1001	1001	PR_FS	0			
+%R	8301	7192	7191	1001	1001	PR_FS	0			
+%R	8302	7192	7054	1001	1001	PR_FS	0			
+%R	8303	7193	7104	1001	1001	PR_FS	0			
+%R	8304	7193	7035	1001	1001	PR_FS	0			
+%R	8305	7194	7193	1001	1001	PR_FS	0			
+%R	8306	7195	7193	1001	1001	PR_FS	0			
+%R	8307	7195	7035	1001	1001	PR_FS	0			
+%R	8308	7196	7194	1001	1001	PR_FS	0			
+%R	8309	7196	7036	1001	1001	PR_FS	0			
+%R	8310	7196	7056	1001	1001	PR_FS	0			
+%R	8311	7196	7188	1001	1001	PR_FS	0			
+%R	8312	7196	7192	1001	1001	PR_FS	0			
+%R	8313	7196	7190	1001	1001	PR_FS	0			
+%R	8314	7197	7044	1001	1001	PR_FS	440			
+%R	8315	7198	7197	1001	1001	PR_FS	0			
+%R	8316	7199	7198	1001	1001	PR_FS	440			
+%R	8317	7200	7199	1001	1001	PR_FS	0			
+%R	8318	7201	7182	1001	1001	PR_FS	0			
+%R	8319	7201	7188	1001	1001	PR_FS	0			
+%R	8320	7201	7190	1001	1001	PR_FS	0			
+%R	8321	7201	7192	1001	1001	PR_FS	0			
+%R	8322	7201	7194	1001	1001	PR_FS	0			
+%R	8323	7201	7196	1001	1001	PR_FS	0			
+%R	8324	7201	7198	1001	1001	PR_FS	0			
+%R	8325	7201	7200	1001	1001	PR_FS	0			
+%R	8326	7201	7120	1001	1001	PR_FS	0			
+%R	8327	7201	7121	1001	1001	PR_FS	0			
+%R	8328	7201	7186	1001	1001	PR_FS	0			
+%R	8329	7201	7040	1001	1001	PR_FS	0			
+%R	8330	7201	7039	1001	1001	PR_FS	0			
+%R	8331	7201	7205	1001	1001	PR_FS	0			
+%R	8332	7201	7134	1001	1001	PR_FS	0			
+%R	8333	7201	7146	1001	1001	PR_FS	0			
+%R	8334	7201	7158	1001	1001	PR_FS	0			
+%R	8335	7201	7170	1001	1001	PR_FS	0			
+%R	8336	7202	7038	1001	1001	PR_FS	0			
+%R	8337	7202	7056	1001	1001	PR_FS	0			
+%R	8338	7203	7202	1001	1001	PR_FS	0			
+%R	8339	7204	7203	1001	1001	PR_FS	0			
+%R	8340	7205	7135	1001	1001	PR_FS	0			
+%R	8341	7205	7147	1001	1001	PR_FS	0			
+%R	8342	7205	7159	1001	1001	PR_FS	0			
+%R	8343	7205	7171	1001	1001	PR_FS	0			
+%R	8344	7205	7183	1001	1001	PR_FS	0			
+%R	8345	7206	7201	1001	1001	PR_FS	0			
+%R	8346	7207	7195	1001	1001	PR_FS	0			
+%R	8347	7207	7194	1001	1001	PR_FS	0			
+%R	8348	7208	7207	1001	1001	PR_FS	0			
+%R	8349	7209	7205	1001	1001	PR_FS	0			
+%R	8350	7209	7204	1001	1001	PR_FS	0			
+%R	8351	7209	7038	1001	1001	PR_FS	0			
+%R	8352	7209	7206	1001	1001	PR_FS	0			
+%R	8353	7210	7206	1001	1001	PR_FS	0			
+%R	8354	7210	7196	1001	1001	PR_FS	0			
+%R	8355	7210	7204	1001	1001	PR_FS	0			
+%R	8356	7211	7209	1001	1001	PR_FS	0			
+%R	8357	7211	7210	1001	1001	PR_FS	0			
+%R	8358	7211	7208	1001	1001	PR_FS	0			
+%R	8359	7212	7211	1001	1001	PR_FS	0			
+%R	8360	7213	7212	1001	1001	PR_FS	0			
+%R	8361	7214	7213	1001	1001	PR_FS	0			
+%R	8362	7215	7214	1001	1001	PR_FS	0			
+%R	8363	7216	7212	1001	1001	PR_FS	0			
+%R	8364	7217	7212	1001	1001	PR_FS	0			
+%R	8365	7218	7212	1001	1001	PR_FS	0			
+%R	8366	7219	7215	1001	1001	PR_FS	0			
+%R	8367	7219	7216	1001	1001	PR_FS	0			
+%R	8368	7219	7217	1001	1001	PR_FS	0			
+%R	8369	7220	7219	1001	1001	PR_FS	0			
+%R	8370	7221	7220	1001	1001	PR_FS	0			
+%R	8371	7222	7221	1001	1001	PR_FS	0			
+%R	8372	7223	7218	1001	1001	PR_FS	0			
+%R	8373	7223	7213	1001	1001	PR_FS	0			
+%R	8374	7224	7222	1001	1001	PR_FS	0			
+%R	8375	7224	7223	1001	1001	PR_FS	0			
+%R	8376	7225	7224	1001	1001	PR_FS	0			
+%R	8377	7226	7008	1001	1001	PR_SS	0			
+%R	8378	7226	7223	1001	1001	PR_FF	0			
+%R	8379	7227	7007	1001	1001	PR_SS	0			
+%R	8380	7227	7223	1001	1001	PR_FF	0			
+%R	8381	7228	7001	1001	1001	PR_SS	0			
+%R	8382	7228	7224	1001	1001	PR_FF	0			
+%R	8383	7229	7001	1001	1001	PR_SS	0			
+%R	8384	7229	7224	1001	1001	PR_FF	0			
+%R	8385	7230	7225	1001	1001	PR_FS	0			
+%R	8386	7231	7230	1001	1001	PR_FS	0			
+%R	8387	7232	7231	1001	1001	PR_FS	0			
+%T	TASKACTV
+%F	task_id	actv_code_type_id	actv_code_id	proj_id
+%R	7000	5000	6000	1001
+%R	7000	5001	6014	1001
+%R	7000	5002	6023	1001
+%R	7000	5003	6029	1001
+%R	7000	5004	6041	1001
+%R	7000	5005	6046	1001
+%R	7000	5006	6078	1001
+%R	7000	5007	6080	1001
+%R	7000	5008	6086	1001
+%R	7001	5000	6000	1001
+%R	7001	5001	6013	1001
+%R	7001	5002	6023	1001
+%R	7001	5003	6029	1001
+%R	7001	5004	6041	1001
+%R	7001	5005	6046	1001
+%R	7001	5006	6078	1001
+%R	7001	5007	6080	1001
+%R	7001	5008	6086	1001
+%R	7002	5000	6000	1001
+%R	7002	5001	6013	1001
+%R	7002	5002	6023	1001
+%R	7002	5003	6029	1001
+%R	7002	5004	6041	1001
+%R	7002	5005	6050	1001
+%R	7002	5006	6078	1001
+%R	7002	5007	6080	1001
+%R	7002	5008	6086	1001
+%R	7003	5000	6000	1001
+%R	7003	5001	6013	1001
+%R	7003	5002	6023	1001
+%R	7003	5003	6029	1001
+%R	7003	5004	6041	1001
+%R	7003	5005	6049	1001
+%R	7003	5006	6078	1001
+%R	7003	5007	6080	1001
+%R	7003	5008	6086	1001
+%R	7004	5000	6000	1001
+%R	7004	5001	6013	1001
+%R	7004	5002	6024	1001
+%R	7004	5003	6029	1001
+%R	7004	5004	6041	1001
+%R	7004	5005	6046	1001
+%R	7004	5006	6078	1001
+%R	7004	5007	6080	1001
+%R	7004	5008	6086	1001
+%R	7005	5000	6000	1001
+%R	7005	5001	6016	1001
+%R	7005	5002	6023	1001
+%R	7005	5003	6029	1001
+%R	7005	5004	6041	1001
+%R	7005	5005	6046	1001
+%R	7005	5006	6079	1001
+%R	7005	5007	6080	1001
+%R	7005	5008	6086	1001
+%R	7006	5000	6000	1001
+%R	7006	5001	6016	1001
+%R	7006	5002	6024	1001
+%R	7006	5003	6029	1001
+%R	7006	5004	6041	1001
+%R	7006	5005	6046	1001
+%R	7006	5006	6077	1001
+%R	7006	5007	6080	1001
+%R	7006	5008	6086	1001
+%R	7007	5000	6000	1001
+%R	7007	5001	6014	1001
+%R	7007	5002	6023	1001
+%R	7007	5003	6029	1001
+%R	7007	5004	6041	1001
+%R	7007	5005	6046	1001
+%R	7007	5006	6078	1001
+%R	7007	5007	6080	1001
+%R	7007	5008	6086	1001
+%R	7008	5000	6000	1001
+%R	7008	5001	6015	1001
+%R	7008	5002	6023	1001
+%R	7008	5003	6029	1001
+%R	7008	5004	6041	1001
+%R	7008	5005	6047	1001
+%R	7008	5006	6078	1001
+%R	7008	5007	6080	1001
+%R	7008	5008	6086	1001
+%R	7009	5000	6000	1001
+%R	7009	5001	6020	1001
+%R	7009	5002	6023	1001
+%R	7009	5003	6029	1001
+%R	7009	5004	6041	1001
+%R	7009	5005	6052	1001
+%R	7009	5006	6078	1001
+%R	7009	5007	6080	1001
+%R	7009	5008	6086	1001
+%R	7010	5000	6000	1001
+%R	7010	5001	6020	1001
+%R	7010	5002	6023	1001
+%R	7010	5003	6029	1001
+%R	7010	5004	6041	1001
+%R	7010	5005	6051	1001
+%R	7010	5006	6078	1001
+%R	7010	5007	6080	1001
+%R	7010	5008	6086	1001
+%R	7011	5000	6000	1001
+%R	7011	5001	6008	1001
+%R	7011	5002	6023	1001
+%R	7011	5003	6029	1001
+%R	7011	5004	6041	1001
+%R	7011	5005	6052	1001
+%R	7011	5006	6078	1001
+%R	7011	5007	6080	1001
+%R	7011	5008	6086	1001
+%R	7012	5000	6000	1001
+%R	7012	5001	6019	1001
+%R	7012	5002	6023	1001
+%R	7012	5003	6029	1001
+%R	7012	5004	6041	1001
+%R	7012	5005	6052	1001
+%R	7012	5006	6078	1001
+%R	7012	5007	6080	1001
+%R	7012	5008	6086	1001
+%R	7013	5000	6000	1001
+%R	7013	5001	6019	1001
+%R	7013	5002	6023	1001
+%R	7013	5003	6029	1001
+%R	7013	5004	6041	1001
+%R	7013	5005	6046	1001
+%R	7013	5006	6079	1001
+%R	7013	5007	6080	1001
+%R	7013	5008	6086	1001
+%R	7014	5000	6000	1001
+%R	7014	5001	6019	1001
+%R	7014	5002	6023	1001
+%R	7014	5003	6029	1001
+%R	7014	5004	6041	1001
+%R	7014	5005	6046	1001
+%R	7014	5006	6079	1001
+%R	7014	5007	6080	1001
+%R	7014	5008	6086	1001
+%R	7015	5000	6000	1001
+%R	7015	5001	6019	1001
+%R	7015	5002	6023	1001
+%R	7015	5003	6029	1001
+%R	7015	5004	6041	1001
+%R	7015	5005	6046	1001
+%R	7015	5006	6078	1001
+%R	7015	5007	6080	1001
+%R	7015	5008	6086	1001
+%R	7016	5000	6000	1001
+%R	7016	5001	6019	1001
+%R	7016	5002	6023	1001
+%R	7016	5003	6029	1001
+%R	7016	5004	6041	1001
+%R	7016	5005	6046	1001
+%R	7016	5006	6078	1001
+%R	7016	5007	6080	1001
+%R	7016	5008	6086	1001
+%R	7017	5000	6000	1001
+%R	7017	5001	6019	1001
+%R	7017	5002	6023	1001
+%R	7017	5003	6029	1001
+%R	7017	5004	6041	1001
+%R	7017	5005	6046	1001
+%R	7017	5006	6078	1001
+%R	7017	5007	6080	1001
+%R	7017	5008	6086	1001
+%R	7018	5000	6000	1001
+%R	7018	5001	6019	1001
+%R	7018	5002	6023	1001
+%R	7018	5003	6029	1001
+%R	7018	5004	6038	1001
+%R	7018	5005	6069	1001
+%R	7018	5006	6078	1001
+%R	7018	5007	6080	1001
+%R	7018	5008	6086	1001
+%R	7019	5000	6000	1001
+%R	7019	5001	6019	1001
+%R	7019	5002	6023	1001
+%R	7019	5003	6029	1001
+%R	7019	5004	6042	1001
+%R	7019	5005	6046	1001
+%R	7019	5006	6078	1001
+%R	7019	5007	6080	1001
+%R	7019	5008	6086	1001
+%R	7020	5000	6000	1001
+%R	7020	5001	6019	1001
+%R	7020	5002	6023	1001
+%R	7020	5003	6029	1001
+%R	7020	5004	6041	1001
+%R	7020	5005	6046	1001
+%R	7020	5006	6078	1001
+%R	7020	5007	6080	1001
+%R	7020	5008	6086	1001
+%R	7021	5000	6001	1001
+%R	7021	5001	6019	1001
+%R	7021	5002	6023	1001
+%R	7021	5003	6029	1001
+%R	7021	5004	6041	1001
+%R	7021	5005	6046	1001
+%R	7021	5006	6078	1001
+%R	7021	5007	6080	1001
+%R	7021	5008	6086	1001
+%R	7022	5000	6000	1001
+%R	7022	5001	6018	1001
+%R	7022	5002	6024	1001
+%R	7022	5003	6029	1001
+%R	7022	5004	6041	1001
+%R	7022	5005	6046	1001
+%R	7022	5006	6077	1001
+%R	7022	5007	6080	1001
+%R	7022	5008	6086	1001
+%R	7023	5000	6000	1001
+%R	7023	5001	6018	1001
+%R	7023	5002	6024	1001
+%R	7023	5003	6029	1001
+%R	7023	5004	6041	1001
+%R	7023	5005	6046	1001
+%R	7023	5006	6077	1001
+%R	7023	5007	6080	1001
+%R	7023	5008	6086	1001
+%R	7024	5000	6000	1001
+%R	7024	5001	6018	1001
+%R	7024	5002	6024	1001
+%R	7024	5003	6029	1001
+%R	7024	5004	6041	1001
+%R	7024	5005	6046	1001
+%R	7024	5006	6077	1001
+%R	7024	5007	6080	1001
+%R	7024	5008	6086	1001
+%R	7025	5000	6000	1001
+%R	7025	5001	6019	1001
+%R	7025	5002	6023	1001
+%R	7025	5003	6029	1001
+%R	7025	5004	6041	1001
+%R	7025	5005	6046	1001
+%R	7025	5006	6078	1001
+%R	7025	5007	6080	1001
+%R	7025	5008	6086	1001
+%R	7026	5000	6000	1001
+%R	7026	5001	6018	1001
+%R	7026	5002	6024	1001
+%R	7026	5003	6029	1001
+%R	7026	5004	6041	1001
+%R	7026	5005	6046	1001
+%R	7026	5006	6077	1001
+%R	7026	5007	6080	1001
+%R	7026	5008	6086	1001
+%R	7027	5000	6000	1001
+%R	7027	5001	6018	1001
+%R	7027	5002	6024	1001
+%R	7027	5003	6029	1001
+%R	7027	5004	6041	1001
+%R	7027	5005	6046	1001
+%R	7027	5006	6077	1001
+%R	7027	5007	6080	1001
+%R	7027	5008	6086	1001
+%R	7028	5000	6000	1001
+%R	7028	5001	6018	1001
+%R	7028	5002	6024	1001
+%R	7028	5003	6029	1001
+%R	7028	5004	6041	1001
+%R	7028	5005	6046	1001
+%R	7028	5006	6077	1001
+%R	7028	5007	6080	1001
+%R	7028	5008	6086	1001
+%R	7029	5000	6001	1001
+%R	7029	5001	6018	1001
+%R	7029	5002	6024	1001
+%R	7029	5003	6029	1001
+%R	7029	5004	6041	1001
+%R	7029	5005	6046	1001
+%R	7029	5006	6077	1001
+%R	7029	5007	6080	1001
+%R	7029	5008	6086	1001
+%R	7030	5000	6001	1001
+%R	7030	5001	6019	1001
+%R	7030	5002	6023	1001
+%R	7030	5003	6029	1001
+%R	7030	5004	6041	1001
+%R	7030	5005	6046	1001
+%R	7030	5006	6078	1001
+%R	7030	5007	6080	1001
+%R	7030	5008	6086	1001
+%R	7031	5000	6001	1001
+%R	7031	5001	6018	1001
+%R	7031	5002	6024	1001
+%R	7031	5003	6029	1001
+%R	7031	5004	6041	1001
+%R	7031	5005	6046	1001
+%R	7031	5006	6077	1001
+%R	7031	5007	6080	1001
+%R	7031	5008	6086	1001
+%R	7032	5000	6001	1001
+%R	7032	5001	6014	1001
+%R	7032	5002	6023	1001
+%R	7032	5003	6029	1001
+%R	7032	5004	6041	1001
+%R	7032	5005	6046	1001
+%R	7032	5006	6078	1001
+%R	7032	5007	6080	1001
+%R	7032	5008	6086	1001
+%R	7033	5000	6001	1001
+%R	7033	5001	6018	1001
+%R	7033	5002	6024	1001
+%R	7033	5003	6029	1001
+%R	7033	5004	6038	1001
+%R	7033	5005	6046	1001
+%R	7033	5006	6077	1001
+%R	7033	5007	6080	1001
+%R	7033	5008	6086	1001
+%R	7034	5000	6001	1001
+%R	7034	5001	6019	1001
+%R	7034	5002	6023	1001
+%R	7034	5003	6029	1001
+%R	7034	5004	6038	1001
+%R	7034	5005	6046	1001
+%R	7034	5006	6078	1001
+%R	7034	5007	6080	1001
+%R	7034	5008	6086	1001
+%R	7035	5000	6001	1001
+%R	7035	5001	6018	1001
+%R	7035	5002	6024	1001
+%R	7035	5003	6029	1001
+%R	7035	5004	6038	1001
+%R	7035	5005	6046	1001
+%R	7035	5006	6077	1001
+%R	7035	5007	6080	1001
+%R	7035	5008	6086	1001
+%R	7036	5000	6001	1001
+%R	7036	5001	6018	1001
+%R	7036	5002	6024	1001
+%R	7036	5003	6029	1001
+%R	7036	5004	6042	1001
+%R	7036	5005	6046	1001
+%R	7036	5006	6077	1001
+%R	7036	5007	6080	1001
+%R	7036	5008	6086	1001
+%R	7037	5000	6000	1001
+%R	7037	5001	6018	1001
+%R	7037	5002	6024	1001
+%R	7037	5003	6029	1001
+%R	7037	5004	6041	1001
+%R	7037	5005	6046	1001
+%R	7037	5006	6077	1001
+%R	7037	5007	6080	1001
+%R	7037	5008	6086	1001
+%R	7038	5000	6001	1001
+%R	7038	5001	6018	1001
+%R	7038	5002	6024	1001
+%R	7038	5003	6029	1001
+%R	7038	5004	6041	1001
+%R	7038	5005	6046	1001
+%R	7038	5006	6077	1001
+%R	7038	5007	6080	1001
+%R	7038	5008	6086	1001
+%R	7039	5000	6000	1001
+%R	7039	5001	6014	1001
+%R	7039	5002	6023	1001
+%R	7039	5003	6029	1001
+%R	7039	5004	6041	1001
+%R	7039	5005	6046	1001
+%R	7039	5006	6078	1001
+%R	7039	5007	6080	1001
+%R	7039	5008	6086	1001
+%R	7040	5000	6000	1001
+%R	7040	5001	6014	1001
+%R	7040	5002	6023	1001
+%R	7040	5003	6029	1001
+%R	7040	5004	6041	1001
+%R	7040	5005	6046	1001
+%R	7040	5006	6078	1001
+%R	7040	5007	6080	1001
+%R	7040	5008	6086	1001
+%R	7041	5000	6000	1001
+%R	7041	5001	6016	1001
+%R	7041	5002	6023	1001
+%R	7041	5003	6029	1001
+%R	7041	5004	6041	1001
+%R	7041	5005	6046	1001
+%R	7041	5006	6079	1001
+%R	7041	5007	6080	1001
+%R	7041	5008	6086	1001
+%R	7042	5000	6001	1001
+%R	7042	5001	6016	1001
+%R	7042	5002	6023	1001
+%R	7042	5003	6029	1001
+%R	7042	5004	6041	1001
+%R	7042	5005	6046	1001
+%R	7042	5006	6079	1001
+%R	7042	5007	6080	1001
+%R	7042	5008	6086	1001
+%R	7043	5000	6001	1001
+%R	7043	5001	6016	1001
+%R	7043	5002	6024	1001
+%R	7043	5003	6029	1001
+%R	7043	5004	6041	1001
+%R	7043	5005	6046	1001
+%R	7043	5006	6077	1001
+%R	7043	5007	6080	1001
+%R	7043	5008	6086	1001
+%R	7044	5000	6001	1001
+%R	7044	5001	6014	1001
+%R	7044	5002	6023	1001
+%R	7044	5003	6029	1001
+%R	7044	5004	6041	1001
+%R	7044	5005	6046	1001
+%R	7044	5006	6078	1001
+%R	7044	5007	6080	1001
+%R	7044	5008	6086	1001
+%R	7045	5000	6001	1001
+%R	7045	5001	6016	1001
+%R	7045	5002	6023	1001
+%R	7045	5003	6029	1001
+%R	7045	5004	6041	1001
+%R	7045	5005	6046	1001
+%R	7045	5006	6079	1001
+%R	7045	5007	6080	1001
+%R	7045	5008	6086	1001
+%R	7046	5000	6001	1001
+%R	7046	5001	6016	1001
+%R	7046	5002	6024	1001
+%R	7046	5003	6029	1001
+%R	7046	5004	6041	1001
+%R	7046	5005	6046	1001
+%R	7046	5006	6077	1001
+%R	7046	5007	6080	1001
+%R	7046	5008	6086	1001
+%R	7047	5000	6001	1001
+%R	7047	5001	6014	1001
+%R	7047	5002	6023	1001
+%R	7047	5003	6029	1001
+%R	7047	5004	6041	1001
+%R	7047	5005	6046	1001
+%R	7047	5006	6078	1001
+%R	7047	5007	6080	1001
+%R	7047	5008	6086	1001
+%R	7048	5000	6001	1001
+%R	7048	5001	6016	1001
+%R	7048	5002	6023	1001
+%R	7048	5003	6029	1001
+%R	7048	5004	6041	1001
+%R	7048	5005	6046	1001
+%R	7048	5006	6079	1001
+%R	7048	5007	6080	1001
+%R	7048	5008	6086	1001
+%R	7049	5000	6001	1001
+%R	7049	5001	6016	1001
+%R	7049	5002	6024	1001
+%R	7049	5003	6029	1001
+%R	7049	5004	6041	1001
+%R	7049	5005	6046	1001
+%R	7049	5006	6077	1001
+%R	7049	5007	6080	1001
+%R	7049	5008	6086	1001
+%R	7050	5000	6001	1001
+%R	7050	5001	6014	1001
+%R	7050	5002	6023	1001
+%R	7050	5003	6029	1001
+%R	7050	5004	6041	1001
+%R	7050	5005	6046	1001
+%R	7050	5006	6078	1001
+%R	7050	5007	6080	1001
+%R	7050	5008	6086	1001
+%R	7051	5000	6000	1001
+%R	7051	5001	6016	1001
+%R	7051	5002	6023	1001
+%R	7051	5003	6029	1001
+%R	7051	5004	6043	1001
+%R	7051	5005	6046	1001
+%R	7051	5006	6076	1001
+%R	7051	5007	6080	1001
+%R	7051	5008	6086	1001
+%R	7052	5000	6001	1001
+%R	7052	5001	6016	1001
+%R	7052	5002	6025	1001
+%R	7052	5003	6029	1001
+%R	7052	5004	6043	1001
+%R	7052	5005	6046	1001
+%R	7052	5006	6076	1001
+%R	7052	5007	6080	1001
+%R	7052	5008	6086	1001
+%R	7053	5000	6000	1001
+%R	7053	5001	6016	1001
+%R	7053	5002	6023	1001
+%R	7053	5003	6029	1001
+%R	7053	5004	6037	1001
+%R	7053	5005	6046	1001
+%R	7053	5006	6076	1001
+%R	7053	5007	6080	1001
+%R	7053	5008	6086	1001
+%R	7054	5000	6000	1001
+%R	7054	5001	6016	1001
+%R	7054	5002	6026	1001
+%R	7054	5003	6029	1001
+%R	7054	5004	6037	1001
+%R	7054	5005	6046	1001
+%R	7054	5006	6076	1001
+%R	7054	5007	6080	1001
+%R	7054	5008	6086	1001
+%R	7055	5000	6001	1001
+%R	7055	5001	6016	1001
+%R	7055	5002	6023	1001
+%R	7055	5003	6029	1001
+%R	7055	5004	6042	1001
+%R	7055	5005	6046	1001
+%R	7055	5006	6076	1001
+%R	7055	5007	6080	1001
+%R	7055	5008	6086	1001
+%R	7056	5000	6001	1001
+%R	7056	5001	6016	1001
+%R	7056	5002	6024	1001
+%R	7056	5003	6029	1001
+%R	7056	5004	6042	1001
+%R	7056	5005	6046	1001
+%R	7056	5006	6076	1001
+%R	7056	5007	6080	1001
+%R	7056	5008	6086	1001
+%R	7057	5000	6000	1001
+%R	7057	5001	6017	1001
+%R	7057	5002	6027	1001
+%R	7057	5003	6029	1001
+%R	7057	5004	6040	1001
+%R	7057	5005	6046	1001
+%R	7057	5006	6078	1001
+%R	7057	5007	6080	1001
+%R	7057	5008	6087	1001
+%R	7058	5000	6001	1001
+%R	7058	5001	6017	1001
+%R	7058	5002	6027	1001
+%R	7058	5003	6029	1001
+%R	7058	5004	6040	1001
+%R	7058	5005	6055	1001
+%R	7058	5006	6077	1001
+%R	7058	5007	6080	1001
+%R	7058	5008	6087	1001
+%R	7059	5000	6001	1001
+%R	7059	5001	6010	1001
+%R	7059	5002	6027	1001
+%R	7059	5003	6029	1001
+%R	7059	5004	6040	1001
+%R	7059	5005	6073	1001
+%R	7059	5006	6078	1001
+%R	7059	5007	6080	1001
+%R	7059	5008	6087	1001
+%R	7060	5000	6001	1001
+%R	7060	5001	6017	1001
+%R	7060	5002	6027	1001
+%R	7060	5003	6029	1001
+%R	7060	5004	6040	1001
+%R	7060	5005	6046	1001
+%R	7060	5006	6077	1001
+%R	7060	5007	6080	1001
+%R	7060	5008	6087	1001
+%R	7061	5000	6001	1001
+%R	7061	5001	6017	1001
+%R	7061	5002	6022	1001
+%R	7061	5003	6029	1001
+%R	7061	5004	6040	1001
+%R	7061	5005	6046	1001
+%R	7061	5006	6077	1001
+%R	7061	5007	6080	1001
+%R	7061	5008	6087	1001
+%R	7062	5000	6001	1001
+%R	7062	5001	6017	1001
+%R	7062	5002	6027	1001
+%R	7062	5003	6029	1001
+%R	7062	5004	6040	1001
+%R	7062	5005	6046	1001
+%R	7062	5006	6078	1001
+%R	7062	5007	6080	1001
+%R	7062	5008	6087	1001
+%R	7063	5000	6000	1001
+%R	7063	5001	6017	1001
+%R	7063	5002	6027	1001
+%R	7063	5003	6029	1001
+%R	7063	5004	6039	1001
+%R	7063	5005	6046	1001
+%R	7063	5006	6078	1001
+%R	7063	5007	6080	1001
+%R	7063	5008	6087	1001
+%R	7064	5000	6001	1001
+%R	7064	5001	6017	1001
+%R	7064	5002	6027	1001
+%R	7064	5003	6029	1001
+%R	7064	5004	6039	1001
+%R	7064	5005	6054	1001
+%R	7064	5006	6077	1001
+%R	7064	5007	6080	1001
+%R	7064	5008	6087	1001
+%R	7065	5000	6001	1001
+%R	7065	5001	6010	1001
+%R	7065	5002	6027	1001
+%R	7065	5003	6029	1001
+%R	7065	5004	6039	1001
+%R	7065	5005	6073	1001
+%R	7065	5006	6078	1001
+%R	7065	5007	6080	1001
+%R	7065	5008	6087	1001
+%R	7066	5000	6001	1001
+%R	7066	5001	6017	1001
+%R	7066	5002	6027	1001
+%R	7066	5003	6029	1001
+%R	7066	5004	6039	1001
+%R	7066	5005	6046	1001
+%R	7066	5006	6077	1001
+%R	7066	5007	6080	1001
+%R	7066	5008	6087	1001
+%R	7067	5000	6001	1001
+%R	7067	5001	6017	1001
+%R	7067	5002	6022	1001
+%R	7067	5003	6029	1001
+%R	7067	5004	6039	1001
+%R	7067	5005	6046	1001
+%R	7067	5006	6077	1001
+%R	7067	5007	6080	1001
+%R	7067	5008	6087	1001
+%R	7068	5000	6001	1001
+%R	7068	5001	6017	1001
+%R	7068	5002	6027	1001
+%R	7068	5003	6029	1001
+%R	7068	5004	6039	1001
+%R	7068	5005	6046	1001
+%R	7068	5006	6078	1001
+%R	7068	5007	6080	1001
+%R	7068	5008	6087	1001
+%R	7069	5000	6000	1001
+%R	7069	5001	6017	1001
+%R	7069	5002	6027	1001
+%R	7069	5003	6029	1001
+%R	7069	5004	6044	1001
+%R	7069	5005	6046	1001
+%R	7069	5006	6078	1001
+%R	7069	5007	6080	1001
+%R	7069	5008	6087	1001
+%R	7070	5000	6001	1001
+%R	7070	5001	6017	1001
+%R	7070	5002	6027	1001
+%R	7070	5003	6029	1001
+%R	7070	5004	6044	1001
+%R	7070	5005	6053	1001
+%R	7070	5006	6077	1001
+%R	7070	5007	6080	1001
+%R	7070	5008	6087	1001
+%R	7071	5000	6001	1001
+%R	7071	5001	6010	1001
+%R	7071	5002	6027	1001
+%R	7071	5003	6029	1001
+%R	7071	5004	6044	1001
+%R	7071	5005	6073	1001
+%R	7071	5006	6078	1001
+%R	7071	5007	6080	1001
+%R	7071	5008	6087	1001
+%R	7072	5000	6001	1001
+%R	7072	5001	6017	1001
+%R	7072	5002	6027	1001
+%R	7072	5003	6029	1001
+%R	7072	5004	6044	1001
+%R	7072	5005	6046	1001
+%R	7072	5006	6077	1001
+%R	7072	5007	6080	1001
+%R	7072	5008	6087	1001
+%R	7073	5000	6001	1001
+%R	7073	5001	6017	1001
+%R	7073	5002	6022	1001
+%R	7073	5003	6029	1001
+%R	7073	5004	6044	1001
+%R	7073	5005	6046	1001
+%R	7073	5006	6077	1001
+%R	7073	5007	6080	1001
+%R	7073	5008	6087	1001
+%R	7074	5000	6001	1001
+%R	7074	5001	6017	1001
+%R	7074	5002	6027	1001
+%R	7074	5003	6029	1001
+%R	7074	5004	6044	1001
+%R	7074	5005	6046	1001
+%R	7074	5006	6078	1001
+%R	7074	5007	6080	1001
+%R	7074	5008	6087	1001
+%R	7075	5000	6000	1001
+%R	7075	5001	6017	1001
+%R	7075	5002	6027	1001
+%R	7075	5003	6029	1001
+%R	7075	5004	6044	1001
+%R	7075	5005	6046	1001
+%R	7075	5006	6078	1001
+%R	7075	5007	6080	1001
+%R	7075	5008	6087	1001
+%R	7076	5000	6000	1001
+%R	7076	5001	6017	1001
+%R	7076	5002	6027	1001
+%R	7076	5003	6029	1001
+%R	7076	5004	6044	1001
+%R	7076	5005	6061	1001
+%R	7076	5006	6077	1001
+%R	7076	5007	6080	1001
+%R	7076	5008	6087	1001
+%R	7077	5000	6001	1001
+%R	7077	5001	6010	1001
+%R	7077	5002	6027	1001
+%R	7077	5003	6029	1001
+%R	7077	5004	6044	1001
+%R	7077	5005	6073	1001
+%R	7077	5006	6078	1001
+%R	7077	5007	6080	1001
+%R	7077	5008	6087	1001
+%R	7078	5000	6001	1001
+%R	7078	5001	6017	1001
+%R	7078	5002	6027	1001
+%R	7078	5003	6029	1001
+%R	7078	5004	6044	1001
+%R	7078	5005	6046	1001
+%R	7078	5006	6077	1001
+%R	7078	5007	6080	1001
+%R	7078	5008	6087	1001
+%R	7079	5000	6001	1001
+%R	7079	5001	6017	1001
+%R	7079	5002	6022	1001
+%R	7079	5003	6029	1001
+%R	7079	5004	6044	1001
+%R	7079	5005	6046	1001
+%R	7079	5006	6077	1001
+%R	7079	5007	6080	1001
+%R	7079	5008	6087	1001
+%R	7080	5000	6001	1001
+%R	7080	5001	6017	1001
+%R	7080	5002	6027	1001
+%R	7080	5003	6029	1001
+%R	7080	5004	6044	1001
+%R	7080	5005	6046	1001
+%R	7080	5006	6078	1001
+%R	7080	5007	6080	1001
+%R	7080	5008	6087	1001
+%R	7081	5000	6000	1001
+%R	7081	5001	6017	1001
+%R	7081	5002	6027	1001
+%R	7081	5003	6029	1001
+%R	7081	5004	6045	1001
+%R	7081	5005	6046	1001
+%R	7081	5006	6078	1001
+%R	7081	5007	6080	1001
+%R	7081	5008	6087	1001
+%R	7082	5000	6000	1001
+%R	7082	5001	6017	1001
+%R	7082	5002	6027	1001
+%R	7082	5003	6029	1001
+%R	7082	5004	6045	1001
+%R	7082	5005	6062	1001
+%R	7082	5006	6077	1001
+%R	7082	5007	6080	1001
+%R	7082	5008	6087	1001
+%R	7083	5000	6001	1001
+%R	7083	5001	6010	1001
+%R	7083	5002	6027	1001
+%R	7083	5003	6029	1001
+%R	7083	5004	6045	1001
+%R	7083	5005	6073	1001
+%R	7083	5006	6078	1001
+%R	7083	5007	6080	1001
+%R	7083	5008	6087	1001
+%R	7084	5000	6001	1001
+%R	7084	5001	6017	1001
+%R	7084	5002	6027	1001
+%R	7084	5003	6029	1001
+%R	7084	5004	6045	1001
+%R	7084	5005	6046	1001
+%R	7084	5006	6077	1001
+%R	7084	5007	6080	1001
+%R	7084	5008	6087	1001
+%R	7085	5000	6001	1001
+%R	7085	5001	6017	1001
+%R	7085	5002	6022	1001
+%R	7085	5003	6029	1001
+%R	7085	5004	6045	1001
+%R	7085	5005	6046	1001
+%R	7085	5006	6077	1001
+%R	7085	5007	6080	1001
+%R	7085	5008	6087	1001
+%R	7086	5000	6001	1001
+%R	7086	5001	6017	1001
+%R	7086	5002	6027	1001
+%R	7086	5003	6029	1001
+%R	7086	5004	6045	1001
+%R	7086	5005	6046	1001
+%R	7086	5006	6078	1001
+%R	7086	5007	6080	1001
+%R	7086	5008	6087	1001
+%R	7087	5000	6000	1001
+%R	7087	5001	6017	1001
+%R	7087	5002	6027	1001
+%R	7087	5003	6029	1001
+%R	7087	5004	6037	1001
+%R	7087	5005	6046	1001
+%R	7087	5006	6078	1001
+%R	7087	5007	6080	1001
+%R	7087	5008	6087	1001
+%R	7088	5000	6000	1001
+%R	7088	5001	6017	1001
+%R	7088	5002	6027	1001
+%R	7088	5003	6029	1001
+%R	7088	5004	6037	1001
+%R	7088	5005	6063	1001
+%R	7088	5006	6077	1001
+%R	7088	5007	6080	1001
+%R	7088	5008	6087	1001
+%R	7089	5000	6001	1001
+%R	7089	5001	6010	1001
+%R	7089	5002	6027	1001
+%R	7089	5003	6029	1001
+%R	7089	5004	6037	1001
+%R	7089	5005	6073	1001
+%R	7089	5006	6078	1001
+%R	7089	5007	6080	1001
+%R	7089	5008	6087	1001
+%R	7090	5000	6001	1001
+%R	7090	5001	6017	1001
+%R	7090	5002	6027	1001
+%R	7090	5003	6029	1001
+%R	7090	5004	6037	1001
+%R	7090	5005	6046	1001
+%R	7090	5006	6077	1001
+%R	7090	5007	6080	1001
+%R	7090	5008	6087	1001
+%R	7091	5000	6001	1001
+%R	7091	5001	6017	1001
+%R	7091	5002	6022	1001
+%R	7091	5003	6029	1001
+%R	7091	5004	6037	1001
+%R	7091	5005	6046	1001
+%R	7091	5006	6077	1001
+%R	7091	5007	6080	1001
+%R	7091	5008	6087	1001
+%R	7092	5000	6001	1001
+%R	7092	5001	6017	1001
+%R	7092	5002	6027	1001
+%R	7092	5003	6029	1001
+%R	7092	5004	6037	1001
+%R	7092	5005	6046	1001
+%R	7092	5006	6078	1001
+%R	7092	5007	6080	1001
+%R	7092	5008	6087	1001
+%R	7093	5000	6000	1001
+%R	7093	5001	6017	1001
+%R	7093	5002	6027	1001
+%R	7093	5003	6029	1001
+%R	7093	5004	6043	1001
+%R	7093	5005	6046	1001
+%R	7093	5006	6078	1001
+%R	7093	5007	6080	1001
+%R	7093	5008	6087	1001
+%R	7094	5000	6000	1001
+%R	7094	5001	6017	1001
+%R	7094	5002	6027	1001
+%R	7094	5003	6029	1001
+%R	7094	5004	6043	1001
+%R	7094	5005	6064	1001
+%R	7094	5006	6077	1001
+%R	7094	5007	6080	1001
+%R	7094	5008	6087	1001
+%R	7095	5000	6001	1001
+%R	7095	5001	6010	1001
+%R	7095	5002	6027	1001
+%R	7095	5003	6029	1001
+%R	7095	5004	6043	1001
+%R	7095	5005	6073	1001
+%R	7095	5006	6078	1001
+%R	7095	5007	6080	1001
+%R	7095	5008	6087	1001
+%R	7096	5000	6001	1001
+%R	7096	5001	6017	1001
+%R	7096	5002	6027	1001
+%R	7096	5003	6029	1001
+%R	7096	5004	6043	1001
+%R	7096	5005	6046	1001
+%R	7096	5006	6077	1001
+%R	7096	5007	6080	1001
+%R	7096	5008	6087	1001
+%R	7097	5000	6001	1001
+%R	7097	5001	6017	1001
+%R	7097	5002	6022	1001
+%R	7097	5003	6029	1001
+%R	7097	5004	6043	1001
+%R	7097	5005	6046	1001
+%R	7097	5006	6077	1001
+%R	7097	5007	6080	1001
+%R	7097	5008	6087	1001
+%R	7098	5000	6001	1001
+%R	7098	5001	6017	1001
+%R	7098	5002	6027	1001
+%R	7098	5003	6029	1001
+%R	7098	5004	6043	1001
+%R	7098	5005	6046	1001
+%R	7098	5006	6078	1001
+%R	7098	5007	6080	1001
+%R	7098	5008	6087	1001
+%R	7099	5000	6001	1001
+%R	7099	5001	6017	1001
+%R	7099	5002	6027	1001
+%R	7099	5003	6029	1001
+%R	7099	5004	6036	1001
+%R	7099	5005	6046	1001
+%R	7099	5006	6078	1001
+%R	7099	5007	6080	1001
+%R	7099	5008	6087	1001
+%R	7100	5000	6001	1001
+%R	7100	5001	6017	1001
+%R	7100	5002	6027	1001
+%R	7100	5003	6029	1001
+%R	7100	5004	6036	1001
+%R	7100	5005	6068	1001
+%R	7100	5006	6077	1001
+%R	7100	5007	6080	1001
+%R	7100	5008	6087	1001
+%R	7101	5000	6001	1001
+%R	7101	5001	6010	1001
+%R	7101	5002	6027	1001
+%R	7101	5003	6029	1001
+%R	7101	5004	6036	1001
+%R	7101	5005	6073	1001
+%R	7101	5006	6078	1001
+%R	7101	5007	6080	1001
+%R	7101	5008	6087	1001
+%R	7102	5000	6001	1001
+%R	7102	5001	6017	1001
+%R	7102	5002	6027	1001
+%R	7102	5003	6029	1001
+%R	7102	5004	6036	1001
+%R	7102	5005	6046	1001
+%R	7102	5006	6077	1001
+%R	7102	5007	6080	1001
+%R	7102	5008	6087	1001
+%R	7103	5000	6001	1001
+%R	7103	5001	6017	1001
+%R	7103	5002	6022	1001
+%R	7103	5003	6029	1001
+%R	7103	5004	6036	1001
+%R	7103	5005	6046	1001
+%R	7103	5006	6077	1001
+%R	7103	5007	6080	1001
+%R	7103	5008	6087	1001
+%R	7104	5000	6001	1001
+%R	7104	5001	6017	1001
+%R	7104	5002	6027	1001
+%R	7104	5003	6029	1001
+%R	7104	5004	6036	1001
+%R	7104	5005	6046	1001
+%R	7104	5006	6078	1001
+%R	7104	5007	6080	1001
+%R	7104	5008	6087	1001
+%R	7105	5000	6000	1001
+%R	7105	5001	6017	1001
+%R	7105	5002	6027	1001
+%R	7105	5003	6029	1001
+%R	7105	5004	6039	1001
+%R	7105	5005	6046	1001
+%R	7105	5006	6078	1001
+%R	7105	5007	6080	1001
+%R	7105	5008	6087	1001
+%R	7106	5000	6000	1001
+%R	7106	5001	6017	1001
+%R	7106	5002	6027	1001
+%R	7106	5003	6029	1001
+%R	7106	5004	6039	1001
+%R	7106	5005	6057	1001
+%R	7106	5006	6077	1001
+%R	7106	5007	6080	1001
+%R	7106	5008	6087	1001
+%R	7107	5000	6001	1001
+%R	7107	5001	6017	1001
+%R	7107	5002	6027	1001
+%R	7107	5003	6029	1001
+%R	7107	5004	6039	1001
+%R	7107	5005	6046	1001
+%R	7107	5006	6077	1001
+%R	7107	5007	6080	1001
+%R	7107	5008	6087	1001
+%R	7108	5000	6001	1001
+%R	7108	5001	6017	1001
+%R	7108	5002	6022	1001
+%R	7108	5003	6029	1001
+%R	7108	5004	6039	1001
+%R	7108	5005	6046	1001
+%R	7108	5006	6077	1001
+%R	7108	5007	6080	1001
+%R	7108	5008	6087	1001
+%R	7109	5000	6001	1001
+%R	7109	5001	6017	1001
+%R	7109	5002	6027	1001
+%R	7109	5003	6029	1001
+%R	7109	5004	6039	1001
+%R	7109	5005	6046	1001
+%R	7109	5006	6078	1001
+%R	7109	5007	6080	1001
+%R	7109	5008	6087	1001
+%R	7110	5000	6000	1001
+%R	7110	5001	6017	1001
+%R	7110	5002	6027	1001
+%R	7110	5003	6029	1001
+%R	7110	5004	6035	1001
+%R	7110	5005	6046	1001
+%R	7110	5006	6078	1001
+%R	7110	5007	6080	1001
+%R	7110	5008	6086	1001
+%R	7111	5000	6000	1001
+%R	7111	5001	6017	1001
+%R	7111	5002	6027	1001
+%R	7111	5003	6029	1001
+%R	7111	5004	6035	1001
+%R	7111	5005	6058	1001
+%R	7111	5006	6077	1001
+%R	7111	5007	6080	1001
+%R	7111	5008	6086	1001
+%R	7112	5000	6001	1001
+%R	7112	5001	6017	1001
+%R	7112	5002	6027	1001
+%R	7112	5003	6029	1001
+%R	7112	5004	6035	1001
+%R	7112	5005	6046	1001
+%R	7112	5006	6078	1001
+%R	7112	5007	6080	1001
+%R	7112	5008	6086	1001
+%R	7113	5000	6000	1001
+%R	7113	5001	6017	1001
+%R	7113	5002	6027	1001
+%R	7113	5003	6029	1001
+%R	7113	5004	6035	1001
+%R	7113	5005	6046	1001
+%R	7113	5006	6078	1001
+%R	7113	5007	6080	1001
+%R	7113	5008	6086	1001
+%R	7114	5000	6000	1001
+%R	7114	5001	6017	1001
+%R	7114	5002	6027	1001
+%R	7114	5003	6029	1001
+%R	7114	5004	6035	1001
+%R	7114	5005	6059	1001
+%R	7114	5006	6077	1001
+%R	7114	5007	6080	1001
+%R	7114	5008	6086	1001
+%R	7115	5000	6001	1001
+%R	7115	5001	6017	1001
+%R	7115	5002	6027	1001
+%R	7115	5003	6029	1001
+%R	7115	5004	6035	1001
+%R	7115	5005	6046	1001
+%R	7115	5006	6078	1001
+%R	7115	5007	6080	1001
+%R	7115	5008	6086	1001
+%R	7116	5000	6000	1001
+%R	7116	5001	6017	1001
+%R	7116	5002	6027	1001
+%R	7116	5003	6029	1001
+%R	7116	5004	6035	1001
+%R	7116	5005	6046	1001
+%R	7116	5006	6078	1001
+%R	7116	5007	6080	1001
+%R	7116	5008	6086	1001
+%R	7117	5000	6000	1001
+%R	7117	5001	6017	1001
+%R	7117	5002	6027	1001
+%R	7117	5003	6029	1001
+%R	7117	5004	6035	1001
+%R	7117	5005	6060	1001
+%R	7117	5006	6077	1001
+%R	7117	5007	6080	1001
+%R	7117	5008	6086	1001
+%R	7118	5000	6001	1001
+%R	7118	5001	6017	1001
+%R	7118	5002	6027	1001
+%R	7118	5003	6029	1001
+%R	7118	5004	6035	1001
+%R	7118	5005	6046	1001
+%R	7118	5006	6078	1001
+%R	7118	5007	6080	1001
+%R	7118	5008	6086	1001
+%R	7119	5000	6000	1001
+%R	7119	5001	6017	1001
+%R	7119	5002	6027	1001
+%R	7119	5003	6029	1001
+%R	7119	5004	6035	1001
+%R	7119	5005	6046	1001
+%R	7119	5006	6078	1001
+%R	7119	5007	6080	1001
+%R	7119	5008	6086	1001
+%R	7120	5000	6001	1001
+%R	7120	5001	6014	1001
+%R	7120	5002	6023	1001
+%R	7120	5003	6029	1001
+%R	7120	5004	6041	1001
+%R	7120	5005	6046	1001
+%R	7120	5006	6078	1001
+%R	7120	5007	6080	1001
+%R	7120	5008	6086	1001
+%R	7121	5000	6001	1001
+%R	7121	5001	6014	1001
+%R	7121	5002	6023	1001
+%R	7121	5003	6029	1001
+%R	7121	5004	6041	1001
+%R	7121	5005	6046	1001
+%R	7121	5006	6078	1001
+%R	7121	5007	6080	1001
+%R	7121	5008	6086	1001
+%R	7122	5000	6000	1001
+%R	7122	5001	6013	1001
+%R	7122	5002	6023	1001
+%R	7122	5003	6029	1001
+%R	7122	5004	6041	1001
+%R	7122	5005	6049	1001
+%R	7122	5006	6078	1001
+%R	7122	5007	6080	1001
+%R	7122	5008	6086	1001
+%R	7123	5000	6001	1001
+%R	7123	5001	6015	1001
+%R	7123	5002	6023	1001
+%R	7123	5003	6029	1001
+%R	7123	5004	6041	1001
+%R	7123	5005	6047	1001
+%R	7123	5006	6078	1001
+%R	7123	5007	6080	1001
+%R	7123	5008	6086	1001
+%R	7124	5000	6001	1001
+%R	7124	5001	6005	1001
+%R	7124	5002	6023	1001
+%R	7124	5003	6030	1001
+%R	7124	5004	6035	1001
+%R	7124	5005	6056	1001
+%R	7124	5006	6078	1001
+%R	7124	5007	6081	1001
+%R	7124	5008	6086	1001
+%R	7125	5000	6001	1001
+%R	7125	5001	6005	1001
+%R	7125	5002	6023	1001
+%R	7125	5003	6030	1001
+%R	7125	5004	6035	1001
+%R	7125	5005	6058	1001
+%R	7125	5006	6078	1001
+%R	7125	5007	6081	1001
+%R	7125	5008	6086	1001
+%R	7126	5000	6001	1001
+%R	7126	5001	6005	1001
+%R	7126	5002	6023	1001
+%R	7126	5003	6030	1001
+%R	7126	5004	6035	1001
+%R	7126	5005	6059	1001
+%R	7126	5006	6078	1001
+%R	7126	5007	6081	1001
+%R	7126	5008	6086	1001
+%R	7127	5000	6001	1001
+%R	7127	5001	6012	1001
+%R	7127	5002	6023	1001
+%R	7127	5003	6030	1001
+%R	7127	5004	6040	1001
+%R	7127	5005	6055	1001
+%R	7127	5006	6078	1001
+%R	7127	5007	6081	1001
+%R	7127	5008	6086	1001
+%R	7128	5000	6001	1001
+%R	7128	5001	6005	1001
+%R	7128	5002	6023	1001
+%R	7128	5003	6030	1001
+%R	7128	5004	6035	1001
+%R	7128	5005	6056	1001
+%R	7128	5006	6078	1001
+%R	7128	5007	6081	1001
+%R	7128	5008	6086	1001
+%R	7129	5000	6001	1001
+%R	7129	5001	6012	1001
+%R	7129	5002	6023	1001
+%R	7129	5003	6030	1001
+%R	7129	5004	6039	1001
+%R	7129	5005	6054	1001
+%R	7129	5006	6078	1001
+%R	7129	5007	6081	1001
+%R	7129	5008	6086	1001
+%R	7130	5000	6001	1001
+%R	7130	5001	6012	1001
+%R	7130	5002	6023	1001
+%R	7130	5003	6030	1001
+%R	7130	5004	6039	1001
+%R	7130	5005	6057	1001
+%R	7130	5006	6078	1001
+%R	7130	5007	6081	1001
+%R	7130	5008	6086	1001
+%R	7131	5000	6001	1001
+%R	7131	5001	6005	1001
+%R	7131	5002	6023	1001
+%R	7131	5003	6030	1001
+%R	7131	5004	6035	1001
+%R	7131	5005	6056	1001
+%R	7131	5006	6078	1001
+%R	7131	5007	6081	1001
+%R	7131	5008	6086	1001
+%R	7132	5000	6001	1001
+%R	7132	5001	6012	1001
+%R	7132	5002	6023	1001
+%R	7132	5003	6030	1001
+%R	7132	5004	6044	1001
+%R	7132	5005	6053	1001
+%R	7132	5006	6078	1001
+%R	7132	5007	6081	1001
+%R	7132	5008	6086	1001
+%R	7133	5000	6001	1001
+%R	7133	5001	6005	1001
+%R	7133	5002	6023	1001
+%R	7133	5003	6030	1001
+%R	7133	5004	6035	1001
+%R	7133	5005	6056	1001
+%R	7133	5006	6078	1001
+%R	7133	5007	6081	1001
+%R	7133	5008	6086	1001
+%R	7134	5000	6001	1001
+%R	7134	5001	6005	1001
+%R	7134	5002	6023	1001
+%R	7134	5003	6030	1001
+%R	7134	5004	6035	1001
+%R	7134	5005	6060	1001
+%R	7134	5006	6078	1001
+%R	7134	5007	6081	1001
+%R	7134	5008	6086	1001
+%R	7135	5000	6001	1001
+%R	7135	5001	6021	1001
+%R	7135	5002	6023	1001
+%R	7135	5003	6030	1001
+%R	7135	5004	6039	1001
+%R	7135	5005	6065	1001
+%R	7135	5006	6078	1001
+%R	7135	5007	6081	1001
+%R	7135	5008	6086	1001
+%R	7136	5000	6001	1001
+%R	7136	5001	6005	1001
+%R	7136	5002	6023	1001
+%R	7136	5003	6031	1001
+%R	7136	5004	6035	1001
+%R	7136	5005	6056	1001
+%R	7136	5006	6078	1001
+%R	7136	5007	6082	1001
+%R	7136	5008	6086	1001
+%R	7137	5000	6001	1001
+%R	7137	5001	6005	1001
+%R	7137	5002	6023	1001
+%R	7137	5003	6031	1001
+%R	7137	5004	6035	1001
+%R	7137	5005	6058	1001
+%R	7137	5006	6078	1001
+%R	7137	5007	6082	1001
+%R	7137	5008	6086	1001
+%R	7138	5000	6001	1001
+%R	7138	5001	6005	1001
+%R	7138	5002	6023	1001
+%R	7138	5003	6031	1001
+%R	7138	5004	6035	1001
+%R	7138	5005	6059	1001
+%R	7138	5006	6078	1001
+%R	7138	5007	6082	1001
+%R	7138	5008	6086	1001
+%R	7139	5000	6001	1001
+%R	7139	5001	6012	1001
+%R	7139	5002	6023	1001
+%R	7139	5003	6031	1001
+%R	7139	5004	6040	1001
+%R	7139	5005	6055	1001
+%R	7139	5006	6078	1001
+%R	7139	5007	6082	1001
+%R	7139	5008	6086	1001
+%R	7140	5000	6001	1001
+%R	7140	5001	6005	1001
+%R	7140	5002	6023	1001
+%R	7140	5003	6031	1001
+%R	7140	5004	6035	1001
+%R	7140	5005	6056	1001
+%R	7140	5006	6078	1001
+%R	7140	5007	6082	1001
+%R	7140	5008	6086	1001
+%R	7141	5000	6001	1001
+%R	7141	5001	6012	1001
+%R	7141	5002	6023	1001
+%R	7141	5003	6031	1001
+%R	7141	5004	6039	1001
+%R	7141	5005	6054	1001
+%R	7141	5006	6078	1001
+%R	7141	5007	6082	1001
+%R	7141	5008	6086	1001
+%R	7142	5000	6001	1001
+%R	7142	5001	6012	1001
+%R	7142	5002	6023	1001
+%R	7142	5003	6031	1001
+%R	7142	5004	6039	1001
+%R	7142	5005	6057	1001
+%R	7142	5006	6078	1001
+%R	7142	5007	6082	1001
+%R	7142	5008	6086	1001
+%R	7143	5000	6001	1001
+%R	7143	5001	6005	1001
+%R	7143	5002	6023	1001
+%R	7143	5003	6031	1001
+%R	7143	5004	6035	1001
+%R	7143	5005	6056	1001
+%R	7143	5006	6078	1001
+%R	7143	5007	6082	1001
+%R	7143	5008	6086	1001
+%R	7144	5000	6001	1001
+%R	7144	5001	6012	1001
+%R	7144	5002	6023	1001
+%R	7144	5003	6031	1001
+%R	7144	5004	6044	1001
+%R	7144	5005	6053	1001
+%R	7144	5006	6078	1001
+%R	7144	5007	6082	1001
+%R	7144	5008	6086	1001
+%R	7145	5000	6001	1001
+%R	7145	5001	6005	1001
+%R	7145	5002	6023	1001
+%R	7145	5003	6031	1001
+%R	7145	5004	6035	1001
+%R	7145	5005	6056	1001
+%R	7145	5006	6078	1001
+%R	7145	5007	6082	1001
+%R	7145	5008	6086	1001
+%R	7146	5000	6001	1001
+%R	7146	5001	6005	1001
+%R	7146	5002	6023	1001
+%R	7146	5003	6031	1001
+%R	7146	5004	6035	1001
+%R	7146	5005	6060	1001
+%R	7146	5006	6078	1001
+%R	7146	5007	6082	1001
+%R	7146	5008	6086	1001
+%R	7147	5000	6001	1001
+%R	7147	5001	6021	1001
+%R	7147	5002	6023	1001
+%R	7147	5003	6031	1001
+%R	7147	5004	6039	1001
+%R	7147	5005	6065	1001
+%R	7147	5006	6078	1001
+%R	7147	5007	6082	1001
+%R	7147	5008	6086	1001
+%R	7148	5000	6001	1001
+%R	7148	5001	6005	1001
+%R	7148	5002	6023	1001
+%R	7148	5003	6032	1001
+%R	7148	5004	6035	1001
+%R	7148	5005	6056	1001
+%R	7148	5006	6078	1001
+%R	7148	5007	6083	1001
+%R	7148	5008	6086	1001
+%R	7149	5000	6001	1001
+%R	7149	5001	6005	1001
+%R	7149	5002	6023	1001
+%R	7149	5003	6032	1001
+%R	7149	5004	6035	1001
+%R	7149	5005	6058	1001
+%R	7149	5006	6078	1001
+%R	7149	5007	6083	1001
+%R	7149	5008	6086	1001
+%R	7150	5000	6001	1001
+%R	7150	5001	6005	1001
+%R	7150	5002	6023	1001
+%R	7150	5003	6032	1001
+%R	7150	5004	6035	1001
+%R	7150	5005	6059	1001
+%R	7150	5006	6078	1001
+%R	7150	5007	6083	1001
+%R	7150	5008	6086	1001
+%R	7151	5000	6001	1001
+%R	7151	5001	6012	1001
+%R	7151	5002	6023	1001
+%R	7151	5003	6032	1001
+%R	7151	5004	6040	1001
+%R	7151	5005	6055	1001
+%R	7151	5006	6078	1001
+%R	7151	5007	6083	1001
+%R	7151	5008	6086	1001
+%R	7152	5000	6001	1001
+%R	7152	5001	6005	1001
+%R	7152	5002	6023	1001
+%R	7152	5003	6032	1001
+%R	7152	5004	6035	1001
+%R	7152	5005	6056	1001
+%R	7152	5006	6078	1001
+%R	7152	5007	6083	1001
+%R	7152	5008	6086	1001
+%R	7153	5000	6001	1001
+%R	7153	5001	6012	1001
+%R	7153	5002	6023	1001
+%R	7153	5003	6032	1001
+%R	7153	5004	6039	1001
+%R	7153	5005	6054	1001
+%R	7153	5006	6078	1001
+%R	7153	5007	6083	1001
+%R	7153	5008	6086	1001
+%R	7154	5000	6001	1001
+%R	7154	5001	6012	1001
+%R	7154	5002	6023	1001
+%R	7154	5003	6032	1001
+%R	7154	5004	6039	1001
+%R	7154	5005	6057	1001
+%R	7154	5006	6078	1001
+%R	7154	5007	6083	1001
+%R	7154	5008	6086	1001
+%R	7155	5000	6001	1001
+%R	7155	5001	6005	1001
+%R	7155	5002	6023	1001
+%R	7155	5003	6032	1001
+%R	7155	5004	6035	1001
+%R	7155	5005	6056	1001
+%R	7155	5006	6078	1001
+%R	7155	5007	6083	1001
+%R	7155	5008	6086	1001
+%R	7156	5000	6001	1001
+%R	7156	5001	6012	1001
+%R	7156	5002	6023	1001
+%R	7156	5003	6032	1001
+%R	7156	5004	6044	1001
+%R	7156	5005	6053	1001
+%R	7156	5006	6078	1001
+%R	7156	5007	6083	1001
+%R	7156	5008	6086	1001
+%R	7157	5000	6001	1001
+%R	7157	5001	6005	1001
+%R	7157	5002	6023	1001
+%R	7157	5003	6032	1001
+%R	7157	5004	6035	1001
+%R	7157	5005	6056	1001
+%R	7157	5006	6078	1001
+%R	7157	5007	6083	1001
+%R	7157	5008	6086	1001
+%R	7158	5000	6001	1001
+%R	7158	5001	6005	1001
+%R	7158	5002	6023	1001
+%R	7158	5003	6032	1001
+%R	7158	5004	6035	1001
+%R	7158	5005	6060	1001
+%R	7158	5006	6078	1001
+%R	7158	5007	6083	1001
+%R	7158	5008	6086	1001
+%R	7159	5000	6001	1001
+%R	7159	5001	6021	1001
+%R	7159	5002	6023	1001
+%R	7159	5003	6032	1001
+%R	7159	5004	6039	1001
+%R	7159	5005	6065	1001
+%R	7159	5006	6078	1001
+%R	7159	5007	6083	1001
+%R	7159	5008	6086	1001
+%R	7160	5000	6001	1001
+%R	7160	5001	6005	1001
+%R	7160	5002	6023	1001
+%R	7160	5003	6033	1001
+%R	7160	5004	6035	1001
+%R	7160	5005	6056	1001
+%R	7160	5006	6078	1001
+%R	7160	5007	6084	1001
+%R	7160	5008	6086	1001
+%R	7161	5000	6001	1001
+%R	7161	5001	6005	1001
+%R	7161	5002	6023	1001
+%R	7161	5003	6033	1001
+%R	7161	5004	6035	1001
+%R	7161	5005	6058	1001
+%R	7161	5006	6078	1001
+%R	7161	5007	6084	1001
+%R	7161	5008	6086	1001
+%R	7162	5000	6001	1001
+%R	7162	5001	6005	1001
+%R	7162	5002	6023	1001
+%R	7162	5003	6033	1001
+%R	7162	5004	6035	1001
+%R	7162	5005	6059	1001
+%R	7162	5006	6078	1001
+%R	7162	5007	6084	1001
+%R	7162	5008	6086	1001
+%R	7163	5000	6001	1001
+%R	7163	5001	6012	1001
+%R	7163	5002	6023	1001
+%R	7163	5003	6033	1001
+%R	7163	5004	6040	1001
+%R	7163	5005	6055	1001
+%R	7163	5006	6078	1001
+%R	7163	5007	6084	1001
+%R	7163	5008	6086	1001
+%R	7164	5000	6001	1001
+%R	7164	5001	6005	1001
+%R	7164	5002	6023	1001
+%R	7164	5003	6033	1001
+%R	7164	5004	6035	1001
+%R	7164	5005	6056	1001
+%R	7164	5006	6078	1001
+%R	7164	5007	6084	1001
+%R	7164	5008	6086	1001
+%R	7165	5000	6001	1001
+%R	7165	5001	6012	1001
+%R	7165	5002	6023	1001
+%R	7165	5003	6033	1001
+%R	7165	5004	6039	1001
+%R	7165	5005	6054	1001
+%R	7165	5006	6078	1001
+%R	7165	5007	6084	1001
+%R	7165	5008	6086	1001
+%R	7166	5000	6001	1001
+%R	7166	5001	6012	1001
+%R	7166	5002	6023	1001
+%R	7166	5003	6033	1001
+%R	7166	5004	6039	1001
+%R	7166	5005	6057	1001
+%R	7166	5006	6078	1001
+%R	7166	5007	6084	1001
+%R	7166	5008	6086	1001
+%R	7167	5000	6001	1001
+%R	7167	5001	6005	1001
+%R	7167	5002	6023	1001
+%R	7167	5003	6033	1001
+%R	7167	5004	6035	1001
+%R	7167	5005	6056	1001
+%R	7167	5006	6078	1001
+%R	7167	5007	6084	1001
+%R	7167	5008	6086	1001
+%R	7168	5000	6001	1001
+%R	7168	5001	6012	1001
+%R	7168	5002	6023	1001
+%R	7168	5003	6033	1001
+%R	7168	5004	6044	1001
+%R	7168	5005	6053	1001
+%R	7168	5006	6078	1001
+%R	7168	5007	6084	1001
+%R	7168	5008	6086	1001
+%R	7169	5000	6001	1001
+%R	7169	5001	6005	1001
+%R	7169	5002	6023	1001
+%R	7169	5003	6033	1001
+%R	7169	5004	6035	1001
+%R	7169	5005	6056	1001
+%R	7169	5006	6078	1001
+%R	7169	5007	6084	1001
+%R	7169	5008	6086	1001
+%R	7170	5000	6001	1001
+%R	7170	5001	6005	1001
+%R	7170	5002	6023	1001
+%R	7170	5003	6033	1001
+%R	7170	5004	6035	1001
+%R	7170	5005	6060	1001
+%R	7170	5006	6078	1001
+%R	7170	5007	6084	1001
+%R	7170	5008	6086	1001
+%R	7171	5000	6001	1001
+%R	7171	5001	6021	1001
+%R	7171	5002	6023	1001
+%R	7171	5003	6033	1001
+%R	7171	5004	6039	1001
+%R	7171	5005	6065	1001
+%R	7171	5006	6078	1001
+%R	7171	5007	6084	1001
+%R	7171	5008	6086	1001
+%R	7172	5000	6001	1001
+%R	7172	5001	6005	1001
+%R	7172	5002	6023	1001
+%R	7172	5003	6034	1001
+%R	7172	5004	6035	1001
+%R	7172	5005	6056	1001
+%R	7172	5006	6078	1001
+%R	7172	5007	6085	1001
+%R	7172	5008	6086	1001
+%R	7173	5000	6001	1001
+%R	7173	5001	6005	1001
+%R	7173	5002	6023	1001
+%R	7173	5003	6034	1001
+%R	7173	5004	6035	1001
+%R	7173	5005	6058	1001
+%R	7173	5006	6078	1001
+%R	7173	5007	6085	1001
+%R	7173	5008	6086	1001
+%R	7174	5000	6001	1001
+%R	7174	5001	6005	1001
+%R	7174	5002	6023	1001
+%R	7174	5003	6034	1001
+%R	7174	5004	6035	1001
+%R	7174	5005	6059	1001
+%R	7174	5006	6078	1001
+%R	7174	5007	6085	1001
+%R	7174	5008	6086	1001
+%R	7175	5000	6001	1001
+%R	7175	5001	6012	1001
+%R	7175	5002	6023	1001
+%R	7175	5003	6034	1001
+%R	7175	5004	6040	1001
+%R	7175	5005	6055	1001
+%R	7175	5006	6078	1001
+%R	7175	5007	6085	1001
+%R	7175	5008	6086	1001
+%R	7176	5000	6001	1001
+%R	7176	5001	6005	1001
+%R	7176	5002	6023	1001
+%R	7176	5003	6034	1001
+%R	7176	5004	6035	1001
+%R	7176	5005	6056	1001
+%R	7176	5006	6078	1001
+%R	7176	5007	6085	1001
+%R	7176	5008	6086	1001
+%R	7177	5000	6001	1001
+%R	7177	5001	6012	1001
+%R	7177	5002	6023	1001
+%R	7177	5003	6034	1001
+%R	7177	5004	6039	1001
+%R	7177	5005	6054	1001
+%R	7177	5006	6078	1001
+%R	7177	5007	6085	1001
+%R	7177	5008	6086	1001
+%R	7178	5000	6001	1001
+%R	7178	5001	6012	1001
+%R	7178	5002	6023	1001
+%R	7178	5003	6034	1001
+%R	7178	5004	6039	1001
+%R	7178	5005	6057	1001
+%R	7178	5006	6078	1001
+%R	7178	5007	6085	1001
+%R	7178	5008	6086	1001
+%R	7179	5000	6001	1001
+%R	7179	5001	6005	1001
+%R	7179	5002	6023	1001
+%R	7179	5003	6034	1001
+%R	7179	5004	6035	1001
+%R	7179	5005	6056	1001
+%R	7179	5006	6078	1001
+%R	7179	5007	6085	1001
+%R	7179	5008	6086	1001
+%R	7180	5000	6001	1001
+%R	7180	5001	6012	1001
+%R	7180	5002	6023	1001
+%R	7180	5003	6034	1001
+%R	7180	5004	6044	1001
+%R	7180	5005	6053	1001
+%R	7180	5006	6078	1001
+%R	7180	5007	6085	1001
+%R	7180	5008	6086	1001
+%R	7181	5000	6001	1001
+%R	7181	5001	6005	1001
+%R	7181	5002	6023	1001
+%R	7181	5003	6034	1001
+%R	7181	5004	6035	1001
+%R	7181	5005	6056	1001
+%R	7181	5006	6078	1001
+%R	7181	5007	6085	1001
+%R	7181	5008	6086	1001
+%R	7182	5000	6001	1001
+%R	7182	5001	6005	1001
+%R	7182	5002	6023	1001
+%R	7182	5003	6034	1001
+%R	7182	5004	6035	1001
+%R	7182	5005	6060	1001
+%R	7182	5006	6078	1001
+%R	7182	5007	6085	1001
+%R	7182	5008	6086	1001
+%R	7183	5000	6001	1001
+%R	7183	5001	6021	1001
+%R	7183	5002	6023	1001
+%R	7183	5003	6034	1001
+%R	7183	5004	6039	1001
+%R	7183	5005	6065	1001
+%R	7183	5006	6078	1001
+%R	7183	5007	6085	1001
+%R	7183	5008	6086	1001
+%R	7184	5000	6001	1001
+%R	7184	5001	6012	1001
+%R	7184	5002	6023	1001
+%R	7184	5003	6029	1001
+%R	7184	5004	6043	1001
+%R	7184	5005	6064	1001
+%R	7184	5006	6078	1001
+%R	7184	5007	6080	1001
+%R	7184	5008	6086	1001
+%R	7185	5000	6001	1001
+%R	7185	5001	6012	1001
+%R	7185	5002	6023	1001
+%R	7185	5003	6029	1001
+%R	7185	5004	6043	1001
+%R	7185	5005	6064	1001
+%R	7185	5006	6078	1001
+%R	7185	5007	6080	1001
+%R	7185	5008	6086	1001
+%R	7186	5000	6001	1001
+%R	7186	5001	6012	1001
+%R	7186	5002	6023	1001
+%R	7186	5003	6029	1001
+%R	7186	5004	6043	1001
+%R	7186	5005	6064	1001
+%R	7186	5006	6078	1001
+%R	7186	5007	6080	1001
+%R	7186	5008	6086	1001
+%R	7187	5000	6001	1001
+%R	7187	5001	6012	1001
+%R	7187	5002	6023	1001
+%R	7187	5003	6029	1001
+%R	7187	5004	6044	1001
+%R	7187	5005	6061	1001
+%R	7187	5006	6078	1001
+%R	7187	5007	6080	1001
+%R	7187	5008	6086	1001
+%R	7188	5000	6001	1001
+%R	7188	5001	6012	1001
+%R	7188	5002	6023	1001
+%R	7188	5003	6029	1001
+%R	7188	5004	6044	1001
+%R	7188	5005	6061	1001
+%R	7188	5006	6078	1001
+%R	7188	5007	6080	1001
+%R	7188	5008	6086	1001
+%R	7189	5000	6001	1001
+%R	7189	5001	6012	1001
+%R	7189	5002	6023	1001
+%R	7189	5003	6029	1001
+%R	7189	5004	6045	1001
+%R	7189	5005	6062	1001
+%R	7189	5006	6078	1001
+%R	7189	5007	6080	1001
+%R	7189	5008	6086	1001
+%R	7190	5000	6001	1001
+%R	7190	5001	6012	1001
+%R	7190	5002	6023	1001
+%R	7190	5003	6029	1001
+%R	7190	5004	6045	1001
+%R	7190	5005	6062	1001
+%R	7190	5006	6078	1001
+%R	7190	5007	6080	1001
+%R	7190	5008	6086	1001
+%R	7191	5000	6001	1001
+%R	7191	5001	6012	1001
+%R	7191	5002	6023	1001
+%R	7191	5003	6029	1001
+%R	7191	5004	6037	1001
+%R	7191	5005	6063	1001
+%R	7191	5006	6078	1001
+%R	7191	5007	6080	1001
+%R	7191	5008	6086	1001
+%R	7192	5000	6001	1001
+%R	7192	5001	6012	1001
+%R	7192	5002	6023	1001
+%R	7192	5003	6029	1001
+%R	7192	5004	6037	1001
+%R	7192	5005	6063	1001
+%R	7192	5006	6078	1001
+%R	7192	5007	6080	1001
+%R	7192	5008	6086	1001
+%R	7193	5000	6001	1001
+%R	7193	5001	6012	1001
+%R	7193	5002	6023	1001
+%R	7193	5003	6029	1001
+%R	7193	5004	6036	1001
+%R	7193	5005	6068	1001
+%R	7193	5006	6078	1001
+%R	7193	5007	6080	1001
+%R	7193	5008	6086	1001
+%R	7194	5000	6001	1001
+%R	7194	5001	6012	1001
+%R	7194	5002	6023	1001
+%R	7194	5003	6029	1001
+%R	7194	5004	6036	1001
+%R	7194	5005	6068	1001
+%R	7194	5006	6078	1001
+%R	7194	5007	6080	1001
+%R	7194	5008	6086	1001
+%R	7195	5000	6001	1001
+%R	7195	5001	6012	1001
+%R	7195	5002	6023	1001
+%R	7195	5003	6029	1001
+%R	7195	5004	6038	1001
+%R	7195	5005	6069	1001
+%R	7195	5006	6078	1001
+%R	7195	5007	6080	1001
+%R	7195	5008	6086	1001
+%R	7196	5000	6001	1001
+%R	7196	5001	6012	1001
+%R	7196	5002	6023	1001
+%R	7196	5003	6029	1001
+%R	7196	5004	6042	1001
+%R	7196	5005	6067	1001
+%R	7196	5006	6078	1001
+%R	7196	5007	6080	1001
+%R	7196	5008	6086	1001
+%R	7197	5000	6001	1001
+%R	7197	5001	6016	1001
+%R	7197	5002	6023	1001
+%R	7197	5003	6029	1001
+%R	7197	5004	6041	1001
+%R	7197	5005	6046	1001
+%R	7197	5006	6077	1001
+%R	7197	5007	6080	1001
+%R	7197	5008	6086	1001
+%R	7198	5000	6001	1001
+%R	7198	5001	6016	1001
+%R	7198	5002	6024	1001
+%R	7198	5003	6029	1001
+%R	7198	5004	6041	1001
+%R	7198	5005	6046	1001
+%R	7198	5006	6077	1001
+%R	7198	5007	6080	1001
+%R	7198	5008	6086	1001
+%R	7199	5000	6001	1001
+%R	7199	5001	6016	1001
+%R	7199	5002	6023	1001
+%R	7199	5003	6029	1001
+%R	7199	5004	6041	1001
+%R	7199	5005	6046	1001
+%R	7199	5006	6077	1001
+%R	7199	5007	6080	1001
+%R	7199	5008	6086	1001
+%R	7200	5000	6001	1001
+%R	7200	5001	6016	1001
+%R	7200	5002	6024	1001
+%R	7200	5003	6029	1001
+%R	7200	5004	6041	1001
+%R	7200	5005	6046	1001
+%R	7200	5006	6077	1001
+%R	7200	5007	6080	1001
+%R	7200	5008	6086	1001
+%R	7201	5000	6001	1001
+%R	7201	5001	6014	1001
+%R	7201	5002	6023	1001
+%R	7201	5003	6029	1001
+%R	7201	5004	6041	1001
+%R	7201	5005	6046	1001
+%R	7201	5006	6078	1001
+%R	7201	5007	6080	1001
+%R	7201	5008	6086	1001
+%R	7202	5000	6001	1001
+%R	7202	5001	6016	1001
+%R	7202	5002	6023	1001
+%R	7202	5003	6029	1001
+%R	7202	5004	6041	1001
+%R	7202	5005	6046	1001
+%R	7202	5006	6079	1001
+%R	7202	5007	6080	1001
+%R	7202	5008	6086	1001
+%R	7203	5000	6001	1001
+%R	7203	5001	6016	1001
+%R	7203	5002	6024	1001
+%R	7203	5003	6029	1001
+%R	7203	5004	6041	1001
+%R	7203	5005	6046	1001
+%R	7203	5006	6077	1001
+%R	7203	5007	6080	1001
+%R	7203	5008	6086	1001
+%R	7204	5000	6001	1001
+%R	7204	5001	6014	1001
+%R	7204	5002	6023	1001
+%R	7204	5003	6029	1001
+%R	7204	5004	6041	1001
+%R	7204	5005	6046	1001
+%R	7204	5006	6078	1001
+%R	7204	5007	6080	1001
+%R	7204	5008	6086	1001
+%R	7205	5000	6001	1001
+%R	7205	5001	6021	1001
+%R	7205	5002	6023	1001
+%R	7205	5003	6029	1001
+%R	7205	5004	6039	1001
+%R	7205	5005	6065	1001
+%R	7205	5006	6078	1001
+%R	7205	5007	6080	1001
+%R	7205	5008	6086	1001
+%R	7206	5000	6001	1001
+%R	7206	5001	6006	1001
+%R	7206	5002	6023	1001
+%R	7206	5003	6029	1001
+%R	7206	5004	6041	1001
+%R	7206	5005	6046	1001
+%R	7206	5006	6078	1001
+%R	7206	5007	6080	1001
+%R	7206	5008	6086	1001
+%R	7207	5000	6001	1001
+%R	7207	5001	6021	1001
+%R	7207	5002	6028	1001
+%R	7207	5003	6029	1001
+%R	7207	5004	6038	1001
+%R	7207	5005	6069	1001
+%R	7207	5006	6078	1001
+%R	7207	5007	6080	1001
+%R	7207	5008	6086	1001
+%R	7208	5000	6001	1001
+%R	7208	5001	6021	1001
+%R	7208	5002	6023	1001
+%R	7208	5003	6029	1001
+%R	7208	5004	6038	1001
+%R	7208	5005	6069	1001
+%R	7208	5006	6078	1001
+%R	7208	5007	6080	1001
+%R	7208	5008	6086	1001
+%R	7209	5000	6002	1001
+%R	7209	5001	6021	1001
+%R	7209	5002	6023	1001
+%R	7209	5003	6029	1001
+%R	7209	5004	6041	1001
+%R	7209	5005	6073	1001
+%R	7209	5006	6078	1001
+%R	7209	5007	6080	1001
+%R	7209	5008	6086	1001
+%R	7210	5000	6002	1001
+%R	7210	5001	6021	1001
+%R	7210	5002	6023	1001
+%R	7210	5003	6029	1001
+%R	7210	5004	6042	1001
+%R	7210	5005	6067	1001
+%R	7210	5006	6078	1001
+%R	7210	5007	6080	1001
+%R	7210	5008	6086	1001
+%R	7211	5000	6002	1001
+%R	7211	5001	6014	1001
+%R	7211	5002	6023	1001
+%R	7211	5003	6029	1001
+%R	7211	5004	6041	1001
+%R	7211	5005	6046	1001
+%R	7211	5006	6078	1001
+%R	7211	5007	6080	1001
+%R	7211	5008	6086	1001
+%R	7212	5000	6002	1001
+%R	7212	5001	6021	1001
+%R	7212	5002	6023	1001
+%R	7212	5003	6029	1001
+%R	7212	5004	6041	1001
+%R	7212	5005	6066	1001
+%R	7212	5006	6078	1001
+%R	7212	5007	6080	1001
+%R	7212	5008	6086	1001
+%R	7213	5000	6002	1001
+%R	7213	5001	6021	1001
+%R	7213	5002	6023	1001
+%R	7213	5003	6029	1001
+%R	7213	5004	6041	1001
+%R	7213	5005	6066	1001
+%R	7213	5006	6078	1001
+%R	7213	5007	6080	1001
+%R	7213	5008	6086	1001
+%R	7214	5000	6002	1001
+%R	7214	5001	6014	1001
+%R	7214	5002	6023	1001
+%R	7214	5003	6029	1001
+%R	7214	5004	6041	1001
+%R	7214	5005	6046	1001
+%R	7214	5006	6078	1001
+%R	7214	5007	6080	1001
+%R	7214	5008	6086	1001
+%R	7215	5000	6002	1001
+%R	7215	5001	6009	1001
+%R	7215	5002	6023	1001
+%R	7215	5003	6029	1001
+%R	7215	5004	6041	1001
+%R	7215	5005	6071	1001
+%R	7215	5006	6078	1001
+%R	7215	5007	6080	1001
+%R	7215	5008	6086	1001
+%R	7216	5000	6002	1001
+%R	7216	5001	6009	1001
+%R	7216	5002	6023	1001
+%R	7216	5003	6029	1001
+%R	7216	5004	6041	1001
+%R	7216	5005	6070	1001
+%R	7216	5006	6078	1001
+%R	7216	5007	6080	1001
+%R	7216	5008	6086	1001
+%R	7217	5000	6002	1001
+%R	7217	5001	6009	1001
+%R	7217	5002	6023	1001
+%R	7217	5003	6029	1001
+%R	7217	5004	6041	1001
+%R	7217	5005	6070	1001
+%R	7217	5006	6078	1001
+%R	7217	5007	6080	1001
+%R	7217	5008	6086	1001
+%R	7218	5000	6002	1001
+%R	7218	5001	6009	1001
+%R	7218	5002	6023	1001
+%R	7218	5003	6029	1001
+%R	7218	5004	6041	1001
+%R	7218	5005	6074	1001
+%R	7218	5006	6078	1001
+%R	7218	5007	6080	1001
+%R	7218	5008	6086	1001
+%R	7219	5000	6003	1001
+%R	7219	5001	6019	1001
+%R	7219	5002	6023	1001
+%R	7219	5003	6029	1001
+%R	7219	5004	6041	1001
+%R	7219	5005	6046	1001
+%R	7219	5006	6078	1001
+%R	7219	5007	6080	1001
+%R	7219	5008	6086	1001
+%R	7220	5000	6003	1001
+%R	7220	5001	6018	1001
+%R	7220	5002	6024	1001
+%R	7220	5003	6029	1001
+%R	7220	5004	6041	1001
+%R	7220	5005	6046	1001
+%R	7220	5006	6077	1001
+%R	7220	5007	6080	1001
+%R	7220	5008	6086	1001
+%R	7221	5000	6003	1001
+%R	7221	5001	6019	1001
+%R	7221	5002	6023	1001
+%R	7221	5003	6029	1001
+%R	7221	5004	6041	1001
+%R	7221	5005	6046	1001
+%R	7221	5006	6078	1001
+%R	7221	5007	6080	1001
+%R	7221	5008	6086	1001
+%R	7222	5000	6003	1001
+%R	7222	5001	6018	1001
+%R	7222	5002	6024	1001
+%R	7222	5003	6029	1001
+%R	7222	5004	6041	1001
+%R	7222	5005	6046	1001
+%R	7222	5006	6077	1001
+%R	7222	5007	6080	1001
+%R	7222	5008	6086	1001
+%R	7223	5000	6002	1001
+%R	7223	5001	6015	1001
+%R	7223	5002	6023	1001
+%R	7223	5003	6029	1001
+%R	7223	5004	6041	1001
+%R	7223	5005	6050	1001
+%R	7223	5006	6078	1001
+%R	7223	5007	6080	1001
+%R	7223	5008	6086	1001
+%R	7224	5000	6003	1001
+%R	7224	5001	6011	1001
+%R	7224	5002	6024	1001
+%R	7224	5003	6029	1001
+%R	7224	5004	6041	1001
+%R	7224	5005	6074	1001
+%R	7224	5006	6078	1001
+%R	7224	5007	6080	1001
+%R	7224	5008	6086	1001
+%R	7225	5000	6003	1001
+%R	7225	5001	6014	1001
+%R	7225	5002	6023	1001
+%R	7225	5003	6029	1001
+%R	7225	5004	6041	1001
+%R	7225	5005	6046	1001
+%R	7225	5006	6078	1001
+%R	7225	5007	6080	1001
+%R	7225	5008	6086	1001
+%R	7226	5000	6000	1001
+%R	7226	5001	6013	1001
+%R	7226	5002	6023	1001
+%R	7226	5003	6029	1001
+%R	7226	5004	6041	1001
+%R	7226	5005	6048	1001
+%R	7226	5006	6078	1001
+%R	7226	5007	6080	1001
+%R	7226	5008	6086	1001
+%R	7227	5000	6000	1001
+%R	7227	5001	6013	1001
+%R	7227	5002	6023	1001
+%R	7227	5003	6029	1001
+%R	7227	5004	6041	1001
+%R	7227	5005	6049	1001
+%R	7227	5006	6078	1001
+%R	7227	5007	6080	1001
+%R	7227	5008	6086	1001
+%R	7228	5000	6000	1001
+%R	7228	5001	6013	1001
+%R	7228	5002	6023	1001
+%R	7228	5003	6029	1001
+%R	7228	5004	6041	1001
+%R	7228	5005	6072	1001
+%R	7228	5006	6078	1001
+%R	7228	5007	6080	1001
+%R	7228	5008	6086	1001
+%R	7229	5000	6000	1001
+%R	7229	5001	6013	1001
+%R	7229	5002	6023	1001
+%R	7229	5003	6029	1001
+%R	7229	5004	6041	1001
+%R	7229	5005	6046	1001
+%R	7229	5006	6078	1001
+%R	7229	5007	6080	1001
+%R	7229	5008	6086	1001
+%R	7230	5000	6004	1001
+%R	7230	5001	6014	1001
+%R	7230	5002	6023	1001
+%R	7230	5003	6029	1001
+%R	7230	5004	6041	1001
+%R	7230	5005	6046	1001
+%R	7230	5006	6078	1001
+%R	7230	5007	6080	1001
+%R	7230	5008	6086	1001
+%R	7231	5000	6004	1001
+%R	7231	5001	6007	1001
+%R	7231	5002	6023	1001
+%R	7231	5003	6029	1001
+%R	7231	5004	6041	1001
+%R	7231	5005	6075	1001
+%R	7231	5006	6078	1001
+%R	7231	5007	6080	1001
+%R	7231	5008	6086	1001
+%R	7232	5000	6004	1001
+%R	7232	5001	6014	1001
+%R	7232	5002	6023	1001
+%R	7232	5003	6029	1001
+%R	7232	5004	6041	1001
+%R	7232	5005	6046	1001
+%R	7232	5006	6078	1001
+%R	7232	5007	6080	1001
+%R	7232	5008	6086	1001
+%T	TASKRSRC
+%F	taskrsrc_id	task_id	proj_id	cost_qty_link_flag	role_id	rsrc_id	pobs_id	remain_qty	target_qty	remain_qty_per_hr	target_qty_per_hr	target_cost	cost_per_qty	remain_cost	act_reg_cost	target_start_date	target_end_date
+%R	10000	7002	1001	Y		3000		200600.0	200600.0			200600.0	1	200600.0	200600.0	2027-01-05 08:00	2027-01-10 16:00
+%R	10001	7003	1001	Y		3000		5664.0	5664.0			5664.0	1	5664.0	5664.0	2027-01-05 08:00	2027-01-07 16:00
+%R	10002	7003	1001	N		3001		24	24	1	1		0	0	0	2027-01-05 08:00	2027-01-07 16:00
+%R	10003	7008	1001	Y		3000		561680.0	561680.0			561680.0	1	561680.0	561680.0	2027-01-19 08:00	2027-01-28 16:00
+%R	10004	7008	1001	N		3002		64	64	1	1		0	0	0	2027-01-19 08:00	2027-01-28 16:00
+%R	10005	7009	1001	Y		3000		24780.0	24780.0			24780.0	1	24780.0	24780.0	2027-01-19 08:00	2027-01-25 16:00
+%R	10006	7009	1001	N		3003		80	80	2	2		0	0	0	2027-01-19 08:00	2027-01-25 16:00
+%R	10007	7010	1001	Y		3000		162250.0	162250.0			162250.0	1	162250.0	162250.0	2027-01-19 08:00	2027-01-27 16:00
+%R	10008	7010	1001	N		3004		112	112	2	2		0	0	0	2027-01-19 08:00	2027-01-27 16:00
+%R	10009	7011	1001	Y		3000		61950.0	61950.0			61950.0	1	61950.0	61950.0	2027-01-21 08:00	2027-02-01 16:00
+%R	10010	7011	1001	N		3005		256	256	4	4		0	0	0	2027-01-21 08:00	2027-02-01 16:00
+%R	10011	7012	1001	Y		3000		37170.0	37170.0			37170.0	1	37170.0	37170.0	2027-02-02 08:00	2027-02-02 16:00
+%R	10012	7018	1001	Y		3000		169920.0	169920.0			169920.0	1	169920.0	169920.0	2027-01-26 08:00	2027-02-08 16:00
+%R	10013	7058	1001	Y		3000		352407.0	352407.0			352407.0	1	352407.0	352407.0	2027-02-03 08:00	2027-03-30 16:00
+%R	10014	7059	1001	Y		3000		5310.0	5310.0			5310.0	1	5310.0	5310.0	2027-03-31 08:00	2027-04-01 16:00
+%R	10015	7064	1001	Y		3000		398356.2	398356.2			398356.2	1	398356.2	398356.2	2027-02-03 08:00	2027-03-09 16:00
+%R	10016	7065	1001	Y		3000		5310.0	5310.0			5310.0	1	5310.0	5310.0	2027-03-10 08:00	2027-03-11 16:00
+%R	10017	7070	1001	Y		3000		352407.0	352407.0			352407.0	1	352407.0	352407.0	2027-02-03 08:00	2027-03-02 16:00
+%R	10018	7071	1001	Y		3000		5310.0	5310.0			5310.0	1	5310.0	5310.0	2027-03-03 08:00	2027-03-04 16:00
+%R	10019	7076	1001	Y		3000		247800.0	247800.0			247800.0	1	247800.0	247800.0	2027-01-27 08:00	2027-04-06 16:00
+%R	10020	7077	1001	Y		3000		26550.0	26550.0			26550.0	1	26550.0	26550.0	2027-04-07 08:00	2027-04-11 16:00
+%R	10021	7082	1001	Y		3000		37170.0	37170.0			37170.0	1	37170.0	37170.0	2027-01-27 08:00	2027-03-02 16:00
+%R	10022	7083	1001	Y		3000		5310.0	5310.0			5310.0	1	5310.0	5310.0	2027-03-03 08:00	2027-03-04 16:00
+%R	10023	7088	1001	Y		3000		53690.0	53690.0			53690.0	1	53690.0	53690.0	2027-01-27 08:00	2027-02-23 16:00
+%R	10024	7089	1001	Y		3000		5310.0	5310.0			5310.0	1	5310.0	5310.0	2027-02-24 08:00	2027-02-25 16:00
+%R	10025	7094	1001	Y		3000		18880.0	18880.0			18880.0	1	18880.0	18880.0	2027-01-27 08:00	2027-03-23 16:00
+%R	10026	7095	1001	Y		3000		8850.0	8850.0			8850.0	1	8850.0	8850.0	2027-03-24 08:00	2027-03-26 16:00
+%R	10027	7100	1001	Y		3000		202960.0	202960.0			202960.0	1	202960.0	202960.0	2027-03-15 08:00	2027-04-11 16:00
+%R	10028	7101	1001	Y		3000		8850.0	8850.0			8850.0	1	8850.0	8850.0	2027-04-12 08:00	2027-04-14 16:00
+%R	10029	7106	1001	Y		3000		118236.0	118236.0			118236.0	1	118236.0	118236.0	2027-01-22 08:00	2027-02-18 16:00
+%R	10030	7111	1001	Y		3000		95730.1	95730.1			95730.1	1	95730.1	95730.1	2027-01-22 08:00	2027-02-11 16:00
+%R	10031	7114	1001	Y		3000		74403.72	74403.72			74403.72	1	74403.72	74403.72	2027-01-22 08:00	2027-02-04 16:00
+%R	10032	7117	1001	Y		3000		17700.0	17700.0			17700.0	1	17700.0	17700.0	2027-01-22 08:00	2027-02-04 16:00
+%R	10033	7122	1001	Y		3000		5664.0	5664.0			5664.0	1	5664.0	5664.0	2027-01-31 08:00	2027-02-02 16:00
+%R	10034	7122	1001	N		3001		24	24	1	1		0	0	0	2027-01-31 08:00	2027-02-02 16:00
+%R	10035	7123	1001	Y		3000		264320.0	264320.0			264320.0	1	264320.0	264320.0	2027-03-17 08:00	2027-03-23 16:00
+%R	10036	7123	1001	N		3002		40	40	1	1		0	0	0	2027-03-17 08:00	2027-03-23 16:00
+%R	10037	7124	1001	Y		3000		143136.95	143136.95			143136.95	1	143136.95	143136.95	2027-03-24 08:00	2027-04-06 16:00
+%R	10038	7124	1001	N		3006		80	80	1	1		0	0	0	2027-03-24 08:00	2027-04-06 16:00
+%R	10039	7125	1001	Y		3000		15664.92	15664.92			15664.92	1	15664.92	15664.92	2027-04-07 08:00	2027-04-08 16:00
+%R	10040	7125	1001	N		3002		16	16	1	1		0	0	0	2027-04-07 08:00	2027-04-08 16:00
+%R	10041	7126	1001	Y		3000		9920.5	9920.5			9920.5	1	9920.5	9920.5	2027-04-07 08:00	2027-04-08 16:00
+%R	10042	7126	1001	N		3002		16	16	1	1		0	0	0	2027-04-07 08:00	2027-04-08 16:00
+%R	10043	7127	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-05-03 08:00	2027-05-06 16:00
+%R	10044	7127	1001	N		3007		32	32	1	1		0	0	0	2027-05-03 08:00	2027-05-06 16:00
+%R	10045	7128	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-05-09 08:00	2027-05-10 16:00
+%R	10046	7128	1001	N		3006		16	16	1	1		0	0	0	2027-05-09 08:00	2027-05-10 16:00
+%R	10047	7129	1001	Y		3000		53114.16	53114.16			53114.16	1	53114.16	53114.16	2027-05-11 08:00	2027-05-20 16:00
+%R	10048	7129	1001	N		3007		32	32	1	1		0	0	0	2027-05-11 08:00	2027-05-20 16:00
+%R	10049	7130	1001	Y		3000		15764.8	15764.8			15764.8	1	15764.8	15764.8	2027-05-23 08:00	2027-05-25 16:00
+%R	10050	7130	1001	N		3008		24	24	1	1		0	0	0	2027-05-23 08:00	2027-05-25 16:00
+%R	10051	7131	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-05-26 08:00	2027-05-27 16:00
+%R	10052	7131	1001	N		3006		16	16	1	1		0	0	0	2027-05-26 08:00	2027-05-27 16:00
+%R	10053	7132	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-05-30 08:00	2027-06-01 16:00
+%R	10054	7132	1001	N		3007		24	24	1	1		0	0	0	2027-05-30 08:00	2027-06-01 16:00
+%R	10055	7133	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-06-02 08:00	2027-06-03 16:00
+%R	10056	7133	1001	N		3006		16	16	1	1		0	0	0	2027-06-02 08:00	2027-06-03 16:00
+%R	10057	7134	1001	Y		3000		3540.0	3540.0			3540.0	1	3540.0	3540.0	2027-06-06 08:00	2027-06-06 16:00
+%R	10058	7134	1001	N		3002		8	8	1	1		0	0	0	2027-06-06 08:00	2027-06-06 16:00
+%R	10059	7135	1001	Y		3000		1585.92	1585.92			1585.92	1	1585.92	1585.92	2027-06-06 08:00	2027-06-06 16:00
+%R	10060	7135	1001	N		3008		8	8	1	1		0	0	0	2027-06-06 08:00	2027-06-06 16:00
+%R	10061	7136	1001	Y		3000		143136.95	143136.95			143136.95	1	143136.95	143136.95	2027-04-07 08:00	2027-04-20 16:00
+%R	10062	7136	1001	N		3006		80	80	1	1		0	0	0	2027-04-07 08:00	2027-04-20 16:00
+%R	10063	7137	1001	Y		3000		15664.92	15664.92			15664.92	1	15664.92	15664.92	2027-04-21 08:00	2027-04-22 16:00
+%R	10064	7137	1001	N		3002		16	16	1	1		0	0	0	2027-04-21 08:00	2027-04-22 16:00
+%R	10065	7138	1001	Y		3000		9920.5	9920.5			9920.5	1	9920.5	9920.5	2027-04-21 08:00	2027-04-22 16:00
+%R	10066	7138	1001	N		3002		16	16	1	1		0	0	0	2027-04-21 08:00	2027-04-22 16:00
+%R	10067	7139	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-06-06 08:00	2027-06-09 16:00
+%R	10068	7139	1001	N		3007		32	32	1	1		0	0	0	2027-06-06 08:00	2027-06-09 16:00
+%R	10069	7140	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-06-10 08:00	2027-06-13 16:00
+%R	10070	7140	1001	N		3006		16	16	1	1		0	0	0	2027-06-10 08:00	2027-06-13 16:00
+%R	10071	7141	1001	Y		3000		53114.16	53114.16			53114.16	1	53114.16	53114.16	2027-06-14 08:00	2027-06-17 16:00
+%R	10072	7141	1001	N		3007		32	32	1	1		0	0	0	2027-06-14 08:00	2027-06-17 16:00
+%R	10073	7142	1001	Y		3000		15764.8	15764.8			15764.8	1	15764.8	15764.8	2027-06-20 08:00	2027-06-22 16:00
+%R	10074	7142	1001	N		3008		24	24	1	1		0	0	0	2027-06-20 08:00	2027-06-22 16:00
+%R	10075	7143	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-06-23 08:00	2027-06-24 16:00
+%R	10076	7143	1001	N		3006		16	16	1	1		0	0	0	2027-06-23 08:00	2027-06-24 16:00
+%R	10077	7144	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-06-27 08:00	2027-06-29 16:00
+%R	10078	7144	1001	N		3007		24	24	1	1		0	0	0	2027-06-27 08:00	2027-06-29 16:00
+%R	10079	7145	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-06-30 08:00	2027-07-01 16:00
+%R	10080	7145	1001	N		3006		16	16	1	1		0	0	0	2027-06-30 08:00	2027-07-01 16:00
+%R	10081	7146	1001	Y		3000		3540.0	3540.0			3540.0	1	3540.0	3540.0	2027-07-04 08:00	2027-07-04 16:00
+%R	10082	7146	1001	N		3002		8	8	1	1		0	0	0	2027-07-04 08:00	2027-07-04 16:00
+%R	10083	7147	1001	Y		3000		1585.92	1585.92			1585.92	1	1585.92	1585.92	2027-07-04 08:00	2027-07-04 16:00
+%R	10084	7147	1001	N		3008		8	8	1	1		0	0	0	2027-07-04 08:00	2027-07-04 16:00
+%R	10085	7148	1001	Y		3000		143136.95	143136.95			143136.95	1	143136.95	143136.95	2027-06-06 08:00	2027-06-17 16:00
+%R	10086	7148	1001	N		3006		80	80	1	1		0	0	0	2027-06-06 08:00	2027-06-17 16:00
+%R	10087	7149	1001	Y		3000		15664.92	15664.92			15664.92	1	15664.92	15664.92	2027-06-20 08:00	2027-06-21 16:00
+%R	10088	7149	1001	N		3002		16	16	1	1		0	0	0	2027-06-20 08:00	2027-06-21 16:00
+%R	10089	7150	1001	Y		3000		9920.5	9920.5			9920.5	1	9920.5	9920.5	2027-06-20 08:00	2027-06-21 16:00
+%R	10090	7150	1001	N		3002		16	16	1	1		0	0	0	2027-06-20 08:00	2027-06-21 16:00
+%R	10091	7151	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-07-04 08:00	2027-07-07 16:00
+%R	10092	7151	1001	N		3007		32	32	1	1		0	0	0	2027-07-04 08:00	2027-07-07 16:00
+%R	10093	7152	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-07-08 08:00	2027-07-11 16:00
+%R	10094	7152	1001	N		3006		16	16	1	1		0	0	0	2027-07-08 08:00	2027-07-11 16:00
+%R	10095	7153	1001	Y		3000		53114.16	53114.16			53114.16	1	53114.16	53114.16	2027-07-12 08:00	2027-07-15 16:00
+%R	10096	7153	1001	N		3007		32	32	1	1		0	0	0	2027-07-12 08:00	2027-07-15 16:00
+%R	10097	7154	1001	Y		3000		15764.8	15764.8			15764.8	1	15764.8	15764.8	2027-07-18 08:00	2027-07-20 16:00
+%R	10098	7154	1001	N		3008		24	24	1	1		0	0	0	2027-07-18 08:00	2027-07-20 16:00
+%R	10099	7155	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-07-21 08:00	2027-07-22 16:00
+%R	10100	7155	1001	N		3006		16	16	1	1		0	0	0	2027-07-21 08:00	2027-07-22 16:00
+%R	10101	7156	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-07-25 08:00	2027-07-27 16:00
+%R	10102	7156	1001	N		3007		24	24	1	1		0	0	0	2027-07-25 08:00	2027-07-27 16:00
+%R	10103	7157	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-07-28 08:00	2027-07-29 16:00
+%R	10104	7157	1001	N		3006		16	16	1	1		0	0	0	2027-07-28 08:00	2027-07-29 16:00
+%R	10105	7158	1001	Y		3000		3540.0	3540.0			3540.0	1	3540.0	3540.0	2027-08-01 08:00	2027-08-01 16:00
+%R	10106	7158	1001	N		3002		8	8	1	1		0	0	0	2027-08-01 08:00	2027-08-01 16:00
+%R	10107	7159	1001	Y		3000		1585.92	1585.92			1585.92	1	1585.92	1585.92	2027-08-01 08:00	2027-08-01 16:00
+%R	10108	7159	1001	N		3008		8	8	1	1		0	0	0	2027-08-01 08:00	2027-08-01 16:00
+%R	10109	7160	1001	Y		3000		143136.95	143136.95			143136.95	1	143136.95	143136.95	2027-07-04 08:00	2027-07-15 16:00
+%R	10110	7160	1001	N		3006		80	80	1	1		0	0	0	2027-07-04 08:00	2027-07-15 16:00
+%R	10111	7161	1001	Y		3000		15664.92	15664.92			15664.92	1	15664.92	15664.92	2027-07-18 08:00	2027-07-19 16:00
+%R	10112	7161	1001	N		3002		16	16	1	1		0	0	0	2027-07-18 08:00	2027-07-19 16:00
+%R	10113	7162	1001	Y		3000		9920.5	9920.5			9920.5	1	9920.5	9920.5	2027-07-18 08:00	2027-07-19 16:00
+%R	10114	7162	1001	N		3002		16	16	1	1		0	0	0	2027-07-18 08:00	2027-07-19 16:00
+%R	10115	7163	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-08-01 08:00	2027-08-04 16:00
+%R	10116	7163	1001	N		3007		32	32	1	1		0	0	0	2027-08-01 08:00	2027-08-04 16:00
+%R	10117	7164	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-08-05 08:00	2027-08-08 16:00
+%R	10118	7164	1001	N		3006		16	16	1	1		0	0	0	2027-08-05 08:00	2027-08-08 16:00
+%R	10119	7165	1001	Y		3000		53114.16	53114.16			53114.16	1	53114.16	53114.16	2027-08-09 08:00	2027-08-12 16:00
+%R	10120	7165	1001	N		3007		32	32	1	1		0	0	0	2027-08-09 08:00	2027-08-12 16:00
+%R	10121	7166	1001	Y		3000		15764.8	15764.8			15764.8	1	15764.8	15764.8	2027-08-15 08:00	2027-08-17 16:00
+%R	10122	7166	1001	N		3008		24	24	1	1		0	0	0	2027-08-15 08:00	2027-08-17 16:00
+%R	10123	7167	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-08-18 08:00	2027-08-19 16:00
+%R	10124	7167	1001	N		3006		16	16	1	1		0	0	0	2027-08-18 08:00	2027-08-19 16:00
+%R	10125	7168	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-08-22 08:00	2027-08-24 16:00
+%R	10126	7168	1001	N		3007		24	24	1	1		0	0	0	2027-08-22 08:00	2027-08-24 16:00
+%R	10127	7169	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-08-25 08:00	2027-08-26 16:00
+%R	10128	7169	1001	N		3006		16	16	1	1		0	0	0	2027-08-25 08:00	2027-08-26 16:00
+%R	10129	7170	1001	Y		3000		3540.0	3540.0			3540.0	1	3540.0	3540.0	2027-08-29 08:00	2027-08-29 16:00
+%R	10130	7170	1001	N		3002		8	8	1	1		0	0	0	2027-08-29 08:00	2027-08-29 16:00
+%R	10131	7171	1001	Y		3000		1585.92	1585.92			1585.92	1	1585.92	1585.92	2027-08-29 08:00	2027-08-29 16:00
+%R	10132	7171	1001	N		3008		8	8	1	1		0	0	0	2027-08-29 08:00	2027-08-29 16:00
+%R	10133	7172	1001	Y		3000		143136.95	143136.95			143136.95	1	143136.95	143136.95	2027-08-01 08:00	2027-08-12 16:00
+%R	10134	7172	1001	N		3006		80	80	1	1		0	0	0	2027-08-01 08:00	2027-08-12 16:00
+%R	10135	7173	1001	Y		3000		15664.94	15664.94			15664.94	1	15664.94	15664.94	2027-08-15 08:00	2027-08-16 16:00
+%R	10136	7173	1001	N		3002		16	16	1	1		0	0	0	2027-08-15 08:00	2027-08-16 16:00
+%R	10137	7174	1001	Y		3000		9920.48	9920.48			9920.48	1	9920.48	9920.48	2027-08-15 08:00	2027-08-16 16:00
+%R	10138	7174	1001	N		3002		16	16	1	1		0	0	0	2027-08-15 08:00	2027-08-16 16:00
+%R	10139	7175	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-08-29 08:00	2027-09-01 16:00
+%R	10140	7175	1001	N		3007		32	32	1	1		0	0	0	2027-08-29 08:00	2027-09-01 16:00
+%R	10141	7176	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-09-02 08:00	2027-09-05 16:00
+%R	10142	7176	1001	N		3006		16	16	1	1		0	0	0	2027-09-02 08:00	2027-09-05 16:00
+%R	10143	7177	1001	Y		3000		53114.16	53114.16			53114.16	1	53114.16	53114.16	2027-09-06 08:00	2027-09-09 16:00
+%R	10144	7177	1001	N		3007		32	32	1	1		0	0	0	2027-09-06 08:00	2027-09-09 16:00
+%R	10145	7178	1001	Y		3000		15764.8	15764.8			15764.8	1	15764.8	15764.8	2027-09-12 08:00	2027-09-14 16:00
+%R	10146	7178	1001	N		3008		24	24	1	1		0	0	0	2027-09-12 08:00	2027-09-14 16:00
+%R	10147	7179	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-09-15 08:00	2027-09-16 16:00
+%R	10148	7179	1001	N		3006		16	16	1	1		0	0	0	2027-09-15 08:00	2027-09-16 16:00
+%R	10149	7180	1001	Y		3000		46987.6	46987.6			46987.6	1	46987.6	46987.6	2027-09-19 08:00	2027-09-21 16:00
+%R	10150	7180	1001	N		3007		24	24	1	1		0	0	0	2027-09-19 08:00	2027-09-21 16:00
+%R	10151	7181	1001	Y		3000		39037.35	39037.35			39037.35	1	39037.35	39037.35	2027-09-22 08:00	2027-09-26 16:00
+%R	10152	7181	1001	N		3006		16	16	1	1		0	0	0	2027-09-22 08:00	2027-09-26 16:00
+%R	10153	7182	1001	Y		3000		3540.0	3540.0			3540.0	1	3540.0	3540.0	2027-09-27 08:00	2027-09-27 16:00
+%R	10154	7182	1001	N		3002		8	8	1	1		0	0	0	2027-09-27 08:00	2027-09-27 16:00
+%R	10155	7183	1001	Y		3000		1585.92	1585.92			1585.92	1	1585.92	1585.92	2027-09-27 08:00	2027-09-27 16:00
+%R	10156	7183	1001	N		3008		8	8	1	1		0	0	0	2027-09-27 08:00	2027-09-27 16:00
+%R	10157	7184	1001	Y		3000		7552.0	7552.0			7552.0	1	7552.0	7552.0	2027-03-24 08:00	2027-04-04 16:00
+%R	10158	7184	1001	N		3002		64	64	1	1		0	0	0	2027-03-24 08:00	2027-04-04 16:00
+%R	10159	7185	1001	Y		3000		5664.0	5664.0			5664.0	1	5664.0	5664.0	2027-04-11 08:00	2027-04-18 16:00
+%R	10160	7185	1001	N		3009		48	48	1	1		0	0	0	2027-04-11 08:00	2027-04-18 16:00
+%R	10161	7186	1001	Y		3000		5664.0	5664.0			5664.0	1	5664.0	5664.0	2027-04-19 08:00	2027-04-21 16:00
+%R	10162	7186	1001	N		3009		24	24	1	1		0	0	0	2027-04-19 08:00	2027-04-21 16:00
+%R	10163	7187	1001	Y		3000		53100.0	53100.0			53100.0	1	53100.0	53100.0	2027-05-06 08:00	2027-05-12 16:00
+%R	10164	7187	1001	N		3010		80	80	2	2		0	0	0	2027-05-06 08:00	2027-05-12 16:00
+%R	10165	7188	1001	Y		3000		53100.0	53100.0			53100.0	1	53100.0	53100.0	2027-09-22 08:00	2027-09-28 16:00
+%R	10166	7188	1001	N		3010		64	64	2	2		0	0	0	2027-09-22 08:00	2027-09-28 16:00
+%R	10167	7189	1001	Y		3000		7965.0	7965.0			7965.0	1	7965.0	7965.0	2027-04-22 08:00	2027-04-26 16:00
+%R	10168	7189	1001	N		3010		48	48	2	2		0	0	0	2027-04-22 08:00	2027-04-26 16:00
+%R	10169	7190	1001	Y		3000		7965.0	7965.0			7965.0	1	7965.0	7965.0	2027-04-27 08:00	2027-04-29 16:00
+%R	10170	7190	1001	N		3010		48	48	2	2		0	0	0	2027-04-27 08:00	2027-04-29 16:00
+%R	10171	7191	1001	Y		3000		11505.0	11505.0			11505.0	1	11505.0	11505.0	2027-04-22 08:00	2027-04-25 16:00
+%R	10172	7191	1001	N		3010		32	32	2	2		0	0	0	2027-04-22 08:00	2027-04-25 16:00
+%R	10173	7192	1001	Y		3000		11505.0	11505.0			11505.0	1	11505.0	11505.0	2027-04-26 08:00	2027-04-28 16:00
+%R	10174	7192	1001	N		3010		48	48	2	2		0	0	0	2027-04-26 08:00	2027-04-28 16:00
+%R	10175	7193	1001	Y		3000		152220.0	152220.0			152220.0	1	152220.0	152220.0	2027-05-05 08:00	2027-05-20 16:00
+%R	10176	7193	1001	N		3011		128	128	2	2		0	0	0	2027-05-05 08:00	2027-05-20 16:00
+%R	10177	7194	1001	Y		3000		152220.0	152220.0			152220.0	1	152220.0	152220.0	2027-05-23 08:00	2027-06-01 16:00
+%R	10178	7194	1001	N		3011		128	128	2	2		0	0	0	2027-05-23 08:00	2027-06-01 16:00
+%R	10179	7195	1001	Y		3000		226560.0	226560.0			226560.0	1	226560.0	226560.0	2027-05-23 08:00	2027-06-03 16:00
+%R	10180	7195	1001	N		3011		160	160	2	2		0	0	0	2027-05-23 08:00	2027-06-03 16:00
+%R	10181	7196	1001	Y		3000		177000.0	177000.0			177000.0	1	177000.0	177000.0	2027-09-29 08:00	2027-10-10 16:00
+%R	10182	7196	1001	N		3011		128	128	2	2		0	0	0	2027-09-29 08:00	2027-10-10 16:00
+%R	10183	7205	1001	Y		3000		1982.4	1982.4			1982.4	1	1982.4	1982.4	2027-09-28 08:00	2027-09-29 16:00
+%R	10184	7207	1001	Y		3000		113280.0	113280.0			113280.0	1	113280.0	113280.0	2027-06-06 08:00	2027-06-17 16:00
+%R	10185	7208	1001	Y		3000		56640.0	56640.0			56640.0	1	56640.0	56640.0	2027-06-20 08:00	2027-06-23 16:00
+%R	10186	7209	1001	Y		3000		106200.0	106200.0			106200.0	1	106200.0	106200.0	2027-11-04 08:00	2027-11-10 16:00
+%R	10187	7209	1001	N		3010		80	80	2	2		0	0	0	2027-11-04 08:00	2027-11-10 16:00
+%R	10188	7210	1001	Y		3000		177000.0	177000.0			177000.0	1	177000.0	177000.0	2027-11-04 08:00	2027-11-10 16:00
+%R	10189	7210	1001	N		3011		80	80	2	2		0	0	0	2027-11-04 08:00	2027-11-10 16:00
+%R	10190	7212	1001	Y		3000		47577.6	47577.6			47577.6	1	47577.6	47577.6	2027-11-11 08:00	2027-11-17 16:00
+%R	10191	7212	1001	N		3010		80	80	2	2		0	0	0	2027-11-11 08:00	2027-11-17 16:00
+%R	10192	7213	1001	Y		3000		31718.4	31718.4			31718.4	1	31718.4	31718.4	2027-11-18 08:00	2027-12-01 16:00
+%R	10193	7213	1001	N		3010		160	160	2	2		0	0	0	2027-11-18 08:00	2027-12-01 16:00
+%R	10194	7215	1001	Y		3000		88500.0	88500.0			88500.0	1	88500.0	88500.0	2027-12-02 08:00	2027-12-09 16:00
+%R	10195	7215	1001	N		3012		96	96	2	2		0	0	0	2027-12-02 08:00	2027-12-09 16:00
+%R	10196	7216	1001	Y		3000		44250.0	44250.0			44250.0	1	44250.0	44250.0	2027-11-18 08:00	2027-11-25 16:00
+%R	10197	7216	1001	N		3012		96	96	2	2		0	0	0	2027-11-18 08:00	2027-11-25 16:00
+%R	10198	7217	1001	Y		3000		44250.0	44250.0			44250.0	1	44250.0	44250.0	2027-11-18 08:00	2027-11-25 16:00
+%R	10199	7217	1001	N		3012		96	96	2	2		0	0	0	2027-11-18 08:00	2027-11-25 16:00
+%R	10200	7218	1001	Y		3000		38822.0	38822.0			38822.0	1	38822.0	38822.0	2027-11-18 08:00	2027-11-24 16:00
+%R	10201	7218	1001	N		3010		80	80	2	2		0	0	0	2027-11-18 08:00	2027-11-24 16:00
+%R	10202	7223	1001	Y		3000		35400.0	35400.0			35400.0	1	35400.0	35400.0	2027-12-02 08:00	2027-12-08 16:00
+%R	10203	7223	1001	N		3002		40	40	1	1		0	0	0	2027-12-02 08:00	2027-12-08 16:00
+%R	10204	7224	1001	Y		3000		16638.0	16638.0			16638.0	1	16638.0	16638.0	2028-01-02 08:00	2028-01-02 16:00
+%R	10205	7226	1001	Y		3000		403560.0	403560.0			403560.0	1	403560.0	403560.0	2027-01-19 08:00	2027-12-08 16:00
+%R	10206	7227	1001	Y		3000		45312.0	45312.0			45312.0	1	45312.0	45312.0	2027-01-18 08:00	2027-12-08 16:00
+%R	10207	7227	1001	N		3001		1784	1784	1	1		0	0	0	2027-01-18 08:00	2027-12-08 16:00
+%R	10208	7228	1001	Y		3000		7670.0	7670.0			7670.0	1	7670.0	7670.0	2027-01-03 08:00	2028-01-02 16:00
+%R	10209	7228	1001	N		3013		2008	2008	1	1		0	0	0	2027-01-03 08:00	2028-01-02 16:00
+%R	10210	7231	1001	Y		3000		148680.0	148680.0			148680.0	1	148680.0	148680.0	2028-01-03 08:00	2029-01-02 16:00
+%T	SCHEDOPTIONS
+%F	schedoptions_id	proj_id	sched_outer_depend_flag	sched_open_critical_flag	sched_lag_early_start_flag	sched_retained_logic	sched_setplantoforecast	sched_progress_override
+%R	1	1001	N	N	Y	Y	N	N
