@@ -126,17 +126,49 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .sec .btn{text-transform:none;letter-spacing:0;order:2}
 .log{counter-reset:n;display:flex;flex-direction:column;gap:8px}
-.lr{counter-increment:n;display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px;gap:6px;align-items:start;background:#FFFBEF;border:1px solid #F3E3B5;border-radius:8px;padding:6px}
+.lr{counter-increment:n;display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px;gap:6px;align-items:start;background:#FFFBEF;border:1px solid #F3E3B5;border-radius:8px;padding:6px}
 .lr::before{content:counter(n);font-weight:700;color:var(--muted);text-align:center;padding-top:7px;font-size:12px}
 .log input,.log textarea{border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0;background:#fff;font-size:13.5px}
 .log textarea{resize:vertical;min-height:34px;field-sizing:content}
-.lh{display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px;gap:6px;padding:0 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.lh{display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px;gap:6px;padding:0 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 .del{border:0;background:none;color:var(--muted);font-size:17px;border-radius:6px;height:32px}
 .del:hover{background:#fdecec;color:var(--red)}
 .nolog{color:var(--muted);font-size:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center}
 .log:not(:empty)+.nolog{display:none}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- attachments / bulk / switch ---------- */
+.clipb{border:0;background:none;border-radius:6px;height:32px;font-size:15px;color:var(--muted)}
+.clipb:hover{background:var(--light)}
+.atts{display:flex;flex-wrap:wrap;gap:6px}
+.lr>.atts{grid-column:2/-1}
+.atts:empty{display:none}
+#uAtts{margin-top:8px}
+.att{display:inline-flex;align-items:center;gap:6px;max-width:260px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 5px;font-size:12.5px;cursor:pointer}
+.att:hover{border-color:var(--blue)}
+.att img,.att .ico{width:28px;height:28px;border-radius:5px;object-fit:cover;flex:none}
+.att .ico{background:var(--light);color:var(--blue-d);font-size:9px;font-weight:800;display:grid;place-items:center;text-transform:uppercase}
+.att .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att small{color:var(--muted);flex:none}
+.att .rm{border:0;background:none;color:var(--muted);font-size:15px;padding:0 4px;border-radius:4px}
+.att .rm:hover{color:var(--red);background:#fdecec}
+td.chk,thead th.chk{width:34px;padding-right:0;cursor:default}
+.chk input{width:16px;height:16px;accent-color:var(--blue);cursor:pointer;display:block}
+thead th.chk input{accent-color:var(--yellow)}
+tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
+#bulk{display:inline-flex;align-items:center;gap:8px;background:#FFF8E1;border:1px solid #F3E3B5;border-radius:8px;padding:3px 5px 3px 12px;font-size:13px}
+#bulk[hidden],#bSaveNow[hidden]{display:none}
+#dView{width:auto;min-width:min(360px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+#dView .db{padding:0;background:#22292b;display:grid;place-items:center}
+#dView img{max-width:100%;max-height:calc(100vh - 110px);display:block}
+.sw{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw i{width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.3);position:relative;transition:background .15s}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+i{background:var(--yellow)}
+.sw input:checked+i::after{transform:translateX(14px)}
+.sw input:focus-visible+i{outline:2px solid #fff;outline-offset:2px}
 
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:720px){
@@ -147,6 +179,8 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
   .lr{grid-template-columns:26px minmax(0,1fr) 30px}
   .lr>:nth-child(2),.lr>:nth-child(3),.lr>:nth-child(4){grid-column:2}
   .lr>.del{grid-column:3;grid-row:1}
+  .lr>.clipb{grid-column:3;grid-row:2}
+  .lr>.atts{grid-column:2}
   .today,.df .hint{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -161,9 +195,11 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
   </div>
   <div class="top-actions">
     <div class="today"><b id="todayTxt"></b><span id="saveTxt"></span></div>
+    <label class="sw" title="When on, every change is saved in this browser automatically"><input type="checkbox" id="autoSw" checked><i></i>Auto-save</label>
+    <button class="btn accent" id="bSaveNow" hidden title="Save changes in this browser (Ctrl+S)">Save now</button>
     <button class="btn accent" id="bNew" title="Add a new item (N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Item</button>
     <button class="btn" id="bXlsx" title="Export to Excel (.xlsx)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Export Excel</button>
-    <button class="btn ghost" id="bSave" title="Download a copy of this file with all current data inside (Ctrl+S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM8 3v6h7V3M8 21v-7h8v7"/></svg>Save File</button>
+    <button class="btn ghost" id="bSave" title="Download a copy of this file with all current data and attachments inside"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM8 3v6h7V3M8 21v-7h8v7"/></svg>Save File</button>
     <button class="btn ghost" id="bFull" title="Full screen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullTxt">Full Screen</span></button>
   </div>
 </header>
@@ -176,6 +212,7 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
   <select id="fStatus" aria-label="Status"><option value="">All statuses</option></select>
   <select id="fPriority" aria-label="Priority"><option value="">All priorities</option></select>
   <button class="btn line sm" id="bReset">Clear filters</button>
+  <span id="bulk" hidden><b id="bulkN"></b><button class="btn danger sm" id="bBulkDel">Delete selected</button><button class="btn line sm" id="bBulkClr">Clear selection</button></span>
   <span class="count" id="count"></span>
 </section>
 
@@ -213,7 +250,7 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
         <label class="f s4">Reference<input id="i_ref" autocomplete="off"></label>
       </div>
       <div class="sec">Updates &amp; Actions Log <button type="button" class="btn line sm" id="bAddLog">+ Add update</button></div>
-      <div class="lh"><span>#</span><span>Date</span><span>Update / Action taken</span><span>By</span><span>Next step</span><span></span></div>
+      <div class="lh"><span>#</span><span>Date</span><span>Update / Action taken</span><span>By</span><span>Next step</span><span></span><span></span></div>
       <div class="log" id="log"></div>
       <div class="nolog">No updates yet — click “+ Add update”.</div>
     </div>
@@ -238,6 +275,7 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
         <label class="f s4">Next step<input id="u_next" autocomplete="off"></label>
         <label class="f s2">Status<select id="u_status"></select></label>
         <label class="f s2">Progress<select id="u_progress"></select></label>
+        <div class="s4"><button type="button" class="btn line sm" id="uAttach">📎 Attach files</button> <span class="hint">any file or image — you can also paste or drop it here</span><div class="atts" id="uAtts"></div></div>
       </div>
     </div>
     <div class="df"><span class="sp"></span><button type="button" class="btn line" data-close>Cancel</button><button type="submit" class="btn primary">Add update</button></div>
@@ -251,10 +289,16 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
   <div class="df"><span class="sp"></span><button class="btn line" id="aNo">Cancel</button><button class="btn primary" id="aYes">OK</button></div>
 </dialog>
 
+<!-- image viewer -->
+<dialog id="dView">
+  <div class="dh"><h2 id="vName"></h2><button class="btn ghost sm" id="vDl">Download</button><button class="x" id="vX" aria-label="Close">×</button></div>
+  <div class="db"><img id="vImg" alt=""></div>
+</dialog>
+
 <datalist id="lProject"></datalist><datalist id="lPeople"></datalist>
 <div id="toast" role="status"></div>
 
-<script id="seed" type="application/json">{"savedAt":1,"items":[{"id":1,"type":"Task","title":"Estimate TSMG cost from blanket agreement","project":"General","priority":"Medium","status":"In Progress","from":"Moaaz","to":"PC","start":"2026-11-04","due":"2026-11-28","closed":"","progress":50,"desc":"have supply chain estimate the cost of TSMG at AZ0 anf H1 from Alomair/tapi blanket egreement","output":"cost estimate for the task order","ref":"TSMG SoW","cc":"Cost ControllNadeem","log":[{"date":"2026-11-04","text":"email sent to PC","by":"hani","next":"cost estimate received from PC"},{"date":"2026-11-08","text":"mohammed suliman contacted suypply chain","by":"mohammed suliman","next":""},{"date":"2026-11-10","text":"Amarin responded that the cost will be close with the previous prices and that the agreement is applicable to raril infrastructre projects","by":"aramin","next":""},{"date":"2026-11-11","text":"mohamed S ali was sent another email to refer to the building works blanket agreement","by":"hani","next":""},{"date":"2026-11-11","text":"mohamed says there is only a blanket agreement with yapi/alomair regarding Rail infrastructure works","by":"","next":""}]},{"id":2,"type":"Task","title":"arrange for a meeting for new weight scale location","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"NPM/engineering/FBU/SRGC","start":"2026-11-04","due":"2026-11-05","closed":"","progress":75,"desc":"Assis and determine location for New Weight Scale location near Baitha mine","output":"vocal points determination","ref":"New Scale SoW","cc":"","log":[{"date":"2026-11-04","text":"email sent to Engineering/FBU/SRGC/NPM","by":"hani","next":"arrange meeting"},{"date":"2026-11-04","text":"Abdulrahman Alwehaib from RSGC is the vocal","by":"salih albahli","next":"get the rest of Vocals"},{"date":"2026-11-05","text":"Metrk is the vocal for AM","by":"metrk","next":"rest of vocal"},{"date":"2026-11-05","text":"abdulrahman alwehaib to be whatsapped because of vacation","by":"abdulrahman","next":""},{"date":"2026-11-08","text":"Ali Alkudaysi is FBU rep.","by":"wael","next":"NPM vocal remaining"},{"date":"2026-11-08","text":"Muath Fahad. Al Oufi is NPM rep.","by":"naif","next":""},{"date":"2026-11-08","text":"email sent to Engineering/FBU/SRGC/NPM","by":"hani","next":""},{"date":"2026-11-08","text":"alwehaib forwarded meeting to Abdulaziz Nasser. Aldolaimi","by":"alwehaib","next":""},{"date":"2026-11-08","text":"meeting sent to nadeem to record rthe MoM for the meeting.","by":"hani","next":""},{"date":"2026-11-09","text":"only Ali remained to accept the meeting","by":"hani","next":""},{"date":"2026-11-10","text":"nadeem to correct the MoM","by":"hani","next":""}]},{"id":3,"type":"Task","title":"PTS/PO Training for ARC","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"Tibor Tompe (ARC Director)","start":"2026-10-25","due":"2026-11-06","closed":"","progress":25,"desc":"PTS/PO Training for ARC","output":"Review comment sheet","ref":"PO14954","cc":"Noura Aldaribi","log":[{"date":"2026-10-05","text":"names received","by":"ARC","next":"email to noura for arranging"},{"date":"2026-11-05","text":"noura received names","by":"hani","next":"confirm prices with ARC"},{"date":"2026-11-05","text":"noura sent arrangemnt detail","by":"noura","next":"contractor to confirm"},{"date":"2026-11-05","text":"detail sent to contractor","by":"hani","next":"send detail to noura"},{"date":"2026-11-08","text":"sent email to suresh to see if we can draft a letter","by":"hani","next":""},{"date":"2026-11-10","text":"suresh provided a letter to be sent to contractor","by":"suresh","next":"letter sent to contractor"},{"date":"2026-11-10","text":"letter sent to ahmad to finalize","by":"hani","next":""},{"date":"2026-11-11","text":"letter sent to the cntractor","by":"","next":""}]},{"id":4,"type":"Task","title":"CCN P2 Performance Certificate","project":"PO 8158","priority":"Medium","status":"In Progress","from":"ahmed aldofian","to":"nadeem/PC","start":"2026-11-03","due":"2026-11-20","closed":"","progress":75,"desc":"create performance cirtifcate to release peroformance bond","output":"performance agreement","ref":"CCN P2","cc":"nadeem","log":[{"date":"2026-11-05","text":"naddem received closeout report","by":"hani","next":"performance certificate creating"},{"date":"2026-11-05","text":"ahmed received final ststement account for Sign/stamp","by":"hani","next":""},{"date":"2026-11-08","text":"ahmed received final ststement account/performance certificate for Sign/stamp","by":"hani","next":""},{"date":"2026-11-08","text":"Close out and performance certificate sent to ECC Project control","by":"hani","next":"release performnce bond"},{"date":"2026-11-11","text":"reminder sent to ECC","by":"hani","next":""}]},{"id":5,"type":"Issue","title":"Rock Cutting – all WIRs rejected, construction at 0%","project":"NSR 6204 – Rock Cutting","priority":"Critical","status":"Closed","from":"SAR Engineering","to":"Project Manager","start":"2026-10-15","due":"2026-10-30","closed":"","progress":100,"desc":"Contractor cannot start sections because inspection requests keep failing.","output":"Recovery plan + resubmitted WIRs","ref":"","cc":"Mostafa Nasar","log":[{"date":"2026-10-15","text":"Raised at weekly meeting","by":"SAR Engineering","next":"Contractor to resubmit"},{"date":"2026-10-29","text":"Resubmission not received","by":"Project Manager","next":"Escalation letter"}]},{"id":6,"type":"Task","title":"Update CRP2 EWR Shutdown 03 progress tracker","project":"EWR CRP2 – Culverts Ph-2","priority":"Medium","status":"Closed","from":"Project Manager","to":"Mostafa Nasar","start":"2026-10-25","due":"2026-10-28","closed":"2026-10-27","progress":100,"desc":"Update the A4 shutdown tracker after the possession.","output":"Updated tracker PDF","ref":"","cc":"","log":[{"date":"2026-11-05","text":"contractor is to replay next Monday, Nov. 9th","by":"abdullah arc","next":"schedule a meeting for wed/Thursday"},{"date":"2026-11-10","text":"Contractor to send an invitation for Thursday 11/12","by":"abdullah ARC","next":""}]},{"id":7,"type":"Task","title":"Kick off meeting with ARC","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"abdullah ARC","start":"2026-11-05","due":"2026-11-12","closed":"","progress":25,"desc":"","output":"","ref":"","cc":"","log":[]},{"id":8,"type":"Task","title":"Design up[date email","project":"General","priority":"High","status":"Closed","from":"Turki","to":"hani","start":"2026-11-09","due":"2026-11-10","closed":"","progress":50,"desc":"","output":"","ref":"","cc":"","log":[]},{"id":9,"type":"Task","title":"Survey project site","project":"","priority":"","status":"","from":"hani","to":"Abdullah ARC","start":"","due":"","closed":"","progress":0,"desc":"","output":"","ref":"","cc":"","log":[]}]}</script>
+<script id="seed" type="application/json">{"savedAt":1,"items":[{"id":1,"type":"Task","title":"Estimate TSMG cost from blanket agreement","project":"General","priority":"Medium","status":"In Progress","from":"Moaaz","to":"PC","start":"2026-11-04","due":"2026-11-28","closed":"","progress":50,"desc":"have supply chain estimate the cost of TSMG at AZ0 anf H1 from Alomair/tapi blanket egreement","output":"cost estimate for the task order","ref":"TSMG SoW","cc":"Cost ControllNadeem","log":[{"date":"2026-11-04","text":"email sent to PC","by":"hani","next":"cost estimate received from PC","files":[]},{"date":"2026-11-08","text":"mohammed suliman contacted suypply chain","by":"mohammed suliman","next":"","files":[]},{"date":"2026-11-10","text":"Amarin responded that the cost will be close with the previous prices and that the agreement is applicable to raril infrastructre projects","by":"aramin","next":"","files":[]},{"date":"2026-11-11","text":"mohamed S ali was sent another email to refer to the building works blanket agreement","by":"hani","next":"","files":[]},{"date":"2026-11-11","text":"mohamed says there is only a blanket agreement with yapi/alomair regarding Rail infrastructure works","by":"","next":"","files":[]}]},{"id":2,"type":"Task","title":"arrange for a meeting for new weight scale location","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"NPM/engineering/FBU/SRGC","start":"2026-11-04","due":"2026-11-05","closed":"","progress":75,"desc":"Assis and determine location for New Weight Scale location near Baitha mine","output":"vocal points determination","ref":"New Scale SoW","cc":"","log":[{"date":"2026-11-04","text":"email sent to Engineering/FBU/SRGC/NPM","by":"hani","next":"arrange meeting","files":[]},{"date":"2026-11-04","text":"Abdulrahman Alwehaib from RSGC is the vocal","by":"salih albahli","next":"get the rest of Vocals","files":[]},{"date":"2026-11-05","text":"Metrk is the vocal for AM","by":"metrk","next":"rest of vocal","files":[]},{"date":"2026-11-05","text":"abdulrahman alwehaib to be whatsapped because of vacation","by":"abdulrahman","next":"","files":[]},{"date":"2026-11-08","text":"Ali Alkudaysi is FBU rep.","by":"wael","next":"NPM vocal remaining","files":[]},{"date":"2026-11-08","text":"Muath Fahad. Al Oufi is NPM rep.","by":"naif","next":"","files":[]},{"date":"2026-11-08","text":"email sent to Engineering/FBU/SRGC/NPM","by":"hani","next":"","files":[]},{"date":"2026-11-08","text":"alwehaib forwarded meeting to Abdulaziz Nasser. Aldolaimi","by":"alwehaib","next":"","files":[]},{"date":"2026-11-08","text":"meeting sent to nadeem to record rthe MoM for the meeting.","by":"hani","next":"","files":[]},{"date":"2026-11-09","text":"only Ali remained to accept the meeting","by":"hani","next":"","files":[]},{"date":"2026-11-10","text":"nadeem to correct the MoM","by":"hani","next":"","files":[]}]},{"id":3,"type":"Task","title":"PTS/PO Training for ARC","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"Tibor Tompe (ARC Director)","start":"2026-10-25","due":"2026-11-06","closed":"","progress":25,"desc":"PTS/PO Training for ARC","output":"Review comment sheet","ref":"PO14954","cc":"Noura Aldaribi","log":[{"date":"2026-10-05","text":"names received","by":"ARC","next":"email to noura for arranging","files":[]},{"date":"2026-11-05","text":"noura received names","by":"hani","next":"confirm prices with ARC","files":[]},{"date":"2026-11-05","text":"noura sent arrangemnt detail","by":"noura","next":"contractor to confirm","files":[]},{"date":"2026-11-05","text":"detail sent to contractor","by":"hani","next":"send detail to noura","files":[]},{"date":"2026-11-08","text":"sent email to suresh to see if we can draft a letter","by":"hani","next":"","files":[]},{"date":"2026-11-10","text":"suresh provided a letter to be sent to contractor","by":"suresh","next":"letter sent to contractor","files":[]},{"date":"2026-11-10","text":"letter sent to ahmad to finalize","by":"hani","next":"","files":[]},{"date":"2026-11-11","text":"letter sent to the cntractor","by":"","next":"","files":[]}]},{"id":4,"type":"Task","title":"CCN P2 Performance Certificate","project":"PO 8158","priority":"Medium","status":"In Progress","from":"ahmed aldofian","to":"nadeem/PC","start":"2026-11-03","due":"2026-11-20","closed":"","progress":75,"desc":"create performance cirtifcate to release peroformance bond","output":"performance agreement","ref":"CCN P2","cc":"nadeem","log":[{"date":"2026-11-05","text":"naddem received closeout report","by":"hani","next":"performance certificate creating","files":[]},{"date":"2026-11-05","text":"ahmed received final ststement account for Sign/stamp","by":"hani","next":"","files":[]},{"date":"2026-11-08","text":"ahmed received final ststement account/performance certificate for Sign/stamp","by":"hani","next":"","files":[]},{"date":"2026-11-08","text":"Close out and performance certificate sent to ECC Project control","by":"hani","next":"release performnce bond","files":[]},{"date":"2026-11-11","text":"reminder sent to ECC","by":"hani","next":"","files":[]}]},{"id":5,"type":"Issue","title":"Rock Cutting – all WIRs rejected, construction at 0%","project":"NSR 6204 – Rock Cutting","priority":"Critical","status":"Closed","from":"SAR Engineering","to":"Project Manager","start":"2026-10-15","due":"2026-10-30","closed":"","progress":100,"desc":"Contractor cannot start sections because inspection requests keep failing.","output":"Recovery plan + resubmitted WIRs","ref":"","cc":"Mostafa Nasar","log":[{"date":"2026-10-15","text":"Raised at weekly meeting","by":"SAR Engineering","next":"Contractor to resubmit","files":[]},{"date":"2026-10-29","text":"Resubmission not received","by":"Project Manager","next":"Escalation letter","files":[]}]},{"id":6,"type":"Task","title":"Update CRP2 EWR Shutdown 03 progress tracker","project":"EWR CRP2 – Culverts Ph-2","priority":"Medium","status":"Closed","from":"Project Manager","to":"Mostafa Nasar","start":"2026-10-25","due":"2026-10-28","closed":"2026-10-27","progress":100,"desc":"Update the A4 shutdown tracker after the possession.","output":"Updated tracker PDF","ref":"","cc":"","log":[{"date":"2026-11-05","text":"contractor is to replay next Monday, Nov. 9th","by":"abdullah arc","next":"schedule a meeting for wed/Thursday","files":[]},{"date":"2026-11-10","text":"Contractor to send an invitation for Thursday 11/12","by":"abdullah ARC","next":"","files":[]}]},{"id":7,"type":"Task","title":"Kick off meeting with ARC","project":"0549","priority":"High","status":"In Progress","from":"hani","to":"abdullah ARC","start":"2026-11-05","due":"2026-11-12","closed":"","progress":25,"desc":"","output":"","ref":"","cc":"","log":[]},{"id":8,"type":"Task","title":"Design up[date email","project":"General","priority":"High","status":"Closed","from":"Turki","to":"hani","start":"2026-11-09","due":"2026-11-10","closed":"","progress":50,"desc":"","output":"","ref":"","cc":"","log":[]},{"id":9,"type":"Task","title":"Survey project site","project":"","priority":"","status":"","from":"hani","to":"Abdullah ARC","start":"","due":"","closed":"","progress":0,"desc":"","output":"","ref":"","cc":"","log":[]}]}</script>
 <script>
 (() => {
 'use strict';
@@ -276,22 +320,55 @@ const dayNum = s => { const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(s||''); return m ? 
 
 /* ---------- data ---------- */
 let db = JSON.parse($('seed').textContent);
-let canStore = true;
-try {
-  const ls = JSON.parse(localStorage.getItem(KEY) || 'null');
-  if (ls && Array.isArray(ls.items) && (ls.savedAt||0) > (db.savedAt||0)) db = ls;
-} catch (e) { canStore = false; }
-
+let canStore = true, dirty = false, idb = null, autoSave = true;
+const AKEY = KEY + '-autosave';
+try { autoSave = localStorage.getItem(AKEY) !== '0'; } catch (e) {}
+const fix = d => { d.items.forEach(it => { it.log = it.log || []; it.log.forEach(l => l.files = l.files || []); }); return d; };
+fix(db);
+// IndexedDB holds the data (no size limit problem with attachments); localStorage is the fallback
+const idbOpen = () => new Promise(res => {
+  setTimeout(() => res(null), 2000);
+  try {
+    const r = indexedDB.open('sar-daily-tracker', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result); r.onerror = r.onblocked = () => res(null);
+  } catch (e) { res(null); }
+});
+const idbGet = () => new Promise(res => {
+  if (!idb) return res(null);
+  try { const q = idb.transaction('kv').objectStore('kv').get('db'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); } catch (e) { res(null); }
+});
+const idbPut = v => new Promise(res => {
+  try { const tx = idb.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, 'db'); tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); }
+});
 function persist() {
-  db.savedAt = Date.now();
-  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { canStore = false; }
+  db.savedAt = Date.now(); dirty = false;
+  // localStorage is written synchronously (safe even if the tab is closed right away); with IndexedDB
+  // available it holds everything except the attachment contents, which live in IndexedDB
+  let lsOk = true;
+  try { localStorage.setItem(KEY, JSON.stringify(db, idb ? (k, v) => k === 'data' ? undefined : v : null)); } catch (e) { lsOk = false; }
+  if (idb) idbPut(db).then(ok => { if (!ok && (!lsOk || nAttAll())) { canStore = false; dirty = true; showSaved(); toast('Could not save in the browser — use Save File'); } });
+  else if (!lsOk) { canStore = false; dirty = true; }
   showSaved();
 }
 function showSaved() {
-  const t = new Date(db.savedAt || Date.now());
-  $('saveTxt').textContent = !canStore ? 'Auto-save off — use Save File' : (db.savedAt || 0) < 1e6 ? 'Auto-save on'
-    : 'Auto-saved ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+  const t = new Date(db.savedAt || 0), hm = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+  $('saveTxt').textContent = !canStore ? 'Browser storage off — use Save File' : dirty ? 'Unsaved changes'
+    : (db.savedAt || 0) < 1e6 ? (autoSave ? 'Auto-save on' : 'Auto-save off') : 'Saved ' + hm;
+  $('autoSw').checked = autoSave;
+  $('bSaveNow').hidden = autoSave || !dirty;
 }
+$('autoSw').onchange = e => {
+  autoSave = e.target.checked;
+  try { localStorage.setItem(AKEY, autoSave ? '1' : '0'); } catch (err) {}
+  if (autoSave && dirty) persist(); else showSaved();
+  toast(autoSave ? 'Auto-save is on' : 'Auto-save is off — use “Save now” or Ctrl+S');
+};
+$('bSaveNow').onclick = () => { persist(); toast('Saved'); };
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+const nAttAll = () => db.items.reduce((s, it) => s + nAtt(it), 0);
+const nAtt = it => it.log.reduce((s, l) => s + l.files.length, 0);
+const sel = new Set();
 const isOpen = it => it.status !== 'Closed' && it.status !== 'Cancelled';
 function dueStatus(it) {
   if (!isOpen(it)) return it.status;
@@ -341,7 +418,7 @@ function visible() {
     if (flt.quick && !QUICK[flt.quick](it)) return false;
     if (q) {
       const hay = [pad(it.id),it.title,it.project,it.type,it.status,it.priority,it.from,it.to,it.cc,it.desc,it.output,it.ref,
-        ...it.log.map(l => l.text+' '+l.by+' '+l.next)].join(' ').toLowerCase();
+        ...it.log.map(l => l.text+' '+l.by+' '+l.next+' '+l.files.map(f => f.name).join(' '))].join(' ').toLowerCase();
       if (!q.split(/\s+/).every(w => hay.includes(w))) return false;
     }
     return true;
@@ -366,14 +443,16 @@ function render() {
   $('kpis').innerHTML = tiles.map(([k,l,n,cl]) =>
     `<button class="kpi ${cl}${flt.quick === k && k ? ' on' : ''}" data-quick="${k}" title="Click to filter"><b>${n}</b><span>${l}</span></button>`).join('');
   // head
-  $('head').innerHTML = COLS.map(([k,l,auto]) =>
+  $('head').innerHTML = '<th class="chk nosort"><input type="checkbox" id="selAll" aria-label="Select all" title="Select all shown items"></th>' + COLS.map(([k,l,auto]) =>
     `<th data-sort="${k}" class="${auto ? 'auto' : ''}">${l}${sort.key === k ? `<span class="ar">${sort.dir > 0 ? '▲' : '▼'}</span>` : ''}</th>`).join('')
     + '<th class="act nosort">Details</th>';
   // rows
   const list = visible();
+  for (const id of [...sel]) if (!list.some(i => i.id === id)) sel.delete(id);   // selection never includes hidden rows
   $('rows').innerHTML = list.map(it => {
     const ds = dueStatus(it), dl = daysLeft(it), l = last(it);
-    return `<tr data-id="${it.id}" class="${ds === 'Overdue' ? 'overdue' : ''}${isOpen(it) ? '' : ' done'}">
+    return `<tr data-id="${it.id}" class="${ds === 'Overdue' ? 'overdue' : ''}${isOpen(it) ? '' : ' done'}${sel.has(it.id) ? ' sel' : ''}">
+<td class="chk"><input type="checkbox" data-sel${sel.has(it.id) ? ' checked' : ''} aria-label="Select item ${pad(it.id)}"></td>
 <td class="id">${pad(it.id)}</td>
 <td><span class="type t-${slug(it.type)}">${esc(it.type)}</span></td>
 <td class="ttl">${esc(it.title)}</td>
@@ -385,19 +464,25 @@ function render() {
 <td><select class="prog" style="--p:${it.progress}%" data-inline="progress" aria-label="Progress">${opts(progList(it.progress), it.progress, v => v + '%')}</select></td>
 <td><span class="pill c-${slug(ds)}">${ds}</span></td>
 <td class="nowrap${dl !== '' && dl < 0 ? ' neg' : ''}">${dl}</td>
-<td><div class="clip" title="${esc(l.text)}">${esc(l.text)}</div></td>
+<td><div class="clip" title="${esc(l.text)}">${esc(l.text)}</div>${nAtt(it) ? `<div class="sub">📎 ${nAtt(it)} attachment${nAtt(it) > 1 ? 's' : ''}</div>` : ''}</td>
 <td><div class="clip" title="${esc(l.next)}">${esc(l.next)}</div></td>
 <td class="nowrap">${fmt(l.date)}</td>
 <td class="act"><button class="btn line sm" data-act="upd" title="Add an update">+ Update</button> <button class="btn primary sm" data-act="open">Open ▸</button></td></tr>`;
   }).join('');
   $('empty').hidden = list.length > 0;
+  updateBulk();
   $('count').textContent = list.length === db.items.length ? `${list.length} items` : `${list.length} of ${db.items.length} items`;
   // autocomplete lists
   const uniq = a => [...new Set(a.map(s => (s||'').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b));
   $('lProject').innerHTML = uniq(db.items.map(i => i.project)).map(v => `<option value="${esc(v)}">`).join('');
   $('lPeople').innerHTML = uniq(db.items.flatMap(i => [i.from,i.to,i.cc,...i.log.map(l => l.by)])).map(v => `<option value="${esc(v)}">`).join('');
 }
-function commit(msg) { persist(); render(); if (msg) toast(msg); }
+function updateBulk() {
+  const n = sel.size, rows = $('rows').children.length, a = $('selAll');
+  $('bulk').hidden = !n; $('bulkN').textContent = n + ' selected';
+  if (a) { a.checked = n > 0 && n === rows; a.indeterminate = n > 0 && n < rows; }
+}
+function commit(msg) { dirty = true; if (autoSave) persist(); else showSaved(); render(); if (msg) toast(msg); }
 let toastT;
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
 
@@ -418,6 +503,53 @@ function ask(msg, yes = 'OK', danger = false) {
   });
 }
 
+/* ---------- attachments ---------- */
+const MAXF = 15 * 1024 * 1024;
+const isImg = f => /^image\//.test(f.type || '');
+const fsize = n => n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+function dataToBlob(data) {
+  const i = data.indexOf(','), bin = atob(data.slice(i + 1)), u = new Uint8Array(bin.length);
+  for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+  return new Blob([u], {type: (/^data:([^;,]*)/.exec(data) || [])[1] || 'application/octet-stream'});
+}
+function drawAtts(box, files, editable) {
+  box.replaceChildren(...files.map((f, i) => {
+    const a = document.createElement('span'); a.className = 'att'; a.title = 'Open ' + f.name;
+    a.innerHTML = (isImg(f) ? `<img src="${esc(f.data)}" alt="">` : `<span class="ico">${esc((/\.([^.]{1,4})$/.exec(f.name) || [,'file'])[1])}</span>`)
+      + `<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small>` + (editable ? '<button type="button" class="rm" title="Remove attachment" aria-label="Remove attachment">×</button>' : '');
+    a.onclick = e => { if (e.target.classList.contains('rm')) { files.splice(i, 1); drawAtts(box, files, editable); } else openAtt(f); };
+    return a;
+  }));
+}
+async function addFiles(list, files, box) {
+  for (const f of list) {
+    if (f.size > MAXF) { toast(`“${f.name}” is larger than 15 MB`); continue; }
+    const data = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(null); r.readAsDataURL(f); });
+    if (!data) { toast('Could not read ' + f.name); continue; }
+    files.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: f.name || 'pasted-file', type: f.type, size: f.size, data});
+  }
+  drawAtts(box, files, true);
+}
+function pickFiles(cb) { const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.onchange = () => cb([...i.files]); i.click(); }
+function openAtt(f) {
+  if (isImg(f)) {
+    $('vName').textContent = f.name; $('vImg').src = f.data;
+    $('vDl').onclick = () => download(dataToBlob(f.data), f.name);
+    $('dView').showModal();
+  } else if (f.type === 'application/pdf') {
+    const url = URL.createObjectURL(dataToBlob(f.data));
+    if (!window.open(url, '_blank')) download(dataToBlob(f.data), f.name);
+  } else download(dataToBlob(f.data), f.name);
+}
+$('vX').onclick = () => $('dView').close();
+$('dView').addEventListener('mousedown', e => { if (e.target === $('dView')) $('dView').close(); });
+function dropZone(el, target) {       // paste or drop files onto an update
+  el.addEventListener('paste', e => { const fs = [...((e.clipboardData && e.clipboardData.files) || [])], t = fs.length && target(e); if (t) { e.preventDefault(); addFiles(fs, t.files, t.box); } });
+  el.addEventListener('drop', e => { const t = target(e); if (t) { e.preventDefault(); addFiles([...e.dataTransfer.files], t.files, t.box); } });
+}
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());      // a stray drop must never navigate away from the tracker
+
 /* ---------- item dialog ---------- */
 const FIELDS = ['title','type','priority','status','progress','project','from','to','start','due','closed','cc','desc','output','ref'];
 let editId = null, snap = '';
@@ -427,7 +559,11 @@ function logRow(l = {}) {
 <textarea data-k="text" rows="1" placeholder="What happened / what was done" aria-label="Update">${esc(l.text || '')}</textarea>
 <input data-k="by" list="lPeople" placeholder="By" value="${esc(l.by || '')}" autocomplete="off" aria-label="By">
 <input data-k="next" placeholder="Next step" value="${esc(l.next || '')}" autocomplete="off" aria-label="Next step">
-<button type="button" class="del" title="Remove this update" aria-label="Remove">×</button>`;
+<button type="button" class="clipb" title="Attach files or images to this update" aria-label="Attach files">📎</button>
+<button type="button" class="del" title="Remove this update" aria-label="Remove">×</button>
+<div class="atts"></div>`;
+  r._files = (l.files || []).slice();
+  drawAtts(r.querySelector('.atts'), r._files, true);
   return r;
 }
 function readForm() {
@@ -435,10 +571,11 @@ function readForm() {
   FIELDS.forEach(k => o[k] = $('i_'+k).value.trim());
   o.progress = +o.progress || 0;
   o.log = [...$('log').children].map(r => {
-    const l = {}; r.querySelectorAll('[data-k]').forEach(e => l[e.dataset.k] = e.value.trim()); return l;
-  }).filter(l => l.text || l.by || l.next);
+    const l = {}; r.querySelectorAll('[data-k]').forEach(e => l[e.dataset.k] = e.value.trim()); l.files = r._files; return l;
+  }).filter(l => l.text || l.by || l.next || l.files.length);
   return o;
 }
+const snapOf = () => JSON.stringify(readForm(), (k, v) => k === 'data' ? undefined : v);
 function openItem(id) {
   const it = id ? db.items.find(i => i.id === id) : null;
   editId = id || null;
@@ -452,12 +589,12 @@ function openItem(id) {
   $('iTag').textContent = it ? 'ITEM ' + pad(it.id) : 'NEW';
   $('iTitle').textContent = it ? it.title : 'New item';
   $('bDelete').hidden = !it;
-  snap = JSON.stringify(readForm());
+  snap = snapOf();
   $('dItem').showModal();
   $('i_title').focus();
 }
 async function closeItem() {
-  if (JSON.stringify(readForm()) !== snap && !(await ask('Discard the changes you made to this item?', 'Discard', true))) return;
+  if (snapOf() !== snap && !(await ask('Discard the changes you made to this item?', 'Discard', true))) return;
   $('dItem').close();
 }
 $('i_status').addEventListener('change', e => {
@@ -467,7 +604,12 @@ $('i_status').addEventListener('change', e => {
   }
 });
 $('bAddLog').onclick = () => { const r = logRow({date: today()}); $('log').append(r); r.querySelector('textarea').focus(); r.scrollIntoView({block:'nearest'}); };
-$('log').addEventListener('click', e => { if (e.target.classList.contains('del')) e.target.closest('.lr').remove(); });
+$('log').addEventListener('click', e => {
+  const r = e.target.closest('.lr'); if (!r) return;
+  if (e.target.classList.contains('del')) r.remove();
+  else if (e.target.classList.contains('clipb')) pickFiles(fs => addFiles(fs, r._files, r.querySelector('.atts')));
+});
+dropZone($('log'), e => { const r = e.target.closest('.lr'); return r && {files: r._files, box: r.querySelector('.atts')}; });
 $('fItem').addEventListener('submit', e => {
   e.preventDefault();
   const o = readForm();
@@ -486,7 +628,7 @@ $('bDelete').onclick = async () => {
 };
 
 /* ---------- quick update dialog ---------- */
-let updId = null;
+let updId = null, updFiles = [];
 function openUpd(id) {
   const it = db.items.find(i => i.id === id); updId = id;
   $('uTag').textContent = 'ITEM ' + pad(it.id); $('uTitle').textContent = it.title;
@@ -494,15 +636,18 @@ function openUpd(id) {
   $('u_by').value = last(it).by || '';
   $('u_status').innerHTML = (it.status ? '' : '<option value="">—</option>') + opts(STATS, it.status);
   $('u_progress').innerHTML = opts(progList(it.progress), it.progress, x => x + '%');
+  updFiles = []; drawAtts($('uAtts'), updFiles, true);
   $('dUpd').showModal(); $('u_text').focus();
 }
+$('uAttach').onclick = () => pickFiles(fs => addFiles(fs, updFiles, $('uAtts')));
+dropZone($('fUpd'), () => ({files: updFiles, box: $('uAtts')}));
 $('u_status').addEventListener('change', e => { if (e.target.value === 'Closed') $('u_progress').innerHTML = opts(PROGS, 100, x => x + '%'); });
 $('fUpd').addEventListener('submit', e => {
   e.preventDefault();
   const text = $('u_text').value.trim();
   if (!text) { $('u_text').focus(); toast('Write the update first'); return; }
   const it = db.items.find(i => i.id === updId);
-  it.log.push({date: $('u_date').value, text, by: $('u_by').value.trim(), next: $('u_next').value.trim()});
+  it.log.push({date: $('u_date').value, text, by: $('u_by').value.trim(), next: $('u_next').value.trim(), files: updFiles});
   it.progress = +$('u_progress').value || 0;
   if ($('u_status').value) applyStatus(it, $('u_status').value);
   $('dUpd').close(); commit('Update added');
@@ -510,7 +655,7 @@ $('fUpd').addEventListener('submit', e => {
 
 /* ---------- dialog plumbing ---------- */
 const closers = {dItem: closeItem, dUpd: async () => {
-  if ($('u_text').value.trim() && !(await ask('Discard this update?', 'Discard', true))) return;
+  if (($('u_text').value.trim() || updFiles.length) && !(await ask('Discard this update?', 'Discard', true))) return;
   $('dUpd').close();
 }};
 for (const id of ['dItem','dUpd']) {
@@ -525,11 +670,16 @@ for (const id of ['dItem','dUpd']) {
 $('rows').addEventListener('click', e => {
   const tr = e.target.closest('tr'); if (!tr) return;
   const id = +tr.dataset.id;
-  if (e.target.closest('[data-inline]')) return;
+  if (e.target.closest('[data-inline],.chk')) return;
   const act = e.target.closest('[data-act]');
   if (act && act.dataset.act === 'upd') openUpd(id); else openItem(id);
 });
 $('rows').addEventListener('change', e => {
+  if (e.target.matches('[data-sel]')) {
+    const tr = e.target.closest('tr'), id = +tr.dataset.id;
+    e.target.checked ? sel.add(id) : sel.delete(id);
+    tr.classList.toggle('sel', e.target.checked); updateBulk(); return;
+  }
   const k = e.target.dataset.inline; if (!k) return;
   const it = db.items.find(i => i.id === +e.target.closest('tr').dataset.id);
   if (k === 'status') applyStatus(it, e.target.value); else it.progress = +e.target.value;
@@ -554,6 +704,18 @@ $('bReset').onclick = $('bReset2').onclick = () => {
   $('q').value = $('fType').value = $('fStatus').value = $('fPriority').value = ''; render();
 };
 $('bNew').onclick = () => openItem(null);
+$('head').addEventListener('change', e => {
+  if (e.target.id !== 'selAll') return;
+  const ids = [...$('rows').children].map(tr => +tr.dataset.id);
+  ids.forEach(id => e.target.checked ? sel.add(id) : sel.delete(id)); render();
+});
+$('bBulkClr').onclick = () => { sel.clear(); render(); };
+$('bBulkDel').onclick = async () => {
+  const n = sel.size; if (!n) return;
+  if (!(await ask(`Delete ${n} selected item${n > 1 ? 's' : ''} and all their updates? This cannot be undone.`, `Delete ${n} item${n > 1 ? 's' : ''}`, true))) return;
+  db.items = db.items.filter(i => !sel.has(i.id)); sel.clear();
+  commit(`${n} item${n > 1 ? 's' : ''} deleted`);
+};
 
 /* ---------- full screen ---------- */
 $('bFull').onclick = () => {
@@ -657,8 +819,8 @@ function buildXlsx() {
     rows: items.map(it => { const l = last(it); return [pad(it.id), it.type, it.title, it.project, it.priority, it.status, it.from, it.to, it.start, it.due, it.closed,
       it.progress / 100, dueStatus(it), daysLeft(it), l.text, l.next, l.date, it.desc, it.output, it.ref, it.cc, it.log.length]; })});
   const log = sheetXml({freezeCols: 2, title: '  SAR  |  Updates & Actions Log', sub,
-    cols: [{h:'Item ID',w:8,k:'c'},{h:'Title / Subject',w:42},{h:'#',w:5,k:'c'},{h:'Date',w:12,k:'d'},{h:'Update / Action Taken',w:70},{h:'By',w:22},{h:'Next Step',w:40}],
-    rows: items.flatMap(it => it.log.map((l,i) => [pad(it.id), it.title, i+1, l.date, l.text, l.by, l.next]))});
+    cols: [{h:'Item ID',w:8,k:'c'},{h:'Title / Subject',w:42},{h:'#',w:5,k:'c'},{h:'Date',w:12,k:'d'},{h:'Update / Action Taken',w:70},{h:'By',w:22},{h:'Next Step',w:40},{h:'Attachments',w:36}],
+    rows: items.flatMap(it => it.log.map((l,i) => [pad(it.id), it.title, i+1, l.date, l.text, l.by, l.next, l.files.map(f => f.name).join(', ')]))});
   const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', P = 'http://schemas.openxmlformats.org/package/2006/';
   return zip([
     ['[Content_Types].xml', X + `<Types xmlns="${P}content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
@@ -672,7 +834,7 @@ $('bXlsx').onclick = () => { download(buildXlsx(), `SAR_Daily_Tracker_${today()}
 
 /* ---------- shortcuts ---------- */
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveFile(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (autoSave) saveFile(); else { persist(); toast('Saved'); } return; }
   if (document.querySelector('dialog[open]') || e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
   const k = e.key.toLowerCase();
   if (k === 'n') { e.preventDefault(); openItem(null); }
@@ -682,6 +844,21 @@ document.addEventListener('keydown', e => {
 
 $('todayTxt').textContent = 'Today: ' + fmt(today());
 showSaved(); render();
+(async () => {            // pick the newest copy: file itself, localStorage (older versions), IndexedDB
+  idb = await idbOpen();
+  let best = db, lsOk = true;
+  try { const ls = JSON.parse(localStorage.getItem(KEY) || 'null'); if (ls && Array.isArray(ls.items) && (ls.savedAt||0) > (best.savedAt||0)) best = ls; } catch (e) { lsOk = false; }
+  const rec = await idbGet(), recOk = rec && Array.isArray(rec.items);
+  if (recOk && (rec.savedAt||0) >= (best.savedAt||0)) best = rec;
+  canStore = !!idb || lsOk;
+  if (best !== db && !dirty) {
+    const data = new Map();            // attachment contents by id, from the file itself and from IndexedDB
+    for (const src of [db, recOk ? fix(rec) : null]) if (src) src.items.forEach(it => it.log.forEach(l => l.files.forEach(f => f.data && data.set(f.id, f.data))));
+    fix(best).items.forEach(it => it.log.forEach(l => { l.files.forEach(f => f.data = f.data || data.get(f.id)); l.files = l.files.filter(f => f.data); }));
+    db = best;
+  }
+  showSaved(); render();
+})();
 })();
 </script>
 </body>
