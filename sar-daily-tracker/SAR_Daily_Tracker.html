@@ -139,6 +139,46 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* ---------- view switch / calendar ---------- */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;flex:none}
+.seg button{border:0;background:none;padding:0 13px;height:34px;font-weight:600;font-size:13px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button:hover{background:var(--bg)}
+.seg button.on{background:var(--blue);color:#fff}
+.calbar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;left:0;background:#fff;z-index:3;flex-wrap:wrap}
+#cLabel{font-size:15px;margin-left:6px}
+.cg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:860px}
+.dh7{padding:6px 8px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#FAFBFC;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.cd{min-height:122px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cg.week .cd{min-height:440px;gap:5px}
+.cd.out{background:#F6F8F9}.cd.out .dn span{color:#aab3b9}
+.cd.today{background:#EEF7F9;box-shadow:inset 0 3px 0 var(--blue)}
+.dn{display:flex;justify-content:space-between;align-items:center;min-height:24px}
+.dn span{font-weight:700;font-size:13px;cursor:pointer;padding:1px 7px;border-radius:6px}
+.dn span:hover{background:var(--light)}
+.cd.today .dn span{background:var(--blue);color:#fff}
+.add{border:0;background:none;color:var(--muted);font-size:17px;line-height:1;border-radius:6px;padding:1px 7px;opacity:0}
+.cd:hover .add,.add:focus-visible{opacity:1}
+.add:hover{background:var(--light);color:var(--blue-d)}
+.ev{display:block;width:100%;text-align:left;border:1px solid transparent;border-radius:6px;padding:3px 6px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex:none}
+.ev:hover{filter:brightness(.94)}
+.ev b{opacity:.7;margin-right:5px;font-variant-numeric:tabular-nums}
+.ev.done span{text-decoration:line-through}
+.ev small{display:block;font-weight:400;opacity:.9;font-size:11.5px;margin-top:2px;white-space:normal}
+.cg.week .ev{white-space:normal;padding:6px 8px}
+.more{border:0;background:none;color:var(--blue-d);font-size:12px;font-weight:700;text-align:left;padding:1px 6px;border-radius:6px}
+.more:hover{background:var(--light)}
+.dayl{padding:12px;display:flex;flex-direction:column;gap:8px}
+.dayc{display:grid;grid-template-columns:86px minmax(0,1.3fr) auto minmax(0,1.2fr) auto;gap:6px 16px;align-items:center;border:1px solid var(--line);border-left:5px solid var(--blue);border-radius:8px;padding:10px 12px;cursor:pointer;background:#fff}
+.dayc:hover{background:#F7FAFB}
+.dayc.overdue{border-left-color:var(--red)}.dayc.done{border-left-color:var(--muted)}.dayc.done .ttl{color:var(--muted);text-decoration:line-through}
+.dayc .ttl{min-width:0;max-width:none}
+.dayc .pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.daynone{padding:46px 20px;text-align:center;color:var(--muted)}
+.nodue{padding:10px 12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;font-weight:700;color:var(--muted);position:sticky;left:0}
+.nodue .ev{width:auto;max-width:280px}
+@media (max-width:720px){.dayc{grid-template-columns:minmax(0,1fr)}}
+
 /* ---------- attachments / bulk / switch ---------- */
 .clipb{border:0;background:none;border-radius:6px;height:32px;font-size:15px;color:var(--muted)}
 .clipb:hover{background:var(--light)}
@@ -209,6 +249,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
 <section class="kpis" id="kpis"></section>
 
 <section class="tools">
+  <div class="seg" id="vSeg" role="group" aria-label="View"><button data-view="table">Table</button><button data-view="cal">Calendar</button></div>
   <input type="search" id="q" placeholder="Search title, project, people, updates…" aria-label="Search">
   <select id="fType" aria-label="Type"><option value="">All types</option></select>
   <select id="fStatus" aria-label="Status"><option value="">All statuses</option></select>
@@ -219,7 +260,20 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <span class="count" id="count"></span>
 </section>
 
-<div class="wrap">
+<div class="wrap" id="cal" hidden>
+  <div class="calbar">
+    <div class="seg" id="mSeg" role="group" aria-label="Calendar period"><button data-mode="day">Day</button><button data-mode="week">Week</button><button data-mode="month">Month</button></div>
+    <button class="btn line sm" id="cPrev" title="Previous (←)" aria-label="Previous">‹</button>
+    <button class="btn line sm" id="cToday">Today</button>
+    <button class="btn line sm" id="cNext" title="Next (→)" aria-label="Next">›</button>
+    <b id="cLabel"></b>
+    <span class="sp" style="flex:1"></span><span class="hint">Items are shown on their due date · click a day’s + to add one</span>
+  </div>
+  <div id="calBody"></div>
+  <div class="nodue" id="calNoDue"></div>
+</div>
+
+<div class="wrap" id="wrapT">
   <table>
     <thead><tr id="head"></tr></thead>
     <tbody id="rows"></tbody>
@@ -487,6 +541,10 @@ function render() {
   }).join('');
   $('empty').hidden = list.length > 0;
   $('fWeek').value = db.weekStart;
+  $('wrapT').hidden = ui.view !== 'table'; $('cal').hidden = ui.view !== 'cal';
+  document.querySelectorAll('#vSeg button').forEach(b => b.classList.toggle('on', b.dataset.view === ui.view));
+  document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === ui.mode));
+  if (ui.view === 'cal') renderCal(list);
   updateBulk();
   $('count').textContent = list.length === db.items.length ? `${list.length} items` : `${list.length} of ${db.items.length} items`;
   // autocomplete lists
@@ -623,10 +681,10 @@ function readForm() {
   return o;
 }
 const snapOf = () => JSON.stringify(readForm(), (k, v) => k === 'data' ? undefined : v);
-function openItem(id) {
+function openItem(id, due = '') {
   const it = id ? db.items.find(i => i.id === id) : null;
   editId = id || null;
-  const v = it || {title:'',type:'Task',priority:'Medium',status:'Not Started',progress:0,project:'',from:'',to:'',start:today(),due:'',closed:'',cc:'',desc:'',output:'',ref:'',log:[]};
+  const v = it || {title:'',type:'Task',priority:'Medium',status:'Not Started',progress:0,project:'',from:'',to:'',start:today(),due,closed:'',cc:'',desc:'',output:'',ref:'',log:[]};
   $('i_type').innerHTML = opts(TYPES, v.type);
   $('i_priority').innerHTML = (v.priority ? '' : '<option value="">—</option>') + opts(PRIOS, v.priority);
   $('i_status').innerHTML = (v.status ? '' : '<option value="">—</option>') + opts(STATS, v.status);
@@ -769,6 +827,78 @@ $('bBulkDel').onclick = async () => {
   commit(`${n} item${n > 1 ? 's' : ''} deleted`);
 };
 
+/* ---------- calendar view ---------- */
+const ui = {view: 'cal', mode: 'week'};                       // calendar / week is the default; the last choice is remembered
+try { Object.assign(ui, JSON.parse(localStorage.getItem(KEY + '-view') || '{}')); } catch (e) {}
+if (!['table','cal'].includes(ui.view)) ui.view = 'cal';
+if (!['day','week','month'].includes(ui.mode)) ui.mode = 'week';
+const saveUi = () => { try { localStorage.setItem(KEY + '-view', JSON.stringify(ui)); } catch (e) {} };
+let cur = dayNum(today());                                    // the day the calendar is centred on
+const numIso = n => new Date(n * 864e5).toISOString().slice(0, 10);
+const dow = n => ((n + 4) % 7 + 7) % 7;
+const weekStartOf = n => n - ((dow(n) - db.weekStart + 7) % 7);
+const longDate = (n, o) => new Date(n * 864e5).toLocaleDateString('en-GB', {timeZone: 'UTC', ...o});
+function evChip(it, rich) {
+  return `<button class="ev c-${slug(dueStatus(it))}${isOpen(it) ? '' : ' done'}" data-id="${it.id}" title="${esc(it.title)} — ${esc(it.status || 'no status')}"><b>${pad(it.id)}</b><span>${esc(it.title)}</span>`
+    + (rich ? `<small>${esc([it.project, it.to && '➜ ' + it.to, it.progress + '%'].filter(Boolean).join(' · '))}</small>` : '') + '</button>';
+}
+function renderCal(list) {
+  const by = new Map(), nodue = [], T = dayNum(today());
+  [...list].sort((a, b) => (isOpen(b) - isOpen(a)) || sortVal(a, 'priority') - sortVal(b, 'priority') || a.id - b.id).forEach(it => {
+    const d = dayNum(it.due);
+    if (d === null) nodue.push(it); else by.set(d, [...(by.get(d) || []), it]);
+  });
+  let html = '', label = '';
+  if (ui.mode === 'day') {
+    const evs = by.get(cur) || [];
+    label = longDate(cur, {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'});
+    html = `<div class="dayl" data-day="${cur}">` + (evs.length ? evs.map(it => {
+      const ds = dueStatus(it), l = last(it);
+      return `<div class="dayc${ds === 'Overdue' ? ' overdue' : ''}${isOpen(it) ? '' : ' done'}" data-id="${it.id}">
+<div><span class="id">${pad(it.id)}</span> <span class="type t-${slug(it.type)}">${esc(it.type)}</span></div>
+<div><div class="ttl">${esc(it.title)}</div><div class="sub">${esc([it.project, [it.from, it.to].filter(Boolean).join(' ➜ ')].filter(Boolean).join(' · '))}</div></div>
+<div class="pills">${it.priority ? `<span class="pill c-${slug(it.priority)}">${esc(it.priority)}</span>` : ''}${it.status ? `<span class="pill c-${slug(it.status)}">${esc(it.status)}</span>` : ''}<span class="pill c-${slug(ds)}">${ds}</span><b>${it.progress}%</b></div>
+<div class="clip" title="${esc(l.text)}">${esc(l.text)}</div>
+<div class="nowrap"><button class="btn line sm" data-act="upd">+ Update</button> <button class="btn primary sm">Open ▸</button></div></div>`;
+    }).join('') : '<div class="daynone">Nothing is due on this day.</div>')
+      + '<div><button class="btn line sm" data-add>+ New item due this day</button></div></div>';
+  } else {
+    let s, n, first = -Infinity, next = Infinity;
+    if (ui.mode === 'week') { s = weekStartOf(cur); n = 7; label = fmt(numIso(s)) + '  –  ' + fmt(numIso(s + 6)); }
+    else {
+      const [y, m] = numIso(cur).split('-').map(Number);
+      first = Date.UTC(y, m - 1, 1) / 864e5; next = Date.UTC(y, m, 1) / 864e5;
+      s = weekStartOf(first); n = Math.ceil((next - s) / 7) * 7; label = longDate(cur, {month: 'long', year: 'numeric'});
+    }
+    const lim = ui.mode === 'month' ? 4 : 0;
+    html = `<div class="cg ${ui.mode}">` + [0,1,2,3,4,5,6].map(i => `<div class="dh7">${DAYS[(db.weekStart + i) % 7].slice(0, 3)}</div>`).join('');
+    for (let d = s; d < s + n; d++) {
+      const evs = by.get(d) || [], iso = numIso(d), dom = +iso.slice(8);
+      html += `<div class="cd${d < first || d >= next ? ' out' : ''}${d === T ? ' today' : ''}" data-day="${d}"><div class="dn"><span data-goto title="Open this day">${dom}${dom === 1 || d === s ? ' ' + MON[iso.slice(5, 7) - 1] : ''}</span><button class="add" data-add title="New item due this day" aria-label="New item due ${fmt(iso)}">+</button></div>`
+        + (lim && evs.length > lim ? evs.slice(0, lim - 1).map(it => evChip(it)).join('') + `<button class="more" data-goto>+${evs.length - lim + 1} more</button>` : evs.map(it => evChip(it, !lim)).join('')) + '</div>';
+    }
+    html += '</div>';
+  }
+  $('calBody').innerHTML = html; $('cLabel').textContent = label;
+  $('calNoDue').hidden = !nodue.length;
+  $('calNoDue').innerHTML = `No due date (${nodue.length})` + nodue.map(it => evChip(it)).join('');
+}
+function calMove(k) {
+  if (ui.mode === 'day') cur += k; else if (ui.mode === 'week') cur += 7 * k;
+  else { const [y, m] = numIso(cur).split('-').map(Number); cur = Date.UTC(y, m - 1 + k, 1) / 864e5; }
+  render();
+}
+$('cPrev').onclick = () => calMove(-1); $('cNext').onclick = () => calMove(1);
+$('cToday').onclick = () => { cur = dayNum(today()); render(); };
+$('vSeg').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (!b) return; ui.view = b.dataset.view; sel.clear(); saveUi(); render(); });
+$('mSeg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (!b) return; ui.mode = b.dataset.mode; saveUi(); render(); });
+$('cal').addEventListener('click', e => {
+  const ev = e.target.closest('[data-id]'), cell = e.target.closest('[data-day]');
+  if (ev) { e.target.closest('[data-act=upd]') ? openUpd(+ev.dataset.id) : openItem(+ev.dataset.id); }
+  else if (cell && e.target.closest('[data-add]')) openItem(null, numIso(+cell.dataset.day));
+  else if (cell && e.target.closest('[data-goto]')) { cur = +cell.dataset.day; ui.mode = 'day'; saveUi(); render(); }
+});
+
 /* ---------- full screen ---------- */
 $('bFull').onclick = () => {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -892,6 +1022,7 @@ document.addEventListener('keydown', e => {
   if (k === 'n') { e.preventDefault(); openItem(null); }
   else if (k === 'f') $('bFull').click();
   else if (k === '/') { e.preventDefault(); $('q').focus(); }
+  else if (ui.view === 'cal' && (k === 'arrowleft' || k === 'arrowright')) calMove(k === 'arrowleft' ? -1 : 1);
 });
 
 $('todayTxt').textContent = 'Today: ' + fmt(today());
