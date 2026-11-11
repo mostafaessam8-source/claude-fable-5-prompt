@@ -179,6 +179,38 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
 .nodue .ev{width:auto;max-width:280px}
 @media (max-width:720px){.dayc{grid-template-columns:minmax(0,1fr)}}
 
+/* ---------- gantt ---------- */
+#gantt{display:flex;flex-direction:column;overflow:hidden}
+#gantt[hidden]{display:none}
+#gantt .calbar{position:static;flex:none}
+.calbar select{height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 8px}
+.gscroll{flex:1;min-height:0;overflow:auto}
+.gt{position:relative;width:max-content;min-width:100%;--lw:300px}
+.gr{display:flex;border-bottom:1px solid var(--line);height:34px;cursor:pointer}
+.gr:hover .gl,.gr:hover .gtrack{background-color:#F7FAFB}
+.gl{position:sticky;left:0;z-index:2;background:#fff;width:var(--lw);flex:none;padding:0 10px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--line);min-width:0}
+.gtt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13px}
+.gtt.done{color:var(--muted);text-decoration:line-through}
+.gtrack{position:relative;flex:1 0 auto;background-image:linear-gradient(to right,var(--line) 1px,transparent 1px)}
+.gr.gg{height:28px;cursor:default}
+.gr.gg .gl,.gr.gg .gtrack{background:#EEF4F6;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue-d)}
+.gh{display:flex;position:sticky;top:0;z-index:4;background:#FAFBFC;border-bottom:1px solid var(--line)}
+.gh .gl{z-index:5;background:#FAFBFC;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.gm,.gk{display:flex}
+.gm div{flex:none;padding:4px 8px;font-weight:700;font-size:12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;height:26px}
+.gk div{flex:none;font-size:11px;line-height:1.15;color:var(--muted);text-align:center;border-right:1px solid var(--line);padding:3px 0;overflow:hidden;white-space:nowrap}
+.gk small{display:block;font-size:9px}
+.gk .tt{background:var(--blue);color:#fff}
+.gb{position:absolute;top:6px;height:21px;border-radius:5px;overflow:hidden;border:1px solid transparent;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.gb i{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.2)}
+.gb span{position:relative}
+.gb.c-on-track,.gb.c-no-due-date{border-color:#9cc6d0}
+.gb.c-due-this-week{border-color:#e6c46e}
+.gr:hover .gb{filter:brightness(.95)}
+.gnow{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.65;z-index:1;pointer-events:none}
+#gantt .nodue{flex:none;position:static}
+@media (max-width:720px){.gt{--lw:150px}}
+
 /* ---------- attachments / bulk / switch ---------- */
 .clipb{border:0;background:none;border-radius:6px;height:32px;font-size:15px;color:var(--muted)}
 .clipb:hover{background:var(--light)}
@@ -249,7 +281,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
 <section class="kpis" id="kpis"></section>
 
 <section class="tools">
-  <div class="seg" id="vSeg" role="group" aria-label="View"><button data-view="table">Table</button><button data-view="cal">Calendar</button></div>
+  <div class="seg" id="vSeg" role="group" aria-label="View"><button data-view="table">Table</button><button data-view="cal">Calendar</button><button data-view="gantt">Gantt</button></div>
   <input type="search" id="q" placeholder="Search title, project, people, updates…" aria-label="Search">
   <select id="fType" aria-label="Type"><option value="">All types</option></select>
   <select id="fStatus" aria-label="Status"><option value="">All statuses</option></select>
@@ -271,6 +303,17 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   </div>
   <div id="calBody"></div>
   <div class="nodue" id="calNoDue"></div>
+</div>
+
+<div class="wrap" id="gantt" hidden>
+  <div class="calbar">
+    <div class="seg" id="zSeg" role="group" aria-label="Gantt zoom"><button data-zoom="day">Day</button><button data-zoom="week">Week</button><button data-zoom="month">Month</button></div>
+    <button class="btn line sm" id="gToday">Today</button>
+    <label class="wk" style="margin-left:6px">Group by<select id="gGroup"><option value="type">Type</option><option value="project">Project</option><option value="status">Status</option><option value="none">None</option></select></label>
+    <span style="flex:1"></span><span class="hint">Bars run from start date to due date · the dark part is progress · red line is today</span>
+  </div>
+  <div class="gscroll" id="gScroll"><div id="gBody"></div></div>
+  <div class="nodue" id="gNoDate"></div>
 </div>
 
 <div class="wrap" id="wrapT">
@@ -545,6 +588,8 @@ function render() {
   document.querySelectorAll('#vSeg button').forEach(b => b.classList.toggle('on', b.dataset.view === ui.view));
   document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === ui.mode));
   if (ui.view === 'cal') renderCal(list);
+  $('gantt').hidden = ui.view !== 'gantt';
+  if (ui.view === 'gantt') renderGantt(list);
   updateBulk();
   $('count').textContent = list.length === db.items.length ? `${list.length} items` : `${list.length} of ${db.items.length} items`;
   // autocomplete lists
@@ -828,9 +873,11 @@ $('bBulkDel').onclick = async () => {
 };
 
 /* ---------- calendar view ---------- */
-const ui = {view: 'cal', mode: 'week'};                       // calendar / week is the default; the last choice is remembered
+const ui = {view: 'cal', mode: 'week', gz: 'week', gg: 'type'};                       // calendar / week is the default; the last choice is remembered
 try { Object.assign(ui, JSON.parse(localStorage.getItem(KEY + '-view') || '{}')); } catch (e) {}
-if (!['table','cal'].includes(ui.view)) ui.view = 'cal';
+if (!['table','cal','gantt'].includes(ui.view)) ui.view = 'cal';
+if (!['day','week','month'].includes(ui.gz)) ui.gz = 'week';
+if (!['type','project','status','none'].includes(ui.gg)) ui.gg = 'type';
 if (!['day','week','month'].includes(ui.mode)) ui.mode = 'week';
 const saveUi = () => { try { localStorage.setItem(KEY + '-view', JSON.stringify(ui)); } catch (e) {} };
 let cur = dayNum(today());                                    // the day the calendar is centred on
@@ -890,7 +937,7 @@ function calMove(k) {
 }
 $('cPrev').onclick = () => calMove(-1); $('cNext').onclick = () => calMove(1);
 $('cToday').onclick = () => { cur = dayNum(today()); render(); };
-$('vSeg').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (!b) return; ui.view = b.dataset.view; sel.clear(); saveUi(); render(); });
+$('vSeg').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (!b) return; ui.view = b.dataset.view; sel.clear(); gJump = true; saveUi(); render(); });
 $('mSeg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (!b) return; ui.mode = b.dataset.mode; saveUi(); render(); });
 $('cal').addEventListener('click', e => {
   const ev = e.target.closest('[data-id]'), cell = e.target.closest('[data-day]');
@@ -898,6 +945,53 @@ $('cal').addEventListener('click', e => {
   else if (cell && e.target.closest('[data-add]')) openItem(null, numIso(+cell.dataset.day));
   else if (cell && e.target.closest('[data-goto]')) { cur = +cell.dataset.day; ui.mode = 'day'; saveUi(); render(); }
 });
+
+/* ---------- gantt view ---------- */
+const GPX = {day: 34, week: 14, month: 5};                    // pixels per day at each zoom
+let gJump = true;                                             // scroll to today on the next draw
+function renderGantt(list) {
+  const T = dayNum(today()), px = GPX[ui.gz], rows = [], nodate = [];
+  list.forEach(it => {
+    let a = dayNum(it.start), b = dayNum(it.due);
+    if (a === null && b === null) { nodate.push(it); return; }
+    if (a === null) a = b; if (b === null) b = a; if (a > b) [a, b] = [b, a];
+    rows.push({it, a, b});
+  });
+  document.querySelectorAll('#zSeg button').forEach(b => b.classList.toggle('on', b.dataset.zoom === ui.gz));
+  $('gGroup').value = ui.gg;
+  $('gNoDate').hidden = !nodate.length;
+  $('gNoDate').innerHTML = `No dates (${nodate.length})` + nodate.map(it => evChip(it)).join('');
+  if (!rows.length) { $('gBody').innerHTML = '<div class="daynone">No items with dates to show.</div>'; return; }
+  const s = weekStartOf(Math.min(T, ...rows.map(r => r.a)) - 3), e = weekStartOf(Math.max(T, ...rows.map(r => r.b)) + 10) + 6, W = (e - s + 1) * px;
+  let months = '', ticks = '';
+  for (let d = s; d <= e;) {
+    const [y, m] = numIso(d).split('-').map(Number), end = Math.min(e + 1, Date.UTC(y, m, 1) / 864e5), w = (end - d) * px;
+    months += `<div style="width:${w}px">${w > 62 ? MON[m - 1] + ' ' + y : ''}</div>`; d = end;
+  }
+  if (ui.gz === 'day') for (let d = s; d <= e; d++) ticks += `<div class="${d === T ? 'tt' : ''}" style="width:${px}px">${+numIso(d).slice(8)}<small>${DAYS[dow(d)].slice(0, 2)}</small></div>`;
+  else for (let d = s; d <= e; d += 7) ticks += `<div style="width:${7 * px}px">${ui.gz === 'week' ? fmt(numIso(d)).slice(0, 6) : +numIso(d).slice(8)}</div>`;
+  const keyOf = it => ui.gg === 'type' ? it.type || 'No type' : ui.gg === 'project' ? it.project || 'No project' : ui.gg === 'status' ? it.status || 'No status' : '';
+  const order = ui.gg === 'type' ? TYPES : ui.gg === 'status' ? STATS : [];
+  const groups = new Map();
+  rows.sort((x, y) => x.a - y.a || x.it.id - y.it.id).forEach(r => { const k = keyOf(r.it); groups.set(k, [...(groups.get(k) || []), r]); });
+  const keys = [...groups.keys()].sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99) || a.localeCompare(b));
+  let html = `<div class="gt"><div class="gh"><div class="gl">Item</div><div style="width:${W}px"><div class="gm">${months}</div><div class="gk">${ticks}</div></div></div>`;
+  for (const k of keys) {
+    if (ui.gg !== 'none') html += `<div class="gr gg"><div class="gl">${esc(k)} (${groups.get(k).length})</div><div class="gtrack" style="width:${W}px;background-image:none"></div></div>`;
+    for (const {it, a, b} of groups.get(k)) {
+      const w = Math.max((b - a + 1) * px, 8);
+      html += `<div class="gr" data-id="${it.id}"><div class="gl" title="${esc(it.title)}"><span class="id">${pad(it.id)}</span><span class="gtt${isOpen(it) ? '' : ' done'}">${esc(it.title)}</span></div>`
+        + `<div class="gtrack" style="width:${W}px;background-size:${7 * px}px 100%"><div class="gb c-${slug(dueStatus(it))}" style="left:${(a - s) * px}px;width:${w}px" `
+        + `title="${esc(it.title)}&#10;${fmt(it.start) || '—'} ➜ ${fmt(it.due) || '—'}&#10;${esc(it.status || 'no status')} · ${it.progress}% · ${dueStatus(it)}"><i style="width:${it.progress}%"></i>${w >= 40 ? `<span>${it.progress}%</span>` : ''}</div></div></div>`;
+    }
+  }
+  $('gBody').innerHTML = html + `<div class="gnow" style="left:calc(var(--lw) + ${(T - s) * px + px / 2 - 1}px)"></div></div>`;
+  if (gJump) { gJump = false; const sc = $('gScroll'); sc.scrollLeft = Math.max(0, (T - s) * px - (sc.clientWidth - 300) / 3); }
+}
+$('zSeg').addEventListener('click', e => { const b = e.target.closest('[data-zoom]'); if (!b) return; ui.gz = b.dataset.zoom; gJump = true; saveUi(); render(); });
+$('gGroup').onchange = e => { ui.gg = e.target.value; saveUi(); render(); };
+$('gToday').onclick = () => { gJump = true; render(); };
+$('gantt').addEventListener('click', e => { const r = e.target.closest('[data-id]'); if (r) openItem(+r.dataset.id); });
 
 /* ---------- full screen ---------- */
 $('bFull').onclick = () => {
