@@ -57,7 +57,8 @@ button{cursor:pointer}
 .tools{display:flex;gap:8px;padding:10px 20px;align-items:center;flex-wrap:wrap}
 .tools input[type=search],.tools select{height:36px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 10px}
 .tools input[type=search]{flex:1 1 220px;min-width:160px}
-.count{color:var(--muted);font-size:12.5px;margin-left:auto}
+.count{color:var(--muted);font-size:12.5px}
+.wk{margin-left:auto;font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 
 /* ---------- table ---------- */
 .wrap{flex:1;min-height:240px;margin:0 20px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
@@ -126,11 +127,11 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .sec .btn{text-transform:none;letter-spacing:0;order:2}
 .log{counter-reset:n;display:flex;flex-direction:column;gap:8px}
-.lr{counter-increment:n;display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px;gap:6px;align-items:start;background:#FFFBEF;border:1px solid #F3E3B5;border-radius:8px;padding:6px}
+.lr{counter-increment:n;display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px 30px;gap:6px;align-items:start;background:#FFFBEF;border:1px solid #F3E3B5;border-radius:8px;padding:6px}
 .lr::before{content:counter(n);font-weight:700;color:var(--muted);text-align:center;padding-top:7px;font-size:12px}
 .log input,.log textarea{border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0;background:#fff;font-size:13.5px}
 .log textarea{resize:vertical;min-height:34px;field-sizing:content}
-.lh{display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px;gap:6px;padding:0 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.lh{display:grid;grid-template-columns:26px 138px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.2fr) 30px 30px 30px;gap:6px;padding:0 7px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 .del{border:0;background:none;color:var(--muted);font-size:17px;border-radius:6px;height:32px}
 .del:hover{background:#fdecec;color:var(--red)}
 .nolog{color:var(--muted);font-size:13px;padding:10px;border:1px dashed var(--line);border-radius:8px;text-align:center}
@@ -180,6 +181,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   .lr>:nth-child(2),.lr>:nth-child(3),.lr>:nth-child(4){grid-column:2}
   .lr>.del{grid-column:3;grid-row:1}
   .lr>.clipb{grid-column:3;grid-row:2}
+  .lr>.lnk{grid-row:3}
   .lr>.atts{grid-column:2}
   .today,.df .hint{display:none}
 }
@@ -213,6 +215,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <select id="fPriority" aria-label="Priority"><option value="">All priorities</option></select>
   <button class="btn line sm" id="bReset">Clear filters</button>
   <span id="bulk" hidden><b id="bulkN"></b><button class="btn danger sm" id="bBulkDel">Delete selected</button><button class="btn line sm" id="bBulkClr">Clear selection</button></span>
+  <label class="wk" title="“Due this week” counts items due up to the last day of the current week">Week starts<select id="fWeek" aria-label="Week starts on"></select></label>
   <span class="count" id="count"></span>
 </section>
 
@@ -250,7 +253,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
         <label class="f s4">Reference<input id="i_ref" autocomplete="off"></label>
       </div>
       <div class="sec">Updates &amp; Actions Log <button type="button" class="btn line sm" id="bAddLog">+ Add update</button></div>
-      <div class="lh"><span>#</span><span>Date</span><span>Update / Action taken</span><span>By</span><span>Next step</span><span></span><span></span></div>
+      <div class="lh"><span>#</span><span>Date</span><span>Update / Action taken</span><span>By</span><span>Next step</span><span></span><span></span><span></span></div>
       <div class="log" id="log"></div>
       <div class="nolog">No updates yet — click “+ Add update”.</div>
     </div>
@@ -275,7 +278,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
         <label class="f s4">Next step<input id="u_next" autocomplete="off"></label>
         <label class="f s2">Status<select id="u_status"></select></label>
         <label class="f s2">Progress<select id="u_progress"></select></label>
-        <div class="s4"><button type="button" class="btn line sm" id="uAttach">📎 Attach files</button> <span class="hint">any file or image — you can also paste or drop it here</span><div class="atts" id="uAtts"></div></div>
+        <div class="s4"><button type="button" class="btn line sm" id="uAttach">📎 Attach files</button> <button type="button" class="btn line sm" id="uLink">🔗 Add link</button> <span class="hint">or paste / drop a file here</span><div class="atts" id="uAtts"></div></div>
       </div>
     </div>
     <div class="df"><span class="sp"></span><button type="button" class="btn line" data-close>Cancel</button><button type="submit" class="btn primary">Add update</button></div>
@@ -287,6 +290,18 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <div class="dh"><h2 id="aTitle">Please confirm</h2></div>
   <div class="db" id="aMsg"></div>
   <div class="df"><span class="sp"></span><button class="btn line" id="aNo">Cancel</button><button class="btn primary" id="aYes">OK</button></div>
+</dialog>
+
+<!-- add link -->
+<dialog id="dLink" class="tiny">
+  <form id="fLink" novalidate>
+    <div class="dh"><h2>Add link</h2><button type="button" class="x" id="lX" aria-label="Close">×</button></div>
+    <div class="db"><div class="grid">
+      <label class="f s4">Link *<input id="l_url" placeholder="https://…  or  \\server\folder\file" autocomplete="off"></label>
+      <label class="f s4">Name (optional)<input id="l_name" placeholder="e.g. MoM on SharePoint" autocomplete="off"></label>
+    </div></div>
+    <div class="df"><span class="sp"></span><button type="button" class="btn line" id="lNo">Cancel</button><button type="submit" class="btn primary">Add link</button></div>
+  </form>
 </dialog>
 
 <!-- image viewer -->
@@ -323,7 +338,7 @@ let db = JSON.parse($('seed').textContent);
 let canStore = true, dirty = false, idb = null, autoSave = true;
 const AKEY = KEY + '-autosave';
 try { autoSave = localStorage.getItem(AKEY) !== '0'; } catch (e) {}
-const fix = d => { d.items.forEach(it => { it.log = it.log || []; it.log.forEach(l => l.files = l.files || []); }); return d; };
+const fix = d => { if (!(d.weekStart >= 0 && d.weekStart <= 6)) d.weekStart = 0; d.items.forEach(it => { it.log = it.log || []; it.log.forEach(l => l.files = l.files || []); }); return d; };
 fix(db);
 // IndexedDB holds the data (no size limit problem with attachments); localStorage is the fallback
 const idbOpen = () => new Promise(res => {
@@ -374,7 +389,8 @@ function dueStatus(it) {
   if (!isOpen(it)) return it.status;
   const d = dayNum(it.due); if (d === null) return 'No Due Date';
   const n = d - dayNum(today());
-  return n < 0 ? 'Overdue' : n === 0 ? 'Due Today' : n <= 7 ? 'Due This Week' : 'On Track';
+  const toWeekEnd = (db.weekStart + 6 - new Date().getDay() + 7) % 7;      // days from today to the last day of this week
+  return n < 0 ? 'Overdue' : n === 0 ? 'Due Today' : n <= toWeekEnd ? 'Due This Week' : 'On Track';
 }
 function daysLeft(it) { const d = dayNum(it.due); return (!isOpen(it) || d === null) ? '' : d - dayNum(today()); }
 const last = it => it.log.length ? it.log[it.log.length-1] : {date:'',text:'',by:'',next:''};
@@ -470,6 +486,7 @@ function render() {
 <td class="act"><button class="btn line sm" data-act="upd" title="Add an update">+ Update</button> <button class="btn primary sm" data-act="open">Open ▸</button></td></tr>`;
   }).join('');
   $('empty').hidden = list.length > 0;
+  $('fWeek').value = db.weekStart;
   updateBulk();
   $('count').textContent = list.length === db.items.length ? `${list.length} items` : `${list.length} of ${db.items.length} items`;
   // autocomplete lists
@@ -514,9 +531,9 @@ function dataToBlob(data) {
 }
 function drawAtts(box, files, editable) {
   box.replaceChildren(...files.map((f, i) => {
-    const a = document.createElement('span'); a.className = 'att'; a.title = 'Open ' + f.name;
-    a.innerHTML = (isImg(f) ? `<img src="${esc(f.data)}" alt="">` : `<span class="ico">${esc((/\.([^.]{1,4})$/.exec(f.name) || [,'file'])[1])}</span>`)
-      + `<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small>` + (editable ? '<button type="button" class="rm" title="Remove attachment" aria-label="Remove attachment">×</button>' : '');
+    const a = document.createElement('span'); a.className = 'att'; a.title = f.url || 'Open ' + f.name;
+    a.innerHTML = (isImg(f) ? `<img src="${esc(f.data)}" alt="">` : f.url ? '<span class="ico" style="font-size:14px">🔗</span>' : `<span class="ico">${esc((/\.([^.]{1,4})$/.exec(f.name) || [,'file'])[1])}</span>`)
+      + `<span class="nm">${esc(f.name)}</span><small>${f.url ? '' : fsize(f.size)}</small>` + (editable ? '<button type="button" class="rm" title="Remove attachment" aria-label="Remove attachment">×</button>' : '');
     a.onclick = e => { if (e.target.classList.contains('rm')) { files.splice(i, 1); drawAtts(box, files, editable); } else openAtt(f); };
     return a;
   }));
@@ -530,8 +547,37 @@ async function addFiles(list, files, box) {
   }
   drawAtts(box, files, true);
 }
+function normUrl(s) {
+  s = s.trim(); if (!s) return null;
+  if (/^\\\\/.test(s)) return 'file:' + s.replace(/\\/g, '/');                 // \\server\share\file
+  if (/^[a-z]:[\\/]/i.test(s)) return 'file:///' + s.replace(/\\/g, '/');       // C:\folder\file
+  if (/^(https?|mailto|file|ftp):/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+.-]*:(?!\d)/i.test(s)) return null;                          // any other scheme is refused
+  return 'https://' + s;
+}
+function askLink() {
+  return new Promise(res => {
+    const d = $('dLink'); $('l_url').value = $('l_name').value = '';
+    const done = v => { d.close(); res(v); };
+    $('lNo').onclick = $('lX').onclick = () => done(null);
+    d.oncancel = e => { e.preventDefault(); done(null); };
+    $('fLink').onsubmit = e => {
+      e.preventDefault();
+      const url = normUrl($('l_url').value);
+      if (!url) { $('l_url').focus(); toast('Enter a valid link'); return; }
+      done({url, name: $('l_name').value.trim() || $('l_url').value.trim()});
+    };
+    d.showModal(); $('l_url').focus();
+  });
+}
+async function addLink(files, box) {
+  const l = await askLink(); if (!l) return;
+  files.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: l.name, url: l.url});
+  drawAtts(box, files, true);
+}
 function pickFiles(cb) { const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.onchange = () => cb([...i.files]); i.click(); }
 function openAtt(f) {
+  if (f.url) { window.open(f.url, '_blank', 'noopener'); return; }
   if (isImg(f)) {
     $('vName').textContent = f.name; $('vImg').src = f.data;
     $('vDl').onclick = () => download(dataToBlob(f.data), f.name);
@@ -560,6 +606,7 @@ function logRow(l = {}) {
 <input data-k="by" list="lPeople" placeholder="By" value="${esc(l.by || '')}" autocomplete="off" aria-label="By">
 <input data-k="next" placeholder="Next step" value="${esc(l.next || '')}" autocomplete="off" aria-label="Next step">
 <button type="button" class="clipb" title="Attach files or images to this update" aria-label="Attach files">📎</button>
+<button type="button" class="clipb lnk" title="Add a link to this update" aria-label="Add link">🔗</button>
 <button type="button" class="del" title="Remove this update" aria-label="Remove">×</button>
 <div class="atts"></div>`;
   r._files = (l.files || []).slice();
@@ -607,6 +654,7 @@ $('bAddLog').onclick = () => { const r = logRow({date: today()}); $('log').appen
 $('log').addEventListener('click', e => {
   const r = e.target.closest('.lr'); if (!r) return;
   if (e.target.classList.contains('del')) r.remove();
+  else if (e.target.classList.contains('lnk')) addLink(r._files, r.querySelector('.atts'));
   else if (e.target.classList.contains('clipb')) pickFiles(fs => addFiles(fs, r._files, r.querySelector('.atts')));
 });
 dropZone($('log'), e => { const r = e.target.closest('.lr'); return r && {files: r._files, box: r.querySelector('.atts')}; });
@@ -639,6 +687,7 @@ function openUpd(id) {
   updFiles = []; drawAtts($('uAtts'), updFiles, true);
   $('dUpd').showModal(); $('u_text').focus();
 }
+$('uLink').onclick = () => addLink(updFiles, $('uAtts'));
 $('uAttach').onclick = () => pickFiles(fs => addFiles(fs, updFiles, $('uAtts')));
 dropZone($('fUpd'), () => ({files: updFiles, box: $('uAtts')}));
 $('u_status').addEventListener('change', e => { if (e.target.value === 'Closed') $('u_progress').innerHTML = opts(PROGS, 100, x => x + '%'); });
@@ -695,6 +744,9 @@ $('kpis').addEventListener('click', e => {
   flt.quick = flt.quick === b.dataset.quick ? '' : b.dataset.quick; render();
 });
 $('fType').innerHTML += opts(TYPES); $('fStatus').innerHTML += opts(STATS); $('fPriority').innerHTML += opts(PRIOS);
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+$('fWeek').innerHTML = DAYS.map((d, i) => `<option value="${i}">${d}</option>`).join('');
+$('fWeek').onchange = e => { db.weekStart = +e.target.value; commit('Week starts on ' + DAYS[db.weekStart]); };
 $('q').oninput = e => { flt.q = e.target.value; render(); };
 $('fType').onchange = e => { flt.type = e.target.value; render(); };
 $('fStatus').onchange = e => { flt.status = e.target.value; render(); };
@@ -820,7 +872,7 @@ function buildXlsx() {
       it.progress / 100, dueStatus(it), daysLeft(it), l.text, l.next, l.date, it.desc, it.output, it.ref, it.cc, it.log.length]; })});
   const log = sheetXml({freezeCols: 2, title: '  SAR  |  Updates & Actions Log', sub,
     cols: [{h:'Item ID',w:8,k:'c'},{h:'Title / Subject',w:42},{h:'#',w:5,k:'c'},{h:'Date',w:12,k:'d'},{h:'Update / Action Taken',w:70},{h:'By',w:22},{h:'Next Step',w:40},{h:'Attachments',w:36}],
-    rows: items.flatMap(it => it.log.map((l,i) => [pad(it.id), it.title, i+1, l.date, l.text, l.by, l.next, l.files.map(f => f.name).join(', ')]))});
+    rows: items.flatMap(it => it.log.map((l,i) => [pad(it.id), it.title, i+1, l.date, l.text, l.by, l.next, l.files.map(f => f.url && f.url !== f.name ? `${f.name} (${f.url})` : f.name).join(', ')]))});
   const X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', P = 'http://schemas.openxmlformats.org/package/2006/';
   return zip([
     ['[Content_Types].xml', X + `<Types xmlns="${P}content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
@@ -854,7 +906,7 @@ showSaved(); render();
   if (best !== db && !dirty) {
     const data = new Map();            // attachment contents by id, from the file itself and from IndexedDB
     for (const src of [db, recOk ? fix(rec) : null]) if (src) src.items.forEach(it => it.log.forEach(l => l.files.forEach(f => f.data && data.set(f.id, f.data))));
-    fix(best).items.forEach(it => it.log.forEach(l => { l.files.forEach(f => f.data = f.data || data.get(f.id)); l.files = l.files.filter(f => f.data); }));
+    fix(best).items.forEach(it => it.log.forEach(l => { l.files.forEach(f => { if (!f.url) f.data = f.data || data.get(f.id); }); l.files = l.files.filter(f => f.data || f.url); }));
     db = best;
   }
   showSaved(); render();
