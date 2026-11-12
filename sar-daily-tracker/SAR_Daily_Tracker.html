@@ -274,7 +274,11 @@ td.chk,thead th.chk{width:34px;padding-right:0;cursor:default}
 thead th.chk input{accent-color:var(--yellow)}
 tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
 #bulk{display:inline-flex;align-items:center;gap:8px;background:#FFF8E1;border:1px solid #F3E3B5;border-radius:8px;padding:3px 5px 3px 12px;font-size:13px}
-#bulk[hidden],#bSaveNow[hidden],#mAdd[hidden]{display:none}
+#bulk[hidden],#bSaveNow[hidden],#mAdd[hidden],#cOff[hidden],#cNow[hidden]{display:none}
+#bCloud.on{background:rgba(255,255,255,.28)}
+#bCloud.err{background:var(--red);border-color:var(--red)}
+.steps{margin:0 0 14px;padding-left:20px;font-size:13px;color:#55504c}
+.steps li{margin:3px 0}
 #dView{width:auto;min-width:min(360px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
 #dView .db{padding:0;background:#22292b;display:grid;place-items:center}
 #dView img{max-width:100%;max-height:calc(100vh - 110px);display:block}
@@ -317,6 +321,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
     <button class="btn accent" id="bNew" title="Add a new item (N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Item</button>
     <button class="btn" id="bXlsx" title="Export to Excel (.xlsx)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Export Excel</button>
     <button class="btn ghost" id="bImp" title="Import items from an Excel tracker file (.xlsx / .xlsm)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0l-4 4m4-4l4 4M4 17v3h16v-3"/></svg>Import Excel</button>
+    <button class="btn ghost" id="bCloud" title="Keep your data in your own private GitHub repository so it opens on any device"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18z"/></svg><span id="cloudTxt">Cloud sync</span></button>
     <button class="btn ghost" id="bSave" title="Download a copy of this file with all current data and attachments inside"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM8 3v6h7V3M8 21v-7h8v7"/></svg>Save File</button>
     <button class="btn ghost" id="bFull" title="Full screen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullTxt">Full Screen</span></button>
   </div>
@@ -435,6 +440,29 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <div class="df"><span class="sp"></span><button class="btn line" id="aNo">Cancel</button><button class="btn primary" id="aYes">OK</button></div>
 </dialog>
 
+<!-- cloud sync -->
+<dialog id="dCloud" class="small">
+  <form id="fCloud" novalidate>
+    <div class="dh"><h2>Cloud sync</h2><button type="button" class="x" id="cX" aria-label="Close">×</button></div>
+    <div class="db">
+      <p style="margin:0 0 8px;font-size:13.5px">Keeps your tracker in a <b>private GitHub repository of your own</b>, so the same data opens on any device. One-time setup:</p>
+      <ol class="steps">
+        <li>On GitHub, create a new <b>private</b> repository (any name, e.g. <code>sar-tracker-data</code>).</li>
+        <li>GitHub → Settings → Developer settings → Fine-grained tokens → generate a token with access to <b>only that repository</b> and the permission <b>Contents: Read and write</b>.</li>
+        <li>Enter both below — once on each device you use.</li>
+      </ol>
+      <div class="grid">
+        <label class="f s4">Repository (owner/name)<input id="c_repo" placeholder="your-username/sar-tracker-data" autocomplete="off" spellcheck="false"></label>
+        <label class="f s4">Access token<input id="c_token" type="password" placeholder="github_pat_…" autocomplete="off"></label>
+        <label class="f s4">Data file name<input id="c_path" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <p id="cStat" style="margin:12px 0 0;font-weight:600;font-size:13px"></p>
+      <p class="hint" style="margin:6px 0 0">The token is stored only in this browser and is sent only to GitHub.</p>
+    </div>
+    <div class="df"><button type="button" class="btn danger" id="cOff">Disconnect</button><span class="sp"></span><button type="button" class="btn line" id="cNow">Sync now</button><button type="submit" class="btn primary">Save &amp; connect</button></div>
+  </form>
+</dialog>
+
 <!-- import -->
 <dialog id="dImp" class="small">
   <div class="dh"><h2>Import from Excel</h2><button class="x" id="mX" aria-label="Close">×</button></div>
@@ -515,8 +543,8 @@ const idbGet = () => new Promise(res => {
 const idbPut = v => new Promise(res => {
   try { const tx = idb.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, 'db'); tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); }
 });
-function persist() {
-  db.savedAt = Date.now(); dirty = false;
+function persist(stamp) {          // stamp: keep a given save time (data just loaded from the cloud)
+  db.savedAt = stamp || Date.now(); dirty = false;
   // localStorage is written synchronously (safe even if the tab is closed right away); with IndexedDB
   // available it holds everything except the attachment contents, which live in IndexedDB
   let lsOk = true;
@@ -524,6 +552,7 @@ function persist() {
   if (idb) idbPut(db).then(ok => { if (!ok && (!lsOk || nAttAll())) { canStore = false; dirty = true; showSaved(); toast('Could not save in the browser — use Save File'); } });
   else if (!lsOk) { canStore = false; dirty = true; }
   showSaved();
+  if (!stamp) cloudSoon();
 }
 function showSaved() {
   const t = new Date(db.savedAt || 0), hm = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
@@ -682,9 +711,9 @@ function applyStatus(it, s) {
 }
 
 /* ---------- confirm dialog ---------- */
-function ask(msg, yes = 'OK', danger = false) {
+function ask(msg, yes = 'OK', danger = false, no = 'Cancel') {
   return new Promise(res => {
-    const d = $('dAsk'); $('aMsg').textContent = msg; $('aYes').textContent = yes;
+    const d = $('dAsk'); $('aMsg').textContent = msg; $('aYes').textContent = yes; $('aNo').textContent = no;
     $('aYes').className = 'btn ' + (danger ? 'danger' : 'primary');
     const done = v => { d.close(); $('aYes').onclick = $('aNo').onclick = d.oncancel = null; res(v); };
     $('aYes').onclick = () => done(true); $('aNo').onclick = () => done(false);
@@ -1453,6 +1482,98 @@ $('bImp').onclick = () => {
   inp.click();
 };
 
+/* ---------- cloud sync: the data file lives in the user's own private GitHub repository ---------- */
+const CKEY = KEY + '-cloud';
+let cloud = null, cloudSha = null, cloudBusy = false, cloudAgain = false, cloudT = 0, cloudLast = 0;
+try { cloud = JSON.parse(localStorage.getItem(CKEY) || 'null'); } catch (e) {}
+const saveCloud = () => { try { cloud ? localStorage.setItem(CKEY, JSON.stringify(cloud)) : localStorage.removeItem(CKEY); } catch (e) {} };
+const hhmm = t => String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+function cloudStatus(msg, err) {
+  $('cloudTxt').textContent = !cloud ? 'Cloud sync' : err ? 'Sync error' : msg;
+  $('bCloud').classList.toggle('err', !!cloud && !!err); $('bCloud').classList.toggle('on', !!cloud && !err);
+  $('cStat').textContent = cloud ? msg : 'Not connected.'; $('cStat').style.color = err ? 'var(--red)' : '';
+  $('cOff').hidden = $('cNow').hidden = !cloud;
+}
+const b64enc = s => { const u = new TextEncoder().encode(s); let o = ''; for (let i = 0; i < u.length; i += 0x8000) o += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(o); };
+const b64dec = s => { const bin = atob(s.replace(/\s/g, '')), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); };
+function ghFetch(method, body, raw) {
+  const url = 'https://api.github.com/repos/' + cloud.repo + '/contents/' + cloud.path.split('/').map(encodeURIComponent).join('/');
+  return fetch(url + (method === 'GET' ? '?_=' + Date.now() : ''), {method, cache: 'no-store', body: body ? JSON.stringify(body) : undefined,
+    headers: {Authorization: 'Bearer ' + cloud.token, Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json'}});
+}
+async function cloudPull() {           // -> {none: true} when the file does not exist yet, else {data}
+  const r = await ghFetch('GET');
+  if (r.status === 401) throw new Error('GitHub rejected the token');
+  if (r.status === 404) {
+    const rr = await fetch('https://api.github.com/repos/' + cloud.repo, {cache: 'no-store', headers: {Authorization: 'Bearer ' + cloud.token}});
+    if (!rr.ok) throw new Error(rr.status === 401 ? 'GitHub rejected the token' : 'Repository not found, or the token has no access to it');
+    cloudSha = null; return {none: true};
+  }
+  if (!r.ok) throw new Error('GitHub answered ' + r.status);
+  const j = await r.json(); cloudSha = j.sha;
+  const data = JSON.parse(j.content ? b64dec(j.content) : await (await ghFetch('GET', null, true)).text());
+  if (!data || !Array.isArray(data.items)) throw new Error('The cloud file is not a tracker data file');
+  return {data: fix(data)};
+}
+async function cloudPush() {           // -> false when the cloud file changed since it was last read
+  const stamp = db.savedAt || 0, r = await ghFetch('PUT', {message: 'Update tracker data', content: b64enc(JSON.stringify(db)), ...(cloudSha ? {sha: cloudSha} : {})});
+  if (r.status === 409 || r.status === 422) return false;
+  if (r.status === 401) throw new Error('GitHub rejected the token');
+  if (r.status === 403 || r.status === 404) throw new Error('The token cannot write to this repository (it needs “Contents: Read and write”)');
+  if (!r.ok) throw new Error('GitHub answered ' + r.status);
+  cloudSha = (await r.json()).content.sha; cloud.syncedAt = stamp; saveCloud(); return true;
+}
+function adopt(data) { db = data; persist(db.savedAt || 1); cloud.syncedAt = db.savedAt; saveCloud(); sel.clear(); gJump = true; render(); }
+const cloudSoon = () => { if (cloud) { clearTimeout(cloudT); cloudT = setTimeout(cloudSync, 1500); } };
+async function cloudSync(manual) {
+  if (!cloud) return;
+  if (cloudBusy) { cloudAgain = true; return; }
+  if (dirty) { cloudStatus('Waiting — unsaved changes'); return; }
+  if (!manual && document.querySelector('#dItem[open],#dUpd[open],#dAsk[open],#dImp[open]')) { cloudSoon(); return; }   // never swap data under an open editor
+  cloudBusy = true; cloudLast = Date.now(); cloudStatus('Syncing…');
+  try {
+    for (let i = 0; ; i++) {
+      if (i > 3) throw new Error('The cloud file keeps changing — try again');
+      const remote = await cloudPull();
+      if (remote.none) { if (await cloudPush()) break; continue; }
+      const first = cloud.syncedAt == null, rc = first || (remote.data.savedAt || 0) !== cloud.syncedAt, lc = first ? db.items.length > 0 : (db.savedAt || 0) !== cloud.syncedAt;
+      if (rc && lc && (remote.data.savedAt || 0) !== (db.savedAt || 0)) {
+        const when = d => d.savedAt > 1e6 ? fmt(iso(new Date(d.savedAt))) + ' ' + hhmm(new Date(d.savedAt)) : 'unknown time';
+        const useCloud = await ask(`The cloud copy (${remote.data.items.length} items, saved ${when(remote.data)}) and this device (${db.items.length} items, saved ${when(db)}) are different. Which one do you want to keep? The other is replaced.`,
+          'Load the cloud copy', false, 'Keep this device’s copy');
+        if (useCloud) adopt(remote.data); else if (!(await cloudPush())) continue;
+      } else if (rc && !lc) adopt(remote.data);
+      else if (lc && !(await cloudPush())) continue;
+      else if (first) { cloud.syncedAt = db.savedAt || 0; saveCloud(); }
+      break;
+    }
+    cloudStatus('Synced ' + hhmm(new Date()));
+  } catch (e) { cloudStatus(e instanceof TypeError ? 'No connection to GitHub — will retry' : e.message, true); }
+  cloudBusy = false;
+  if (cloudAgain) { cloudAgain = false; cloudSoon(); }
+}
+$('bCloud').onclick = () => {
+  $('c_repo').value = cloud ? cloud.repo : ''; $('c_token').value = cloud ? cloud.token : ''; $('c_path').value = cloud ? cloud.path : 'sar-daily-tracker.json';
+  if (!cloud) cloudStatus('');
+  $('dCloud').showModal();
+};
+$('cX').onclick = () => $('dCloud').close();
+$('fCloud').addEventListener('submit', async e => {
+  e.preventDefault();
+  const repo = $('c_repo').value.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/+$/g, ''), token = $('c_token').value.trim(), path = $('c_path').value.trim().replace(/^\/+/, '') || 'sar-daily-tracker.json';
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { $('c_repo').focus(); toast('Write the repository as owner/name'); return; }
+  if (!token) { $('c_token').focus(); toast('Paste the access token'); return; }
+  cloud = {repo, token, path, syncedAt: cloud && cloud.repo === repo && cloud.path === path ? cloud.syncedAt : null}; cloudSha = null; saveCloud();
+  if (dirty) persist();
+  await cloudSync(true);
+  if ($('bCloud').classList.contains('on')) { $('dCloud').close(); toast('Cloud sync is on — your data now follows you to any device'); }
+});
+$('cNow').onclick = () => cloudSync(true);
+$('cOff').onclick = () => { cloud = null; saveCloud(); clearTimeout(cloudT); cloudStatus(''); toast('Cloud sync is off — the data stays in this browser and in your repository'); };
+const cloudCheck = () => { if (cloud && !document.hidden && Date.now() - cloudLast > 20000) cloudSync(); };
+document.addEventListener('visibilitychange', cloudCheck); window.addEventListener('focus', cloudCheck); setInterval(cloudCheck, 120000);
+cloudStatus(cloud ? 'Connecting…' : '');
+
 /* ---------- shortcuts ---------- */
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (autoSave) saveFile(); else { persist(); toast('Saved'); } return; }
@@ -1473,6 +1594,7 @@ showSaved(); render();
   const rec = await idbGet(), recOk = rec && Array.isArray(rec.items);
   if (recOk && (rec.savedAt||0) >= (best.savedAt||0)) best = rec;
   canStore = !!idb || lsOk;
+  setTimeout(cloudSync, 300);
   if (best !== db && !dirty) {
     const data = new Map();            // attachment contents by id, from the file itself and from IndexedDB
     for (const src of [db, recOk ? fix(rec) : null]) if (src) src.items.forEach(it => it.log.forEach(l => l.files.forEach(f => f.data && data.set(f.id, f.data))));

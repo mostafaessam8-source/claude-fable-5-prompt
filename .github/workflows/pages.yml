@@ -82,6 +82,10 @@ jobs:
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/report-compare/index.html
           sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/report-compare/index.html
+      # SAR Daily Tracker: daily tasks / activities / issues tracker (single file, no build) is published at /sar-daily-tracker/
+      # The published copy carries no data: items stay in each user's browser, or in their own private repository (Cloud sync).
+      - name: Add the SAR Daily Tracker
+        run: python3 sar-daily-tracker/build_online.py dist/sar-daily-tracker
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
