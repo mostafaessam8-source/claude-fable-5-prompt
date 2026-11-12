@@ -12,7 +12,7 @@
       <span class="logo" aria-hidden="true"></span>
       <div>
         <h1>Design Submission <b>Gantt</b></h1>
-        <p>Saudi Arabia Railways · Programme Controls · <span class="ver" id="ver">Version 7.2 · build __BUILD__</span></p>
+        <p>Saudi Arabia Railways · Programme Controls · <span class="ver" id="ver">Version 7.3 · build __BUILD__</span></p>
       </div>
     </div>
     <div class="top-actions" id="topActions" hidden>
@@ -44,6 +44,9 @@
         <div class="controls">
           <label class="ctl">Data date <small>تاريخ القطع</small>
             <input type="date" id="dataDate">
+          </label>
+          <label class="ctl">Alert window <small>أيام التنبيه</small>
+            <input type="number" id="alertDays" min="1" max="365" value="14" title="Dates inside this many days are amber; inside half of it orange">
           </label>
           <span class="ctl-btns">
             <button class="chip" id="ddBook" type="button" title="Use the data date written in the workbook">Workbook</button>
@@ -81,6 +84,7 @@
           <button class="chip" id="btnExpand" type="button">Expand all</button>
         </div>
         <div class="legend" id="legend"></div>
+        <div class="legend dlegend"><span class="dt done">Done</span><span class="dt over">Overdue</span><span class="dt soon">Due soon (≤ ½ window)</span><span class="dt near">Near (≤ window)</span><span class="dt later">Later</span><small>date colours follow the status and the data date</small></div>
         <div class="gantt-wrap" id="ganttWrap"><div class="gantt" id="gantt"></div></div>
         <p class="hint" id="rowHint"></p>
       </div>

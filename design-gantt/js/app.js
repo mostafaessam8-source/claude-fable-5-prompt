@@ -7,7 +7,7 @@
   var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
-  var S = { sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
+  var S = { alertDays: 14, sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function iso(n) { return M.serialToDate(n).toISOString().slice(0, 10); }
@@ -139,11 +139,20 @@
         var x = X_(g.d) + ppd / 2, top = it.kind === 'project' ? 9 : 8;
         bars += '<div class="ms ' + g.t + (g.actual ? '' : ' hollow') + '" data-i="' + ix + '" style="left:' + (x - 8) + 'px;top:' + top + 'px"></div>';
       });
+      function dcell(d, isApp) {
+        if (!M.isNum(d)) return '<div class="g-cell"></div>';
+        var tone = '';
+        if (it.kind === 'element' && it.status) {
+          var done = isApp ? it.status === 'Approved' : (it.status === 'Submitted' || it.status === 'Under Review' || it.status === 'Approved'), cut = S.model.meta.cut, w = S.alertDays;
+          tone = done ? 'done' : d < cut ? 'over' : d <= cut + Math.round(w / 2) ? 'soon' : d <= cut + w ? 'near' : 'later';
+        }
+        return '<div class="g-cell' + (tone ? ' dt ' + tone : '') + '">' + M.fmtDate(d).slice(0, 6) + '</div>';
+      }
       var pill = it.status ? '<span class="pill" style="background:' + HC[it.status] + (it.status === 'Not Submitted' ? ';color:#8a1c1c' : it.status === 'Partialy Submitted' ? ';color:#3d2a00' : '') + '">' + it.status + '</span>' : '<span></span>';
       var tog = hasKids[it.id] ? '<button class="toggle" type="button" data-id="' + it.id + '" aria-label="Collapse or expand">' + (S.collapsed[it.id] ? '▸' : '▾') + '</button>' : '';
       out.push('<div class="g-row ' + cls + '" style="height:30px" data-i="' + ix + '"><div class="g-left" style="padding-left:' + it.lvl * 14 + 'px">' +
         '<div class="g-name"><div class="t">' + tog + '<span title="' + h(it.label) + '">' + h(it.label) + '</span></div></div>' + pill +
-        '<div class="g-cell">' + (M.isFinite_(it.pri) ? it.pri : '') + '</div><div class="g-cell">' + h(it.rev || '') + '</div><div class="g-cell">' + (M.isNum(it.ps) ? M.fmtDate(it.ps).slice(0, 6) : '') + '</div><div class="g-cell">' + (M.isNum(it.pa) ? M.fmtDate(it.pa).slice(0, 6) : '') + '</div></div>' +
+        '<div class="g-cell">' + (M.isFinite_(it.pri) ? it.pri : '') + '</div><div class="g-cell">' + h(it.rev || '') + '</div>' + dcell(it.ps, false) + dcell(it.pa, true) + '</div>' +
         '<div class="g-plot" style="width:' + totalW + 'px"><div class="g-grid"></div>' + grid + bars + '</div></div>');
     });
     box.innerHTML = out.join('');
@@ -236,6 +245,7 @@
     $('btnPrint').addEventListener('click', function () { document.querySelector('[data-tab=gantt]').click(); window.print(); });
 
     function setCut(n) { if (n == null) return; M.recalc(S.model, n); $('dataDate').value = iso(n); render(); }
+    $('alertDays').addEventListener('change', function () { var n = parseInt(this.value, 10); S.alertDays = isFinite(n) && n > 0 ? n : 14; this.value = S.alertDays; render(); });
     $('dataDate').addEventListener('change', function () { setCut(fromIso(this.value)); });
     $('ddBook').addEventListener('click', function () { if (S.model.meta.workbookDataDate != null) setCut(S.model.meta.workbookDataDate); });
     $('ddToday').addEventListener('click', function () { setCut(M.dateToSerial(new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())))); });
