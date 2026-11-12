@@ -190,6 +190,21 @@
   var H_LABELS = ['Own submission', 'Own approval', 'Is project row', 'Separator row', 'Row kind', 'Project row', 'Last date', 'Tracker order: is project', 'Tracker order: separator', 'Tracker order: kind', 'Tracker order: project row'];
   var SUBMITTAL_COL = { 'Not Submitted': ['F8D7DA', '8A1C1C'], 'Partialy Submitted': ['F5A300', '3D2A00'], 'Submitted': ['00778B', 'FFFFFF'], 'Under Review': ['1E6FD9', 'FFFFFF'], 'Approved': ['2E7D32', 'FFFFFF'] };
   var STATUS_COL = { 'Actual': ['2E7D32', 'FFFFFF'], 'In progress': ['1E6FD9', 'FFFFFF'], 'Forecast': ['7E57C2', 'FFFFFF'], 'No dates': ['B0BEC5', '37474F'] };
+  // Date colour coding (live: depends on TODAY() and an alert-window cell the user can change)
+  var DATE_COL = { done: ['2E7D32', 'FFFFFF'], over: ['C62828', 'FFFFFF'], soon: ['F57C00', 'FFFFFF'], near: ['FFE082', '5D4037'], later: ['E3F0F7', '1B5E72'] };
+  var DONE_SUB = ['Submitted', 'Under Review', 'Approved'];
+  /* the 5 rules for one date cell: done / overdue / due within half the window (orange) / due within the window (amber) / later.
+   * st = status cell, d = date cell, win = alert window (days), gate = extra condition (e.g. "this row is an element"). */
+  function dateRules(st, d, win, doneTest, gate) {
+    var W = 'IF(ISNUMBER(' + win + '),' + win + ',14)', has = 'AND(' + gate + ',ISNUMBER(' + d + '),', not = 'NOT(' + doneTest + ')';
+    return [
+      ['done', has + doneTest + ')'],
+      ['over', has + not + ',' + d + '<TODAY())'],
+      ['soon', has + not + ',' + d + '>=TODAY(),' + d + '<=TODAY()+ROUND(' + W + '/2,0))'],
+      ['near', has + not + ',' + d + '>TODAY()+ROUND(' + W + '/2,0),' + d + '<=TODAY()+' + W + ')'],
+      ['later', has + not + ',' + d + '>TODAY()+' + W + ')']
+    ];
+  }
   var UNITS = { day: 270, week: 80, month: 30 };
   var SPARE_ROWS = 60; // empty Tracker rows below the last filled one that the chart already watches
 
@@ -232,8 +247,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.2   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.3   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -251,6 +266,15 @@
       lc += span;
     });
 
+    /* date colour legend (columns A-H, rows 4-5) */
+    cell(4, 1, 'DATE COLOURS (live vs TODAY)  ▶', { font: { sz: 8, b: true, color: C.teal }, h: 'right', v: 'center', wrap: true }); merge(4, 1, 5, 2); styleOnly(5, 1, { font: { sz: 8 } });
+    [[4, 3, 3, 'Done', 'done'], [4, 4, 4, 'Overdue', 'over'], [4, 5, 6, 'Due soon', 'soon'], [5, 3, 3, 'Near', 'near'], [5, 4, 4, 'Later', 'later']].forEach(function (L) {
+      var sp = { font: { sz: 8, b: true, color: DATE_COL[L[4]][1] }, fill: DATE_COL[L[4]][0], h: 'center', border: { left: thin(C.white), right: thin(C.white), top: thin(C.white), bottom: thin(C.white) } };
+      for (var cc = L[1]; cc <= L[2]; cc++) styleOnly(L[0], cc, sp);
+      cell(L[0], L[1], L[3], sp); merge(L[0], L[1], L[0], L[2]);
+    });
+    cell(5, 5, 'orange ≤ ½ window · amber ≤ window', { font: { sz: 7, color: C.mute }, h: 'left' }); merge(5, 5, 5, 8);
+
     /* data date + chart start (row 7) */
     rowH(7, 15);
     cell(7, 1, 'DATA DATE (= TODAY)  ▶', { font: { sz: 9, b: true, color: C.red }, h: 'right' }); merge(7, 1, 7, 2);
@@ -264,6 +288,8 @@
     var startD = lo - 28, wd = M.serialToDate(startD).getUTCDay();
     if (scale === 'week') startD -= wd; // Sunday
     if (scale === 'month') { var sd = M.serialToDate(startD); startD = M.dateToSerial(new Date(Date.UTC(sd.getUTCFullYear(), sd.getUTCMonth(), 1))); }
+    cell(7, 6, 'ALERT ≤ days ▶', { font: { sz: 8, b: true, color: C.teal }, h: 'right' });
+    cell(7, 7, 14, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: '0" days"', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } });
     cell(7, 5, startD, { font: { sz: 10, b: true, color: C.text }, fill: 'FFF59D', h: 'center', fmt: 'dd\\-mmm\\-yy', unlocked: true, border: { left: thin(C.line), right: thin(C.line), top: thin(C.line), bottom: thin(C.line) } });
     function unitDate(u) {
       if (scale === 'week') return startD + 7 * u;
@@ -392,10 +418,12 @@
     Object.keys(SUBMITTAL_COL).forEach(function (k) { cf('G' + R0 + ':G' + lastData, '"' + k + '"', sb.dxf({ fill: SUBMITTAL_COL[k][0], font: { b: true, color: SUBMITTAL_COL[k][1] } }), 'cellIs', 'equal'); });
     ['A', 'B', 'C', 'D'].forEach(function (k) { cf('H' + R0 + ':H' + lastData, '"' + k + '"', sb.dxf({ fill: CODE[k], font: { b: true, color: C.white } }), 'cellIs', 'equal'); });
     // date cells carry the milestone colours: solid = actual, pale = forecast
-    cf('C' + R0 + ':C' + lastData, 'AND(ISNUMBER(C' + R0 + '),C' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.sub, font: { b: true, color: C.white } }));
-    cf('C' + R0 + ':C' + lastData, 'ISNUMBER(C' + R0 + ')', sb.dxf({ fill: C.subSoft, font: { b: true, color: C.sub } }));
-    cf('D' + R0 + ':D' + lastData, 'AND(ISNUMBER(D' + R0 + '),D' + R0 + '<=' + DD + ')', sb.dxf({ fill: C.app, font: { b: true, color: C.white } }));
-    cf('D' + R0 + ':D' + lastData, 'ISNUMBER(D' + R0 + ')', sb.dxf({ fill: C.appSoft, font: { b: true, color: C.app } }));
+    var stG = '$G' + R0, elG = kc + '="E"', WIN = '$G$7';
+    function dateCf(col, doneTest) {
+      dateRules(stG, col + R0, WIN, doneTest, elG).forEach(function (r) { cf(col + R0 + ':' + col + lastData, r[1], sb.dxf({ fill: DATE_COL[r[0]][0], font: { b: true, color: DATE_COL[r[0]][1] } })); });
+    }
+    dateCf('C', 'OR(' + DONE_SUB.map(function (k) { return stG + '="' + k + '"'; }).join(',') + ')');
+    dateCf('D', stG + '="Approved"');
 
     var lastRow = lastData;
 
@@ -489,6 +517,17 @@
       }).join('') + '</conditionalFormatting>';
     }
     block(g.subst, SUBMITTAL_COL);
+    // date columns: Submission Date and Approval Date coloured by the row's submittal status and today's date (alert window = the control panel's AT-RISK WINDOW cell)
+    if (g.subst && g.ps && g.pa) {
+      var win = '$' + ((model.meta.refs && model.meta.refs.win) || 'C6').replace(/(\d+)/, '$$$1'), stc = '$' + g.subst + r0, gate = 'TRIM(' + stc + '&"")<>""';
+      [[g.ps, 'OR(' + DONE_SUB.map(function (k) { return stc + '="' + k + '"'; }).join(',') + ')'], [g.pa, stc + '="Approved"']].forEach(function (pr) {
+        var sq = pr[0] + r0 + ':' + pr[0] + r1;
+        xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + sq + '">[\\s\\S]*?</conditionalFormatting>', 'g'), '');
+        blocks += '<conditionalFormatting sqref="' + sq + '">' + dateRules(stc, pr[0] + r0, win, pr[1], gate).map(function (r) {
+          return '<cfRule type="expression" dxfId="' + sb.dxf({ fill: DATE_COL[r[0]][0], font: { b: true, color: DATE_COL[r[0]][1] } }) + '" priority="' + (pri++) + '"><formula>' + esc(r[1]) + '</formula></cfRule>';
+        }).join('') + '</conditionalFormatting>';
+      });
+    }
     var codePal = {}; Object.keys(CODE).forEach(function (k) { codePal[k] = [CODE[k], 'FFFFFF']; });
     block(g.fcode, codePal); // the final SAR code (A / B / C / D)
     // conditional formats come before the data validations in a worksheet part

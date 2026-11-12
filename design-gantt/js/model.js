@@ -131,6 +131,7 @@
     var meta = { dataDate: null, refs: {} };
     for (var r = 1; r < hdrRow; r++)
       if (/^data date/.test(norm(cells['A' + r])) && isNum(cells['C' + r])) { meta.dataDate = cells['C' + r]; meta.refs.dd = 'C' + r; }
+      if (/^at-?risk window/.test(norm(cells['A' + r])) && isNum(cells['C' + r])) meta.refs.win = 'C' + r;
     return meta;
   }
 

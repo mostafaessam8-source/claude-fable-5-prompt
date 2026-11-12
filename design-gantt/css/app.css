@@ -195,3 +195,15 @@ table.checks { border-collapse: collapse; width: 100%; font-size: 13px; }
 .revised summary { cursor: pointer; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .rev-use { margin-inline-start: auto; font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
 .revised td small { color: var(--mute); }
+
+/* date colour coding */
+.dt { border-radius: 4px; font-weight: 700; }
+.dt.done { background: #2e7d32; color: #fff; }
+.dt.over { background: #c62828; color: #fff; }
+.dt.soon { background: #f57c00; color: #fff; }
+.dt.near { background: #ffe082; color: #5d4037; }
+.dt.later { background: #e3f0f7; color: #1b5e72; }
+.g-cell.dt { margin: 0 2px; padding: 2px 0; font-size: 11px; }
+.dlegend { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; font-size: 11px; }
+.dlegend .dt { padding: 2px 8px; }
+.dlegend small { color: #6b7b82; }
