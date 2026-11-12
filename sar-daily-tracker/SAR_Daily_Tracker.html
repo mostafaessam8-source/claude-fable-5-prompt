@@ -152,11 +152,11 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.log input:focus
 .cd{min-height:122px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .cg.week .cd{min-height:440px;gap:5px}
 .cd.out{background:#F6F8F9}.cd.out .dn span{color:#aab3b9}
-.cd.today{background:#EEF7F9;box-shadow:inset 0 3px 0 var(--blue)}
+.cd.now{background:#EEF7F9;box-shadow:inset 0 3px 0 var(--blue)}
 .dn{display:flex;justify-content:space-between;align-items:center;min-height:24px}
 .dn span{font-weight:700;font-size:13px;cursor:pointer;padding:1px 7px;border-radius:6px}
 .dn span:hover{background:var(--light)}
-.cd.today .dn span{background:var(--blue);color:#fff}
+.cd.now .dn span{background:var(--blue);color:#fff}
 .add{border:0;background:none;color:var(--muted);font-size:17px;line-height:1;border-radius:6px;padding:1px 7px;opacity:0}
 .cd:hover .add,.add:focus-visible{opacity:1}
 .add:hover{background:var(--light);color:var(--blue-d)}
@@ -990,7 +990,7 @@ function renderCal(list) {
     html = `<div class="cg ${ui.mode}">` + [0,1,2,3,4,5,6].map(i => `<div class="dh7">${DAYS[(db.weekStart + i) % 7].slice(0, 3)}</div>`).join('');
     for (let d = s; d < s + n; d++) {
       const evs = by.get(d) || [], iso = numIso(d), dom = +iso.slice(8);
-      html += `<div class="cd${d < first || d >= next ? ' out' : ''}${d === T ? ' today' : ''}" data-day="${d}"><div class="dn"><span data-goto title="Open this day">${dom}${dom === 1 || d === s ? ' ' + MON[iso.slice(5, 7) - 1] : ''}</span><button class="add" data-add title="New item due this day" aria-label="New item due ${fmt(iso)}">+</button></div>`
+      html += `<div class="cd${d < first || d >= next ? ' out' : ''}${d === T ? ' now' : ''}" data-day="${d}"><div class="dn"><span data-goto title="Open this day">${dom}${dom === 1 || d === s ? ' ' + MON[iso.slice(5, 7) - 1] : ''}</span><button class="add" data-add title="New item due this day" aria-label="New item due ${fmt(iso)}">+</button></div>`
         + (lim && evs.length > lim ? evs.slice(0, lim - 1).map(it => evChip(it)).join('') + `<button class="more" data-goto>+${evs.length - lim + 1} more</button>` : evs.map(it => evChip(it, !lim)).join('')) + '</div>';
     }
     html += '</div>';
