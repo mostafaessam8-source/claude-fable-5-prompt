@@ -12,7 +12,7 @@
       <span class="logo" aria-hidden="true"></span>
       <div>
         <h1>Design Submission <b>Gantt</b></h1>
-        <p>Saudi Arabia Railways · Programme Controls · <span class="ver" id="ver">Version 7.3 · build __BUILD__</span></p>
+        <p>Saudi Arabia Railways · Programme Controls · <span class="ver" id="ver">Version 7.4 · build __BUILD__</span></p>
       </div>
     </div>
     <div class="top-actions" id="topActions" hidden>
@@ -40,7 +40,9 @@
 
     <section id="app" hidden>
       <div class="bar">
-        <div class="file-info"><span class="dot"></span><span id="fileName"></span> <button class="link" id="btnChange" type="button">change file</button></div>
+        <div class="file-info"><span class="dot"></span><span id="fileName"></span> <button class="link" id="btnChange" type="button">change file</button>
+          <button class="chip upd" id="btnRefresh" type="button" title="Load the newest tracker (the online workbook is copied to the site automatically every 15 minutes)">↻ Update from online <span class="ar">حدّث من الأونلاين</span></button>
+          <a class="link" id="lnkSync" href="https://github.com/mostafaessam8-source/claude-fable-5-prompt/actions/workflows/sync-tracker.yml" target="_blank" rel="noopener" title="Copy the online workbook now instead of waiting for the 15-minute cycle: Run workflow, wait ~30 s, then press Update">sync now ↗</a></div>
         <div class="controls">
           <label class="ctl">Data date <small>تاريخ القطع</small>
             <input type="date" id="dataDate">
