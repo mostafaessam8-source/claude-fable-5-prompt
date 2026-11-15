@@ -207,3 +207,7 @@ table.checks { border-collapse: collapse; width: 100%; font-size: 13px; }
 .dlegend { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; font-size: 11px; }
 .dlegend .dt { padding: 2px 8px; }
 .dlegend small { color: #6b7b82; }
+
+.chip.upd { background: var(--teal); color: #fff; border-color: var(--teal); margin-left: 8px; font-weight: 700; }
+.chip.upd:disabled { opacity: .6; cursor: wait; }
+#lnkSync { margin-left: 8px; font-size: 12px; }

@@ -294,18 +294,36 @@
     'https://raw.githubusercontent.com/mostafaessam8-source/claude-fable-5-prompt/main/tracker-latest/SAR_ESS_Design_Submission_Tracker_LATEST_Gantt.xlsx',
     'latest.xlsx'
   ];
-  (async function autoLoad() {
+  var API_COMMITS = 'https://api.github.com/repos/mostafaessam8-source/claude-fable-5-prompt/commits?per_page=1&path=tracker-latest/SAR_ESS_Design_Submission_Tracker_LATEST_Gantt.xlsx';
+  function ago(ms) { var m = Math.round(ms / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; }
+  // when the repository copy of the tracker was last changed by the sync (= when the online workbook last changed)
+  async function syncStamp() {
+    try {
+      var r = await fetch(API_COMMITS, { cache: 'no-store' }); if (!r.ok) return '';
+      var j = await r.json(), d = j[0] && j[0].commit && new Date(j[0].commit.committer.date);
+      return d ? ' · online workbook last changed ' + d.toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' (' + ago(Date.now() - d) + ')' : '';
+    } catch (e) { return ''; }
+  }
+  async function loadLatest(manual) {
     for (var i = 0; i < LATEST.length; i++) {
       try {
         var res = await fetch(LATEST[i] + (i === 0 ? '?t=' + Date.now() : ''), { cache: 'no-store' });
         if (!res.ok) continue;
-        var blob = await res.blob();
+        var blob = await res.blob(), same = manual && S.buf && blob.size === S.buf.byteLength;
         S.useRevised = false;
         await loadFile(new File([blob], 'SAR_ESS_Design_Submission_Tracker_LATEST.xlsx'), { revised: false });
-        if (S.model) $('fileName').textContent = 'Latest tracker — synced from the online workbook (' + (i === 0 ? 'repository' : 'site copy') + ')';
-        return;
+        if (S.model) $('fileName').textContent = 'Latest tracker — synced from the online workbook (' + (i === 0 ? 'repository' : 'site copy') + ')' + await syncStamp() + (manual ? (same ? ' · already up to date' : ' · updated ✓') : '');
+        return true;
       } catch (e) { /* try the next source; if none works the upload box stays */ }
     }
-  })();
+    return false;
+  }
+  loadLatest(false);
+  $('btnRefresh').addEventListener('click', async function () {
+    var b = this; b.disabled = true; b.textContent = 'Updating…';
+    var ok = await loadLatest(true);
+    if (!ok) showError('Could not reach the latest tracker right now. Check the connection and try again.');
+    b.disabled = false; b.textContent = '↻ Update from online';
+  });
   window.__designGantt = { S: S, loadFile: loadFile };
 })();
