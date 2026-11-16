@@ -4,6 +4,9 @@ Every update gets a new version number (shown in the page header: `Version X.Y �
 `tests/compare.test.js` fails if the number in `index.html` differs from the newest entry below.
 Minor (`2.1`, `2.2`, …) = improvements and fixes; major (`3.0`) = a change in how the tool works.
 
+## 4.1 — 2026-11-16
+- **Offline version**: one self-contained file (`report-compare-offline.html`, ~460 KB, everything inlined) — download it from the header link ("⬇ Offline version"), save it anywhere and open it by double-click; no internet, no server. Same features, nothing is uploaded anywhere.
+
 ## 4.0 — 2026-11-09
 Works like Excel: you type in the cell.
 - **Edit in the cell**: select a cell and just type (or `Backspace` to clear and type), `F2` / double-click to edit what is there. `Enter` / `Tab` / arrows finish and move, `Shift` reverses, `Esc` cancels,

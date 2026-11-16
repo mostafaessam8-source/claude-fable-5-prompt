@@ -63,6 +63,9 @@ Published at `/report-compare/` by `.github/workflows/pages.yml` (after the chan
 - Drag column/row header borders to resize (double-click = AutoFit); right-click cells and headers for the Excel context menu; `Ctrl+1` opens Format Cells.
 - Review shortcuts moved to Alt: Alt+N / Alt+P next/previous change, Alt+I next issue, Alt+K keep, Alt+J reject.
 
+## Offline
+The header link **⬇ Offline version** downloads `report-compare-offline.html`, a single file that works without internet (build it yourself: `python3 tools/build_offline.py out.html`).
+
 ## Limits
 - Sheets are matched by name and cells by address: inserting rows in a long table shows up as many changes.
 - Charts, pictures and Excel cell notes are preserved in the download but not drawn in the web view or compared.

@@ -395,3 +395,7 @@ body.rsz-col, body.rsz-col * { cursor: col-resize !important; } body.rsz-row, bo
 /* a one-line title bar like Excel's */
 .brand > div { display: flex; align-items: baseline; gap: 4px 14px; flex-wrap: wrap; }
 .brand p { margin: 0; font-size: 11px; opacity: .8; } .titlefile { margin: 0; }
+
+/* 4.1 offline download link */
+.offl{margin-left:10px;color:#fff;font-size:11px;text-decoration:underline;opacity:.9}
+.offl:hover{opacity:1}
