@@ -149,6 +149,9 @@
     var count = el('<span class="count"></span>');
     tools.appendChild(count);
     if (opts.exportName !== false) {
+      var pbtn = el('<button class="link-btn" type="button" title="Print this table on A4 (SAR template)">⎙ Print A4</button>');
+      pbtn.addEventListener("click", function () { printTable(current()); });
+      tools.appendChild(pbtn);
       var btn = el('<button class="link-btn" type="button">⤓ Export CSV</button>');
       btn.addEventListener("click", function () { exportCsv(current()); });
       tools.appendChild(btn);
@@ -259,6 +262,72 @@
       a.download = (opts.exportName || "table") + ".csv";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }
+
+    /* Print the table as shown (search + sort applied) on A4 in the SAR template: logo, title, date, header row
+       repeated on every sheet, totals, page numbers. Landscape when the table is wide; scaled to the sheet width. */
+    function printTable(rows) {
+      var panel = wrap.closest(".panel"), page = document.querySelector(".page-title h1, main h1, h1");
+      var title = (panel && panel.querySelector(".panel-head h3") ? panel.querySelector(".panel-head h3").textContent : "") ||
+        String(opts.exportName || "Table").replace(/_/g, " ");
+      var sub = panel && panel.querySelector(".panel-head .sub") ? panel.querySelector(".panel-head .sub").textContent : "";
+      var cols = opts.columns, land = cols.length > 7;
+      var txt = function (c, r) {
+        var v = val(c, r);
+        if (c.type === "meter") return fmt.pct(v);
+        return (TYPE_FMT[c.type] || fmt.text)(v);
+      };
+      var h = "<thead><tr>" + cols.map(function (c) { return '<th class="' + (NUMERIC[c.type] ? "num" : "") + '">' + esc(c.label) + "</th>"; }).join("") + "</tr></thead><tbody>";
+      rows.forEach(function (r) {
+        h += "<tr>" + cols.map(function (c) {
+          var s = txt(c, r), n = toNum(val(c, r));
+          var cls = [NUMERIC[c.type] ? "num" : "", c.wrap ? "wrap" : "nw", c.signed && n !== null && n < -0.5 ? "neg" : ""].join(" ");
+          return '<td class="' + cls + '">' + esc(s) + "</td>";
+        }).join("") + "</tr>";
+      });
+      h += "</tbody>";
+      if (opts.totals && rows.length) {
+        h += "<tfoot><tr>" + cols.map(function (c, i) {
+          var t = i === 0 ? "Total" : "";
+          if (c.total === "sum") t = (TYPE_FMT[c.type] || fmt.money)(sum(rows, c.get || c.key));
+          else if (typeof c.total === "function") t = c.total(rows);
+          return '<td class="' + (NUMERIC[c.type] ? "num" : "") + '">' + esc(t) + "</td>";
+        }).join("") + "</tr></tfoot>";
+      }
+      var now = new Date(), d = ("0" + now.getDate()).slice(-2) + "-" + "JanFebMarAprMayJunJulAugSepOctNovDec".substr(now.getMonth() * 3, 3) + "-" + now.getFullYear(), logo = new URL("assets/img/sar-logo.png", location.href).href;
+      var note = rows.length + " of " + opts.rows.length + " rows" + (state.q ? " · search: “" + state.q + "”" : "") + (state.sorts.length ? " · sorted" : "");
+      var css = "@page{size:A4 " + (land ? "landscape" : "portrait") + ";margin:10mm 9mm 12mm;" +
+        "@bottom-left{content:'Saudi Arabia Railways (SAR) · PD-NSR';font:7pt Arial;color:#6b6b6b}" +
+        "@bottom-right{content:'Page ' counter(page) ' of ' counter(pages);font:7pt Arial;color:#6b6b6b}}" +
+        "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+        "body{margin:0;font:8pt Arial,Helvetica,sans-serif;color:#3D3935}" +
+        ".hd{display:flex;align-items:center;gap:12px;border-bottom:2.5pt solid #00778B;padding-bottom:6px;margin-bottom:8px}" +
+        ".hd img{height:34px}.hd .t{flex:1}.hd b{display:block;font-size:13pt;color:#00778B}.hd span{font-size:8pt;color:#6b6b6b}" +
+        ".hd .d{text-align:right;font-size:7.5pt;color:#6b6b6b;white-space:nowrap}.hd .d b{font-size:8pt;color:#3D3935}" +
+        "table{width:100%;border-collapse:collapse}thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid}" +
+        "th{background:#00778B;color:#fff;font-weight:700;text-align:left;padding:4px 5px;border:0.5pt solid #00778B;font-size:7.5pt}" +
+        "td{padding:3px 5px;border-bottom:0.5pt solid #d5dadc;vertical-align:top}tbody tr:nth-child(even) td{background:#eef6f7}" +
+        ".num{text-align:right;white-space:nowrap}.nw{white-space:nowrap}.wrap{white-space:normal;min-width:230px;max-width:340px}.neg{color:#C00000}" +
+        "tfoot td{background:#3D3935!important;color:#fff;font-weight:700;border:0}" +
+        ".ft{margin-top:6px;font-size:7pt;color:#6b6b6b}";
+      var doc = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + "</title><style>" + css + "</style></head><body>" +
+        '<div class="hd"><img src="' + logo + '" alt="SAR"><div class="t"><b>' + esc(title) + "</b><span>" + esc(sub || (page ? page.textContent : "")) + "</span></div>" +
+        '<div class="d"><b>PD-NSR Cost Control Dashboard</b><br>Printed ' + esc(d) + "<br>" + esc(note) + "</div></div>" +
+        '<table id="t">' + h + '</table><div class="ft">All amounts in SAR.</div></body></html>';
+      var fr = document.createElement("iframe");
+      fr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+      document.body.appendChild(fr);
+      var w = fr.contentWindow; w.document.open(); w.document.write(doc); w.document.close();
+      var go = function () {
+        // scale a wide table down to the printable width (A4 less margins, in CSS px)
+        var t = w.document.getElementById("t"), maxW = ((land ? 297 : 210) - 18) * 96 / 25.4;
+        fr.style.width = Math.ceil(maxW) + "px";
+        var sw = t.scrollWidth; if (sw > maxW) w.document.body.style.zoom = (maxW / sw * 0.99).toFixed(3);
+        w.focus(); w.print();
+        setTimeout(function () { fr.remove(); }, 1500);
+      };
+      var img = w.document.querySelector("img");
+      if (img && !img.complete) { img.onload = img.onerror = function () { setTimeout(go, 50); }; } else setTimeout(go, 100);
     }
 
     function draw() {
