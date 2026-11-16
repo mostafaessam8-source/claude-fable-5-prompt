@@ -78,10 +78,11 @@ jobs:
         run: |
           node report-compare/tests/compare.test.js
           cp -r report-compare dist/report-compare
-          rm -rf dist/report-compare/tests dist/report-compare/package.json dist/report-compare/README.md
+          rm -rf dist/report-compare/tests dist/report-compare/tools dist/report-compare/package.json dist/report-compare/README.md
           V="${GITHUB_SHA::7}"
           sed -i -E "s#(src|href)=\"((js|css)/[^\"?]+)\"#\1=\"\2?v=$V\"#g" dist/report-compare/index.html
           sed -i "s#__BUILD__#$V · $(date -u +'%Y-%m-%d %H:%M UTC')#" dist/report-compare/index.html
+          python3 report-compare/tools/build_offline.py dist/report-compare/report-compare-offline.html "$V"
       # SAR Daily Tracker: daily tasks / activities / issues tracker (single file, no build) is published at /sar-daily-tracker/
       # The published copy carries no data: items stay in each user's browser, or in their own private repository (Cloud sync).
       - name: Add the SAR Daily Tracker
