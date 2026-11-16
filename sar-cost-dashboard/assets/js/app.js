@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   var U = window.UI, esc = U.esc, fmt = U.fmt, norm = SARImporter.normKey;
+  var SHOW_REV_PLAN = false;   // Rev Spend Plan hidden on the site (data kept); the Original plan is the plan of record
 
   var ICONS = {
     overview: '<path d="M3 13h8V3H3zm10 8h8V11h-8zM3 21h8v-6H3zm10-18v6h8V3z"/>',
@@ -93,15 +94,18 @@
   function buildLookups() {
     // Revised Spend Plan (Budget 2026, "Spending Plan (VP)") joined onto the Spending Plan rows by ID + month;
     // the original "Spend Plan as per Budgeting" stays untouched.
+    // The Rev Spend Plan is kept in the data (D.revLoaded) but not shown: plans and targets use the Original plan
+    // (user, Nov 2026). Set SHOW_REV_PLAN to true to show it again.
     var rev = {}, revFY = {};
-    D.hasRev = D.has("Rev_Spend_Plan");
+    D.revLoaded = D.has("Rev_Spend_Plan");
+    D.hasRev = SHOW_REV_PLAN && D.revLoaded;
     D.t("Rev_Spend_Plan").forEach(function (r) {
       var v = typeof r["Rev Spend Plan"] === "number" ? r["Rev Spend Plan"] : 0, id = String(r.ID);
       rev[id + "|" + r.Month] = (rev[id + "|" + r.Month] || 0) + v; revFY[id] = (revFY[id] || 0) + v;
     });
     var spIds = {};
-    D.t("Spending_Plan").forEach(function (r) { spIds[String(r.ID)] = 1; r["Rev Spend Plan (Incr)"] = D.hasRev ? (rev[String(r.ID) + "|" + r.Month] || 0) : null; });
-    D.t("KPI_Projects_Data").forEach(function (r) { r["Rev Spend Plan FTY 2026"] = D.hasRev ? (revFY[String(r.Code)] || 0) : null; });
+    D.t("Spending_Plan").forEach(function (r) { spIds[String(r.ID)] = 1; r["Rev Spend Plan (Incr)"] = D.revLoaded ? (rev[String(r.ID) + "|" + r.Month] || 0) : null; });
+    D.t("KPI_Projects_Data").forEach(function (r) { r["Rev Spend Plan FTY 2026"] = D.revLoaded ? (revFY[String(r.Code)] || 0) : null; });
     D.revOnly = Object.keys(revFY).filter(function (id) { return !spIds[id]; });           // in Budget 2026 but not in the Spending Plan
     D.revMissing = D.hasRev ? Object.keys(spIds).filter(function (id) { return !(id in revFY); }) : [];
     // Balanced Scorecard targets (Projects_Department.xlsx) matched onto the KPI Summary rows by KPI name

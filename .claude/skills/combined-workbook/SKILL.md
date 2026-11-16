@@ -52,6 +52,10 @@ file only for those sources.
   "مش عايز فوركاست تاني غير اللي بيجي من المقاول"). No V0 / V2 forecast columns in Monthly Plan, Projects, KPI Scorecard
   or the Dashboard; the site drops V0 / V2 columns of the old Delivery Plan too, and does not keep the PC tracker's
   own forecasts (year-end, Nov / Dec, risk-adjusted). Never add another forecast without asking.
+- **The plan of record is the Original plan** (user rule Nov 2026: "امسح الريفيزد بلان ... واعتمد الاوريجينال بلان ...
+  مش تمسحها"). The Rev Spend Plan stays in the workbook and is still read by the site (`D.revLoaded`), but the site
+  does not show it: `SHOW_REV_PLAN = false` in app.js makes `D.hasRev` false, so every page, KPI, target (95% of plan)
+  and the weekly PPT use the Original plan. Set it to true only if the user asks to show the Rev plan again.
 - Every finding in *Review Notes* gives its source as file › sheet › cells (user rule: always show the source).
 - Cached values come from LibreOffice (`recalc.py` of the xlsx skill) on the standalone build, then merge.py writes
   them into the formula cells; `fullCalcOnLoad="1"` makes Excel recalc on open. libreoffice-calc may need
