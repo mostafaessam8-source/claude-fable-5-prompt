@@ -1132,7 +1132,8 @@
         // IPC status summary (QS e-mail) — only in the final combined file
         "Change": g(p, "Change (SAR)"), "Revised Contract Value": g(p, "Revised Contract Value (SAR)"), "IPC Certified Gross": g(p, "IPC Certified Gross (SAR)"),
         "IPC To Be Paid": g(p, "IPC To Be Paid (SAR)"), "Contract Outstanding": g(p, "Contract Outstanding (SAR)"), "IPC Status Date": g(p, "IPC Status Date"),
-        "Project Manager (IPC)": g(p, "Project Manager (IPC)"), "IPC Comments": g(p, "IPC Comments") });
+        "Project Manager (IPC)": g(p, "Project Manager (IPC)"), "IPC Comments": g(p, "IPC Comments"),
+        "Team Update": g(p, "Team Update (CTP)") });
     });
 
     var summary = KS.map(function (k) {

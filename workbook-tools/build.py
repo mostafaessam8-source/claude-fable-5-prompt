@@ -200,6 +200,7 @@ PCOLS = [  # key, header, kind, width, fmt, note
     ("w_spi", "SPI", "wk", 7, "0.00", "SPI"),
     ("w_pm", "Project Manager (weekly)", "wk", 22, None, "Project Manager"),
     ("chk", "Data Checks", "f", 22, None, "Calc: Data Checks sheet"),
+    ("team_upd", "Team Update (CTP)", "in", 50, None, "Input · CTP Projects › Project status › Project update (last column: other files read Projects by column letter)"),
 ]
 PC = {k: CL(i + 1) for i, (k, *_r) in enumerate(PCOLS)}
 header_row(pj, 4, [(h, kind, w, fmt, note) for (k, h, kind, w, fmt, note) in PCOLS])

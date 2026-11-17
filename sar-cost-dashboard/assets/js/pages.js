@@ -352,6 +352,7 @@
       U.info("Remaining WC", fmt.money(n["Remaining WC"])) + U.info("Cum plan / actual", w["Planned (%) - Cumulative"] != null ? fmt.pct(w["Planned (%) - Cumulative"]) + " / " + fmt.pct(w["Actual (%) - Cumulative"]) : "") +
       U.info("SPI", w.SPI != null ? '<span class="' + spiTxtCls(w.SPI) + '">' + N(w.SPI).toFixed(2) + "</span>" : "") + U.info("Issues (open / total)", (p.open || 0) + " / " + (p.issues || 0)) + "</div>";
     if (n["Remarks/Concern"]) h += '<div class="note-box" style="margin-top:12px"><b>Remarks / concern:</b> ' + esc(n["Remarks/Concern"]) + "</div>";
+    if (n["Team Update"]) h += '<div class="note-box" style="margin-top:12px;white-space:pre-line"><b>Team update (CTP):</b>\n' + esc(n["Team Update"]) + "</div>";
     if (w["Reason for Delays"]) h += '<div class="note-box warn" style="margin-top:12px"><b>Reason for delays:</b> ' + esc(w["Reason for Delays"]) + "</div>";
     h += '<div class="qv-links">';
     if (p.src) h += '<a class="icon-btn" data-go="progress">Progress, S-curve & timeline →</a>';
@@ -1786,6 +1787,8 @@
     });
     if (c.error) add(v, '<div class="note-box warn">This card could not be read completely: ' + esc(c.error) + "</div>");
     if (window.SARChecks) SARChecks.inline(v, c.Code);
+    var tu = (D.t("NSR_Project_Data").filter(function (r) { return String(r.ID) === String(c.Code); })[0] || {})["Team Update"];
+    if (tu) add(v, '<div class="note-box" style="white-space:pre-line"><b>Team update (CTP Projects):</b>\n' + esc(tu) + "</div>");
 
     var pfm = c.Perf || {}, fu = c.Fund || {}, sk = c.Stake || {}, ex = c.Exec || {}, sp = span(c), sl = slip(c);
     add(v, '<section class="pc-head"><div class="pc-id"><span class="pc-code">' + esc(c.Code) + "</span>" + (c.Size ? '<span class="pc-tag">' + esc(c.Size) + "</span>" : "") +

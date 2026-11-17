@@ -57,6 +57,11 @@ file only for those sources.
   does not show it: `SHOW_REV_PLAN = false` in app.js makes `D.hasRev` false, so every page, KPI, target (95% of plan)
   and the weekly PPT use the Original plan. Set it to true only if the user asks to show the Rev plan again.
 - Every finding in *Review Notes* gives its source as file › sheet › cells (user rule: always show the source).
+- **Projects column letters are fixed for outside files.** The team's *CTP Projects.xlsx* (Project status › Table4) reads
+  Projects by letter: AJ Budget Plan FY, AC WC Current Year, AD Total WC, AW Planned % (cum), AX Actual % (cum)
+  (external link to `D:\Final Dashboards\Weekly Reporty Updates\EPBU NSR Projects Database - TEST v0.2.xlsx`).
+  Add any new Projects column at the end (after Data Checks), never in between. The last column is *Team Update (CTP)*
+  (CTP › Project status › Project update), shown on the project quick view and the project card.
 - Cached values come from LibreOffice (`recalc.py` of the xlsx skill) on the standalone build, then merge.py writes
   them into the formula cells; `fullCalcOnLoad="1"` makes Excel recalc on open. libreoffice-calc may need
   `apt-get update && apt-get install -y --no-install-recommends libreoffice-calc` in a fresh container.

@@ -36,7 +36,7 @@ PIN = {"Code": "code", "Short Name": "short", "Project Name": "name", "Program":
        "Weekly Report Code": "wcode", "Remarks / Concern": "remarks", "PR Number": "pr", "Contractor": "contractor",
        "Owner (BU)": "owner", "Budget (PMO) (SAR)": "budget_pmo", "Scope": "scope", "Change (SAR)": "cv_change",
        "Revised Contract Value (SAR)": "cv_rev", "IPC Certified Gross (SAR)": "ipc_cert", "IPC Status Date": "ipc_date",
-       "Project Manager (IPC)": "pm", "IPC Comments": "ipc_note"}
+       "Project Manager (IPC)": "pm", "IPC Comments": "ipc_note", "Team Update (CTP)": "team_upd"}
 projects = []
 for r, h, ws, wv in rows("Projects"):
     p = {}
