@@ -7,7 +7,7 @@
   var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
-  var S = { alertDays: 14, sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { error: true, warn: true, info: false } };
+  var S = { alertDays: 14, sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { late: true, error: true, warn: true, info: false } };
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function iso(n) { return M.serialToDate(n).toISOString().slice(0, 10); }
@@ -69,7 +69,7 @@
       return '<option value="' + i + '">' + h((p.code ? p.code + ' — ' : '') + p.name) + '</option>';
     }).join('');
     $('fStatus').innerHTML = Object.keys(HC).map(function (k) { return '<button type="button" class="chip" data-st="' + k + '"><i style="background:' + HC[k] + '"></i>' + k + '</button>'; }).join('');
-    $('cFilter').innerHTML = [['error', 'Errors'], ['warn', 'Warnings'], ['info', 'Notes']].map(function (x) { return '<button type="button" class="chip" data-sev="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+    $('cFilter').innerHTML = [['late', 'Overdue'], ['error', 'Errors'], ['warn', 'Warnings'], ['info', 'Notes']].map(function (x) { return '<button type="button" class="chip" data-sev="' + x[0] + '">' + x[1] + '</button>'; }).join('');
   }
 
   /* ---------- rendering ---------- */
@@ -172,7 +172,7 @@
     var rows = all.filter(function (k) { return S.sev[k.sev]; });
     $('checksTable').innerHTML = '<thead><tr><th></th><th>Project</th><th>Element</th><th>Row</th><th>Finding</th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (k) {
-        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
+        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'late' ? 'OVERDUE' : k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
       }).join('') : '<tr><td colspan="5" style="padding:18px;color:#78909c">Nothing to report for this selection.</td></tr>') + '</tbody>';
   }
 
