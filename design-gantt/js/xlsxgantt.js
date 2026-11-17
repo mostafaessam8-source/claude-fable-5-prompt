@@ -247,8 +247,8 @@
     var subSpec = { font: { sz: 9, color: C.white }, fill: C.black, h: 'left', indent: 1 };
     for (c = 1; c <= lastCol; c++) styleOnly(2, c, subSpec);
     var srcTxt = String(o.sourceName || lay.sheet), shn = lay.sheet.replace(/"/g, '""');
-    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
-      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.5   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
+    cell(2, 1, 'Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + lay.sheet + ' sheet   ·   Source file: ' + srcTxt + '   ·   Data date ' + M.fmtDate(cut), subSpec,
+      '"Saudi Arabia Railways  |  Programme Controls   ·   Gantt v7.6   ·   Fully automatic: every row, date and milestone is a formula reading the ' + shn + ' sheet   ·   Source file: ' + srcTxt.replace(/"/g, '""') + '   ·   Data date "&TEXT($C$7,"dd-mmm-yy")');
     merge(2, 1, 2, lastCol); rowH(2, 16); rowH(3, 6);
     rowH(4, 18); rowH(5, 18); rowH(6, 6);
 
@@ -511,7 +511,7 @@
     function block(col, pal, fontOf) {
       if (!col) return;
       var sq = col + r0 + ':' + col + r1;
-      xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + sq + '">[\\s\\S]*?</conditionalFormatting>', 'g'), ''); // idempotent
+      xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + col + r0 + ':' + col + '\\d+">[\\s\\S]*?</conditionalFormatting>', 'g'), ''); // idempotent (also drops the same block written for another last row)
       blocks += '<conditionalFormatting sqref="' + sq + '">' + Object.keys(pal).map(function (k) {
         return '<cfRule type="cellIs" dxfId="' + sb.dxf({ fill: pal[k][0], font: { b: true, color: pal[k][1] } }) + '" priority="' + (pri++) + '" operator="equal"><formula>"' + k + '"</formula></cfRule>';
       }).join('') + '</conditionalFormatting>';
@@ -522,7 +522,7 @@
       var win = '$' + ((model.meta.refs && model.meta.refs.win) || 'C6').replace(/(\d+)/, '$$$1'), stc = '$' + g.subst + r0, gate = 'TRIM(' + stc + '&"")<>""';
       [[g.ps, 'OR(' + DONE_SUB.map(function (k) { return stc + '="' + k + '"'; }).join(',') + ')'], [g.pa, stc + '="Approved"']].forEach(function (pr) {
         var sq = pr[0] + r0 + ':' + pr[0] + r1;
-        xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + sq + '">[\\s\\S]*?</conditionalFormatting>', 'g'), '');
+        xml = xml.replace(new RegExp('<conditionalFormatting sqref="' + pr[0] + r0 + ':' + pr[0] + '\\d+">[\\s\\S]*?</conditionalFormatting>', 'g'), '');
         blocks += '<conditionalFormatting sqref="' + sq + '">' + dateRules(stc, pr[0] + r0, win, pr[1], gate).map(function (r) {
           return '<cfRule type="expression" dxfId="' + sb.dxf({ fill: DATE_COL[r[0]][0], font: { b: true, color: DATE_COL[r[0]][1] } }) + '" priority="' + (pri++) + '"><formula>' + esc(r[1]) + '</formula></cfRule>';
         }).join('') + '</conditionalFormatting>';
@@ -555,15 +555,99 @@
     return ok;
   }
 
+
+  /* ---------- order the Tracker sheet itself by priority ----------
+   * Projects 1, 2, 3 ...; inside a project its elements by their own priority (ties keep the Tracker order, blank / "-" last,
+   * empty spare rows stay at the end of the project). A project travels with its elements as one block. Formulas are re-pointed
+   * (shared formulas are written out first), row heights / grouping / styles move with their rows.
+   * Returns { rowMap: {oldRow: newRow} } or null when nothing had to move (or the sheet has merged cells in the way). */
+  function unx(t) { return t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'); }
+  function shiftFormula(f, dr, dc) {
+    return f.split(/("(?:[^"]|"")*")/).map(function (part, i) {
+      if (i % 2) return part;
+      return part.replace(/(?<![A-Za-z0-9_.])(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\d(A-Za-z_])/g, function (m0, d1, col, d2, row) {
+        var c2 = d1 ? col : M.numToCol(M.colToNum(col) + dc), r2 = d2 ? +row : +row + dr;
+        return d1 + c2 + d2 + r2;
+      });
+    }).join('');
+  }
+  async function sortTracker(zip, loc, model) {
+    var lay = model.layout, sh = loc.sheets.filter(function (x) { return x.name === lay.sheet; })[0];
+    if (!sh || !model.projects.length) return null;
+    var projs = model.projects.slice().sort(function (a, b) { return a.row - b.row; });
+    var start = projs[0].row, end = Math.max(lay.lastContent || 0, projs.reduce(function (m, p) { return Math.max(m, p.row, p.elements.reduce(function (n, e) { return Math.max(n, e.row); }, 0)); }, 0));
+    var xml = await M.readText(zip, sh.path);
+    var mc = xml.match(/<mergeCell\b[^>]*ref="[^"]+"/g) || [];
+    for (var i = 0; i < mc.length; i++) { var nums = mc[i].match(/\d+/g).map(Number); if (nums[nums.length - 1] >= start && nums[0] <= end) return null; }
+    // blocks: project row + its element rows + the empty rows that follow it
+    var blocks = projs.map(function (p, k) {
+      var last = (k + 1 < projs.length ? projs[k + 1].row - 1 : end), elRows = {}, pos = [];
+      p.elements.forEach(function (e) { elRows[e.row] = e; });
+      var els = [], rest = [];
+      for (var r = p.row + 1; r <= last; r++) (elRows[r] ? els : rest).push(elRows[r] || r);
+      els = els.map(function (e, j) { return { row: e.row, pri: e.pri, j: j }; }).sort(function (a, b) { return a.pri === b.pri ? a.j - b.j : a.pri < b.pri ? -1 : 1; });
+      return { pri: p.pri, k: k, rows: [p.row].concat(els.map(function (e) { return e.row; })).concat(rest) };
+    });
+    blocks.sort(function (a, b) { return a.pri === b.pri ? a.k - b.k : a.pri < b.pri ? -1 : 1; });
+    var order = []; blocks.forEach(function (b) { order = order.concat(b.rows); }); // order[i] = old row that goes to row start + i
+    var rowMap = {}, moved = false;
+    order.forEach(function (old, i) { rowMap[old] = start + i; if (old !== start + i) moved = true; });
+    if (!moved) return null;
+
+    // 1. write every shared formula out (a shared group cannot be split across rows that move)
+    var masters = {};
+    xml = xml.replace(/<c\b([^>]*?)\br="([A-Z]+)(\d+)"([^>]*?)>(<f\b[^>]*\/>|<f\b(?:[^>]*[^\/>])?>[\s\S]*?<\/f>)([\s\S]*?)<\/c>/g, function (m0, a1, col, row, a2, f, rest) {
+      var fa = (/<f\b([^>]*?)\/?>/.exec(f) || [])[1] || '';
+      if (!/\bt="shared"/.test(fa)) return m0;
+      var si = /\bsi="(\d+)"/.exec(fa)[1], text = /<f\b(?:[^>]*[^\/>])?>([\s\S]*?)<\/f>/.exec(f);
+      if (text && text[1]) masters[si] = { col: M.colToNum(col), row: +row, f: unx(text[1]) };
+      var mst = masters[si]; if (!mst) return m0;
+      var out = shiftFormula(mst.f, +row - mst.row, M.colToNum(col) - mst.col);
+      return '<c' + a1 + 'r="' + col + row + '"' + a2 + '><f>' + esc(out).replace(/&quot;/g, '"') + '</f>' + rest + '</c>';
+    });
+    // 2. move the rows
+    var rows = {}, firstAt = -1, lastEnd = -1, re = /<row\b[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g, mm;
+    while ((mm = re.exec(xml))) {
+      var rn = +(/\br="(\d+)"/.exec(mm[0])[1]);
+      if (rn >= start && rn <= end) { rows[rn] = mm[0]; if (firstAt < 0) firstAt = mm.index; lastEnd = mm.index + mm[0].length; }
+    }
+    if (firstAt < 0) return null;
+    var newRows = order.map(function (old) {
+      var nw = rowMap[old], x = rows[old], dr = nw - old;
+      if (!x) return '';
+      return x.replace(/^<row\b([^>]*?)\br="\d+"/, '<row$1r="' + nw + '"').replace(/<c\b([^>]*?)\br="([A-Z]+)\d+"([^>]*?)(\/?)>([\s\S]*?)(?=<c\b|<\/row>|$)/g, function (m0, a1, col, a2, sl, body) {
+        var b = body.replace(/(<f\b(?:[^>]*[^\/>])?>)([\s\S]*?)(<\/f>)/, function (q, o, t, c3) { return o + esc(shiftFormula(unx(t), dr, 0)).replace(/&quot;/g, '"') + c3; });
+        return '<c' + a1 + 'r="' + col + nw + '"' + a2 + sl + '>' + b;
+      });
+    }).join('');
+    xml = xml.slice(0, firstAt) + newRows + xml.slice(lastEnd);
+    // 3. status / code columns: formats and drop-downs that skipped the project rows now cover the whole column
+    var g = lay.g, r0 = lay.hdrRow + 1, r1 = lay.lastRow;
+    [g.subst, g.fcode].filter(Boolean).forEach(function (col) {
+      var full = col + r0 + ':' + col + r1, re2 = new RegExp('(<(?:dataValidation|conditionalFormatting)\\b[^>]*?sqref=")((?:' + col + '\\d+(?::' + col + '\\d+)?\\s*)+)(")', 'g');
+      xml = xml.replace(re2, function (m0, a, ref, b) { return /^[A-Z]+\d+:[A-Z]+\d+$/.test(ref.trim()) && ref.trim() === full ? m0 : a + full + b; });
+    });
+    zip.file(sh.path, xml);
+    return { rowMap: rowMap };
+  }
+  // run fn with the model's row numbers translated to the new Tracker order, then put them back
+  function withRows(model, rowMap, fn) {
+    var saved = [];
+    function mv(o) { saved.push([o, o.row]); if (rowMap[o.row]) o.row = rowMap[o.row]; }
+    model.projects.forEach(function (p) { mv(p); p.elements.forEach(mv); });
+    try { return fn(); } finally { saved.forEach(function (x) { x[0].row = x[1]; }); }
+  }
+
   /* ---------- put the sheet into the workbook package ---------- */
   async function build(zip, model, opts) {
     opts = opts || {};
     var scale = opts.scale || 'week';
     var loc = await M.locateSheets(zip);
     var patched = await patchTracker(zip, loc, model);
+    var sorted = opts.sortTracker === false ? null : await sortTracker(zip, loc, model);
     var stylesXml = await M.readText(zip, 'xl/styles.xml');
     var sb = new StyleBook(stylesXml);
-    var res = buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName });
+    var res = sorted ? withRows(model, sorted.rowMap, function () { return buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName }); }) : buildSheet(sb, model, { scale: scale, sourceName: opts.sourceName });
     await colourTrackerStatus(zip, loc, model, sb);
 
     var wbXml = loc.workbookXml, relsXml = loc.relsXml;
@@ -606,5 +690,5 @@
     return { bytes: out, rows: res.lastRow, cols: res.lastCol, items: res.lastData, patched: patched };
   }
 
-  return { build: build, colourTrackerOnly: colourTrackerOnly, setCell: setNumberCell, SUBMITTAL_COL: SUBMITTAL_COL, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
+  return { build: build, sortTracker: sortTracker, colourTrackerOnly: colourTrackerOnly, setCell: setNumberCell, SUBMITTAL_COL: SUBMITTAL_COL, layout: layout, palette: C, HEALTH: HEALTH, CODE: CODE };
 });
