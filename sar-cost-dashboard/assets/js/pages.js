@@ -1035,8 +1035,9 @@
     var codes = {}; SHP.forEach(function (r) { codes[r.Code] = 1; });
     SX = SX.filter(function (x) { return codes[x.Code]; });
     var yrs = {}; SX.forEach(function (x) { var y = String(x.Month || "").slice(0, 4); if (y) yrs[y] = (yrs[y] || 0) + (+x.Spend || 0); });
+    SHP.forEach(function (r) { var y = String(r["Possession Start"] || "").slice(0, 4); if (y && !(y in yrs)) yrs[y] = 0; });   // years with a possession but no spend yet
     var now = String(new Date().getFullYear()), ys = Object.keys(yrs).sort();
-    var Y = shutdownSection.year && yrs[shutdownSection.year] ? shutdownSection.year : (ys.filter(function (y) { return y > now; })[0] || ys[ys.length - 1] || now);
+    var Y = shutdownSection.year && (shutdownSection.year in yrs) ? shutdownSection.year : (ys.filter(function (y) { return y > now; })[0] || ys[ys.length - 1] || now);
     var inY = function (d) { return String(d || "").slice(0, 4) === Y; };
     var key = function (r) { return r.Code + "|" + r.Shutdown; };
     var spY = {}; SX.forEach(function (x) { if (inY(x.Month)) { var k = x.Code + "|" + x.Shutdown, m = +String(x.Month).slice(5, 7) - 1; (spY[k] = spY[k] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[m] += +x.Spend || 0; } });
