@@ -263,7 +263,16 @@
       p.elements.forEach(function (e) { if (!isNum(e.ps) && !isNum(e.pa)) add('info', p, e, 'No Submission / Approval dates entered yet.'); });
       if (!p.elements.length && !isNum(p.ps) && !isNum(p.pa)) add('info', p, { name: p.name, row: p.row }, 'Project has no dates and no element rows.');
     });
-    var rank = { error: 0, warn: 1, info: 2 };
+    // overdue dates = the red cells of the date colour coding: the planned date is already behind the data date and the step is not done
+    var cut = model.meta.cut, DONE_SUB = { 'Submitted': 1, 'Under Review': 1, 'Approved': 1 };
+    if (isNum(cut)) model.projects.forEach(function (p) {
+      p.elements.forEach(function (e) {
+        if (!e.subst) return;
+        if (isNum(e.ps) && e.ps < cut && !DONE_SUB[e.subst]) add('late', p, e, 'Submission overdue by ' + (cut - e.ps) + ' day' + (cut - e.ps === 1 ? '' : 's') + ': planned ' + fmtDate(e.ps) + ', status "' + e.subst + '".');
+        if (isNum(e.pa) && e.pa < cut && e.subst !== 'Approved') add('late', p, e, 'Review / approval overdue by ' + (cut - e.pa) + ' day' + (cut - e.pa === 1 ? '' : 's') + ': planned ' + fmtDate(e.pa) + ', status "' + e.subst + '".');
+      });
+    });
+    var rank = { late: 0, error: 1, warn: 2, info: 3 };
     out.sort(function (a, b) { return rank[a.sev] - rank[b.sev] || a.row - b.row; });
     return out;
   }

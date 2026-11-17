@@ -211,3 +211,5 @@ table.checks { border-collapse: collapse; width: 100%; font-size: 13px; }
 .chip.upd { background: var(--teal); color: #fff; border-color: var(--teal); margin-left: 8px; font-weight: 700; }
 .chip.upd:disabled { opacity: .6; cursor: wait; }
 #lnkSync { margin-left: 8px; font-size: 12px; }
+
+.sev.late { background: #c62828; }
