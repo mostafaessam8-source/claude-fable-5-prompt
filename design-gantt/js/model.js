@@ -102,13 +102,16 @@
   /* ---------- header detection ---------- */
   var GLOBAL_LABELS = [
     [/^programme/, 'programme'], [/^project code/, 'code'], [/^project\s*\/\s*element|^element|^project name/, 'name'],
-    [/^submission date/, 'ps'], [/^approval date/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'], [/^(rev(ision)?|submittal)(\s*(no\.?|number))?$/, 'rev'], // "Submittal No" (how many times it has been submitted, first = 1); older workbooks call it "Rev No" [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
+    // the dates may be called "Submission Date" / "Approval Date" or "Last Submission Date" / "Last Review Date"
+    [/^(last\s+)?submission date/, 'ps'], [/^(approval date|last review date)/, 'pa'], [/^priority/, 'pri'], [/^status$/, 'subst'], [/^code$/, 'fcode'],
+    // "Submittal No" = how many times it has been submitted (first = 1); older workbooks call it "Rev No"
+    [/^(rev(ision)?|submittal)(\s*(no\.?|number))?$/, 'rev'], [/main challenges|^notes|^remarks/, 'notes'], [/^lvl/, 'lvl']
   ];
 
   function detectLayout(sheet) {
     var cells = sheet.cells, hdrRow = 0, c, r;
     for (r = 1; r <= 60 && !hdrRow; r++)
-      for (c = 1; c <= 120; c++) { var v = cells[numToCol(c) + r]; if (typeof v === 'string' && /^submission date/.test(norm(v))) { hdrRow = r; break; } }
+      for (c = 1; c <= 120; c++) { var v = cells[numToCol(c) + r]; if (typeof v === 'string' && /^(last\s+)?submission date/.test(norm(v))) { hdrRow = r; break; } }
     if (!hdrRow) throw new Error('Could not find the "Submission Date" / "Approval Date" columns. Is this the Design Submission Tracker?');
     var lastCol = 1, g = {};
     for (c = 1; c <= 120; c++) if (cells[numToCol(c) + hdrRow] != null) lastCol = c;
