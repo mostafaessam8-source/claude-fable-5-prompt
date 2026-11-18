@@ -303,7 +303,8 @@
       case 'res': out.text = S.p.asg.filter((a) => a.task === tk.id).map((a) => (S.p.rsrc.find((r) => r.id === a.rsrc) || {}).name).filter(Boolean).join(', '); break;
       default: { const rc = P6.regCell(k, row, S.ctx); if (rc) { out.text = rc.text; out.cls = rc.cls; } break; }
     }
-    if (P6.isMile(tk) && (k === 'dur' || k === 'rem') && false) out.text = '';
+    // P6: a start milestone shows only its start side, a finish milestone only its finish side
+    if (P6.isMile(tk) && (tk.type === 'TT_FinMile' ? ['es', 'as', 'bs', 'ls'] : ['ef', 'af', 'bf', 'lf']).includes(k)) { out.text = ''; out.ro = true; }
     return out;
   }
   function selectOpts(k, row) {
