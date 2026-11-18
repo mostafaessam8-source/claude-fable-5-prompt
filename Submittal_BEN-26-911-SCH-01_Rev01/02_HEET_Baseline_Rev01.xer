@@ -55,12 +55,12 @@ ERMHDR	19.12	2026-11-11	Project	admin	Admin	projectdb	Project Management	SAR
 %R	2037	1001	1	370	1	N	Y	WS_Open	1.4.3.9	LL-09 FO closures & accessories		2028											
 %R	2038	1001	1	380	1	N	Y	WS_Open	1.4.4	Standard / Local Items - PO, Supply & Delivery (handholes, conduits, marker posts, sweet sand)		2025											
 %R	2039	1001	1	390	1	N	Y	WS_Open	1.5	CONSTRUCTION (C)		2000											
-%R	2040	1001	1	400	1	N	Y	WS_Open	1.5.2	Civil & Cable Works by Section (risk-ranked sequence)		2039											
-%R	2041	1001	1	410	1	N	Y	WS_Open	1.5.2.1	Section 1		2040											
-%R	2042	1001	1	420	1	N	Y	WS_Open	1.5.2.2	Section 2		2040											
-%R	2043	1001	1	430	1	N	Y	WS_Open	1.5.2.3	Section 3		2040											
-%R	2044	1001	1	440	1	N	Y	WS_Open	1.5.2.4	Section 4		2040											
-%R	2045	1001	1	450	1	N	Y	WS_Open	1.5.2.5	Section 5		2040											
+%R	2040	1001	1	400	1	N	Y	WS_Open	1.5.2	Enabling Works by Section (SoW §7): Civil Works, Cables Installation, Splicing & Testing - risk-ranked sequence		2039											
+%R	2041	1001	1	410	1	N	Y	WS_Open	1.5.2.1	Section 1 (1,100 LM) - Trench & Civil Works, Cables Installation (DSS / DAS / TDR), Splicing & OTDR Testing		2040											
+%R	2042	1001	1	420	1	N	Y	WS_Open	1.5.2.2	Section 2 (1,100 LM) - Trench & Civil Works, Cables Installation (DSS / DAS / TDR), Splicing & OTDR Testing		2040											
+%R	2043	1001	1	430	1	N	Y	WS_Open	1.5.2.3	Section 3 (1,100 LM) - Trench & Civil Works, Cables Installation (DSS / DAS / TDR), Splicing & OTDR Testing		2040											
+%R	2044	1001	1	440	1	N	Y	WS_Open	1.5.2.4	Section 4 (1,100 LM) - Trench & Civil Works, Cables Installation (DSS / DAS / TDR), Splicing & OTDR Testing		2040											
+%R	2045	1001	1	450	1	N	Y	WS_Open	1.5.2.5	Section 5 (1,100 LM) - Trench & Civil Works, Cables Installation (DSS / DAS / TDR), Splicing & OTDR Testing		2040											
 %R	2046	1001	1	460	1	N	Y	WS_Open	1.5.3	Station Power, Shelter & Field Systems (TDR, Weather, Comms)		2039											
 %R	2047	1001	1	470	1	N	Y	WS_Open	1.5.4	Local Cloud, Cybersecurity & Integration Installation		2039											
 %R	2048	1001	1	480	1	N	Y	WS_Open	1.6	TESTING, COMMISSIONING & HANDOVER (TC)		2000											
