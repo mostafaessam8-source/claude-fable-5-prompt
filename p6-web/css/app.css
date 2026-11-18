@@ -626,3 +626,4 @@ body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
 #toolbar.multi{height:auto!important;min-height:38px;flex-wrap:wrap;overflow:visible!important;white-space:normal;row-gap:2px;padding-top:2px;padding-bottom:2px}
 .arr-brk{flex:0 0 100%;height:0;margin:0;padding:0;border:0}
 body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relative;cursor:grab}body.arr-mode .arr-brk::after{content:"↵ row break / فاصل صف";position:absolute;top:1px;inset-inline-start:6px;font-size:10px;color:#e67e22;font-style:normal}
+.verchip{border:1px solid #00778B;color:#00778B;background:#fff;border-radius:10px;font-weight:700;font-size:11px;padding:1px 8px;margin:0 6px;cursor:pointer;white-space:nowrap}.verchip:hover{background:#00778B;color:#fff}
