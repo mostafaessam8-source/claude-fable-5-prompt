@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="ltr">
 <head>
-<!-- P6 Web – Schedule Studio v2.5.1 (2574c98) – offline single-file build -->
+<!-- P6 Web – Schedule Studio v2.5.2 (41dbbb0) – offline single-file build -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>P6 Web – Schedule Studio</title>
@@ -635,6 +635,7 @@ body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
 #toolbar.multi{height:auto!important;min-height:38px;flex-wrap:wrap;overflow:visible!important;white-space:normal;row-gap:2px;padding-top:2px;padding-bottom:2px}
 .arr-brk{flex:0 0 100%;height:0;margin:0;padding:0;border:0}
 body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relative;cursor:grab}body.arr-mode .arr-brk::after{content:"↵ row break / فاصل صف";position:absolute;top:1px;inset-inline-start:6px;font-size:10px;color:#e67e22;font-style:normal}
+.verchip{border:1px solid #00778B;color:#00778B;background:#fff;border-radius:10px;font-weight:700;font-size:11px;padding:1px 8px;margin:0 6px;cursor:pointer;white-space:nowrap}.verchip:hover{background:#00778B;color:#fff}
 
 </style>
 </head>
@@ -1192,10 +1193,20 @@ body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relati
 (function (g) {
   'use strict';
   const P6 = g.P6;
-  P6.VERSION = '2.5.1'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '2574c98'; P6.OFFLINE = true;
+  P6.VERSION = '2.5.2'; P6.BUILD_DATE = '2026-10-29'; P6.COMMIT = '41dbbb0'; P6.OFFLINE = true;
   P6.versionName = () => 'P6 Web – Schedule Studio v' + P6.VERSION + (P6.COMMIT && P6.COMMIT !== 'dev' ? ' (' + P6.COMMIT + ')' : '') + (P6.OFFLINE ? ' · Offline' : '');
   P6.offlineFile = () => 'P6-Web-v' + P6.VERSION + '-offline.html';
   document.title = P6.versionName();
+  // always-visible version chip in the top bar (visible in every theme); click = About
+  const chip = () => {
+    const tb = document.getElementById('topbar'); if (!tb || document.getElementById('verChip')) return;
+    const b = document.createElement('button'); b.id = 'verChip'; b.type = 'button'; b.className = 'verchip';
+    b.textContent = 'v' + P6.VERSION + (P6.OFFLINE ? ' · Offline' : ''); b.title = P6.versionName() + ' · ' + P6.BUILD_DATE;
+    b.onclick = () => { if (g.App && g.App.dialogs && g.App.dialogs.about) g.App.dialogs.about(); };
+    const sp = tb.querySelector('.spacer'); if (sp) tb.insertBefore(b, sp); else tb.appendChild(b);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', chip); else chip();
+  setTimeout(chip, 500); setTimeout(chip, 2000);
 })(window);
 
 </script>
