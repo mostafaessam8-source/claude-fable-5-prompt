@@ -114,7 +114,8 @@ dialog form{display:flex;flex-direction:column;min-height:0;flex:1}
 .x{background:none;border:0;color:#fff;font-size:22px;line-height:1;padding:4px 8px;border-radius:6px}
 .x:hover{background:rgba(255,255,255,.2)}
 .db{padding:18px 20px;overflow:auto;flex:1}
-.df{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;background:#FAFBFC}
+.df{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;background:#FAFBFC;flex-wrap:wrap}
+[hidden]{display:none!important}
 .df .sp{flex:1}
 .hint{color:var(--muted);font-size:12px}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 14px}
@@ -320,7 +321,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
     <button class="btn accent" id="bSaveNow" hidden title="Save changes in this browser (Ctrl+S)">Save now</button>
     <button class="btn accent" id="bNew" title="Add a new item (N)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Item</button>
     <button class="btn" id="bXlsx" title="Export to Excel (.xlsx)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Export Excel</button>
-    <button class="btn ghost" id="bImp" title="Import items from an Excel tracker file (.xlsx / .xlsm)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0l-4 4m4-4l4 4M4 17v3h16v-3"/></svg>Import Excel</button>
+    <button class="btn ghost" id="bImp" title="Import items from an Excel tracker (.xlsx / .xlsm) or from a saved copy of this tracker (.html)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0l-4 4m4-4l4 4M4 17v3h16v-3"/></svg>Import Excel</button>
     <button class="btn ghost" id="bCloud" title="Keep your data in your own private GitHub repository so it opens on any device"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18z"/></svg><span id="cloudTxt">Cloud sync</span></button>
     <button class="btn ghost" id="bSave" title="Download a copy of this file with all current data and attachments inside"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM8 3v6h7V3M8 21v-7h8v7"/></svg>Save File</button>
     <button class="btn ghost" id="bFull" title="Full screen (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fullTxt">Full Screen</span></button>
@@ -336,7 +337,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <select id="fStatus" aria-label="Status"><option value="">All statuses</option></select>
   <select id="fPriority" aria-label="Priority"><option value="">All priorities</option></select>
   <button class="btn line sm" id="bReset">Clear filters</button>
-  <span id="bulk" hidden><b id="bulkN"></b><button class="btn danger sm" id="bBulkDel">Delete selected</button><button class="btn line sm" id="bBulkClr">Clear selection</button></span>
+  <span id="bulk" hidden><b id="bulkN"></b><button class="btn line sm" id="bBulkSend">Send selected</button><button class="btn danger sm" id="bBulkDel">Delete selected</button><button class="btn line sm" id="bBulkClr">Clear selection</button></span>
   <label class="wk" title="“Due this week” counts items due up to the last day of the current week">Week starts<select id="fWeek" aria-label="Week starts on"></select></label>
   <span class="count" id="count"></span>
 </section>
@@ -407,6 +408,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
     </div>
     <div class="df">
       <button type="button" class="btn danger" id="bDelete">Delete item</button>
+      <button type="button" class="btn line" id="bSend" title="Email this item with all its details, attachments and links as one HTML file">✉ Send by email</button>
       <span class="sp"></span><span class="hint">Ctrl + Enter to save</span>
       <button type="button" class="btn line" data-close>Cancel</button>
       <button type="submit" class="btn primary">Save</button>
@@ -440,6 +442,20 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <div class="df"><span class="sp"></span><button class="btn line" id="aNo">Cancel</button><button class="btn primary" id="aYes">OK</button></div>
 </dialog>
 
+<!-- send by email -->
+<dialog id="dSend" class="small">
+  <div class="dh"><h2 id="sTitle">Send by email</h2><button class="x" id="sX" aria-label="Close">×</button></div>
+  <div class="db">
+    <p style="margin:0 0 12px;font-size:13.5px">Everything about <span id="sWhat"></span> — details, all updates, attached files, images and links — is packed into <b>one HTML file</b> the receiver opens in any browser.</p>
+    <div class="grid">
+      <label class="f s4">To (optional)<input id="s_to" placeholder="name@company.com; second@company.com" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <p id="sInfo" style="margin:12px 0 0;font-weight:600;font-size:13px"></p>
+    <p class="hint" style="margin:6px 0 0">“Open in Outlook” downloads a draft email (.eml). Click the downloaded file: Outlook opens a new message with the file already attached — check it and press Send.</p>
+  </div>
+  <div class="df"><button class="btn line" id="sHtml">Download HTML only</button><span class="sp"></span><button class="btn line" id="sShare">Share…</button><button class="btn primary" id="sEml">Open in Outlook</button></div>
+</dialog>
+
 <!-- cloud sync -->
 <dialog id="dCloud" class="small">
   <form id="fCloud" novalidate>
@@ -465,7 +481,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
 
 <!-- import -->
 <dialog id="dImp" class="small">
-  <div class="dh"><h2>Import from Excel</h2><button class="x" id="mX" aria-label="Close">×</button></div>
+  <div class="dh"><h2>Import</h2><button class="x" id="mX" aria-label="Close">×</button></div>
   <div class="db"><p id="mMsg" style="margin:0 0 10px;font-weight:600"></p><p id="mNote" class="hint" style="margin:0;font-size:13px"></p></div>
   <div class="df"><span class="sp"></span><button class="btn line" id="mNo">Cancel</button><button class="btn line" id="mAdd">Add as new items</button><button class="btn danger" id="mRep">Replace current items</button></div>
 </dialog>
@@ -493,6 +509,7 @@ tbody tr.sel td,tbody tr.sel:hover td{background:#FFF8E1}
   <button data-cmd="open" role="menuitem">Open / edit</button>
   <button data-cmd="upd" role="menuitem">Add update</button>
   <button data-cmd="close" role="menuitem" id="ctxClose">Mark as closed</button>
+  <button data-cmd="send" role="menuitem">Send by email</button>
   <button data-cmd="dup" role="menuitem">Duplicate</button>
   <button data-cmd="del" role="menuitem" class="dng">Delete</button>
 </div>
@@ -837,7 +854,7 @@ function openItem(id, due = '') {
   $('log').replaceChildren(...v.log.map(logRow));
   $('iTag').textContent = it ? 'ITEM ' + pad(it.id) : 'NEW';
   $('iTitle').textContent = it ? it.title : 'New item';
-  $('bDelete').hidden = !it;
+  $('bDelete').hidden = $('bSend').hidden = !it;
   snap = snapOf();
   $('dItem').showModal();
   $('i_title').focus();
@@ -1074,6 +1091,7 @@ $('ctx').addEventListener('click', e => {
   if (c === 'open') openItem(it.id);
   else if (c === 'upd') openUpd(it.id);
   else if (c === 'del') removeItems([it.id]);
+  else if (c === 'send') openSend([it]);
   else if (c === 'close') {
     if (isOpen(it)) { applyStatus(it, 'Closed'); commit(`Item ${pad(it.id)} closed`); }
     else { it.status = 'In Progress'; it.closed = ''; commit(`Item ${pad(it.id)} reopened`); }
@@ -1456,11 +1474,17 @@ async function parseExcel(file) {
   return {items, updates: items.reduce((s, i) => s + i.log.length, 0)};
 }
 $('bImp').onclick = () => {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.xlsm';
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.xlsm,.html,.htm';
   inp.onchange = async () => {
     const file = inp.files[0]; if (!file) return;
     let res;
-    try { res = await parseExcel(file); } catch (err) { toast('Could not read this file — it must be an Excel .xlsx or .xlsm tracker'); return; }
+    try {
+      if (/\.html?$/i.test(file.name)) {                           // a copy made with "Save File": attachments come with it
+        const m = /<script id="seed" type="application\/json">([\s\S]*?)<\/script>/.exec(await file.text()), d = m && JSON.parse(m[1]);
+        if (!d || !Array.isArray(d.items)) throw new Error('no data');
+        fix(d); res = {items: d.items, updates: d.items.reduce((s, i) => s + i.log.length, 0)};
+      } else res = await parseExcel(file);
+    } catch (err) { toast('Could not read this file — use an Excel tracker (.xlsx / .xlsm) or a saved tracker copy (.html)'); return; }
     if (!res.items.length) { toast('No tracker items were found in this file'); return; }
     const d = $('dImp'), n = res.items.length, have = db.items.length;
     $('mMsg').textContent = `Found ${n} item${n > 1 ? 's' : ''} and ${res.updates} update${res.updates === 1 ? '' : 's'} in “${file.name}”.`;
@@ -1573,6 +1597,86 @@ $('cOff').onclick = () => { cloud = null; saveCloud(); clearTimeout(cloudT); clo
 const cloudCheck = () => { if (cloud && !document.hidden && Date.now() - cloudLast > 20000) cloudSync(); };
 document.addEventListener('visibilitychange', cloudCheck); window.addEventListener('focus', cloudCheck); setInterval(cloudCheck, 120000);
 cloudStatus(cloud ? 'Connecting…' : '');
+
+/* ---------- send by email: one self-contained HTML file per item (or several), wrapped in a draft .eml ---------- */
+function itemsHtml(items) {
+  const pill = (v, bg, fg) => v ? `<span class="p" style="background:${bg};color:${fg}">${esc(v)}</span>` : '';
+  const COL = {Critical: ['#CB2C30', '#fff'], High: ['#F1B434', '#3D3935'], Medium: ['#E6F1F4', '#005F6F'], Low: ['#fff', '#768692'], 'In Progress': ['#00778B', '#fff'], 'Awaiting Response': ['#F1B434', '#3D3935'],
+    'On Hold': ['#C8C9C7', '#3D3935'], Closed: ['#768692', '#fff'], 'Not Started': ['#E6F1F4', '#005F6F'], Cancelled: ['#fff', '#768692'], Overdue: ['#CB2C30', '#fff'], 'Due Today': ['#F1B434', '#3D3935'],
+    'Due This Week': ['#FBE3A6', '#3D3935'], 'On Track': ['#E6F1F4', '#005F6F'], 'No Due Date': ['#fff', '#768692']};
+  const pl = v => pill(v, ...(COL[v] || ['#E6F1F4', '#005F6F'])), f = (l, v) => `<div class="f"><small>${l}</small><div>${v || '—'}</div></div>`;
+  const att = x => x.url ? `<a class="a" href="${esc(x.url)}" target="_blank" rel="noopener">🔗 ${esc(x.name)}</a>`
+    : isImg(x) ? `<figure><img src="${esc(x.data)}" data-n="${esc(x.name)}" alt="${esc(x.name)}" title="Click to open full size"><figcaption>${esc(x.name)}</figcaption></figure>`
+    : `<a class="a" href="${esc(x.data)}" download="${esc(x.name)}" data-n="${esc(x.name)}">📎 ${esc(x.name)} <small>(${fsize(x.size)})</small></a>`;
+  const body = items.map(it => { const ds = dueStatus(it), dl = daysLeft(it);
+    return `<section><h2><span>ITEM ${pad(it.id)}</span>${esc(it.title)}</h2>
+<div class="g">${f('Type', esc(it.type))}${f('Priority', pl(it.priority))}${f('Status', pl(it.status))}${f('Progress', it.progress + '%')}${f('Due status', pl(ds) + (dl !== '' ? ` <small>${dl < 0 ? nDays(-dl) + ' late' : nDays(dl) + ' left'}</small>` : ''))}
+${f('Project', esc(it.project))}${f('From (requested by)', esc(it.from))}${f('To (assigned to)', esc(it.to))}${f('Support / CC', esc(it.cc))}${f('Reference', esc(it.ref))}
+${f('Start date', fmt(it.start))}${f('Due date', fmt(it.due))}${f('Closed date', fmt(it.closed))}</div>
+<div class="g2">${f('Description / Scope', esc(it.desc).replace(/\n/g, '<br>'))}${f('Expected output', esc(it.output).replace(/\n/g, '<br>'))}</div>
+<h3>Updates &amp; actions log (${it.log.length})</h3>` + (it.log.length ? `<table><thead><tr><th>#</th><th>Date</th><th>Update / action taken</th><th>By</th><th>Next step</th></tr></thead><tbody>`
+      + it.log.map((l, i) => `<tr><td>${i + 1}</td><td class="nw">${fmt(l.date)}</td><td>${esc(l.text).replace(/\n/g, '<br>')}${l.files.length ? `<div class="at">${l.files.map(att).join('')}</div>` : ''}</td><td>${esc(l.by)}</td><td>${esc(l.next)}</td></tr>`).join('')
+      + '</tbody></table>' : '<p class="m">No updates logged.</p>') + '</section>'; }).join('');
+  const title = items.length === 1 ? `ITEM ${pad(items[0].id)} — ${items[0].title}` : `${items.length} tracker items`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>
+*{box-sizing:border-box}body{margin:0;background:#F3F6F7;color:#3D3935;font:14px/1.5 "Segoe UI",system-ui,Arial,sans-serif}
+header{background:#00778B;color:#fff;padding:14px 24px}header b{font-size:20px;letter-spacing:.06em;margin-right:12px}header small{display:block;color:#fff;opacity:.85;margin-top:2px}
+main{max-width:1000px;margin:0 auto;padding:18px}section{background:#fff;border:1px solid #DDE3E6;border-radius:10px;padding:18px 20px;margin-bottom:18px}
+h2{margin:0 0 14px;font-size:19px}h2 span{display:inline-block;background:#00778B;color:#fff;font-size:12px;border-radius:6px;padding:2px 8px;margin-right:10px;vertical-align:middle}
+h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#005F6F;margin:20px 0 8px}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px 16px}.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 16px;margin-top:14px}
+.f small{display:block;font-size:11px;font-weight:700;color:#768692;text-transform:uppercase;letter-spacing:.04em}small{color:#768692}
+.p{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;border:1px solid #DDE3E6}
+table{border-collapse:collapse;width:100%}th{background:#00778B;color:#fff;text-align:left;font-size:12px;padding:7px 9px}td{padding:8px 9px;border-bottom:1px solid #DDE3E6;vertical-align:top}.nw{white-space:nowrap}.m{color:#768692}
+.at{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.a{display:inline-block;border:1px solid #DDE3E6;border-radius:8px;padding:5px 10px;text-decoration:none;color:#005F6F;font-weight:600;font-size:13px;background:#F7FAFB;word-break:break-all}
+figure{margin:0;border:1px solid #DDE3E6;border-radius:8px;padding:5px;background:#F7FAFB;max-width:260px}figure img{display:block;max-width:100%;max-height:190px;border-radius:5px;cursor:zoom-in}figcaption{font-size:11.5px;color:#768692;margin-top:4px;word-break:break-all}
+footer{text-align:center;color:#768692;font-size:12px;padding:0 0 24px}@media print{body{background:#fff}section{border:0;padding:0}}
+</style></head><body><header><b>SAR</b>Daily Tasks, Activities &amp; Issues Tracker<small>Saudi Arabia Railways · Project Management Office · sent ${fmt(today())} — due status is as of this date</small></header><main>${body}</main>
+<footer>Files and images are inside this page: click one to open or save it.</footer>
+<scr` + `ipt>document.addEventListener('click',function(e){var a=e.target.closest('[data-n]');if(!a)return;e.preventDefault();var d=a.getAttribute('href')||a.src,i=d.indexOf(','),b=atob(d.slice(i+1)),u=new Uint8Array(b.length);for(var k=0;k<b.length;k++)u[k]=b.charCodeAt(k);var url=URL.createObjectURL(new Blob([u],{type:(/^data:([^;,]*)/.exec(d)||[])[1]||'application/octet-stream'}));if(a.tagName==='IMG'){window.open(url,'_blank');}else{var l=document.createElement('a');l.href=url;l.download=a.getAttribute('data-n');document.body.appendChild(l);l.click();l.remove();}});</scr` + `ipt></body></html>`;
+}
+let sendDoc = null;
+function openSend(items) {
+  const one = items.length === 1 ? items[0] : null, html = itemsHtml(items), size = new Blob([html]).size;
+  const safe = s => s.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  const nAttach = items.reduce((s, it) => s + nAtt(it), 0), last1 = one ? last(one) : null;
+  sendDoc = {html, name: (one ? `SAR_Item_${pad(one.id)}_${safe(one.title)}` : `SAR_Items_${today()}`) + '.html',
+    subject: one ? `SAR Tracker — ITEM ${pad(one.id)}: ${one.title}` : `SAR Tracker — ${items.length} items`,
+    text: one ? `Please find attached ITEM ${pad(one.id)} — ${one.title}.` : `Please find attached ${items.length} tracker items.`,
+    body: '<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#3D3935"><p>Dear all,</p><p>Please find attached the full details of ' + (one ? `<b>ITEM ${pad(one.id)} — ${esc(one.title)}</b>` : `<b>${items.length} tracker items</b>`)
+      + ' (details, updates log, files and links). Open the attached HTML file in any browser.</p>'
+      + '<table style="border-collapse:collapse;font-size:13px">' + items.map(it => `<tr><td style="padding:4px 12px 4px 0;color:#768692">${pad(it.id)}</td><td style="padding:4px 12px 4px 0"><b>${esc(it.title)}</b></td><td style="padding:4px 12px 4px 0">${esc(it.status)}</td><td style="padding:4px 12px 4px 0">${it.progress}%</td><td style="padding:4px 0">${it.due ? 'due ' + fmt(it.due) : ''}</td></tr>`).join('') + '</table>'
+      + (last1 && last1.text ? `<p><b>Latest update:</b> ${esc(last1.text)}${last1.next ? `<br><b>Next step:</b> ${esc(last1.next)}` : ''}</p>` : '') + '<p>Regards,</p></div>'};
+  $('sTitle').textContent = one ? `Send item ${pad(one.id)} by email` : `Send ${items.length} items by email`;
+  $('sWhat').textContent = one ? 'this item' : `these ${items.length} items`;
+  $('sInfo').textContent = `Attachment: ${sendDoc.name} · ${fsize(size)} · ${nAttach} file${nAttach === 1 ? '' : 's'} / link${nAttach === 1 ? '' : 's'} inside` + (size > 15 * 1048576 ? ' — this may be too large for email; consider “Download HTML only” and sharing it another way.' : '');
+  $('sInfo').style.color = size > 15 * 1048576 ? 'var(--red)' : '';
+  let can = false; try { can = !!navigator.canShare && navigator.canShare({files: [new File(['x'], 'x.html', {type: 'text/html'})]}); } catch (e) {}
+  $('sShare').hidden = !can;
+  $('dSend').showModal();
+}
+function buildEml(doc, to) {
+  const q = s => /^[\x20-\x7E]*$/.test(s) ? s : '=?UTF-8?B?' + b64enc(s) + '?=', wrap = s => s.replace(/.{76}/g, '$&\r\n'), B = '----=_SAR_Tracker_' + Date.now().toString(36);
+  return ['X-Unsent: 1', 'To: ' + to, 'Subject: ' + q(doc.subject), 'MIME-Version: 1.0', `Content-Type: multipart/mixed; boundary="${B}"`, '',
+    '--' + B, 'Content-Type: text/html; charset="utf-8"', 'Content-Transfer-Encoding: base64', '', wrap(b64enc(doc.body)),
+    '--' + B, `Content-Type: text/html; charset="utf-8"; name="${doc.name}"`, 'Content-Transfer-Encoding: base64', `Content-Disposition: attachment; filename="${doc.name}"`, '', wrap(b64enc(doc.html)),
+    '--' + B + '--', ''].join('\r\n');
+}
+$('sEml').onclick = () => {
+  const to = $('s_to').value.split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
+  if (to.some(a => !/^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/.test(a))) { $('s_to').focus(); toast('Check the email address'); return; }
+  download(new Blob([buildEml(sendDoc, to.join(', '))], {type: 'message/rfc822'}), sendDoc.name.replace(/\.html$/, '.eml'));
+  $('dSend').close(); toast('Draft downloaded — click it to open in Outlook, then press Send');
+};
+$('sHtml').onclick = () => { download(new Blob([sendDoc.html], {type: 'text/html'}), sendDoc.name); $('dSend').close(); toast('HTML file downloaded'); };
+$('sShare').onclick = async () => {
+  try { await navigator.share({files: [new File([sendDoc.html], sendDoc.name, {type: 'text/html'})], title: sendDoc.subject, text: sendDoc.text}); $('dSend').close(); }
+  catch (e) { if (e.name !== 'AbortError') toast('Sharing is not available here — use “Open in Outlook”'); }
+};
+$('sX').onclick = () => $('dSend').close();
+$('dSend').addEventListener('mousedown', e => { if (e.target === $('dSend')) $('dSend').close(); });
+$('bSend').onclick = () => { const it = db.items.find(i => i.id === editId); if (it) openSend([{...it, ...readForm()}]); };
+$('bBulkSend').onclick = () => { const items = db.items.filter(i => sel.has(i.id)); if (items.length) openSend(items); };
 
 /* ---------- shortcuts ---------- */
 document.addEventListener('keydown', e => {
