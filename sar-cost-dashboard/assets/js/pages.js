@@ -963,8 +963,10 @@
   }
 
   /** Spending-plan matrix: an overall block then one block per project, months as columns, red cut-off line. */
+  var SM_KEY = "sar.smHidden";       // spending-plan matrix: row types the user hid (per browser)
+  function smHidden() { try { return JSON.parse(localStorage.getItem(SM_KEY) || "[]") || []; } catch (e) { return []; } }
   function spendMatrix(host, list, months, cut, onProj) {
-    var ci = months.indexOf(cut);
+    var ci = months.indexOf(cut), HID = smHidden();
     function rowsOf(get) {                                   // monthly plan / actual-or-forecast for a set of projects
       return months.map(function (m) { return list.reduce(function (s, o) { var c = o.months[m]; return s + (c ? get(c) : 0); }, 0); });
     }
@@ -981,9 +983,11 @@
       var lab = RV ? [["M Original Plan", plan, "p", sum(plan)], ["M Rev Plan", rev, "p", sum(rev)], ["M Actual / Forecast", act, "a", sum(act)],
           ["Cum Original Plan", cumP, "c", null], ["Cum Rev Plan", cumR, "c", null], ["Cum Actual / Forecast", cumA, "c", null], ["Variance (vs Rev)", vr, "v", vr[vr.length - 1]]]
         : [["M Plan", plan, "p", sum(plan)], ["M Actual / Forecast", act, "a", sum(act)], ["Cum Plan", cumP, "c", null], ["Cum Actual / Forecast", cumA, "c", null], ["Variance", vr, "v", vr[vr.length - 1]]];
+      lab = lab.filter(function (l) { return HID.indexOf(l[0]) < 0; });
+      if (!lab.length) return "";
       var tot = lab.map(function (l) { return l[3]; }), last = lab.length - 1;
       return lab.map(function (l, k) {
-        return '<tr class="' + (k === 0 ? "first" : "") + (k === last ? " var" : "") + (l[0].indexOf("Rev") >= 0 ? " rev" : "") + '">' + (k === 0 ? '<th rowspan="' + lab.length + '" class="sm-p' + (idx != null ? " clickable" : "") + '"' + (idx != null ? ' data-p="' + idx + '"' : "") + ">" + title + (sub ? "<small>" + sub + "</small>" : "") + "</th>" : "") +
+        return '<tr class="' + (k === 0 ? "first" : "") + (k === last && l[2] === "v" ? " var" : "") + (k === last ? " blk-end" : "") + (l[0].indexOf("Rev") >= 0 ? " rev" : "") + '">' + (k === 0 ? '<th rowspan="' + lab.length + '" class="sm-p' + (idx != null ? " clickable" : "") + '"' + (idx != null ? ' data-p="' + idx + '"' : "") + ">" + title + (sub ? "<small>" + sub + "</small>" : "") + "</th>" : "") +
           '<th class="sm-l">' + l[0] + "</th>" + cells(l[1], l[2]) + '<td class="num tot' + (k === last ? (tot[k] < -0.5 ? " neg" : tot[k] > 0.5 ? " pos" : "") : "") + '">' + (tot[k] == null ? "" : fmt.money(tot[k])) + "</td></tr>";
       }).join("");
     }
@@ -992,7 +996,7 @@
       months.map(function (m, i) { return '<th data-c="' + i + '" class="' + (i === ci ? "cut" : "") + (ci >= 0 && i > ci ? " fcst" : "") + '">' + esc(fmt.month(m)) + (ci >= 0 && i === ci + 1 ? "<small>Forecast →</small>" : i === ci ? "<small>Cut-off</small>" : "") + "</th>"; }).join("") +
       "<th>Total 2026</th></tr></thead><tbody>";
     function actOrFc(c) { return c.past ? (c.act || 0) : (c.fc || 0); }
-    h += block("Overall", withData.length + " projects", rowsOf(function (c) { return c.plan || 0; }), rowsOf(actOrFc), null, rowsOf(function (c) { return c.rev || 0; })).replace(/<tr class="first/, '<tr class="overall first').replace(/<tr class="/g, '<tr class="ov ');
+    if (HID.indexOf("Overall") < 0) h += block("Overall", withData.length + " projects", rowsOf(function (c) { return c.plan || 0; }), rowsOf(actOrFc), null, rowsOf(function (c) { return c.rev || 0; })).replace(/<tr class="first/, '<tr class="overall first').replace(/<tr class="/g, '<tr class="ov ');
     withData.forEach(function (o, i) {
       var one = [o];
       var pl = months.map(function (m) { var c = o.months[m]; return c ? c.plan || 0 : 0; }), ac = months.map(function (m) { var c = o.months[m]; return c ? actOrFc(c) : 0; });
@@ -1000,8 +1004,20 @@
       h += block("<b>" + esc(o.ID) + "</b> " + esc(o.name), esc(o.kpi), pl, ac, i, rv);
     });
     h += "</tbody></table></div>";
-    var tools = '<div class="sm-tools"><span class="sm-hint">Reading ruler: hover a row to follow it across the months · click to pin it, ↑ ↓ to move, Esc to clear</span></div>';
+    var TYPES = ["Overall"].concat(RV ? ["M Original Plan", "M Rev Plan", "M Actual / Forecast", "Cum Original Plan", "Cum Rev Plan", "Cum Actual / Forecast", "Variance (vs Rev)"]
+      : ["M Plan", "M Actual / Forecast", "Cum Plan", "Cum Actual / Forecast", "Variance"]);
+    var chips = '<div class="sm-rows" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:4px 0 8px"><b>Show rows:</b>' +
+      TYPES.map(function (t) { return '<label style="display:inline-flex;gap:5px;align-items:center;cursor:pointer;white-space:nowrap"><input type="checkbox" data-t="' + esc(t) + '"' + (HID.indexOf(t) < 0 ? " checked" : "") + ">" + esc(t === "Overall" ? "Overall block" : t) + "</label>"; }).join("") +
+      '<a href="#" class="sm-all" style="margin-left:6px">Show all</a></div>';
+    var tools = '<div class="sm-tools">' + chips + '<span class="sm-hint">Reading ruler: hover a row to follow it across the months · click to pin it, ↑ ↓ to move, Esc to clear</span></div>';
     var node = add(host, "<div>" + tools + h + "</div>");
+    function redraw(hid) { try { localStorage.setItem(SM_KEY, JSON.stringify(hid)); } catch (e) { /* storage blocked: this view only */ }
+      var y = window.scrollY; node.remove(); spendMatrix(host, list, months, cut, onProj); window.scrollTo(0, y); }
+    node.querySelectorAll(".sm-rows input").forEach(function (cb) { cb.addEventListener("change", function () {
+      var hid = [].slice.call(node.querySelectorAll(".sm-rows input")).filter(function (x) { return !x.checked; }).map(function (x) { return x.getAttribute("data-t"); });
+      if (hid.filter(function (t) { return t !== "Overall"; }).length >= TYPES.length - 1) { cb.checked = true; U.toast("Keep at least one row type.", true); return; }
+      redraw(hid); }); });
+    node.querySelector(".sm-all").addEventListener("click", function (e) { e.preventDefault(); redraw([]); });
     node.querySelectorAll(".sm-p.clickable").forEach(function (t) { t.addEventListener("click", function (e) { onProj(withData[+t.getAttribute("data-p")], e); }); });
 
     // reading ruler: row highlight on hover (CSS), click pins a row, the hovered month column is tinted
