@@ -15,7 +15,7 @@
     const parts = [], cen = []; let off = 0;
     const w16 = (a, v) => a.push(v & 255, (v >> 8) & 255), w32 = (a, v) => a.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255);
     for (const [name, text] of files) {
-      const nm = enc.encode(name), data = enc.encode(text), crc = crc32(data), h = [];
+      const nm = enc.encode(name), data = typeof text === 'string' ? enc.encode(text) : text, crc = crc32(data), h = [];
       w32(h, 0x04034b50); w16(h, 20); w16(h, 0x0800); w16(h, 0); w16(h, 0); w16(h, 0x21); w32(h, crc); w32(h, data.length); w32(h, data.length); w16(h, nm.length); w16(h, 0);
       parts.push(new Uint8Array(h), nm, data);
       const c = []; w32(c, 0x02014b50); w16(c, 20); w16(c, 20); w16(c, 0x0800); w16(c, 0); w16(c, 0); w16(c, 0x21); w32(c, crc); w32(c, data.length); w32(c, data.length); w16(c, nm.length); w16(c, 0); w16(c, 0); w16(c, 0); w16(c, 0); w32(c, 0); w32(c, off);
