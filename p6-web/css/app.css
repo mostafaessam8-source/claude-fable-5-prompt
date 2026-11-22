@@ -627,3 +627,14 @@ body.arr-mode #toolbar .sep{outline:1px dashed #e67e22;width:6px;cursor:grab}
 .arr-brk{flex:0 0 100%;height:0;margin:0;padding:0;border:0}
 body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relative;cursor:grab}body.arr-mode .arr-brk::after{content:"↵ row break / فاصل صف";position:absolute;top:1px;inset-inline-start:6px;font-size:10px;color:#e67e22;font-style:normal}
 .verchip{border:1px solid #00778B;color:#00778B;background:#fff;border-radius:10px;font-weight:700;font-size:11px;padding:1px 8px;margin:0 6px;cursor:pointer;white-space:nowrap}.verchip:hover{background:#00778B;color:#fff}
+/* Resource Assignments (P6 style grid + time-phased spreadsheet) */
+.ra-split{display:flex;flex:1;min-height:0;direction:ltr;background:#fff}.ra-left{display:flex;flex-direction:column;min-width:280px;overflow:hidden}.ra-right{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.ra-gut{width:5px;cursor:col-resize;background:#bdbdbd;flex:none}.ra-lh,.ra-rh{overflow:hidden;flex:none;background:linear-gradient(#f4f4f4,#d6d6d6);border-bottom:1px solid #8a8a8a;height:44px}
+.ra-lh .ra-hr{display:flex}.ra-hc{display:block;flex:none;box-sizing:border-box;border-inline-end:1px solid #9a9a9a;font-weight:600;font-size:12px;overflow:hidden;white-space:nowrap;position:relative;padding:0 5px;color:#222}
+.ra-lh .ra-hc{height:44px;line-height:44px;text-align:left}.ra-rh .ra-hc{text-align:center;height:22px;line-height:22px}.ra-ht,.ra-hb{display:flex;height:22px}.ra-ht{border-bottom:1px solid #9a9a9a}.ra-hc.dd{background:#cfe3ff}.ra-hc.ra-tot{background:#e9e9e9}
+.ra-rz{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize}.ra-lb,.ra-rb{flex:1;overflow:auto;position:relative;min-height:0}#ra_ls,#ra_rs{position:relative}
+.ra-r{position:absolute;left:0;height:24px;display:flex;align-items:center;border-bottom:1px solid #e2e2e2;white-space:nowrap;font-size:12px;color:#000;box-sizing:border-box}.ra-c{flex:none;overflow:hidden;text-overflow:ellipsis;padding:0 5px;box-sizing:border-box;border-inline-end:1px solid #efefef;line-height:22px}
+.ra-b{font-weight:700;color:#000}.ra-r.shr{font-size:11px}.ra-r.sel{background:#316ac5!important;color:#fff!important}.ra-r.sel .ra-c{border-color:#5f8fe0}.ra-grand{background:#d9d9d9;font-weight:700}
+.ra-pm{cursor:pointer;display:inline-block;width:13px;height:13px;text-align:center;border:1px solid #666;margin-inline-end:5px;font-size:11px;line-height:11px;background:#fff;color:#000}
+.ra-dock .ra-tools{margin-inline-start:auto;display:flex;gap:6px;align-items:center}.ra-dock .ra-tools label{display:flex;gap:4px;align-items:center;font-size:12px}
+.ra-dock select.inp{min-width:170px}.ra-dock{overflow:hidden;white-space:nowrap}

@@ -201,6 +201,7 @@
     return out;
   }
   function renderAssign(el) {
+    if (App.renderAssignWin) return App.renderAssignWin(el);
     const p = App.p, tmap = new Map(p.tasks.map((x) => [x.id, x])), rmap = new Map(p.rsrc.map((x) => [x.id, x])), amap = new Map(p.accounts.map((x) => [x.id, x]));
     const measure = App.cfg.raMeasure || 'ru';
     const list = p.asg.filter((a) => tmap.has(a.task) && rmap.has(a.rsrc)).sort((a, b) => tmap.get(a.task).code.localeCompare(tmap.get(b.task).code, undefined, { numeric: true }));

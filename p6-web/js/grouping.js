@@ -19,6 +19,8 @@
   // ----- group fields
   const DATE_INT = { Day: (d) => d, Week: (d) => d - P6.dow(d), Month: (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m, 1); }, Quarter: (d) => { const y = P6.ymd(d); return P6.mkDay(y.y, y.m - (y.m % 3), 1); }, Year: (d) => P6.mkDay(P6.ymd(d).y, 0, 1) };
   const dateLabel = (interval, d) => { const y = P6.ymd(d); return interval === 'Year' ? String(y.y) : interval === 'Quarter' ? 'Q' + (Math.floor(y.m / 3) + 1) + ' ' + y.y : interval === 'Month' ? P6.MON[y.m] + ' ' + y.y : P6.fmtDate(d); };
+  P6.grpShowable = (by) => /^(ac|rc):/.test(by) || ['rsrc', 'acct', 'role'].includes(by);
+  P6.newGroupLevel = newLevel;
   P6.groupFields = function (p) {
     const base = [['wbs', 'WBS'], ['status', 'col_status'], ['type', 'col_type'], ['cal', 'col_cal'], ['crit', 'col_crit'], ['pct', 'col_pct'], ['es', 'col_es'], ['ef', 'col_ef'], ['tf', 'col_tf'], ['dur', 'col_dur'], ['primname', 'col_primname'], ['fp', 'col_fp'], ['cstr', 'col_cstr']];
     const out = base.map(([k, l]) => [k, l === 'WBS' ? 'WBS' : t(l)]);
@@ -101,7 +103,7 @@
     const catLevel = (ts, li, depth, path, L) => {
       const map = new Map();
       for (const tk of ts) { const v = keyOf(L.by, tk, ctx, L); if (!map.has(v.k)) map.set(v.k, { v, ts: [] }); map.get(v.k).ts.push(tk); }
-      if (/^ac:/.test(L.by) && !L.hideEmpty) for (const v of p.codeVals.filter((x) => x.type === +L.by.slice(3))) { const k = String(v.id); if (!map.has(k)) map.set(k, { v: keyOf(L.by, { codes: { [L.by.slice(3)]: v.id } }, ctx, L), ts: [] }); }
+      if (P6.grpShowable(L.by) && !L.hideEmpty) for (const v of p.codeVals.filter((x) => x.type === +L.by.slice(3))) { const k = String(v.id); if (!map.has(k)) map.set(k, { v: keyOf(L.by, { codes: { [L.by.slice(3)]: v.id } }, ctx, L), ts: [] }); }
       let list = [...map.values()];
       list.sort(L.alpha ? (a, b) => o.nat(a.v.label, b.v.label) : (a, b) => (a.v.s - b.v.s) || o.nat(a.v.label, b.v.label));
       const cd = L.indent === false ? depth : depth + 1, color = L.color || PAL[li % PAL.length];
@@ -119,9 +121,10 @@
   };
 
   // ================= Group and Sort dialog =================
-  D.groupSort = function () {
-    const G = clone(P6.normGrp(App.cfg)); let selI = 0;
-    const fields = P6.groupFields(App.p);
+  D.groupSort = function (O) {
+    O = O || {}; const CFG = O.cfg || App.cfg;
+    const G = clone(P6.normGrp(CFG)); let selI = 0;
+    const fields = O.fields ? O.fields() : P6.groupFields(App.p);
     const body = document.createElement('div'); body.className = 'grpdlg';
     const acOpt = () => (fields.some(([k]) => /^ac:/.test(k)) ? '' : `<option value="__codes">${esc(t('grp_defcodes'))}</option>`);
     const rowsHtml = () => {
@@ -138,13 +141,13 @@
       const L = G.levels[selI] || null;
       body.innerHTML = `<div class="gd-wrap"><div class="gd-main"><fieldset><legend>${esc(t('grp_display'))}</legend><label class="chk"><input type="checkbox" id="gd_tot"${G.totals !== false ? ' checked' : ''}> ${esc(t('grp_totals'))}</label><label class="chk" style="margin-inline-start:22px"><input type="checkbox" id="gd_grand"${G.grand ? ' checked' : ''}${G.totals === false ? ' disabled' : ''}> ${esc(t('grp_grand'))}</label><label class="chk" style="margin-inline-start:22px"><input type="checkbox" id="gd_sum"${G.summ ? ' checked' : ''}> ${esc(t('grp_summ'))}</label><label class="chk"><input type="checkbox" id="gd_shr"${G.shrink ? ' checked' : ''}> ${esc(t('grp_shrink'))}</label></fieldset>
         <fieldset><legend>${esc(t('grp_by'))}</legend><div class="gd-tbl"><table class="mini"><thead><tr><th>${esc(t('grp_by'))}</th><th style="width:60px">${esc(t('grp_indent'))}</th><th style="width:90px">${esc(t('grp_tolevel'))}</th><th style="width:110px">${esc(t('grp_interval'))}</th><th style="width:70px">${esc(t('grp_pbreak'))}</th><th style="width:130px">${esc(t('grp_fontcolor'))}</th></tr></thead><tbody>${rowsHtml()}</tbody></table></div></fieldset>
-        <fieldset><legend>${esc(t('grp_options'))}</legend><label class="chk"><input type="checkbox" id="go_he"${L && L.hideEmpty ? ' checked' : ''}${L && /^ac:/.test(L.by) ? '' : ' disabled'}> ${esc(t('grp_hideempty'))}</label><label class="chk"><input type="checkbox" id="go_al"${L && L.alpha ? ' checked' : ''}${L && L.by !== 'wbs' ? '' : ' disabled'}> ${esc(t('grp_alpha'))}</label><div style="margin-top:6px">${esc(t('grp_show'))}:</div>
-        ${['title', 'id', 'name'].map((k) => `<label class="chk" style="margin-inline-start:12px"><input type="checkbox" data-sh="${k}"${L && L.show && L.show[k] ? ' checked' : ''}${L && /^ac:/.test(L.by) ? '' : ' disabled'}> ${esc(t('grp_show_' + k))}</label>`).join('')}</fieldset></div>
+        <fieldset><legend>${esc(t('grp_options'))}</legend><label class="chk"><input type="checkbox" id="go_he"${L && L.hideEmpty ? ' checked' : ''}${L && P6.grpShowable(L.by) ? '' : ' disabled'}> ${esc(t('grp_hideempty'))}</label><label class="chk"><input type="checkbox" id="go_al"${L && L.alpha ? ' checked' : ''}${L && L.by !== 'wbs' ? '' : ' disabled'}> ${esc(t('grp_alpha'))}</label><div style="margin-top:6px">${esc(t('grp_show'))}:</div>
+        ${['title', 'id', 'name'].map((k) => `<label class="chk" style="margin-inline-start:12px"><input type="checkbox" data-sh="${k}"${L && L.show && L.show[k] ? ' checked' : ''}${L && P6.grpShowable(L.by) ? '' : ' disabled'}> ${esc(t('grp_show_' + k))}</label>`).join('')}</fieldset></div>
 <div class="gd-side"><button class="btn pri" data-a="ok"><b class="gi" style="color:#2e9b2e">✔</b>${esc(t('ok'))}</button><button class="btn" data-a="cancel"><b class="gi" style="color:#d03a2f">⦸</b>${esc(t('cancel'))}</button><hr><button class="btn" data-a="apply"><b class="gi" style="color:#2f6fc4">▤</b>${esc(t('apply'))}</button><button class="btn" data-a="del"${L ? '' : ' disabled'}><b class="gi" style="color:#d03a2f">✖</b>${esc(t('delete'))}</button><hr><button class="btn" data-a="sort"><b class="gi" style="color:#2b3340">▭</b>${esc(t('grp_sort'))}…</button><button class="btn" data-a="default"><b class="gi" style="color:#2e9b2e">▶</b>${esc(t('default'))}</button><hr><button class="btn" data-a="help"><b class="gi" style="color:#e0a800">?</b>${esc(t('help'))}</button></div></div>`;
     };
     draw();
     const m = D.modal({ title: t('group_sort').replace('…', ''), cls: 'wide grpmodal', body, buttons: [], sticky: true });
-    const apply = () => { App.cfg.grp = clone(G); App.saveCfg(); App.refresh(); App.drawLayoutBar && App.drawLayoutBar(); };
+    const apply = () => { CFG.grp = clone(G); CFG.group = G.levels.length ? 'wbs' : 'none'; App.saveCfg(); if (O.after) return O.after(); App.refresh(); App.drawLayoutBar && App.drawLayoutBar(); };
     body.addEventListener('change', (e) => {
       const x = e.target;
       if (x.value === '__codes') { m.close(); D.codes('acg'); return; }
@@ -166,20 +169,22 @@
       const b = e.target.closest('[data-a]'); if (!b || b.disabled) return; const a = b.dataset.a;
       if (a === 'ok') { apply(); m.close(); } else if (a === 'cancel') m.close(); else if (a === 'apply') apply();
       else if (a === 'del') { G.levels.splice(selI, 1); selI = Math.max(0, selI - 1); draw(); }
-      else if (a === 'sort') D.sortDialog();
-      else if (a === 'default') { const d = { levels: [newLevel('wbs')], totals: true, grand: false, summ: false, shrink: false, wbsColors: null }; Object.assign(G, d); selI = 0; draw(); }
+      else if (a === 'sort') D.sortDialog(O);
+      else if (a === 'default') { const d = { levels: (O.defaultBy || ['wbs']).map(newLevel), totals: true, grand: false, summ: false, shrink: false, wbsColors: null }; Object.assign(G, d); selI = 0; draw(); }
       else if (a === 'help') D.modal({ title: t('help'), cls: 'mid', body: `<div style="line-height:1.8">${t('grp_help_html')}</div>`, buttons: [{ label: t('close'), cls: 'pri', fn: () => {} }] });
     });
   };
 
   // ================= Sort dialog =================
-  D.sortDialog = function () {
-    const cur = clone(P6.normSorts(App.cfg)); while (cur.length < 5) cur.push({ k: '', dir: 1 });
-    const keys = Object.keys(App.ALL_COLS).filter((k) => App.ALL_COLS[k].sort || /^(code|name|es|ef|tf|dur|pct)$/.test(k));
+  D.sortDialog = function (O) {
+    O = O || {}; const CFG = O.cfg || App.cfg;
+    const cur = clone(P6.normSorts(CFG)); while (cur.length < 5) cur.push({ k: '', dir: 1 });
+    const lab = (k) => (O.sortLabel ? O.sortLabel(k) : t('col_' + k));
+    const keys = O.sortKeys ? O.sortKeys() : Object.keys(App.ALL_COLS).filter((k) => App.ALL_COLS[k].sort || /^(code|name|es|ef|tf|dur|pct)$/.test(k));
     const body = document.createElement('div');
-    const draw = () => { body.innerHTML = `<table class="mini"><thead><tr><th>${esc(t('sort_by'))}</th><th style="width:150px">${esc(t('order'))}</th></tr></thead><tbody>${cur.map((s, i) => `<tr data-i="${i}"><td><select data-k="k"><option value="">—</option>${keys.map((k) => `<option value="${esc(k)}"${s.k === k ? ' selected' : ''}>${esc(t('col_' + k))}</option>`).join('')}</select></td><td><select data-k="dir"><option value="1"${s.dir === 1 ? ' selected' : ''}>${esc(t('sort_asc'))}</option><option value="-1"${s.dir === -1 ? ' selected' : ''}>${esc(t('sort_desc'))}</option></select></td></tr>`).join('')}</tbody></table>`; };
+    const draw = () => { body.innerHTML = `<table class="mini"><thead><tr><th>${esc(t('sort_by'))}</th><th style="width:150px">${esc(t('order'))}</th></tr></thead><tbody>${cur.map((s, i) => `<tr data-i="${i}"><td><select data-k="k"><option value="">—</option>${keys.map((k) => `<option value="${esc(k)}"${s.k === k ? ' selected' : ''}>${esc(lab(k))}</option>`).join('')}</select></td><td><select data-k="dir"><option value="1"${s.dir === 1 ? ' selected' : ''}>${esc(t('sort_asc'))}</option><option value="-1"${s.dir === -1 ? ' selected' : ''}>${esc(t('sort_desc'))}</option></select></td></tr>`).join('')}</tbody></table>`; };
     draw();
-    D.modal({ title: t('grp_sort').replace('…', ''), cls: 'mid', body, buttons: [{ label: t('default'), fn: () => { App.cfg.sorts = null; App.cfg.sort = 'code'; App.cfg.sortDir = 1; App.saveCfg(); App.refresh(); } }, { label: t('cancel'), fn: () => {} }, { label: t('ok'), cls: 'pri', fn: () => { const s = cur.filter((x) => x.k).map((x) => ({ k: x.k, dir: +x.dir })); App.cfg.sorts = s.length ? s : null; if (s.length) { App.cfg.sort = s[0].k; App.cfg.sortDir = s[0].dir; } App.saveCfg(); App.refresh(); } }] });
+    D.modal({ title: t('grp_sort').replace('…', ''), cls: 'mid', body, buttons: [{ label: t('default'), fn: () => { CFG.sorts = null; CFG.sort = O.defaultSort || 'code'; CFG.sortDir = 1; App.saveCfg(); if (O.after) O.after(); else App.refresh(); } }, { label: t('cancel'), fn: () => {} }, { label: t('ok'), cls: 'pri', fn: () => { const s = cur.filter((x) => x.k).map((x) => ({ k: x.k, dir: +x.dir })); CFG.sorts = s.length ? s : null; if (s.length) { CFG.sort = s[0].k; CFG.sortDir = s[0].dir; } App.saveCfg(); if (O.after) O.after(); else App.refresh(); } }] });
     body.addEventListener('change', (e) => { const i = +e.target.closest('tr').dataset.i; cur[i][e.target.dataset.k] = e.target.dataset.k === 'dir' ? +e.target.value : e.target.value; });
   };
 })(window);
