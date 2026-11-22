@@ -130,8 +130,8 @@
     else if (basis === 'rem') rem(tk.es, tk.ef, tot('rem'));
     else if (basis === 'reml') rem(tk.ls != null ? tk.ls : tk.es, tk.lf != null ? tk.lf : tk.ef, tot('rem'));
     else if (basis === 'ac') { put(days(tk.es, Math.min(dd, tk.af != null ? tk.af : tk.ef)), tot('act')); rem(tk.es, tk.ef, tot('rem')); }
-    else if (basis === 'pv') { const s = tk.bs != null ? tk.bs : tk.es, e = tk.bf != null ? tk.bf : tk.ef; put(days(s, e), N.bc); }
-    else if (basis === 'ev') put(days(tk.es, Math.min(dd, tk.ef)), N.bc * (tk.status === 'C' ? 1 : (tk.pct || 0) / 100));
+    else if (basis === 'pv') { const s = tk.bs != null ? tk.bs : tk.es, e = tk.bf != null ? tk.bf : tk.ef; put(days(s, e), cost ? N.bc : N.bu); }
+    else if (basis === 'ev') put(days(tk.es, Math.min(dd, tk.ef)), (cost ? N.bc : N.bu) * (tk.status === 'C' ? 1 : (tk.pct || 0) / 100));
     return out;
   }
 
@@ -220,7 +220,7 @@
     const fmtV = M[3] === 'c' ? (v) => (Math.abs(v) < 0.5 ? '' : money(v)) : (v) => (Math.abs(v) < 0.005 ? '' : n2(v));
 
     // ----- shell DOM
-    const bar = `▽ ${esc(t('layout'))}: ${esc(t('lay_assign'))}<span class="ra-tools"><button class="btn sm" data-ra="grp">${esc(B('Group and Sort…', 'تجميع وترتيب…'))}</button><button class="btn sm" data-ra="cols">${esc(B('Columns…', 'الأعمدة…'))}</button><button class="btn sm" data-ra="ts">${esc(B('Timescale…', 'المقياس الزمني…'))}</button><button class="btn sm" data-ra="exp">${esc(B('Expand all', 'فتح الكل'))}</button><button class="btn sm" data-ra="col">${esc(B('Collapse all', 'طي الكل'))}</button>
+    const bar = `▽ ${esc(t('layout'))}: ${esc(t('lay_assign'))}<span class="ra-tools"><button class="btn sm" data-ra="grp">${esc(B('Group and Sort…', 'تجميع وترتيب…'))}</button><button class="btn sm" data-ra="cols">${esc(B('Columns…', 'الأعمدة…'))}</button><button class="btn sm" data-ra="ts">${esc(B('Timescale…', 'المقياس الزمني…'))}</button><button class="btn sm" data-ra="scx">${esc(B('S-Curve → Excel…', 'منحنى S → Excel…'))}</button><button class="btn sm" data-ra="exp">${esc(B('Expand all', 'فتح الكل'))}</button><button class="btn sm" data-ra="col">${esc(B('Collapse all', 'طي الكل'))}</button>
       <label style="margin-inline-start:8px">${esc(B('Timescale', 'المقياس'))}: <select class="inp" data-ra="unit" style="height:22px">${['Day', 'Week', 'Month', 'Quarter', 'Year'].map((u) => `<option value="${u}"${R.ts.unit === u ? ' selected' : ''}>${esc(B(u, { Day: 'يوم', Week: 'أسبوع', Month: 'شهر', Quarter: 'ربع', Year: 'سنة' }[u]))}</option>`).join('')}</select></label>
       <label>${esc(t('display'))}: <select class="inp" data-ra="meas" style="height:22px">${MEAS.map((m) => `<option value="${m[0]}"${R.measure === m[0] ? ' selected' : ''}>${esc(B(m[1], m[2]))}</option>`).join('')}</select></label>
       <label class="chk"><input type="checkbox" data-ra="cum"${R.cum ? ' checked' : ''}> ${esc(B('Cumulative', 'تراكمي'))}</label></span>`;
@@ -290,7 +290,7 @@
       const b = e.target.closest('[data-ra]');
       if (b && b.tagName === 'BUTTON') {
         const a = b.dataset.ra;
-        if (a === 'grp') return D.groupSort(grpOpts()); if (a === 'cols') return D.columns(colOpts()); if (a === 'ts') return tsDialog();
+        if (a === 'scx') return App.sCurveExport(); if (a === 'grp') return D.groupSort(grpOpts()); if (a === 'cols') return D.columns(colOpts()); if (a === 'ts') return tsDialog();
         if (a === 'exp') { ST.collapsed.clear(); return render(el); } if (a === 'col') { ST.collapsed = new Set(allBands()); return render(el); }
       }
       const row = e.target.closest('.ra-r[data-a]'); if (row) { select(+row.dataset.a); lb.querySelectorAll('.sel,.ra-r.sel').forEach((q) => q.classList.remove('sel')); paint(); drawBottom(); return; }
@@ -375,5 +375,13 @@
   const wrap = (name, make) => { const orig = D[name]; D[name] = function (O) { if (!O && App.win === 'assign') return orig(make()); return orig(O); }; };
   wrap('groupSort', grpOpts); wrap('columns', colOpts); wrap('sortDialog', grpOpts);
   const tsOrig = D.timescaleDialog; D.timescaleDialog = function () { if (App.win === 'assign') return tsDialog(); return tsOrig.apply(this, arguments); };
+
+  function rowsOf(p) {
+    const pm = { cals: new Map(p.cals.map((c) => [c.id, c])), roles: new Map((p.roles || []).map((x) => [x.id, x])), accts: new Map((p.accounts || []).map((x) => [x.id, x])), codeVal: new Map((p.codeVals || []).map((v) => [v.id, v])) };
+    const tm = new Map(p.tasks.map((x) => [x.id, x])), rm = new Map(p.rsrc.map((x) => [x.id, x])), wm = new Map(p.wbs.map((x) => [x.id, x])), out = [];
+    for (const a of p.asg) { const tk = tm.get(a.task), r = rm.get(a.rsrc); if (!tk || !r) continue; out.push({ a, t: tk, r, w: wm.get(tk.wbs), wm, pm, N: asgNums(a, tk, r), pv: 0, ev: 0 }); }
+    return out;
+  }
+  App.assignKit = { rowsOf, mkPeriods, phaseRow, asgNums };
   App.renderAssignWin = render;
 })(window);
