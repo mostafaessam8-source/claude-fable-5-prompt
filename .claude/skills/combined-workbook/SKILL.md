@@ -48,6 +48,10 @@ file only for those sources.
   (fatalities + major/10 + minor/200 + near misses/1000) ÷ man-hours × 1e6 with major = Lost Time + Restricted
   Work-Day, minor = Medical Treatment + First Aid (cumulative figures). "Better When" = Lower → % achieved = target ÷ actual.
 - One YTD cut-off (`Settings!B6`, name `cfg_YTDMonth`); next month = cut-off + 1; report date = latest weekly Report Date.
+  The site has its own **YTD cut-off picker** on the Cost page (user request Nov 2026: "أعملي أوبشن اني أحدد ال cut off dates"):
+  default = Auto (last month with an actual in Monthly Plan), saved per browser (`localStorage sar.ytdCut`). It drives the
+  Cost page YTD figures, the Spend at risk YTD Actual (Monthly Plan actuals to the cut-off, the tracker figure only for
+  projects without monthly rows) and the Execution page. The workbook's own YTD columns still follow `Settings!B6`.
 - **Only one spend forecast: the contractor's** (Monthly Plan › Contractor Forecast (Incr); user rule Nov 2026:
   "مش عايز فوركاست تاني غير اللي بيجي من المقاول"). No V0 / V2 forecast columns in Monthly Plan, Projects, KPI Scorecard
   or the Dashboard; the site drops V0 / V2 columns of the old Delivery Plan too, and does not keep the PC tracker's

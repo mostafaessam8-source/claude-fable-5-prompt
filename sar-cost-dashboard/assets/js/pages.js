@@ -668,7 +668,7 @@
     ksum.forEach(function (r) { kpiName[N(r["KPI Code"])] = r["Objective/ KPIs"]; kpiW[N(r["KPI Code"])] = N(r["KPI Weight (%)"]) || 0; });
     kpd.filter(isKPI([7, 8])).forEach(function (r) { codeKpi[String(r.Code)] = N(r["KPI Code"]); });
     function kpiOf(id) { var k = codeKpi[id]; return k != null ? kpiName[k] || "KPI " + k : "Not in a cost KPI"; }
-    var cut = lastActualMonth(spAll), months = U.uniq(spAll.map(function (r) { return r.Month; })).sort(), toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
+    var cut = ytdCut(spAll), months = U.uniq(spAll.map(function (r) { return r.Month; })).sort(), toCut = cut ? "Jan – " + esc(fmt.month(cut)) : "";
     var projAll = outlookByProject(spAll, cut, kpiOf), byId = {};
     projAll.forEach(function (o) { byId[o.ID] = o; });
     // one filter bar for the whole page: spend projects and cost-register rows share KPI / outlook / fund / phase / project
@@ -684,6 +684,7 @@
     // spend by project and the invoice schedule — full-year KPI / outlook figures stay full year
     var mdef = { key: "month", label: "Month", options: months, display: fmt.month };
     var st = filterBar(ctx, defs.concat([mdef]), projAll);
+    cutPicker(ctx, v, spAll);
     var selM = months.filter(function (m) { return st.month.indexOf(m) >= 0; }), hasM = selM.length > 0, vMonths = hasM ? selM : months;
     var mLbl = hasM ? selM.map(fmt.month).join(", ") : "";
     function inM(o) { var r = { plan: 0, rev: 0, fc: 0, act: 0 }; selM.forEach(function (m) { var c = o.months[m]; if (!c) return; r.plan += c.plan; r.rev += c.rev; r.fc += c.fc; r.act += c.act || 0; }); return r; }
@@ -828,7 +829,10 @@
       var gr = grid(v, "g-5");
       var site = function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length ? m.reduce(function (a, o) { return a + (o.landing || 0); }, 0) : null; };
       var SF = rk.reduce(function (a, r) { return a + (site(r) || 0); }, 0);
-      gr.innerHTML = mTile("Contractor forecast 2026", SF, "slate", "the projects in the tracker · Monthly Plan") + mTile("YTD actual (tracker)", RS("YTD Actuals"), "yellow") +
+      // YTD actual from the Monthly Plan actuals up to the chosen cut-off (the tracker figure when the project has no monthly rows)
+      var ytdA = function (r) { var m = proj.filter(function (o) { return o.ID === r.Code || o.ID.slice(0, -1) === r.Code; }); return m.length ? m.reduce(function (a, o) { return a + (o.act || 0); }, 0) : r["YTD Actuals"]; };
+      rk = rk.map(function (r) { return Object.assign({}, r, { "YTD Actuals": ytdA(r) }); });
+      gr.innerHTML = mTile("Contractor forecast 2026", SF, "slate", "the projects in the tracker · Monthly Plan") + mTile("YTD actual", RS("YTD Actuals"), "yellow", toCut) +
         mTile("In-process", RS("In-Process"), "mid", "invoices / WC under processing") + mTile("Total at risk", RS("Total At Risk"), "red", "geopolitical " + fmt.m(RS("At Risk Geopolitical"), 1) + " M · other " + fmt.m(RS("At Risk Other"), 1) + " M") +
         mTile("Forecast − at risk", SF - RS("Total At Risk"), "black", "contractor forecast less the amount at risk");
       var trows = rk.map(function (r) {
@@ -847,7 +851,7 @@
           columns: [{ key: "Code", label: "Code" }, { key: "Project Name", label: "Project", wrap: true }, { key: "Total At Risk", label: "Total At Risk", type: "money", total: "sum",
               render: function (x) { return x > 0 ? '<b class="neg">' + fmt.money(x) + "</b>" : fmt.money(x || 0); } },
             { key: "why", label: "Root cause", wrap: true }, { key: "2026 Plan", label: "2026 Plan", type: "money", total: "sum" },
-            { key: "siteFc", label: "Contractor Forecast 2026", type: "money", total: "sum" }, { key: "YTD Actuals", label: "YTD Actual", type: "money", total: "sum" },
+            { key: "siteFc", label: "Contractor Forecast 2026", type: "money", total: "sum" }, { key: "YTD Actuals", label: "YTD Actual" + (cut ? " (to " + fmt.month(cut) + ")" : ""), type: "money", total: "sum" },
             { key: "In-Process", label: "In-Process", type: "money", total: "sum" }, { key: "At Risk Geopolitical", label: "At Risk · Geopolitical", type: "money", total: "sum" },
             { key: "At Risk Other", label: "At Risk · Operational", type: "money", total: "sum" },
             { key: "adj", label: "Forecast − At Risk", type: "money", total: "sum" }, { key: "Budget Reprofiling", label: "Reprofiling" }] });
@@ -912,6 +916,19 @@
   var OUT_ORDER = ["Behind plan", "At risk", "On track", "Above plan", "Unplanned spend", "No 2026 plan"];
   var OUT_COLOR = { "Behind plan": C.red, "At risk": C.yellow, "On track": C.blue, "Above plan": C.mid, "Unplanned spend": C.slate, "No 2026 plan": C.gray };
   function lastActualMonth(sp) { return sp.filter(function (r) { return N(G(r, SP.act)) != null; }).map(function (r) { return r.Month; }).sort().pop() || null; }
+  /* YTD cut-off chosen by the user (Cost page): "" = auto (the last month with an actual). Kept per browser. */
+  var CUT_KEY = "sar.ytdCut";
+  function cutPref() { try { return localStorage.getItem(CUT_KEY) || ""; } catch (e) { return ""; } }
+  function ytdCut(sp) { var p = cutPref(), ms = sp.map(function (r) { return r.Month; }); return p && ms.indexOf(p) >= 0 ? p : lastActualMonth(sp); }
+  function cutPicker(ctx, v, sp) {
+    var auto = lastActualMonth(sp), cur = cutPref(), ms = U.uniq(sp.map(function (r) { return r.Month; })).sort();
+    if (cur && ms.indexOf(cur) < 0) cur = "";
+    var box = add(v, '<div class="cut-pick note-box" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px"><b>YTD cut-off</b>' +
+      '<select aria-label="YTD cut-off month">' + '<option value="">Auto – last month with an actual' + (auto ? " (" + esc(fmt.month(auto)) + ")" : "") + "</option>" +
+      ms.map(function (m) { return '<option value="' + esc(m) + '"' + (m === cur ? " selected" : "") + ">to " + esc(fmt.month(m)) + "</option>"; }).join("") + "</select>" +
+      '<span class="muted">YTD plan, YTD actual and the spend at risk count the months up to this cut-off · the workbook cut-off is Settings › YTD cut-off</span></div>');
+    box.querySelector("select").addEventListener("change", function (e) { try { if (e.target.value) localStorage.setItem(CUT_KEY, e.target.value); else localStorage.removeItem(CUT_KEY); } catch (x) { /* storage blocked */ } ctx.rerender(); });
+  }
   function outlookByProject(rows, cut, kpiOf) {
     var by = {};
     rows.forEach(function (r) {
@@ -2084,7 +2101,7 @@
     D.t("Weekly_Report_Updates").forEach(function (r) { var k = String(r["Project Code"] || ""); if (k && (!wk[k] || r["Report Date"] > wk[k]["Report Date"])) wk[k] = r; });
     // 2026 spend per project (Rev Spend Plan when Budget 2026 is loaded)
     var RV = hasRev(), spd = {}, spRows = D.t("Spending_Plan");
-    var cut = spRows.filter(function (r) { return N(G(r, SP.act)) != null; }).map(function (r) { return r.Month; }).sort().pop() || null;
+    var cut = ytdCut(spRows);
     spRows.forEach(function (r) {
       var k = String(r.ID), o = spd[k] || (spd[k] = { fy: 0, fyO: 0, ytdP: 0, ytdA: 0, fc: 0 });
       var pl = N(G(r, RV ? SP.rev : SP.plan)) || 0, past = cut && r.Month <= cut;
