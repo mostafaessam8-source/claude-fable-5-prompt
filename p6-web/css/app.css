@@ -638,3 +638,7 @@ body.arr-mode .arr-brk{height:16px;border-top:2px dashed #e67e22;position:relati
 .ra-pm{cursor:pointer;display:inline-block;width:13px;height:13px;text-align:center;border:1px solid #666;margin-inline-end:5px;font-size:11px;line-height:11px;background:#fff;color:#000}
 .ra-dock .ra-tools{margin-inline-start:auto;display:flex;gap:6px;align-items:center}.ra-dock .ra-tools label{display:flex;gap:4px;align-items:center;font-size:12px}
 .ra-dock select.inp{min-width:170px}.ra-dock{overflow:hidden;white-space:nowrap}
+/* S-Curve preview */
+.scv{display:grid;grid-template-columns:290px 1fr;gap:14px;color:#333;font-family:"Segoe UI",Arial,sans-serif;max-height:76vh}.scv-opt{display:flex;flex-direction:column;gap:7px;overflow:auto;padding-inline-end:6px;border-inline-end:1px solid #d9e6e9}.scv-f{display:flex;flex-direction:column;gap:2px;font-size:12px}.scv-f .inp{padding:3px 6px}
+.scv-opt b{color:#00778B;margin-top:6px;font-size:12px}.scv-q{display:flex;gap:4px;flex-wrap:wrap}.scv-rl{display:flex;flex-direction:column;gap:2px;max-height:200px;overflow:auto;border:1px solid #e1ecee;padding:4px;border-radius:6px;font-size:12px}
+.scv-pv{overflow:auto;min-width:0}.scv-kpi{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.scv-kpi .cmpc{flex:1 1 110px;padding:6px 8px}.scv-kpi .cmpc b{font-size:18px}.scv-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0 4px}.scv-t td,.scv-t th{padding:2px 8px}
