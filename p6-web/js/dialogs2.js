@@ -9,8 +9,12 @@
   const label = (k) => t('col_' + k);
 
   // =============== Columns (Available Options tree / Selected Options list) ===============
-  D.columns = function () {
-    let cols = clone(App.cfg.cols);
+  D.columns = function (O) {
+    O = O || {};
+    const label = (k) => (O.label ? O.label(k) : t('col_' + k));
+    const groupsOf = () => (O.groups ? O.groups() : groupsOf());
+    const widthOf = (k) => (O.widthOf ? O.widthOf(k) : App.ALL_COLS[k].w);
+    let cols = clone(O.get ? O.get() : App.cfg.cols);
     const open = new Set(['gen']);
     let selA = null;           // {type:'g'|'k', id}
     let selB = new Set();      // keys selected on the right
@@ -20,7 +24,7 @@
     const draw = () => {
       P6.rebuildDynCols(App.p);
       const chosen = new Set(cols.map((c) => c.k));
-      const groups = P6.colGroups(App.p).filter((gr) => gr.keys.length || ['acg', 'acp', 'pcode', 'udf'].includes(gr.id));
+      const groups = groupsOf().filter((gr) => gr.keys.length || ['acg', 'acp', 'pcode', 'udf'].includes(gr.id));
       const left = groups.map((gr) => {
         const keys = gr.keys.filter((k) => !chosen.has(k) && (!q || label(k).toLowerCase().includes(q.toLowerCase())));
         if (q && !keys.length) return '';
@@ -33,14 +37,15 @@
         <div class="cd-right"><div class="cd-h">${esc(t('selected_opts'))}</div><div class="cd-list" id="cd_b">${cols.map((c, i) => `<div class="ck2${selB.has(c.k) ? ' on' : ''}" data-b="${i}" dir="auto">${esc(c.title || label(c.k))}</div>`).join('')}</div></div>
         <div class="cd-ud"><button class="cdb" data-a="up">▲</button><button class="cdb" data-a="down">▼</button></div>
         <div class="cd-btns"><button class="btn pri" data-a="ok">✔ ${esc(t('ok'))}</button><button class="btn" data-a="cancel">⦸ ${esc(t('cancel'))}</button><button class="btn" data-a="apply">${esc(t('apply'))}</button><button class="btn" data-a="copy">${esc(t('copy_from'))}</button><button class="btn" data-a="default">▶ ${esc(t('default'))}</button><button class="btn" data-a="edit"${selB.size === 1 ? '' : ' disabled'}>${esc(t('edit_column'))}</button><button class="btn" data-a="help">? ${esc(t('help'))}</button></div>`;
+      if (O.noCopy) { const cb = body.querySelector('[data-a="copy"]'); if (cb) cb.remove(); }
       const sc = $('#cd_a', body); if (sc && draw.sa != null) sc.scrollTop = draw.sa;
       const sb = $('#cd_b', body); if (sb && draw.sb != null) sb.scrollTop = draw.sb;
     };
     draw();
-    const m = modal({ title: t('columns'), cls: 'wide colsmodal', body, buttons: [], sticky: true });
-    const apply = () => { if (!cols.length) return App.toast(t('err_no_cols'), true); App.cfg.cols = clone(cols); App.cfg.layoutName = ''; App.saveCfg(); App.refresh(); };
-    const addKeys = (keys) => { keys.forEach((k) => { if (!cols.some((c) => c.k === k)) cols.push({ k, w: App.ALL_COLS[k].w }); }); };
-    const visibleLeaf = () => { const chosen = new Set(cols.map((c) => c.k)); return P6.colGroups(App.p).flatMap((gr) => gr.keys).filter((k) => !chosen.has(k)); };
+    const m = modal({ title: O.title || t('columns'), cls: 'wide colsmodal', body, buttons: [], sticky: true });
+    const apply = () => { if (!cols.length) return App.toast(t('err_no_cols'), true); if (O.set) { O.set(clone(cols)); return; } App.cfg.cols = clone(cols); App.cfg.layoutName = ''; App.saveCfg(); App.refresh(); };
+    const addKeys = (keys) => { keys.forEach((k) => { if (!cols.some((c) => c.k === k)) cols.push({ k, w: widthOf(k) }); }); };
+    const visibleLeaf = () => { const chosen = new Set(cols.map((c) => c.k)); return groupsOf().flatMap((gr) => gr.keys).filter((k) => !chosen.has(k)); };
     body.addEventListener('input', (e) => { if (e.target.id === 'cd_q') { q = e.target.value; draw.sa = null; draw(); const i = $('#cd_q', body); i.focus(); i.setSelectionRange(q.length, q.length); } });
     body.addEventListener('click', (e) => {
       draw.sa = ($('#cd_a', body) || {}).scrollTop; draw.sb = ($('#cd_b', body) || {}).scrollTop;
@@ -54,7 +59,7 @@
       const a = btn.dataset.a;
       if (a === 'add') {
         if (selA && selA.type === 'k') addKeys([selA.id]);
-        else if (selA && selA.type === 'g') addKeys(P6.colGroups(App.p).find((x) => x.id === selA.id).keys);
+        else if (selA && selA.type === 'g') addKeys(groupsOf().find((x) => x.id === selA.id).keys);
         selA = null;
       } else if (a === 'addall') addKeys(visibleLeaf());
       else if (a === 'rem') { cols = cols.filter((c) => !selB.has(c.k)); selB.clear(); }
@@ -66,7 +71,7 @@
       } else if (a === 'ok') { apply(); return m.close(); }
       else if (a === 'cancel') return m.close();
       else if (a === 'apply') apply();
-      else if (a === 'default') { cols = App.DEF_COLS.map((k) => ({ k, w: App.ALL_COLS[k].w })); selB.clear(); }
+      else if (a === 'default') { cols = O.defaults ? O.defaults() : App.DEF_COLS.map((k) => ({ k, w: App.ALL_COLS[k].w })); selB.clear(); }
       else if (a === 'copy') {
         const r = btn.getBoundingClientRect(), saved = App.cfg.layouts || {};
         return App.popMenu([...Object.keys(App.LAYOUTS).map((k) => ({ l: t('lay_' + k), fn: () => { cols = App.LAYOUTS[k].cols.map((c) => ({ k: c, w: App.ALL_COLS[c].w })); selB.clear(); draw(); } })), ...(Object.keys(saved).length ? ['-'] : []), ...Object.keys(saved).map((n) => ({ l: n, fn: () => { cols = clone(saved[n].cols); selB.clear(); draw(); } }))], r.left, r.bottom);
