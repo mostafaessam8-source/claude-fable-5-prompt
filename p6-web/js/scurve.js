@@ -135,35 +135,84 @@
   }
   App.sCurveBuild = build;
 
-  /* ---------- dialog ---------- */
+  /* ---------- preview window (live) + export ---------- */
+  const fv = (t, v) => {
+    if (v == null || v === '') return '';
+    if (t === 'pp') return (v * 100).toFixed(1) + '%';
+    if (t === 'c0') return Math.round(v).toLocaleString('en-US');
+    if (t === 'm') return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (t === 'd') return fmtD(v);
+    if (typeof v === 'number') return String(Math.round(v * 100) / 100);
+    return String(v);
+  };
+  function chartSvg(C) {
+    const per = C.P.per, n = per.length, W = 860, H = 300, L = 46, R = 14, T = 16, Bm = 52, w = W - L - R, h = H - T - Bm, bac = C.BAC || 1;
+    const cp = cumul(C.tot.planned), ca = cumul(C.tot.actual), cf = cumul(C.tot.forecast);
+    const mx = Math.max(1, ...Array.from(cp, (v) => v / bac), ...Array.from(cf, (v, i) => (i >= C.ddIdx ? v / bac : 0))), top = Math.ceil(mx * 10) / 10;
+    const x = (i) => L + (n === 1 ? w / 2 : (i * w) / (n - 1)), y = (v) => T + h - (v / top) * h;
+    const line = (arr, from, to, col, dash) => { const pts = []; for (let i = from; i <= to; i++) pts.push(x(i).toFixed(1) + ',' + y(arr[i] / bac).toFixed(1)); return pts.length > 1 ? `<polyline fill="none" stroke="${col}" stroke-width="2.4" ${dash ? 'stroke-dasharray="6 4"' : ''} points="${pts.join(' ')}"/>` : ''; };
+    let grid = ''; for (let g = 0; g <= 5; g++) { const v = (top * g) / 5; grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#C8C9C7" stroke-width=".6"/><text x="${L - 6}" y="${y(v) + 3}" font-size="10" text-anchor="end" fill="#555">${Math.round(v * 100)}%</text>`; }
+    const step = Math.max(1, Math.ceil(n / 14)); let xl = ''; for (let i = 0; i < n; i += step) xl += `<text transform="translate(${x(i)},${H - Bm + 14}) rotate(-35)" font-size="9" text-anchor="end" fill="#555">${esc(label(C.o.unit, per[i]))}</text>`;
+    const dx = C.ddIdx >= 0 ? `<line x1="${x(C.ddIdx)}" x2="${x(C.ddIdx)}" y1="${T}" y2="${T + h}" stroke="#00778B" stroke-dasharray="3 3"/><text x="${x(C.ddIdx) + 4}" y="${T + 10}" font-size="10" fill="#00778B" text-anchor="start" direction="ltr">Data date</text>` : '';
+    const leg = [['Planned', 'المخطط', SAR.blue], ['Actual', 'الفعلي', SAR.red], ['Forecast', 'المتوقع', SAR.yellow]].map((l, k) => `<rect x="${L + k * 120}" y="${H - 14}" width="14" height="4" fill="${l[2]}"/><text x="${L + k * 120 + 18}" y="${H - 9}" font-size="11" fill="#333" text-anchor="start" direction="ltr">${esc(l[0])}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:#fff;border:1px solid #d9e6e9;border-radius:6px" dir="ltr">${grid}${xl}${dx}${line(cp, 0, n - 1, SAR.blue)}${line(ca, 0, Math.max(0, C.ddIdx), SAR.red)}${line(cf, Math.max(0, C.ddIdx), n - 1, SAR.yellow, true)}${leg}</svg>`;
+  }
+  function tableHtml(sh) {
+    const MAXR = 400, MAXC = 140, cols = sh.cols.slice(0, MAXC), rows = sh.rows.slice(0, MAXR);
+    const th = cols.map((c, i) => `<th${c.t && c.t !== 's' ? ' style="text-align:end"' : ''}>${esc(c.h)}</th>`).join('');
+    const tr = rows.map((r, ri) => { const st = sh.style ? sh.style(r, ri) || {} : {}, fl = sh.fill ? sh.fill(r, ri) : null; return `<tr${fl ? ` style="background:${fl}"` : ''}>${cols.map((c, i) => `<td style="${c.t && c.t !== 's' ? 'text-align:end;' : ''}${st.bold ? 'font-weight:700;' : ''}${i === 0 && st.indent ? `padding-inline-start:${8 + st.indent * 14}px;` : ''}white-space:nowrap">${esc(fv(c.t, r[i]))}</td>`).join('')}</tr>`; }).join('');
+    return `<div class="tbl-scroll" style="max-height:290px"><table class="mini cmpt scv-t"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>${sh.rows.length > MAXR || sh.cols.length > MAXC ? `<p class="hint">${esc(B('Preview shows the first ' + MAXR + ' rows / ' + MAXC + ' columns – Excel has everything.', 'المعاينة تعرض أول ' + MAXR + ' صف و ' + MAXC + ' عمود – ملف Excel فيه كل شيء.'))}</p>` : ''}`;
+  }
+
   App.sCurveExport = function () {
     const p = App.p; if (!p) return; const o = defaults(), by = (id) => p.wbs.find((w) => w.id === id);
     const rsSel = new Set(o.rs || p.rsrc.map((r) => r.id)), usedR = new Set(p.asg.map((a) => a.rsrc)), list = p.rsrc.filter((r) => usedR.has(r.id));
     const depth = (w) => { let n = 1, x = w; while (x && x.parent != null && by(x.parent)) { n++; x = by(x.parent); } return n; }, maxDepth = Math.max(1, ...p.wbs.map(depth));
-    const body = document.createElement('div'); body.className = 'wif'; body.dir = P6.dir();
-    const sel = (id, opts, v) => `<select id="${id}">${opts.map(([k, l]) => `<option value="${k}"${String(v) === String(k) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    const body = document.createElement('div'); body.dir = P6.dir(); let cur = 'S-Curve', timer = 0, last = null;
+    const sel = (id, opts, v) => `<select id="${id}" class="inp">${opts.map(([k, l]) => `<option value="${k}"${String(v) === String(k) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     const wopts = [[0, B('Entire project', 'المشروع كله')], ...[...p.wbs].sort((a, b) => (a.seq - b.seq) || String(a.code).localeCompare(String(b.code), undefined, { numeric: true })).map((w) => [w.id, ' '.repeat((depth(w) - 1) * 3) + (w.code ? w.code + ' – ' : '') + w.name])];
-    body.innerHTML = `<div class="dly-form"><label>${esc(B('Basis', 'الأساس'))}${sel('sc_b', [['c', B('Cost', 'تكلفة')], ['u', B('Units (hours / qty)', 'وحدات (ساعات / كمية)')]], o.basis)}</label>
-      <label>${esc(B('Timescale', 'المقياس الزمني'))}${sel('sc_u', [['Day', B('Day', 'يوم')], ['Week', B('Week', 'أسبوع')], ['Month', B('Month', 'شهر')], ['Quarter', B('Quarter', 'ربع سنة')], ['Year', B('Year', 'سنة')]], o.unit)}</label>
-      <label>${esc(B('Values in WBS / resource sheets', 'القيم في شيتات WBS / الموارد'))}${sel('sc_c', [['0', B('Per period', 'لكل فترة')], ['1', B('Cumulative', 'تراكمي')]], o.cum ? 1 : 0)}</label>
-      <label>${esc(B('Start date (blank = auto)', 'تاريخ البداية (فارغ = تلقائي)'))}<input id="sc_s" placeholder="dd-mmm-yy" value="${o.start != null ? esc(fmtD(o.start)) : ''}"></label>
-      <label>${esc(B('End date (blank = auto)', 'تاريخ النهاية (فارغ = تلقائي)'))}<input id="sc_e" placeholder="dd-mmm-yy" value="${o.end != null ? esc(fmtD(o.end)) : ''}"></label>
-      <label>${esc(B('WBS level in the distribution', 'مستوى WBS في التوزيع'))}${sel('sc_l', [[0, B('All levels', 'كل المستويات')], ...Array.from({ length: maxDepth }, (_, i) => [i + 1, B('Level ', 'المستوى ') + (i + 1)])], o.level)}</label>
-      <label class="w2">${esc(B('WBS scope', 'نطاق WBS'))}${sel('sc_w', wopts, o.wbs)}</label>
-      <label><span>&nbsp;</span><span><input type="checkbox" id="sc_he"${o.hideEmpty ? ' checked' : ''}> ${esc(B('Hide WBS without assignments', 'إخفاء WBS بدون تعيينات'))}</span></label></div>
-      <h4>${esc(B('Sheets', 'الشيتات'))}</h4><div class="wif-add"><label><input type="checkbox" id="sc_mp"${o.meas.planned ? ' checked' : ''}> ${esc(B('Planned', 'المخطط'))}</label><label><input type="checkbox" id="sc_ma"${o.meas.actual ? ' checked' : ''}> ${esc(B('Actual', 'الفعلي'))}</label><label><input type="checkbox" id="sc_mf"${o.meas.forecast ? ' checked' : ''}> ${esc(B('Forecast', 'المتوقع'))}</label>
-      <span>|</span><label><input type="checkbox" id="sc_dw"${o.sheets.wbs ? ' checked' : ''}> ${esc(B('By WBS', 'حسب WBS'))}</label><label><input type="checkbox" id="sc_dr"${o.sheets.res ? ' checked' : ''}> ${esc(B('By resource', 'حسب المورد'))}</label><label><input type="checkbox" id="sc_drw"${o.sheets.rw ? ' checked' : ''}> ${esc(B('Resource ▸ WBS', 'المورد ▸ WBS'))}</label></div>
-      <h4>${esc(B('Resources', 'الموارد'))} <button class="btn sm" data-q="all">${esc(B('All', 'الكل'))}</button><button class="btn sm" data-q="none">${esc(B('None', 'لا شيء'))}</button><button class="btn sm" data-q="RT_Labor">${esc(B('Labor', 'عمالة'))}</button><button class="btn sm" data-q="RT_Equip">${esc(B('Equipment', 'معدات'))}</button><button class="btn sm" data-q="RT_Mat">${esc(B('Material', 'مواد'))}</button></h4>
-      <div class="tbl-scroll" style="max-height:170px"><table class="mini cmpt"><tbody>${list.map((r) => `<tr><td style="width:26px"><input type="checkbox" class="sc_r" data-id="${r.id}" data-t="${r.type}"${rsSel.has(r.id) ? ' checked' : ''}></td><td>${esc((r.short ? r.short + ' – ' : '') + r.name)}</td><td>${esc(RTN[r.type] || '')}</td></tr>`).join('') || '<tr><td>–</td></tr>'}</tbody></table></div>
-      <p class="hint">${esc(B('The S-Curve sheet is always included (planned / actual / forecast, cumulative and %, with an Excel chart). Planned uses the baseline dates when a baseline exists.', 'شيت S-Curve دايماً موجود (مخطط / فعلي / متوقع، تراكمي و%، مع رسم Excel). المخطط يعتمد على تواريخ الـ baseline لو موجودة.'))}</p>`;
-    D.modal({ title: B('Export S-Curve to Excel', 'تصدير منحنى S إلى Excel'), cls: 'wide dsh-modal', body, sticky: true, buttons: [{ label: P6.t('cancel'), fn: () => {} }, { label: B('Export to Excel', 'تصدير إلى Excel'), cls: 'pri', fn: (c, el) => {
-      const q = (s) => el.querySelector(s), ps = q('#sc_s').value.trim(), pe = q('#sc_e').value.trim(), s = ps ? P6.parseDate(ps) : null, e = pe ? P6.parseDate(pe) : null;
-      if ((ps && s == null) || (pe && e == null)) { App.toast(B('Bad date', 'تاريخ غير صالح'), true); return false; }
-      const ids = [...el.querySelectorAll('.sc_r')].filter((x) => x.checked).map((x) => +x.dataset.id); if (!ids.length) { App.toast(B('Select at least one resource', 'اختر موارد'), true); return false; }
-      Object.assign(o, { basis: q('#sc_b').value, unit: q('#sc_u').value, cum: q('#sc_c').value === '1', start: s, end: e, level: +q('#sc_l').value, wbs: +q('#sc_w').value, hideEmpty: q('#sc_he').checked, meas: { planned: q('#sc_mp').checked, actual: q('#sc_ma').checked, forecast: q('#sc_mf').checked }, sheets: { wbs: q('#sc_dw').checked, res: q('#sc_dr').checked, rw: q('#sc_drw').checked }, rs: ids.length === list.length ? null : ids });
+    const ck = (id, v, l) => `<label class="chk"><input type="checkbox" id="${id}"${v ? ' checked' : ''}> ${esc(l)}</label>`;
+    body.innerHTML = `<div class="scv"><div class="scv-opt"><div class="scv-f"><label>${esc(B('Basis', 'الأساس'))}</label>${sel('sc_b', [['c', B('Cost', 'تكلفة')], ['u', B('Units (hours / qty)', 'وحدات (ساعات / كمية)')]], o.basis)}</div>
+      <div class="scv-f"><label>${esc(B('Timescale', 'المقياس الزمني'))}</label>${sel('sc_u', [['Day', B('Day', 'يوم')], ['Week', B('Week', 'أسبوع')], ['Month', B('Month', 'شهر')], ['Quarter', B('Quarter', 'ربع سنة')], ['Year', B('Year', 'سنة')]], o.unit)}</div>
+      <div class="scv-f"><label>${esc(B('Start (blank = auto)', 'البداية (فارغ = تلقائي)'))}</label><input id="sc_s" class="inp" placeholder="dd-mmm-yy" value="${o.start != null ? esc(fmtD(o.start)) : ''}"></div>
+      <div class="scv-f"><label>${esc(B('End (blank = auto)', 'النهاية (فارغ = تلقائي)'))}</label><input id="sc_e" class="inp" placeholder="dd-mmm-yy" value="${o.end != null ? esc(fmtD(o.end)) : ''}"></div>
+      <div class="scv-f"><label>${esc(B('WBS scope', 'نطاق WBS'))}</label>${sel('sc_w', wopts, o.wbs)}</div>
+      <div class="scv-f"><label>${esc(B('WBS level', 'مستوى WBS'))}</label>${sel('sc_l', [[0, B('All levels', 'كل المستويات')], ...Array.from({ length: maxDepth }, (_, i) => [i + 1, B('Level ', 'المستوى ') + (i + 1)])], o.level)}</div>
+      <div class="scv-f"><label>${esc(B('Values in distribution', 'القيم في التوزيع'))}</label>${sel('sc_c', [['0', B('Per period', 'لكل فترة')], ['1', B('Cumulative', 'تراكمي')]], o.cum ? 1 : 0)}</div>
+      ${ck('sc_he', o.hideEmpty, B('Hide WBS without assignments', 'إخفاء WBS بدون تعيينات'))}
+      <b>${esc(B('Measures', 'المقاييس'))}</b>${ck('sc_mp', o.meas.planned, B('Planned', 'المخطط'))}${ck('sc_ma', o.meas.actual, B('Actual', 'الفعلي'))}${ck('sc_mf', o.meas.forecast, B('Forecast', 'المتوقع'))}
+      <b>${esc(B('Distribution', 'التوزيع'))}</b>${ck('sc_dw', o.sheets.wbs, B('By WBS', 'حسب WBS'))}${ck('sc_dr', o.sheets.res, B('By resource', 'حسب المورد'))}${ck('sc_drw', o.sheets.rw, B('Resource ▸ WBS', 'المورد ▸ WBS'))}
+      <b>${esc(B('Resources', 'الموارد'))}</b><div class="scv-q"><button class="btn sm" data-q="all">${esc(B('All', 'الكل'))}</button><button class="btn sm" data-q="none">${esc(B('None', 'لا شيء'))}</button><button class="btn sm" data-q="RT_Labor">${esc(B('Labor', 'عمالة'))}</button><button class="btn sm" data-q="RT_Equip">${esc(B('Equip.', 'معدات'))}</button><button class="btn sm" data-q="RT_Mat">${esc(B('Material', 'مواد'))}</button></div>
+      <div class="scv-rl">${list.map((r) => `<label class="chk"><input type="checkbox" class="sc_r" data-id="${r.id}" data-t="${r.type}"${rsSel.has(r.id) ? ' checked' : ''}> ${esc((r.short ? r.short + ' – ' : '') + r.name)} <small>${esc(RTN[r.type] || '')}</small></label>`).join('')}</div></div>
+      <div class="scv-pv"><div class="scv-kpi" id="scv_k"></div><div id="scv_c"></div><div class="scv-tabs" id="scv_t"></div><div id="scv_tb"></div></div></div>`;
+    const m = D.modal({ title: B('S-Curve & distribution – preview', 'منحنى S والتوزيع – معاينة'), cls: 'wide dsh-modal', body, sticky: true, buttons: [{ label: P6.t('close'), fn: () => {} }, { label: B('Export to Excel', 'تصدير إلى Excel'), cls: 'pri', fn: () => { if (!last) return false; try { App.xlsxBook(sanitize(p.name) + '-S-Curve-' + o.unit + '.xlsx', last.sheets); App.toast(B('Excel exported: ' + last.sheets.length + ' sheets', 'تم التصدير: ' + last.sheets.length + ' شيت')); } catch (er) { console.error(er); App.toast(String(er.message || er), true); } return false; } }] });
+    const mod = m.el.querySelector('.modal'); if (mod) { mod.style.width = 'min(1500px,97vw)'; mod.style.maxWidth = '97vw'; }
+    const $ = (q) => body.querySelector(q);
+    function read() {
+      const ps = $('#sc_s').value.trim(), pe = $('#sc_e').value.trim(), s = ps ? P6.parseDate(ps) : null, e = pe ? P6.parseDate(pe) : null; if ((ps && s == null) || (pe && e == null)) return false;
+      const ids = [...body.querySelectorAll('.sc_r')].filter((x) => x.checked).map((x) => +x.dataset.id);
+      Object.assign(o, { basis: $('#sc_b').value, unit: $('#sc_u').value, cum: $('#sc_c').value === '1', start: s, end: e, level: +$('#sc_l').value, wbs: +$('#sc_w').value, hideEmpty: $('#sc_he').checked, meas: { planned: $('#sc_mp').checked, actual: $('#sc_ma').checked, forecast: $('#sc_mf').checked }, sheets: { wbs: $('#sc_dw').checked, res: $('#sc_dr').checked, rw: $('#sc_drw').checked }, rs: ids.length === list.length ? null : ids });
+      o._ids = ids; return true;
+    }
+    function draw() {
+      if (!read()) { $('#scv_k').innerHTML = `<span class="cmp-bad">${esc(B('Bad date', 'تاريخ غير صالح'))}</span>`; return; }
+      if (!o._ids.length) { $('#scv_c').innerHTML = `<p class="hint">${esc(B('Select at least one resource', 'اختر مورداً واحداً على الأقل'))}</p>`; $('#scv_tb').innerHTML = ''; $('#scv_t').innerHTML = ''; $('#scv_k').innerHTML = ''; last = null; return; }
       App.saveCfg();
-      try { const r = build(o); App.xlsxBook(sanitize(p.name) + '-S-Curve-' + o.unit + '.xlsx', r.sheets); App.toast(B('Excel exported: ' + r.sheets.length + ' sheets' + (r.C.truncated ? ' (periods capped at 1,500)' : ''), 'تم التصدير: ' + r.sheets.length + ' شيت' + (r.C.truncated ? ' (الفترات محدودة بـ 1500)' : ''))); } catch (er) { console.error(er); App.toast(String(er.message || er), true); return false; }
-    } }] });
-    body.onclick = (ev) => { const b = ev.target.closest('[data-q]'); if (!b) return; const k = b.dataset.q; body.querySelectorAll('.sc_r').forEach((c) => { c.checked = k === 'all' ? true : k === 'none' ? false : c.dataset.t === k; }); };
+      try { last = build(o); } catch (er) { last = null; $('#scv_c').innerHTML = `<p class="cmp-bad">${esc(String(er.message || er))}</p>`; $('#scv_tb').innerHTML = ''; $('#scv_t').innerHTML = ''; $('#scv_k').innerHTML = ''; return; }
+      const C = last.C, pct = (v) => (C.BAC ? Math.round((v / C.BAC) * 1000) / 10 : 0), spi = C.PV ? C.EV / C.PV : null, kp = (v, l, cls) => `<div class="cmpc ${cls || ''}"><b>${v}</b><span>${esc(l)}</span></div>`;
+      $('#scv_k').innerHTML = kp(fv(C.cost ? 'c0' : 'f', C.BAC), B('Budget at completion', 'الميزانية عند الإنجاز')) + kp(pct(C.PV) + '%', B('Planned to date', 'المخطط حتى الآن')) + kp(pct(C.EV) + '%', B('Earned to date', 'المكتسب حتى الآن'), C.EV >= C.PV ? 'good' : 'bad') + kp(spi == null ? '–' : spi.toFixed(2), 'SPI', spi != null && spi < 1 ? 'bad' : 'good') + kp(C.rows.length, B('Assignments', 'التعيينات')) + kp(C.n + ' · ' + o.unit, B('Periods', 'الفترات'));
+      $('#scv_c').innerHTML = chartSvg(C) + (C.truncated ? `<p class="hint">${esc(B('Periods capped at 1,500.', 'الفترات محدودة بـ 1500.'))}</p>` : '');
+      const names = last.sheets.map((s) => s.name).filter((nm) => nm !== 'Summary' || true); if (!names.includes(cur)) cur = 'S-Curve';
+      $('#scv_t').innerHTML = names.map((nm) => `<button class="btn sm${nm === cur ? ' pri' : ''}" data-s="${esc(nm)}">${esc(nm)}</button>`).join('');
+      showSheet();
+    }
+    function showSheet() { if (!last) return; const sh = last.sheets.find((s) => s.name === cur) || last.sheets[1]; $('#scv_tb').innerHTML = `<div class="hint" style="margin:4px 0"><b>${esc(sh.title)}</b> · ${esc(sh.subtitle || '')}</div>` + tableHtml(sh); body.querySelectorAll('#scv_t [data-s]').forEach((b) => b.classList.toggle('pri', b.dataset.s === sh.name)); }
+    const later = () => { clearTimeout(timer); timer = setTimeout(draw, 160); };
+    body.addEventListener('change', later); body.addEventListener('input', (e) => { if (e.target.tagName === 'INPUT' && e.target.type === 'text') later(); });
+    body.addEventListener('click', (ev) => {
+      const q = ev.target.closest('[data-q]'); if (q) { const k = q.dataset.q; body.querySelectorAll('.sc_r').forEach((c) => { c.checked = k === 'all' ? true : k === 'none' ? false : c.dataset.t === k; }); return later(); }
+      const sb = ev.target.closest('[data-s]'); if (sb) { cur = sb.dataset.s; showSheet(); }
+    });
+    draw();
   };
 })(window);
