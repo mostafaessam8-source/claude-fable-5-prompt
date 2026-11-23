@@ -17,3 +17,8 @@ CREATE TABLE deliverables (file TEXT, description TEXT, status TEXT);
 CREATE VIEW v_long_lead AS SELECT ref, package, phase, value_sar FROM boq_items WHERE lead_class = 'Long';
 CREATE VIEW v_value_by_group AS SELECT grp, COUNT(*) AS items, SUM(value_sar) AS value_sar FROM boq_items GROUP BY grp;
 CREATE VIEW v_value_by_phase AS SELECT phase, COUNT(*) AS items, SUM(value_sar) AS value_sar FROM boq_items GROUP BY phase;
+CREATE TABLE bl02_activities (activity_id TEXT PRIMARY KEY, name TEXT, type TEXT, duration_days INTEGER, early_start TEXT, early_finish TEXT, late_start TEXT, late_finish TEXT,
+  total_float_days INTEGER, responsible TEXT, tga_process TEXT, submit_review TEXT, duration_basis TEXT, is_new_in_bl02 INTEGER, on_critical_path INTEGER);
+CREATE TABLE bl02_relationships (predecessor TEXT, successor TEXT, type TEXT, lag_days INTEGER);
+CREATE TABLE bl02_critical_path (seq INTEGER, activity_id TEXT, name TEXT, duration_days INTEGER, early_start TEXT, early_finish TEXT, total_float_days INTEGER);
+CREATE VIEW v_bl02_near_critical_tga AS SELECT activity_id, name, early_finish, total_float_days, responsible FROM bl02_activities WHERE is_new_in_bl02 = 1 AND type != 'TT_LOE' AND total_float_days <= 30 ORDER BY total_float_days;

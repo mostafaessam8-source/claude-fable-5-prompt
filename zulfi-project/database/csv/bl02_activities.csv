@@ -1,0 +1,598 @@
+﻿activity_id,name,type,duration_days,early_start,early_finish,late_start,late_finish,total_float_days,responsible,tga_process,submit_review,duration_basis,is_new_in_bl02,on_critical_path
+MS-0010,Notice to Proceed (Project Start) - 1 Nov 2026,TT_Mile,0,2026-11-01,2026-11-01,2026-11-01,2026-11-01,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+MS-0020,Access Permits Obtained (Month 1),TT_FinMile,0,2026-11-30,2026-11-30,2028-12-31,2028-12-31,732,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0030,Concept Design Approved - Gate 1,TT_FinMile,0,2027-01-30,2027-01-30,2028-12-31,2028-12-31,671,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0040,Preliminary Design Approved - Gate 2,TT_FinMile,0,2027-04-28,2027-04-28,2027-08-25,2027-08-25,113,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0050,Phase 1 Procurement Start (Prequalification),TT_Mile,0,2027-05-14,2027-05-14,2027-09-10,2027-09-10,113,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0060,Detailed Design (IFC) Approved - Gate 3,TT_FinMile,0,2027-09-21,2027-09-21,2027-09-21,2027-09-21,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+MS-0070,Work Permit Issued,TT_FinMile,0,2027-10-06,2027-10-06,2028-04-21,2028-04-21,190,Contractor,SAR Work Permit and Possession,Not applicable,Baseline,0,0
+MS-0080,Phase 2 Procurement Start (Prequalification),TT_Mile,0,2027-09-22,2027-09-22,2027-09-22,2027-09-22,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+MS-0090,Construction Start,TT_Mile,0,2027-10-07,2027-10-07,2028-04-22,2028-04-22,190,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0100,Signalling & Turnout Materials Delivered to Site,TT_FinMile,0,2028-04-05,2028-04-05,2028-12-20,2028-12-20,251,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0110,Track Materials Delivered to Site,TT_FinMile,0,2028-08-09,2028-08-09,2028-12-20,2028-12-20,132,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0120,All Construction Works Complete,TT_FinMile,0,2028-10-21,2028-10-21,2028-12-20,2028-12-20,60,Contractor,Not TGA process,Not applicable,Baseline,0,0
+MS-0130,Taking-Over of All Works (Handing Over),TT_FinMile,0,2028-12-20,2028-12-20,2028-12-31,2028-12-31,11,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0010,Notice to Proceed / Contract Commencement,TT_Task,1,2026-11-01,2026-11-01,2026-11-01,2026-11-01,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PR-0020,Mobilise Project Management Team & Issue Project Organisation Chart,TT_Task,14,2026-11-02,2026-11-15,2028-02-06,2028-02-19,447,Contractor,Not TGA process,Review / Approval,Baseline,0,0
+PR-0030,Project Kick-off Meeting with SAR / Employer,TT_Task,3,2026-11-02,2026-11-04,2028-02-17,2028-02-19,458,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0040,Performance Bond & Advance Payment Guarantee - Issue and Submit,TT_Task,21,2026-11-02,2026-11-22,2028-03-05,2028-03-25,467,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0050,"Insurances (CAR, Third Party, Workmen Compensation) - Procure and Submit",TT_Task,21,2026-11-02,2026-11-22,2028-03-05,2028-03-25,467,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0060,Project Execution Plan & Methodology Statements - Submit,TT_Task,14,2026-11-16,2026-11-29,2028-02-20,2028-03-12,447,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0070,HSE Plan & Risk Assessments - Submit to SAR,TT_Task,5,2026-11-16,2026-11-20,2028-03-13,2028-03-17,461,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-2070,HSE Plan & Risk Assessments - Approval by SAR,TT_Task,21,2026-11-21,2026-12-11,2028-03-18,2028-04-07,461,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PR-0080,"Quality Plan, ITPs & Material Approval Procedure - Submit to SAR",TT_Task,5,2026-11-16,2026-11-20,2028-03-13,2028-03-17,461,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-2080,"Quality Plan, ITPs & Material Approval Procedure - Approval by SAR",TT_Task,21,2026-11-21,2026-12-11,2028-03-18,2028-04-07,461,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PR-0090,Baseline Programme - Submission to SAR,TT_Task,5,2026-11-30,2026-12-04,2028-03-13,2028-03-17,447,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-2090,Baseline Programme - Approval by SAR,TT_Task,21,2026-12-05,2026-12-25,2028-03-18,2028-04-07,447,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PR-0100,Access Permits - Site Access & Security Clearance (Month 1),TT_Task,30,2026-11-01,2026-11-30,2026-11-01,2026-11-30,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PR-0110,Civil Defense Design Review and Approval (Concept and Detailed),TT_Task,45,2027-05-22,2027-07-05,2027-08-08,2027-09-21,78,Authority,Authority Design Approvals,Review / Approval,Baseline,0,0
+PR-0120,SAR Work Permit - Final Approval and Issue (14 Days after Detailed Design Approval),TT_Task,14,2027-09-22,2027-10-06,2028-04-08,2028-04-21,190,Contractor,SAR Work Permit and Possession,Review / Approval,Baseline,0,0
+PR-0130,"Site Offices, Camp, Laydown & Storage Establishment",TT_Task,29,2026-12-01,2026-12-29,2028-01-31,2028-03-07,412,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0140,"Temporary Utilities, Site Fencing & Security",TT_Task,18,2026-12-30,2027-01-16,2028-03-08,2028-03-25,412,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0150,"Construction Mobilisation - Plant, Equipment, Labour & Subcontractors (30 days, pre-mobilisation)",TT_Task,30,2027-09-01,2027-10-06,2028-03-26,2028-04-29,169,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0160,SEC Power Connection - Application & Load Schedule Submission,TT_Task,14,2027-04-29,2027-05-12,2028-05-10,2028-05-23,355,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0170,NWC Water & Sewer Connection - Application Submission,TT_Task,14,2027-04-29,2027-05-12,2028-09-08,2028-09-21,476,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0180,Telecom / Fibre Service Connection - Application Submission,TT_Task,14,2027-04-29,2027-05-12,2028-09-24,2028-10-07,491,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0190,Civil Defense Concept Design - Submission,TT_Task,14,2027-04-29,2027-05-12,2027-07-22,2027-08-04,78,Contractor,Authority Design Approvals,Submission,Baseline,0,0
+PR-0200,"Project Management, Monthly Progress Reporting & Controls (Level of Effort)",TT_LOE,751,2026-11-01,2028-12-20,2026-11-12,2028-12-31,11,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0210,Demobilisation of Site Facilities & Final Site Clearance,TT_Task,9,2028-12-21,2028-12-31,2028-12-21,2028-12-31,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PR-0220,Topographic Survey & Existing Utilities Mapping,TT_Task,17,2026-12-01,2026-12-17,2026-12-01,2026-12-17,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PR-0230,"Geotechnical Investigation, Boreholes & Soil Report",TT_Task,35,2026-12-01,2027-01-04,2026-12-27,2027-01-30,26,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0240,Existing Track Survey & As-Built Verification for Tie-in,TT_Task,17,2026-12-01,2026-12-17,2027-01-14,2027-01-30,44,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0250,Hydrology & Stormwater Drainage Study,TT_Task,20,2026-12-18,2027-01-06,2027-01-11,2027-01-30,24,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PR-0260,Utility Capacity & Load Studies (SEC / NWC / Telecom),TT_Task,20,2026-12-18,2027-01-06,2028-04-13,2028-05-09,460,Contractor,Not TGA process,Not applicable,Baseline,0,0
+DS-0010,"Concept Design - Design Management, Coordination & Review Meetings",TT_LOE,61,2026-12-01,2027-01-30,2028-11-01,2028-12-31,671,Contractor,Not TGA process,Not applicable,Baseline,0,0
+DS-0020,Gate 1 - Concept Design Approved by SAR,TT_FinMile,0,2027-01-30,2027-01-30,2027-01-30,2027-01-30,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+DS-0030,Concept Design Development - Main Building,TT_Task,40,2026-12-01,2027-01-09,2026-12-05,2027-01-13,4,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0040,Concept Design Submission to SAR - Main Building,TT_Task,3,2027-01-10,2027-01-12,2027-01-14,2027-01-16,4,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2040,Concept Design Review & Approval by SAR - Main Building,TT_Task,14,2027-01-13,2027-01-26,2027-01-17,2027-01-30,4,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0050,Concept Design Development - IT Equipment,TT_Task,34,2026-12-01,2027-01-03,2026-12-11,2027-01-13,10,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0060,Concept Design Submission to SAR - IT Equipment,TT_Task,3,2027-01-04,2027-01-06,2027-01-14,2027-01-16,10,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2060,Concept Design Review & Approval by SAR - IT Equipment,TT_Task,14,2027-01-07,2027-01-20,2027-01-17,2027-01-30,10,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0070,Concept Design Development - Furniture Works (FF&E),TT_Task,30,2026-12-01,2026-12-30,2026-12-15,2027-01-13,14,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0080,Concept Design Submission to SAR - Furniture Works (FF&E),TT_Task,3,2026-12-31,2027-01-02,2027-01-14,2027-01-16,14,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2080,Concept Design Review & Approval by SAR - Furniture Works (FF&E),TT_Task,14,2027-01-03,2027-01-16,2027-01-17,2027-01-30,14,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0090,Concept Design Development - Substation & SEC Works,TT_Task,40,2026-12-01,2027-01-09,2026-12-05,2027-01-13,4,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0100,Concept Design Submission to SAR - Substation & SEC Works,TT_Task,3,2027-01-10,2027-01-12,2027-01-14,2027-01-16,4,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2100,Concept Design Review & Approval by SAR - Substation & SEC Works,TT_Task,14,2027-01-13,2027-01-26,2027-01-17,2027-01-30,4,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0110,Concept Design Development - Firefighting Building,TT_Task,38,2026-12-01,2027-01-07,2026-12-07,2027-01-13,6,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0120,Concept Design Submission to SAR - Firefighting Building,TT_Task,3,2027-01-08,2027-01-10,2027-01-14,2027-01-16,6,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2120,Concept Design Review & Approval by SAR - Firefighting Building,TT_Task,14,2027-01-11,2027-01-24,2027-01-17,2027-01-30,6,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0130,Concept Design Development - Generator Room,TT_Task,32,2026-12-01,2027-01-01,2026-12-13,2027-01-13,12,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0140,Concept Design Submission to SAR - Generator Room,TT_Task,3,2027-01-02,2027-01-04,2027-01-14,2027-01-16,12,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2140,Concept Design Review & Approval by SAR - Generator Room,TT_Task,14,2027-01-05,2027-01-18,2027-01-17,2027-01-30,12,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0150,Concept Design Development - Underground Water Tank,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,1
+DS-0160,Concept Design Submission to SAR - Underground Water Tank,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,1
+DS-2160,Concept Design Review & Approval by SAR - Underground Water Tank,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,1
+DS-0170,Concept Design Development - Site Works & Underground Utilities,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0180,Concept Design Submission to SAR - Site Works & Underground Utilities,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2180,Concept Design Review & Approval by SAR - Site Works & Underground Utilities,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0190,Concept Design Development - Car Parking Sheds,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0200,Concept Design Submission to SAR - Car Parking Sheds,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2200,Concept Design Review & Approval by SAR - Car Parking Sheds,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0210,Concept Design Development - Fence Works,TT_Task,24,2026-12-15,2027-01-07,2026-12-21,2027-01-13,6,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0220,Concept Design Submission to SAR - Fence Works,TT_Task,3,2027-01-08,2027-01-10,2027-01-14,2027-01-16,6,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2220,Concept Design Review & Approval by SAR - Fence Works,TT_Task,14,2027-01-11,2027-01-24,2027-01-17,2027-01-30,6,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0230,Concept Design Development - Automatic Gate System,TT_Task,24,2026-12-15,2027-01-07,2026-12-21,2027-01-13,6,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0240,Concept Design Submission to SAR - Automatic Gate System,TT_Task,3,2027-01-08,2027-01-10,2027-01-14,2027-01-16,6,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2240,Concept Design Review & Approval by SAR - Automatic Gate System,TT_Task,14,2027-01-11,2027-01-24,2027-01-17,2027-01-30,6,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0250,Concept Design Development - Access Road,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0260,Concept Design Submission to SAR - Access Road,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2260,Concept Design Review & Approval by SAR - Access Road,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0270,Concept Design Development - External Works (Above Ground),TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0280,Concept Design Submission to SAR - External Works (Above Ground),TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2280,Concept Design Review & Approval by SAR - External Works (Above Ground),TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0290,Concept Design Development - Signalling & Telecommunication,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0300,Concept Design Submission to SAR - Signalling & Telecommunication,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2300,Concept Design Review & Approval by SAR - Signalling & Telecommunication,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0310,Concept Design Development - Railway Track Works,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0320,Concept Design Submission to SAR - Railway Track Works,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2320,Concept Design Review & Approval by SAR - Railway Track Works,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0330,Concept Design Development - Railway Turnout Works,TT_Task,30,2026-12-15,2027-01-13,2026-12-15,2027-01-13,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0340,Concept Design Submission to SAR - Railway Turnout Works,TT_Task,3,2027-01-14,2027-01-16,2027-01-14,2027-01-16,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2340,Concept Design Review & Approval by SAR - Railway Turnout Works,TT_Task,14,2027-01-17,2027-01-30,2027-01-17,2027-01-30,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0350,"Preliminary Design - Design Management, Coordination & Review Meetings",TT_LOE,81,2027-01-31,2027-04-28,2028-10-12,2028-12-31,590,Contractor,Not TGA process,Not applicable,Baseline,0,0
+DS-0360,Gate 2 - Preliminary Design Approved by SAR,TT_FinMile,0,2027-04-28,2027-04-28,2027-04-28,2027-04-28,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+DS-0370,Preliminary Design Development - Main Building,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,1
+DS-0380,Preliminary Design Submission to SAR - Main Building,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,1
+DS-2380,Preliminary Design Review & Approval by SAR - Main Building,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,1
+DS-0390,Preliminary Design Development - IT Equipment,TT_Task,51,2027-01-31,2027-03-29,2027-02-06,2027-04-04,6,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0400,Preliminary Design Submission to SAR - IT Equipment,TT_Task,3,2027-03-30,2027-04-01,2027-04-05,2027-04-07,6,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2400,Preliminary Design Review & Approval by SAR - IT Equipment,TT_Task,21,2027-04-02,2027-04-22,2027-04-08,2027-04-28,6,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0410,Preliminary Design Development - Furniture Works (FF&E),TT_Task,45,2027-01-31,2027-03-23,2027-02-12,2027-04-04,12,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0420,Preliminary Design Submission to SAR - Furniture Works (FF&E),TT_Task,3,2027-03-24,2027-03-26,2027-04-05,2027-04-07,12,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2420,Preliminary Design Review & Approval by SAR - Furniture Works (FF&E),TT_Task,21,2027-03-27,2027-04-16,2027-04-08,2027-04-28,12,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0430,Preliminary Design Development - Substation & SEC Works,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0440,Preliminary Design Submission to SAR - Substation & SEC Works,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2440,Preliminary Design Review & Approval by SAR - Substation & SEC Works,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0450,Preliminary Design Development - Firefighting Building,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0460,Preliminary Design Submission to SAR - Firefighting Building,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2460,Preliminary Design Review & Approval by SAR - Firefighting Building,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0470,Preliminary Design Development - Generator Room,TT_Task,48,2027-01-31,2027-03-26,2027-02-09,2027-04-04,9,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0480,Preliminary Design Submission to SAR - Generator Room,TT_Task,3,2027-03-27,2027-03-29,2027-04-05,2027-04-07,9,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2480,Preliminary Design Review & Approval by SAR - Generator Room,TT_Task,21,2027-03-30,2027-04-19,2027-04-08,2027-04-28,9,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0490,Preliminary Design Development - Underground Water Tank,TT_Task,48,2027-01-31,2027-03-26,2027-02-09,2027-04-04,9,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0500,Preliminary Design Submission to SAR - Underground Water Tank,TT_Task,3,2027-03-27,2027-03-29,2027-04-05,2027-04-07,9,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2500,Preliminary Design Review & Approval by SAR - Underground Water Tank,TT_Task,21,2027-03-30,2027-04-19,2027-04-08,2027-04-28,9,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0510,Preliminary Design Development - Site Works & Underground Utilities,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0520,Preliminary Design Submission to SAR - Site Works & Underground Utilities,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2520,Preliminary Design Review & Approval by SAR - Site Works & Underground Utilities,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0530,Preliminary Design Development - Car Parking Sheds,TT_Task,48,2027-01-31,2027-03-26,2027-02-09,2027-04-04,9,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0540,Preliminary Design Submission to SAR - Car Parking Sheds,TT_Task,3,2027-03-27,2027-03-29,2027-04-05,2027-04-07,9,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2540,Preliminary Design Review & Approval by SAR - Car Parking Sheds,TT_Task,21,2027-03-30,2027-04-19,2027-04-08,2027-04-28,9,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0550,Preliminary Design Development - Fence Works,TT_Task,36,2027-01-31,2027-03-08,2027-02-21,2027-04-04,21,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0560,Preliminary Design Submission to SAR - Fence Works,TT_Task,3,2027-03-15,2027-03-17,2027-04-05,2027-04-07,21,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2560,Preliminary Design Review & Approval by SAR - Fence Works,TT_Task,21,2027-03-18,2027-04-07,2027-04-08,2027-04-28,21,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0570,Preliminary Design Development - Automatic Gate System,TT_Task,36,2027-01-31,2027-03-08,2027-02-21,2027-04-04,21,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0580,Preliminary Design Submission to SAR - Automatic Gate System,TT_Task,3,2027-03-15,2027-03-17,2027-04-05,2027-04-07,21,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2580,Preliminary Design Review & Approval by SAR - Automatic Gate System,TT_Task,21,2027-03-18,2027-04-07,2027-04-08,2027-04-28,21,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0590,Preliminary Design Development - Access Road,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0600,Preliminary Design Submission to SAR - Access Road,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2600,Preliminary Design Review & Approval by SAR - Access Road,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0610,Preliminary Design Development - External Works (Above Ground),TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0620,Preliminary Design Submission to SAR - External Works (Above Ground),TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2620,Preliminary Design Review & Approval by SAR - External Works (Above Ground),TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0630,Preliminary Design Development - Signalling & Telecommunication,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0640,Preliminary Design Submission to SAR - Signalling & Telecommunication,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2640,Preliminary Design Review & Approval by SAR - Signalling & Telecommunication,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0650,Preliminary Design Development - Railway Track Works,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0660,Preliminary Design Submission to SAR - Railway Track Works,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2660,Preliminary Design Review & Approval by SAR - Railway Track Works,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0670,Preliminary Design Development - Railway Turnout Works,TT_Task,57,2027-01-31,2027-04-04,2027-01-31,2027-04-04,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0680,Preliminary Design Submission to SAR - Railway Turnout Works,TT_Task,3,2027-04-05,2027-04-07,2027-04-05,2027-04-07,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2680,Preliminary Design Review & Approval by SAR - Railway Turnout Works,TT_Task,21,2027-04-08,2027-04-28,2027-04-08,2027-04-28,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0690,"Detailed Design & IFC - Design Management, Coordination & Review Meetings",TT_LOE,140,2027-04-29,2027-09-21,2028-08-13,2028-12-31,450,Contractor,Not TGA process,Not applicable,Baseline,0,0
+DS-0700,Gate 3 - Detailed Design (IFC) Approved by SAR,TT_FinMile,0,2027-09-21,2027-09-21,2027-09-21,2027-09-21,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+DS-0710,Detailed Design & IFC Development - Main Building,TT_Task,104,2027-04-29,2027-08-16,2027-05-04,2027-08-21,5,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0720,Detailed Design & IFC Submission to SAR - Main Building,TT_Task,3,2027-08-17,2027-08-19,2027-08-22,2027-08-24,5,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2720,Detailed Design & IFC Review & Approval by SAR - Main Building,TT_Task,28,2027-08-20,2027-09-16,2027-08-25,2027-09-21,5,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0730,Detailed Design & IFC Development - IT Equipment,TT_Task,88,2027-04-29,2027-07-31,2027-05-26,2027-08-21,21,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0740,Detailed Design & IFC Submission to SAR - IT Equipment,TT_Task,3,2027-08-01,2027-08-03,2027-08-22,2027-08-24,21,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2740,Detailed Design & IFC Review & Approval by SAR - IT Equipment,TT_Task,28,2027-08-04,2027-08-31,2027-08-25,2027-09-21,21,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0750,Detailed Design & IFC Development - Furniture Works (FF&E),TT_Task,78,2027-04-29,2027-07-21,2027-06-05,2027-08-21,31,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0760,Detailed Design & IFC Submission to SAR - Furniture Works (FF&E),TT_Task,3,2027-07-22,2027-07-24,2027-08-22,2027-08-24,31,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2760,Detailed Design & IFC Review & Approval by SAR - Furniture Works (FF&E),TT_Task,28,2027-07-25,2027-08-21,2027-08-25,2027-09-21,31,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0770,Detailed Design & IFC Development - Substation & SEC Works,TT_Task,104,2027-04-29,2027-08-16,2027-05-04,2027-08-21,5,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0780,Detailed Design & IFC Submission to SAR - Substation & SEC Works,TT_Task,3,2027-08-17,2027-08-19,2027-08-22,2027-08-24,5,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2780,Detailed Design & IFC Review & Approval by SAR - Substation & SEC Works,TT_Task,28,2027-08-20,2027-09-16,2027-08-25,2027-09-21,5,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0790,Detailed Design & IFC Development - Firefighting Building,TT_Task,99,2027-04-29,2027-08-11,2027-05-09,2027-08-21,10,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0800,Detailed Design & IFC Submission to SAR - Firefighting Building,TT_Task,3,2027-08-12,2027-08-14,2027-08-22,2027-08-24,10,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2800,Detailed Design & IFC Review & Approval by SAR - Firefighting Building,TT_Task,28,2027-08-15,2027-09-11,2027-08-25,2027-09-21,10,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0810,Detailed Design & IFC Development - Generator Room,TT_Task,83,2027-04-29,2027-07-26,2027-05-31,2027-08-21,26,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0820,Detailed Design & IFC Submission to SAR - Generator Room,TT_Task,3,2027-07-27,2027-07-29,2027-08-22,2027-08-24,26,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2820,Detailed Design & IFC Review & Approval by SAR - Generator Room,TT_Task,28,2027-07-30,2027-08-26,2027-08-25,2027-09-21,26,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0830,Detailed Design & IFC Development - Underground Water Tank,TT_Task,83,2027-04-29,2027-07-26,2027-05-31,2027-08-21,26,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0840,Detailed Design & IFC Submission to SAR - Underground Water Tank,TT_Task,3,2027-07-27,2027-07-29,2027-08-22,2027-08-24,26,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2840,Detailed Design & IFC Review & Approval by SAR - Underground Water Tank,TT_Task,28,2027-07-30,2027-08-26,2027-08-25,2027-09-21,26,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0850,Detailed Design & IFC Development - Site Works & Underground Utilities,TT_Task,109,2027-04-29,2027-08-21,2027-04-29,2027-08-21,0,Contractor,Not TGA process,Preparation,Baseline,0,1
+DS-0860,Detailed Design & IFC Submission to SAR - Site Works & Underground Utilities,TT_Task,3,2027-08-22,2027-08-24,2027-08-22,2027-08-24,0,Contractor,Not TGA process,Submission,Baseline,0,1
+DS-2860,Detailed Design & IFC Review & Approval by SAR - Site Works & Underground Utilities,TT_Task,28,2027-08-25,2027-09-21,2027-08-25,2027-09-21,0,SAR,Not TGA process,Review / Approval,Baseline,0,1
+DS-0870,Detailed Design & IFC Development - Car Parking Sheds,TT_Task,83,2027-04-29,2027-07-26,2027-05-31,2027-08-21,26,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0880,Detailed Design & IFC Submission to SAR - Car Parking Sheds,TT_Task,3,2027-07-27,2027-07-29,2027-08-22,2027-08-24,26,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2880,Detailed Design & IFC Review & Approval by SAR - Car Parking Sheds,TT_Task,28,2027-07-30,2027-08-26,2027-08-25,2027-09-21,26,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0890,Detailed Design & IFC Development - Fence Works,TT_Task,62,2027-04-29,2027-07-05,2027-06-21,2027-08-21,47,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0900,Detailed Design & IFC Submission to SAR - Fence Works,TT_Task,3,2027-07-06,2027-07-08,2027-08-22,2027-08-24,47,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2900,Detailed Design & IFC Review & Approval by SAR - Fence Works,TT_Task,28,2027-07-09,2027-08-05,2027-08-25,2027-09-21,47,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0910,Detailed Design & IFC Development - Automatic Gate System,TT_Task,62,2027-04-29,2027-07-05,2027-06-21,2027-08-21,47,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0920,Detailed Design & IFC Submission to SAR - Automatic Gate System,TT_Task,3,2027-07-06,2027-07-08,2027-08-22,2027-08-24,47,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2920,Detailed Design & IFC Review & Approval by SAR - Automatic Gate System,TT_Task,28,2027-07-09,2027-08-05,2027-08-25,2027-09-21,47,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0930,Detailed Design & IFC Development - Access Road,TT_Task,99,2027-04-29,2027-08-11,2027-05-09,2027-08-21,10,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0940,Detailed Design & IFC Submission to SAR - Access Road,TT_Task,3,2027-08-12,2027-08-14,2027-08-22,2027-08-24,10,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2940,Detailed Design & IFC Review & Approval by SAR - Access Road,TT_Task,28,2027-08-15,2027-09-11,2027-08-25,2027-09-21,10,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0950,Detailed Design & IFC Development - External Works (Above Ground),TT_Task,104,2027-04-29,2027-08-16,2027-05-04,2027-08-21,5,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0960,Detailed Design & IFC Submission to SAR - External Works (Above Ground),TT_Task,3,2027-08-17,2027-08-19,2027-08-22,2027-08-24,5,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2960,Detailed Design & IFC Review & Approval by SAR - External Works (Above Ground),TT_Task,28,2027-08-20,2027-09-16,2027-08-25,2027-09-21,5,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0970,Detailed Design & IFC Development - Signalling & Telecommunication,TT_Task,109,2027-04-29,2027-08-21,2027-04-29,2027-08-21,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-0980,Detailed Design & IFC Submission to SAR - Signalling & Telecommunication,TT_Task,3,2027-08-22,2027-08-24,2027-08-22,2027-08-24,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-2980,Detailed Design & IFC Review & Approval by SAR - Signalling & Telecommunication,TT_Task,28,2027-08-25,2027-09-21,2027-08-25,2027-09-21,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-0990,Detailed Design & IFC Development - Railway Track Works,TT_Task,109,2027-04-29,2027-08-21,2027-04-29,2027-08-21,0,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-1000,Detailed Design & IFC Submission to SAR - Railway Track Works,TT_Task,3,2027-08-22,2027-08-24,2027-08-22,2027-08-24,0,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-3000,Detailed Design & IFC Review & Approval by SAR - Railway Track Works,TT_Task,28,2027-08-25,2027-09-21,2027-08-25,2027-09-21,0,SAR,Not TGA process,Review / Approval,Baseline,0,0
+DS-1010,Detailed Design & IFC Development - Railway Turnout Works,TT_Task,104,2027-04-29,2027-08-16,2027-05-04,2027-08-21,5,Contractor,Not TGA process,Preparation,Baseline,0,0
+DS-1020,Detailed Design & IFC Submission to SAR - Railway Turnout Works,TT_Task,3,2027-08-17,2027-08-19,2027-08-22,2027-08-24,5,Contractor,Not TGA process,Submission,Baseline,0,0
+DS-3020,Detailed Design & IFC Review & Approval by SAR - Railway Turnout Works,TT_Task,28,2027-08-20,2027-09-16,2027-08-25,2027-09-21,5,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0010,Prequalification of Vendors / Subcontractors - Main Building,TT_Task,14,2027-05-21,2027-06-03,2028-03-02,2028-03-15,277,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0020,Prequalification of Vendors / Subcontractors - IT Equipment,TT_Task,14,2027-05-21,2027-06-03,2028-07-21,2028-08-03,411,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0030,Prequalification of Vendors / Subcontractors - Furniture Works (FF&E),TT_Task,14,2027-09-24,2027-10-07,2028-08-04,2028-08-17,300,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0040,Prequalification of Vendors / Subcontractors - Substation & SEC Works,TT_Task,14,2027-05-21,2027-06-03,2027-10-26,2027-11-08,157,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0050,Prequalification of Vendors / Subcontractors - Firefighting Building,TT_Task,14,2027-05-21,2027-06-03,2028-07-07,2028-07-20,397,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0060,Prequalification of Vendors / Subcontractors - Generator Room,TT_Task,14,2027-09-24,2027-10-07,2028-03-05,2028-03-18,155,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0070,Prequalification of Vendors / Subcontractors - Underground Water Tank,TT_Task,14,2027-05-21,2027-06-03,2028-08-06,2028-08-19,427,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0080,Prequalification of Vendors / Subcontractors - Site Works & Underground Utilities,TT_Task,14,2027-05-21,2027-06-03,2028-06-20,2028-07-03,380,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0090,Prequalification of Vendors / Subcontractors - Car Parking Sheds,TT_Task,14,2027-05-21,2027-06-03,2028-06-07,2028-06-20,367,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0100,Prequalification of Vendors / Subcontractors - Fence Works,TT_Task,14,2027-05-21,2027-06-03,2028-08-20,2028-09-02,441,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0110,Prequalification of Vendors / Subcontractors - Automatic Gate System,TT_Task,14,2027-05-21,2027-06-03,2028-08-19,2028-09-01,440,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0120,Prequalification of Vendors / Subcontractors - Access Road,TT_Task,14,2027-09-24,2027-10-07,2028-08-06,2028-08-19,302,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0130,Prequalification of Vendors / Subcontractors - External Works (Above Ground),TT_Task,14,2027-05-21,2027-06-03,2028-05-19,2028-06-01,348,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0140,Prequalification of Vendors / Subcontractors - Signalling & Telecommunication,TT_Task,14,2027-05-21,2027-06-03,2027-09-11,2027-09-25,113,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0150,Prequalification of Vendors / Subcontractors - Railway Track Works,TT_Task,14,2027-09-24,2027-10-07,2027-09-24,2027-10-07,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PC-0160,Prequalification of Vendors / Subcontractors - Railway Turnout Works,TT_Task,14,2027-05-21,2027-06-03,2027-09-18,2027-10-02,120,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0170,Material Submittal to SAR - Main Building,TT_Task,3,2027-06-04,2027-06-06,2028-03-16,2028-03-18,277,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2170,Material Approval by SAR - Main Building,TT_Task,21,2027-06-07,2027-06-27,2028-03-19,2028-04-08,277,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0180,Material Submittal to SAR - IT Equipment,TT_Task,3,2027-06-04,2027-06-06,2028-08-04,2028-08-06,411,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2180,Material Approval by SAR - IT Equipment,TT_Task,21,2027-06-07,2027-06-27,2028-08-07,2028-08-27,411,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0190,Material Submittal to SAR - Furniture Works (FF&E),TT_Task,3,2027-10-08,2027-10-10,2028-08-18,2028-08-20,300,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2190,Material Approval by SAR - Furniture Works (FF&E),TT_Task,21,2027-10-11,2027-10-31,2028-08-21,2028-09-10,300,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0200,Material Submittal to SAR - Substation & SEC Works,TT_Task,3,2027-06-04,2027-06-06,2027-11-09,2027-11-11,157,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2200,Material Approval by SAR - Substation & SEC Works,TT_Task,28,2027-06-07,2027-07-04,2027-11-12,2027-12-09,157,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0210,Material Submittal to SAR - Firefighting Building,TT_Task,3,2027-06-04,2027-06-06,2028-07-21,2028-07-23,397,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2210,Material Approval by SAR - Firefighting Building,TT_Task,21,2027-06-07,2027-06-27,2028-07-24,2028-08-13,397,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0220,Material Submittal to SAR - Generator Room,TT_Task,3,2027-10-08,2027-10-10,2028-03-19,2028-03-21,155,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2220,Material Approval by SAR - Generator Room,TT_Task,28,2027-10-11,2027-11-07,2028-03-22,2028-04-18,155,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0230,Material Submittal to SAR - Underground Water Tank,TT_Task,3,2027-06-04,2027-06-06,2028-08-20,2028-08-22,427,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2230,Material Approval by SAR - Underground Water Tank,TT_Task,21,2027-06-07,2027-06-27,2028-08-23,2028-09-12,427,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0240,Material Submittal to SAR - Site Works & Underground Utilities,TT_Task,3,2027-06-04,2027-06-06,2028-07-04,2028-07-06,380,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2240,Material Approval by SAR - Site Works & Underground Utilities,TT_Task,21,2027-06-07,2027-06-27,2028-07-07,2028-07-27,380,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0250,Material Submittal to SAR - Car Parking Sheds,TT_Task,3,2027-06-04,2027-06-06,2028-06-21,2028-06-23,367,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2250,Material Approval by SAR - Car Parking Sheds,TT_Task,21,2027-06-07,2027-06-27,2028-06-24,2028-07-14,367,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0260,Material Submittal to SAR - Fence Works,TT_Task,3,2027-06-04,2027-06-06,2028-09-03,2028-09-05,441,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2260,Material Approval by SAR - Fence Works,TT_Task,21,2027-06-07,2027-06-27,2028-09-06,2028-09-27,441,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0270,Material Submittal to SAR - Automatic Gate System,TT_Task,3,2027-06-04,2027-06-06,2028-09-02,2028-09-04,440,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2270,Material Approval by SAR - Automatic Gate System,TT_Task,21,2027-06-07,2027-06-27,2028-09-05,2028-09-26,440,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0280,Material Submittal to SAR - Access Road,TT_Task,3,2027-10-08,2027-10-10,2028-08-20,2028-08-22,302,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2280,Material Approval by SAR - Access Road,TT_Task,21,2027-10-11,2027-10-31,2028-08-23,2028-09-12,302,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0290,Material Submittal to SAR - External Works (Above Ground),TT_Task,3,2027-06-04,2027-06-06,2028-06-02,2028-06-04,348,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2290,Material Approval by SAR - External Works (Above Ground),TT_Task,21,2027-06-07,2027-06-27,2028-06-05,2028-06-25,348,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0300,Material Submittal to SAR - Signalling & Telecommunication,TT_Task,3,2027-06-04,2027-06-06,2027-09-26,2027-09-28,113,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2300,Material Approval by SAR - Signalling & Telecommunication,TT_Task,28,2027-06-07,2027-07-04,2027-09-29,2027-10-26,113,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0310,Material Submittal to SAR - Railway Track Works,TT_Task,3,2027-10-08,2027-10-10,2027-10-08,2027-10-10,0,Contractor,Not TGA process,Submission,Baseline,0,1
+PC-2310,Material Approval by SAR - Railway Track Works,TT_Task,28,2027-10-11,2027-11-07,2027-10-11,2027-11-07,0,SAR,Not TGA process,Review / Approval,Baseline,0,1
+PC-0320,Material Submittal to SAR - Railway Turnout Works,TT_Task,3,2027-06-04,2027-06-06,2027-10-03,2027-10-05,120,Contractor,Not TGA process,Submission,Baseline,0,0
+PC-2320,Material Approval by SAR - Railway Turnout Works,TT_Task,28,2027-06-07,2027-07-04,2027-10-06,2027-11-02,120,SAR,Not TGA process,Review / Approval,Baseline,0,0
+PC-0330,Purchase Order Placement - Main Building,TT_Task,10,2027-06-28,2027-07-07,2028-04-09,2028-04-18,277,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0340,Purchase Order Placement - IT Equipment,TT_Task,10,2027-06-28,2027-07-07,2028-08-28,2028-09-06,411,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0350,Purchase Order Placement - Furniture Works (FF&E),TT_Task,10,2027-11-01,2027-11-10,2028-09-11,2028-09-20,300,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0360,Purchase Order Placement - Substation & SEC Works,TT_Task,10,2027-07-05,2027-07-14,2027-12-10,2027-12-19,157,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0370,Purchase Order Placement - Firefighting Building,TT_Task,10,2027-06-28,2027-07-07,2028-08-14,2028-08-23,397,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0380,Purchase Order Placement - Generator Room,TT_Task,10,2027-11-08,2027-11-17,2028-04-19,2028-04-28,155,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0390,Purchase Order Placement - Underground Water Tank,TT_Task,10,2027-06-28,2027-07-07,2028-09-13,2028-09-22,427,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0400,Purchase Order Placement - Site Works & Underground Utilities,TT_Task,10,2027-06-28,2027-07-07,2028-07-28,2028-08-06,380,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0410,Purchase Order Placement - Car Parking Sheds,TT_Task,10,2027-06-28,2027-07-07,2028-07-15,2028-07-24,367,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0420,Purchase Order Placement - Fence Works,TT_Task,10,2027-06-28,2027-07-07,2028-09-28,2028-10-07,441,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0430,Purchase Order Placement - Automatic Gate System,TT_Task,10,2027-06-28,2027-07-07,2028-09-27,2028-10-06,440,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0440,Purchase Order Placement - Access Road,TT_Task,10,2027-11-01,2027-11-10,2028-09-13,2028-09-22,302,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0450,Purchase Order Placement - External Works (Above Ground),TT_Task,10,2027-06-28,2027-07-07,2028-06-26,2028-07-05,348,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0460,Purchase Order Placement - Signalling & Telecommunication,TT_Task,10,2027-07-05,2027-07-14,2027-10-27,2027-11-05,113,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0470,Purchase Order Placement - Railway Track Works,TT_Task,10,2027-11-08,2027-11-17,2027-11-08,2027-11-17,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PC-0480,Purchase Order Placement - Railway Turnout Works,TT_Task,10,2027-07-05,2027-07-14,2027-11-03,2027-11-12,120,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0490,Supply & Delivery to Site (Short Lead) - Main Building,TT_Task,60,2027-09-21,2027-11-20,2028-04-19,2028-06-24,202,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0500,Supply & Delivery to Site (Short Lead) - IT Equipment,TT_Task,60,2027-10-28,2027-12-26,2028-09-07,2028-11-06,300,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0510,Supply & Delivery to Site (Short Lead) - Furniture Works (FF&E),TT_Task,60,2027-12-19,2028-02-16,2028-09-21,2028-11-20,262,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0520,Supply & Delivery to Site (Short Lead) - Firefighting Building,TT_Task,60,2027-09-05,2027-11-04,2028-08-24,2028-10-23,338,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0530,Supply & Delivery to Site (Short Lead) - Underground Water Tank,TT_Task,45,2027-10-17,2027-11-30,2028-09-24,2028-11-07,327,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0540,Supply & Delivery to Site (Short Lead) - Site Works & Underground Utilities,TT_Task,60,2027-07-27,2027-09-25,2028-08-07,2028-10-06,361,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0550,Supply & Delivery to Site (Short Lead) - Car Parking Sheds,TT_Task,60,2027-11-09,2028-01-07,2028-07-25,2028-09-22,244,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0560,Supply & Delivery to Site (Short Lead) - Fence Works,TT_Task,45,2027-09-29,2027-11-12,2028-10-08,2028-11-21,359,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0570,Supply & Delivery to Site (Short Lead) - Automatic Gate System,TT_Task,60,2027-08-05,2027-10-04,2028-10-07,2028-12-05,412,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0580,Supply & Delivery to Site (Short Lead) - Access Road,TT_Task,30,2027-11-11,2027-12-10,2028-09-24,2028-10-23,302,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0590,Supply & Delivery to Site (Short Lead) - External Works (Above Ground),TT_Task,45,2027-11-04,2027-12-18,2028-07-06,2028-08-19,230,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0600,Manufacture (Long Lead) - Substation & SEC Works,TT_Task,180,2027-07-15,2028-01-10,2027-12-20,2028-06-16,158,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0610,Shipping & Delivery to Site - Substation & SEC Works,TT_Task,21,2028-01-11,2028-01-31,2028-06-17,2028-07-07,158,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0620,Manufacture (Long Lead) - Generator Room,TT_Task,150,2027-11-18,2028-04-15,2028-04-29,2028-09-25,163,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0630,Shipping & Delivery to Site - Generator Room,TT_Task,21,2028-04-16,2028-05-06,2028-09-26,2028-10-16,163,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0640,Manufacture (Long Lead) - Signalling & Telecommunication,TT_Task,245,2027-07-15,2028-03-15,2027-11-06,2028-07-07,114,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0650,Shipping & Delivery to Site - Signalling & Telecommunication,TT_Task,21,2028-03-16,2028-04-05,2028-07-08,2028-07-28,114,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0660,Manufacture (Long Lead) - Railway Track Works,TT_Task,245,2027-11-18,2028-07-19,2027-11-18,2028-07-19,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PC-0670,Shipping & Delivery to Site - Railway Track Works,TT_Task,21,2028-07-20,2028-08-09,2028-07-20,2028-08-09,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+PC-0680,Manufacture (Long Lead) - Railway Turnout Works,TT_Task,245,2027-07-15,2028-03-15,2027-11-13,2028-07-14,121,Contractor,Not TGA process,Not applicable,Baseline,0,0
+PC-0690,Shipping & Delivery to Site - Railway Turnout Works,TT_Task,21,2028-03-16,2028-04-05,2028-07-15,2028-08-04,121,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0010,"Excavation, Shoring & Dewatering",TT_Task,8,2027-10-16,2027-10-24,2028-09-24,2028-10-02,281,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0020,Backfilling & Compaction around Foundations,TT_Task,6,2027-11-01,2027-11-07,2028-09-06,2028-09-12,253,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0030,Blinding & Foundation Waterproofing,TT_Task,3,2027-10-16,2027-10-18,2028-09-30,2028-10-02,286,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0040,"Footings & Ground Beams - Formwork, Rebar & Concrete",TT_Task,14,2027-10-16,2027-10-31,2028-04-30,2028-05-22,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0050,Slab on Grade & Plinth Beams,TT_Task,8,2027-11-17,2027-11-25,2028-09-24,2028-10-02,253,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0060,RC Columns & Walls,TT_Task,12,2027-11-01,2027-11-14,2028-05-23,2028-06-05,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0070,Roof Beams & Slab - Formwork & Reinforcement,TT_Task,16,2027-11-15,2027-12-02,2028-06-06,2028-06-24,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0080,Roof Slab Concrete Pour & Curing,TT_Task,7,2027-12-04,2027-12-11,2028-08-31,2028-09-07,220,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0090,Underground Drainage & Sleeves,TT_Task,8,2027-11-08,2027-11-16,2028-09-13,2028-09-21,253,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0100,Water Supply & Drainage Piping - First Fix,TT_Task,18,2027-12-04,2027-12-23,2028-06-27,2028-07-17,164,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0110,Sanitary Fixtures & Second Fix,TT_Task,13,2028-02-07,2028-02-21,2028-09-17,2028-10-02,178,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0120,Ductwork & Piping - First Fix,TT_Task,20,2027-12-04,2027-12-26,2028-06-25,2028-07-17,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0130,"AC Units, Diffusers & Equipment Installation",TT_Task,15,2028-02-01,2028-02-17,2028-09-14,2028-10-02,181,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0140,"Conduits, Containment & Back Boxes",TT_Task,16,2027-12-04,2027-12-21,2028-06-27,2028-07-15,164,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0150,"Cable Pulling, Panel Boards & Distribution Boards",TT_Task,18,2027-12-22,2028-01-11,2028-07-16,2028-08-05,164,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0160,"Lighting, Small Power & Fixtures",TT_Task,15,2028-02-01,2028-02-17,2028-09-14,2028-10-02,181,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0170,Sprinkler & Fire Water Pipework,TT_Task,14,2027-12-04,2027-12-19,2028-06-29,2028-07-15,166,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0180,"Sprinkler Heads, Hose Cabinets & Accessories",TT_Task,10,2028-02-01,2028-02-12,2028-09-20,2028-10-02,186,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0190,External Blockwork,TT_Task,16,2027-11-15,2027-12-02,2028-06-06,2028-06-24,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0200,Internal Blockwork & Partitions,TT_Task,14,2027-12-04,2027-12-19,2028-06-29,2028-07-15,166,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0210,"Embeds, Miscellaneous Steel & Supports",TT_Task,12,2027-11-15,2027-11-28,2028-09-18,2028-10-02,251,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0220,"Handrails, Louvers & Metal Cladding",TT_Task,10,2027-12-20,2027-12-30,2028-09-20,2028-10-02,223,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0230,Roof Waterproofing & Thermal Insulation,TT_Task,14,2027-12-12,2027-12-27,2028-09-16,2028-10-02,226,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0240,"Wall Insulation, Sealants & Flashings",TT_Task,8,2027-12-20,2027-12-28,2028-09-24,2028-10-02,225,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0250,Door & Window Frames and Glazing Installation,TT_Task,14,2027-12-20,2028-01-04,2028-09-16,2028-10-02,219,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0260,Door Leaves & Ironmongery,TT_Task,10,2028-03-08,2028-03-19,2028-09-20,2028-10-02,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0270,Internal & External Plastering,TT_Task,16,2027-12-27,2028-01-13,2028-07-18,2028-08-05,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0280,Floor Screed & Tiling,TT_Task,20,2028-01-15,2028-02-06,2028-08-06,2028-08-28,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0290,False Ceiling & Bulkheads,TT_Task,15,2028-01-15,2028-01-31,2028-08-28,2028-09-13,181,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0300,Painting - Internal & External,TT_Task,19,2028-02-07,2028-03-07,2028-08-29,2028-09-19,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0310,"Signage, Toilet Partitions & Accessories",TT_Task,10,2028-03-08,2028-03-19,2028-09-20,2028-10-02,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0320,Built-in Fittings & Window Treatments,TT_Task,10,2028-03-08,2028-03-19,2028-09-20,2028-10-02,162,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0330,Accessibility Platform Lift - Supply & Installation,TT_Task,15,2027-12-20,2028-01-05,2028-09-14,2028-10-02,218,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0340,Building Management System (BMS) Installation,TT_Task,16,2028-01-12,2028-01-30,2028-08-27,2028-09-13,182,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0350,"Telephone, PA & Communication Cabling",TT_Task,12,2028-01-12,2028-01-25,2028-08-29,2028-09-11,184,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0360,Fire Alarm System Installation,TT_Task,12,2028-01-12,2028-01-25,2028-08-29,2028-09-11,184,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0370,Security Systems - Field Devices & Cabling,TT_Task,17,2028-01-26,2028-02-14,2028-09-12,2028-10-02,184,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0380,"Containment, Structured Cabling, Fibre & Racks Installation",TT_Task,25,2027-12-12,2028-01-09,2028-09-09,2028-10-08,220,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0390,Active Network Equipment & Servers Installation,TT_Task,15,2028-01-10,2028-01-26,2028-11-07,2028-11-23,245,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0400,"CCTV, Access Control & Public Address Systems Installation",TT_Task,28,2028-01-10,2028-02-10,2028-10-09,2028-11-09,220,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0410,System Integration & Configuration with Existing Infrastructure,TT_Task,12,2028-02-12,2028-03-04,2028-11-11,2028-11-23,220,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0420,"Supply & Installation of Furniture, Fittings & Equipment - Main Building",TT_Task,20,2028-03-08,2028-03-30,2028-11-21,2028-12-13,214,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0430,"Supply & Installation of Furniture, Fittings & Equipment - Firefighting Building",TT_Task,11,2028-01-19,2028-01-31,2028-11-08,2028-11-20,238,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0440,"Foundations, Plinths & Cable Trenches (Civil)",TT_Task,20,2027-10-09,2027-10-31,2028-06-14,2028-07-06,201,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0450,"Installation of RMU, Transformers & Package Units",TT_Task,19,2028-02-01,2028-02-23,2028-07-08,2028-07-29,122,Contractor,Not TGA process,Preparation,Baseline,0,0
+CN-0460,Trenching & Duct Banks for MV/LV Feeders,TT_Task,25,2027-10-09,2027-11-06,2028-11-22,2028-12-20,338,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0470,"MV/LV Cable Laying, Jointing & Terminations",TT_Task,20,2028-03-02,2028-03-25,2028-07-30,2028-08-21,122,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0480,Grounding & Panel Boards Installation,TT_Task,15,2028-03-02,2028-03-19,2028-08-16,2028-09-02,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0490,Manholes & Associated Civil Works,TT_Task,20,2027-10-09,2027-10-31,2028-06-14,2028-07-06,201,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0500,"Protection, Metering & Terminations",TT_Task,10,2028-03-26,2028-04-05,2028-09-03,2028-09-13,132,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0510,SEC Connection Works (Source Point to Station),TT_Task,20,2028-03-26,2028-04-17,2028-08-22,2028-09-13,122,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0520,"Excavation, Shoring & Dewatering",TT_Task,6,2027-10-16,2027-10-21,2028-11-02,2028-11-08,315,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0530,Backfilling & Compaction around Foundations,TT_Task,4,2027-10-27,2027-10-31,2028-10-22,2028-10-25,295,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0540,Blinding & Foundation Waterproofing,TT_Task,2,2027-10-16,2027-10-17,2028-11-07,2028-11-08,319,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0550,"Footings & Ground Beams - Formwork, Rebar & Concrete",TT_Task,10,2027-10-16,2027-10-26,2028-07-27,2028-08-07,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0560,Slab on Grade & Plinth Beams,TT_Task,6,2027-11-08,2027-11-14,2028-11-02,2028-11-08,295,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0570,RC Columns & Walls,TT_Task,8,2027-10-27,2027-11-04,2028-08-08,2028-08-16,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0580,Roof Beams & Slab - Formwork & Reinforcement,TT_Task,11,2027-11-06,2027-11-17,2028-08-17,2028-08-29,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0590,Roof Slab Concrete Pour & Curing,TT_Task,5,2027-11-18,2027-11-23,2028-10-23,2028-10-28,277,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0600,Underground Drainage & Sleeves,TT_Task,6,2027-11-01,2027-11-07,2028-10-26,2028-11-01,295,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0610,Water Supply & Drainage Piping - First Fix,TT_Task,13,2027-11-18,2027-12-02,2028-10-25,2028-11-08,279,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0620,Sanitary Fixtures & Second Fix,TT_Task,7,2028-01-06,2028-01-13,2028-11-01,2028-11-08,243,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0630,Ductwork & Piping - First Fix,TT_Task,14,2027-11-18,2027-12-04,2028-10-24,2028-11-08,278,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0640,"AC Units, Diffusers & Equipment Installation",TT_Task,8,2028-01-03,2028-01-11,2028-10-31,2028-11-08,245,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0650,"Conduits, Containment & Back Boxes",TT_Task,11,2027-11-18,2027-11-30,2028-08-30,2028-09-11,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0660,"Cable Pulling, Panel Boards & Distribution Boards",TT_Task,13,2027-12-01,2027-12-15,2028-09-12,2028-09-27,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0670,"Lighting, Small Power & Fixtures",TT_Task,8,2028-01-03,2028-01-11,2028-10-31,2028-11-08,245,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0680,"Fire Pump Room - Duty / Standby / Jockey Pumps, Controllers & Pipework",TT_Task,18,2027-11-18,2027-12-08,2028-08-30,2028-09-19,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0690,"Hydrants, Hose Reel Connections & Link to Water Tank / Fire Ring Main",TT_Task,10,2027-12-12,2027-12-22,2028-09-26,2028-10-07,234,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0700,"Sprinkler Heads, Hose Cabinets & Accessories",TT_Task,6,2028-01-03,2028-01-09,2028-11-02,2028-11-08,247,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0710,External Blockwork,TT_Task,11,2027-11-06,2027-11-17,2028-08-17,2028-08-29,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0720,Internal Blockwork & Partitions,TT_Task,10,2027-11-18,2027-11-29,2028-08-31,2028-09-11,233,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0730,"Embeds, Miscellaneous Steel & Supports",TT_Task,8,2027-11-06,2027-11-14,2028-10-31,2028-11-08,295,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0740,"Handrails, Louvers & Metal Cladding",TT_Task,7,2027-11-30,2027-12-07,2028-09-12,2028-09-19,233,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0750,Roof Waterproofing & Thermal Insulation,TT_Task,10,2027-11-24,2027-12-05,2028-10-29,2028-11-08,277,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0760,"Wall Insulation, Sealants & Flashings",TT_Task,6,2027-11-30,2027-12-06,2028-09-13,2028-09-19,234,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0770,Door & Window Frames and Glazing Installation,TT_Task,10,2027-11-30,2027-12-11,2028-09-13,2028-09-25,234,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0780,Door Leaves & Ironmongery,TT_Task,7,2028-01-19,2028-01-26,2028-11-01,2028-11-08,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0790,Internal & External Plastering,TT_Task,11,2027-12-09,2027-12-21,2028-09-20,2028-10-03,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0800,Floor Screed & Tiling,TT_Task,13,2027-12-22,2028-01-05,2028-10-04,2028-10-18,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0810,False Ceiling & Bulkheads,TT_Task,10,2027-12-22,2028-01-02,2028-10-19,2028-10-30,245,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0820,Painting - Internal & External,TT_Task,11,2028-01-06,2028-01-18,2028-10-19,2028-10-31,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0830,"Signage, Toilet Partitions & Accessories",TT_Task,7,2028-01-19,2028-01-26,2028-11-01,2028-11-08,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0840,Built-in Fittings & Window Treatments,TT_Task,7,2028-01-19,2028-01-26,2028-11-01,2028-11-08,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0850,Accessibility Platform Lift - Supply & Installation,TT_Task,10,2027-11-30,2027-12-11,2028-09-13,2028-09-25,234,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0860,Building Management System (BMS) Installation,TT_Task,10,2027-12-16,2027-12-27,2028-10-29,2028-11-08,258,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0870,"Telephone, PA & Communication Cabling",TT_Task,8,2027-12-16,2027-12-25,2028-09-28,2028-10-07,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0880,Fire Alarm System Installation,TT_Task,8,2027-12-16,2027-12-25,2028-09-28,2028-10-07,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0890,Security Systems - Field Devices & Cabling,TT_Task,10,2027-12-26,2028-01-05,2028-10-08,2028-10-18,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0900,Excavation & Backfilling,TT_Task,6,2027-11-20,2027-11-25,2028-11-21,2028-11-27,301,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0910,Foundations & Slab on Grade,TT_Task,14,2027-11-20,2027-12-05,2028-08-16,2028-08-31,219,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0920,"RC Columns, Walls & Roof Slab",TT_Task,20,2027-12-06,2027-12-28,2028-09-02,2028-09-25,219,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0930,"Blockwork, Roof Waterproofing & Insulation",TT_Task,18,2027-12-29,2028-01-18,2028-09-26,2028-10-16,219,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0940,"Doors, Louvers, Finishes & Painting",TT_Task,16,2028-01-19,2028-02-06,2028-11-09,2028-11-27,239,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0950,"Generator Sets, Fuel System, Day Tank & Exhaust Installation",TT_Task,20,2028-05-09,2028-05-31,2028-10-17,2028-11-08,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0960,"Ventilation, Sound Attenuation & Fire Safety Systems",TT_Task,12,2028-06-01,2028-06-14,2028-11-14,2028-11-27,141,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0970,"Cable Trenches, Containment & Earthing",TT_Task,12,2027-12-06,2027-12-19,2028-11-14,2028-11-27,281,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0980,"Control Panels, Cabling, Lighting & Small Power",TT_Task,16,2028-06-01,2028-06-19,2028-11-09,2028-11-27,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-0990,"Excavation, Shoring & Dewatering",TT_Task,12,2027-10-23,2027-11-04,2028-09-14,2028-09-28,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1000,Blinding & Base Slab,TT_Task,10,2027-11-06,2027-11-16,2028-09-30,2028-10-10,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1010,RC Walls,TT_Task,14,2027-11-17,2027-12-02,2028-10-11,2028-10-26,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1020,Roof Slab,TT_Task,10,2027-12-04,2027-12-14,2028-10-28,2028-11-07,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1030,Backfilling & Compaction,TT_Task,6,2027-12-15,2027-12-21,2028-11-25,2028-11-30,282,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1040,Waterproofing Systems & Protective Coatings,TT_Task,10,2027-12-04,2027-12-14,2028-10-28,2028-11-07,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1050,"Access Hatch, Ladder & Covers",TT_Task,6,2027-12-15,2027-12-21,2028-11-25,2028-11-30,282,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1060,Inlet / Outlet Pipework & Valves,TT_Task,12,2027-12-15,2027-12-28,2028-11-08,2028-11-21,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1070,Internal Fittings & Hydrostatic Test,TT_Task,8,2027-12-29,2028-01-06,2028-11-22,2028-11-30,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1080,"Level Controls, Lighting & Earthing",TT_Task,10,2027-12-15,2027-12-26,2028-11-11,2028-11-21,270,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1090,"Manholes, Chambers, Catch Basins & Thrust Blocks (RC)",TT_Task,60,2027-10-09,2027-12-16,2028-09-12,2028-11-21,278,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1100,Surface Reinstatement & Site Grading after UG Works,TT_Task,25,2027-11-30,2027-12-28,2028-07-22,2028-08-19,188,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1110,"Trenching, Bedding & Shoring for Utility Networks",TT_Task,40,2027-10-09,2027-11-23,2028-10-07,2028-11-21,298,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1120,Stormwater Drainage Pipelines & Channels,TT_Task,45,2027-10-09,2027-11-29,2028-05-30,2028-07-20,188,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1130,"Potable Water Network, Valves & Chambers",TT_Task,35,2027-10-09,2027-11-17,2028-10-12,2028-11-21,303,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1140,"Firefighting Ring Main, Hydrants & Valve Chambers",TT_Task,35,2027-10-09,2027-11-17,2028-06-11,2028-07-20,198,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1150,Sewerage Network & Manholes,TT_Task,40,2027-10-09,2027-11-23,2028-10-07,2028-11-21,298,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1160,Irrigation Network (Underground),TT_Task,25,2027-11-30,2027-12-28,2028-10-24,2028-11-21,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1170,"Pressure / Leak Testing, Flushing & Disinfection of Networks",TT_Task,15,2027-11-30,2027-12-16,2028-11-05,2028-11-21,278,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1180,Electrical & Telecom Ducts with Handholes,TT_Task,40,2027-10-09,2027-11-23,2028-10-07,2028-11-21,298,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1190,"Lift Station - Excavation, Wet Well & RC Structure",TT_Task,25,2027-10-09,2027-11-06,2028-09-10,2028-10-09,276,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1200,"Lift Station - Waterproofing, Cover Slab & Access",TT_Task,10,2027-11-07,2027-11-17,2028-10-10,2028-10-21,276,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1210,"Lift Station - Pumps, Piping & Valves",TT_Task,15,2027-11-18,2027-12-05,2028-10-22,2028-11-07,276,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1220,"Lift Station - Power Supply, Controls & Telemetry",TT_Task,12,2027-12-06,2027-12-19,2028-11-08,2028-11-21,276,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1230,Excavation & Isolated Foundations (RC),TT_Task,20,2027-12-29,2028-01-20,2028-08-30,2028-09-21,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1240,Steel Columns & Roof Framing Erection,TT_Task,35,2028-01-22,2028-03-09,2028-09-24,2028-11-02,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1250,"Roof Sheeting, Insulation & Rainwater Downpipes",TT_Task,20,2028-03-11,2028-04-02,2028-11-04,2028-11-26,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1260,"Bay Surface Finishes, Line & Handicap Marking",TT_Task,15,2028-04-03,2028-04-19,2028-11-27,2028-12-13,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1270,Lighting & Associated Electrical Works,TT_Task,15,2028-04-03,2028-04-19,2028-11-27,2028-12-13,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1280,Setting Out & Post Hole Excavation,TT_Task,8,2027-11-13,2027-11-21,2028-12-07,2028-12-16,321,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1290,Foundation Concrete & Bituminous Damp-proofing,TT_Task,12,2027-11-13,2027-11-25,2028-11-08,2028-11-21,296,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1300,"Steel Posts, Chain Link & Barbed Wire Erection",TT_Task,15,2027-11-27,2027-12-13,2028-11-22,2028-12-09,296,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1310,"Backfilling, Levelling & Compaction",TT_Task,6,2027-12-14,2027-12-20,2028-12-10,2028-12-16,296,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1320,Civil & Structural Works for Barrier Islands,TT_Task,10,2027-12-29,2028-01-09,2028-12-04,2028-12-14,278,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1330,"Conduiting, Wiring & Control Cabling",TT_Task,8,2027-10-09,2027-10-17,2028-11-27,2028-12-05,342,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1340,"Boom Barrier, Control Panel & Card Reader Installation",TT_Task,8,2027-10-18,2027-10-26,2028-12-06,2028-12-14,342,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1350,"Formation, Excavation, Compaction & Sub-base",TT_Task,30,2027-12-11,2028-01-13,2028-10-19,2028-11-22,255,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1360,Base Course Construction,TT_Task,15,2027-12-11,2027-12-27,2028-10-24,2028-11-09,259,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1370,Asphalt Binder & Wearing Course,TT_Task,12,2027-12-28,2028-01-10,2028-11-11,2028-11-23,259,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1380,"Road Markings, Signage, Guardrails & Speed Humps",TT_Task,12,2028-01-11,2028-01-24,2028-11-28,2028-12-11,262,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1390,Lighting Pole Foundations & Ducts,TT_Task,16,2028-01-15,2028-02-01,2028-11-23,2028-12-11,255,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1400,"Cabling, Luminaires & Road Lighting Energization",TT_Task,12,2028-01-11,2028-01-24,2028-11-28,2028-12-11,262,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1410,Irrigation Network (Median & Verges),TT_Task,16,2028-01-15,2028-02-01,2028-11-23,2028-12-11,255,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1420,Planting & Landscaping,TT_Task,15,2028-01-11,2028-01-27,2028-11-25,2028-12-11,259,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1430,"Stormwater Drainage Pipes, Culverts & Inlets",TT_Task,30,2027-11-06,2027-12-09,2028-09-13,2028-10-18,255,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1440,"Site Clearance, Cut & Fill, Grading & Soil Improvement",TT_Task,30,2027-10-30,2027-12-02,2028-06-17,2028-07-20,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1450,Sub-base & Base Course - Internal Roads & Car Park Areas,TT_Task,20,2028-01-02,2028-01-24,2028-08-20,2028-09-11,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1460,Prime Coat & Asphalt Wearing Course,TT_Task,18,2028-01-25,2028-02-14,2028-11-19,2028-12-09,242,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1470,"Kerbs, Interlock Footpaths & Bollards",TT_Task,30,2028-01-25,2028-03-07,2028-09-12,2028-10-17,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1480,"Guard Houses - Civil, Finishes & Services",TT_Task,30,2027-12-04,2028-01-06,2028-11-05,2028-12-09,275,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1490,"Road Markings, Traffic Signs, Speed Breakers & Handicap Ramps",TT_Task,12,2028-03-08,2028-03-21,2028-11-26,2028-12-09,218,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1500,"Light Pole Foundations, Ducts & Cabling",TT_Task,20,2027-12-04,2027-12-26,2028-11-16,2028-12-09,285,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1510,"Pole Erection, Luminaires & Energization",TT_Task,12,2028-03-08,2028-03-21,2028-11-26,2028-12-09,218,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1520,Irrigation Network - Landscape Areas,TT_Task,15,2028-03-08,2028-03-25,2028-10-18,2028-11-04,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1530,"Hard & Soft Landscaping - Trees, Shrubs, Groundcover & Lawn",TT_Task,30,2028-03-26,2028-04-29,2028-11-05,2028-12-09,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1540,"Surface Drainage - Channels, Catch Basins & Connections",TT_Task,25,2027-12-04,2028-01-01,2028-07-22,2028-08-19,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1550,Duct Banks Construction & Handholes,TT_Task,30,2027-11-06,2027-12-09,2028-06-24,2028-07-27,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1560,"Fibre Optic Cable Supply, Laying, Splicing & Testing",TT_Task,25,2028-04-06,2028-05-11,2028-07-29,2028-08-26,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1570,Patch Panels Installation & Termination,TT_Task,8,2028-05-13,2028-05-21,2028-08-27,2028-09-04,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1580,Equipment Racks Installation,TT_Task,8,2028-04-06,2028-04-15,2028-09-28,2028-10-07,143,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1590,Junction Boxes Installation,TT_Task,10,2028-04-06,2028-04-17,2028-09-26,2028-10-07,141,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1600,"Active Equipment (Switches, Routers) Installation & Configuration",TT_Task,12,2028-05-22,2028-06-04,2028-09-05,2028-09-18,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1610,Signalling Controllers Installation & Configuration,TT_Task,20,2028-05-13,2028-06-04,2028-08-27,2028-09-18,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1620,Integration with ICT Systems,TT_Task,15,2028-06-05,2028-06-21,2028-09-19,2028-10-07,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1630,Earthworks (Cut & Fill) - Loop Line Formation,TT_Task,15,2027-10-23,2027-11-08,2028-07-31,2028-08-16,229,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1640,Track Drainage,TT_Task,12,2027-10-23,2027-11-04,2028-08-03,2028-08-16,232,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1650,"Materials Receiving, Inspection & Handling (Rails, Sleepers, Ballast, Fastenings)",TT_Task,6,2028-08-10,2028-08-16,2028-08-10,2028-08-16,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+CN-1660,"Track Installation - Ballast, Sleepers, Rail, Welding & Tamping",TT_Task,35,2028-08-17,2028-09-27,2028-08-17,2028-09-27,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+CN-1670,Existing Track Realignment & Tie-in,TT_Task,10,2028-09-28,2028-10-09,2028-09-28,2028-10-09,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+CN-1680,Signalling & Telecom Integration - Track Side,TT_Task,10,2028-10-10,2028-10-21,2028-10-10,2028-10-21,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+CN-1690,Earthworks (Cut & Fill) - Turnout Area,TT_Task,12,2027-11-06,2027-11-18,2028-07-26,2028-08-08,213,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1700,Track Drainage,TT_Task,8,2027-11-06,2027-11-14,2028-07-31,2028-08-08,217,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1710,"Materials Receiving, Inspection & Handling (Turnouts, Sleepers, Ballast)",TT_Task,4,2028-04-06,2028-04-10,2028-08-05,2028-08-08,97,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1720,"Turnout & Crossover Installation - Alignment, Welding & Tamping",TT_Task,25,2028-04-11,2028-05-16,2028-08-09,2028-09-06,97,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1730,Existing Track Realignment & Tie-in (Possession),TT_Task,8,2028-05-23,2028-05-31,2028-09-13,2028-09-21,97,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CN-1740,Signalling & Telecom Integration,TT_Task,8,2028-06-05,2028-06-13,2028-09-24,2028-10-02,94,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0010,"Testing & Commissioning - MEP, Fire & Life Safety Systems",TT_Task,20,2028-05-13,2028-06-04,2028-10-03,2028-10-25,122,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0020,Civil Defense and Authority Inspections - Main Building,TT_Task,10,2028-06-08,2028-06-19,2028-10-29,2028-11-08,121,Contractor,Verification and Readiness,Not applicable,Baseline,0,0
+TC-0030,Snagging & Punch-list Closure,TT_Task,10,2028-06-20,2028-07-01,2028-11-09,2028-11-20,121,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0040,Handing Over - Main Building,TT_FinMile,0,2028-07-01,2028-07-01,2028-12-20,2028-12-20,147,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0050,IT & Low-Voltage Systems Testing & Commissioning (FAT / SAT),TT_Task,15,2028-05-13,2028-05-29,2028-11-25,2028-12-11,167,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0060,"Operator Training, As-Built & O&M Manuals",TT_Task,8,2028-05-30,2028-06-07,2028-12-12,2028-12-20,167,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0070,Handing Over - IT Equipment,TT_FinMile,0,2028-06-07,2028-06-07,2028-12-20,2028-12-20,167,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0080,"Final Inspection, Snagging & Handing Over Check - FF&E",TT_Task,6,2028-04-01,2028-04-06,2028-12-14,2028-12-20,214,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0090,Handing Over - Furniture Works (FF&E),TT_FinMile,0,2028-04-06,2028-04-06,2028-12-20,2028-12-20,214,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0100,"Testing, Protection Settings & Energization",TT_Task,15,2028-04-18,2028-05-11,2028-09-14,2028-10-02,122,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0110,SEC Inspection and Permanent Connection,TT_Task,15,2028-05-15,2028-05-31,2028-11-11,2028-11-27,153,Contractor,Verification and Readiness,Not applicable,Baseline,0,0
+TC-0120,Handing Over - Substation & SEC Works,TT_FinMile,0,2028-05-31,2028-05-31,2028-12-20,2028-12-20,173,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0130,"Fire Pump Tests, Flow Tests & Commissioning",TT_Task,15,2028-05-13,2028-05-29,2028-11-09,2028-11-26,154,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0140,Civil Defense Inspection and Approval - Ancillary Buildings,TT_Task,10,2028-06-03,2028-06-13,2028-11-30,2028-12-11,154,Contractor,Verification and Readiness,Review / Approval,Baseline,0,0
+TC-0150,Snagging & Punch-list Closure,TT_Task,8,2028-06-14,2028-06-22,2028-12-12,2028-12-20,154,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0160,Handing Over - Firefighting Building,TT_FinMile,0,2028-06-22,2028-06-22,2028-12-20,2028-12-20,154,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0170,Generator Load Bank Test & Commissioning,TT_Task,12,2028-06-20,2028-07-03,2028-11-28,2028-12-11,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0180,Integration with Main Electrical Network,TT_Task,8,2028-07-04,2028-07-12,2028-12-12,2028-12-20,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0190,Handing Over - Generator Room,TT_FinMile,0,2028-07-12,2028-07-12,2028-12-20,2028-12-20,137,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0200,"Disinfection, Water Quality Tests & Commissioning",TT_Task,8,2028-01-08,2028-01-16,2028-12-02,2028-12-10,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0210,NWC Inspection and Acceptance,TT_Task,6,2028-01-20,2028-01-26,2028-12-14,2028-12-20,268,Contractor,Verification and Readiness,Review / Approval,Baseline,0,0
+TC-0220,Handing Over - Underground Water Tank,TT_FinMile,0,2028-01-26,2028-01-26,2028-12-20,2028-12-20,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0230,Authority Inspections & Permanent Connections (NWC / SEC / Telecom),TT_Task,15,2028-01-01,2028-01-17,2028-11-25,2028-12-11,268,Contractor,Verification and Readiness,Not applicable,Baseline,0,0
+TC-0240,As-Built Survey & Final Acceptance of Utilities,TT_Task,8,2028-01-18,2028-01-26,2028-12-12,2028-12-20,268,Contractor,Not TGA process,Review / Approval,Baseline,0,0
+TC-0250,Handing Over - Site Works & Underground Utilities,TT_FinMile,0,2028-01-26,2028-01-26,2028-12-20,2028-12-20,268,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0260,Final Inspection & Snagging - Car Parking Sheds,TT_Task,6,2028-04-20,2028-04-26,2028-12-14,2028-12-20,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0270,Handing Over - Car Parking Sheds,TT_FinMile,0,2028-04-26,2028-04-26,2028-12-20,2028-12-20,197,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0280,Final Inspection & Snagging - Fence Works,TT_Task,4,2027-12-21,2027-12-25,2028-12-17,2028-12-20,296,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0290,Handing Over - Fence Works,TT_FinMile,0,2027-12-25,2027-12-25,2028-12-20,2028-12-20,296,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0300,Gate System Testing & Commissioning,TT_Task,5,2028-05-13,2028-05-17,2028-12-16,2028-12-20,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0310,Handing Over - Automatic Gate System,TT_FinMile,0,2028-05-17,2028-05-17,2028-12-20,2028-12-20,185,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0320,"Final Inspection, Snagging & Lighting Energization - Access Road",TT_Task,8,2028-05-13,2028-05-21,2028-12-12,2028-12-20,182,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0330,Handing Over - Access Road,TT_FinMile,0,2028-05-21,2028-05-21,2028-12-20,2028-12-20,182,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0340,Final Inspection & Snagging - External Works,TT_Task,10,2028-05-13,2028-05-23,2028-12-10,2028-12-20,180,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0350,Handing Over - External Works (Above Ground),TT_FinMile,0,2028-05-23,2028-05-23,2028-12-20,2028-12-20,180,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0360,Static & Functional Testing - Signalling & Telecommunication,TT_Task,12,2028-06-22,2028-07-05,2028-10-08,2028-10-21,91,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0370,Dynamic & System Integration Testing with Track and Turnouts,TT_Task,15,2028-10-22,2028-11-07,2028-10-22,2028-11-07,0,Contractor,Verification and Readiness,Not applicable,Baseline,0,1
+TC-0380,SAR Safety Assessment and Acceptance - Review,TT_Task,15,2028-11-22,2028-12-09,2028-11-22,2028-12-09,0,Contractor,Verification and Readiness,Review / Approval,Baseline,0,1
+TC-0390,Handing Over - Signalling & Telecommunication,TT_FinMile,0,2028-12-09,2028-12-09,2028-12-20,2028-12-20,10,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0400,"Track Geometry Survey, Inspection & Load Testing",TT_Task,10,2028-10-22,2028-11-01,2028-11-12,2028-11-22,18,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0410,SAR Inspection & Acceptance - Loop Line,TT_Task,10,2028-11-08,2028-11-19,2028-11-23,2028-12-04,13,Contractor,Not TGA process,Review / Approval,Baseline,0,0
+TC-0420,Handing Over - Railway Track Works,TT_FinMile,0,2028-11-19,2028-11-19,2028-12-20,2028-12-20,27,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0430,Turnout Geometry Inspection & Functional Tests,TT_Task,8,2028-06-14,2028-06-22,2028-10-03,2028-10-11,94,Contractor,Not TGA process,Not applicable,Baseline,0,0
+TC-0440,SAR Inspection & Acceptance - Turnouts,TT_Task,8,2028-06-24,2028-07-02,2028-10-12,2028-10-21,94,Contractor,Not TGA process,Review / Approval,Baseline,0,0
+TC-0450,Handing Over - Railway Turnout Works,TT_FinMile,0,2028-07-02,2028-07-02,2028-12-20,2028-12-20,146,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CO-0010,"Final As-Built Drawings, O&M Manuals & Handing Over Documentation",TT_Task,30,2028-07-02,2028-07-31,2028-11-21,2028-12-20,141,Contractor,Not TGA process,Not applicable,Baseline,0,0
+CO-0020,Taking-Over of All Works - Final Handing Over Certificate,TT_FinMile,0,2028-12-20,2028-12-20,2028-12-20,2028-12-20,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+CO-0030,Final Account Submission & Project Closeout Report,TT_Task,5,2028-12-21,2028-12-26,2028-12-26,2028-12-31,4,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-2111,Municipality Design Submission,TT_Task,5,2027-05-13,2027-05-23,2027-08-18,2027-08-22,91,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0111,Municipality Design Approval,TT_Task,30,2027-05-24,2027-06-22,2027-08-23,2027-09-21,91,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-2112,NWC Water & Sewer Design Submission,TT_Task,5,2027-05-13,2027-05-23,2027-08-03,2027-08-07,76,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0112,NWC Water & Sewer Design Approval,TT_Task,45,2027-05-24,2027-07-07,2027-08-08,2027-09-21,76,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-2113,SEC Electrical Design Submission,TT_Task,5,2027-05-13,2027-05-23,2027-07-19,2027-07-23,61,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0113,SEC Electrical Design Approval,TT_Task,60,2027-05-24,2027-07-22,2027-07-24,2027-09-21,61,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-2114,Telecom / Fibre Design Submission,TT_Task,5,2027-05-13,2027-05-23,2027-08-03,2027-08-07,76,Contractor,Not TGA process,Submission,Baseline,0,0
+PR-0114,Telecom / Fibre Design Approval,TT_Task,45,2027-05-24,2027-07-07,2027-08-08,2027-09-21,76,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-0270,Environmental Permit for Construction - Application Submission,TT_Task,5,2027-05-14,2027-05-24,2028-01-26,2028-01-30,250,Contractor,Authority Design Approvals,Submission,Baseline,0,0
+PR-2270,Environmental Permit for Construction - Approval,TT_Task,60,2027-05-25,2027-07-23,2028-01-31,2028-04-07,250,Authority,Authority Design Approvals,Review / Approval,Baseline,0,0
+PR-0165,SEC Permanent Power Supply - Agreement & Approval,TT_Task,90,2027-05-13,2027-08-16,2028-05-24,2028-08-21,355,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-0175,NWC Water & Sewer Connection - Approval,TT_Task,60,2027-05-13,2027-07-17,2028-09-22,2028-11-21,476,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-0185,Telecom / Fibre Service Connection - Approval,TT_Task,45,2027-05-13,2027-07-02,2028-10-08,2028-11-21,491,Authority,Not TGA process,Review / Approval,Baseline,0,0
+PR-0195,SAR Operations Possession Booking - Track Tie-in (Loop Line),TT_Task,30,2028-08-22,2028-09-20,2028-08-28,2028-09-27,6,SAR,SAR Work Permit and Possession,Review / Approval,Baseline,0,0
+PR-0196,SAR Operations Possession Booking - Turnout Tie-in,TT_Task,30,2028-04-16,2028-05-22,2028-08-14,2028-09-12,113,SAR,SAR Work Permit and Possession,Review / Approval,Baseline,0,0
+TC-0460,Trial Running - Loop Line & Turnouts with Signalling,TT_Task,12,2028-11-08,2028-11-21,2028-11-08,2028-11-21,0,Contractor,Verification and Readiness,Not applicable,Baseline,0,1
+CO-0015,SAR Taking-Over Certificate - Review and Issue,TT_Task,11,2028-12-10,2028-12-20,2028-12-10,2028-12-20,0,SAR,Verification and Readiness,Review / Approval,Baseline,0,1
+MS-0140,Contract Completion Date (26 months from NTP),TT_FinMile,0,2028-12-31,2028-12-31,2028-12-31,2028-12-31,0,Contractor,Not TGA process,Not applicable,Baseline,0,1
+MS-0075,Environmental Permit & Authority Approvals Obtained,TT_FinMile,0,2027-07-23,2027-07-23,2028-04-07,2028-04-07,250,Contractor,Authority Design Approvals,Not applicable,Baseline,0,0
+ADV-0010,Advance Payment Received (10% of Contract Value),TT_FinMile,0,2026-11-01,2026-11-01,2026-11-01,2026-11-01,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-01,Monthly Interim Payment Certificate No.01 - submit invoice (2026-11),TT_FinMile,0,2026-11-30,2026-11-30,2026-11-30,2026-11-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-02,Monthly Interim Payment Certificate No.02 - submit invoice (2026-12),TT_FinMile,0,2026-12-31,2026-12-31,2026-12-31,2026-12-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-03,Monthly Interim Payment Certificate No.03 - submit invoice (2027-01),TT_FinMile,0,2027-01-31,2027-01-31,2027-01-31,2027-01-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-04,Monthly Interim Payment Certificate No.04 - submit invoice (2027-02),TT_FinMile,0,2027-02-28,2027-02-28,2027-02-28,2027-02-28,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-05,Monthly Interim Payment Certificate No.05 - submit invoice (2027-03),TT_FinMile,0,2027-03-31,2027-03-31,2027-03-31,2027-03-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-06,Monthly Interim Payment Certificate No.06 - submit invoice (2027-04),TT_FinMile,0,2027-04-30,2027-04-30,2027-04-30,2027-04-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-07,Monthly Interim Payment Certificate No.07 - submit invoice (2027-05),TT_FinMile,0,2027-05-31,2027-05-31,2027-05-31,2027-05-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-08,Monthly Interim Payment Certificate No.08 - submit invoice (2027-06),TT_FinMile,0,2027-06-30,2027-06-30,2027-06-30,2027-06-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-09,Monthly Interim Payment Certificate No.09 - submit invoice (2027-07),TT_FinMile,0,2027-07-31,2027-07-31,2027-07-31,2027-07-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-10,Monthly Interim Payment Certificate No.10 - submit invoice (2027-08),TT_FinMile,0,2027-08-31,2027-08-31,2027-08-31,2027-08-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-11,Monthly Interim Payment Certificate No.11 - submit invoice (2027-09),TT_FinMile,0,2027-09-30,2027-09-30,2027-09-30,2027-09-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-12,Monthly Interim Payment Certificate No.12 - submit invoice (2027-10),TT_FinMile,0,2027-10-31,2027-10-31,2027-10-31,2027-10-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-13,Monthly Interim Payment Certificate No.13 - submit invoice (2027-11),TT_FinMile,0,2027-11-30,2027-11-30,2027-11-30,2027-11-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-14,Monthly Interim Payment Certificate No.14 - submit invoice (2027-12),TT_FinMile,0,2027-12-31,2027-12-31,2027-12-31,2027-12-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-15,Monthly Interim Payment Certificate No.15 - submit invoice (2028-01),TT_FinMile,0,2028-01-31,2028-01-31,2028-01-31,2028-01-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-16,Monthly Interim Payment Certificate No.16 - submit invoice (2028-02),TT_FinMile,0,2028-02-23,2028-02-23,2028-02-23,2028-02-23,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-17,Monthly Interim Payment Certificate No.17 - submit invoice (2028-03),TT_FinMile,0,2028-03-31,2028-03-31,2028-03-31,2028-03-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-18,Monthly Interim Payment Certificate No.18 - submit invoice (2028-04),TT_FinMile,0,2028-04-30,2028-04-30,2028-04-30,2028-04-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-19,Monthly Interim Payment Certificate No.19 - submit invoice (2028-05),TT_FinMile,0,2028-05-31,2028-05-31,2028-05-31,2028-05-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-20,Monthly Interim Payment Certificate No.20 - submit invoice (2028-06),TT_FinMile,0,2028-06-30,2028-06-30,2028-06-30,2028-06-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-21,Monthly Interim Payment Certificate No.21 - submit invoice (2028-07),TT_FinMile,0,2028-07-31,2028-07-31,2028-07-31,2028-07-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-22,Monthly Interim Payment Certificate No.22 - submit invoice (2028-08),TT_FinMile,0,2028-08-31,2028-08-31,2028-08-31,2028-08-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-23,Monthly Interim Payment Certificate No.23 - submit invoice (2028-09),TT_FinMile,0,2028-09-30,2028-09-30,2028-09-30,2028-09-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-24,Monthly Interim Payment Certificate No.24 - submit invoice (2028-10),TT_FinMile,0,2028-10-31,2028-10-31,2028-10-31,2028-10-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-25,Monthly Interim Payment Certificate No.25 - submit invoice (2028-11),TT_FinMile,0,2028-11-30,2028-11-30,2028-11-30,2028-11-30,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+IPC-26,Monthly Interim Payment Certificate No.26 - submit invoice (2028-12),TT_FinMile,0,2028-12-31,2028-12-31,2028-12-31,2028-12-31,0,SAR,Not TGA process,Not applicable,Baseline,0,0
+TG-0010,Prepare ICP Appointment Package (Scope of Independent Assessment and Competence Evidence),TT_Task,7,2026-11-02,2026-11-08,2027-01-02,2027-01-08,61,Contractor,ICP and Safety Planning,Preparation,Contract (C),1,0
+TG-0020,ICP Appointment - Submission to SAR / TGA,TT_Task,2,2026-11-09,2026-11-10,2027-01-09,2027-01-10,61,Contractor,ICP and Safety Planning,Submission,Contract (C),1,0
+TG-2020,ICP Appointment - Review and Acceptance by SAR / TGA,TT_Task,10,2026-11-11,2026-11-20,2027-01-11,2027-01-20,61,Authority,ICP and Safety Planning,Review / Approval,To be confirmed (T),1,0
+TG-0030,"Prepare DEMP, Safe-by-Design Safety Plan, RAM Plan and Change Management Procedure",TT_Task,21,2026-11-02,2026-11-22,2026-12-11,2026-12-31,39,Contractor,ICP and Safety Planning,Preparation,Contract (C),1,0
+TG-0040,"DEMP, Safety and RAM Plans - Submission to SAR",TT_Task,2,2026-11-23,2026-11-24,2027-01-01,2027-01-02,39,Contractor,ICP and Safety Planning,Submission,Contract (C),1,0
+TG-2040,"DEMP, Safety and RAM Plans - Review and Approval by SAR",TT_Task,14,2026-11-25,2026-12-08,2027-01-17,2027-01-30,53,SAR,ICP and Safety Planning,Review / Approval,Baseline assumption (B),1,0
+TG-0050,ICP Review of Safety Plan and Risk Process,TT_Task,10,2026-11-25,2026-12-04,2027-01-21,2027-01-30,57,ICP,ICP and Safety Planning,Review / Approval,Baseline assumption (B),1,0
+TG-0110,Concept Stage - Safe-by-Design Hazard Identification (All Disciplines),TT_Task,21,2026-11-25,2026-12-15,2027-01-03,2027-01-23,39,Contractor,Design Safety Assurance,Not applicable,Contract (C),1,0
+TG-0120,ICP Check of Concept Safety Inputs,TT_Task,7,2026-12-16,2026-12-22,2027-01-24,2027-01-30,39,ICP,Design Safety Assurance,Not applicable,Baseline assumption (B),1,0
+TG-0210,"Preliminary Hazard Analysis, Safety Case and Risk Register",TT_Task,42,2027-01-31,2027-03-20,2027-02-16,2027-04-05,16,Contractor,Design Safety Assurance,Not applicable,Contract (C),1,0
+TG-0220,Safety Case and Risk Register - Submission to SAR,TT_Task,2,2027-03-21,2027-03-22,2027-04-06,2027-04-07,16,Contractor,Design Safety Assurance,Submission,Contract (C),1,0
+TG-2220,Safety Case and Risk Register - Review by SAR,TT_Task,21,2027-03-23,2027-04-12,2027-04-08,2027-04-28,16,SAR,Design Safety Assurance,Review / Approval,Baseline assumption (B),1,0
+TG-0230,ICP Review of Preliminary Safety Case,TT_Task,10,2027-03-23,2027-04-01,2027-04-19,2027-04-28,27,ICP,Design Safety Assurance,Review / Approval,Baseline assumption (B),1,0
+TG-0310,High-Level EIA Preparation (Preliminary Design),TT_Task,35,2027-01-31,2027-03-07,2027-03-03,2027-04-12,30,Contractor,Design Safety Assurance,Preparation,Contract (C),1,0
+TG-0320,High-Level EIA - Submission to SAR,TT_Task,2,2027-03-08,2027-03-15,2027-04-13,2027-04-14,30,Contractor,Design Safety Assurance,Submission,Contract (C),1,0
+TG-2320,High-Level EIA - Review by SAR (CRS),TT_Task,14,2027-03-16,2027-03-29,2027-04-15,2027-04-28,30,SAR,Design Safety Assurance,Review / Approval,Baseline assumption (B),1,0
+TG-0330,Detailed EIA Preparation (for GAMEP),TT_Task,45,2027-03-30,2027-05-13,2027-12-12,2028-01-25,250,Contractor,Design Safety Assurance,Preparation,Contract (C),1,0
+TG-0410,Hazard Close-out to ALARP and Residual Hazard Transfer List,TT_Task,21,2027-04-29,2027-05-25,2027-08-16,2027-09-05,103,Contractor,Design Safety Assurance,Not applicable,Contract (C),1,0
+TG-0420,Hazard Close-out Report - Submission to SAR,TT_Task,2,2027-05-26,2027-05-27,2027-09-06,2027-09-07,103,Contractor,Design Safety Assurance,Submission,Contract (C),1,0
+TG-2420,Hazard Close-out Report - Review by SAR,TT_Task,14,2027-05-28,2027-06-10,2027-09-08,2027-09-21,103,SAR,Design Safety Assurance,Review / Approval,Baseline assumption (B),1,0
+TG-0430,ICP Design Verification Statement,TT_Task,10,2027-05-28,2027-06-06,2027-09-12,2027-09-21,107,ICP,Design Safety Assurance,Not applicable,Baseline assumption (B),1,0
+TG-0510,HCIS Design Package Preparation (HCIS-Approved Consultant),TT_Task,21,2027-04-29,2027-05-25,2027-07-31,2027-08-20,87,Contractor,Authority Design Approvals,Review / Approval,Contract (C),1,0
+TG-0520,HCIS Design Package - Submission to HCIS,TT_Task,2,2027-05-26,2027-05-27,2027-08-21,2027-08-22,87,Contractor,Authority Design Approvals,Submission,Contract (C),1,0
+TG-2520,HCIS Design Approval,TT_Task,30,2027-05-28,2027-06-26,2027-08-23,2027-09-21,87,Authority,Authority Design Approvals,Review / Approval,To be confirmed (T),1,0
+TG-0530,Civil Defense Detailed Design - Submission,TT_Task,3,2027-05-13,2027-05-21,2027-08-05,2027-08-07,78,Contractor,Authority Design Approvals,Submission,Contract (C),1,0
+TG-0610,"Prepare SAR Work Permit Package (Permit Form, WARA, Method Statements, Insurance, KMZ, Staff List, PTS / PO / PICOP Evidence)",TT_Task,21,2027-06-04,2027-06-24,2028-01-09,2028-01-29,218,Contractor,SAR Work Permit and Possession,Preparation,Work Permit Handbook (H),1,0
+TG-0620,Work Permit Request - Submission to SAR Permit Department (by SAR as Project Owner),TT_Task,2,2027-06-25,2027-06-26,2028-01-30,2028-01-31,218,Contractor,SAR Work Permit and Possession,Submission,Work Permit Handbook (H),1,0
+TG-2620,Work Permit Request - SAR Acceptance Check (5 Working Days),TT_Task,5,2027-06-27,2027-07-01,2028-02-01,2028-02-05,218,SAR,SAR Work Permit and Possession,Review / Approval,Work Permit Handbook (H),1,0
+TG-0630,Additional Documents Requested by SAR - Contractor Response (7 Days),TT_Task,7,2027-07-02,2027-07-08,2028-02-06,2028-02-12,218,Contractor,SAR Work Permit and Possession,Not applicable,Work Permit Handbook (H),1,0
+TG-2630,"Work Permit - SAR Cross-Functional Technical Review (Engineering, HSE, Insurance, Real Estate, Security, Network Planning)",TT_Task,30,2027-07-09,2027-08-07,2028-02-13,2028-03-21,218,SAR,SAR Work Permit and Possession,Review / Approval,To be confirmed (T),1,0
+TG-0640,Delivery Plan (TTF02) - Submission,TT_Task,3,2027-08-08,2027-08-10,2028-03-22,2028-03-24,218,Contractor,SAR Work Permit and Possession,Submission,Work Permit Handbook (H),1,0
+TG-2640,Delivery Plan (TTF02) - SAR Review and Approval,TT_Task,14,2027-08-11,2027-08-24,2028-03-25,2028-04-07,218,SAR,SAR Work Permit and Possession,Review / Approval,To be confirmed (T),1,0
+TG-0650,"Possession Request Package - Loop Line Tie-in (TTF02, WARA, Method Statement, PICOP / PO)",TT_Task,5,2028-08-17,2028-08-21,2028-08-23,2028-08-27,6,Contractor,SAR Work Permit and Possession,Submission,Work Permit Handbook (H),1,0
+TG-0660,"Possession Request Package - Turnout Tie-in (TTF02, WARA, Method Statement, PICOP / PO)",TT_Task,5,2028-04-11,2028-04-15,2028-08-09,2028-08-13,113,Contractor,SAR Work Permit and Possession,Submission,Work Permit Handbook (H),1,0
+TG-0710,Prepare Construction Safety Plan and ICP Hold / Witness Points,TT_Task,7,2027-06-19,2027-06-25,2028-04-03,2028-04-09,280,Contractor,Construction Safety Assurance,Preparation,Baseline assumption (B),1,0
+TG-0720,Construction Safety Plan - Submission to SAR / ICP,TT_Task,2,2027-06-26,2027-06-27,2028-04-10,2028-04-11,280,Contractor,Construction Safety Assurance,Submission,Baseline assumption (B),1,0
+TG-2720,Construction Safety Plan - Review and Acceptance by SAR / ICP,TT_Task,10,2027-06-28,2027-07-07,2028-04-12,2028-04-21,280,SAR,Construction Safety Assurance,Review / Approval,Baseline assumption (B),1,0
+TG-0730,ICP Witness of Critical Works (Level of Effort),TT_LOE,312,2027-10-07,2028-10-21,2027-10-07,2028-10-21,0,ICP,Construction Safety Assurance,Not applicable,Baseline assumption (B),1,0
+TG-0810,ICP Witness of System and Integration Tests and Trial Running,TT_Task,27,2028-10-22,2028-11-17,2028-10-26,2028-11-21,4,ICP,Verification and Readiness,Not applicable,Baseline assumption (B),1,0
+TG-0820,ICP Final Verification Report (Prepared During Trial Running),TT_Task,6,2028-11-09,2028-11-14,2028-11-11,2028-11-16,2,ICP,Verification and Readiness,Preparation,Baseline assumption (B),1,0
+TG-0830,"Safety Assessment - Submission (Final Safety Case, ICP Report, Test and Trial Reports)",TT_Task,5,2028-11-15,2028-11-19,2028-11-17,2028-11-21,2,Contractor,Verification and Readiness,Submission,Baseline assumption (B),1,0
+TG-0840,Civil Defense Inspection Request - Submission (Main Building Fire and Life Safety),TT_Task,3,2028-06-05,2028-06-07,2028-10-26,2028-10-28,142,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0841,Civil Defense Inspection Request - Submission (Ancillary Buildings),TT_Task,3,2028-05-30,2028-06-01,2028-11-27,2028-11-29,180,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0850,SEC Inspection Request - Submission,TT_Task,3,2028-05-12,2028-05-14,2028-11-08,2028-11-10,179,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0860,NWC Inspection Request - Submission,TT_Task,3,2028-01-17,2028-01-19,2028-12-11,2028-12-13,313,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0870,Authority Inspection Request - Submission (NWC / SEC / Telecom Permanent Connections),TT_Task,3,2027-12-29,2027-12-31,2028-11-22,2028-11-24,313,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0880,"Taking-Over Certificate Application and Document Submission (As-Builts, O&M Manuals, Spares, Assurance Letter, Authority Certificates)",TT_Task,5,2028-12-04,2028-12-08,2028-12-05,2028-12-09,1,Contractor,Verification and Readiness,Submission,Contract (C),1,0
+TG-0910,Operating Rules Change Request and Risk Assessment - Loop Line and Turnouts,TT_Task,10,2027-10-08,2027-10-17,2028-09-27,2028-10-06,339,SAR,Verification and Readiness,Not applicable,SAR procedure (S),1,0
+TG-0920,Operating Rules Critical Change Request Form - Submission (SAR-012-200-4-001),TT_Task,2,2027-10-18,2027-10-19,2028-10-07,2028-10-08,339,SAR,Verification and Readiness,Submission,SAR procedure (S),1,0
+TG-2920,Change Request Review by Railway Excellence and Governance (15 Days),TT_Task,15,2027-10-20,2027-11-03,2028-10-09,2028-10-23,339,SAR,Verification and Readiness,Review / Approval,SAR procedure (S),1,0
+TG-2925,Railway Governance Notice (RGN) Preparation and Publication (15 Days),TT_Task,15,2027-11-04,2027-11-18,2028-10-24,2028-11-07,339,SAR,Verification and Readiness,Preparation,SAR procedure (S),1,0
+TG-0930,"SAR Operational Readiness Review (Staff, Procedures, Operating Rules)",TT_Task,7,2028-11-26,2028-12-02,2028-12-03,2028-12-09,7,SAR,Verification and Readiness,Review / Approval,Baseline assumption (B),1,0

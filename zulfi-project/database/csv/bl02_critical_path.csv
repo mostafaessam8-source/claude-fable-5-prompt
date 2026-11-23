@@ -1,0 +1,36 @@
+﻿seq,activity_id,name,duration_days,early_start,early_finish,total_float_days
+1,MS-0010,Notice to Proceed (Project Start) - 1 Nov 2026,0,2026-11-01,2026-11-01,0
+2,PR-0010,Notice to Proceed / Contract Commencement,1,2026-11-01,2026-11-01,0
+3,PR-0100,Access Permits - Site Access & Security Clearance (Month 1),30,2026-11-01,2026-11-30,0
+4,PR-0220,Topographic Survey & Existing Utilities Mapping,17,2026-12-01,2026-12-17,0
+5,DS-0150,Concept Design Development - Underground Water Tank,30,2026-12-15,2027-01-13,0
+6,DS-0160,Concept Design Submission to SAR - Underground Water Tank,3,2027-01-14,2027-01-16,0
+7,DS-2160,Concept Design Review & Approval by SAR - Underground Water Tank,14,2027-01-17,2027-01-30,0
+8,DS-0020,Gate 1 - Concept Design Approved by SAR,0,2027-01-30,2027-01-30,0
+9,DS-0370,Preliminary Design Development - Main Building,57,2027-01-31,2027-04-04,0
+10,DS-0380,Preliminary Design Submission to SAR - Main Building,3,2027-04-05,2027-04-07,0
+11,DS-2380,Preliminary Design Review & Approval by SAR - Main Building,21,2027-04-08,2027-04-28,0
+12,DS-0360,Gate 2 - Preliminary Design Approved by SAR,0,2027-04-28,2027-04-28,0
+13,DS-0850,Detailed Design & IFC Development - Site Works & Underground Utilities,109,2027-04-29,2027-08-21,0
+14,DS-0860,Detailed Design & IFC Submission to SAR - Site Works & Underground Utilities,3,2027-08-22,2027-08-24,0
+15,DS-2860,Detailed Design & IFC Review & Approval by SAR - Site Works & Underground Utilities,28,2027-08-25,2027-09-21,0
+16,DS-0700,Gate 3 - Detailed Design (IFC) Approved by SAR,0,2027-09-21,2027-09-21,0
+17,MS-0060,Detailed Design (IFC) Approved - Gate 3,0,2027-09-21,2027-09-21,0
+18,MS-0080,Phase 2 Procurement Start (Prequalification),0,2027-09-22,2027-09-22,0
+19,PC-0150,Prequalification of Vendors / Subcontractors - Railway Track Works,14,2027-09-24,2027-10-07,0
+20,PC-0310,Material Submittal to SAR - Railway Track Works,3,2027-10-08,2027-10-10,0
+21,PC-2310,Material Approval by SAR - Railway Track Works,28,2027-10-11,2027-11-07,0
+22,PC-0470,Purchase Order Placement - Railway Track Works,10,2027-11-08,2027-11-17,0
+23,PC-0660,Manufacture (Long Lead) - Railway Track Works,245,2027-11-18,2028-07-19,0
+24,PC-0670,Shipping & Delivery to Site - Railway Track Works,21,2028-07-20,2028-08-09,0
+25,CN-1650,"Materials Receiving, Inspection & Handling (Rails, Sleepers, Ballast, Fastenings)",6,2028-08-10,2028-08-16,0
+26,CN-1660,"Track Installation - Ballast, Sleepers, Rail, Welding & Tamping",35,2028-08-17,2028-09-27,0
+27,CN-1670,Existing Track Realignment & Tie-in,10,2028-09-28,2028-10-09,0
+28,CN-1680,Signalling & Telecom Integration - Track Side,10,2028-10-10,2028-10-21,0
+29,TC-0370,Dynamic & System Integration Testing with Track and Turnouts,15,2028-10-22,2028-11-07,0
+30,TC-0460,Trial Running - Loop Line & Turnouts with Signalling,12,2028-11-08,2028-11-21,0
+31,TC-0380,SAR Safety Assessment and Acceptance - Review,15,2028-11-22,2028-12-09,0
+32,CO-0015,SAR Taking-Over Certificate - Review and Issue,11,2028-12-10,2028-12-20,0
+33,CO-0020,Taking-Over of All Works - Final Handing Over Certificate,0,2028-12-20,2028-12-20,0
+34,PR-0210,Demobilisation of Site Facilities & Final Site Clearance,9,2028-12-21,2028-12-31,0
+35,MS-0140,Contract Completion Date (26 months from NTP),0,2028-12-31,2028-12-31,0
