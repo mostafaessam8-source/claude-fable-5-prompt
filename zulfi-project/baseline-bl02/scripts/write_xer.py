@@ -49,7 +49,8 @@ for t in all_tasks:
         info = new_codes[t.code]; leaf = info['leaf']
         base = dict(code_of[by['PR-0270'].id])
         code_of[t.id] = base
-        stage = {'0901': 'Preliminaries', '0902': 'Design', '0903': 'Preliminaries', '0904': 'Preliminaries', '0905': 'Construction', '0906': 'Testing & Commission'}[leaf]
+        stage = {'0901': 'Preliminaries', '0902': 'Design', '0903': 'Preliminaries', '0904': 'Preliminaries', '0905': 'Preliminaries', '0906': 'Testing & Commission'}[leaf]
+        if t.code in ('TG-0910', 'TG-0920', 'TG-2920', 'TG-2925'): stage = 'Preliminaries'
         setcode(t.id, 'Stage', stage)
         setcode(t.id, 'BOQ Ref', 'N/A'); setcode(t.id, 'Cost Component', 'No cost'); setcode(t.id, 'Payment Basis', 'None')
         setcode(t.id, 'Responsibility', {'Contractor': 'Contractor', 'SAR': 'SAR', 'Authority': 'Authority', 'ICP': 'ICP'}[info['resp']])
