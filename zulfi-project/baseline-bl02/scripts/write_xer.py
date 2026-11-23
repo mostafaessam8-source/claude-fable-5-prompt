@@ -124,6 +124,13 @@ for (p, s, typ, lag) in rels:
         newrows.append(r)
 T['TASKPRED']['r'] = newrows
 
+# Contract Phase follows the phase of the BOQ item (design lump sum shown in the bridge); fixes 24 design activities of Phase 2 items coded Phase 1
+fixed = 0
+for t in all_tasks:
+    c = code_of[t.id]
+    if t.code not in new_codes and rev[c['Phase']][1] == 'Phase 2' and rev[c['Contract Phase']][1] == 'Phase 1 (Billing)' and rev[c['BOQ Ref']][1] != '1.1':
+        c['Contract Phase'] = codeval[('Contract Phase', 'Phase 2 (Billing)')]; fixed += 1
+print('Contract Phase recoded for', fixed, 'activities')
 # ---------------------------------------------------------------- TASKACTV rows
 rows = []
 for t in all_tasks:

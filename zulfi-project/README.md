@@ -24,6 +24,7 @@ Basis tags: C contract scope, B baseline assumption, S SAR procedure, T to be co
 
 ## Files
 - `baseline-bl02/`: **ZULFI-BL02 baseline submittal**: `Zulfi_Baseline_Programme_BL02_TGA.xer` (P6), logic and critical path workbook, critical path and TGA Gantt charts (PDF, PNG), submittal report (docx, pdf), `scripts/` (CPM engine matched to the XER, spec of the added activities, XER writer, report builders).
+- `cost-review/`: review of the BOQ phase values: `ZULFI-BOQ_Corrected.xlsx` (repaired formulas, FF&E reference, Contract Phase coding and a Phase Reconciliation sheet) and the script that applied the fixes. The file as received is `source-files/ZULFI-BOQ_as_received.xlsx`.
 - `source-files/C001/`: the original project files as received (baseline XER, BOQ mapping and control workbooks, narrative, cash flow, trackers, schedule-review deck, and four SAR documents).
 - `deliverables/`: TGA approvals deck (14 slides), long-lead deck (2 slides), procurement list.
 - `src/tga-deck/`: pptxgenjs builders and `motion.py` (slide transition and inner animation). Run `npm install pptxgenjs@3.12.0`, `node build.js`, `python3 motion.py stage.pptx out.pptx`.

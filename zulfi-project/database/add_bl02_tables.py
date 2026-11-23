@@ -15,6 +15,16 @@ cur.executemany('INSERT INTO bl02_relationships VALUES (?,?,?,?)', rows)
 cur.execute('CREATE TABLE bl02_critical_path (seq INTEGER, activity_id TEXT, name TEXT, duration_days INTEGER, early_start TEXT, early_finish TEXT, total_float_days INTEGER)')
 T = {t['code']: t for t in M['tasks']}
 cur.executemany('INSERT INTO bl02_critical_path VALUES (?,?,?,?,?,?,?)', [(i, c, T[c]['name'], T[c]['dur'], T[c]['es'], T[c]['ef'], T[c]['tf']) for i, c in enumerate(M['driving'], 1)])
+cur.execute('DROP TABLE IF EXISTS phase_reconciliation')
+cur.execute('CREATE TABLE phase_reconciliation (basis TEXT, phase TEXT, amount_sar REAL, note TEXT)')
+cur.executemany('INSERT INTO phase_reconciliation VALUES (?,?,?,?)', [
+ ('Contract billing (BOQ)', 'Phase 1', 65009000, 'Items + 1.1 preliminaries + 2.1 design lump sum'),
+ ('Contract billing (BOQ)', 'Phase 2', 34990000, 'Items 3.3, 4.3, 6.1, 7.2'),
+ ('Programme cost (design allocated to items)', 'Phase 1', 63116957, 'Mapped activity cost, Contract Phase code, after correction'),
+ ('Programme cost (design allocated to items)', 'Phase 2', 36882043, 'Includes design allocation of the Phase 2 items, SAR 1,892,043'),
+ ('Before correction (Contract Phase code)', 'Phase 1', 65971225, '24 to 36 design activities of Phase 2 items coded Phase 1'),
+ ('Before correction (Contract Phase code)', 'Phase 2', 34027775, 'SAR 962,225 away from the BOQ'),
+])
 cur.execute("DROP VIEW IF EXISTS v_bl02_near_critical_tga")
 cur.execute("CREATE VIEW v_bl02_near_critical_tga AS SELECT activity_id, name, early_finish, total_float_days, responsible FROM bl02_activities WHERE is_new_in_bl02 = 1 AND type != 'TT_LOE' AND total_float_days <= 30 ORDER BY total_float_days")
 cur.execute("UPDATE deliverables SET status = 'Recovered from C001.rar: source-files/C001/Zulfi_Baseline_Programme.xer' WHERE file = 'Zulfi_Baseline_Programme.xer'")

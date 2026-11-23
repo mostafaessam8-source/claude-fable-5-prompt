@@ -21,4 +21,5 @@ CREATE TABLE bl02_activities (activity_id TEXT PRIMARY KEY, name TEXT, type TEXT
   total_float_days INTEGER, responsible TEXT, tga_process TEXT, submit_review TEXT, duration_basis TEXT, is_new_in_bl02 INTEGER, on_critical_path INTEGER);
 CREATE TABLE bl02_relationships (predecessor TEXT, successor TEXT, type TEXT, lag_days INTEGER);
 CREATE TABLE bl02_critical_path (seq INTEGER, activity_id TEXT, name TEXT, duration_days INTEGER, early_start TEXT, early_finish TEXT, total_float_days INTEGER);
+CREATE TABLE phase_reconciliation (basis TEXT, phase TEXT, amount_sar REAL, note TEXT);
 CREATE VIEW v_bl02_near_critical_tga AS SELECT activity_id, name, early_finish, total_float_days, responsible FROM bl02_activities WHERE is_new_in_bl02 = 1 AND type != 'TT_LOE' AND total_float_days <= 30 ORDER BY total_float_days;
