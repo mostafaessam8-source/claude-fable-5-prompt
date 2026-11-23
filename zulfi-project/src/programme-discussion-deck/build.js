@@ -56,13 +56,13 @@ const txt = (s, id, t, o) => { s.addText(t, TX(Object.assign({ objectName: id },
     s.addText([{ text: m[0], options: { bold: true, fontSize: 11, breakLine: true } }, { text: m[1], options: { fontSize: 10.5, color: C.blue } }], TX({ x: bx, y: by, w: 2.1, h: 0.55, align: "center", valign: "middle", objectName: id + "t" }));
     step([{ name: id + "d", fx: "fade" }, { name: id + "t", fx: "fade" }], 250);
   });
-  const msg = [["Phase 1", "12 items, SAR 55.2 M: station buildings, site, signalling, turnouts. Procurement from Month 7."], ["Phase 2", "4 items, SAR 35.0 M: railway track, access road, generator room, FF&E. Procurement from Month 11."], ["What controls the end", "Phase 2 railway track: 245 days of manufacture, no float to completion."]];
+  const msg = [["Phase 1: SAR 65.0 M", "12 items SAR 55.2 M, plus preliminaries and design SAR 9.8 M. Procurement from Month 7."], ["Phase 2: SAR 35.0 M", "4 items: railway track, access road, generator room, FF&E. Procurement from Month 11."], ["What controls the end", "Phase 2 railway track: 245 days of manufacture, no float to completion."]];
   msg.forEach((m, i) => {
     const x = 0.85 + i * 3.97, id = `g${i}`;
     step(card(s, id, x, 5.3, 3.8, 1.15, C.white, i === 2 ? C.red : C.blue));
     step([txt(s, id + "h", m[0], { x: x + 0.15, y: 5.4, w: 3.5, h: 0.28, fontSize: 12.5, bold: true, color: C.blue }), txt(s, id + "t", m[1], { x: x + 0.15, y: 5.7, w: 3.5, h: 0.7, fontSize: 10.5, valign: "top" })]);
   });
-  note(s, NOTE + " Phase values exclude SAR 9.8 M of preliminaries and design.", 6.55);
+  note(s, NOTE + " Phase values are contract billing: Phase 1 includes preliminaries and the design lump sum.", 6.55);
   s.addNotes("The programme is 26 months with zero float to the contract completion date. Phase 1 has 12 BOQ items and Phase 2 has 4; the station is operated after Taking-Over on 20 Dec 2028.");
 }
 
@@ -86,7 +86,7 @@ const txt = (s, id, t, o) => { s.addText(t, TX(Object.assign({ objectName: id },
     step([{ name: `r${i}l`, fx: "fade" }, { name: `r${i}b`, fx: "wipe" }, { name: `r${i}m`, fx: "fade" }], 250); y += rh;
   };
   band("Design", "Gate 1 Month 3 | Gate 2 Month 6 | Gate 3 Month 11", C.slate, "b0"); bar(rows[0], 0);
-  band("Phase 1", "12 items | SAR 55.2 M", C.blue, "b1"); [1, 2, 3].forEach(k => bar(rows[k], k));
+  band("Phase 1", "12 items SAR 55.2 M | SAR 65.0 M with preliminaries and design", C.blue, "b1"); [1, 2, 3].forEach(k => bar(rows[k], k));
   band("Phase 2", "4 items | SAR 35.0 M", C.black, "b2"); [4, 5, 6].forEach(k => bar(rows[k], k));
   const cols = [
     ["Phase 1 items", C.blue, "Main building, IT equipment, substation and SEC, firefighting building, water tank, site works and utilities, parking sheds, fence, gates, signalling and telecom, external works, turnouts.", "Long-lead: substation, signalling, turnouts. Float 114 to 158 days."],
@@ -97,7 +97,7 @@ const txt = (s, id, t, o) => { s.addText(t, TX(Object.assign({ objectName: id },
     step(card(s, id, x, 5.45, 5.82, 1.05, C.white, c[1]));
     step([txt(s, id + "t", c[2], { x: x + 0.15, y: 5.52, w: 5.5, h: 0.62, fontSize: 10, valign: "top" }), txt(s, id + "l", c[3], { x: x + 0.15, y: 6.14, w: 5.5, h: 0.32, fontSize: 10, bold: true, color: c[1] === C.black ? C.black : C.blue, valign: "top" })]);
   });
-  note(s, NOTE + " Phase values exclude preliminaries and design.", 6.58);
+  note(s, NOTE + " Programme cost with the design lump sum spread over the items: Phase 1 SAR 63.1 M, Phase 2 SAR 36.9 M (SAR 1.9 M of design moves to Phase 1 billing).", 6.58);
   s.addNotes("Both phases share one design stage and one set of gates. Phase 1 procurement starts in Month 7, 15 days after Gate 2. Phase 2 procurement starts in Month 11, after Gate 3. Construction starts for both in Month 12 after the work permit.");
 }
 

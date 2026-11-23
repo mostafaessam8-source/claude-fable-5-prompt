@@ -47,6 +47,9 @@ lines = [
  ('Approvals Timeline: key permit and approval dates', 10, False),
  ('Gate Logic: what each design gate now waits for', 10, False),
  ('Checks: integrity checks of the XER', 10, False),
+ ('Phase Values: bridge from the programme cost to the contract billing by phase', 10, False),
+ ('Revision Log: existing activities whose dates moved because a submission was added', 10, False),
+ ('Progress by Quarter: planned progress value', 10, False),
  ('', 10, False),
  ('Notes', 11, True),
  ('Notice to Proceed is assumed on 1 Nov 2026 and is not confirmed; all dates move with it. Months count from the NTP.', 10, False),
@@ -149,6 +152,16 @@ rows = [['Activities in the XER', tot, 'OK'], ['New activities', len(new), 'OK']
         ['Critical activities (float 0 or less, excluding LOE)', crit, 'Same count as the previous baseline'], ['Contract completion', tasks['MS-0140']['ef'], 'OK'], ['Open ends (no successor)', len(noend), ', '.join(noend[:8])], ['Open starts (no predecessor)', len(nopre), ', '.join(nopre[:8])],
         ['Resource cost total (PERF + CASH)', 199998000.23, 'Unchanged: new activities carry no cost']]
 sheet('Checks', ['Check', 'Value', 'Result'], rows, [60, 20, 60], 'Open ends and starts are the activities the baseline already treated as level-of-effort or cash items.')
+
+import extra_data as X
+pv = X.phase_values(); p1 = pv['Phase 1 (Billing)']; p2 = pv['Phase 2 (Billing)']; dal = 1892043
+rows = [['Contract billing (BOQ): items + 1.1 + 2.1', 65009000, 34990000, 99999000], ['Programme cost: design lump sum spread over the 16 items', round(p1), round(p2), round(p1 + p2)], ['Design allocation carried by the Phase 2 items (billed in Phase 1)', dal, -dal, 0],
+        ['Programme cost + bridge = contract billing', round(p1) + dal, round(p2) - dal, round(p1 + p2)], ['Check against the BOQ', round(p1) + dal - 65009000, round(p2) - dal - 34990000, 0]]
+sheet('Phase Values', ['Basis', 'Phase 1 (SAR)', 'Phase 2 (SAR)', 'Total (SAR)'], rows, [70, 18, 18, 18], 'Contract Phase code in the XER follows the phase of the BOQ item. The 1.89 M design allocation of the Phase 2 items is billed in Phase 1 under BOQ item 2.1.')
+rl = X.revision_log()
+sheet('Revision Log', ['Activity ID', 'Activity', 'Start (before)', 'Finish (before)', 'Start (BL02)', 'Finish (BL02)', 'Float (d)', 'Reason'], rl, [11, 58, 12, 12, 12, 12, 8, 62], 'Existing activities whose dates moved because a submission or a link was added. None is on the critical path (lowest float 6 days, loop line possession); contract completion is unchanged.', datecols=(3, 4, 5, 6))
+qp = X.quarterly_progress('/home/user/c001/out/Zulfi_Baseline_Programme_BL02_TGA.xer')
+sheet('Progress by Quarter', ['Quarter', 'From month', 'To month', 'Progress value (SAR M)'], [list(r) for r in qp] + [['Total', 1, 26, round(sum(r[3] for r in qp), 2)]], [12, 12, 12, 22], 'Planned progress value from the PERF resource (spread evenly over each activity). Net cash timing follows the cash flow workbook and moves by at most SAR 0.07 M between quarters.')
 wb.save('/home/user/c001/out/Zulfi_BL02_TGA_Logic_and_Critical_Path.xlsx')
 print('saved', len(new), len(links), len(pairs), len(driving))
 print('open ends', noend[:12]); print('open starts', nopre[:12])

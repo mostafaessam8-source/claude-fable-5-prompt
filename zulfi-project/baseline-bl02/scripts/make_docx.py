@@ -64,7 +64,9 @@ table(['File', 'Content'], [
     ['Zulfi_Baseline_Programme_BL02_TGA.xer', 'The programme for import into P6. New WBS 09 and 3 new activity codes'],
     ['Zulfi_BL02_TGA_Logic_and_Critical_Path.xlsx', 'New activities, logic links, submit-review pairs, critical path, near-critical items, approvals timeline, checks'],
     ['Zulfi_BL02_Critical_Path_and_TGA_Gantt.pdf', 'Critical path chart and TGA process chart (PNG versions included)'],
-    ['This report (docx)', 'Method, logic, critical path narrative, assumptions and open points'],
+    ['This report (docx)', 'Method, logic, critical path narrative, phase values, revision log, assumptions and open points'],
+    ['ZULFI-BOQ_Corrected.xlsx', 'BOQ and activity cost mapping with the phase reconciliation'],
+    ['Zulfi_Programme_Discussion_EN.pptx', '10-slide discussion deck for senior management'],
 ], [7.5, 9.5])
 
 doc.add_heading('2. What this revision adds', 1)
@@ -131,5 +133,25 @@ table(['Check', 'Result'], [
     ['New activities with no predecessor or no successor', 0], ['Contract completion', d(T['MS-0140']['ef'])], ['Cost loading', 'Unchanged: PERF and CASH resources total SAR 99,999,000 each; new activities carry no cost'],
     ['XER structure', 'Field counts, keys, relationships and code references verified; schedule recomputed from the file and matches'],
 ], [7, 10], 9)
+
+import extra_data as X
+doc.add_heading('9. Phase values and cost', 1)
+pv = X.phase_values(); p1 = pv['Phase 1 (Billing)']; p2 = pv['Phase 2 (Billing)']; dal = 1892043
+para('The Contract Phase code now follows the phase of the BOQ item. The mapped activity cost carries the design lump sum (BOQ 2.1, SAR 4,889,000) spread over all 16 items, so the Phase 2 items carry SAR 1,892,043 of design that the contract bills in Phase 1.')
+table(['Basis', 'Phase 1 (SAR)', 'Phase 2 (SAR)', 'Total (SAR)'], [
+    ['Programme cost (mapped activity cost)', f"{p1:,.0f}", f"{p2:,.0f}", f"{p1 + p2:,.0f}"],
+    ['Design allocation of the Phase 2 items', f"+{dal:,.0f}", f"-{dal:,.0f}", '0'],
+    ['Contract billing basis', f"{p1 + dal:,.0f}", f"{p2 - dal:,.0f}", f"{p1 + p2:,.0f}"],
+    ['BOQ (items + 1.1 + 2.1; Phase 2 items)', '65,009,000', '34,990,000', '99,999,000'],
+], [7.5, 3.2, 3.2, 3.1], 9)
+para('A correction was made in this revision: 36 design activities of the Phase 2 items (3.3, 4.3, 6.1, 7.2) had been coded Phase 1, which showed Phase 1 at SAR 65,971,225 and Phase 2 at SAR 34,027,775. Costs and dates of those activities are unchanged.', size=10)
+qp = X.quarterly_progress('/home/user/c001/out/Zulfi_Baseline_Programme_BL02_TGA.xer')
+table(['Quarter'] + [q[0] for q in qp], [['Months'] + [f"{q[1]}-{q[2]}" for q in qp], ['Progress value, SAR M'] + [f"{q[3]:.2f}" for q in qp]], [3.4] + [1.5] * 9, 8.5)
+doc.add_heading('10. Revision log', 1)
+rl = X.revision_log()
+import datetime as _dt
+_sh = [(_dt.date.fromisoformat(r[4]) - _dt.date.fromisoformat(r[2])).days for r in rl if r[0] not in ('PR-0270', 'PR-2270')]
+para(f"{len(rl)} existing activities moved because a submission or a link was added: most by {min(_sh)} to {max(_sh)} days, and the environmental permit application and approval by about four months (the detailed EIA now precedes the application). The lowest float among them is {min(r[6] for r in rl)} days (loop line possession booking); none is on the critical path and contract completion is unchanged.")
+table(['ID', 'Activity', 'Start before', 'Start BL02', 'Float'], [[r[0], r[1][:58], r[2], r[4], r[6]] for r in rl], [1.7, 8.3, 2.5, 2.5, 1.6], 8)
 doc.save('/home/user/c001/out/Zulfi_BL02_Baseline_Submittal_Report.docx')
 print('docx saved')
