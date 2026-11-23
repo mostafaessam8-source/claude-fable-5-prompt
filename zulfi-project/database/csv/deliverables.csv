@@ -1,0 +1,10 @@
+﻿file,description,status
+deliverables/Zulfi_TGA_Approvals_Workflow_EN.pptx,"SAR-template deck, 14 slides: TGA clause 18, approvals, workflows, days, documents, critical path",In repository
+deliverables/Zulfi_Long_Lead_Items_EN.pptx,"SAR-template deck, 2 slides: long-lead packages and schedule protection",In repository
+deliverables/Zulfi_Procurement_List.xlsx,"16 procurement packages with lead class, window and value",In repository
+src/ceo-briefing/build_ceo.js,"Source of the CEO Briefing deck (11 slides), rebuilt from the conversation; needs deck.json and map.png",Recovered source
+recovered/*,"Scripts read during the conversation: Awj kick-off builders (lib.py, kick_motion.py) and the English schedule-review deck (build_en.js, motion_en.py)",Recovered source
+Zulfi_Baseline_Programme.xer,"P6 baseline (518 activities, submittal separated from approval, zero float)",LOST: container reset; resend the copy delivered earlier
+"Planning engine (engine.py, xer.py, builders)","CPM with 3 calendars, cost loading, cash flow, XER export",LOST: container reset
+"Zulfi_BOQ.xlsx, BOQ Mapping, Control workbook, narrative, cash-flow and tracker workbooks",Earlier deliverables,LOST from the container; the BOQ is in boq_items
+"Zulfi_CEO_Briefing_EN.pptx, Zulfi_Station_Kickoff_Meeting_Redesigned.pptx, English SAR decks",Earlier decks,LOST from the container; delivered to the user in chat

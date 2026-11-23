@@ -1,0 +1,13 @@
+﻿id,name,month_from_ntp,basis,note
+MS-0010,Notice to Proceed,1,B,Date to be confirmed
+MS-0020,Access permits obtained,1,B,Tender note: month 1
+MS-0030,Gate 1 - Concept design approved,3,B,Tender window: months 2 to 3
+MS-0040,Gate 2 - Preliminary design approved,6,B,Tender window: months 4 to 6
+MS-0050,Phase 1 procurement start,7,B,15 days after Gate 2
+MS-0060,Gate 3 - Detailed design (IFC) approved,11,B,Tender window: months 7 to 11
+MS-0080,Phase 2 procurement start,11,B,
+MS-0090,Work permit and construction start,12,B,14 days after Gate 3
+MS-0100,Signalling and turnout materials on site,,B,Long-lead delivery (month not recorded here)
+MS-0110,Track materials on site,,B,Long-lead delivery (month not recorded here)
+MS-0120,All construction works complete,24,B,Before testing and trial running
+MS-0130,Taking-Over of all works,26,B,Contract completion 31 Dec 2028; zero float

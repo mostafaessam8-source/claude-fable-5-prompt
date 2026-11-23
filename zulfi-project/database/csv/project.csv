@@ -1,0 +1,22 @@
+﻿key,value
+name_en,Zulfi Train Station (Zulfi Passenger Railway Station)
+name_ar,محطة قطار الزلفي
+client,Saudi Arabia Railways (SAR)
+contractor,Awj International Contracting Co.
+funder,Zulfi Cooperative Society (الجمعية التعاونية بالزلفي)
+line,"North-South Railway (NSR), Zulfi City, chainage TK 254"
+delivery,EPC (design and build)
+contract_value_sar_excl_vat,99999000
+duration_months,26
+ntp_assumed,2026-11-01 (NOT CONFIRMED; all calendar dates move with the NTP)
+taking_over_baseline,2028-12-20
+contract_completion_baseline,2028-12-31
+float_to_completion_days,0
+station_building,"single storey, about 1,100 m2"
+platform,"1 single-face platform, about 500 m"
+capacity,400 passengers per day (100 per trip)
+operations,"Bi-directional running, 50 km/h, ETCS Level 2 (per contractor kick-off material)"
+classification,"CAPEX, Construction, Complex, Mega, Group 4 (project information form)"
+first_6_month_funding_requested_sar,15000000
+first_6_month_baseline_need_sar,14727801
+advance_payment_assumption,10% recovered proportionally (assumption)

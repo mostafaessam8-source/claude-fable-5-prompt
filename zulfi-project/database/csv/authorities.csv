@@ -1,0 +1,8 @@
+﻿entity,approves_or_reviews,stage,contractor_documents,source
+SAR Engineering and Projects,"Design at each phase gate, IDC/IDR sign-off, submittals, readiness reviews, Taking-Over",All stages,"Design basis, drawings, specifications, method statements","C 8, 21, 22"
+TGA,"Change control, Independent Competent Person, safe design and construction",Design to operation,"ICP appointment, safety case, change requests",C 18
+HCIS,Security and fire design via HCIS-approved consultant; works by HCIS-approved contractor,Detailed design to installation,"HCIS design approval, contractor approval",C section 2 and 42
+Civil Defense,Fire protection and life safety (NFPA / SBC),"Detailed design, completion","Fire design package, inspection certificate",C section 2
+"GAMEP (General Authority of Meteorology and Environment Protection, as written in the scope)",Detailed EIA and Environmental Permit for Construction,Preliminary design to before works,High-level and detailed EIA,"C 18, 45"
+"SEC, NWC, Municipality","Power, potable water, sewerage and drainage connections",Applications early; connect before testing,"Load schedules, applications, agreements",C 33
+"Road authority, pipeline and line owners",Highway junction tie-in; crossings near pipelines and transmission lines (e.g. ARAMCO),Detailed design to works,"Junction design, clearance letters","C 31, 43 (authority to be identified)"

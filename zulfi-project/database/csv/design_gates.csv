@@ -1,0 +1,4 @@
+﻿gate,sar_stage,completion,month,review_days,content
+Gate 1 Concept,1a,0-10%,3,14,"Design Basis Reports all disciplines, concept drawings, rough cost estimate"
+Gate 2 Preliminary,2a,10-30%,6,21,"Preliminary reports and drawings, VE, high-level EIA, hazard analysis, safety case, risk register, surveys, BoQ"
+Gate 3 Detailed / IFC,3a / 3b,30-100%,11,28,"Coordinated detailed drawings, final specifications, hazards to ALARP, RAM reports, HCIS and Civil Defense approvals submitted, final IDC/IDR, IFC suite"

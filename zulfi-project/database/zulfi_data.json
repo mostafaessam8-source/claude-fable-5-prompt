@@ -1,0 +1,1110 @@
+{
+ "project": {
+  "comment": "",
+  "rows": [
+   {
+    "key": "name_en",
+    "value": "Zulfi Train Station (Zulfi Passenger Railway Station)"
+   },
+   {
+    "key": "name_ar",
+    "value": "محطة قطار الزلفي"
+   },
+   {
+    "key": "client",
+    "value": "Saudi Arabia Railways (SAR)"
+   },
+   {
+    "key": "contractor",
+    "value": "Awj International Contracting Co."
+   },
+   {
+    "key": "funder",
+    "value": "Zulfi Cooperative Society (الجمعية التعاونية بالزلفي)"
+   },
+   {
+    "key": "line",
+    "value": "North-South Railway (NSR), Zulfi City, chainage TK 254"
+   },
+   {
+    "key": "delivery",
+    "value": "EPC (design and build)"
+   },
+   {
+    "key": "contract_value_sar_excl_vat",
+    "value": "99999000"
+   },
+   {
+    "key": "duration_months",
+    "value": "26"
+   },
+   {
+    "key": "ntp_assumed",
+    "value": "2026-11-01 (NOT CONFIRMED; all calendar dates move with the NTP)"
+   },
+   {
+    "key": "taking_over_baseline",
+    "value": "2028-12-20"
+   },
+   {
+    "key": "contract_completion_baseline",
+    "value": "2028-12-31"
+   },
+   {
+    "key": "float_to_completion_days",
+    "value": "0"
+   },
+   {
+    "key": "station_building",
+    "value": "single storey, about 1,100 m2"
+   },
+   {
+    "key": "platform",
+    "value": "1 single-face platform, about 500 m"
+   },
+   {
+    "key": "capacity",
+    "value": "400 passengers per day (100 per trip)"
+   },
+   {
+    "key": "operations",
+    "value": "Bi-directional running, 50 km/h, ETCS Level 2 (per contractor kick-off material)"
+   },
+   {
+    "key": "classification",
+    "value": "CAPEX, Construction, Complex, Mega, Group 4 (project information form)"
+   },
+   {
+    "key": "first_6_month_funding_requested_sar",
+    "value": "15000000"
+   },
+   {
+    "key": "first_6_month_baseline_need_sar",
+    "value": "14727801"
+   },
+   {
+    "key": "advance_payment_assumption",
+    "value": "10% recovered proportionally (assumption)"
+   }
+  ]
+ },
+ "boq_items": {
+  "comment": "Scope descriptions are indicative, taken from BOQ item titles and quantities; confirm against contract specifications.",
+  "rows": [
+   {
+    "ref": "1.1",
+    "package": "Preliminaries & General Requirements (lump sum)",
+    "grp": "General",
+    "phase": "Phase 1",
+    "lead_class": "",
+    "value_sar": 4900000,
+    "descriptor": "",
+    "scope_description": "Contractor general requirements: mobilisation, site establishment, project management and staff, bonds and insurances, management plans, permits and authority approvals, reporting and demobilisation (lump sum)."
+   },
+   {
+    "ref": "2.1",
+    "package": "Design Works (lump sum, allocated to items)",
+    "grp": "General",
+    "phase": "Phase 1",
+    "lead_class": "",
+    "value_sar": 4889000,
+    "descriptor": "",
+    "scope_description": "Design of all works through Concept, Preliminary and Detailed Design / IFC stages, including submittals to SAR for review and approval (lump sum, allocated to the BOQ items)."
+   },
+   {
+    "ref": "3.1",
+    "package": "Main Building (GEA 1,100 m2)",
+    "grp": "Main Building",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 2250000,
+    "descriptor": "GEA 1,100 m2, single storey",
+    "scope_description": "Design and construction of the passenger station main building, GEA 1,100 m2, single storey: structure, architectural finishes and building services."
+   },
+   {
+    "ref": "3.2",
+    "package": "IT Equipment",
+    "grp": "Main Building",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 400000,
+    "descriptor": "",
+    "scope_description": "Supply, installation and commissioning of IT equipment for the station building."
+   },
+   {
+    "ref": "3.3",
+    "package": "Furniture, Fixtures & Equipment (FF&E)",
+    "grp": "Main Building",
+    "phase": "Phase 2",
+    "lead_class": "Short",
+    "value_sar": 1900000,
+    "descriptor": "",
+    "scope_description": "Supply and installation of furniture, fixtures and equipment (FF&E) for the station building."
+   },
+   {
+    "ref": "4.1",
+    "package": "Substation & SEC Works",
+    "grp": "Ancillary Buildings",
+    "phase": "Phase 1",
+    "lead_class": "Long",
+    "value_sar": 3690000,
+    "descriptor": "",
+    "scope_description": "Substation and SEC works: power supply room and incoming electrical connection for the station."
+   },
+   {
+    "ref": "4.2",
+    "package": "Firefighting Building (GEA 518 m2)",
+    "grp": "Ancillary Buildings",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 1490000,
+    "descriptor": "GEA 518 m2",
+    "scope_description": "Design and construction of the firefighting building, GEA 518 m2."
+   },
+   {
+    "ref": "4.3",
+    "package": "Generator Room",
+    "grp": "Ancillary Buildings",
+    "phase": "Phase 2",
+    "lead_class": "Long",
+    "value_sar": 990000,
+    "descriptor": "BOQ 62 m2",
+    "scope_description": "Design and construction of the generator room, 62 m2, with the standby generator."
+   },
+   {
+    "ref": "4.4",
+    "package": "Underground Water Tank",
+    "grp": "Ancillary Buildings",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 2331000,
+    "descriptor": "",
+    "scope_description": "Construction of the underground water tank, including related fittings and connections."
+   },
+   {
+    "ref": "5.1",
+    "package": "Site Works & Underground Utilities",
+    "grp": "External Works",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 10880000,
+    "descriptor": "Plot 15,000 m2",
+    "scope_description": "Site preparation and underground utilities for the 15,000 m2 plot: earthworks, drainage, water, sewage and cable ducts."
+   },
+   {
+    "ref": "5.2",
+    "package": "Car Parking Sheds",
+    "grp": "External Works",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 790000,
+    "descriptor": "BOQ 1,375 m2 (80 lots in management model)",
+    "scope_description": "Car parking sheds, 1,375 m2 (80 lots in the management model)."
+   },
+   {
+    "ref": "5.3",
+    "package": "Fence Works",
+    "grp": "External Works",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 200000,
+    "descriptor": "BOQ 500 m",
+    "scope_description": "Perimeter fence works, 500 m."
+   },
+   {
+    "ref": "5.4",
+    "package": "Automatic Gate System",
+    "grp": "External Works",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 300000,
+    "descriptor": "BOQ 2 no.",
+    "scope_description": "Automatic gate system, 2 gates."
+   },
+   {
+    "ref": "6.1",
+    "package": "Access Road (Station Road)",
+    "grp": "Road Works",
+    "phase": "Phase 2",
+    "lead_class": "Short",
+    "value_sar": 10200000,
+    "descriptor": "about 1,700 m dual carriageway",
+    "scope_description": "Station access road, about 1,700 m dual carriageway, including pavement, drainage, lighting and markings."
+   },
+   {
+    "ref": "6.2",
+    "package": "Signalling & Telecommunication",
+    "grp": "Railway Systems",
+    "phase": "Phase 1",
+    "lead_class": "Long",
+    "value_sar": 14900000,
+    "descriptor": "",
+    "scope_description": "Signalling and telecommunication systems for the station and loop line."
+   },
+   {
+    "ref": "6.3",
+    "package": "External Works (above ground)",
+    "grp": "Road Works",
+    "phase": "Phase 1",
+    "lead_class": "Short",
+    "value_sar": 8990000,
+    "descriptor": "",
+    "scope_description": "External above-ground works: paving, landscaping and finishing around the station."
+   },
+   {
+    "ref": "7.2",
+    "package": "Railway Track Works (Loop Line, 2,500 m)",
+    "grp": "Railway Systems",
+    "phase": "Phase 2",
+    "lead_class": "Long",
+    "value_sar": 21900000,
+    "descriptor": "2,500 m loop line",
+    "scope_description": "Railway track works for the loop line, 2,500 m."
+   },
+   {
+    "ref": "7.3",
+    "package": "Railway Turnout Works",
+    "grp": "Railway Systems",
+    "phase": "Phase 1",
+    "lead_class": "Long",
+    "value_sar": 8999000,
+    "descriptor": "",
+    "scope_description": "Railway turnout works connecting the loop line to the main line."
+   }
+  ]
+ },
+ "phases": {
+  "comment": "Phase 1 = 12 items, Phase 2 = 4 items (3.3, 4.3, 6.1, 7.2). Dates assume NTP 1-Nov-2026 and are indicative.",
+  "rows": [
+   {
+    "phase": "Both",
+    "stage": "Design",
+    "start_month": 2,
+    "finish_month": 11,
+    "start_date_indicative": "2026-12-01",
+    "finish_date_indicative": "2027-09-21"
+   },
+   {
+    "phase": "Phase 1",
+    "stage": "Procurement",
+    "start_month": 7,
+    "finish_month": 18,
+    "start_date_indicative": "2027-05-21",
+    "finish_date_indicative": "2028-04-05"
+   },
+   {
+    "phase": "Phase 1",
+    "stage": "Construction",
+    "start_month": 12,
+    "finish_month": 20,
+    "start_date_indicative": "2027-10-09",
+    "finish_date_indicative": "2028-06-21"
+   },
+   {
+    "phase": "Phase 1",
+    "stage": "Testing and commissioning",
+    "start_month": 14,
+    "finish_month": 26,
+    "start_date_indicative": "2027-12-21",
+    "finish_date_indicative": "2028-12-09"
+   },
+   {
+    "phase": "Phase 2",
+    "stage": "Procurement",
+    "start_month": 11,
+    "finish_month": 22,
+    "start_date_indicative": "2027-09-24",
+    "finish_date_indicative": "2028-08-09"
+   },
+   {
+    "phase": "Phase 2",
+    "stage": "Construction",
+    "start_month": 12,
+    "finish_month": 24,
+    "start_date_indicative": "2027-10-23",
+    "finish_date_indicative": "2028-10-21"
+   },
+   {
+    "phase": "Phase 2",
+    "stage": "Testing and commissioning",
+    "start_month": 18,
+    "finish_month": 25,
+    "start_date_indicative": "2028-04-01",
+    "finish_date_indicative": "2028-11-19"
+   }
+  ]
+ },
+ "milestones": {
+  "comment": "",
+  "rows": [
+   {
+    "id": "MS-0010",
+    "name": "Notice to Proceed",
+    "month_from_ntp": 1,
+    "basis": "B",
+    "note": "Date to be confirmed"
+   },
+   {
+    "id": "MS-0020",
+    "name": "Access permits obtained",
+    "month_from_ntp": 1,
+    "basis": "B",
+    "note": "Tender note: month 1"
+   },
+   {
+    "id": "MS-0030",
+    "name": "Gate 1 - Concept design approved",
+    "month_from_ntp": 3,
+    "basis": "B",
+    "note": "Tender window: months 2 to 3"
+   },
+   {
+    "id": "MS-0040",
+    "name": "Gate 2 - Preliminary design approved",
+    "month_from_ntp": 6,
+    "basis": "B",
+    "note": "Tender window: months 4 to 6"
+   },
+   {
+    "id": "MS-0050",
+    "name": "Phase 1 procurement start",
+    "month_from_ntp": 7,
+    "basis": "B",
+    "note": "15 days after Gate 2"
+   },
+   {
+    "id": "MS-0060",
+    "name": "Gate 3 - Detailed design (IFC) approved",
+    "month_from_ntp": 11,
+    "basis": "B",
+    "note": "Tender window: months 7 to 11"
+   },
+   {
+    "id": "MS-0080",
+    "name": "Phase 2 procurement start",
+    "month_from_ntp": 11,
+    "basis": "B",
+    "note": ""
+   },
+   {
+    "id": "MS-0090",
+    "name": "Work permit and construction start",
+    "month_from_ntp": 12,
+    "basis": "B",
+    "note": "14 days after Gate 3"
+   },
+   {
+    "id": "MS-0100",
+    "name": "Signalling and turnout materials on site",
+    "month_from_ntp": null,
+    "basis": "B",
+    "note": "Long-lead delivery (month not recorded here)"
+   },
+   {
+    "id": "MS-0110",
+    "name": "Track materials on site",
+    "month_from_ntp": null,
+    "basis": "B",
+    "note": "Long-lead delivery (month not recorded here)"
+   },
+   {
+    "id": "MS-0120",
+    "name": "All construction works complete",
+    "month_from_ntp": 24,
+    "basis": "B",
+    "note": "Before testing and trial running"
+   },
+   {
+    "id": "MS-0130",
+    "name": "Taking-Over of all works",
+    "month_from_ntp": 26,
+    "basis": "B",
+    "note": "Contract completion 31 Dec 2028; zero float"
+   }
+  ]
+ },
+ "cash_flow_quarterly": {
+  "comment": "Progress value = work done; net cash = invoiced after the 10% advance (assumption).",
+  "rows": [
+   {
+    "period": "Q1",
+    "month_from": 1,
+    "month_to": 3,
+    "progress_value_sar_m": 3.668,
+    "net_cash_sar_m": 13.285,
+    "cumulative_net_cash_pct": 13.3
+   },
+   {
+    "period": "Q2",
+    "month_from": 4,
+    "month_to": 6,
+    "progress_value_sar_m": 1.67,
+    "net_cash_sar_m": 1.443,
+    "cumulative_net_cash_pct": 14.7
+   },
+   {
+    "period": "Q3",
+    "month_from": 7,
+    "month_to": 9,
+    "progress_value_sar_m": 10.784,
+    "net_cash_sar_m": 6.361,
+    "cumulative_net_cash_pct": 21.1
+   },
+   {
+    "period": "Q4",
+    "month_from": 10,
+    "month_to": 12,
+    "progress_value_sar_m": 15.124,
+    "net_cash_sar_m": 12.649,
+    "cumulative_net_cash_pct": 33.7
+   },
+   {
+    "period": "Q5",
+    "month_from": 13,
+    "month_to": 15,
+    "progress_value_sar_m": 34.942,
+    "net_cash_sar_m": 28.378,
+    "cumulative_net_cash_pct": 62.1
+   },
+   {
+    "period": "Q6",
+    "month_from": 16,
+    "month_to": 18,
+    "progress_value_sar_m": 13.719,
+    "net_cash_sar_m": 15.822,
+    "cumulative_net_cash_pct": 77.9
+   },
+   {
+    "period": "Q7",
+    "month_from": 19,
+    "month_to": 21,
+    "progress_value_sar_m": 9.985,
+    "net_cash_sar_m": 12.373,
+    "cumulative_net_cash_pct": 90.3
+   },
+   {
+    "period": "Q8",
+    "month_from": 22,
+    "month_to": 24,
+    "progress_value_sar_m": 8.298,
+    "net_cash_sar_m": 8.059,
+    "cumulative_net_cash_pct": 98.4
+   },
+   {
+    "period": "Q9",
+    "month_from": 25,
+    "month_to": 26,
+    "progress_value_sar_m": 1.809,
+    "net_cash_sar_m": 1.628,
+    "cumulative_net_cash_pct": 100.0
+   }
+  ]
+ },
+ "cash_flow_semiannual": {
+  "comment": "",
+  "rows": [
+   {
+    "period": "H1",
+    "month_from": 1,
+    "month_to": 6,
+    "progress_value_sar_m": 5.338,
+    "net_cash_sar_m": 14.728,
+    "cumulative_net_cash_pct": 14.7
+   },
+   {
+    "period": "H2",
+    "month_from": 7,
+    "month_to": 12,
+    "progress_value_sar_m": 25.908,
+    "net_cash_sar_m": 19.01,
+    "cumulative_net_cash_pct": 33.7
+   },
+   {
+    "period": "H3",
+    "month_from": 13,
+    "month_to": 18,
+    "progress_value_sar_m": 48.661,
+    "net_cash_sar_m": 44.2,
+    "cumulative_net_cash_pct": 77.9
+   },
+   {
+    "period": "H4",
+    "month_from": 19,
+    "month_to": 24,
+    "progress_value_sar_m": 18.283,
+    "net_cash_sar_m": 20.432,
+    "cumulative_net_cash_pct": 98.4
+   },
+   {
+    "period": "H5",
+    "month_from": 25,
+    "month_to": 26,
+    "progress_value_sar_m": 1.809,
+    "net_cash_sar_m": 1.628,
+    "cumulative_net_cash_pct": 100.0
+   }
+  ]
+ },
+ "cost_components": {
+  "comment": "Planning baseline split of the SAR 99.999 M contract value.",
+  "rows": [
+   {
+    "component": "Preliminaries",
+    "sar": 4899999.98
+   },
+   {
+    "component": "Design",
+    "sar": 4889000.01
+   },
+   {
+    "component": "Engineering",
+    "sar": 4510500.0
+   },
+   {
+    "component": "Procurement",
+    "sar": 9021000.0
+   },
+   {
+    "component": "Material delivered",
+    "sar": 23409300.0
+   },
+   {
+    "component": "Construction and T&C",
+    "sar": 53269200.04
+   }
+  ]
+ },
+ "tga_requirements": {
+  "comment": "",
+  "rows": [
+   {
+    "requirement": "Management and Control of Change",
+    "contract_wording": "Implement the TGA guidance on change management (TGA-R-000-GDN-230504-06 per SAR procedure SAR-012-200-02-001).",
+    "programme_meaning": "Changes to approved design or scope are risk-assessed and approved before they are built.",
+    "clause": "18"
+   },
+   {
+    "requirement": "Independent Competent Person",
+    "contract_wording": "Appointment of an Independent Competent Person (ICP).",
+    "programme_meaning": "Proposal: appoint at mobilisation, before the first design submission.",
+    "clause": "18"
+   },
+   {
+    "requirement": "Safe Design and Construction",
+    "contract_wording": "Safe by Design at every design stage, ALARP, RAM to EN 50126.",
+    "programme_meaning": "Hazard analysis, safety case and risk register at Preliminary; hazards to ALARP in Detailed.",
+    "clause": "18, 24, 25"
+   },
+   {
+    "requirement": "Environmental",
+    "contract_wording": "EIA, Environmental Permit for Construction before works, approved wastewater discharge.",
+    "programme_meaning": "High-level EIA at Preliminary; detailed EIA to GAMEP; permit before the work permit (Month 12).",
+    "clause": "18, 45"
+   }
+  ]
+ },
+ "authorities": {
+  "comment": "",
+  "rows": [
+   {
+    "entity": "SAR Engineering and Projects",
+    "approves_or_reviews": "Design at each phase gate, IDC/IDR sign-off, submittals, readiness reviews, Taking-Over",
+    "stage": "All stages",
+    "contractor_documents": "Design basis, drawings, specifications, method statements",
+    "source": "C 8, 21, 22"
+   },
+   {
+    "entity": "TGA",
+    "approves_or_reviews": "Change control, Independent Competent Person, safe design and construction",
+    "stage": "Design to operation",
+    "contractor_documents": "ICP appointment, safety case, change requests",
+    "source": "C 18"
+   },
+   {
+    "entity": "HCIS",
+    "approves_or_reviews": "Security and fire design via HCIS-approved consultant; works by HCIS-approved contractor",
+    "stage": "Detailed design to installation",
+    "contractor_documents": "HCIS design approval, contractor approval",
+    "source": "C section 2 and 42"
+   },
+   {
+    "entity": "Civil Defense",
+    "approves_or_reviews": "Fire protection and life safety (NFPA / SBC)",
+    "stage": "Detailed design, completion",
+    "contractor_documents": "Fire design package, inspection certificate",
+    "source": "C section 2"
+   },
+   {
+    "entity": "GAMEP (General Authority of Meteorology and Environment Protection, as written in the scope)",
+    "approves_or_reviews": "Detailed EIA and Environmental Permit for Construction",
+    "stage": "Preliminary design to before works",
+    "contractor_documents": "High-level and detailed EIA",
+    "source": "C 18, 45"
+   },
+   {
+    "entity": "SEC, NWC, Municipality",
+    "approves_or_reviews": "Power, potable water, sewerage and drainage connections",
+    "stage": "Applications early; connect before testing",
+    "contractor_documents": "Load schedules, applications, agreements",
+    "source": "C 33"
+   },
+   {
+    "entity": "Road authority, pipeline and line owners",
+    "approves_or_reviews": "Highway junction tie-in; crossings near pipelines and transmission lines (e.g. ARAMCO)",
+    "stage": "Detailed design to works",
+    "contractor_documents": "Junction design, clearance letters",
+    "source": "C 31, 43 (authority to be identified)"
+   }
+  ]
+ },
+ "approval_durations": {
+  "comment": "",
+  "rows": [
+   {
+    "activity": "Concept design review by SAR",
+    "days": "14",
+    "owner": "SAR Engineering",
+    "basis": "B"
+   },
+   {
+    "activity": "Preliminary design review by SAR",
+    "days": "21",
+    "owner": "SAR Engineering",
+    "basis": "B"
+   },
+   {
+    "activity": "Detailed and IFC design review by SAR",
+    "days": "28",
+    "owner": "SAR Engineering",
+    "basis": "B"
+   },
+   {
+    "activity": "Work permit after Gate 3",
+    "days": "14",
+    "owner": "SAR",
+    "basis": "B"
+   },
+   {
+    "activity": "SEC permanent power supply agreement",
+    "days": "90 (120 if needed)",
+    "owner": "SEC",
+    "basis": "B"
+   },
+   {
+    "activity": "Possession booking for track tie-in",
+    "days": "30",
+    "owner": "SAR Operations",
+    "basis": "B"
+   },
+   {
+    "activity": "Safety assessment",
+    "days": "15 (about 30 recommended)",
+    "owner": "SAR Safety, ICP",
+    "basis": "B"
+   },
+   {
+    "activity": "Taking-Over certificate review and issue",
+    "days": "11",
+    "owner": "SAR",
+    "basis": "B"
+   },
+   {
+    "activity": "Operating-rule critical change (15 + 15), SAR-012-200-02-001",
+    "days": "30",
+    "owner": "SAR Governance, RBWG",
+    "basis": "S"
+   },
+   {
+    "activity": "SAR functional audit planned-audit notice, SAR-012-600-3-001",
+    "days": "42 minimum (6 weeks)",
+    "owner": "SAR SRGC",
+    "basis": "S"
+   },
+   {
+    "activity": "TGA reviews and ICP verification",
+    "days": "TBC",
+    "owner": "TGA, ICP",
+    "basis": "T"
+   },
+   {
+    "activity": "HCIS, Civil Defense, GAMEP, NWC, Municipality, road authority",
+    "days": "TBC",
+    "owner": "Each authority",
+    "basis": "T"
+   }
+  ]
+ },
+ "documents_by_stage": {
+  "comment": "",
+  "rows": [
+   {
+    "stage": "Mobilise and plan",
+    "documents": "DEMP, safety management plan, RAM plan, document control procedure, ICP appointment, risk register",
+    "approved_by": "SAR, TGA"
+   },
+   {
+    "stage": "Design",
+    "documents": "Design Basis Reports, drawings and calculations, VE proposals, hazard analysis and safety case, high-level EIA, RAM prediction reports, meeting ToR and minutes, IDC/IDR sheets",
+    "approved_by": "SAR (phase gates), ICP"
+   },
+   {
+    "stage": "Permits",
+    "documents": "Detailed EIA, HCIS design approval, Civil Defense approval, utility applications and agreements, junction approval, work permit and possession requests",
+    "approved_by": "GAMEP, HCIS, Civil Defense, utilities, SAR"
+   },
+   {
+    "stage": "Execution",
+    "documents": "Material submittals, shop and fabrication drawings, method statements, lift plans, ITPs, inspection requests, FAT procedures and reports, NCRs, red-line drawings",
+    "approved_by": "SAR, ICP"
+   },
+   {
+    "stage": "Test and handover",
+    "documents": "Test procedures and reports, safety assessment, trial running report, as-built drawings, O&M manuals with spare parts list, Taking-Over and handover certificates",
+    "approved_by": "SAR, TGA, HCIS, Civil Defense"
+   }
+  ]
+ },
+ "design_gates": {
+  "comment": "Workflow at every stage: internal design check (SAR-025-400-2-028), IDC/IDR, submit, SAR review (CRS), resubmit, SAR Phase Gate Review.",
+  "rows": [
+   {
+    "gate": "Gate 1 Concept",
+    "sar_stage": "1a",
+    "completion": "0-10%",
+    "month": 3,
+    "review_days": 14,
+    "content": "Design Basis Reports all disciplines, concept drawings, rough cost estimate"
+   },
+   {
+    "gate": "Gate 2 Preliminary",
+    "sar_stage": "2a",
+    "completion": "10-30%",
+    "month": 6,
+    "review_days": 21,
+    "content": "Preliminary reports and drawings, VE, high-level EIA, hazard analysis, safety case, risk register, surveys, BoQ"
+   },
+   {
+    "gate": "Gate 3 Detailed / IFC",
+    "sar_stage": "3a / 3b",
+    "completion": "30-100%",
+    "month": 11,
+    "review_days": 28,
+    "content": "Coordinated detailed drawings, final specifications, hazards to ALARP, RAM reports, HCIS and Civil Defense approvals submitted, final IDC/IDR, IFC suite"
+   }
+  ]
+ },
+ "project_status": {
+  "comment": "Status as given by the project manager at the time of the CEO briefing.",
+  "rows": [
+   {
+    "item": "Contractor Project Manager",
+    "status": "Done",
+    "detail": "Appointed; contract signed"
+   },
+   {
+    "item": "Construction Manager and Planning Engineer",
+    "status": "In progress",
+    "detail": "Interviews under way"
+   },
+   {
+    "item": "Project design firm",
+    "status": "In progress",
+    "detail": "Contractor has started appointing the design firm"
+   },
+   {
+    "item": "Funding for the first 6 months",
+    "status": "In progress",
+    "detail": "Zulfi Cooperative Society asked to provide SAR 15 M (baseline need SAR 14.7 M)"
+   },
+   {
+    "item": "Purchase Order",
+    "status": "Waiting",
+    "detail": "With SAR Finance; the Notice to Proceed starts once it is issued"
+   }
+  ]
+ },
+ "open_points": {
+  "comment": "",
+  "rows": [
+   {
+    "point": "Review times of TGA and of the Independent Competent Person",
+    "owner": "SAR / TGA"
+   },
+   {
+    "point": "HCIS and Civil Defense review times",
+    "owner": "SAR / authorities"
+   },
+   {
+    "point": "Whether the ICP must be in place before the first design submission",
+    "owner": "SAR / TGA"
+   },
+   {
+    "point": "Design review windows 14, 21 and 28 days",
+    "owner": "SAR"
+   },
+   {
+    "point": "Possession windows and safety assessment duration",
+    "owner": "SAR Operations"
+   },
+   {
+    "point": "Trial-running duration and operational readiness criteria",
+    "owner": "SAR Operations"
+   },
+   {
+    "point": "Notice to Proceed date",
+    "owner": "SAR PMO"
+   },
+   {
+    "point": "Per-package long-lead manufacture days (only the 150 to 245 day range is recorded)",
+    "owner": "Contractor / suppliers"
+   },
+   {
+    "point": "The TGA guidance documents themselves were not provided",
+    "owner": "SAR"
+   },
+   {
+    "point": "Which entity issues the construction environmental permit (scope says GAMEP)",
+    "owner": "SAR"
+   }
+  ]
+ },
+ "tga_process_activities_draft": {
+  "comment": "DRAFT: proposed TGA-process activities and logic for the next baseline submittal. Not yet loaded into a P6 file; the baseline XER and scheduling engine were lost (see README). Durations marked D or T need confirmation.",
+  "rows": [
+   {
+    "activity_id": "TG-0010",
+    "name": "Appoint Independent Competent Person (ICP)",
+    "duration_days": 14,
+    "predecessors": "MS-0010:FS",
+    "basis": "D",
+    "note": "Proposal"
+   },
+   {
+    "activity_id": "TG-0020",
+    "name": "Prepare DEMP, safety plan and RAM plan",
+    "duration_days": 21,
+    "predecessors": "MS-0010:SS",
+    "basis": "C",
+    "note": "Clauses 19, 20, 24, 25; duration proposed"
+   },
+   {
+    "activity_id": "TG-0030",
+    "name": "SAR review of DEMP and plans",
+    "duration_days": 14,
+    "predecessors": "TG-0020:FS",
+    "basis": "D",
+    "note": "Uses the 14-day concept review window"
+   },
+   {
+    "activity_id": "TG-0040",
+    "name": "ICP review of safety plan and risk process",
+    "duration_days": 10,
+    "predecessors": "TG-0010:FS;TG-0020:FS",
+    "basis": "D",
+    "note": ""
+   },
+   {
+    "activity_id": "TG-0100",
+    "name": "Concept: Safe-by-Design hazard identification",
+    "duration_days": 21,
+    "predecessors": "TG-0020:SS+14",
+    "basis": "C",
+    "note": "Clause 24"
+   },
+   {
+    "activity_id": "TG-0110",
+    "name": "ICP check of Concept safety inputs",
+    "duration_days": 7,
+    "predecessors": "TG-0100:FS;TG-0040:FS",
+    "basis": "D",
+    "note": "Successor: MS-0030 Gate 1"
+   },
+   {
+    "activity_id": "TG-0200",
+    "name": "Preliminary hazard analysis, safety case, risk register",
+    "duration_days": 42,
+    "predecessors": "MS-0030:FS",
+    "basis": "C",
+    "note": "Clause 35; duration proposed"
+   },
+   {
+    "activity_id": "TG-0210",
+    "name": "High-level EIA (Preliminary design)",
+    "duration_days": 35,
+    "predecessors": "MS-0030:FS",
+    "basis": "C",
+    "note": "Clause 45; duration proposed"
+   },
+   {
+    "activity_id": "TG-0220",
+    "name": "ICP review of safety case",
+    "duration_days": 10,
+    "predecessors": "TG-0200:FS",
+    "basis": "D",
+    "note": "Successor: MS-0040 Gate 2"
+   },
+   {
+    "activity_id": "TG-0310",
+    "name": "Detailed EIA to GAMEP and Environmental Permit for Construction",
+    "duration_days": 75,
+    "predecessors": "TG-0210:FS",
+    "basis": "T",
+    "note": "Authority time TBC; successor MS-0090"
+   },
+   {
+    "activity_id": "TG-0320",
+    "name": "HCIS design approval (HCIS-approved consultant)",
+    "duration_days": 30,
+    "predecessors": "MS-0040:FS",
+    "basis": "T",
+    "note": "Authority time TBC; successor MS-0060"
+   },
+   {
+    "activity_id": "TG-0330",
+    "name": "Civil Defense design approval",
+    "duration_days": 30,
+    "predecessors": "MS-0040:FS",
+    "basis": "T",
+    "note": "Authority time TBC; successor MS-0060"
+   },
+   {
+    "activity_id": "TG-0340",
+    "name": "Utility applications and agreements (SEC 90 days)",
+    "duration_days": 90,
+    "predecessors": "MS-0040:SS",
+    "basis": "B",
+    "note": "SEC 90 days (120 if needed)"
+   },
+   {
+    "activity_id": "TG-0400",
+    "name": "Close hazards to ALARP; residual hazard transfer list",
+    "duration_days": 21,
+    "predecessors": "MS-0040:FS",
+    "basis": "C",
+    "note": "Clause 36"
+   },
+   {
+    "activity_id": "TG-0410",
+    "name": "ICP design verification statement",
+    "duration_days": 10,
+    "predecessors": "TG-0400:FS",
+    "basis": "D",
+    "note": "Successor: MS-0060 Gate 3"
+   },
+   {
+    "activity_id": "TG-0510",
+    "name": "Agree ICP inspection plan for construction",
+    "duration_days": 7,
+    "predecessors": "MS-0060:FS",
+    "basis": "D",
+    "note": "Successor: MS-0090"
+   },
+   {
+    "activity_id": "TG-0600",
+    "name": "ICP witness of critical works (level of effort)",
+    "duration_days": null,
+    "predecessors": "MS-0090:SS",
+    "basis": "D",
+    "note": "Spans MS-0090 to MS-0120"
+   },
+   {
+    "activity_id": "TG-0710",
+    "name": "Safety assessment",
+    "duration_days": 15,
+    "predecessors": "MS-0120:FS",
+    "basis": "B",
+    "note": "About 30 days recommended"
+   },
+   {
+    "activity_id": "TG-0720",
+    "name": "ICP final verification report",
+    "duration_days": 7,
+    "predecessors": "TG-0710:FS",
+    "basis": "D",
+    "note": ""
+   },
+   {
+    "activity_id": "TG-0740",
+    "name": "Civil Defense fire inspection certificate",
+    "duration_days": 14,
+    "predecessors": "MS-0120:FS",
+    "basis": "T",
+    "note": "Authority time TBC"
+   },
+   {
+    "activity_id": "TG-0750",
+    "name": "HCIS security systems acceptance",
+    "duration_days": 14,
+    "predecessors": "MS-0120:FS",
+    "basis": "T",
+    "note": "Authority time TBC"
+   },
+   {
+    "activity_id": "TG-0770",
+    "name": "SAR operational readiness review",
+    "duration_days": 7,
+    "predecessors": "TG-0720:FS",
+    "basis": "D",
+    "note": ""
+   },
+   {
+    "activity_id": "TG-0780",
+    "name": "Taking-Over certificate review and issue",
+    "duration_days": 11,
+    "predecessors": "TG-0770:FS;TG-0740:FS;TG-0750:FS",
+    "basis": "B",
+    "note": "Successor: MS-0130 Taking-Over"
+   }
+  ]
+ },
+ "deliverables": {
+  "comment": "",
+  "rows": [
+   {
+    "file": "deliverables/Zulfi_TGA_Approvals_Workflow_EN.pptx",
+    "description": "SAR-template deck, 14 slides: TGA clause 18, approvals, workflows, days, documents, critical path",
+    "status": "In repository"
+   },
+   {
+    "file": "deliverables/Zulfi_Long_Lead_Items_EN.pptx",
+    "description": "SAR-template deck, 2 slides: long-lead packages and schedule protection",
+    "status": "In repository"
+   },
+   {
+    "file": "deliverables/Zulfi_Procurement_List.xlsx",
+    "description": "16 procurement packages with lead class, window and value",
+    "status": "In repository"
+   },
+   {
+    "file": "src/ceo-briefing/build_ceo.js",
+    "description": "Source of the CEO Briefing deck (11 slides), rebuilt from the conversation; needs deck.json and map.png",
+    "status": "Recovered source"
+   },
+   {
+    "file": "recovered/*",
+    "description": "Scripts read during the conversation: Awj kick-off builders (lib.py, kick_motion.py) and the English schedule-review deck (build_en.js, motion_en.py)",
+    "status": "Recovered source"
+   },
+   {
+    "file": "Zulfi_Baseline_Programme.xer",
+    "description": "P6 baseline (518 activities, submittal separated from approval, zero float)",
+    "status": "LOST: container reset; resend the copy delivered earlier"
+   },
+   {
+    "file": "Planning engine (engine.py, xer.py, builders)",
+    "description": "CPM with 3 calendars, cost loading, cash flow, XER export",
+    "status": "LOST: container reset"
+   },
+   {
+    "file": "Zulfi_BOQ.xlsx, BOQ Mapping, Control workbook, narrative, cash-flow and tracker workbooks",
+    "description": "Earlier deliverables",
+    "status": "LOST from the container; the BOQ is in boq_items"
+   },
+   {
+    "file": "Zulfi_CEO_Briefing_EN.pptx, Zulfi_Station_Kickoff_Meeting_Redesigned.pptx, English SAR decks",
+    "description": "Earlier decks",
+    "status": "LOST from the container; delivered to the user in chat"
+   }
+  ]
+ }
+}

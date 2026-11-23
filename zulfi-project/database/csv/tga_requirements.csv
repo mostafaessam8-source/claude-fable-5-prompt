@@ -1,0 +1,5 @@
+﻿requirement,contract_wording,programme_meaning,clause
+Management and Control of Change,Implement the TGA guidance on change management (TGA-R-000-GDN-230504-06 per SAR procedure SAR-012-200-02-001).,Changes to approved design or scope are risk-assessed and approved before they are built.,18
+Independent Competent Person,Appointment of an Independent Competent Person (ICP).,"Proposal: appoint at mobilisation, before the first design submission.",18
+Safe Design and Construction,"Safe by Design at every design stage, ALARP, RAM to EN 50126.","Hazard analysis, safety case and risk register at Preliminary; hazards to ALARP in Detailed.","18, 24, 25"
+Environmental,"EIA, Environmental Permit for Construction before works, approved wastewater discharge.",High-level EIA at Preliminary; detailed EIA to GAMEP; permit before the work permit (Month 12).,"18, 45"

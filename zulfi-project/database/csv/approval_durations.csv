@@ -1,0 +1,13 @@
+﻿activity,days,owner,basis
+Concept design review by SAR,14,SAR Engineering,B
+Preliminary design review by SAR,21,SAR Engineering,B
+Detailed and IFC design review by SAR,28,SAR Engineering,B
+Work permit after Gate 3,14,SAR,B
+SEC permanent power supply agreement,90 (120 if needed),SEC,B
+Possession booking for track tie-in,30,SAR Operations,B
+Safety assessment,15 (about 30 recommended),"SAR Safety, ICP",B
+Taking-Over certificate review and issue,11,SAR,B
+"Operating-rule critical change (15 + 15), SAR-012-200-02-001",30,"SAR Governance, RBWG",S
+"SAR functional audit planned-audit notice, SAR-012-600-3-001",42 minimum (6 weeks),SAR SRGC,S
+TGA reviews and ICP verification,TBC,"TGA, ICP",T
+"HCIS, Civil Defense, GAMEP, NWC, Municipality, road authority",TBC,Each authority,T

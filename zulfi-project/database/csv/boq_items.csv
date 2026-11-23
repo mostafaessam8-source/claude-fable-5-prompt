@@ -1,0 +1,19 @@
+﻿ref,package,grp,phase,lead_class,value_sar,descriptor,scope_description
+1.1,Preliminaries & General Requirements (lump sum),General,Phase 1,,4900000,,"Contractor general requirements: mobilisation, site establishment, project management and staff, bonds and insurances, management plans, permits and authority approvals, reporting and demobilisation (lump sum)."
+2.1,"Design Works (lump sum, allocated to items)",General,Phase 1,,4889000,,"Design of all works through Concept, Preliminary and Detailed Design / IFC stages, including submittals to SAR for review and approval (lump sum, allocated to the BOQ items)."
+3.1,"Main Building (GEA 1,100 m2)",Main Building,Phase 1,Short,2250000,"GEA 1,100 m2, single storey","Design and construction of the passenger station main building, GEA 1,100 m2, single storey: structure, architectural finishes and building services."
+3.2,IT Equipment,Main Building,Phase 1,Short,400000,,"Supply, installation and commissioning of IT equipment for the station building."
+3.3,"Furniture, Fixtures & Equipment (FF&E)",Main Building,Phase 2,Short,1900000,,"Supply and installation of furniture, fixtures and equipment (FF&E) for the station building."
+4.1,Substation & SEC Works,Ancillary Buildings,Phase 1,Long,3690000,,Substation and SEC works: power supply room and incoming electrical connection for the station.
+4.2,Firefighting Building (GEA 518 m2),Ancillary Buildings,Phase 1,Short,1490000,GEA 518 m2,"Design and construction of the firefighting building, GEA 518 m2."
+4.3,Generator Room,Ancillary Buildings,Phase 2,Long,990000,BOQ 62 m2,"Design and construction of the generator room, 62 m2, with the standby generator."
+4.4,Underground Water Tank,Ancillary Buildings,Phase 1,Short,2331000,,"Construction of the underground water tank, including related fittings and connections."
+5.1,Site Works & Underground Utilities,External Works,Phase 1,Short,10880000,"Plot 15,000 m2","Site preparation and underground utilities for the 15,000 m2 plot: earthworks, drainage, water, sewage and cable ducts."
+5.2,Car Parking Sheds,External Works,Phase 1,Short,790000,"BOQ 1,375 m2 (80 lots in management model)","Car parking sheds, 1,375 m2 (80 lots in the management model)."
+5.3,Fence Works,External Works,Phase 1,Short,200000,BOQ 500 m,"Perimeter fence works, 500 m."
+5.4,Automatic Gate System,External Works,Phase 1,Short,300000,BOQ 2 no.,"Automatic gate system, 2 gates."
+6.1,Access Road (Station Road),Road Works,Phase 2,Short,10200000,"about 1,700 m dual carriageway","Station access road, about 1,700 m dual carriageway, including pavement, drainage, lighting and markings."
+6.2,Signalling & Telecommunication,Railway Systems,Phase 1,Long,14900000,,Signalling and telecommunication systems for the station and loop line.
+6.3,External Works (above ground),Road Works,Phase 1,Short,8990000,,"External above-ground works: paving, landscaping and finishing around the station."
+7.2,"Railway Track Works (Loop Line, 2,500 m)",Railway Systems,Phase 2,Long,21900000,"2,500 m loop line","Railway track works for the loop line, 2,500 m."
+7.3,Railway Turnout Works,Railway Systems,Phase 1,Long,8999000,,Railway turnout works connecting the loop line to the main line.

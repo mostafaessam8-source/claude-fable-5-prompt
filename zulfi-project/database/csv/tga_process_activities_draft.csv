@@ -1,0 +1,24 @@
+﻿activity_id,name,duration_days,predecessors,basis,note
+TG-0010,Appoint Independent Competent Person (ICP),14,MS-0010:FS,D,Proposal
+TG-0020,"Prepare DEMP, safety plan and RAM plan",21,MS-0010:SS,C,"Clauses 19, 20, 24, 25; duration proposed"
+TG-0030,SAR review of DEMP and plans,14,TG-0020:FS,D,Uses the 14-day concept review window
+TG-0040,ICP review of safety plan and risk process,10,TG-0010:FS;TG-0020:FS,D,
+TG-0100,Concept: Safe-by-Design hazard identification,21,TG-0020:SS+14,C,Clause 24
+TG-0110,ICP check of Concept safety inputs,7,TG-0100:FS;TG-0040:FS,D,Successor: MS-0030 Gate 1
+TG-0200,"Preliminary hazard analysis, safety case, risk register",42,MS-0030:FS,C,Clause 35; duration proposed
+TG-0210,High-level EIA (Preliminary design),35,MS-0030:FS,C,Clause 45; duration proposed
+TG-0220,ICP review of safety case,10,TG-0200:FS,D,Successor: MS-0040 Gate 2
+TG-0310,Detailed EIA to GAMEP and Environmental Permit for Construction,75,TG-0210:FS,T,Authority time TBC; successor MS-0090
+TG-0320,HCIS design approval (HCIS-approved consultant),30,MS-0040:FS,T,Authority time TBC; successor MS-0060
+TG-0330,Civil Defense design approval,30,MS-0040:FS,T,Authority time TBC; successor MS-0060
+TG-0340,Utility applications and agreements (SEC 90 days),90,MS-0040:SS,B,SEC 90 days (120 if needed)
+TG-0400,Close hazards to ALARP; residual hazard transfer list,21,MS-0040:FS,C,Clause 36
+TG-0410,ICP design verification statement,10,TG-0400:FS,D,Successor: MS-0060 Gate 3
+TG-0510,Agree ICP inspection plan for construction,7,MS-0060:FS,D,Successor: MS-0090
+TG-0600,ICP witness of critical works (level of effort),,MS-0090:SS,D,Spans MS-0090 to MS-0120
+TG-0710,Safety assessment,15,MS-0120:FS,B,About 30 days recommended
+TG-0720,ICP final verification report,7,TG-0710:FS,D,
+TG-0740,Civil Defense fire inspection certificate,14,MS-0120:FS,T,Authority time TBC
+TG-0750,HCIS security systems acceptance,14,MS-0120:FS,T,Authority time TBC
+TG-0770,SAR operational readiness review,7,TG-0720:FS,D,
+TG-0780,Taking-Over certificate review and issue,11,TG-0770:FS;TG-0740:FS;TG-0750:FS,B,Successor: MS-0130 Taking-Over
