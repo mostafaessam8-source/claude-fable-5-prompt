@@ -92,123 +92,123 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	81053	7101	540	530	1	N	Y	WS_Open	1.8.5	SAR Acceptance & Formal Handover		81048	0	0	0.0000	0.0000						EC_Cmp_pct	EE_Rem_hr	KYAXB/hX+3jfVnY0FNBQKQ		
 %T	TASK
 %F	task_id	proj_id	wbs_id	clndr_id	phys_complete_pct	rev_fdbk_flag	est_wt	lock_plan_flag	auto_compute_act_flag	complete_pct_type	task_type	duration_type	status_code	task_code	task_name	rsrc_id	total_float_hr_cnt	free_float_hr_cnt	remain_drtn_hr_cnt	act_work_qty	remain_work_qty	target_work_qty	target_drtn_hr_cnt	target_equip_qty	act_equip_qty	remain_equip_qty	cstr_date	act_start_date	act_end_date	late_start_date	late_end_date	expect_end_date	early_start_date	early_end_date	restart_date	reend_date	target_start_date	target_end_date	rem_late_start_date	rem_late_end_date	cstr_type	priority_type	suspend_date	resume_date	float_path	float_path_order	guid	tmpl_guid	cstr_date2	cstr_type2	driving_path_flag	act_this_per_work_qty	act_this_per_equip_qty	external_early_start_date	external_late_end_date	create_date	update_date	create_user	update_user	location_id
-%R	91000	7101	81001	7611	0	N	1	N	N	CP_Drtn	TT_Mile	DT_FixedDrtn	TK_NotStart	MS-001	NTP - Notice to Proceed (16-Nov-2026; re-base if the actual NTP differs)		0	0	0	0	0	0	0	0	0	0	2026-11-16 08:00			2026-11-16 08:00	2026-11-16 08:00		2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	CS_MSOA	PT_Normal					GkRErS5bSBRVpLEH3q3USQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91001	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1010	Kick-off meeting & project management set-up		8	0	16	0	0	0	16	0	0	0				2026-11-17 08:00	2026-11-18 16:00		2026-11-16 08:00	2026-11-17 16:00	2026-11-16 08:00	2026-11-17 16:00	2026-11-16 08:00	2026-11-17 16:00	2026-11-17 08:00	2026-11-18 16:00		PT_Normal					scEG9sL9ECkOu3SdFAUkmQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91002	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1020	Insurance (CAR / TPL) & performance bond issuance		8	0	32	0	0	0	32	0	0	0				2026-11-19 08:00	2026-11-24 16:00		2026-11-18 08:00	2026-11-23 16:00	2026-11-18 08:00	2026-11-23 16:00	2026-11-18 08:00	2026-11-23 16:00	2026-11-19 08:00	2026-11-24 16:00		PT_Normal					hvtraWz1ejCpSzWCX3S01Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91003	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1030	PTS training & PO induction - batch 1 (initial team)		24	16	24	0	0	0	24	0	0	0				2026-11-23 08:00	2026-11-25 16:00		2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-23 08:00	2026-11-25 16:00		PT_Normal					PR148IdryxcxIshEt/z2xg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91000	7101	81001	7611	0	N	1	N	N	CP_Drtn	TT_Mile	DT_FixedDrtn	TK_NotStart	MS-001	NTP - Notice to Proceed (16-Nov-2026; re-base if the actual NTP differs)		0	0	0	0	0	0	0	0	0	0	2026-11-16 08:00			2026-11-16 08:00	2026-11-16 08:00		2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	2026-11-16 08:00	CS_MSOA	PT_Normal					GkRErS5bSBRVpLEH3q3USQ				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91001	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1010	Kick-off meeting & project management set-up		0	0	16	0	0	0	16	0	0	0				2026-11-16 08:00	2026-11-17 16:00		2026-11-16 08:00	2026-11-17 16:00	2026-11-16 08:00	2026-11-17 16:00	2026-11-16 08:00	2026-11-17 16:00	2026-11-16 08:00	2026-11-17 16:00		PT_Normal					scEG9sL9ECkOu3SdFAUkmQ				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91002	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1020	Insurance (CAR / TPL) & performance bond issuance		0	0	32	0	0	0	32	0	0	0				2026-11-18 08:00	2026-11-23 16:00		2026-11-18 08:00	2026-11-23 16:00	2026-11-18 08:00	2026-11-23 16:00	2026-11-18 08:00	2026-11-23 16:00	2026-11-18 08:00	2026-11-23 16:00		PT_Normal					hvtraWz1ejCpSzWCX3S01Q				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91003	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1030	PTS training & PO induction - batch 1 (initial team)		16	16	24	0	0	0	24	0	0	0				2026-11-22 08:00	2026-11-24 16:00		2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-22 08:00	2026-11-24 16:00		PT_Normal					PR148IdryxcxIshEt/z2xg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91004	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MGT-1090	Obtain SAR risk scores & confirm Section priority (SAR input)		576	568	24	0	0	0	24	0	0	0				2027-03-01 08:00	2027-03-03 16:00		2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2027-03-01 08:00	2027-03-03 16:00		PT_Normal					rN2cITvt2q3z13zYpMNWVw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91005	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1010	Performance Security (10% on-demand bank guarantee) - confirm issue & submit to SAR (due before Effective Date)		1768	728	8	0	0	0	8	0	0	0				2027-10-05 08:00	2027-10-05 16:00		2026-11-16 08:00	2026-11-16 16:00	2026-11-16 08:00	2026-11-16 16:00	2026-11-16 08:00	2026-11-16 16:00	2027-10-05 08:00	2027-10-05 16:00		PT_Normal					ttW6AWeb+zrRZYKE1ArJ0g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91006	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1020	Submit contractor licences & certificates (CR, tax, MISA) to SAR		1768	728	8	0	0	0	8	0	0	0				2027-10-05 08:00	2027-10-05 16:00		2026-11-16 08:00	2026-11-16 16:00	2026-11-16 08:00	2026-11-16 16:00	2026-11-16 08:00	2026-11-16 16:00	2027-10-05 08:00	2027-10-05 16:00		PT_Normal					f+GgsY1H+sjkRYpxaV8JVg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91007	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1030	Baseline programme (Primavera P6) - prepare & submit within 14 days of Effective Date		1640	0	64	0	0	0	64	0	0	0				2027-09-12 08:00	2027-09-21 16:00		2026-11-16 08:00	2026-11-25 16:00	2026-11-16 08:00	2026-11-25 16:00	2026-11-16 08:00	2026-11-25 16:00	2027-09-12 08:00	2027-09-21 16:00		PT_Normal					jd8C3NhL/Rpes4Nx4xB8rg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91008	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1035	SAR review & approval - baseline programme		2400	888	112	0	0	0	112	0	0	0				2027-09-22 08:00	2027-10-05 16:00		2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2027-09-22 08:00	2027-10-05 16:00		PT_Normal					l+DCYR8m6lD+VYDY37QXqg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91009	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1040	Insurance certificates (CAR, marine cargo, professional indemnity, plant) - submit to SAR		8	0	8	0	0	0	8	0	0	0				2026-11-25 08:00	2026-11-25 16:00		2026-11-24 08:00	2026-11-24 16:00	2026-11-24 08:00	2026-11-24 16:00	2026-11-24 08:00	2026-11-24 16:00	2026-11-25 08:00	2026-11-25 16:00		PT_Normal					S4inms4JUqMKMe9Ak6Xaeg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91009	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1040	Insurance certificates (CAR, marine cargo, professional indemnity, plant) - submit to SAR		0	0	8	0	0	0	8	0	0	0				2026-11-24 08:00	2026-11-24 16:00		2026-11-24 08:00	2026-11-24 16:00	2026-11-24 08:00	2026-11-24 16:00	2026-11-24 08:00	2026-11-24 16:00	2026-11-24 08:00	2026-11-24 16:00		PT_Normal					S4inms4JUqMKMe9Ak6Xaeg				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91010	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1050	Key Personnel CVs, manpower & Saudization schedule - submit to SAR		720	0	24	0	0	0	24	0	0	0				2027-03-31 08:00	2027-04-04 16:00		2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2026-11-18 08:00	2026-11-22 16:00	2027-03-31 08:00	2027-04-04 16:00		PT_Normal					Ay/Q1sXREIUjklEzfsmzIQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91011	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1055	SAR approval - Key Personnel & manpower schedule		1064	1056	112	0	0	0	112	0	0	0				2027-04-05 08:00	2027-04-18 16:00		2026-11-23 08:00	2026-12-06 16:00	2026-11-23 08:00	2026-12-06 16:00	2026-11-23 08:00	2026-12-06 16:00	2027-04-05 08:00	2027-04-18 16:00		PT_Normal					8eiknhQBlvmWmfH1eNNeqA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91012	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1060	Sub-contractor & supplier approval request (cl. 5.7.2) - prepare & submit		392	0	40	0	0	0	40	0	0	0				2027-01-26 08:00	2027-02-01 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-01-26 08:00	2027-02-01 16:00		PT_Normal					qJlIpEc7ui6BwI8w17brIQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91013	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1065	SAR prior written approval - sub-contractors & suppliers		552	552	112	0	0	0	112	0	0	0				2027-02-02 08:00	2027-02-15 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-02-02 08:00	2027-02-15 16:00		PT_Normal					jqw3pc9sVilLeg9ko7K6zw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91012	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1060	Sub-contractor & supplier approval request (cl. 5.7.2) - prepare & submit		480	0	40	0	0	0	40	0	0	0				2027-02-10 08:00	2027-02-16 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-02-10 08:00	2027-02-16 16:00		PT_Normal					qJlIpEc7ui6BwI8w17brIQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91013	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUD-1065	SAR prior written approval - sub-contractors & suppliers		672	672	112	0	0	0	112	0	0	0				2027-02-17 08:00	2027-03-02 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-02-17 08:00	2027-03-02 16:00		PT_Normal					jqw3pc9sVilLeg9ko7K6zw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91014	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1410	QA/QC Plan, HSE Plan & Project Execution Plan - prepare & submit		704	0	40	0	0	0	40	0	0	0				2027-03-29 08:00	2027-04-04 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-03-29 08:00	2027-04-04 16:00		PT_Normal					lQKNa/QTr4dQBGzB7urK7w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91015	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1510	SAR review & approval - QA/QC, HSE & Execution Plans		1048	896	112	0	0	0	112	0	0	0				2027-04-05 08:00	2027-04-18 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-04-05 08:00	2027-04-18 16:00		PT_Normal					I9oiScSObSV/kUsJYHW9Vw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91016	7101	81004	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1420	Method statements & ITPs (survey, trenching, cable laying, OTDR/splicing, track crossing, equipment) - prepare & submit		584	0	64	0	0	0	64	0	0	0				2027-03-02 08:00	2027-03-17 16:00		2026-11-18 08:00	2026-11-29 16:00	2026-11-18 08:00	2026-11-29 16:00	2026-11-18 08:00	2026-11-29 16:00	2027-03-02 08:00	2027-03-17 16:00		PT_Normal					kOvZrbmxx3HMkrU3sNvE5A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91017	7101	81004	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1520	SAR review & approval - method statements & ITPs		864	0	112	0	0	0	112	0	0	0				2027-03-18 08:00	2027-03-31 16:00		2026-11-30 08:00	2026-12-13 16:00	2026-11-30 08:00	2026-12-13 16:00	2026-11-30 08:00	2026-12-13 16:00	2027-03-18 08:00	2027-03-31 16:00		PT_Normal					n0Qk3ZQnQrKgVaEs5g4rng				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91018	7101	81006	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1110	Permit 1 - prepare & submit work permit request for site access & survey (Work Permit Portal)		8	0	16	0	0	0	16	0	0	0				2026-11-26 08:00	2026-11-29 16:00		2026-11-25 08:00	2026-11-26 16:00	2026-11-25 08:00	2026-11-26 16:00	2026-11-25 08:00	2026-11-26 16:00	2026-11-26 08:00	2026-11-29 16:00		PT_Normal					AFNkG7uPPkrbXHQJiHurJw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91019	7101	81006	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1120	SAR review & issue Permit 1 (site access & survey)		24	16	112	0	0	0	112	0	0	0				2026-11-30 08:00	2026-12-13 16:00		2026-11-27 08:00	2026-12-10 16:00	2026-11-27 08:00	2026-12-10 16:00	2026-11-27 08:00	2026-12-10 16:00	2026-11-30 08:00	2026-12-13 16:00		PT_Normal					JlQQcjuPVsM07pC914BC+A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91018	7101	81006	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1110	Permit 1 - prepare & submit work permit request for site access & survey (Work Permit Portal)		0	0	16	0	0	0	16	0	0	0				2026-11-25 08:00	2026-11-26 16:00		2026-11-25 08:00	2026-11-26 16:00	2026-11-25 08:00	2026-11-26 16:00	2026-11-25 08:00	2026-11-26 16:00	2026-11-25 08:00	2026-11-26 16:00		PT_Normal					AFNkG7uPPkrbXHQJiHurJw				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91019	7101	81006	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-1120	SAR review & issue Permit 1 (site access & survey)		16	16	112	0	0	0	112	0	0	0				2026-11-29 08:00	2026-12-12 16:00		2026-11-27 08:00	2026-12-10 16:00	2026-11-27 08:00	2026-12-10 16:00	2026-11-27 08:00	2026-12-10 16:00	2026-11-29 08:00	2026-12-12 16:00		PT_Normal					JlQQcjuPVsM07pC914BC+A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91020	7101	81003	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-1040	Site establishment - offices & temporary facilities		624	520	64	0	0	0	64	0	0	0				2027-04-07 08:00	2027-04-18 16:00		2026-12-13 08:00	2026-12-22 16:00	2026-12-13 08:00	2026-12-22 16:00	2026-12-13 08:00	2026-12-22 16:00	2027-04-07 08:00	2027-04-18 16:00		PT_Normal					5RoP2J6dXa6ss34RQ4YLWA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91021	7101	81009	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1210	Existing system, power capacity & shelter assessment (incl. data correlation)		24	0	40	0	0	0	40	0	0	0				2026-12-16 08:00	2026-12-22 16:00		2026-12-13 08:00	2026-12-17 16:00	2026-12-13 08:00	2026-12-17 16:00	2026-12-13 08:00	2026-12-17 16:00	2026-12-16 08:00	2026-12-22 16:00		PT_Normal					f6sO3BE5A/0mAH/Q4Tudtw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91022	7101	81009	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1220	Topographic survey, GPR utilities detection & dilapidation survey (5.5 km route)		8	0	56	0	0	0	56	0	0	0				2026-12-14 08:00	2026-12-22 16:00		2026-12-13 08:00	2026-12-21 16:00	2026-12-13 08:00	2026-12-21 16:00	2026-12-13 08:00	2026-12-21 16:00	2026-12-14 08:00	2026-12-22 16:00		PT_Normal					/HWgsDZP8tVzDmgb0CGpUw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91023	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1231	Survey Report part A - TDR baseline report (existing system)		8	0	160	0	0	0	160	0	0	0				2026-12-23 08:00	2027-01-19 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-23 08:00	2027-01-19 16:00		PT_Normal					lcdwvAxLBXVGuqZikfdxBA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91024	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1232	Survey Report part B - DAS seismic baseline report (existing system)		8	0	160	0	0	0	160	0	0	0				2026-12-23 08:00	2027-01-19 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-23 08:00	2027-01-19 16:00		PT_Normal					0+SlFv169YA6shYWG7LwWA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91025	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1233	Survey Report part C - DSS strain baseline report (existing system)		8	0	160	0	0	0	160	0	0	0				2026-12-23 08:00	2027-01-19 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-23 08:00	2027-01-19 16:00		PT_Normal					wgEvYGQrcbUQsHorMbmZcQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91026	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1234	Survey Report part D - weather station data baseline report (existing system)		8	0	160	0	0	0	160	0	0	0				2026-12-23 08:00	2027-01-19 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-23 08:00	2027-01-19 16:00		PT_Normal					sggxEnFfisU1RPj8ZyQY1A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91027	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1230	Survey Report - compile baseline of existing system (topographic, GPR, dilapidation, TDR, DAS, DSS, weather)		8	0	40	0	0	0	40	0	0	0				2027-01-20 08:00	2027-01-26 16:00		2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-20 08:00	2027-01-26 16:00		PT_Normal					kiNzZzafKbpdTZOSFqfFHg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91028	7101	81012	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1305	Concept design - basis of design, route, system architecture & sizing		360	352	40	0	0	0	40	0	0	0				2027-01-20 08:00	2027-01-26 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-01-20 08:00	2027-01-26 16:00		PT_Normal					f5WzzrTuqLC87wirA8xbmQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91029	7101	81013	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1305	Concept design package + Survey Report - submit to SAR		8	0	8	0	0	0	8	0	0	0				2027-01-27 08:00	2027-01-27 16:00		2027-01-26 08:00	2027-01-26 16:00	2027-01-26 08:00	2027-01-26 16:00	2027-01-26 08:00	2027-01-26 16:00	2027-01-27 08:00	2027-01-27 16:00		PT_Normal					M3eHX9M4Hl/j89QnCeLBTA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91030	7101	81014	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1305	SAR review & approval - Concept design & Survey Report		8	0	112	0	0	0	112	0	0	0				2027-01-28 08:00	2027-02-10 16:00		2027-01-27 08:00	2027-02-09 16:00	2027-01-27 08:00	2027-02-09 16:00	2027-01-27 08:00	2027-02-09 16:00	2027-01-28 08:00	2027-02-10 16:00		PT_Normal					KAyNJnr3mDtoOELV/YUH8g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91031	7101	81016	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1307	Preliminary design - route & cable layout, power/shelter sizing, interfaces, quantity check		8	0	32	0	0	0	32	0	0	0				2027-02-11 08:00	2027-02-16 16:00		2027-02-10 08:00	2027-02-15 16:00	2027-02-10 08:00	2027-02-15 16:00	2027-02-10 08:00	2027-02-15 16:00	2027-02-11 08:00	2027-02-16 16:00		PT_Normal					1mw/pP/e/wJh8lM0fDOSjQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91032	7101	81017	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1307	Preliminary design package - submit to SAR		8	0	8	0	0	0	8	0	0	0				2027-02-17 08:00	2027-02-17 16:00		2027-02-16 08:00	2027-02-16 16:00	2027-02-16 08:00	2027-02-16 16:00	2027-02-16 08:00	2027-02-16 16:00	2027-02-17 08:00	2027-02-17 16:00		PT_Normal					EkkvB+7M71xV20bPacpRAw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91033	7101	81018	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1307	SAR review & approval - Preliminary design		8	0	112	0	0	0	112	0	0	0				2027-02-18 08:00	2027-03-03 16:00		2027-02-17 08:00	2027-03-02 16:00	2027-02-17 08:00	2027-03-02 16:00	2027-02-17 08:00	2027-03-02 16:00	2027-02-18 08:00	2027-03-03 16:00		PT_Normal					cBfoiqa2wT8IkeBXoLesOA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91021	7101	81009	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1210	Existing system, power capacity & shelter assessment (incl. data correlation)		16	0	40	0	0	0	40	0	0	0				2026-12-15 08:00	2026-12-21 16:00		2026-12-13 08:00	2026-12-17 16:00	2026-12-13 08:00	2026-12-17 16:00	2026-12-13 08:00	2026-12-17 16:00	2026-12-15 08:00	2026-12-21 16:00		PT_Normal					f6sO3BE5A/0mAH/Q4Tudtw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91022	7101	81009	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1220	Topographic survey, GPR utilities detection & dilapidation survey (5.5 km route)		0	0	56	0	0	0	56	0	0	0				2026-12-13 08:00	2026-12-21 16:00		2026-12-13 08:00	2026-12-21 16:00	2026-12-13 08:00	2026-12-21 16:00	2026-12-13 08:00	2026-12-21 16:00	2026-12-13 08:00	2026-12-21 16:00		PT_Normal					/HWgsDZP8tVzDmgb0CGpUw				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91023	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1231	Survey Report part A - TDR baseline report (existing system)		0	0	160	0	0	0	160	0	0	0				2026-12-22 08:00	2027-01-18 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00		PT_Normal					lcdwvAxLBXVGuqZikfdxBA				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91024	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1232	Survey Report part B - DAS seismic baseline report (existing system)		0	0	160	0	0	0	160	0	0	0				2026-12-22 08:00	2027-01-18 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00		PT_Normal					0+SlFv169YA6shYWG7LwWA				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91025	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1233	Survey Report part C - DSS strain baseline report (existing system)		0	0	160	0	0	0	160	0	0	0				2026-12-22 08:00	2027-01-18 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00		PT_Normal					wgEvYGQrcbUQsHorMbmZcQ				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91026	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1234	Survey Report part D - weather station data baseline report (existing system)		0	0	160	0	0	0	160	0	0	0				2026-12-22 08:00	2027-01-18 16:00		2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00	2026-12-22 08:00	2027-01-18 16:00		PT_Normal					sggxEnFfisU1RPj8ZyQY1A				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91027	7101	81009	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SRV-1230	Survey Report - compile baseline of existing system (topographic, GPR, dilapidation, TDR, DAS, DSS, weather)		0	0	40	0	0	0	40	0	0	0				2027-01-19 08:00	2027-01-25 16:00		2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00	2027-01-19 08:00	2027-01-25 16:00		PT_Normal					kiNzZzafKbpdTZOSFqfFHg				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91028	7101	81012	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1305	Concept design - basis of design, route, system architecture & sizing		352	352	40	0	0	0	40	0	0	0				2027-01-19 08:00	2027-01-25 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-01-19 08:00	2027-01-25 16:00		PT_Normal					f5WzzrTuqLC87wirA8xbmQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91029	7101	81013	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1305	Concept design package + Survey Report - submit to SAR		0	0	8	0	0	0	8	0	0	0				2027-01-26 08:00	2027-01-26 16:00		2027-01-26 08:00	2027-01-26 16:00	2027-01-26 08:00	2027-01-26 16:00	2027-01-26 08:00	2027-01-26 16:00	2027-01-26 08:00	2027-01-26 16:00		PT_Normal					M3eHX9M4Hl/j89QnCeLBTA				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91030	7101	81014	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1305	SAR review & approval - Concept design & Survey Report		0	0	112	0	0	0	112	0	0	0				2027-01-27 08:00	2027-02-09 16:00		2027-01-27 08:00	2027-02-09 16:00	2027-01-27 08:00	2027-02-09 16:00	2027-01-27 08:00	2027-02-09 16:00	2027-01-27 08:00	2027-02-09 16:00		PT_Normal					KAyNJnr3mDtoOELV/YUH8g				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91031	7101	81016	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1307	Preliminary design - route & cable layout, power/shelter sizing, interfaces, quantity check		0	0	32	0	0	0	32	0	0	0				2027-02-10 08:00	2027-02-15 16:00		2027-02-10 08:00	2027-02-15 16:00	2027-02-10 08:00	2027-02-15 16:00	2027-02-10 08:00	2027-02-15 16:00	2027-02-10 08:00	2027-02-15 16:00		PT_Normal					1mw/pP/e/wJh8lM0fDOSjQ				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91032	7101	81017	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1307	Preliminary design package - submit to SAR		0	0	8	0	0	0	8	0	0	0				2027-02-16 08:00	2027-02-16 16:00		2027-02-16 08:00	2027-02-16 16:00	2027-02-16 08:00	2027-02-16 16:00	2027-02-16 08:00	2027-02-16 16:00	2027-02-16 08:00	2027-02-16 16:00		PT_Normal					EkkvB+7M71xV20bPacpRAw				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91033	7101	81018	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1307	SAR review & approval - Preliminary design		0	0	112	0	0	0	112	0	0	0				2027-02-17 08:00	2027-03-02 16:00		2027-02-17 08:00	2027-03-02 16:00	2027-02-17 08:00	2027-03-02 16:00	2027-02-17 08:00	2027-03-02 16:00	2027-02-17 08:00	2027-03-02 16:00		PT_Normal					cBfoiqa2wT8IkeBXoLesOA				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91034	7101	81020	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1310	Detailed design - IFC drawings, specifications & calculations		8	0	40	0	0	0	40	0	0	0				2027-03-04 08:00	2027-03-16 16:00		2027-03-03 08:00	2027-03-15 16:00	2027-03-03 08:00	2027-03-15 16:00	2027-03-03 08:00	2027-03-15 16:00	2027-03-04 08:00	2027-03-16 16:00		PT_Normal					AzVhov1xbNIjbIiDisO77w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91035	7101	81021	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	DSN-1320	IFC package QA check & submission to SAR		8	0	8	0	0	0	8	0	0	0				2027-03-17 08:00	2027-03-17 16:00		2027-03-16 08:00	2027-03-16 16:00	2027-03-16 08:00	2027-03-16 16:00	2027-03-16 08:00	2027-03-16 16:00	2027-03-17 08:00	2027-03-17 16:00		PT_Normal					hVfkvW0RumOKI4evH4j1CA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91036	7101	81022	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1560	SAR review & approval - IFC package (IFC approved)		8	0	112	0	0	0	112	0	0	0				2027-03-18 08:00	2027-03-31 16:00		2027-03-17 08:00	2027-03-30 16:00	2027-03-17 08:00	2027-03-30 16:00	2027-03-17 08:00	2027-03-30 16:00	2027-03-18 08:00	2027-03-31 16:00		PT_Normal					qsvsssapptUhXwykKOMHWA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91037	7101	81026	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1430	Material submittal - DSS cable NZS-DSS-C02, 48-core FO cable, TDR coaxial cable		392	0	40	0	0	0	40	0	0	0				2027-01-26 08:00	2027-02-01 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-01-26 08:00	2027-02-01 16:00		PT_Normal					/f6TBGqQul0hSkqIQJ9VOw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91038	7101	81026	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1440	Material submittal - TDR system, weather station, comms modules/SIM, UPS & electrical panels, cloud hardware		568	0	48	0	0	0	48	0	0	0				2027-02-28 08:00	2027-03-07 16:00		2026-11-18 08:00	2026-11-25 16:00	2026-11-18 08:00	2026-11-25 16:00	2026-11-18 08:00	2026-11-25 16:00	2027-02-28 08:00	2027-03-07 16:00		PT_Normal					cSuY+GHiRH/iZlvnsKxuVw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91037	7101	81026	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1430	Material submittal - DSS cable NZS-DSS-C02, 48-core FO cable, TDR coaxial cable		480	0	40	0	0	0	40	0	0	0				2027-02-10 08:00	2027-02-16 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-02-10 08:00	2027-02-16 16:00		PT_Normal					/f6TBGqQul0hSkqIQJ9VOw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91038	7101	81026	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1440	Material submittal - TDR system, weather station, comms modules/SIM, UPS & electrical panels, cloud hardware		640	0	48	0	0	0	48	0	0	0				2027-03-17 08:00	2027-03-24 16:00		2026-11-18 08:00	2026-11-25 16:00	2026-11-18 08:00	2026-11-25 16:00	2026-11-18 08:00	2026-11-25 16:00	2027-03-17 08:00	2027-03-24 16:00		PT_Normal					cSuY+GHiRH/iZlvnsKxuVw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91039	7101	81026	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1450	Material submittal - FO closures, handholes/manholes, steel & rigid conduits, marker posts, sweet sand		640	0	40	0	0	0	40	0	0	0				2027-03-17 08:00	2027-03-23 16:00		2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2026-11-18 08:00	2026-11-24 16:00	2027-03-17 08:00	2027-03-23 16:00		PT_Normal					Qhv77rI0LWlKpqZ6nHzZAQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91040	7101	81023	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1470	Cybersecurity (NCA ECC-1/CSCC-1/OTCC-1, SAR OT/ICS) & local-cloud architecture design package		600	0	80	0	0	0	80	0	0	0				2027-06-08 08:00	2027-06-21 16:00		2027-02-10 08:00	2027-02-24 16:00	2027-02-10 08:00	2027-02-24 16:00	2027-02-10 08:00	2027-02-24 16:00	2027-06-08 08:00	2027-06-21 16:00		PT_Normal					TcL714DYyIHHvHy9nItnRA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91041	7101	81023	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1480	Interface Control Document - existing 1.5 km system & iSiteCentral		1384	0	64	0	0	0	64	0	0	0				2027-08-31 08:00	2027-09-09 16:00		2026-12-20 08:00	2026-12-29 16:00	2026-12-20 08:00	2026-12-29 16:00	2026-12-20 08:00	2026-12-29 16:00	2027-08-31 08:00	2027-09-09 16:00		PT_Normal					j/SkvKTrlcE+ZJJ1W+JrNw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91042	7101	81023	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1490	FAT procedures & test plans (TDR, cables, weather, comms, UPS, cloud hardware)		560	0	48	0	0	0	48	0	0	0				2027-03-25 08:00	2027-04-01 16:00		2026-12-10 08:00	2026-12-17 16:00	2026-12-10 08:00	2026-12-17 16:00	2026-12-10 08:00	2026-12-17 16:00	2027-03-25 08:00	2027-04-01 16:00		PT_Normal					GWBj3UhtKnpd2pbYKTZiOQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91042	7101	81023	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1490	FAT procedures & test plans (TDR, cables, weather, comms, UPS, cloud hardware)		640	0	48	0	0	0	48	0	0	0				2027-04-08 08:00	2027-04-15 16:00		2026-12-10 08:00	2026-12-17 16:00	2026-12-10 08:00	2026-12-17 16:00	2026-12-10 08:00	2026-12-17 16:00	2027-04-08 08:00	2027-04-15 16:00		PT_Normal					GWBj3UhtKnpd2pbYKTZiOQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91043	7101	81023	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SUB-1495	SAT, commissioning & performance-validation procedures		920	0	48	0	0	0	48	0	0	0				2027-09-14 08:00	2027-09-21 16:00		2027-03-31 08:00	2027-04-07 16:00	2027-03-31 08:00	2027-04-07 16:00	2027-03-31 08:00	2027-04-07 16:00	2027-09-14 08:00	2027-09-21 16:00		PT_Normal					odAeyq6Mm49h8eVKSW97pw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91044	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1530	SAR review & approval - cable materials (DSS, FO, TDR coax)		552	552	112	0	0	0	112	0	0	0				2027-02-02 08:00	2027-02-15 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-02-02 08:00	2027-02-15 16:00		PT_Normal					S97vGE5K9rvtUI4sXq+gIA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91045	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1540	SAR review & approval - equipment materials (TDR, weather, comms, UPS/panels, cloud HW)		840	0	112	0	0	0	112	0	0	0				2027-03-11 08:00	2027-03-24 16:00		2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2027-03-11 08:00	2027-03-24 16:00		PT_Normal					p3RVXdFFN6dBn5MJzPV9cQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91046	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1550	SAR review & approval - civil materials (closures, handholes, conduits, markers, sand)		952	552	112	0	0	0	112	0	0	0				2027-03-24 08:00	2027-04-06 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-03-24 08:00	2027-04-06 16:00		PT_Normal					L4qx3v1Ub4rv+GSlkh5urA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91044	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1530	SAR review & approval - cable materials (DSS, FO, TDR coax)		672	672	112	0	0	0	112	0	0	0				2027-02-17 08:00	2027-03-02 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-02-17 08:00	2027-03-02 16:00		PT_Normal					S97vGE5K9rvtUI4sXq+gIA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91045	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1540	SAR review & approval - equipment materials (TDR, weather, comms, UPS/panels, cloud HW)		952	0	112	0	0	0	112	0	0	0				2027-03-25 08:00	2027-04-07 16:00		2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2026-11-26 08:00	2026-12-09 16:00	2027-03-25 08:00	2027-04-07 16:00		PT_Normal					p3RVXdFFN6dBn5MJzPV9cQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91046	7101	81027	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1550	SAR review & approval - civil materials (closures, handholes, conduits, markers, sand)		952	672	112	0	0	0	112	0	0	0				2027-03-24 08:00	2027-04-06 16:00		2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2026-11-25 08:00	2026-12-08 16:00	2027-03-24 08:00	2027-04-06 16:00		PT_Normal					L4qx3v1Ub4rv+GSlkh5urA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91047	7101	81024	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1620	SAR IT/OT & cybersecurity review & approval - architecture design		936	24	112	0	0	0	112	0	0	0				2027-06-22 08:00	2027-07-05 16:00		2027-02-25 08:00	2027-03-10 16:00	2027-02-25 08:00	2027-03-10 16:00	2027-02-25 08:00	2027-03-10 16:00	2027-06-22 08:00	2027-07-05 16:00		PT_Normal					PUrvO8eyRHShCwpaUkP0WA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91048	7101	81024	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1650	SAR / system-owner review & approval - Interface Control Document		2048	2048	112	0	0	0	112	0	0	0				2027-09-12 08:00	2027-09-25 16:00		2026-12-30 08:00	2027-01-12 16:00	2026-12-30 08:00	2027-01-12 16:00	2026-12-30 08:00	2027-01-12 16:00	2027-09-12 08:00	2027-09-25 16:00		PT_Normal					/A2fGOiIHw5P2aubL0quOw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91049	7101	81024	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1660	SAR review & approval - FAT procedures (SAR witness notice incl.)		848	616	112	0	0	0	112	0	0	0				2027-04-03 08:00	2027-04-16 16:00		2026-12-18 08:00	2026-12-31 16:00	2026-12-18 08:00	2026-12-31 16:00	2026-12-18 08:00	2026-12-31 16:00	2027-04-03 08:00	2027-04-16 16:00		PT_Normal					A1pmHnQMuqrb5P3+RC1thA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91049	7101	81024	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1660	SAR review & approval - FAT procedures (SAR witness notice incl.)		960	752	112	0	0	0	112	0	0	0				2027-04-17 08:00	2027-04-30 16:00		2026-12-18 08:00	2026-12-31 16:00	2026-12-18 08:00	2026-12-31 16:00	2026-12-18 08:00	2026-12-31 16:00	2027-04-17 08:00	2027-04-30 16:00		PT_Normal					A1pmHnQMuqrb5P3+RC1thA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91050	7101	81024	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	APR-1670	SAR review & approval - SAT/commissioning procedures		1336	1336	112	0	0	0	112	0	0	0				2027-09-22 08:00	2027-10-05 16:00		2027-04-08 08:00	2027-04-21 16:00	2027-04-08 08:00	2027-04-21 16:00	2027-04-08 08:00	2027-04-21 16:00	2027-09-22 08:00	2027-10-05 16:00		PT_Normal					uSOCDwrt6QGJ78SDf+O7UA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91051	7101	81001	7611	0	N	1	N	N	CP_Drtn	TT_FinMile	DT_FixedDrtn	TK_NotStart	MS-010	Stage 1 complete - mobilization done, IFC approved & submittals issued		1040	1040	0	0	0	0	0	0	0	0				2027-10-05 16:00	2027-10-05 16:00		2027-03-30 16:00	2027-03-30 16:00	2027-03-30 16:00	2027-03-30 16:00	2027-03-30 16:00	2027-03-30 16:00	2027-10-05 16:00	2027-10-05 16:00		PT_Normal					96cxFl2JUsYMe3YlPmZ06w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91052	7101	81007	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2110	Permit 2 - prepare & submit work permit request for execution (route works, crossings, station works; TTF02, PICOP, PTS register)		8	0	16	0	0	0	16	0	0	0				2027-04-01 08:00	2027-04-04 16:00		2027-03-31 08:00	2027-04-01 16:00	2027-03-31 08:00	2027-04-01 16:00	2027-03-31 08:00	2027-04-01 16:00	2027-04-01 08:00	2027-04-04 16:00		PT_Normal					m2wtyCPkFUEPpzYV8joUfA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91053	7101	81007	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRM-2120	SAR review & issue Permit 2 (start of execution)		24	16	112	0	0	0	112	0	0	0				2027-04-05 08:00	2027-04-18 16:00		2027-04-02 08:00	2027-04-15 16:00	2027-04-02 08:00	2027-04-15 16:00	2027-04-02 08:00	2027-04-15 16:00	2027-04-05 08:00	2027-04-18 16:00		PT_Normal					DWvE0dO5OeM1UM3qHi8ghg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91054	7101	81029	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS10	[LL-01] Place PO & supplier kick-off - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-02-16 08:00	2027-02-18 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	CS_MSOA	PT_Normal					UREa7VkYh6ypatkTh0dY+Q				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91055	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS20	[LL-01] Manufacture / supply - DSS cable NZS-DSS-C02 (5,500 LM)		8	0	448	0	0	0	448	0	0	0				2027-02-20 08:00	2027-04-16 16:00		2027-02-19 08:00	2027-04-15 16:00	2027-02-19 08:00	2027-04-15 16:00	2027-02-19 08:00	2027-04-15 16:00	2027-02-20 08:00	2027-04-16 16:00		PT_Normal					Zhp7omClmZBGQQLc4mW0fQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91056	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-DSS	[LL-01] FAT at manufacturer - DSS cable NZS-DSS-C02 (5,500 LM)		8	0	16	0	0	0	16	0	0	0				2027-04-17 08:00	2027-04-18 16:00		2027-04-16 08:00	2027-04-17 16:00	2027-04-16 08:00	2027-04-17 16:00	2027-04-16 08:00	2027-04-17 16:00	2027-04-17 08:00	2027-04-18 16:00		PT_Normal					PNgPzmA0PzAZKXOmA1KePw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91057	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS30	[LL-01] Shipping / import - DSS cable NZS-DSS-C02 (5,500 LM)		8	0	168	0	0	0	168	0	0	0				2027-04-19 08:00	2027-05-09 16:00		2027-04-18 08:00	2027-05-08 16:00	2027-04-18 08:00	2027-05-08 16:00	2027-04-18 08:00	2027-05-08 16:00	2027-04-19 08:00	2027-05-09 16:00		PT_Normal					eS89DxPfTp0zNR94dplwxw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91058	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS40	[LL-01] Customs clearance & SABER conformity - DSS cable NZS-DSS-C02 (5,500 LM)		8	0	56	0	0	0	56	0	0	0				2027-05-10 08:00	2027-05-16 16:00		2027-05-09 08:00	2027-05-15 16:00	2027-05-09 08:00	2027-05-15 16:00	2027-05-09 08:00	2027-05-15 16:00	2027-05-10 08:00	2027-05-16 16:00		PT_Normal					mtcJfKXuAZiqjviCPu083Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91059	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS50	[LL-01] Delivery to site (Heet) - DSS cable NZS-DSS-C02 (5,500 LM)		8	8	24	0	0	0	24	0	0	0				2027-05-17 08:00	2027-05-19 16:00		2027-05-16 08:00	2027-05-18 16:00	2027-05-16 08:00	2027-05-18 16:00	2027-05-16 08:00	2027-05-18 16:00	2027-05-17 08:00	2027-05-19 16:00		PT_Normal					kLrOEjimFmNZXd0BF0PClQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91060	7101	81030	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO10	[LL-02] Place PO & supplier kick-off - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-03-25 08:00	2027-03-29 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-03-25 08:00	2027-03-29 16:00	CS_MSOA	PT_Normal					gX0BIDMW7frMTkRTebbe5g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91061	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO20	[LL-02] Manufacture / supply - Outdoor 48-core FO cable - DAS (5,500 LM)		312	0	280	0	0	0	280	0	0	0				2027-03-30 08:00	2027-05-03 16:00		2027-02-19 08:00	2027-03-25 16:00	2027-02-19 08:00	2027-03-25 16:00	2027-02-19 08:00	2027-03-25 16:00	2027-03-30 08:00	2027-05-03 16:00		PT_Normal					1GNrBsZAgN2sR1VblmJAKA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91062	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-FO	[LL-02] FAT at manufacturer - Outdoor 48-core FO cable - DAS (5,500 LM)		312	0	16	0	0	0	16	0	0	0				2027-05-04 08:00	2027-05-05 16:00		2027-03-26 08:00	2027-03-27 16:00	2027-03-26 08:00	2027-03-27 16:00	2027-03-26 08:00	2027-03-27 16:00	2027-05-04 08:00	2027-05-05 16:00		PT_Normal					T/XGO8y8vdQInKQrgfBRRw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91063	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO30	[LL-02] Shipping / import - Outdoor 48-core FO cable - DAS (5,500 LM)		312	0	112	0	0	0	112	0	0	0				2027-05-06 08:00	2027-05-19 16:00		2027-03-28 08:00	2027-04-10 16:00	2027-03-28 08:00	2027-04-10 16:00	2027-03-28 08:00	2027-04-10 16:00	2027-05-06 08:00	2027-05-19 16:00		PT_Normal					qfKXcgBIl9dScbqiapiK+Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91064	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO40	[LL-02] Customs clearance & SABER conformity - Outdoor 48-core FO cable - DAS (5,500 LM)		312	0	56	0	0	0	56	0	0	0				2027-05-20 08:00	2027-05-26 16:00		2027-04-11 08:00	2027-04-17 16:00	2027-04-11 08:00	2027-04-17 16:00	2027-04-11 08:00	2027-04-17 16:00	2027-05-20 08:00	2027-05-26 16:00		PT_Normal					72VLMoBJHPms2K3DmQOTzg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91065	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO50	[LL-02] Delivery to site (Heet) - Outdoor 48-core FO cable - DAS (5,500 LM)		312	312	24	0	0	0	24	0	0	0				2027-05-27 08:00	2027-05-29 16:00		2027-04-18 08:00	2027-04-20 16:00	2027-04-18 08:00	2027-04-20 16:00	2027-04-18 08:00	2027-04-20 16:00	2027-05-27 08:00	2027-05-29 16:00		PT_Normal					iJJ1AqsIxBfurTkAPvkhqA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91066	7101	81031	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC10	[LL-03] Place PO & supplier kick-off - TDR coaxial cable (5,500 LM)		280	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-13 08:00	2027-04-15 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-04-13 08:00	2027-04-15 16:00	CS_MSOA	PT_Normal					e9pR7KDVGJWHyaGhO84JrA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91067	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC20	[LL-03] Manufacture / supply - TDR coaxial cable (5,500 LM)		456	0	224	0	0	0	224	0	0	0				2027-04-17 08:00	2027-05-14 16:00		2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-04-17 08:00	2027-05-14 16:00		PT_Normal					dMgdHnNgf5q4xzDPtY2qDw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91068	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDRC	[LL-03] FAT at manufacturer - TDR coaxial cable (5,500 LM)		456	0	16	0	0	0	16	0	0	0				2027-05-15 08:00	2027-05-16 16:00		2027-03-19 08:00	2027-03-20 16:00	2027-03-19 08:00	2027-03-20 16:00	2027-03-19 08:00	2027-03-20 16:00	2027-05-15 08:00	2027-05-16 16:00		PT_Normal					COoCLDADRcvN+42dOZbaFg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91069	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC30	[LL-03] Shipping / import - TDR coaxial cable (5,500 LM)		456	0	112	0	0	0	112	0	0	0				2027-05-17 08:00	2027-05-30 16:00		2027-03-21 08:00	2027-04-03 16:00	2027-03-21 08:00	2027-04-03 16:00	2027-03-21 08:00	2027-04-03 16:00	2027-05-17 08:00	2027-05-30 16:00		PT_Normal					hqqmjBTTrNSkkaNWkff2vQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91070	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC40	[LL-03] Customs clearance & SABER conformity - TDR coaxial cable (5,500 LM)		456	0	56	0	0	0	56	0	0	0				2027-05-31 08:00	2027-06-06 16:00		2027-04-04 08:00	2027-04-10 16:00	2027-04-04 08:00	2027-04-10 16:00	2027-04-04 08:00	2027-04-10 16:00	2027-05-31 08:00	2027-06-06 16:00		PT_Normal					PoncbVgCs2MUiIYlhIWHWw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91071	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC50	[LL-03] Delivery to site (Heet) - TDR coaxial cable (5,500 LM)		456	456	24	0	0	0	24	0	0	0				2027-06-07 08:00	2027-06-09 16:00		2027-04-11 08:00	2027-04-13 16:00	2027-04-11 08:00	2027-04-13 16:00	2027-04-11 08:00	2027-04-13 16:00	2027-06-07 08:00	2027-06-09 16:00		PT_Normal					kc/ZV1/L5kdBy3HsYKuOug				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91072	7101	81032	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR10	[LL-04] Place PO & supplier kick-off - TDR system (interrogator, antenna & accessories)		528	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-06-01 08:00	2027-06-03 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-06-01 08:00	2027-06-03 16:00	CS_MSOA	PT_Normal					xaujak2/LqhXCcAIsCabiQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91073	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR20	[LL-04] Manufacture / supply - TDR system (interrogator, antenna & accessories)		848	0	560	0	0	0	560	0	0	0				2027-06-05 08:00	2027-08-13 16:00		2027-02-19 08:00	2027-04-29 16:00	2027-02-19 08:00	2027-04-29 16:00	2027-02-19 08:00	2027-04-29 16:00	2027-06-05 08:00	2027-08-13 16:00		PT_Normal					TwBhqc0MsJIMEt6VMU4h6Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91074	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDR	[LL-04] FAT at manufacturer - TDR system (interrogator, antenna & accessories)		848	0	40	0	0	0	40	0	0	0				2027-08-14 08:00	2027-08-18 16:00		2027-04-30 08:00	2027-05-04 16:00	2027-04-30 08:00	2027-05-04 16:00	2027-04-30 08:00	2027-05-04 16:00	2027-08-14 08:00	2027-08-18 16:00		PT_Normal					bHH0RPWLqLjYpjD4EeJtNQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91075	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR30	[LL-04] Shipping / import - TDR system (interrogator, antenna & accessories)		848	0	112	0	0	0	112	0	0	0				2027-08-19 08:00	2027-09-01 16:00		2027-05-05 08:00	2027-05-18 16:00	2027-05-05 08:00	2027-05-18 16:00	2027-05-05 08:00	2027-05-18 16:00	2027-08-19 08:00	2027-09-01 16:00		PT_Normal					hDezqKrJVrPo88Uw6XtfKQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91076	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR40	[LL-04] Customs clearance & SABER conformity - TDR system (interrogator, antenna & accessories)		848	0	56	0	0	0	56	0	0	0				2027-09-02 08:00	2027-09-08 16:00		2027-05-19 08:00	2027-05-25 16:00	2027-05-19 08:00	2027-05-25 16:00	2027-05-19 08:00	2027-05-25 16:00	2027-09-02 08:00	2027-09-08 16:00		PT_Normal					Jt0qAIIjE6ld1biYyXaumg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91077	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR50	[LL-04] Delivery to site (Heet) - TDR system (interrogator, antenna & accessories)		848	8	24	0	0	0	24	0	0	0				2027-09-09 08:00	2027-09-11 16:00		2027-05-26 08:00	2027-05-28 16:00	2027-05-26 08:00	2027-05-28 16:00	2027-05-26 08:00	2027-05-28 16:00	2027-09-09 08:00	2027-09-11 16:00		PT_Normal					QGdP+9pNk090VPYR1FGV3Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91078	7101	81033	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX10	[LL-05] Place PO & supplier kick-off - Weather station sensors		768	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-07-13 08:00	2027-07-15 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-07-13 08:00	2027-07-15 16:00	CS_MSOA	PT_Normal					T3tzcRzhRFd+hg2MDfb97w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91079	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX20	[LL-05] Manufacture / supply - Weather station sensors		1176	0	280	0	0	0	280	0	0	0				2027-07-16 08:00	2027-08-19 16:00		2027-02-19 08:00	2027-03-25 16:00	2027-02-19 08:00	2027-03-25 16:00	2027-02-19 08:00	2027-03-25 16:00	2027-07-16 08:00	2027-08-19 16:00		PT_Normal					JS/LAqzZmdneJplMf3Brng				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91080	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-WX	[LL-05] FAT at manufacturer - Weather station sensors		1176	0	16	0	0	0	16	0	0	0				2027-08-20 08:00	2027-08-21 16:00		2027-03-26 08:00	2027-03-27 16:00	2027-03-26 08:00	2027-03-27 16:00	2027-03-26 08:00	2027-03-27 16:00	2027-08-20 08:00	2027-08-21 16:00		PT_Normal					Pw4npOtRU+B3oeCiniik+A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91081	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX30	[LL-05] Shipping / import - Weather station sensors		1176	0	112	0	0	0	112	0	0	0				2027-08-22 08:00	2027-09-04 16:00		2027-03-28 08:00	2027-04-10 16:00	2027-03-28 08:00	2027-04-10 16:00	2027-03-28 08:00	2027-04-10 16:00	2027-08-22 08:00	2027-09-04 16:00		PT_Normal					WccEXDf65oUT/mFsMWnxLA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91082	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX40	[LL-05] Customs clearance & SABER conformity - Weather station sensors		1176	0	56	0	0	0	56	0	0	0				2027-09-05 08:00	2027-09-11 16:00		2027-04-11 08:00	2027-04-17 16:00	2027-04-11 08:00	2027-04-17 16:00	2027-04-11 08:00	2027-04-17 16:00	2027-09-05 08:00	2027-09-11 16:00		PT_Normal					6yF1epQl9NJUuFzIfCJGag				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91083	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX50	[LL-05] Delivery to site (Heet) - Weather station sensors		1176	264	24	0	0	0	24	0	0	0				2027-09-12 08:00	2027-09-14 16:00		2027-04-18 08:00	2027-04-20 16:00	2027-04-18 08:00	2027-04-20 16:00	2027-04-18 08:00	2027-04-20 16:00	2027-09-12 08:00	2027-09-14 16:00		PT_Normal					7G4HEDpbHsujp2q8VR9sZg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91084	7101	81034	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM10	[LL-06] Place PO & supplier kick-off - Communication modules & SIM hardware		832	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-07-25 08:00	2027-07-27 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-07-25 08:00	2027-07-27 16:00	CS_MSOA	PT_Normal					++eNBYjpSTn6oOYk9LhqeQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91085	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM20	[LL-06] Manufacture / supply - Communication modules & SIM hardware		1272	0	224	0	0	0	224	0	0	0				2027-07-28 08:00	2027-08-24 16:00		2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-07-28 08:00	2027-08-24 16:00		PT_Normal					VCXxgcYqUXeIDQUakzcaLg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91086	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-COM	[LL-06] FAT at manufacturer - Communication modules & SIM hardware		1272	0	16	0	0	0	16	0	0	0				2027-08-25 08:00	2027-08-26 16:00		2027-03-19 08:00	2027-03-20 16:00	2027-03-19 08:00	2027-03-20 16:00	2027-03-19 08:00	2027-03-20 16:00	2027-08-25 08:00	2027-08-26 16:00		PT_Normal					X82ImPjq1t5Na3HwE9QOjw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91087	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM30	[LL-06] Shipping / import - Communication modules & SIM hardware		1272	0	80	0	0	0	80	0	0	0				2027-08-27 08:00	2027-09-05 16:00		2027-03-21 08:00	2027-03-30 16:00	2027-03-21 08:00	2027-03-30 16:00	2027-03-21 08:00	2027-03-30 16:00	2027-08-27 08:00	2027-09-05 16:00		PT_Normal					NYrS/4i9+TFGqcY6tiM/SA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91088	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM40	[LL-06] Customs clearance & SABER conformity - Communication modules & SIM hardware		1272	0	56	0	0	0	56	0	0	0				2027-09-06 08:00	2027-09-12 16:00		2027-03-31 08:00	2027-04-06 16:00	2027-03-31 08:00	2027-04-06 16:00	2027-03-31 08:00	2027-04-06 16:00	2027-09-06 08:00	2027-09-12 16:00		PT_Normal					eYldLjaA35Cc2vbXpL9Dow				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91089	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM50	[LL-06] Delivery to site (Heet) - Communication modules & SIM hardware		1272	352	24	0	0	0	24	0	0	0				2027-09-13 08:00	2027-09-15 16:00		2027-04-07 08:00	2027-04-09 16:00	2027-04-07 08:00	2027-04-09 16:00	2027-04-07 08:00	2027-04-09 16:00	2027-09-13 08:00	2027-09-15 16:00		PT_Normal					YRWXYjREa1knoHW7VSy74A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91090	7101	81035	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR10	[LL-07] Place PO & supplier kick-off - UPS (min. 4 h) & electrical panels		600	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-06-14 08:00	2027-06-16 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-06-14 08:00	2027-06-16 16:00	CS_MSOA	PT_Normal					b1u8350ZCv85nynJtwbQ9A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91091	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR20	[LL-07] Manufacture / supply - UPS (min. 4 h) & electrical panels		944	0	448	0	0	0	448	0	0	0				2027-06-17 08:00	2027-08-11 16:00		2027-02-19 08:00	2027-04-15 16:00	2027-02-19 08:00	2027-04-15 16:00	2027-02-19 08:00	2027-04-15 16:00	2027-06-17 08:00	2027-08-11 16:00		PT_Normal					nmYbxcpdB/nQYM45VIy2jg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91092	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-PWR	[LL-07] FAT at manufacturer - UPS (min. 4 h) & electrical panels		944	0	24	0	0	0	24	0	0	0				2027-08-12 08:00	2027-08-14 16:00		2027-04-16 08:00	2027-04-18 16:00	2027-04-16 08:00	2027-04-18 16:00	2027-04-16 08:00	2027-04-18 16:00	2027-08-12 08:00	2027-08-14 16:00		PT_Normal					vibkcLTwcpUl8m4Hq407OQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91093	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR30	[LL-07] Shipping / import - UPS (min. 4 h) & electrical panels		944	0	56	0	0	0	56	0	0	0				2027-08-15 08:00	2027-08-21 16:00		2027-04-19 08:00	2027-04-25 16:00	2027-04-19 08:00	2027-04-25 16:00	2027-04-19 08:00	2027-04-25 16:00	2027-08-15 08:00	2027-08-21 16:00		PT_Normal					JKS1zfRcEnIDs8kWcXZ9aA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91094	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR40	[LL-07] Customs clearance & SABER conformity - UPS (min. 4 h) & electrical panels		944	0	40	0	0	0	40	0	0	0				2027-08-22 08:00	2027-08-26 16:00		2027-04-26 08:00	2027-04-30 16:00	2027-04-26 08:00	2027-04-30 16:00	2027-04-26 08:00	2027-04-30 16:00	2027-08-22 08:00	2027-08-26 16:00		PT_Normal					b7p73RqiZQ/QZHXAeR2GTg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91095	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR50	[LL-07] Delivery to site (Heet) - UPS (min. 4 h) & electrical panels		944	8	24	0	0	0	24	0	0	0				2027-08-27 08:00	2027-08-29 16:00		2027-05-01 08:00	2027-05-03 16:00	2027-05-01 08:00	2027-05-03 16:00	2027-05-01 08:00	2027-05-03 16:00	2027-08-27 08:00	2027-08-29 16:00		PT_Normal					nOIj3jVd6D8Nf+rpa/PjDA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91054	7101	81029	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS10	[LL-01] Place PO & supplier kick-off - DSS cable NZS-DSS-C02 (5,500 LM)		0	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-03-03 08:00	2027-03-07 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	CS_MSOA	PT_Normal					UREa7VkYh6ypatkTh0dY+Q				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91055	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS20	[LL-01] Manufacture / supply - DSS cable NZS-DSS-C02 (5,500 LM)		40	0	392	0	0	0	392	0	0	0				2027-03-13 08:00	2027-04-30 16:00		2027-03-08 08:00	2027-04-25 16:00	2027-03-08 08:00	2027-04-25 16:00	2027-03-08 08:00	2027-04-25 16:00	2027-03-13 08:00	2027-04-30 16:00		PT_Normal					Zhp7omClmZBGQQLc4mW0fQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91056	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-DSS	[LL-01] FAT at manufacturer - DSS cable NZS-DSS-C02 (5,500 LM)		40	0	16	0	0	0	16	0	0	0				2027-05-01 08:00	2027-05-02 16:00		2027-04-26 08:00	2027-04-27 16:00	2027-04-26 08:00	2027-04-27 16:00	2027-04-26 08:00	2027-04-27 16:00	2027-05-01 08:00	2027-05-02 16:00		PT_Normal					PNgPzmA0PzAZKXOmA1KePw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91057	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS30	[LL-01] Shipping / import - DSS cable NZS-DSS-C02 (5,500 LM)		40	0	56	0	0	0	56	0	0	0				2027-05-03 08:00	2027-05-09 16:00		2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-05-03 08:00	2027-05-09 16:00		PT_Normal					eS89DxPfTp0zNR94dplwxw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91058	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS40	[LL-01] Customs clearance & SABER conformity - DSS cable NZS-DSS-C02 (5,500 LM)		40	0	56	0	0	0	56	0	0	0				2027-05-10 08:00	2027-05-16 16:00		2027-05-05 08:00	2027-05-11 16:00	2027-05-05 08:00	2027-05-11 16:00	2027-05-05 08:00	2027-05-11 16:00	2027-05-10 08:00	2027-05-16 16:00		PT_Normal					mtcJfKXuAZiqjviCPu083Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91059	7101	81029	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-DSS50	[LL-01] Delivery to site (Heet) - DSS cable NZS-DSS-C02 (5,500 LM)		40	40	24	0	0	0	24	0	0	0				2027-05-17 08:00	2027-05-19 16:00		2027-05-12 08:00	2027-05-14 16:00	2027-05-12 08:00	2027-05-14 16:00	2027-05-12 08:00	2027-05-14 16:00	2027-05-17 08:00	2027-05-19 16:00		PT_Normal					kLrOEjimFmNZXd0BF0PClQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91060	7101	81030	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO10	[LL-02] Place PO & supplier kick-off - Outdoor 48-core FO cable - DAS (5,500 LM)		96	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-03-25 08:00	2027-03-29 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-25 08:00	2027-03-29 16:00	CS_MSOA	PT_Normal					gX0BIDMW7frMTkRTebbe5g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91061	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO20	[LL-02] Manufacture / supply - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	280	0	0	0	280	0	0	0				2027-03-30 08:00	2027-05-03 16:00		2027-03-08 08:00	2027-04-11 16:00	2027-03-08 08:00	2027-04-11 16:00	2027-03-08 08:00	2027-04-11 16:00	2027-03-30 08:00	2027-05-03 16:00		PT_Normal					1GNrBsZAgN2sR1VblmJAKA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91062	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-FO	[LL-02] FAT at manufacturer - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	16	0	0	0	16	0	0	0				2027-05-04 08:00	2027-05-05 16:00		2027-04-12 08:00	2027-04-13 16:00	2027-04-12 08:00	2027-04-13 16:00	2027-04-12 08:00	2027-04-13 16:00	2027-05-04 08:00	2027-05-05 16:00		PT_Normal					T/XGO8y8vdQInKQrgfBRRw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91063	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO30	[LL-02] Shipping / import - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	112	0	0	0	112	0	0	0				2027-05-06 08:00	2027-05-19 16:00		2027-04-14 08:00	2027-04-27 16:00	2027-04-14 08:00	2027-04-27 16:00	2027-04-14 08:00	2027-04-27 16:00	2027-05-06 08:00	2027-05-19 16:00		PT_Normal					qfKXcgBIl9dScbqiapiK+Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91064	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO40	[LL-02] Customs clearance & SABER conformity - Outdoor 48-core FO cable - DAS (5,500 LM)		176	0	56	0	0	0	56	0	0	0				2027-05-20 08:00	2027-05-26 16:00		2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-05-20 08:00	2027-05-26 16:00		PT_Normal					72VLMoBJHPms2K3DmQOTzg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91065	7101	81030	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-FO50	[LL-02] Delivery to site (Heet) - Outdoor 48-core FO cable - DAS (5,500 LM)		176	176	24	0	0	0	24	0	0	0				2027-05-27 08:00	2027-05-29 16:00		2027-05-05 08:00	2027-05-07 16:00	2027-05-05 08:00	2027-05-07 16:00	2027-05-05 08:00	2027-05-07 16:00	2027-05-27 08:00	2027-05-29 16:00		PT_Normal					iJJ1AqsIxBfurTkAPvkhqA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91066	7101	81031	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC10	[LL-03] Place PO & supplier kick-off - TDR coaxial cable (5,500 LM)		200	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-13 08:00	2027-04-15 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-04-13 08:00	2027-04-15 16:00	CS_MSOA	PT_Normal					e9pR7KDVGJWHyaGhO84JrA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91067	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC20	[LL-03] Manufacture / supply - TDR coaxial cable (5,500 LM)		320	0	224	0	0	0	224	0	0	0				2027-04-17 08:00	2027-05-14 16:00		2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-04-17 08:00	2027-05-14 16:00		PT_Normal					dMgdHnNgf5q4xzDPtY2qDw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91068	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDRC	[LL-03] FAT at manufacturer - TDR coaxial cable (5,500 LM)		320	0	16	0	0	0	16	0	0	0				2027-05-15 08:00	2027-05-16 16:00		2027-04-05 08:00	2027-04-06 16:00	2027-04-05 08:00	2027-04-06 16:00	2027-04-05 08:00	2027-04-06 16:00	2027-05-15 08:00	2027-05-16 16:00		PT_Normal					COoCLDADRcvN+42dOZbaFg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91069	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC30	[LL-03] Shipping / import - TDR coaxial cable (5,500 LM)		320	0	112	0	0	0	112	0	0	0				2027-05-17 08:00	2027-05-30 16:00		2027-04-07 08:00	2027-04-20 16:00	2027-04-07 08:00	2027-04-20 16:00	2027-04-07 08:00	2027-04-20 16:00	2027-05-17 08:00	2027-05-30 16:00		PT_Normal					hqqmjBTTrNSkkaNWkff2vQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91070	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC40	[LL-03] Customs clearance & SABER conformity - TDR coaxial cable (5,500 LM)		320	0	56	0	0	0	56	0	0	0				2027-05-31 08:00	2027-06-06 16:00		2027-04-21 08:00	2027-04-27 16:00	2027-04-21 08:00	2027-04-27 16:00	2027-04-21 08:00	2027-04-27 16:00	2027-05-31 08:00	2027-06-06 16:00		PT_Normal					PoncbVgCs2MUiIYlhIWHWw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91071	7101	81031	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDRC50	[LL-03] Delivery to site (Heet) - TDR coaxial cable (5,500 LM)		320	320	24	0	0	0	24	0	0	0				2027-06-07 08:00	2027-06-09 16:00		2027-04-28 08:00	2027-04-30 16:00	2027-04-28 08:00	2027-04-30 16:00	2027-04-28 08:00	2027-04-30 16:00	2027-06-07 08:00	2027-06-09 16:00		PT_Normal					kc/ZV1/L5kdBy3HsYKuOug				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91072	7101	81032	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR10	[LL-04] Place PO & supplier kick-off - TDR system (interrogator, antenna & accessories)		448	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-06-01 08:00	2027-06-03 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-06-01 08:00	2027-06-03 16:00	CS_MSOA	PT_Normal					xaujak2/LqhXCcAIsCabiQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91073	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR20	[LL-04] Manufacture / supply - TDR system (interrogator, antenna & accessories)		712	0	560	0	0	0	560	0	0	0				2027-06-05 08:00	2027-08-13 16:00		2027-03-08 08:00	2027-05-16 16:00	2027-03-08 08:00	2027-05-16 16:00	2027-03-08 08:00	2027-05-16 16:00	2027-06-05 08:00	2027-08-13 16:00		PT_Normal					TwBhqc0MsJIMEt6VMU4h6Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91074	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-TDR	[LL-04] FAT at manufacturer - TDR system (interrogator, antenna & accessories)		712	0	40	0	0	0	40	0	0	0				2027-08-14 08:00	2027-08-18 16:00		2027-05-17 08:00	2027-05-21 16:00	2027-05-17 08:00	2027-05-21 16:00	2027-05-17 08:00	2027-05-21 16:00	2027-08-14 08:00	2027-08-18 16:00		PT_Normal					bHH0RPWLqLjYpjD4EeJtNQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91075	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR30	[LL-04] Shipping / import - TDR system (interrogator, antenna & accessories)		712	0	112	0	0	0	112	0	0	0				2027-08-19 08:00	2027-09-01 16:00		2027-05-22 08:00	2027-06-04 16:00	2027-05-22 08:00	2027-06-04 16:00	2027-05-22 08:00	2027-06-04 16:00	2027-08-19 08:00	2027-09-01 16:00		PT_Normal					hDezqKrJVrPo88Uw6XtfKQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91076	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR40	[LL-04] Customs clearance & SABER conformity - TDR system (interrogator, antenna & accessories)		712	0	56	0	0	0	56	0	0	0				2027-09-02 08:00	2027-09-08 16:00		2027-06-05 08:00	2027-06-11 16:00	2027-06-05 08:00	2027-06-11 16:00	2027-06-05 08:00	2027-06-11 16:00	2027-09-02 08:00	2027-09-08 16:00		PT_Normal					Jt0qAIIjE6ld1biYyXaumg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91077	7101	81032	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-TDR50	[LL-04] Delivery to site (Heet) - TDR system (interrogator, antenna & accessories)		712	0	24	0	0	0	24	0	0	0				2027-09-09 08:00	2027-09-11 16:00		2027-06-12 08:00	2027-06-14 16:00	2027-06-12 08:00	2027-06-14 16:00	2027-06-12 08:00	2027-06-14 16:00	2027-09-09 08:00	2027-09-11 16:00		PT_Normal					QGdP+9pNk090VPYR1FGV3Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91078	7101	81033	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX10	[LL-05] Place PO & supplier kick-off - Weather station sensors		688	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-07-13 08:00	2027-07-15 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-07-13 08:00	2027-07-15 16:00	CS_MSOA	PT_Normal					T3tzcRzhRFd+hg2MDfb97w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91079	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX20	[LL-05] Manufacture / supply - Weather station sensors		1040	0	280	0	0	0	280	0	0	0				2027-07-16 08:00	2027-08-19 16:00		2027-03-08 08:00	2027-04-11 16:00	2027-03-08 08:00	2027-04-11 16:00	2027-03-08 08:00	2027-04-11 16:00	2027-07-16 08:00	2027-08-19 16:00		PT_Normal					JS/LAqzZmdneJplMf3Brng				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91080	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-WX	[LL-05] FAT at manufacturer - Weather station sensors		1040	0	16	0	0	0	16	0	0	0				2027-08-20 08:00	2027-08-21 16:00		2027-04-12 08:00	2027-04-13 16:00	2027-04-12 08:00	2027-04-13 16:00	2027-04-12 08:00	2027-04-13 16:00	2027-08-20 08:00	2027-08-21 16:00		PT_Normal					Pw4npOtRU+B3oeCiniik+A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91081	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX30	[LL-05] Shipping / import - Weather station sensors		1040	0	112	0	0	0	112	0	0	0				2027-08-22 08:00	2027-09-04 16:00		2027-04-14 08:00	2027-04-27 16:00	2027-04-14 08:00	2027-04-27 16:00	2027-04-14 08:00	2027-04-27 16:00	2027-08-22 08:00	2027-09-04 16:00		PT_Normal					WccEXDf65oUT/mFsMWnxLA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91082	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX40	[LL-05] Customs clearance & SABER conformity - Weather station sensors		1040	0	56	0	0	0	56	0	0	0				2027-09-05 08:00	2027-09-11 16:00		2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-04-28 08:00	2027-05-04 16:00	2027-09-05 08:00	2027-09-11 16:00		PT_Normal					6yF1epQl9NJUuFzIfCJGag				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91083	7101	81033	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-WX50	[LL-05] Delivery to site (Heet) - Weather station sensors		1040	208	24	0	0	0	24	0	0	0				2027-09-12 08:00	2027-09-14 16:00		2027-05-05 08:00	2027-05-07 16:00	2027-05-05 08:00	2027-05-07 16:00	2027-05-05 08:00	2027-05-07 16:00	2027-09-12 08:00	2027-09-14 16:00		PT_Normal					7G4HEDpbHsujp2q8VR9sZg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91084	7101	81034	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM10	[LL-06] Place PO & supplier kick-off - Communication modules & SIM hardware		752	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-07-25 08:00	2027-07-27 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-07-25 08:00	2027-07-27 16:00	CS_MSOA	PT_Normal					++eNBYjpSTn6oOYk9LhqeQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91085	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM20	[LL-06] Manufacture / supply - Communication modules & SIM hardware		1136	0	224	0	0	0	224	0	0	0				2027-07-28 08:00	2027-08-24 16:00		2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-07-28 08:00	2027-08-24 16:00		PT_Normal					VCXxgcYqUXeIDQUakzcaLg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91086	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-COM	[LL-06] FAT at manufacturer - Communication modules & SIM hardware		1136	0	16	0	0	0	16	0	0	0				2027-08-25 08:00	2027-08-26 16:00		2027-04-05 08:00	2027-04-06 16:00	2027-04-05 08:00	2027-04-06 16:00	2027-04-05 08:00	2027-04-06 16:00	2027-08-25 08:00	2027-08-26 16:00		PT_Normal					X82ImPjq1t5Na3HwE9QOjw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91087	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM30	[LL-06] Shipping / import - Communication modules & SIM hardware		1136	0	80	0	0	0	80	0	0	0				2027-08-27 08:00	2027-09-05 16:00		2027-04-07 08:00	2027-04-16 16:00	2027-04-07 08:00	2027-04-16 16:00	2027-04-07 08:00	2027-04-16 16:00	2027-08-27 08:00	2027-09-05 16:00		PT_Normal					NYrS/4i9+TFGqcY6tiM/SA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91088	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM40	[LL-06] Customs clearance & SABER conformity - Communication modules & SIM hardware		1136	0	56	0	0	0	56	0	0	0				2027-09-06 08:00	2027-09-12 16:00		2027-04-17 08:00	2027-04-23 16:00	2027-04-17 08:00	2027-04-23 16:00	2027-04-17 08:00	2027-04-23 16:00	2027-09-06 08:00	2027-09-12 16:00		PT_Normal					eYldLjaA35Cc2vbXpL9Dow				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91089	7101	81034	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-COM50	[LL-06] Delivery to site (Heet) - Communication modules & SIM hardware		1136	296	24	0	0	0	24	0	0	0				2027-09-13 08:00	2027-09-15 16:00		2027-04-24 08:00	2027-04-26 16:00	2027-04-24 08:00	2027-04-26 16:00	2027-04-24 08:00	2027-04-26 16:00	2027-09-13 08:00	2027-09-15 16:00		PT_Normal					YRWXYjREa1knoHW7VSy74A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91090	7101	81035	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR10	[LL-07] Place PO & supplier kick-off - UPS (min. 4 h) & electrical panels		520	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-06-14 08:00	2027-06-16 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-06-14 08:00	2027-06-16 16:00	CS_MSOA	PT_Normal					b1u8350ZCv85nynJtwbQ9A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91091	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR20	[LL-07] Manufacture / supply - UPS (min. 4 h) & electrical panels		808	0	448	0	0	0	448	0	0	0				2027-06-17 08:00	2027-08-11 16:00		2027-03-08 08:00	2027-05-02 16:00	2027-03-08 08:00	2027-05-02 16:00	2027-03-08 08:00	2027-05-02 16:00	2027-06-17 08:00	2027-08-11 16:00		PT_Normal					nmYbxcpdB/nQYM45VIy2jg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91092	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-PWR	[LL-07] FAT at manufacturer - UPS (min. 4 h) & electrical panels		808	0	24	0	0	0	24	0	0	0				2027-08-12 08:00	2027-08-14 16:00		2027-05-03 08:00	2027-05-05 16:00	2027-05-03 08:00	2027-05-05 16:00	2027-05-03 08:00	2027-05-05 16:00	2027-08-12 08:00	2027-08-14 16:00		PT_Normal					vibkcLTwcpUl8m4Hq407OQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91093	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR30	[LL-07] Shipping / import - UPS (min. 4 h) & electrical panels		808	0	56	0	0	0	56	0	0	0				2027-08-15 08:00	2027-08-21 16:00		2027-05-06 08:00	2027-05-12 16:00	2027-05-06 08:00	2027-05-12 16:00	2027-05-06 08:00	2027-05-12 16:00	2027-08-15 08:00	2027-08-21 16:00		PT_Normal					JKS1zfRcEnIDs8kWcXZ9aA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91094	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR40	[LL-07] Customs clearance & SABER conformity - UPS (min. 4 h) & electrical panels		808	0	40	0	0	0	40	0	0	0				2027-08-22 08:00	2027-08-26 16:00		2027-05-13 08:00	2027-05-17 16:00	2027-05-13 08:00	2027-05-17 16:00	2027-05-13 08:00	2027-05-17 16:00	2027-08-22 08:00	2027-08-26 16:00		PT_Normal					b7p73RqiZQ/QZHXAeR2GTg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91095	7101	81035	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-PWR50	[LL-07] Delivery to site (Heet) - UPS (min. 4 h) & electrical panels		808	16	24	0	0	0	24	0	0	0				2027-08-27 08:00	2027-08-29 16:00		2027-05-18 08:00	2027-05-20 16:00	2027-05-18 08:00	2027-05-20 16:00	2027-05-18 08:00	2027-05-20 16:00	2027-08-27 08:00	2027-08-29 16:00		PT_Normal					nOIj3jVd6D8Nf+rpa/PjDA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91096	7101	81036	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD10	[LL-08] Place PO & supplier kick-off - Local-cloud hardware & licences (KSA hosted)		624	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-07-06 08:00	2027-07-08 16:00		2027-03-14 08:00	2027-03-16 16:00	2027-03-14 08:00	2027-03-16 16:00	2027-03-14 08:00	2027-03-16 16:00	2027-07-06 08:00	2027-07-08 16:00	CS_MSOA	PT_Normal					YGVVL6dVHuiBXExxXhEMSw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91097	7101	81036	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD20	[LL-08] Manufacture / supply - Local-cloud hardware & licences (KSA hosted)		912	0	224	0	0	0	224	0	0	0				2027-07-09 08:00	2027-08-05 16:00		2027-03-17 08:00	2027-04-13 16:00	2027-03-17 08:00	2027-04-13 16:00	2027-03-17 08:00	2027-04-13 16:00	2027-07-09 08:00	2027-08-05 16:00		PT_Normal					6PRINl3l2rp+K6O5KY7YkA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91098	7101	81036	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	FAT-CLD	[LL-08] FAT at manufacturer - Local-cloud hardware & licences (KSA hosted)		912	0	24	0	0	0	24	0	0	0				2027-08-06 08:00	2027-08-08 16:00		2027-04-14 08:00	2027-04-16 16:00	2027-04-14 08:00	2027-04-16 16:00	2027-04-14 08:00	2027-04-16 16:00	2027-08-06 08:00	2027-08-08 16:00		PT_Normal					Z4gH3f1Ba7Ammf+yYN744A				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91099	7101	81036	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD30	[LL-08] Shipping / import - Local-cloud hardware & licences (KSA hosted)		912	0	80	0	0	0	80	0	0	0				2027-08-09 08:00	2027-08-18 16:00		2027-04-17 08:00	2027-04-26 16:00	2027-04-17 08:00	2027-04-26 16:00	2027-04-17 08:00	2027-04-26 16:00	2027-08-09 08:00	2027-08-18 16:00		PT_Normal					RwoTihv8+PtvSTFEXfhRkA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91100	7101	81036	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD40	[LL-08] Customs clearance & SABER conformity - Local-cloud hardware & licences (KSA hosted)		912	0	56	0	0	0	56	0	0	0				2027-08-19 08:00	2027-08-25 16:00		2027-04-27 08:00	2027-05-03 16:00	2027-04-27 08:00	2027-05-03 16:00	2027-04-27 08:00	2027-05-03 16:00	2027-08-19 08:00	2027-08-25 16:00		PT_Normal					z5pRm5cTKrG5skZanM+oRw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91101	7101	81036	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLD50	[LL-08] Delivery to site (Heet) - Local-cloud hardware & licences (KSA hosted)		912	16	24	0	0	0	24	0	0	0				2027-08-26 08:00	2027-08-28 16:00		2027-05-04 08:00	2027-05-06 16:00	2027-05-04 08:00	2027-05-06 16:00	2027-05-04 08:00	2027-05-06 16:00	2027-08-26 08:00	2027-08-28 16:00		PT_Normal					e5EGnGXNN/GuXZz4xka2PQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91102	7101	81037	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS10	[LL-09] Place PO & supplier kick-off - FO closures, splice trays, connectors & pigtails		248	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-07 08:00	2027-04-11 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-04-07 08:00	2027-04-11 16:00	CS_MSOA	PT_Normal					WRdA/ZEmwMHP5j8QrU90Hg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91103	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS20	[LL-09] Manufacture / supply - FO closures, splice trays, connectors & pigtails		416	0	224	0	0	0	224	0	0	0				2027-04-12 08:00	2027-05-09 16:00		2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-02-19 08:00	2027-03-18 16:00	2027-04-12 08:00	2027-05-09 16:00		PT_Normal					ZluqMBDGRXHMaVxncLZuHg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91104	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS30	[LL-09] Shipping / import - FO closures, splice trays, connectors & pigtails		416	0	112	0	0	0	112	0	0	0				2027-05-10 08:00	2027-05-23 16:00		2027-03-19 08:00	2027-04-01 16:00	2027-03-19 08:00	2027-04-01 16:00	2027-03-19 08:00	2027-04-01 16:00	2027-05-10 08:00	2027-05-23 16:00		PT_Normal					5268ASWOBcpEtlXmtr9D1Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91105	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS40	[LL-09] Customs clearance & SABER conformity - FO closures, splice trays, connectors & pigtails		416	0	56	0	0	0	56	0	0	0				2027-05-24 08:00	2027-05-30 16:00		2027-04-02 08:00	2027-04-08 16:00	2027-04-02 08:00	2027-04-08 16:00	2027-04-02 08:00	2027-04-08 16:00	2027-05-24 08:00	2027-05-30 16:00		PT_Normal					0l9YXamCNmk8xxOywju7CQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91106	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS50	[LL-09] Delivery to site (Heet) - FO closures, splice trays, connectors & pigtails		416	416	24	0	0	0	24	0	0	0				2027-05-31 08:00	2027-06-02 16:00		2027-04-09 08:00	2027-04-11 16:00	2027-04-09 08:00	2027-04-11 16:00	2027-04-09 08:00	2027-04-11 16:00	2027-05-31 08:00	2027-06-02 16:00		PT_Normal					msMfu9a8Hc7CR5SMlPvvvA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91107	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH10	Place PO & supplier kick-off - Handholes & manholes (precast)		280	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-13 08:00	2027-04-15 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-04-13 08:00	2027-04-15 16:00	CS_MSOA	PT_Normal					4xGvwbIFUL6T7mBiqkQ3Rg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91108	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH20	Manufacture / supply - Handholes & manholes (precast)		464	0	168	0	0	0	168	0	0	0				2027-04-18 08:00	2027-05-08 16:00		2027-02-19 08:00	2027-03-11 16:00	2027-02-19 08:00	2027-03-11 16:00	2027-02-19 08:00	2027-03-11 16:00	2027-04-18 08:00	2027-05-08 16:00		PT_Normal					HvTtjcEGF6yHJ7v0LQzxPA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91109	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH50	Delivery to site (Heet) - Handholes & manholes (precast)		464	456	24	0	0	0	24	0	0	0				2027-05-09 08:00	2027-05-11 16:00		2027-03-12 08:00	2027-03-14 16:00	2027-03-12 08:00	2027-03-14 16:00	2027-03-12 08:00	2027-03-14 16:00	2027-05-09 08:00	2027-05-11 16:00		PT_Normal					5qm0eg8ZevXsgyRczIkF9g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91110	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND10	Place PO & supplier kick-off - Steel & rigid conduits		320	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-20 08:00	2027-04-22 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-04-20 08:00	2027-04-22 16:00	CS_MSOA	PT_Normal					dwkeofYJKZQvlROMIXLrnw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91111	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND20	Manufacture / supply - Steel & rigid conduits		520	0	112	0	0	0	112	0	0	0				2027-04-25 08:00	2027-05-08 16:00		2027-02-19 08:00	2027-03-04 16:00	2027-02-19 08:00	2027-03-04 16:00	2027-02-19 08:00	2027-03-04 16:00	2027-04-25 08:00	2027-05-08 16:00		PT_Normal					VnWDSI0r7fp0vg/3pfCWgg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91112	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND50	Delivery to site (Heet) - Steel & rigid conduits		520	512	24	0	0	0	24	0	0	0				2027-05-09 08:00	2027-05-11 16:00		2027-03-05 08:00	2027-03-07 16:00	2027-03-05 08:00	2027-03-07 16:00	2027-03-05 08:00	2027-03-07 16:00	2027-05-09 08:00	2027-05-11 16:00		PT_Normal					zmZhEZTNt3VdDhu5RjLjgQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91113	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK10	Place PO & supplier kick-off - Marker posts, warning tape & route markers		1128	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-09-14 08:00	2027-09-16 16:00		2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-02-16 08:00	2027-02-18 16:00	2027-09-14 08:00	2027-09-16 16:00	CS_MSOA	PT_Normal					lW/dSZyGBNuJV7zMTs68Tg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91114	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK20	Manufacture / supply - Marker posts, warning tape & route markers		1688	0	112	0	0	0	112	0	0	0				2027-09-18 08:00	2027-10-01 16:00		2027-02-19 08:00	2027-03-04 16:00	2027-02-19 08:00	2027-03-04 16:00	2027-02-19 08:00	2027-03-04 16:00	2027-09-18 08:00	2027-10-01 16:00		PT_Normal					VXJ3rmzXF3EkGVHprkgHIA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91115	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK50	Delivery to site (Heet) - Marker posts, warning tape & route markers		1688	808	24	0	0	0	24	0	0	0				2027-10-02 08:00	2027-10-04 16:00		2027-03-05 08:00	2027-03-07 16:00	2027-03-05 08:00	2027-03-07 16:00	2027-03-05 08:00	2027-03-07 16:00	2027-10-02 08:00	2027-10-04 16:00		PT_Normal					GvI78oNA/d1Hnu+Y0Lvbmw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91116	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-SND10	Arrange sweet-sand source, approval & stockpile at site		496	488	56	0	0	0	56	0	0	0	2027-02-16 08:00			2027-04-19 08:00	2027-04-25 16:00		2027-02-16 08:00	2027-02-22 16:00	2027-02-16 08:00	2027-02-22 16:00	2027-02-16 08:00	2027-02-22 16:00	2027-04-19 08:00	2027-04-25 16:00	CS_MSOA	PT_Normal					blhR+yvFTiAqEdiMigz+6g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91102	7101	81037	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS10	[LL-09] Place PO & supplier kick-off - FO closures, splice trays, connectors & pigtails		168	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-07 08:00	2027-04-11 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-04-07 08:00	2027-04-11 16:00	CS_MSOA	PT_Normal					WRdA/ZEmwMHP5j8QrU90Hg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91103	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS20	[LL-09] Manufacture / supply - FO closures, splice trays, connectors & pigtails		280	0	224	0	0	0	224	0	0	0				2027-04-12 08:00	2027-05-09 16:00		2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-03-08 08:00	2027-04-04 16:00	2027-04-12 08:00	2027-05-09 16:00		PT_Normal					ZluqMBDGRXHMaVxncLZuHg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91104	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS30	[LL-09] Shipping / import - FO closures, splice trays, connectors & pigtails		280	0	112	0	0	0	112	0	0	0				2027-05-10 08:00	2027-05-23 16:00		2027-04-05 08:00	2027-04-18 16:00	2027-04-05 08:00	2027-04-18 16:00	2027-04-05 08:00	2027-04-18 16:00	2027-05-10 08:00	2027-05-23 16:00		PT_Normal					5268ASWOBcpEtlXmtr9D1Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91105	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS40	[LL-09] Customs clearance & SABER conformity - FO closures, splice trays, connectors & pigtails		280	0	56	0	0	0	56	0	0	0				2027-05-24 08:00	2027-05-30 16:00		2027-04-19 08:00	2027-04-25 16:00	2027-04-19 08:00	2027-04-25 16:00	2027-04-19 08:00	2027-04-25 16:00	2027-05-24 08:00	2027-05-30 16:00		PT_Normal					0l9YXamCNmk8xxOywju7CQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91106	7101	81037	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CLS50	[LL-09] Delivery to site (Heet) - FO closures, splice trays, connectors & pigtails		280	280	24	0	0	0	24	0	0	0				2027-05-31 08:00	2027-06-02 16:00		2027-04-26 08:00	2027-04-28 16:00	2027-04-26 08:00	2027-04-28 16:00	2027-04-26 08:00	2027-04-28 16:00	2027-05-31 08:00	2027-06-02 16:00		PT_Normal					msMfu9a8Hc7CR5SMlPvvvA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91107	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH10	Place PO & supplier kick-off - Handholes & manholes (precast)		200	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-13 08:00	2027-04-15 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-04-13 08:00	2027-04-15 16:00	CS_MSOA	PT_Normal					4xGvwbIFUL6T7mBiqkQ3Rg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91108	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH20	Manufacture / supply - Handholes & manholes (precast)		328	0	168	0	0	0	168	0	0	0				2027-04-18 08:00	2027-05-08 16:00		2027-03-08 08:00	2027-03-28 16:00	2027-03-08 08:00	2027-03-28 16:00	2027-03-08 08:00	2027-03-28 16:00	2027-04-18 08:00	2027-05-08 16:00		PT_Normal					HvTtjcEGF6yHJ7v0LQzxPA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91109	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-HH50	Delivery to site (Heet) - Handholes & manholes (precast)		328	320	24	0	0	0	24	0	0	0				2027-05-09 08:00	2027-05-11 16:00		2027-03-29 08:00	2027-03-31 16:00	2027-03-29 08:00	2027-03-31 16:00	2027-03-29 08:00	2027-03-31 16:00	2027-05-09 08:00	2027-05-11 16:00		PT_Normal					5qm0eg8ZevXsgyRczIkF9g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91110	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND10	Place PO & supplier kick-off - Steel & rigid conduits		240	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-04-20 08:00	2027-04-22 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-04-20 08:00	2027-04-22 16:00	CS_MSOA	PT_Normal					dwkeofYJKZQvlROMIXLrnw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91111	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND20	Manufacture / supply - Steel & rigid conduits		384	0	112	0	0	0	112	0	0	0				2027-04-25 08:00	2027-05-08 16:00		2027-03-08 08:00	2027-03-21 16:00	2027-03-08 08:00	2027-03-21 16:00	2027-03-08 08:00	2027-03-21 16:00	2027-04-25 08:00	2027-05-08 16:00		PT_Normal					VnWDSI0r7fp0vg/3pfCWgg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91112	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-CND50	Delivery to site (Heet) - Steel & rigid conduits		384	376	24	0	0	0	24	0	0	0				2027-05-09 08:00	2027-05-11 16:00		2027-03-22 08:00	2027-03-24 16:00	2027-03-22 08:00	2027-03-24 16:00	2027-03-22 08:00	2027-03-24 16:00	2027-05-09 08:00	2027-05-11 16:00		PT_Normal					zmZhEZTNt3VdDhu5RjLjgQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91113	7101	81038	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK10	Place PO & supplier kick-off - Marker posts, warning tape & route markers		1048	0	24	0	0	0	24	0	0	0	2027-02-16 08:00			2027-09-14 08:00	2027-09-16 16:00		2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-03-03 08:00	2027-03-07 16:00	2027-09-14 08:00	2027-09-16 16:00	CS_MSOA	PT_Normal					lW/dSZyGBNuJV7zMTs68Tg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91114	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK20	Manufacture / supply - Marker posts, warning tape & route markers		1552	0	112	0	0	0	112	0	0	0				2027-09-18 08:00	2027-10-01 16:00		2027-03-08 08:00	2027-03-21 16:00	2027-03-08 08:00	2027-03-21 16:00	2027-03-08 08:00	2027-03-21 16:00	2027-09-18 08:00	2027-10-01 16:00		PT_Normal					VXJ3rmzXF3EkGVHprkgHIA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91115	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-MRK50	Delivery to site (Heet) - Marker posts, warning tape & route markers		1552	672	24	0	0	0	24	0	0	0				2027-10-02 08:00	2027-10-04 16:00		2027-03-22 08:00	2027-03-24 16:00	2027-03-22 08:00	2027-03-24 16:00	2027-03-22 08:00	2027-03-24 16:00	2027-10-02 08:00	2027-10-04 16:00		PT_Normal					GvI78oNA/d1Hnu+Y0Lvbmw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91116	7101	81038	7613	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PRC-SND10	Arrange sweet-sand source, approval & stockpile at site		376	368	56	0	0	0	56	0	0	0	2027-02-16 08:00			2027-04-19 08:00	2027-04-25 16:00		2027-03-03 08:00	2027-03-09 16:00	2027-03-03 08:00	2027-03-09 16:00	2027-03-03 08:00	2027-03-09 16:00	2027-04-19 08:00	2027-04-25 16:00	CS_MSOA	PT_Normal					blhR+yvFTiAqEdiMigz+6g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91117	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-3005	PTS training & PO induction - batch 2 (field crews)		656	648	24	0	0	0	24	0	0	0				2027-04-14 08:00	2027-04-18 16:00		2026-12-14 08:00	2026-12-16 16:00	2026-12-14 08:00	2026-12-16 16:00	2026-12-14 08:00	2026-12-16 16:00	2027-04-14 08:00	2027-04-18 16:00		PT_Normal					uquskq6TJZbg8KncBFQOlQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91118	7101	81003	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	MOB-3010	Mobilize plant, equipment & labour; compound & logistics set-up		8	0	40	0	0	0	40	0	0	0				2027-04-19 08:00	2027-04-25 16:00		2027-04-18 08:00	2027-04-22 16:00	2027-04-18 08:00	2027-04-22 16:00	2027-04-18 08:00	2027-04-22 16:00	2027-04-19 08:00	2027-04-25 16:00		PT_Normal					XDcYWPnlzH732R/uC0URYA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91119	7101	81041	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-110	Section 1 - excavate trench (800x200 mm) & sweet-sand bedding, 1,100 LM		8	0	96	0	0	0	96	0	0	0				2027-04-26 08:00	2027-05-11 16:00		2027-04-25 08:00	2027-05-10 16:00	2027-04-25 08:00	2027-05-10 16:00	2027-04-25 08:00	2027-05-10 16:00	2027-04-26 08:00	2027-05-11 16:00		PT_Normal					zLfjbFKFm7liLRXy71abxQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
@@ -271,15 +271,15 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	91176	7101	81045	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CAB-560	Section 5 - final backfill, compaction & reinstatement		56	0	16	0	0	0	16	0	0	0				2027-09-29 08:00	2027-09-30 16:00		2027-09-19 08:00	2027-09-20 16:00	2027-09-19 08:00	2027-09-20 16:00	2027-09-19 08:00	2027-09-20 16:00	2027-09-29 08:00	2027-09-30 16:00		PT_Normal					GW0f+ttQDROAyTJuOW4RtQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91177	7101	81045	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CIV-540	Section 5 - marker posts, warning tape & route markers		72	72	8	0	0	0	8	0	0	0				2027-10-05 08:00	2027-10-05 16:00		2027-09-21 08:00	2027-09-21 16:00	2027-09-21 08:00	2027-09-21 16:00	2027-09-21 08:00	2027-09-21 16:00	2027-10-05 08:00	2027-10-05 16:00		PT_Normal					lPp3Jy3zaR5NV6lnxGSA6g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91178	7101	81045	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TST-510	Section 5 - final OTDR certification & test record		56	0	8	0	0	0	8	0	0	0				2027-10-03 08:00	2027-10-03 16:00		2027-09-21 08:00	2027-09-21 16:00	2027-09-21 08:00	2027-09-21 16:00	2027-09-21 08:00	2027-09-21 16:00	2027-10-03 08:00	2027-10-03 16:00		PT_Normal					2xg040HywQoPYLkUAoOypg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91179	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SHL-3410	Shelter expansion - civil works (if required per assessment)		632	0	64	0	0	0	64	0	0	0				2027-08-18 08:00	2027-08-29 16:00		2027-04-25 08:00	2027-05-04 16:00	2027-04-25 08:00	2027-05-04 16:00	2027-04-25 08:00	2027-05-04 16:00	2027-08-18 08:00	2027-08-29 16:00		PT_Normal					qlvbG9TolL54Jz8z/ik8Xg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91180	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3420	Electrical installation - panels & power upgrade		632	0	48	0	0	0	48	0	0	0				2027-08-30 08:00	2027-09-06 16:00		2027-05-05 08:00	2027-05-12 16:00	2027-05-05 08:00	2027-05-12 16:00	2027-05-05 08:00	2027-05-12 16:00	2027-08-30 08:00	2027-09-06 16:00		PT_Normal					Pyf0KunAJdqOKeBDx9ynmw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91181	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3430	UPS installation & 4-hour autonomy test		632	0	24	0	0	0	24	0	0	0				2027-09-07 08:00	2027-09-09 16:00		2027-05-13 08:00	2027-05-23 16:00	2027-05-13 08:00	2027-05-23 16:00	2027-05-13 08:00	2027-05-23 16:00	2027-09-07 08:00	2027-09-09 16:00		PT_Normal					flGpjyBcSe0jer+4TTlo/g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91182	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TDR-3510	TDR system installation - interrogator & antenna		600	600	40	0	0	0	40	0	0	0				2027-09-12 08:00	2027-09-16 16:00		2027-05-30 08:00	2027-06-03 16:00	2027-05-30 08:00	2027-06-03 16:00	2027-05-30 08:00	2027-06-03 16:00	2027-09-12 08:00	2027-09-16 16:00		PT_Normal					6ErgCgKihb2KJcKcdnrhkg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91179	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	SHL-3410	Shelter expansion - civil works (if required per assessment)		632	64	64	0	0	0	64	0	0	0				2027-08-18 08:00	2027-08-29 16:00		2027-04-25 08:00	2027-05-04 16:00	2027-04-25 08:00	2027-05-04 16:00	2027-04-25 08:00	2027-05-04 16:00	2027-08-18 08:00	2027-08-29 16:00		PT_Normal					qlvbG9TolL54Jz8z/ik8Xg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91180	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3420	Electrical installation - panels & power upgrade		568	0	48	0	0	0	48	0	0	0				2027-08-30 08:00	2027-09-06 16:00		2027-05-23 08:00	2027-05-30 16:00	2027-05-23 08:00	2027-05-30 16:00	2027-05-23 08:00	2027-05-30 16:00	2027-08-30 08:00	2027-09-06 16:00		PT_Normal					Pyf0KunAJdqOKeBDx9ynmw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91181	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	PWR-3430	UPS installation & 4-hour autonomy test		568	0	24	0	0	0	24	0	0	0				2027-09-07 08:00	2027-09-09 16:00		2027-05-31 08:00	2027-06-02 16:00	2027-05-31 08:00	2027-06-02 16:00	2027-05-31 08:00	2027-06-02 16:00	2027-09-07 08:00	2027-09-09 16:00		PT_Normal					flGpjyBcSe0jer+4TTlo/g				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91182	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TDR-3510	TDR system installation - interrogator & antenna		504	504	40	0	0	0	40	0	0	0				2027-09-12 08:00	2027-09-16 16:00		2027-06-15 08:00	2027-06-21 16:00	2027-06-15 08:00	2027-06-21 16:00	2027-06-15 08:00	2027-06-21 16:00	2027-09-12 08:00	2027-09-16 16:00		PT_Normal					6ErgCgKihb2KJcKcdnrhkg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91183	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	TDR-3520	TDR configuration, calibration & pre-commissioning		0	0	32	0	0	0	32	0	0	0				2027-09-19 08:00	2027-09-22 16:00		2027-09-19 08:00	2027-09-22 16:00	2027-09-19 08:00	2027-09-22 16:00	2027-09-19 08:00	2027-09-22 16:00	2027-09-19 08:00	2027-09-22 16:00		PT_Normal					NrwcBioJOih9SX+PPjY6oA				Y	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91184	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3610	Weather station sensors installation		656	0	24	0	0	0	24	0	0	0				2027-09-15 08:00	2027-09-19 16:00		2027-05-24 08:00	2027-05-26 16:00	2027-05-24 08:00	2027-05-26 16:00	2027-05-24 08:00	2027-05-26 16:00	2027-09-15 08:00	2027-09-19 16:00		PT_Normal					S1LsVd1igvs507Rgo6BgNQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91185	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3620	Weather station integration with data logger		656	656	24	0	0	0	24	0	0	0				2027-09-20 08:00	2027-09-22 16:00		2027-05-27 08:00	2027-05-31 16:00	2027-05-27 08:00	2027-05-31 16:00	2027-05-27 08:00	2027-05-31 16:00	2027-09-20 08:00	2027-09-22 16:00		PT_Normal					fpbmv/QOIxufWvCXsNJzXg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91186	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3710	Communication modules installation		664	0	16	0	0	0	16	0	0	0				2027-09-16 08:00	2027-09-19 16:00		2027-05-24 08:00	2027-05-25 16:00	2027-05-24 08:00	2027-05-25 16:00	2027-05-24 08:00	2027-05-25 16:00	2027-09-16 08:00	2027-09-19 16:00		PT_Normal					9Yk5InzWxP2xYIJjeuRytQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91187	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3720	SIM activation, alert & e-mail distribution configuration		664	664	24	0	0	0	24	0	0	0				2027-09-20 08:00	2027-09-22 16:00		2027-05-26 08:00	2027-05-30 16:00	2027-05-26 08:00	2027-05-30 16:00	2027-05-26 08:00	2027-05-30 16:00	2027-09-20 08:00	2027-09-22 16:00		PT_Normal					EwCDzQGEWxHyIzN4y0YTNA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91184	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3610	Weather station sensors installation		592	0	24	0	0	0	24	0	0	0				2027-09-15 08:00	2027-09-19 16:00		2027-06-03 08:00	2027-06-07 16:00	2027-06-03 08:00	2027-06-07 16:00	2027-06-03 08:00	2027-06-07 16:00	2027-09-15 08:00	2027-09-19 16:00		PT_Normal					S1LsVd1igvs507Rgo6BgNQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91185	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	WX-3620	Weather station integration with data logger		592	592	24	0	0	0	24	0	0	0				2027-09-20 08:00	2027-09-22 16:00		2027-06-08 08:00	2027-06-10 16:00	2027-06-08 08:00	2027-06-10 16:00	2027-06-08 08:00	2027-06-10 16:00	2027-09-20 08:00	2027-09-22 16:00		PT_Normal					fpbmv/QOIxufWvCXsNJzXg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91186	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3710	Communication modules installation		600	0	16	0	0	0	16	0	0	0				2027-09-16 08:00	2027-09-19 16:00		2027-06-03 08:00	2027-06-06 16:00	2027-06-03 08:00	2027-06-06 16:00	2027-06-03 08:00	2027-06-06 16:00	2027-09-16 08:00	2027-09-19 16:00		PT_Normal					9Yk5InzWxP2xYIJjeuRytQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
+%R	91187	7101	81046	7612	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	COM-3720	SIM activation, alert & e-mail distribution configuration		600	600	24	0	0	0	24	0	0	0				2027-09-20 08:00	2027-09-22 16:00		2027-06-07 08:00	2027-06-09 16:00	2027-06-07 08:00	2027-06-09 16:00	2027-06-07 08:00	2027-06-09 16:00	2027-09-20 08:00	2027-09-22 16:00		PT_Normal					EwCDzQGEWxHyIzN4y0YTNA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91188	7101	81047	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CLD-3810	Local KSA cloud infrastructure - provisioning & set-up		608	0	64	0	0	0	64	0	0	0				2027-08-29 08:00	2027-09-07 16:00		2027-05-09 08:00	2027-05-24 16:00	2027-05-09 08:00	2027-05-24 16:00	2027-05-09 08:00	2027-05-24 16:00	2027-08-29 08:00	2027-09-07 16:00		PT_Normal					jKr6CHeYxgf7KVmNnSZvGw				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91189	7101	81047	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CLD-3820	Local KSA cloud infrastructure - hardening & connectivity		624	16	64	0	0	0	64	0	0	0				2027-09-12 08:00	2027-09-21 16:00		2027-05-25 08:00	2027-06-03 16:00	2027-05-25 08:00	2027-06-03 16:00	2027-05-25 08:00	2027-06-03 16:00	2027-09-12 08:00	2027-09-21 16:00		PT_Normal					oSgqdumkwJPdi5LtzpusOQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91190	7101	81047	7611	0	N	1	N	N	CP_Drtn	TT_Task	DT_FixedDrtn	TK_NotStart	CYB-3920	Cybersecurity controls implementation & hardening		608	0	80	0	0	0	80	0	0	0				2027-09-08 08:00	2027-09-21 16:00		2027-05-25 08:00	2027-06-07 16:00	2027-05-25 08:00	2027-06-07 16:00	2027-05-25 08:00	2027-06-07 16:00	2027-09-08 08:00	2027-09-21 16:00		PT_Normal					iasOjVVEVH5aOXuv8UGn8Q				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
@@ -392,304 +392,317 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	95075	91053	91052	7101	7101	PR_FS	0			
 %R	95076	91054	91044	7101	7101	PR_FS	0			
 %R	95077	91054	91013	7101	7101	PR_FS	0			
-%R	95078	91055	91054	7101	7101	PR_FS	0			
-%R	95079	91056	91055	7101	7101	PR_FS	0			
-%R	95080	91056	91049	7101	7101	PR_FS	0			
-%R	95081	91057	91056	7101	7101	PR_FS	0			
-%R	95082	91058	91057	7101	7101	PR_FS	0			
-%R	95083	91059	91058	7101	7101	PR_FS	0			
-%R	95084	91060	91044	7101	7101	PR_FS	0			
-%R	95085	91060	91013	7101	7101	PR_FS	0			
-%R	95086	91061	91060	7101	7101	PR_FS	0			
-%R	95087	91062	91061	7101	7101	PR_FS	0			
-%R	95088	91062	91049	7101	7101	PR_FS	0			
-%R	95089	91063	91062	7101	7101	PR_FS	0			
-%R	95090	91064	91063	7101	7101	PR_FS	0			
-%R	95091	91065	91064	7101	7101	PR_FS	0			
-%R	95092	91066	91044	7101	7101	PR_FS	0			
-%R	95093	91066	91013	7101	7101	PR_FS	0			
-%R	95094	91067	91066	7101	7101	PR_FS	0			
-%R	95095	91068	91067	7101	7101	PR_FS	0			
-%R	95096	91068	91049	7101	7101	PR_FS	0			
-%R	95097	91069	91068	7101	7101	PR_FS	0			
-%R	95098	91070	91069	7101	7101	PR_FS	0			
-%R	95099	91071	91070	7101	7101	PR_FS	0			
-%R	95100	91072	91045	7101	7101	PR_FS	0			
-%R	95101	91072	91013	7101	7101	PR_FS	0			
-%R	95102	91073	91072	7101	7101	PR_FS	0			
-%R	95103	91074	91073	7101	7101	PR_FS	0			
-%R	95104	91074	91049	7101	7101	PR_FS	0			
-%R	95105	91075	91074	7101	7101	PR_FS	0			
-%R	95106	91076	91075	7101	7101	PR_FS	0			
-%R	95107	91077	91076	7101	7101	PR_FS	0			
-%R	95108	91078	91045	7101	7101	PR_FS	0			
-%R	95109	91078	91013	7101	7101	PR_FS	0			
-%R	95110	91079	91078	7101	7101	PR_FS	0			
-%R	95111	91080	91079	7101	7101	PR_FS	0			
-%R	95112	91080	91049	7101	7101	PR_FS	0			
-%R	95113	91081	91080	7101	7101	PR_FS	0			
-%R	95114	91082	91081	7101	7101	PR_FS	0			
-%R	95115	91083	91082	7101	7101	PR_FS	0			
-%R	95116	91084	91045	7101	7101	PR_FS	0			
-%R	95117	91084	91013	7101	7101	PR_FS	0			
-%R	95118	91085	91084	7101	7101	PR_FS	0			
-%R	95119	91086	91085	7101	7101	PR_FS	0			
-%R	95120	91086	91049	7101	7101	PR_FS	0			
-%R	95121	91087	91086	7101	7101	PR_FS	0			
-%R	95122	91088	91087	7101	7101	PR_FS	0			
-%R	95123	91089	91088	7101	7101	PR_FS	0			
-%R	95124	91090	91045	7101	7101	PR_FS	0			
-%R	95125	91090	91013	7101	7101	PR_FS	0			
-%R	95126	91091	91090	7101	7101	PR_FS	0			
-%R	95127	91092	91091	7101	7101	PR_FS	0			
-%R	95128	91092	91049	7101	7101	PR_FS	0			
-%R	95129	91093	91092	7101	7101	PR_FS	0			
-%R	95130	91094	91093	7101	7101	PR_FS	0			
-%R	95131	91095	91094	7101	7101	PR_FS	0			
-%R	95132	91096	91045	7101	7101	PR_FS	0			
-%R	95133	91096	91047	7101	7101	PR_FS	0			
-%R	95134	91096	91013	7101	7101	PR_FS	0			
-%R	95135	91097	91096	7101	7101	PR_FS	0			
-%R	95136	91098	91097	7101	7101	PR_FS	0			
-%R	95137	91098	91049	7101	7101	PR_FS	0			
-%R	95138	91099	91098	7101	7101	PR_FS	0			
-%R	95139	91100	91099	7101	7101	PR_FS	0			
-%R	95140	91101	91100	7101	7101	PR_FS	0			
-%R	95141	91102	91046	7101	7101	PR_FS	0			
-%R	95142	91102	91013	7101	7101	PR_FS	0			
-%R	95143	91103	91102	7101	7101	PR_FS	0			
-%R	95144	91104	91103	7101	7101	PR_FS	0			
-%R	95145	91105	91104	7101	7101	PR_FS	0			
-%R	95146	91106	91105	7101	7101	PR_FS	0			
-%R	95147	91107	91046	7101	7101	PR_FS	0			
-%R	95148	91107	91013	7101	7101	PR_FS	0			
-%R	95149	91108	91107	7101	7101	PR_FS	0			
-%R	95150	91109	91108	7101	7101	PR_FS	0			
-%R	95151	91110	91046	7101	7101	PR_FS	0			
-%R	95152	91110	91013	7101	7101	PR_FS	0			
-%R	95153	91111	91110	7101	7101	PR_FS	0			
-%R	95154	91112	91111	7101	7101	PR_FS	0			
-%R	95155	91113	91046	7101	7101	PR_FS	0			
-%R	95156	91113	91013	7101	7101	PR_FS	0			
-%R	95157	91114	91113	7101	7101	PR_FS	0			
-%R	95158	91115	91114	7101	7101	PR_FS	0			
-%R	95159	91116	91046	7101	7101	PR_FS	0			
-%R	95160	91117	91017	7101	7101	PR_FS	0			
-%R	95161	91118	91053	7101	7101	PR_FS	0			
-%R	95162	91118	91017	7101	7101	PR_FS	0			
-%R	95163	91118	91015	7101	7101	PR_FS	0			
-%R	95164	91118	91011	7101	7101	PR_FS	0			
-%R	95165	91118	91020	7101	7101	PR_FS	0			
-%R	95166	91118	91117	7101	7101	PR_FS	0			
-%R	95167	91119	91118	7101	7101	PR_FS	0			
-%R	95168	91119	91116	7101	7101	PR_FS	0			
-%R	95169	91119	91004	7101	7101	PR_FS	0			
-%R	95170	91120	91119	7101	7101	PR_FS	0			
-%R	95171	91120	91109	7101	7101	PR_FS	0			
-%R	95172	91121	91119	7101	7101	PR_FS	0			
-%R	95173	91121	91112	7101	7101	PR_FS	0			
-%R	95174	91121	91053	7101	7101	PR_FS	0			
-%R	95175	91122	91120	7101	7101	PR_FS	0			
-%R	95176	91122	91121	7101	7101	PR_FS	0			
-%R	95177	91122	91059	7101	7101	PR_FS	0			
-%R	95178	91123	91122	7101	7101	PR_FS	0			
-%R	95179	91124	91123	7101	7101	PR_FS	0			
-%R	95180	91124	91065	7101	7101	PR_FS	0			
-%R	95181	91125	91124	7101	7101	PR_FS	0			
-%R	95182	91125	91106	7101	7101	PR_FS	0			
-%R	95183	91126	91125	7101	7101	PR_FS	0			
-%R	95184	91127	91126	7101	7101	PR_FS	0			
-%R	95185	91127	91071	7101	7101	PR_FS	0			
-%R	95186	91128	91127	7101	7101	PR_FS	0			
-%R	95187	91129	91128	7101	7101	PR_FS	0			
-%R	95188	91129	91115	7101	7101	PR_FS	0			
-%R	95189	91130	91128	7101	7101	PR_FS	0			
-%R	95190	91131	91119	7101	7101	PR_FS	0			
-%R	95191	91132	91131	7101	7101	PR_FS	0			
-%R	95192	91132	91109	7101	7101	PR_FS	0			
-%R	95193	91133	91131	7101	7101	PR_FS	0			
-%R	95194	91133	91112	7101	7101	PR_FS	0			
-%R	95195	91133	91053	7101	7101	PR_FS	0			
-%R	95196	91134	91132	7101	7101	PR_FS	0			
-%R	95197	91134	91133	7101	7101	PR_FS	0			
-%R	95198	91134	91059	7101	7101	PR_FS	0			
-%R	95199	91134	91122	7101	7101	PR_FS	0			
-%R	95200	91135	91134	7101	7101	PR_FS	0			
-%R	95201	91136	91135	7101	7101	PR_FS	0			
-%R	95202	91136	91065	7101	7101	PR_FS	0			
-%R	95203	91136	91124	7101	7101	PR_FS	0			
-%R	95204	91137	91136	7101	7101	PR_FS	0			
-%R	95205	91137	91106	7101	7101	PR_FS	0			
-%R	95206	91138	91137	7101	7101	PR_FS	0			
-%R	95207	91139	91138	7101	7101	PR_FS	0			
-%R	95208	91139	91071	7101	7101	PR_FS	0			
-%R	95209	91139	91127	7101	7101	PR_FS	0			
-%R	95210	91140	91139	7101	7101	PR_FS	0			
-%R	95211	91141	91140	7101	7101	PR_FS	0			
-%R	95212	91141	91115	7101	7101	PR_FS	0			
-%R	95213	91142	91140	7101	7101	PR_FS	0			
-%R	95214	91143	91119	7101	7101	PR_FS	0			
-%R	95215	91143	91128	7101	7101	PR_FS	0			
-%R	95216	91144	91143	7101	7101	PR_FS	0			
-%R	95217	91144	91109	7101	7101	PR_FS	0			
-%R	95218	91145	91143	7101	7101	PR_FS	0			
-%R	95219	91145	91112	7101	7101	PR_FS	0			
-%R	95220	91145	91053	7101	7101	PR_FS	0			
-%R	95221	91146	91144	7101	7101	PR_FS	0			
-%R	95222	91146	91145	7101	7101	PR_FS	0			
-%R	95223	91146	91059	7101	7101	PR_FS	0			
-%R	95224	91146	91134	7101	7101	PR_FS	0			
-%R	95225	91147	91146	7101	7101	PR_FS	0			
-%R	95226	91148	91147	7101	7101	PR_FS	0			
-%R	95227	91148	91065	7101	7101	PR_FS	0			
-%R	95228	91148	91136	7101	7101	PR_FS	0			
-%R	95229	91149	91148	7101	7101	PR_FS	0			
-%R	95230	91149	91106	7101	7101	PR_FS	0			
-%R	95231	91150	91149	7101	7101	PR_FS	0			
-%R	95232	91151	91150	7101	7101	PR_FS	0			
-%R	95233	91151	91071	7101	7101	PR_FS	0			
-%R	95234	91151	91139	7101	7101	PR_FS	0			
-%R	95235	91152	91151	7101	7101	PR_FS	0			
-%R	95236	91153	91152	7101	7101	PR_FS	0			
-%R	95237	91153	91115	7101	7101	PR_FS	0			
-%R	95238	91154	91152	7101	7101	PR_FS	0			
-%R	95239	91155	91131	7101	7101	PR_FS	0			
-%R	95240	91155	91140	7101	7101	PR_FS	0			
-%R	95241	91156	91155	7101	7101	PR_FS	0			
-%R	95242	91156	91109	7101	7101	PR_FS	0			
-%R	95243	91157	91155	7101	7101	PR_FS	0			
-%R	95244	91157	91112	7101	7101	PR_FS	0			
-%R	95245	91157	91053	7101	7101	PR_FS	0			
-%R	95246	91158	91156	7101	7101	PR_FS	0			
-%R	95247	91158	91157	7101	7101	PR_FS	0			
-%R	95248	91158	91059	7101	7101	PR_FS	0			
-%R	95249	91158	91146	7101	7101	PR_FS	0			
-%R	95250	91159	91158	7101	7101	PR_FS	0			
-%R	95251	91160	91159	7101	7101	PR_FS	0			
-%R	95252	91160	91065	7101	7101	PR_FS	0			
-%R	95253	91160	91148	7101	7101	PR_FS	0			
-%R	95254	91161	91160	7101	7101	PR_FS	0			
-%R	95255	91161	91106	7101	7101	PR_FS	0			
-%R	95256	91162	91161	7101	7101	PR_FS	0			
-%R	95257	91163	91162	7101	7101	PR_FS	0			
-%R	95258	91163	91071	7101	7101	PR_FS	0			
-%R	95259	91163	91151	7101	7101	PR_FS	0			
-%R	95260	91164	91163	7101	7101	PR_FS	0			
-%R	95261	91165	91164	7101	7101	PR_FS	0			
-%R	95262	91165	91115	7101	7101	PR_FS	0			
-%R	95263	91166	91164	7101	7101	PR_FS	0			
-%R	95264	91167	91143	7101	7101	PR_FS	0			
-%R	95265	91167	91152	7101	7101	PR_FS	0			
-%R	95266	91168	91167	7101	7101	PR_FS	0			
-%R	95267	91168	91109	7101	7101	PR_FS	0			
-%R	95268	91169	91167	7101	7101	PR_FS	0			
-%R	95269	91169	91112	7101	7101	PR_FS	0			
-%R	95270	91169	91053	7101	7101	PR_FS	0			
-%R	95271	91170	91168	7101	7101	PR_FS	0			
-%R	95272	91170	91169	7101	7101	PR_FS	0			
-%R	95273	91170	91059	7101	7101	PR_FS	0			
-%R	95274	91170	91158	7101	7101	PR_FS	0			
-%R	95275	91171	91170	7101	7101	PR_FS	0			
-%R	95276	91172	91171	7101	7101	PR_FS	0			
-%R	95277	91172	91065	7101	7101	PR_FS	0			
-%R	95278	91172	91160	7101	7101	PR_FS	0			
-%R	95279	91173	91172	7101	7101	PR_FS	0			
-%R	95280	91173	91106	7101	7101	PR_FS	0			
-%R	95281	91174	91173	7101	7101	PR_FS	0			
-%R	95282	91175	91174	7101	7101	PR_FS	0			
-%R	95283	91175	91071	7101	7101	PR_FS	0			
-%R	95284	91175	91163	7101	7101	PR_FS	0			
-%R	95285	91176	91175	7101	7101	PR_FS	0			
-%R	95286	91177	91176	7101	7101	PR_FS	0			
-%R	95287	91177	91115	7101	7101	PR_FS	0			
-%R	95288	91178	91176	7101	7101	PR_FS	0			
-%R	95289	91179	91053	7101	7101	PR_FS	0			
-%R	95290	91179	91036	7101	7101	PR_FS	0			
-%R	95291	91179	91118	7101	7101	PR_FS	0			
-%R	95292	91180	91179	7101	7101	PR_FS	0			
-%R	95293	91180	91095	7101	7101	PR_FS	0			
-%R	95294	91181	91180	7101	7101	PR_FS	0			
-%R	95295	91182	91077	7101	7101	PR_FS	0			
-%R	95296	91182	91181	7101	7101	PR_FS	0			
-%R	95297	91183	91182	7101	7101	PR_FS	0			
-%R	95298	91183	91175	7101	7101	PR_FS	0			
-%R	95299	91184	91083	7101	7101	PR_FS	0			
-%R	95300	91184	91181	7101	7101	PR_FS	0			
-%R	95301	91185	91184	7101	7101	PR_FS	0			
-%R	95302	91186	91089	7101	7101	PR_FS	0			
-%R	95303	91186	91181	7101	7101	PR_FS	0			
-%R	95304	91187	91186	7101	7101	PR_FS	0			
-%R	95305	91188	91101	7101	7101	PR_FS	0			
-%R	95306	91188	91047	7101	7101	PR_FS	0			
-%R	95307	91189	91188	7101	7101	PR_FS	0			
-%R	95308	91190	91188	7101	7101	PR_FS	0			
-%R	95309	91190	91047	7101	7101	PR_FS	0			
-%R	95310	91191	91189	7101	7101	PR_FS	0			
-%R	95311	91191	91048	7101	7101	PR_FS	0			
-%R	95312	91191	91183	7101	7101	PR_FS	0			
-%R	95313	91191	91187	7101	7101	PR_FS	0			
-%R	95314	91191	91185	7101	7101	PR_FS	0			
-%R	95315	91192	91177	7101	7101	PR_FS	0			
-%R	95316	91192	91183	7101	7101	PR_FS	0			
-%R	95317	91192	91185	7101	7101	PR_FS	0			
-%R	95318	91192	91187	7101	7101	PR_FS	0			
-%R	95319	91192	91189	7101	7101	PR_FS	0			
-%R	95320	91192	91191	7101	7101	PR_FS	0			
-%R	95321	91192	91181	7101	7101	PR_FS	0			
-%R	95322	91192	91051	7101	7101	PR_FS	0			
-%R	95323	91192	91193	7101	7101	PR_FS	0			
-%R	95324	91192	91129	7101	7101	PR_FS	0			
-%R	95325	91192	91141	7101	7101	PR_FS	0			
-%R	95326	91192	91153	7101	7101	PR_FS	0			
-%R	95327	91192	91165	7101	7101	PR_FS	0			
-%R	95328	91193	91130	7101	7101	PR_FS	0			
-%R	95329	91193	91142	7101	7101	PR_FS	0			
-%R	95330	91193	91154	7101	7101	PR_FS	0			
-%R	95331	91193	91166	7101	7101	PR_FS	0			
-%R	95332	91193	91178	7101	7101	PR_FS	0			
-%R	95333	91194	91190	7101	7101	PR_FS	0			
-%R	95334	91194	91189	7101	7101	PR_FS	0			
-%R	95335	91195	91194	7101	7101	PR_FS	0			
-%R	95336	91196	91193	7101	7101	PR_FS	0			
-%R	95337	91196	91050	7101	7101	PR_FS	0			
-%R	95338	91196	91192	7101	7101	PR_FS	0			
-%R	95339	91197	91192	7101	7101	PR_FS	0			
-%R	95340	91197	91191	7101	7101	PR_FS	0			
-%R	95341	91198	91196	7101	7101	PR_FS	0			
-%R	95342	91198	91197	7101	7101	PR_FS	0			
-%R	95343	91198	91195	7101	7101	PR_FS	0			
-%R	95344	91199	91198	7101	7101	PR_FS	0			
-%R	95345	91200	91199	7101	7101	PR_FS	0			
-%R	95346	91201	91200	7101	7101	PR_FS	0			
-%R	95347	91202	91198	7101	7101	PR_FS	0			
-%R	95348	91203	91198	7101	7101	PR_FS	0			
-%R	95349	91204	91198	7101	7101	PR_FS	0			
-%R	95350	91205	91202	7101	7101	PR_FS	0			
-%R	95351	91205	91203	7101	7101	PR_FS	0			
-%R	95352	91206	91205	7101	7101	PR_FS	0			
-%R	95353	91207	91204	7101	7101	PR_FS	0			
-%R	95354	91207	91199	7101	7101	PR_FS	0			
-%R	95355	91208	91206	7101	7101	PR_FS	0			
-%R	95356	91208	91207	7101	7101	PR_FS	0			
-%R	95357	91208	91201	7101	7101	PR_FS	0			
-%R	95358	91209	91208	7101	7101	PR_FS	0			
-%R	95359	91210	91209	7101	7101	PR_FS	0			
-%R	95360	91211	91020	7101	7101	PR_SS	0			
-%R	95361	91211	91118	7101	7101	PR_FF	0			
-%R	95362	91212	91020	7101	7101	PR_SS	0			
-%R	95363	91212	91118	7101	7101	PR_FF	0			
-%R	95364	91213	91119	7101	7101	PR_SS	0			
-%R	95365	91213	91176	7101	7101	PR_FF	0			
-%R	95366	91214	91119	7101	7101	PR_SS	0			
-%R	95367	91214	91176	7101	7101	PR_FF	0			
-%R	95368	91215	91196	7101	7101	PR_SS	0			
-%R	95369	91215	91199	7101	7101	PR_FF	0			
-%R	95370	91216	91196	7101	7101	PR_SS	0			
-%R	95371	91216	91199	7101	7101	PR_FF	0			
-%R	95372	91217	91201	7101	7101	PR_SS	0			
-%R	95373	91217	91208	7101	7101	PR_FF	0			
-%R	95374	91218	91201	7101	7101	PR_SS	0			
-%R	95375	91218	91208	7101	7101	PR_FF	0			
-%R	95376	91219	91001	7101	7101	PR_SS	0			
-%R	95377	91219	91208	7101	7101	PR_FF	0			
+%R	95078	91054	91033	7101	7101	PR_FS	0			
+%R	95079	91055	91054	7101	7101	PR_FS	0			
+%R	95080	91056	91055	7101	7101	PR_FS	0			
+%R	95081	91056	91049	7101	7101	PR_FS	0			
+%R	95082	91057	91056	7101	7101	PR_FS	0			
+%R	95083	91058	91057	7101	7101	PR_FS	0			
+%R	95084	91059	91058	7101	7101	PR_FS	0			
+%R	95085	91060	91044	7101	7101	PR_FS	0			
+%R	95086	91060	91013	7101	7101	PR_FS	0			
+%R	95087	91060	91033	7101	7101	PR_FS	0			
+%R	95088	91061	91060	7101	7101	PR_FS	0			
+%R	95089	91062	91061	7101	7101	PR_FS	0			
+%R	95090	91062	91049	7101	7101	PR_FS	0			
+%R	95091	91063	91062	7101	7101	PR_FS	0			
+%R	95092	91064	91063	7101	7101	PR_FS	0			
+%R	95093	91065	91064	7101	7101	PR_FS	0			
+%R	95094	91066	91044	7101	7101	PR_FS	0			
+%R	95095	91066	91013	7101	7101	PR_FS	0			
+%R	95096	91066	91033	7101	7101	PR_FS	0			
+%R	95097	91067	91066	7101	7101	PR_FS	0			
+%R	95098	91068	91067	7101	7101	PR_FS	0			
+%R	95099	91068	91049	7101	7101	PR_FS	0			
+%R	95100	91069	91068	7101	7101	PR_FS	0			
+%R	95101	91070	91069	7101	7101	PR_FS	0			
+%R	95102	91071	91070	7101	7101	PR_FS	0			
+%R	95103	91072	91045	7101	7101	PR_FS	0			
+%R	95104	91072	91013	7101	7101	PR_FS	0			
+%R	95105	91072	91033	7101	7101	PR_FS	0			
+%R	95106	91073	91072	7101	7101	PR_FS	0			
+%R	95107	91074	91073	7101	7101	PR_FS	0			
+%R	95108	91074	91049	7101	7101	PR_FS	0			
+%R	95109	91075	91074	7101	7101	PR_FS	0			
+%R	95110	91076	91075	7101	7101	PR_FS	0			
+%R	95111	91077	91076	7101	7101	PR_FS	0			
+%R	95112	91078	91045	7101	7101	PR_FS	0			
+%R	95113	91078	91013	7101	7101	PR_FS	0			
+%R	95114	91078	91033	7101	7101	PR_FS	0			
+%R	95115	91079	91078	7101	7101	PR_FS	0			
+%R	95116	91080	91079	7101	7101	PR_FS	0			
+%R	95117	91080	91049	7101	7101	PR_FS	0			
+%R	95118	91081	91080	7101	7101	PR_FS	0			
+%R	95119	91082	91081	7101	7101	PR_FS	0			
+%R	95120	91083	91082	7101	7101	PR_FS	0			
+%R	95121	91084	91045	7101	7101	PR_FS	0			
+%R	95122	91084	91013	7101	7101	PR_FS	0			
+%R	95123	91084	91033	7101	7101	PR_FS	0			
+%R	95124	91085	91084	7101	7101	PR_FS	0			
+%R	95125	91086	91085	7101	7101	PR_FS	0			
+%R	95126	91086	91049	7101	7101	PR_FS	0			
+%R	95127	91087	91086	7101	7101	PR_FS	0			
+%R	95128	91088	91087	7101	7101	PR_FS	0			
+%R	95129	91089	91088	7101	7101	PR_FS	0			
+%R	95130	91090	91045	7101	7101	PR_FS	0			
+%R	95131	91090	91013	7101	7101	PR_FS	0			
+%R	95132	91090	91033	7101	7101	PR_FS	0			
+%R	95133	91091	91090	7101	7101	PR_FS	0			
+%R	95134	91092	91091	7101	7101	PR_FS	0			
+%R	95135	91092	91049	7101	7101	PR_FS	0			
+%R	95136	91093	91092	7101	7101	PR_FS	0			
+%R	95137	91094	91093	7101	7101	PR_FS	0			
+%R	95138	91095	91094	7101	7101	PR_FS	0			
+%R	95139	91096	91045	7101	7101	PR_FS	0			
+%R	95140	91096	91047	7101	7101	PR_FS	0			
+%R	95141	91096	91013	7101	7101	PR_FS	0			
+%R	95142	91096	91033	7101	7101	PR_FS	0			
+%R	95143	91097	91096	7101	7101	PR_FS	0			
+%R	95144	91098	91097	7101	7101	PR_FS	0			
+%R	95145	91098	91049	7101	7101	PR_FS	0			
+%R	95146	91099	91098	7101	7101	PR_FS	0			
+%R	95147	91100	91099	7101	7101	PR_FS	0			
+%R	95148	91101	91100	7101	7101	PR_FS	0			
+%R	95149	91102	91046	7101	7101	PR_FS	0			
+%R	95150	91102	91013	7101	7101	PR_FS	0			
+%R	95151	91102	91033	7101	7101	PR_FS	0			
+%R	95152	91103	91102	7101	7101	PR_FS	0			
+%R	95153	91104	91103	7101	7101	PR_FS	0			
+%R	95154	91105	91104	7101	7101	PR_FS	0			
+%R	95155	91106	91105	7101	7101	PR_FS	0			
+%R	95156	91107	91046	7101	7101	PR_FS	0			
+%R	95157	91107	91013	7101	7101	PR_FS	0			
+%R	95158	91107	91033	7101	7101	PR_FS	0			
+%R	95159	91108	91107	7101	7101	PR_FS	0			
+%R	95160	91109	91108	7101	7101	PR_FS	0			
+%R	95161	91110	91046	7101	7101	PR_FS	0			
+%R	95162	91110	91013	7101	7101	PR_FS	0			
+%R	95163	91110	91033	7101	7101	PR_FS	0			
+%R	95164	91111	91110	7101	7101	PR_FS	0			
+%R	95165	91112	91111	7101	7101	PR_FS	0			
+%R	95166	91113	91046	7101	7101	PR_FS	0			
+%R	95167	91113	91013	7101	7101	PR_FS	0			
+%R	95168	91113	91033	7101	7101	PR_FS	0			
+%R	95169	91114	91113	7101	7101	PR_FS	0			
+%R	95170	91115	91114	7101	7101	PR_FS	0			
+%R	95171	91116	91046	7101	7101	PR_FS	0			
+%R	95172	91116	91033	7101	7101	PR_FS	0			
+%R	95173	91117	91017	7101	7101	PR_FS	0			
+%R	95174	91118	91053	7101	7101	PR_FS	0			
+%R	95175	91118	91017	7101	7101	PR_FS	0			
+%R	95176	91118	91015	7101	7101	PR_FS	0			
+%R	95177	91118	91011	7101	7101	PR_FS	0			
+%R	95178	91118	91020	7101	7101	PR_FS	0			
+%R	95179	91118	91117	7101	7101	PR_FS	0			
+%R	95180	91119	91118	7101	7101	PR_FS	0			
+%R	95181	91119	91116	7101	7101	PR_FS	0			
+%R	95182	91119	91004	7101	7101	PR_FS	0			
+%R	95183	91120	91119	7101	7101	PR_FS	0			
+%R	95184	91120	91109	7101	7101	PR_FS	0			
+%R	95185	91121	91119	7101	7101	PR_FS	0			
+%R	95186	91121	91112	7101	7101	PR_FS	0			
+%R	95187	91121	91053	7101	7101	PR_FS	0			
+%R	95188	91122	91120	7101	7101	PR_FS	0			
+%R	95189	91122	91121	7101	7101	PR_FS	0			
+%R	95190	91122	91059	7101	7101	PR_FS	0			
+%R	95191	91123	91122	7101	7101	PR_FS	0			
+%R	95192	91124	91123	7101	7101	PR_FS	0			
+%R	95193	91124	91065	7101	7101	PR_FS	0			
+%R	95194	91125	91124	7101	7101	PR_FS	0			
+%R	95195	91125	91106	7101	7101	PR_FS	0			
+%R	95196	91126	91125	7101	7101	PR_FS	0			
+%R	95197	91127	91126	7101	7101	PR_FS	0			
+%R	95198	91127	91071	7101	7101	PR_FS	0			
+%R	95199	91128	91127	7101	7101	PR_FS	0			
+%R	95200	91129	91128	7101	7101	PR_FS	0			
+%R	95201	91129	91115	7101	7101	PR_FS	0			
+%R	95202	91130	91128	7101	7101	PR_FS	0			
+%R	95203	91131	91119	7101	7101	PR_FS	0			
+%R	95204	91132	91131	7101	7101	PR_FS	0			
+%R	95205	91132	91109	7101	7101	PR_FS	0			
+%R	95206	91133	91131	7101	7101	PR_FS	0			
+%R	95207	91133	91112	7101	7101	PR_FS	0			
+%R	95208	91133	91053	7101	7101	PR_FS	0			
+%R	95209	91134	91132	7101	7101	PR_FS	0			
+%R	95210	91134	91133	7101	7101	PR_FS	0			
+%R	95211	91134	91059	7101	7101	PR_FS	0			
+%R	95212	91134	91122	7101	7101	PR_FS	0			
+%R	95213	91135	91134	7101	7101	PR_FS	0			
+%R	95214	91136	91135	7101	7101	PR_FS	0			
+%R	95215	91136	91065	7101	7101	PR_FS	0			
+%R	95216	91136	91124	7101	7101	PR_FS	0			
+%R	95217	91137	91136	7101	7101	PR_FS	0			
+%R	95218	91137	91106	7101	7101	PR_FS	0			
+%R	95219	91138	91137	7101	7101	PR_FS	0			
+%R	95220	91139	91138	7101	7101	PR_FS	0			
+%R	95221	91139	91071	7101	7101	PR_FS	0			
+%R	95222	91139	91127	7101	7101	PR_FS	0			
+%R	95223	91140	91139	7101	7101	PR_FS	0			
+%R	95224	91141	91140	7101	7101	PR_FS	0			
+%R	95225	91141	91115	7101	7101	PR_FS	0			
+%R	95226	91142	91140	7101	7101	PR_FS	0			
+%R	95227	91143	91119	7101	7101	PR_FS	0			
+%R	95228	91143	91128	7101	7101	PR_FS	0			
+%R	95229	91144	91143	7101	7101	PR_FS	0			
+%R	95230	91144	91109	7101	7101	PR_FS	0			
+%R	95231	91145	91143	7101	7101	PR_FS	0			
+%R	95232	91145	91112	7101	7101	PR_FS	0			
+%R	95233	91145	91053	7101	7101	PR_FS	0			
+%R	95234	91146	91144	7101	7101	PR_FS	0			
+%R	95235	91146	91145	7101	7101	PR_FS	0			
+%R	95236	91146	91059	7101	7101	PR_FS	0			
+%R	95237	91146	91134	7101	7101	PR_FS	0			
+%R	95238	91147	91146	7101	7101	PR_FS	0			
+%R	95239	91148	91147	7101	7101	PR_FS	0			
+%R	95240	91148	91065	7101	7101	PR_FS	0			
+%R	95241	91148	91136	7101	7101	PR_FS	0			
+%R	95242	91149	91148	7101	7101	PR_FS	0			
+%R	95243	91149	91106	7101	7101	PR_FS	0			
+%R	95244	91150	91149	7101	7101	PR_FS	0			
+%R	95245	91151	91150	7101	7101	PR_FS	0			
+%R	95246	91151	91071	7101	7101	PR_FS	0			
+%R	95247	91151	91139	7101	7101	PR_FS	0			
+%R	95248	91152	91151	7101	7101	PR_FS	0			
+%R	95249	91153	91152	7101	7101	PR_FS	0			
+%R	95250	91153	91115	7101	7101	PR_FS	0			
+%R	95251	91154	91152	7101	7101	PR_FS	0			
+%R	95252	91155	91131	7101	7101	PR_FS	0			
+%R	95253	91155	91140	7101	7101	PR_FS	0			
+%R	95254	91156	91155	7101	7101	PR_FS	0			
+%R	95255	91156	91109	7101	7101	PR_FS	0			
+%R	95256	91157	91155	7101	7101	PR_FS	0			
+%R	95257	91157	91112	7101	7101	PR_FS	0			
+%R	95258	91157	91053	7101	7101	PR_FS	0			
+%R	95259	91158	91156	7101	7101	PR_FS	0			
+%R	95260	91158	91157	7101	7101	PR_FS	0			
+%R	95261	91158	91059	7101	7101	PR_FS	0			
+%R	95262	91158	91146	7101	7101	PR_FS	0			
+%R	95263	91159	91158	7101	7101	PR_FS	0			
+%R	95264	91160	91159	7101	7101	PR_FS	0			
+%R	95265	91160	91065	7101	7101	PR_FS	0			
+%R	95266	91160	91148	7101	7101	PR_FS	0			
+%R	95267	91161	91160	7101	7101	PR_FS	0			
+%R	95268	91161	91106	7101	7101	PR_FS	0			
+%R	95269	91162	91161	7101	7101	PR_FS	0			
+%R	95270	91163	91162	7101	7101	PR_FS	0			
+%R	95271	91163	91071	7101	7101	PR_FS	0			
+%R	95272	91163	91151	7101	7101	PR_FS	0			
+%R	95273	91164	91163	7101	7101	PR_FS	0			
+%R	95274	91165	91164	7101	7101	PR_FS	0			
+%R	95275	91165	91115	7101	7101	PR_FS	0			
+%R	95276	91166	91164	7101	7101	PR_FS	0			
+%R	95277	91167	91143	7101	7101	PR_FS	0			
+%R	95278	91167	91152	7101	7101	PR_FS	0			
+%R	95279	91168	91167	7101	7101	PR_FS	0			
+%R	95280	91168	91109	7101	7101	PR_FS	0			
+%R	95281	91169	91167	7101	7101	PR_FS	0			
+%R	95282	91169	91112	7101	7101	PR_FS	0			
+%R	95283	91169	91053	7101	7101	PR_FS	0			
+%R	95284	91170	91168	7101	7101	PR_FS	0			
+%R	95285	91170	91169	7101	7101	PR_FS	0			
+%R	95286	91170	91059	7101	7101	PR_FS	0			
+%R	95287	91170	91158	7101	7101	PR_FS	0			
+%R	95288	91171	91170	7101	7101	PR_FS	0			
+%R	95289	91172	91171	7101	7101	PR_FS	0			
+%R	95290	91172	91065	7101	7101	PR_FS	0			
+%R	95291	91172	91160	7101	7101	PR_FS	0			
+%R	95292	91173	91172	7101	7101	PR_FS	0			
+%R	95293	91173	91106	7101	7101	PR_FS	0			
+%R	95294	91174	91173	7101	7101	PR_FS	0			
+%R	95295	91175	91174	7101	7101	PR_FS	0			
+%R	95296	91175	91071	7101	7101	PR_FS	0			
+%R	95297	91175	91163	7101	7101	PR_FS	0			
+%R	95298	91176	91175	7101	7101	PR_FS	0			
+%R	95299	91177	91176	7101	7101	PR_FS	0			
+%R	95300	91177	91115	7101	7101	PR_FS	0			
+%R	95301	91178	91176	7101	7101	PR_FS	0			
+%R	95302	91179	91053	7101	7101	PR_FS	0			
+%R	95303	91179	91036	7101	7101	PR_FS	0			
+%R	95304	91179	91118	7101	7101	PR_FS	0			
+%R	95305	91180	91179	7101	7101	PR_FS	0			
+%R	95306	91180	91095	7101	7101	PR_FS	0			
+%R	95307	91181	91180	7101	7101	PR_FS	0			
+%R	95308	91182	91077	7101	7101	PR_FS	0			
+%R	95309	91182	91181	7101	7101	PR_FS	0			
+%R	95310	91183	91182	7101	7101	PR_FS	0			
+%R	95311	91183	91175	7101	7101	PR_FS	0			
+%R	95312	91184	91083	7101	7101	PR_FS	0			
+%R	95313	91184	91181	7101	7101	PR_FS	0			
+%R	95314	91185	91184	7101	7101	PR_FS	0			
+%R	95315	91186	91089	7101	7101	PR_FS	0			
+%R	95316	91186	91181	7101	7101	PR_FS	0			
+%R	95317	91187	91186	7101	7101	PR_FS	0			
+%R	95318	91188	91101	7101	7101	PR_FS	0			
+%R	95319	91188	91047	7101	7101	PR_FS	0			
+%R	95320	91189	91188	7101	7101	PR_FS	0			
+%R	95321	91190	91188	7101	7101	PR_FS	0			
+%R	95322	91190	91047	7101	7101	PR_FS	0			
+%R	95323	91191	91189	7101	7101	PR_FS	0			
+%R	95324	91191	91048	7101	7101	PR_FS	0			
+%R	95325	91191	91183	7101	7101	PR_FS	0			
+%R	95326	91191	91187	7101	7101	PR_FS	0			
+%R	95327	91191	91185	7101	7101	PR_FS	0			
+%R	95328	91192	91177	7101	7101	PR_FS	0			
+%R	95329	91192	91183	7101	7101	PR_FS	0			
+%R	95330	91192	91185	7101	7101	PR_FS	0			
+%R	95331	91192	91187	7101	7101	PR_FS	0			
+%R	95332	91192	91189	7101	7101	PR_FS	0			
+%R	95333	91192	91191	7101	7101	PR_FS	0			
+%R	95334	91192	91181	7101	7101	PR_FS	0			
+%R	95335	91192	91051	7101	7101	PR_FS	0			
+%R	95336	91192	91193	7101	7101	PR_FS	0			
+%R	95337	91192	91129	7101	7101	PR_FS	0			
+%R	95338	91192	91141	7101	7101	PR_FS	0			
+%R	95339	91192	91153	7101	7101	PR_FS	0			
+%R	95340	91192	91165	7101	7101	PR_FS	0			
+%R	95341	91193	91130	7101	7101	PR_FS	0			
+%R	95342	91193	91142	7101	7101	PR_FS	0			
+%R	95343	91193	91154	7101	7101	PR_FS	0			
+%R	95344	91193	91166	7101	7101	PR_FS	0			
+%R	95345	91193	91178	7101	7101	PR_FS	0			
+%R	95346	91194	91190	7101	7101	PR_FS	0			
+%R	95347	91194	91189	7101	7101	PR_FS	0			
+%R	95348	91195	91194	7101	7101	PR_FS	0			
+%R	95349	91196	91193	7101	7101	PR_FS	0			
+%R	95350	91196	91050	7101	7101	PR_FS	0			
+%R	95351	91196	91192	7101	7101	PR_FS	0			
+%R	95352	91197	91192	7101	7101	PR_FS	0			
+%R	95353	91197	91191	7101	7101	PR_FS	0			
+%R	95354	91198	91196	7101	7101	PR_FS	0			
+%R	95355	91198	91197	7101	7101	PR_FS	0			
+%R	95356	91198	91195	7101	7101	PR_FS	0			
+%R	95357	91199	91198	7101	7101	PR_FS	0			
+%R	95358	91200	91199	7101	7101	PR_FS	0			
+%R	95359	91201	91200	7101	7101	PR_FS	0			
+%R	95360	91202	91198	7101	7101	PR_FS	0			
+%R	95361	91203	91198	7101	7101	PR_FS	0			
+%R	95362	91204	91198	7101	7101	PR_FS	0			
+%R	95363	91205	91202	7101	7101	PR_FS	0			
+%R	95364	91205	91203	7101	7101	PR_FS	0			
+%R	95365	91206	91205	7101	7101	PR_FS	0			
+%R	95366	91207	91204	7101	7101	PR_FS	0			
+%R	95367	91207	91199	7101	7101	PR_FS	0			
+%R	95368	91208	91206	7101	7101	PR_FS	0			
+%R	95369	91208	91207	7101	7101	PR_FS	0			
+%R	95370	91208	91201	7101	7101	PR_FS	0			
+%R	95371	91209	91208	7101	7101	PR_FS	0			
+%R	95372	91210	91209	7101	7101	PR_FS	0			
+%R	95373	91211	91020	7101	7101	PR_SS	0			
+%R	95374	91211	91118	7101	7101	PR_FF	0			
+%R	95375	91212	91020	7101	7101	PR_SS	0			
+%R	95376	91212	91118	7101	7101	PR_FF	0			
+%R	95377	91213	91119	7101	7101	PR_SS	0			
+%R	95378	91213	91176	7101	7101	PR_FF	0			
+%R	95379	91214	91119	7101	7101	PR_SS	0			
+%R	95380	91214	91176	7101	7101	PR_FF	0			
+%R	95381	91215	91196	7101	7101	PR_SS	0			
+%R	95382	91215	91199	7101	7101	PR_FF	0			
+%R	95383	91216	91196	7101	7101	PR_SS	0			
+%R	95384	91216	91199	7101	7101	PR_FF	0			
+%R	95385	91217	91201	7101	7101	PR_SS	0			
+%R	95386	91217	91208	7101	7101	PR_FF	0			
+%R	95387	91218	91201	7101	7101	PR_SS	0			
+%R	95388	91218	91208	7101	7101	PR_FF	0			
+%R	95389	91219	91001	7101	7101	PR_SS	0			
+%R	95390	91219	91208	7101	7101	PR_FF	0			
 %E
