@@ -476,7 +476,6 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	91217	7101	81002	7612	0	N	1	N	N	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MOB-1053	Site security, fencing & traffic management - handover period (LOE)		0	0	80	0	0	0	80	0	0	0				2027-11-02 08:00	2027-11-15 16:00		2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00		PT_Normal					eLuYbCE69hHgORrqpI+VuA				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91218	7101	81002	7612	0	N	1	N	N	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MOB-1083	Protection Officer on site - handover period (LOE)		0	0	80	0	0	0	80	0	0	0				2027-11-02 08:00	2027-11-15 16:00		2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00	2027-11-02 08:00	2027-11-15 16:00		PT_Normal					Fw5Q0lNtIacqEcSFasY9pg				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %R	91219	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MGT-1060	Project management, QA/QC & HSE supervision and records (LOE)		0	0	2008	0	0	0	2008	0	0	0				2026-11-16 08:00	2027-11-15 16:00		2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00		PT_Normal					8ygE3b1zhentTp3X1R0xvQ				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
-%R	91220	7101	81002	7611	0	N	1	N	N	CP_Drtn	TT_LOE	DT_FixedDrtn	TK_NotStart	MGT-1070	Weekly & monthly progress reporting (LOE)		0	0	2008	0	0	0	2008	0	0	0				2026-11-16 08:00	2027-11-15 16:00		2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00	2026-11-16 08:00	2027-11-15 16:00		PT_Normal					JbtGNV7LkqyiTJ26dD1E4w				N	0	0			2026-11-23 08:00	2026-11-23 08:00	admin	admin	
 %T	TASKPRED
 %F	task_pred_id	task_id	pred_task_id	proj_id	pred_proj_id	pred_type	lag_hr_cnt	float_path	aref	arls
 %R	95000	91001	91000	7101	7101	PR_FS	0			
@@ -857,8 +856,6 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	95375	91218	91208	7101	7101	PR_FF	0			
 %R	95376	91219	91001	7101	7101	PR_SS	0			
 %R	95377	91219	91208	7101	7101	PR_FF	0			
-%R	95378	91220	91001	7101	7101	PR_SS	0			
-%R	95379	91220	91208	7101	7101	PR_FF	0			
 %T	TASKRSRC
 %F	taskrsrc_id	task_id	proj_id	cost_qty_link_flag	role_id	rsrc_id	pobs_id	remain_qty	target_qty	remain_qty_per_hr	target_qty_per_hr	target_cost	cost_per_qty	remain_cost	act_reg_cost	act_ot_cost	act_reg_qty	act_ot_qty	target_start_date	target_end_date
 %R	96000	91002	7101	Y		61000		188800.0	188800.0			188800.0	1	188800.0	0	0	0	0	2026-11-18 08:00	2026-11-23 16:00
@@ -3955,19 +3952,6 @@ ERMHDR	16.1	2026-11-23	Project	admin	Admin	dbxDatabaseNoName	Project Management	
 %R	91219	63010	64091	7101
 %R	91219	63011	64097	7101
 %R	91219	63012	64099	7101
-%R	91220	63000	64000	7101
-%R	91220	63001	64004	7101
-%R	91220	63002	64015	7101
-%R	91220	63003	64017	7101
-%R	91220	63004	64027	7101
-%R	91220	63005	64037	7101
-%R	91220	63006	64041	7101
-%R	91220	63007	64053	7101
-%R	91220	63008	64058	7101
-%R	91220	63009	64089	7101
-%R	91220	63010	64091	7101
-%R	91220	63011	64097	7101
-%R	91220	63012	64099	7101
 %T	UDFVALUE
 %F	udf_type_id	fk_id	proj_id	udf_date	udf_number	udf_text	udf_code_id
 %R	65001	91002	7101			Item 04: 80.0% = 188,800.00	
