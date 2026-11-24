@@ -7,7 +7,7 @@
   var CODE = { A: '#2e7d32', B: '#6aa84f', C: '#e69a00', D: '#c62828' };
   var PPD = { day: 18, week: 4.6, month: 1.3 }; // pixels per day of the on-screen chart
 
-  var S = { alertDays: 14, sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { late: true, error: true, warn: true, info: false } };
+  var S = { col: '', alertDays: 14, sortPri: true, buf: null, name: '', model: null, scale: 'week', status: {}, project: '', q: '', collapsed: {}, sev: { late: true, error: true, warn: true, info: false } };
 
   function h(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function iso(n) { return M.serialToDate(n).toISOString().slice(0, 10); }
@@ -165,15 +165,22 @@
     $('rowHint').textContent = shown + ' of ' + items.length + ' lines shown · hover a bar for the dates · ' + (S.scale === 'day' ? 'daily' : S.scale === 'week' ? 'weekly' : 'monthly') + ' scale';
   }
 
+  var CHECK_COLS = ['Submission Date', 'Review Date', 'Status', 'Code', 'Priority', 'Submittal No'];
   function renderChecks() {
     var all = S.model.checks, n = all.filter(function (k) { return k.sev !== 'info'; }).length;
     $('checkCount').textContent = n ? n : '';
     Array.prototype.forEach.call(document.querySelectorAll('#cFilter .chip'), function (b) { b.classList.toggle('on', !!S.sev[b.dataset.sev]); });
-    var rows = all.filter(function (k) { return S.sev[k.sev]; });
-    $('checksTable').innerHTML = '<thead><tr><th></th><th>Project</th><th>Element</th><th>Row</th><th>Finding</th></tr></thead><tbody>' +
+    var bySev = all.filter(function (k) { return S.sev[k.sev]; });
+    // one option per column the problem sits in (counts follow the severity chips above)
+    $('cCols').innerHTML = '<span class="cap">Column</span>' + [''].concat(CHECK_COLS).map(function (c) {
+      var cnt = c ? bySev.filter(function (k) { return k.col === c; }).length : bySev.length;
+      return '<button type="button" class="chip' + (S.col === c ? ' on' : '') + (cnt ? '' : ' zero') + '" data-col="' + h(c) + '">' + (c || 'All columns') + ' <b>' + cnt + '</b></button>';
+    }).join('');
+    var rows = bySev.filter(function (k) { return !S.col || k.col === S.col; });
+    $('checksTable').innerHTML = '<thead><tr><th></th><th>Column</th><th>Project</th><th>Element</th><th>Row</th><th>Finding</th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (k) {
-        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'late' ? 'OVERDUE' : k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
-      }).join('') : '<tr><td colspan="5" style="padding:18px;color:#78909c">Nothing to report for this selection.</td></tr>') + '</tbody>';
+        return '<tr><td><span class="sev ' + k.sev + '">' + (k.sev === 'late' ? 'OVERDUE' : k.sev === 'error' ? 'ERROR' : k.sev === 'warn' ? 'WARN' : 'NOTE') + '</span></td><td><span class="coltag">' + h(k.col || '') + '</span></td><td>' + h(k.project) + '</td><td>' + h(k.element) + '</td><td>' + k.row + '</td><td>' + h(k.msg) + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="padding:18px;color:#78909c">Nothing to report for this selection.</td></tr>') + '</tbody>';
   }
 
   function renderRules() {
@@ -271,6 +278,10 @@
     $('cFilter').addEventListener('click', function (e) {
       var b = e.target.closest('.chip'); if (!b) return;
       S.sev[b.dataset.sev] = !S.sev[b.dataset.sev]; renderChecks();
+    });
+    $('cCols').addEventListener('click', function (e) {
+      var b = e.target.closest('.chip'); if (!b) return;
+      S.col = b.dataset.col; renderChecks();
     });
     $('fSort').addEventListener('click', function () { S.sortPri = !S.sortPri; this.classList.toggle('on', S.sortPri); S.collapsed = {}; renderGantt(); });
     $('fSort').classList.toggle('on', S.sortPri);

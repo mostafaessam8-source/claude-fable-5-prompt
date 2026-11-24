@@ -252,24 +252,32 @@
 
   function runChecks(model) {
     var out = [];
-    function add(sev, p, e, msg) { out.push({ sev: sev, project: p.code || p.name, element: e.name, row: e.row, msg: msg }); }
+    function add(sev, p, e, msg, col) { out.push({ sev: sev, col: col || '', project: p.code || p.name, element: e.name, row: e.row, msg: msg }); }
     model.projects.forEach(function (p) {
       [{ row: p.row, name: p.name, ps: p.ps, pa: p.pa }].concat(p.elements).forEach(function (e) {
-        if (isNum(e.ps) && isNum(e.pa) && e.pa < e.ps) add('error', p, e, 'Approval Date (' + fmtDate(e.pa) + ') is before Submission Date (' + fmtDate(e.ps) + ').');
-        else if (isNum(e.pa) && !isNum(e.ps)) add('warn', p, e, 'Approval Date is filled but the Submission Date is empty.');
-        if (e.code && !/^[ABCD]$/.test(e.code)) add('warn', p, e, 'SAR code "' + e.code + '" is not A, B, C or D.');
-        if (e.strPs) add('info', p, e, 'Submission Date contains text, not a date.');
+        if (isNum(e.ps) && isNum(e.pa) && e.pa < e.ps) add('error', p, e, 'Approval Date (' + fmtDate(e.pa) + ') is before Submission Date (' + fmtDate(e.ps) + ').', 'Review Date');
+        else if (isNum(e.pa) && !isNum(e.ps)) add('warn', p, e, 'Approval Date is filled but the Submission Date is empty.', 'Submission Date');
+        if (e.code && !/^[ABCD]$/.test(e.code)) add('warn', p, e, 'SAR code "' + e.code + '" is not A, B, C or D.', 'Code');
+        if (e.strPs) add('info', p, e, 'Submission Date contains text, not a date.', 'Submission Date');
       });
-      p.elements.forEach(function (e) { if (!isNum(e.ps) && !isNum(e.pa)) add('info', p, e, 'No Submission / Approval dates entered yet.'); });
-      if (!p.elements.length && !isNum(p.ps) && !isNum(p.pa)) add('info', p, { name: p.name, row: p.row }, 'Project has no dates and no element rows.');
+      p.elements.forEach(function (e) { if (!isNum(e.ps) && !isNum(e.pa)) add('info', p, e, 'No Submission / Approval dates entered yet.', 'Submission Date'); });
+      if (!p.elements.length && !isNum(p.ps) && !isNum(p.pa)) add('info', p, { name: p.name, row: p.row }, 'Project has no dates and no element rows.', 'Submission Date');
     });
     // overdue dates = the red cells of the date colour coding: the planned date is already behind the data date and the step is not done
     var cut = model.meta.cut, DONE_SUB = { 'Submitted': 1, 'Under Review': 1, 'Approved': 1 };
     if (isNum(cut)) model.projects.forEach(function (p) {
       p.elements.forEach(function (e) {
         if (!e.subst) return;
-        if (isNum(e.ps) && e.ps < cut && !DONE_SUB[e.subst]) add('late', p, e, 'Submission overdue by ' + (cut - e.ps) + ' day' + (cut - e.ps === 1 ? '' : 's') + ': planned ' + fmtDate(e.ps) + ', status "' + e.subst + '".');
-        if (isNum(e.pa) && e.pa < cut && e.subst !== 'Approved') add('late', p, e, 'Review / approval overdue by ' + (cut - e.pa) + ' day' + (cut - e.pa === 1 ? '' : 's') + ': planned ' + fmtDate(e.pa) + ', status "' + e.subst + '".');
+        if (isNum(e.ps) && e.ps < cut && !DONE_SUB[e.subst]) add('late', p, e, 'Submission overdue by ' + (cut - e.ps) + ' day' + (cut - e.ps === 1 ? '' : 's') + ': planned ' + fmtDate(e.ps) + ', status "' + e.subst + '".', 'Submission Date');
+        if (isNum(e.pa) && e.pa < cut && e.subst !== 'Approved') add('late', p, e, 'Review / approval overdue by ' + (cut - e.pa) + ' day' + (cut - e.pa === 1 ? '' : 's') + ': planned ' + fmtDate(e.pa) + ', status "' + e.subst + '".', 'Review Date');
+      });
+    });
+    // other columns
+    model.projects.forEach(function (p) {
+      p.elements.forEach(function (e) {
+        if (!e.subst && (isNum(e.ps) || isNum(e.pa))) add('warn', p, e, 'Status is empty although the row has dates.', 'Status');
+        if (DONE_SUB[e.subst] && !String(e.rev || '').trim()) add('warn', p, e, 'Status is "' + e.subst + '" but the Submittal No is empty.', 'Submittal No');
+        if (!isFinite(e.pri)) add('info', p, e, 'Priority is empty.', 'Priority');
       });
     });
     var rank = { late: 0, error: 1, warn: 2, info: 3 };
