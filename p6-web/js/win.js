@@ -292,6 +292,7 @@
 
   // ======================= WBS =======================
   function renderWbs(el) {
+    if (App.renderWbsWin) return App.renderWbsWin(el);
     const p = App.p, ru = App.ru || P6.rollup(p), M = App.getCtx().M;
     const by = new Map(p.wbs.map((w) => [w.id, w]));
     const order = [], kids = (id) => p.wbs.filter((w) => w.parent === id).sort((a, b) => (a.seq - b.seq) || a.code.localeCompare(b.code, undefined, { numeric: true }));

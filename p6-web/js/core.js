@@ -426,12 +426,13 @@
       }
       for (const k of kids.get(id) || []) {
         const c = calc(k);
-        r.es = Math.min(r.es, c.es); r.ef = Math.max(r.ef, c.ef);
-        r.bs = Math.min(r.bs, c.bs); r.bf = Math.max(r.bf, c.bf);
+        const nl = (v, d) => (v == null ? d : v);   // a child WBS with no activities has null dates – they must not count as 0
+        r.es = Math.min(r.es, nl(c.es, Infinity)); r.ef = Math.max(r.ef, nl(c.ef, -Infinity));
+        r.bs = Math.min(r.bs, nl(c.bs, Infinity)); r.bf = Math.max(r.bf, nl(c.bf, -Infinity));
         r.as = Math.min(r.as, c.as); r.af = Math.max(r.af, c.af);
         r.dur += c.dur; r.done += c.done; r.crit = r.crit || c.crit; r.count += c.count;
-        r.nNS += c.nNS; r.nIP += c.nIP; r.nC += c.nC; r.nCrit += c.nCrit; r.rem += c.rem; r.ls = Math.min(r.ls, c.ls); r.lf = Math.max(r.lf, c.lf);
-        r.tf = Math.min(r.tf, c.tf);
+        r.nNS += c.nNS; r.nIP += c.nIP; r.nC += c.nC; r.nCrit += c.nCrit; r.rem += c.rem; r.ls = Math.min(r.ls, nl(c.ls, Infinity)); r.lf = Math.max(r.lf, nl(c.lf, -Infinity));
+        r.tf = Math.min(r.tf, nl(c.tf, Infinity));
         if (!c.allC || !c.count) r.allC = r.allC && c.allC;
       }
       r.pct = r.dur > 0 ? Math.round((r.done / r.dur) * 100) : 0;
