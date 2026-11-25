@@ -19,7 +19,7 @@ const DT = 'dd-mmm-yyyy hh:mm'
 const DT_SHORT = 'dd-mmm hh:mm'
 export const PLAN_FIRST = 2 // first data row of the Plan sheet
 export const G_FIRST = 7 // first row under the header of the Gantt sheet
-export const BLOCK = 9 // rows of the header block above each culvert (title + layout picture + figures)
+export const BLOCK = 2 // rows of the header above each culvert: the title bar with the figures, and a strip with the plan finish, hold points and manpower
 
 export function colName(n: number): string {
   let s = ''
@@ -215,27 +215,14 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     dark(g0, Math.min(gEnd, g0 + 23), { formula: `IF(${wsum}=0,"","FORECAST FINISH  "&TEXT(${mx(fen, 'MAXIFS')},"ddd dd-mmm hh:mm")&"      HAND-BACK  "&TEXT(Project!$B$11,"ddd dd-mmm hh:mm"))` }, 10)
     if (gEnd >= g0 + 24) dark(g0 + 24, gEnd, { formula: `IF(${wsum}=0,"",COUNTIFS(${cb},${code},${vr},">0.1")&" OF "&COUNTIFS(${cb},${code},${w},">0")&" ACTIVITIES BEHIND PLAN")` }, 10)
     ws.getRow(top).height = 24
-    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 14.5
-    for (let r = top + 1; r <= last; r++) for (let c = 1; c <= 12; c++) ws.getCell(r, c).fill = solid('#FFFFFF')
-    if (bk.card) {
-      const id = wb.addImage({ buffer: bk.card.data as unknown as ExcelJS.Buffer, extension: 'png' })
-      const wd = 170
-      ws.addImage(id, { tl: { col: 0.12, row: top + 0.12 }, ext: { width: wd, height: Math.round((wd * bk.card.height) / bk.card.width) } })
-    }
-    // beside the picture: the plan finish and the protocol's hold points
-    const items: [string, string, string?][] = [
-      ['PLAN FINISH', `IF(${wsum}=0,"",${mx(pf, 'MAXIFS')})`, 'ddd dd-mmm hh:mm'],
-      ['HOLD POINTS', `COUNTIFS(Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code},Plan!$L$${PLAN_FIRST}:$L$${PLAN_FIRST + acts - 1},"<>")&"   (SAR attends "&COUNTIFS(Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code},Plan!$M$${PLAN_FIRST}:$M$${PLAN_FIRST + acts - 1},"Yes")&")"`],
-      ['MANPOWER (sum)', `SUMIFS(Plan!$G$${PLAN_FIRST}:$G$${PLAN_FIRST + acts - 1},Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code})`, '0'],
-    ]
-    items.forEach(([label, f, nf], k) => {
-      const r = top + 1 + k
-      ws.mergeCells(r, 4, r, 6); ws.mergeCells(r, 7, r, 10)
-      const a = ws.getCell(r, 4), v = ws.getCell(r, 7)
-      a.value = label; a.font = font(TEAL, 9, true); a.alignment = { vertical: 'middle', horizontal: 'right' }
-      v.value = { formula: f }; v.font = font(INK, 10, true); v.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }; v.fill = solid('#E6F1F4')
-      if (nf) v.numFmt = nf
-    })
+    // the second line: plan finish, hold points of the protocol, manpower
+    const pr = (col: string) => `Plan!$${col}$${PLAN_FIRST}:$${col}$${PLAN_FIRST + acts - 1}`
+    ws.mergeCells(last, 1, last, gEnd)
+    const strip = ws.getCell(last, 1)
+    strip.value = { formula: `IF(${wsum}=0,"","PLAN FINISH  "&TEXT(${mx(pf, 'MAXIFS')},"ddd dd-mmm hh:mm")&"          HOLD POINTS  "&COUNTIFS(${pr('A')},${code},${pr('L')},"<>")&"  (SAR attends "&COUNTIFS(${pr('A')},${code},${pr('M')},"Yes")&")          MANPOWER  "&SUMIFS(${pr('G')},${pr('A')},${code}))` }
+    strip.font = font(TEAL, 9, true); strip.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    for (let c = 1; c <= gEnd; c++) ws.getCell(last, c).fill = solid('#E6F1F4')
+    ws.getRow(last).height = 17
   })
   for (const c of lvlCells) lvl(c, `$${c.replace(/(\d+)/, '$$$1')}`)
   ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:6', printArea: `A1:${L(gEnd)}${rowOf(Math.max(1, used) - 1) + 1}`, horizontalCentered: true, margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
