@@ -15,6 +15,7 @@ import { LEVELS, LEVEL_INFO } from '../protocol/status'
 const TEAL = '#00778B'
 const INK = '#3D3935'
 const DT = 'dd-mmm-yyyy hh:mm'
+const DT_SHORT = 'dd-mmm hh:mm'
 export const PLAN_FIRST = 2 // first data row of the Plan sheet
 export const G_FIRST = 7 // first data row of the Gantt sheet (two rows per activity)
 
@@ -24,7 +25,7 @@ export function colName(n: number): string {
   return s
 }
 
-interface Opts { hours: number; acts: number }
+interface Opts { hours: number; acts: number; /** how many activity rows have data (the print area stops there) */ used: number }
 
 /** The Gantt column a cell of the helper block lives in. */
 const helper = (hours: number) => {
@@ -32,16 +33,16 @@ const helper = (hours: number) => {
   return { AS: h0, AE: h0 + 1, FS: h0 + 2, FE: h0 + 3, W: h0 + 4, AP: h0 + 5, PP: h0 + 6, VAR: h0 + 7, FEN: h0 + 8, PF: h0 + 9, OV: h0 + 10, FIRST: h0 + 11, TOK: h0 + 12, REF: h0 + 13, REL: h0 + 14, PR: h0 + 15, PCAR: h0 + 16, GAP: h0 + 17 }
 }
 
-export function addGantt(wb: ExcelJS.Workbook, { hours, acts }: Opts) {
+export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used }: Opts) {
   const ws = wb.addWorksheet('Gantt', { views: [{ state: 'frozen', xSplit: 6, ySplit: 6, showGridLines: false }] })
   const g0 = 14 // first Gantt column (N)
   const gEnd = 13 + hours
   const H = helper(hours)
   const lastRow = G_FIRST + 2 * acts - 1
   const L = (c: number) => colName(c)
-  const widths = [10, 8, 44, 13, 12, 15, 17, 17, 8, 7, 22, 8, 1]
+  const widths = [9, 7, 36, 10, 11, 10, 12.5, 12.5, 6, 6, 18, 6.5, 1]
   widths.forEach((w, i) => { ws.getColumn(i + 1).width = w })
-  for (let c = g0; c <= gEnd; c++) ws.getColumn(c).width = 3.1
+  for (let c = g0; c <= gEnd; c++) ws.getColumn(c).width = 2.7
   ws.getColumn(gEnd + 1).width = 1
   for (let c = H.AS; c <= H.GAP; c++) { ws.getColumn(c).width = 12; ws.getColumn(c).hidden = true }
 
@@ -123,7 +124,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts }: Opts) {
     ws.mergeCells(g1, 11, g2, 11)
     ws.getCell(g1, 11).value = { formula: `IF(OR(${S}="",${F}=""),"",IF(${AF}<>"",IF(${AF}<${F}-1/1440,"Completed - Ahead",IF(${AF}<=${F}+1/1440,"Completed - On Time","Completed - Delayed")),IF(${AS}<>"",IF($L${g2}<=0.1,"In Progress - On Track","In Progress - BEHIND"),IF(${CUT}<${S},"Not Started","NOT STARTED - LATE"))))` }
     ws.getCell(g1, 11).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; ws.getCell(g1, 11).font = font(INK, 8, true)
-    for (const [g, c] of [[g1, 7], [g1, 8], [g2, 7], [g2, 8]] as const) { ws.getCell(g, c).numFmt = DT; ws.getCell(g, c).alignment = { horizontal: 'center', vertical: 'middle' } }
+    for (const [g, c] of [[g1, 7], [g1, 8], [g2, 7], [g2, 8]] as const) { ws.getCell(g, c).numFmt = DT_SHORT; ws.getCell(g, c).alignment = { horizontal: 'center', vertical: 'middle' } }
     ws.getCell(g2, 8).font = font('#5B6770', 9)
     ws.getCell(g1, 9).numFmt = '0.0'; ws.getCell(g2, 9).numFmt = '0.0'; ws.getCell(g1, 10).numFmt = '0%'; ws.getCell(g2, 10).numFmt = '0%'; ws.getCell(g2, 12).numFmt = '+0.0;-0.0;0.0'
     for (const [g, c] of [[g1, 9], [g2, 9], [g1, 10], [g2, 10], [g2, 12]] as const) ws.getCell(g, c).alignment = { horizontal: 'center', vertical: 'middle' }
@@ -180,7 +181,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts }: Opts) {
     { type: 'expression', priority: pri++, formulae: [`ISNUMBER(SEARCH("Completed",$K${G_FIRST}))`], style: { fill: cfFill('#D9EEF1') } },
   ] })
   // legend under the title block
-  ws.pageSetup = { orientation: 'landscape', paperSize: 8 as never, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '5:6', margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
+  ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '5:6', printArea: `A1:${L(gEnd)}${G_FIRST + 2 * Math.max(1, used) - 1}`, horizontalCentered: true, margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
   ws.headerFooter = { oddFooter: `&L${DOC_DEFAULTS.docNo}  Rev ${DOC_DEFAULTS.rev}  ${DOC_DEFAULTS.effective}&RPage &P of &N` }
   return { H, lastRow, g0, gEnd, helperRange: range }
 }

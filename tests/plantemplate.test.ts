@@ -51,6 +51,8 @@ describe('SAR plan template', () => {
     expect(f('Gantt', 'G7')).toMatch(/Plan!/)
     expect(f('Status Update', 'B9')).toMatch(/SUMPRODUCT/)
     expect(wb.getWorksheet('Delay Notification')!.getCell('B6').value).toBe('C290-01')
+    for (const w of wb.worksheets) expect(w.pageSetup.paperSize).toBe(9) // every sheet prints on A4
+    expect(wb.getWorksheet('Gantt')!.pageSetup.fitToWidth).toBe(1)
   }, 60000)
   it('refuses other workbooks', async () => {
     expect(await isPlanTemplate(FIXTURE)).toBe(false)
