@@ -13,6 +13,7 @@ import { DELAY_CAUSES } from '../protocol/lists'
 import { DOC_DEFAULTS } from '../protocol/docControl'
 import { LEVELS, LEVEL_INFO } from '../protocol/status'
 import { box, center, font, left, solid } from '../export/styles'
+import { addForms, addGantt } from './trackerSheets'
 import { date, ImportError, isBlank, num, plain, text, addUnits } from './cells'
 
 export const PLAN_MARK = 'SAR SHUTDOWN PLAN TEMPLATE'
@@ -34,30 +35,6 @@ function banner(ws: ExcelJS.Worksheet, title: string, width: number) {
   c.value = title
   c.font = font('#FFFFFF', 13, true); c.fill = solid(TEAL); c.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
   ws.getRow(1).height = 26
-}
-
-/** Blank protocol form: label | value rows under the SAR document header. */
-function formSheet(wb: ExcelJS.Workbook, name: string, title: string, rows: string[], extra?: (ws: ExcelJS.Worksheet, row: number) => void) {
-  const ws = wb.addWorksheet(name, { views: [{ showGridLines: false }] })
-  ws.columns = [{ width: 38 }, { width: 70 }]
-  ws.mergeCells('A1:B1'); ws.getCell('A1').value = `Function: ${DOC_DEFAULTS.fn}      Department: ${DOC_DEFAULTS.dept}`; ws.getCell('A1').font = font(INK, 9, true)
-  ws.mergeCells('A2:B2'); ws.getCell('A2').value = `Document Title: ${DOC_DEFAULTS.title}`; ws.getCell('A2').font = font(INK, 9)
-  ws.mergeCells('A4:B4'); ws.getCell('A4').value = title; ws.getCell('A4').font = font(TEAL, 14, true)
-  let r = 6
-  for (const k of rows) {
-    const a = ws.getCell(r, 1), b = ws.getCell(r, 2)
-    a.value = k; a.font = font(INK, 10, true); a.fill = solid('#F2F8F9'); a.border = box; a.alignment = left
-    b.border = box; b.alignment = left; b.fill = solid('#FFFFFF')
-    ws.getRow(r).height = 22
-    r++
-  }
-  r++
-  extra?.(ws, r)
-  ws.mergeCells(r + 12, 1, r + 12, 2)
-  const f = ws.getCell(r + 12, 1)
-  f.value = `Document No.: ${DOC_DEFAULTS.docNo}     Rev. No.: ${DOC_DEFAULTS.rev}     Effective Date: ${DOC_DEFAULTS.effective}`
-  f.font = font('#FFFFFF', 9, true); f.fill = solid(TEAL)
-  ws.pageSetup = { orientation: 'portrait', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 1 }
 }
 
 /** The template, empty (a worked example of two rows) or filled from a project. */
@@ -153,6 +130,12 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   pl.autoFilter = { from: 'A1', to: { row: 1, column: PLAN_HEAD.length } }
   pl.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
 
+  // ---- the live sheets: Gantt (plan vs actual / forecast) and the protocol forms, all driven by formulas ----
+  const acts = Math.max(150, (project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 0) + 30)
+  const hours = Math.min(168, Math.max(24, Math.ceil(project ? (project.settings.unit === 'days' ? project.settings.duration * 24 : project.settings.duration) : 48)))
+  const g = addGantt(wb, { hours, acts })
+  addForms(wb, g, acts, { ref: project ? `${lay[0]?.code || 'L1'}-01` : 'C290-01', code: lay[0]?.code ?? 'C290' })
+  wb.calcProperties = { fullCalcOnLoad: true }
   // ---- Lists ----
   const li = wb.addWorksheet(SHEETS.lists)
   li.getCell('A1').value = 'Delay cause'; li.getCell('A1').font = font(INK, 10, true)
@@ -160,14 +143,6 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   li.getColumn(1).width = 40
   li.getCell('C1').value = 'Status level'; li.getCell('C1').font = font(INK, 10, true)
   LEVELS.forEach((l, i) => { const c = li.getCell(i + 2, 3); c.value = LEVEL_INFO[l].label; c.fill = solid(LEVEL_INFO[l].bg); c.font = font(LEVEL_INFO[l].fg, 10, true) })
-
-  // ---- blank protocol forms ----
-  formSheet(wb, 'Delay Notification', 'Appendix B – Delay Notification Template', ['Project / Location', 'Shutdown Ref', 'Date / Time', 'Activity', 'Delay', 'Cause', 'Impact / Milestone', 'Original Handback', 'Current Forecast', 'Recovery Action', 'Additional Resources', 'SAR Support Required', 'Next Update', 'Contractor Responsible Manager'])
-  formSheet(wb, 'Recovery Plan', 'Appendix C – Recovery Plan Template', ['Project / Location', 'Current Status', 'Delay / Root Cause', 'Remaining Activities', 'Critical Path', 'Recovery Measures', 'Additional Resources', 'Revised Forecast', 'SAR Support Required', 'Update Frequency', 'Next Update', 'Contractor Responsible Manager'])
-  formSheet(wb, 'Status Update', 'Appendix D – Shutdown Status Update', ['Project / Location', 'Update Time', 'Overall Progress', 'Planned', 'Variance', 'Delay', 'Current Forecast', 'Outstanding Activities', 'Recovery', 'SAR Support', 'Operational Impact', 'Next Update', 'Status: Green / Yellow / Orange / Red'], (ws, row) => {
-    ;['Status', 'Trigger', 'Minimum Requirement'].forEach((h, i) => { const c = ws.getCell(row, i + 1); c.value = h; c.fill = solid(TEAL); c.font = font('#FFFFFF', 10, true); c.border = box })
-    LEVELS.forEach((l, i) => { const r = row + 1 + i; const a = ws.getCell(r, 1); a.value = LEVEL_INFO[l].label; a.fill = solid(LEVEL_INFO[l].bg); a.font = font(LEVEL_INFO[l].fg, 10, true); ws.getCell(r, 2).value = LEVEL_INFO[l].trigger; ws.getCell(r, 3).value = LEVEL_INFO[l].requirement; for (let c = 1; c <= 3; c++) ws.getCell(r, c).border = box })
-  })
 
   return new Uint8Array(await wb.xlsx.writeBuffer())
 }

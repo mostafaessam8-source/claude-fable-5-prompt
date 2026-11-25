@@ -41,6 +41,17 @@ describe('SAR plan template', () => {
     expect(back.project.settings.shutdown).toMatchObject({ ref: 'SD-03', manager: 'A. Manager' })
     expect(back.project.settings.possessionStart.getTime()).toBe(p.settings.possessionStart.getTime())
   }, 120000)
+  it('the tracker workbook has the live sheets in order, with formulas', async () => {
+    const ExcelJS = (await import('exceljs')).default
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load((await buildPlanTemplate()) as unknown as ArrayBuffer)
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['Project', 'Locations', 'Plan', 'Gantt', 'Status Update', 'Delay Notification', 'Recovery Plan', 'Lists'])
+    const f = (ws: string, a: string) => (wb.getWorksheet(ws)!.getCell(a).value as { formula?: string }).formula
+    expect(f('Gantt', 'C4')).toMatch(/NOW\(\)/)
+    expect(f('Gantt', 'G7')).toMatch(/Plan!/)
+    expect(f('Status Update', 'B9')).toMatch(/SUMPRODUCT/)
+    expect(wb.getWorksheet('Delay Notification')!.getCell('B6').value).toBe('C290-01')
+  }, 60000)
   it('refuses other workbooks', async () => {
     expect(await isPlanTemplate(FIXTURE)).toBe(false)
     await expect(parsePlanTemplate(FIXTURE)).rejects.toThrow(/not the SAR Shutdown Plan template/)
