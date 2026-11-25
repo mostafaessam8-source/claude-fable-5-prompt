@@ -25,7 +25,10 @@ export function colName(n: number): string {
   return s
 }
 
-interface Opts { hours: number; acts: number; /** how many activity rows have data (the print area stops there) */ used: number }
+interface Opts { hours: number; acts: number; /** how many activity rows have data (the print area stops there) */ used: number
+  /** indexes (0-based, among the activities) where a new culvert starts: the Gantt prints one culvert per page */
+  starts: number[]
+}
 
 /** The Gantt column a cell of the helper block lives in. */
 const helper = (hours: number) => {
@@ -33,7 +36,7 @@ const helper = (hours: number) => {
   return { AS: h0, AE: h0 + 1, FS: h0 + 2, FE: h0 + 3, W: h0 + 4, AP: h0 + 5, PP: h0 + 6, VAR: h0 + 7, FEN: h0 + 8, PF: h0 + 9, OV: h0 + 10, FIRST: h0 + 11, TOK: h0 + 12, REF: h0 + 13, REL: h0 + 14, PR: h0 + 15, PCAR: h0 + 16, GAP: h0 + 17 }
 }
 
-export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used }: Opts) {
+export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, starts }: Opts) {
   const ws = wb.addWorksheet('Gantt', { views: [{ state: 'frozen', xSplit: 6, ySplit: 6, showGridLines: false }] })
   const g0 = 14 // first Gantt column (N)
   const gEnd = 13 + hours
@@ -180,7 +183,8 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used }: Opts) {
     { type: 'expression', priority: pri++, formulae: [`OR(ISNUMBER(SEARCH("Delayed",$K${G_FIRST})),ISNUMBER(SEARCH("LATE",$K${G_FIRST})),ISNUMBER(SEARCH("BEHIND",$K${G_FIRST})))`], style: { fill: cfFill('#F8D7D8'), font: { bold: true, color: { argb: 'FFCB2C30' } } } },
     { type: 'expression', priority: pri++, formulae: [`ISNUMBER(SEARCH("Completed",$K${G_FIRST}))`], style: { fill: cfFill('#D9EEF1') } },
   ] })
-  // legend under the title block
+  // one culvert per printed page: a page break above the first row of each culvert after the first
+  for (const i of starts) if (i > 0 && i < used) ws.getRow(G_FIRST + 2 * i - 1).addPageBreak()
   ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '5:6', printArea: `A1:${L(gEnd)}${G_FIRST + 2 * Math.max(1, used) - 1}`, horizontalCentered: true, margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
   ws.headerFooter = { oddFooter: `&L${DOC_DEFAULTS.docNo}  Rev ${DOC_DEFAULTS.rev}  ${DOC_DEFAULTS.effective}&RPage &P of &N` }
   return { H, lastRow, g0, gEnd, helperRange: range }

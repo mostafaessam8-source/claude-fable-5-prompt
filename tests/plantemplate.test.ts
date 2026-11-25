@@ -27,7 +27,11 @@ describe('SAR plan template', () => {
     p = patchActivity(p, 0, 3, { crew: 'Track 1', equipment: 'Loader', manpower: 12, holdPoint: 'HP-2 Levels', sarAttend: true, delayCause: 'Weather', actualStartDate: new Date(Date.UTC(2026, 9, 16)), actualStartTime: 3, pct: 0.4, remarks: 'note' })
     p = { ...p, settings: { ...p.settings, shutdown: { ref: 'SD-03', manager: 'A. Manager' } } }
     const layouts = p.locations.map((l) => parseLayout(l.name, l.scope))
-    const back = await parsePlanTemplate(await buildPlanTemplate(p, layouts))
+    const bytes = await buildPlanTemplate(p, layouts)
+    const zip = await (await import('jszip')).default.loadAsync(bytes)
+    const gantt = await zip.file('xl/worksheets/sheet4.xml')!.async('string')
+    expect((gantt.match(/<brk /g) ?? []).length).toBe(p.locations.length - 1) // one culvert per printed page
+    const back = await parsePlanTemplate(bytes)
     const a = computeProject(p), b = computeProject(back.project)
     expect(b.locations.length).toBe(a.locations.length)
     for (let i = 0; i < a.locations.length; i++) {
