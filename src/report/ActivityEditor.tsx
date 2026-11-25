@@ -23,8 +23,8 @@ function actualPatch(which: 'actualStart' | 'actualFinish', value: string): Part
 }
 
 /** Default widths (px) of the table's columns and their headers; the widths can be dragged (like Excel) and are saved with the project. */
-export const DEFAULT_ACT_COLS = [26, 28, 34, 340, 70, 210, 58, 62, 168, 168, 168, 168, 66, 92, 240]
-const HEADS = ['', '', '#', 'Activity', 'Duration (h)', 'Follows', 'Rel', 'Lag (h)', 'Planned start', 'Planned finish', 'Actual start', 'Actual finish', '% done', 'Status', 'Remarks']
+export const DEFAULT_ACT_COLS = [26, 28, 34, 340, 70, 210, 58, 62, 168, 168, 168, 168, 66, 92, 240, 110, 170, 74, 230, 74]
+const HEADS = ['', '', '#', 'Activity', 'Duration (h)', 'Follows', 'Rel', 'Lag (h)', 'Planned start', 'Planned finish', 'Actual start', 'Actual finish', '% done', 'Status', 'Remarks', 'Crew / team', 'Equipment', 'Manpower', 'Hold point', 'SAR attends']
 const cell = 'border-b border-slate-200 px-1 py-0.5'
 const field = 'w-full rounded border border-slate-300 px-1 py-0.5 text-xs'
 
@@ -60,7 +60,8 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth, onP
   const [dragging, setDragging] = useState<number[] | null>(null)
   const [drop, setDrop] = useState<number | null | undefined>(undefined) // undefined = no target, null = the end
   // ---- column widths ----
-  const cols = project.settings.activityCols && project.settings.activityCols.length === DEFAULT_ACT_COLS.length ? project.settings.activityCols : DEFAULT_ACT_COLS
+  const sc = project.settings.activityCols
+  const cols = sc && sc.length === DEFAULT_ACT_COLS.length ? sc : sc && sc.length === 15 ? [...sc, ...DEFAULT_ACT_COLS.slice(15)] : DEFAULT_ACT_COLS // widths saved before the shutdown columns existed keep theirs
   const tableW = cols.reduce((a, b) => a + b, 0)
   const setCols = (next: number[]) => onChange(applySettings(project, { activityCols: next }))
   const rz = useRef<null | { c: number; x0: number; w0: number; prevW?: number }>(null)
@@ -81,7 +82,7 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth, onP
   /** Autofit: the width that shows the longest text of the column (text columns), else the default. */
   const fitCol = (c: number) => {
     const font = '12px Calibri, Lato, Inter, sans-serif'
-    const texts = c === 3 ? acts.map((a) => a.name) : c === 14 ? acts.map((a) => a.remarks) : c === 5 ? acts.map((a) => `#${a.pred} ${nameOf(a.pred)}`) : null
+    const texts = c === 3 ? acts.map((a) => a.name) : c === 14 ? acts.map((a) => a.remarks) : c === 15 ? acts.map((a) => a.crew ?? '') : c === 16 ? acts.map((a) => a.equipment ?? '') : c === 18 ? acts.map((a) => a.holdPoint ?? '') : c === 5 ? acts.map((a) => `#${a.pred} ${nameOf(a.pred)}`) : null
     if (!texts) return DEFAULT_ACT_COLS[c]
     return Math.round(Math.min(700, Math.max(HEADS[c].length * 7 + 12, ...texts.map((t) => textWidth(t, font) + 28))))
   }
@@ -387,6 +388,14 @@ export function ActivityEditor({ project, layouts, result, onChange, onBoth, onP
                 </td>
                 <td className={cell}><span className="rounded px-1 font-bold" style={{ background: tone.bg, color: tone.fg }}>{r.status}</span></td>
                 <td className={cell}><NameInput value={a.remarks} blankOk placeholder="note / contractor remark" onCommit={(remarks) => edit({ remarks })} /></td>
+                <td className={cell}><NameInput value={a.crew ?? ''} blankOk placeholder="crew / team" onCommit={(crew) => edit({ crew })} /></td>
+                <td className={cell}><NameInput value={a.equipment ?? ''} blankOk placeholder="equipment" onCommit={(equipment) => edit({ equipment })} /></td>
+                <td className={cell}>
+                  <input className={field} type="number" min={0} step={1} value={a.manpower ?? ''} aria-label="Manpower"
+                    onChange={(e) => edit({ manpower: e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value))) })} />
+                </td>
+                <td className={cell}><NameInput value={a.holdPoint ?? ''} blankOk placeholder="hold point / inspection" onCommit={(holdPoint) => edit({ holdPoint })} /></td>
+                <td className={`${cell} text-center`}><input type="checkbox" checked={!!a.sarAttend} aria-label="SAR attends" onChange={(e) => edit({ sarAttend: e.target.checked || undefined })} /></td>
               </tr>
             )
           })}

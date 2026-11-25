@@ -5,6 +5,7 @@ import {
   RELS, splitDateTime, successorsOf, timeToInput,
 } from '../links/edit'
 import type { ActivityInput, Project, Rel } from '../model/types'
+import { DELAY_CAUSES } from '../protocol/lists'
 import { useNarrow } from '../model/useNarrow'
 import { activityTone } from './brand'
 import { fmtShort, fmtVariance } from './format'
@@ -219,6 +220,21 @@ export function ActivityPanel({ project, result, loc, no, tab, onTab, onChange, 
                 </select>
               </label>
             )}
+          </section>
+
+          <section>
+            <h3 className="mb-1 bg-[#768692] px-2 py-1 text-xs font-bold text-white">SHUTDOWN DETAILS (SAR protocol)</h3>
+            <label className={lab}>Crew / team<input className={inp} value={a.crew ?? ''} onChange={(e) => edit({ crew: e.target.value })} /></label>
+            <label className={`${lab} mt-2`}>Equipment<input className={inp} value={a.equipment ?? ''} onChange={(e) => edit({ equipment: e.target.value })} /></label>
+            <label className={`${lab} mt-2`}>Manpower (nos.)<input className={inp} type="number" min={0} value={a.manpower ?? ''} onChange={(e) => edit({ manpower: e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value))) })} /></label>
+            <label className={`${lab} mt-2`}>Hold point / inspection<input className={inp} value={a.holdPoint ?? ''} placeholder="e.g. HP-2 Culvert levels / alignment before backfill" onChange={(e) => edit({ holdPoint: e.target.value })} /></label>
+            <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-600"><input type="checkbox" checked={!!a.sarAttend} onChange={(e) => edit({ sarAttend: e.target.checked || undefined })} /> SAR attends / releases this hold point</label>
+            <label className={`${lab} mt-2`}>Delay cause (when late)
+              <select className={inp} value={a.delayCause ?? ''} onChange={(e) => edit({ delayCause: e.target.value || undefined })}>
+                <option value="">—</option>
+                {DELAY_CAUSES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </label>
           </section>
 
           <section>
