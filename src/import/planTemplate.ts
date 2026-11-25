@@ -134,7 +134,8 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   const acts = Math.max(150, (project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 0) + 30)
   const hours = Math.min(168, Math.max(24, Math.ceil(project ? (project.settings.unit === 'days' ? project.settings.duration * 24 : project.settings.duration) : 48)))
   const used = project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 40
-  const g = addGantt(wb, { hours, acts, used })
+  const starts = project ? project.locations.reduce<number[]>((a, _l, i) => [...a, i === 0 ? 0 : a[i - 1] + project.locations[i - 1].activities.length], []) : []
+  const g = addGantt(wb, { hours, acts, used, starts })
   addForms(wb, g, acts, { ref: project ? `${lay[0]?.code || 'L1'}-01` : 'C290-01', code: lay[0]?.code ?? 'C290' })
   wb.calcProperties = { fullCalcOnLoad: true }
   // ---- Lists ----
