@@ -21,7 +21,7 @@ export function addDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, g: { H
   ws.views = [{ showGridLines: false }]
   const R = (c: number) => `Gantt!$${colName(c)}$${G_FIRST}:$${colName(c)}$${lastRow}`
   const cb = R(2), w = R(H.W), pp = R(H.PP), ap = R(H.AP), fen = R(H.FEN), pf = R(H.PF), vr = R(H.VAR)
-  const widths = [10, 17, 11, 9, 15, 15, 15, 9, 9, 9, 9, 11, 20, 20, 21]
+  const widths = [10, 17, 11, 9, 15, 15, 15, 9, 9, 9, 9, 11, 18, 18, 27]
   widths.forEach((x, i) => { ws.getColumn(i + 1).width = x })
   const N = widths.length
 
@@ -95,12 +95,12 @@ export function addDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, g: { H
       x.alignment = { vertical: 'middle', horizontal: c === 2 ? 'left' : 'center', indent: c === 2 ? 1 : 0 }
       if (nf) x.numFmt = nf
     })
-    ws.getRow(r).height = 86
+    ws.getRow(r).height = 116
     const card = cards?.[i]
     ws.getCell(r, 15).fill = solid(zebra); ws.getCell(r, 15).border = box
     if (card) {
       const id = wb.addImage({ buffer: card.data as unknown as ExcelJS.Buffer, extension: 'png' })
-      ws.addImage(id, { tl: { col: 14.05, row: r - 1 + 0.07 }, ext: { width: 125, height: Math.round((125 * card.height) / card.width) } })
+      ws.addImage(id, { tl: { col: 14.05, row: r - 1 + 0.07 }, ext: { width: 172, height: Math.round((172 * card.height) / card.width) } })
     }
   }
   const lastCulvert = first + n - 1
