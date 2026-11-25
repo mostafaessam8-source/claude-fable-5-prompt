@@ -20,10 +20,11 @@ import { useNarrow } from './model/useNarrow'
 import { ReportView, type Selected } from './report/ReportView'
 import { ActivityPanel, PANEL_W } from './report/ActivityPanel'
 import { DATES_W, DatesPanel } from './report/DatesPanel'
+import { ProtocolView } from './protocol/ProtocolView'
 import { LINKS_W, LinksPanel } from './report/LinksPanel'
 import { SettingsBar } from './SettingsBar'
 
-type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities'
+type Tab = 'import' | 'layout' | 'links' | 'report' | 'activities' | 'protocol'
 
 /** Edits that only move dates (a drag) merge into one undo step; adding, deleting, reordering or renaming activities each get their own. */
 const sameShape = (x: Saved | null, y: Saved | null) => {
@@ -274,7 +275,7 @@ export function App() {
         </div>
       </header>
       {project && result && (
-        <nav className="flex overflow-x-auto whitespace-nowrap border-b border-slate-300 bg-white">{tabBtn('report', 'Report')}{tabBtn('activities', 'Activities')}{tabBtn('layout', 'Site layout')}{!OFFLINE && tabBtn('links', 'Relationships')}{!OFFLINE && tabBtn('import', 'Imported data (JSON)')}</nav>
+        <nav className="flex overflow-x-auto whitespace-nowrap border-b border-slate-300 bg-white">{tabBtn('report', 'Report')}{tabBtn('activities', 'Activities')}{tabBtn('layout', 'Site layout')}{tabBtn('protocol', 'Protocol forms')}{!OFFLINE && tabBtn('links', 'Relationships')}{!OFFLINE && tabBtn('import', 'Imported data (JSON)')}</nav>
       )}
       </div>
       {creating && (
@@ -332,6 +333,7 @@ export function App() {
             )}
             </>
           )}
+          {tab === 'protocol' && <ProtocolView project={project} result={result} onChange={setProject} />}
           {tab === 'layout' && (
             <LayoutForm layouts={layouts} names={project.locations.map((l) => l.name)} onChange={setLayouts} />
           )}

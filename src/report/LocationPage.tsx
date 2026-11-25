@@ -2,7 +2,8 @@ import { LEVEL_INFO, levelOf } from '../protocol/status'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
-import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
+import { DocFooter, DocHeader } from '../protocol/DocBlocks'
+import { docControl } from '../protocol/docControl'
 import { addActivity, addLink, removeLink, hoursToInput, inputToHours, lagToKeepStart, moveActivities, patchActivity, setPlannedFinish, setPlannedStart, splitDateTime } from '../links/edit'
 import { parseDateTime } from '../links/table'
 import { applySettings } from '../model/settings'
@@ -435,21 +436,18 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
   return (
     <div ref={pageRef} className={`report-page${line ? ' linking' : ''}`} style={{ fontSize: 8.5, width: PAGE_X, height: RL.pageH, ['--ps' as string]: Math.min(1123 / PAGE_X, PAGE_H0 / RL.pageH) }}>
       {/* the SAR logo heads every page, on white */}
-      <div style={{ background: '#fff', padding: '4px 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 26, width: 26 * SAR_LOGO_RATIO, display: 'block' }} />
-        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: C.slate }}>SAR.COM.SA</span>
-      </div>
+      <DocHeader doc={docControl(s)} />
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 15, padding: '5px 12px', letterSpacing: 0.3 }}>
         {pageTitle(s.projectName, layout, loc.name, '  -  ')}
       </div>
       <div style={{ display: 'flex', height: 24, alignItems: 'center', fontWeight: 700, fontSize: 10 }}>
-        <div style={{ width: TABLE_W + PA_W, background: C.grey, height: '100%', display: 'flex', alignItems: 'center', gap: 18, padding: '0 10px', color: C.black }}>
+        <div style={{ width: TABLE_W + PA_W, background: C.grey, height: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '0 8px', color: C.black, whiteSpace: 'nowrap', overflow: 'hidden', fontSize: 9 }}>
           {layout?.cells ? <span>{layout.cells} {unit(layout.kind, layout.cells)}</span> : null}
           {layout?.length ? <span>LENGTH {layout.length}</span> : null}
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
-          {(() => { const lv = LEVEL_INFO[levelOf(loc)]; return <span style={{ background: lv.bg, color: lv.fg, fontWeight: 800, fontSize: 9, padding: '1px 8px', borderRadius: 2 }} title={`SAR protocol level: ${lv.trigger}`}>SAR LEVEL {lv.label}</span> })()}
+          {(() => { const lv = LEVEL_INFO[levelOf(loc)]; return <span style={{ background: lv.bg, color: lv.fg, fontWeight: 800, fontSize: 9, padding: '1px 8px', borderRadius: 2 }} title={`SAR protocol level: ${lv.trigger}`}>SAR {lv.label}</span> })()}
           {(() => { // the buffer to hand-back, as a verdict: late (negative) / on time / ahead
             const b = loc.bufferToHandback
             const v = b < -0.05 ? { t: 'LATE', bg: C.red, fg: '#fff' } : b > 0.05 ? { t: 'AHEAD', bg: C.blue, fg: '#fff' } : { t: 'ON TIME', bg: C.amber, fg: C.black }
@@ -751,6 +749,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           </span>
         ))}
       </div>
+      <DocFooter doc={docControl(s)} page={index + 2} />
     </div>
   )
 }
