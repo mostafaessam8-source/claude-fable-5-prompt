@@ -29,7 +29,7 @@ describe('SAR plan template', () => {
     const layouts = p.locations.map((l) => parseLayout(l.name, l.scope))
     const bytes = await buildPlanTemplate(p, layouts)
     const zip = await (await import('jszip')).default.loadAsync(bytes)
-    const gantt = await zip.file('xl/worksheets/sheet4.xml')!.async('string')
+    const gantt = await zip.file('xl/worksheets/sheet5.xml')!.async('string')
     expect((gantt.match(/<brk /g) ?? []).length).toBe(p.locations.length - 1) // one culvert per printed page
     const back = await parsePlanTemplate(bytes)
     const a = computeProject(p), b = computeProject(back.project)
@@ -49,7 +49,7 @@ describe('SAR plan template', () => {
     const ExcelJS = (await import('exceljs')).default
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load((await buildPlanTemplate()) as unknown as ArrayBuffer)
-    expect(wb.worksheets.map((w) => w.name)).toEqual(['Project', 'Locations', 'Plan', 'Gantt', 'Status Update', 'Delay Notification', 'Recovery Plan', 'Lists'])
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['Dashboard', 'Project', 'Locations', 'Plan', 'Gantt', 'Status Update', 'Delay Notification', 'Recovery Plan', 'Lists'])
     const f = (ws: string, a: string) => (wb.getWorksheet(ws)!.getCell(a).value as { formula?: string }).formula
     expect(f('Gantt', 'C4')).toMatch(/NOW\(\)/)
     expect(f('Gantt', 'G17')).toMatch(/Plan!/) // row 7 is the culvert's header block, its first activity starts under it
