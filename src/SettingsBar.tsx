@@ -48,6 +48,12 @@ export function SettingsBar({ project, onChange, showLinks, onShowLinks, effecti
       <label className="flex flex-col">Prepared by
         <input className={`${f} w-48`} value={s.preparedBy} placeholder="name" onChange={(e) => onChange(applySettings(project, { preparedBy: e.target.value }))} />
       </label>
+      <label className="flex flex-col">Shutdown ref
+        <input className={`${f} w-36`} value={s.shutdown?.ref ?? ''} placeholder="e.g. SD-03" onChange={(e) => onChange(applySettings(project, { shutdown: { ref: e.target.value } }))} />
+      </label>
+      <label className="flex flex-col">Contractor responsible manager
+        <input className={`${f} w-48`} value={s.shutdown?.manager ?? ''} placeholder="name" onChange={(e) => onChange(applySettings(project, { shutdown: { manager: e.target.value } }))} />
+      </label>
       <button className="rounded border border-slate-300 px-2 py-0.5" onClick={() => setWidths(true)} title="Type the width of each column of the report table">Column widths…</button>
       {widths && <ColumnWidths project={project} onChange={onChange} onClose={() => setWidths(false)} />}
       <button className="rounded border border-slate-300 px-2 py-0.5 disabled:opacity-40" disabled={!hasRowHeights(project) && !s.summaryRows} onClick={() => onChange(applySettings(clearRowHeights(project), { summaryRows: null }))}

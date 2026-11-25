@@ -10,7 +10,7 @@ import { LINKS_W, LinksPanel } from './LinksPanel'
 import { ActivityPanel, PANEL_W, type PanelTab } from './ActivityPanel'
 import { LocationPage, pageWidth } from './LocationPage'
 import { coverHeight, coverWidth } from './columns'
-import { applySettings } from '../model/settings'
+import { applySettings, floatingNow } from '../model/settings'
 
 export const PAGE_W = 1123 // A4 landscape at 96 dpi
 export const PAGE_H = 794
@@ -55,7 +55,7 @@ export function ReportView({ result, layouts, project, onChange, showLinks = tru
     <div ref={box} className="report-wrap" style={{ marginRight: !narrow ? (show ? PANEL_W : selected && datesOpen ? DATES_W : selected && linksOpen ? LINKS_W : 0) : 0 }}>
       <div className="report-zoom" style={{ ['--z' as string]: zoom }}>
         <div className="report-page" style={{ width: coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange, project.settings.relCols), height: coverHeight(project.settings.summaryRows), ['--ps' as string]: Math.min(1123 / coverWidth(project.settings.summaryCols, project.settings.tableCols, project.settings.dateRange, project.settings.relCols), 794 / coverHeight(project.settings.summaryRows)) }}>
-          <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} />
+          <Cover result={result} layouts={layouts} zoom={zoom} onSummary={(summaryCols, summaryRows) => onChange(applySettings(project, { summaryCols, summaryRows }))} onLogUpdate={() => onChange(applySettings(project, { shutdown: { lastUpdate: floatingNow() } }))} />
         </div>
         {result.locations.map((_, i) => (
           <LocationPage key={i} result={result} index={i} layout={layouts[i]} project={project} onChange={onChange} onStructure={dropSel} zoom={zoom} showLinks={showLinks}

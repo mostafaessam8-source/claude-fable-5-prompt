@@ -1,5 +1,5 @@
 import { addUnits } from '../import/parse'
-import type { HoursOrDays, Project } from './types'
+import type { HoursOrDays, Project, ShutdownInfo } from './types'
 
 export interface SettingsPatch {
   possessionStart?: Date
@@ -15,6 +15,7 @@ export interface SettingsPatch {
   activityCols?: number[] | null
   dateRange?: boolean
   relCols?: boolean
+  shutdown?: Partial<ShutdownInfo>
   summaryCols?: number[] | null
   summaryRows?: (number | null)[] | null
 }
@@ -43,6 +44,7 @@ export function applySettings(project: Project, patch: SettingsPatch): Project {
       preparedBy: patch.preparedBy ?? old.preparedBy, reportTitle: patch.reportTitle ?? old.reportTitle, subtitle: patch.subtitle ?? old.subtitle,
       tableCols: patch.tableCols === undefined ? old.tableCols : (patch.tableCols ?? undefined),
       activityCols: patch.activityCols === undefined ? old.activityCols : (patch.activityCols ?? undefined),
+      shutdown: patch.shutdown ? { ...old.shutdown, ...patch.shutdown } : old.shutdown,
       relCols: patch.relCols === undefined ? old.relCols : (patch.relCols || undefined),
       dateRange: patch.dateRange === undefined ? old.dateRange : (patch.dateRange || undefined),
       summaryCols: patch.summaryCols === undefined ? old.summaryCols : (patch.summaryCols ?? undefined),

@@ -58,11 +58,14 @@ export function rowLayout(acts: { no?: number; remarks: string; rowH?: number }[
 }
 
 /** The cover's summary table: default widths (px) of its first 8 columns; the progress column takes the rest. */
-export const DEFAULT_SUM_COLS = [190, 84, 92, 92, 96, 44, 44, 76]
-export const SUM_COL_NAMES = ['Location', 'Status', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Actual %', 'Buffer to Hand-back', 'Progress']
+export const DEFAULT_SUM_COLS = [190, 84, 74, 92, 92, 96, 44, 44, 76]
+export const SUM_COL_NAMES = ['Location', 'Status', 'SAR level', 'Planned Finish', 'Actual / Forecast Finish', 'Time Variance', 'Plan %', 'Actual %', 'Buffer to Hand-back', 'Progress']
 export const SUM_MIN_COL = 24, SUM_MAX_COL = 420, SUM_MIN_ROW = 14, SUM_MAX_ROW = 200
 const SUM_PROGRESS_MIN = 160
-export function summaryCols(c: number[] | undefined): number[] { return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS }
+export function summaryCols(c: number[] | undefined): number[] {
+  if (c && c.length === DEFAULT_SUM_COLS.length - 1) return [c[0], c[1], DEFAULT_SUM_COLS[2], ...c.slice(2)] // saved before the SAR level column
+  return c && c.length === DEFAULT_SUM_COLS.length ? c : DEFAULT_SUM_COLS
+}
 /** Width of the cover page: as wide as the location pages (so all pages line up), or wider when the summary columns were widened. */
 export function coverWidth(c: number[] | undefined, tableCols?: number[], dateRange = false, relCols = false): number {
   return Math.max(pageWidth(tableCols, dateRange, relCols), Math.ceil(summaryCols(c).reduce((a, b) => a + b, 0) + SUM_PROGRESS_MIN + 24))
