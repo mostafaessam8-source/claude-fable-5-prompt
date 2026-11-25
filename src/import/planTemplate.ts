@@ -13,7 +13,8 @@ import { DELAY_CAUSES } from '../protocol/lists'
 import { DOC_DEFAULTS } from '../protocol/docControl'
 import { LEVELS, LEVEL_INFO } from '../protocol/status'
 import { box, center, font, left, solid } from '../export/styles'
-import { addForms, addGantt } from './trackerSheets'
+import type { CardsImage } from '../export/siteLayouts'
+import { addForms, addGantt, type GanttBlock } from './trackerSheets'
 import { date, ImportError, isBlank, num, plain, text, addUnits } from './cells'
 
 export const PLAN_MARK = 'SAR SHUTDOWN PLAN TEMPLATE'
@@ -38,7 +39,7 @@ function banner(ws: ExcelJS.Worksheet, title: string, width: number) {
 }
 
 /** The template, empty (a worked example of two rows) or filled from a project. */
-export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[]): Promise<Uint8Array> {
+export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[], cards?: (CardsImage | undefined)[]): Promise<Uint8Array> {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'SAR Possession Tracker'
   const st = project?.settings
@@ -134,8 +135,12 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   const acts = Math.max(150, (project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 0) + 30)
   const hours = Math.min(168, Math.max(24, Math.ceil(project ? (project.settings.unit === 'days' ? project.settings.duration * 24 : project.settings.duration) : 48)))
   const used = project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 40
-  const starts = project ? project.locations.reduce<number[]>((a, _l, i) => [...a, i === 0 ? 0 : a[i - 1] + project.locations[i - 1].activities.length], []) : []
-  const g = addGantt(wb, { hours, acts, used, starts })
+  // one header block (name, site layout card, figures) per culvert; the Gantt prints one culvert per page
+  let at = 0
+  const blocks: GanttBlock[] = project
+    ? project.locations.map((l, i) => { const b = { start: at, code: lay[i]?.code ?? '', title: `${(lay[i] ? composeName(lay[i]) : l.name).toUpperCase()}${lay[i] && composeScope(lay[i]) ? `   ·   ${composeScope(lay[i])}` : ''}`, card: cards?.[i] }; at += l.activities.length; return b })
+    : [{ start: 0, code: lay[0]?.code ?? 'C290', title: `${composeName(lay[0]).toUpperCase()}   ·   ${composeScope(lay[0])}`, card: cards?.[0] }]
+  const g = addGantt(wb, { hours, acts, used, blocks })
   addForms(wb, g, acts, { ref: project ? `${lay[0]?.code || 'L1'}-01` : 'C290-01', code: lay[0]?.code ?? 'C290' })
   wb.calcProperties = { fullCalcOnLoad: true }
   // ---- Lists ----

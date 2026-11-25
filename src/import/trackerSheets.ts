@@ -8,6 +8,7 @@
  */
 import ExcelJS from 'exceljs'
 import { SAR_LOGO_RATIO, sarLogoBytes } from '../brand/logo'
+import type { CardsImage } from '../export/siteLayouts'
 import { box, cfFill, center, font, solid } from '../export/styles'
 import { DOC_DEFAULTS } from '../protocol/docControl'
 import { LEVELS, LEVEL_INFO } from '../protocol/status'
@@ -17,7 +18,8 @@ const INK = '#3D3935'
 const DT = 'dd-mmm-yyyy hh:mm'
 const DT_SHORT = 'dd-mmm hh:mm'
 export const PLAN_FIRST = 2 // first data row of the Plan sheet
-export const G_FIRST = 7 // first data row of the Gantt sheet (two rows per activity)
+export const G_FIRST = 7 // first row under the header of the Gantt sheet
+export const BLOCK = 10 // rows of the header block above each culvert (title + layout picture + figures)
 
 export function colName(n: number): string {
   let s = ''
@@ -25,29 +27,31 @@ export function colName(n: number): string {
   return s
 }
 
-interface Opts { hours: number; acts: number; /** how many activity rows have data (the print area stops there) */ used: number
-  /** indexes (0-based, among the activities) where a new culvert starts: the Gantt prints one culvert per page */
-  starts: number[]
-}
+/** One culvert on the Gantt: where its activities start (0-based, among all activities) and what its header block shows. */
+export interface GanttBlock { start: number; code: string; title: string; card?: CardsImage }
+interface Opts { hours: number; acts: number; /** how many activity rows have data (the print area stops there) */ used: number; blocks: GanttBlock[] }
 
 /** The Gantt column a cell of the helper block lives in. */
 const helper = (hours: number) => {
   const h0 = 13 + hours + 2
-  return { AS: h0, AE: h0 + 1, FS: h0 + 2, FE: h0 + 3, W: h0 + 4, AP: h0 + 5, PP: h0 + 6, VAR: h0 + 7, FEN: h0 + 8, PF: h0 + 9, OV: h0 + 10, FIRST: h0 + 11, TOK: h0 + 12, REF: h0 + 13, REL: h0 + 14, PR: h0 + 15, PCAR: h0 + 16, GAP: h0 + 17 }
+  return { AS: h0, AE: h0 + 1, FS: h0 + 2, FE: h0 + 3, W: h0 + 4, AP: h0 + 5, PP: h0 + 6, VAR: h0 + 7, FEN: h0 + 8, PF: h0 + 9, OV: h0 + 10, FIRST: h0 + 11, TOK: h0 + 12, REF: h0 + 13, REL: h0 + 14, PR: h0 + 15, PCAR: h0 + 16, GAP: h0 + 17, PGR: h0 + 18 }
 }
 
-export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, starts }: Opts) {
+export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: given }: Opts) {
   const ws = wb.addWorksheet('Gantt', { views: [{ state: 'frozen', xSplit: 6, ySplit: 6, showGridLines: false }] })
   const g0 = 14 // first Gantt column (N)
   const gEnd = 13 + hours
   const H = helper(hours)
-  const lastRow = G_FIRST + 2 * acts - 1
+  const blocks = given.length ? given : [{ start: 0, code: '', title: '' }]
+  /** the Gantt row of an activity's Plan line: every culvert has a header block above its first activity */
+  const rowOf = (i: number) => G_FIRST + BLOCK * blocks.filter((b) => b.start <= i).length + 2 * i
+  const lastRow = rowOf(acts - 1) + 1
   const L = (c: number) => colName(c)
   const widths = [9, 7, 36, 10, 11, 10, 12.5, 12.5, 6, 6, 18, 6.5, 1]
   widths.forEach((w, i) => { ws.getColumn(i + 1).width = w })
   for (let c = g0; c <= gEnd; c++) ws.getColumn(c).width = 2.7
   ws.getColumn(gEnd + 1).width = 1
-  for (let c = H.AS; c <= H.GAP; c++) { ws.getColumn(c).width = 12; ws.getColumn(c).hidden = true }
+  for (let c = H.AS; c <= H.PGR; c++) { ws.getColumn(c).width = 12; ws.getColumn(c).hidden = true }
 
   // ---- header block: document control, title, report time / level / buffer ----
   ws.mergeCells(1, 1, 1, 12); ws.getCell(1, 1).value = { formula: '"Function: "&Project!$B$13&"      Department: "&Project!$B$14' }; ws.getCell(1, 1).font = font(INK, 9, true)
@@ -93,7 +97,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, starts }: Op
 
   // ---- two rows per activity: Plan, Actual / Forecast ----
   for (let i = 0; i < acts; i++) {
-    const r = PLAN_FIRST + i, g1 = G_FIRST + 2 * i, g2 = g1 + 1
+    const r = PLAN_FIRST + i, g1 = rowOf(i), g2 = g1 + 1
     const P = (col: string) => `Plan!$${col}${r}`
     const zebra = i % 2 ? '#F2F8F9' : '#FFFFFF'
     for (let c = 1; c <= 12; c++) for (const g of [g1, g2]) { const x = ws.getCell(g, c); x.fill = solid(zebra); x.border = box; x.font = font(INK, 9) }
@@ -149,9 +153,10 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, starts }: Op
     ws.getCell(g1, H.REF).value = { formula: `IF(${pr(H.TOK)}="","",IF(${pos}<99,TRIM(LEFT(${pr(H.TOK)},${pos}-1)),${pr(H.TOK)}))` }
     ws.getCell(g1, H.REL).value = { formula: `IF(${pr(H.TOK)}="","FS",IF(${pos}<99,UPPER(MID(${pr(H.TOK)},${pos},2)),"FS"))` }
     ws.getCell(g1, H.PR).value = { formula: `IF(${pr(H.REF)}="",0,IFERROR(MATCH(${pr(H.REF)},Plan!$B$1:$B$${PLAN_FIRST + acts + 40},0),0))` }
-    const pg = `(7+2*(${pr(H.PR)}-${PLAN_FIRST}))`
-    ws.getCell(g1, H.PCAR).value = { formula: `IF(OR(${pr(H.PR)}=0,${pr(H.PR)}>=${r}),0,OFFSET(${pr(H.PR)},-2*(${r}-${pr(H.PR)}),${H.VAR - H.PR}))` }
-    ws.getCell(g1, H.GAP).value = { formula: `IF(OR(${pr(H.PR)}=0,${pr(H.PR)}>=${r},${S}="",${F}=""),0,MAX(0,ROUND(IF(${pr(H.REL)}="FS",${S}-INDEX(Gantt!$H:$H,${pg}),IF(${pr(H.REL)}="SS",${S}-INDEX(Gantt!$G:$G,${pg}),IF(${pr(H.REL)}="FF",${F}-INDEX(Gantt!$H:$H,${pg}),${F}-INDEX(Gantt!$G:$G,${pg}))))*24,3)))` }
+    ws.getCell(g1, H.PGR).value = { formula: `IF(${pr(H.REF)}="",0,IFERROR(MATCH(${pr(H.REF)},$A$1:$A$${lastRow},0),0))` }
+    const pg = pr(H.PGR)
+    ws.getCell(g1, H.PCAR).value = { formula: `IF(OR(${pr(H.PR)}=0,${pr(H.PR)}>=${r},${pg}=0),0,OFFSET(${pg},${pg}-${g1},${H.VAR - H.PGR}))` }
+    ws.getCell(g1, H.GAP).value = { formula: `IF(OR(${pr(H.PR)}=0,${pr(H.PR)}>=${r},${pg}=0,${S}="",${F}=""),0,MAX(0,ROUND(IF(${pr(H.REL)}="FS",${S}-INDEX(Gantt!$H:$H,${pg}),IF(${pr(H.REL)}="SS",${S}-INDEX(Gantt!$G:$G,${pg}),IF(${pr(H.REL)}="FF",${F}-INDEX(Gantt!$H:$H,${pg}),${F}-INDEX(Gantt!$G:$G,${pg}))))*24,3)))` }
     const absd = `IF(${pr(H.PCAR)}>0,MAX(0,${pr(H.PCAR)}-${pr(H.GAP)}),${pr(H.PCAR)})`
     ws.getCell(g1, H.VAR).value = { formula: `ROUND(IF(OR(${S}="",${F}=""),0,IF(OR(${pr(H.FIRST)}=1,${AS}<>""),${pr(H.OV)},IF(${pr(H.OV)}>0,MAX(${pr(H.OV)},${absd}),${absd}))),3)` }
     ws.getCell(g1, H.FEN).value = { formula: `IF(ISNUMBER($H${g2}),$H${g2},0)` }
@@ -183,9 +188,51 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, starts }: Op
     { type: 'expression', priority: pri++, formulae: [`OR(ISNUMBER(SEARCH("Delayed",$K${G_FIRST})),ISNUMBER(SEARCH("LATE",$K${G_FIRST})),ISNUMBER(SEARCH("BEHIND",$K${G_FIRST})))`], style: { fill: cfFill('#F8D7D8'), font: { bold: true, color: { argb: 'FFCB2C30' } } } },
     { type: 'expression', priority: pri++, formulae: [`ISNUMBER(SEARCH("Completed",$K${G_FIRST}))`], style: { fill: cfFill('#D9EEF1') } },
   ] })
-  // one culvert per printed page: a page break above the first row of each culvert after the first
-  for (const i of starts) if (i > 0 && i < used) ws.getRow(G_FIRST + 2 * i - 1).addPageBreak()
-  ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '5:6', printArea: `A1:${L(gEnd)}${G_FIRST + 2 * Math.max(1, used) - 1}`, horizontalCentered: true, margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
+  // ---- a header block above each culvert: its name, the site layout card and its figures; one culvert per printed page ----
+  const lvlCells: string[] = []
+  blocks.forEach((bk, bi) => {
+    const top = rowOf(bk.start) - BLOCK
+    const last = top + BLOCK - 1
+    if (bi > 0) ws.getRow(top - 1).addPageBreak()
+    ws.mergeCells(top, 1, top, gEnd)
+    const t = ws.getCell(top, 1)
+    t.value = bk.title || (bk.code ? `CULVERT ${bk.code}` : 'CULVERT')
+    t.font = font('#FFFFFF', 12, true); t.fill = solid(INK); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    ws.getRow(top).height = 22
+    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 19.5
+    for (let r = top + 1; r <= last; r++) for (let c = 1; c <= 12; c++) ws.getCell(r, c).fill = solid('#FFFFFF')
+    if (bk.card) {
+      const id = wb.addImage({ buffer: bk.card.data as unknown as ExcelJS.Buffer, extension: 'png' })
+      const w = 200
+      ws.addImage(id, { tl: { col: 0.12, row: top + 0.15 }, ext: { width: w, height: Math.round((w * bk.card.height) / bk.card.width) } })
+    }
+    // the culvert's figures, next to the picture (formulas over this culvert's rows)
+    const code = `"${bk.code.replace(/"/g, '""')}"`
+    const w = range(H.W), pp = range(H.PP), ap = range(H.AP), fen = range(H.FEN), pf = range(H.PF), vr = range(H.VAR), cb = range(2)
+    const mx = (c: string, fn: string) => `IFERROR(_xlfn.${fn}(${c},${cb},${code}),0)`
+    const buf = `ROUND((Project!$B$11-${mx(fen, 'MAXIFS')})*24,1)`
+    const lvl = `IF(SUMPRODUCT((${cb}=${code})*${w})=0,"",IF(${buf}<0,"RED",IF(${mx(fen, 'MAXIFS')}>${mx(pf, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(vr, 'MAXIFS')}>0.1),"YELLOW","GREEN"))))`
+    const wsum = `SUMPRODUCT((${cb}=${code})*${w})`
+    const items: [string, string, string?][] = [
+      ['SAR LEVEL', lvl],
+      ['BUFFER TO HAND-BACK', `IF(${wsum}=0,"",${buf})`, '0.0" h"'],
+      ['PLANNED / ACTUAL', `IF(${wsum}=0,"",TEXT(SUMPRODUCT((${cb}=${code})*${w}*${pp})/${wsum},"0%")&"  /  "&TEXT(SUMPRODUCT((${cb}=${code})*${w}*${ap})/${wsum},"0%"))`],
+      ['FORECAST FINISH', `IF(${wsum}=0,"",${mx(fen, 'MAXIFS')})`, 'ddd dd-mmm hh:mm'],
+      ['HAND-BACK', 'Project!$B$11', 'ddd dd-mmm hh:mm'],
+      ['ACTIVITIES BEHIND PLAN', `IF(${wsum}=0,"",COUNTIFS(${cb},${code},${vr},">0.1")&" of "&COUNTIFS(${cb},${code},${w},">0"))`],
+    ]
+    items.forEach(([label, f, nf], k) => {
+      const r = top + 1 + k
+      ws.mergeCells(r, 5, r, 6); ws.mergeCells(r, 7, r, 9)
+      const a = ws.getCell(r, 5), v = ws.getCell(r, 7)
+      a.value = label; a.font = font(TEAL, 9, true); a.alignment = { vertical: 'middle', horizontal: 'right' }
+      v.value = { formula: f }; v.font = font(INK, 10, true); v.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }; v.fill = solid('#E6F1F4')
+      if (nf) v.numFmt = nf
+      if (k === 0) lvlCells.push(`G${r}`)
+    })
+  })
+  for (const c of lvlCells) lvl(c, `$${c.replace(/(\d+)/, '$$$1')}`)
+  ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:6', printArea: `A1:${L(gEnd)}${rowOf(Math.max(1, used) - 1) + 1}`, horizontalCentered: true, margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.4, header: 0.1, footer: 0.2 } }
   ws.headerFooter = { oddFooter: `&L${DOC_DEFAULTS.docNo}  Rev ${DOC_DEFAULTS.rev}  ${DOC_DEFAULTS.effective}&RPage &P of &N` }
   return { H, lastRow, g0, gEnd, helperRange: range }
 }
@@ -273,7 +320,7 @@ export function addForms(wb: ExcelJS.Workbook, g: ReturnType<typeof addGantt>, a
   }
   const bSel = '$B$6'
   const m = `MATCH(${bSel},Plan!$B$1:$B$${PLAN_FIRST + acts + 40},0)`
-  const g1 = `7+2*(${m}-${PLAN_FIRST})`
+  const g1 = `MATCH(${bSel},Gantt!$A$1:$A$${lastRow},0)`
   const gv = (col: string, off: number) => `INDEX(Gantt!$${col}:$${col},${g1}+${off})`
   const b = form(wb, 'Delay Notification', 'Appendix B – Delay Notification Template', [
     { label: 'Project / Location', formula: `IFERROR(Project!$B$4&"  —  Culvert "&INDEX(Plan!$A:$A,${m}),"select the activity Ref above")` },
