@@ -113,12 +113,6 @@ export function addDashboard(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, g: { H
   }
   ws.addConditionalFormatting({ ref: `H${first}:H${lastCulvert}`, rules: [{ type: 'expression', priority: 20, formulae: [`AND(ISNUMBER($H${first}),$H${first}<0)`], style: { fill: cfFill('#CB2C30'), font: { bold: true, color: { argb: 'FFFFFFFF' } } } }, { type: 'expression', priority: 21, formulae: [`AND(ISNUMBER($H${first}),$H${first}<2)`], style: { fill: cfFill('#FBE5A8') } }] })
 
-  const lay = HR + n + 1
-  const footRow = lay + 1
-  ws.mergeCells(footRow, 1, footRow, N)
-  const f = ws.getCell(footRow, 1)
-  f.value = { formula: '"Document No.: "&Project!$B$16&"        Rev. No.: "&Project!$B$17&"        Effective Date: "&Project!$B$18' }
-  f.font = font('#FFFFFF', 9, true); f.fill = solid(TEAL); f.alignment = { vertical: 'middle', indent: 1 }; ws.getRow(footRow).height = 20
   ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 1, horizontalCentered: true, margins: { left: 0.3, right: 0.3, top: 0.3, bottom: 0.3, header: 0.1, footer: 0.1 } }
   void DOC_DEFAULTS
 }
