@@ -155,6 +155,14 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   li.getCell('C1').value = 'Status level'; li.getCell('C1').font = font(INK, 10, true)
   LEVELS.forEach((l, i) => { const c = li.getCell(i + 2, 3); c.value = LEVEL_INFO[l].label; c.fill = solid(LEVEL_INFO[l].bg); c.font = font(LEVEL_INFO[l].fg, 10, true) })
 
+  // tab order: what is printed first (in printing order), then the settings / data sheets
+  const ORDER = ['Dashboard', 'Gantt', 'Status Update', 'Delay Notification', 'Recovery Plan', SHEETS.project, SHEETS.locations, SHEETS.plan, SHEETS.lists]
+  ORDER.forEach((n, i) => {
+    const w = wb.getWorksheet(n)
+    if (!w) return
+    ;(w as unknown as { orderNo: number }).orderNo = i
+    w.properties.tabColor = { argb: i < 5 ? 'FF00778B' : 'FF8A9AA0' }
+  })
   return new Uint8Array(await wb.xlsx.writeBuffer())
 }
 
