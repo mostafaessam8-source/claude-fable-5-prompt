@@ -1,3 +1,4 @@
+import { LEVEL_INFO, levelOf } from '../protocol/status'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { fromHours, toHours, type ProjectResult } from '../engine/schedule'
 import { pageTitle, unit, type SiteLayout } from '../layout/parse'
@@ -448,6 +449,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
+          {(() => { const lv = LEVEL_INFO[levelOf(loc)]; return <span style={{ background: lv.bg, color: lv.fg, fontWeight: 800, fontSize: 9, padding: '1px 8px', borderRadius: 2 }} title={`SAR protocol level: ${lv.trigger}`}>SAR LEVEL {lv.label}</span> })()}
           {(() => { // the buffer to hand-back, as a verdict: late (negative) / on time / ahead
             const b = loc.bufferToHandback
             const v = b < -0.05 ? { t: 'LATE', bg: C.red, fg: '#fff' } : b > 0.05 ? { t: 'AHEAD', bg: C.blue, fg: '#fff' } : { t: 'ON TIME', bg: C.amber, fg: C.black }

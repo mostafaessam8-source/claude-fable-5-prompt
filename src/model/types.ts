@@ -5,7 +5,18 @@
 export type Rel = 'FS' | 'SS' | 'FF' | 'SF'
 export type HoursOrDays = 'hours' | 'days'
 
+/** Shutdown details of the whole project (SAR protocol NSR-SWP-01-PM-MD). */
+export interface ShutdownInfo {
+  /** Shutdown Ref (the shutdown's reference). */
+  ref?: string
+  /** Contractor Responsible Manager (the shutdown manager). */
+  manager?: string
+  /** When the last status update was logged (floating wall clock). */
+  lastUpdate?: Date
+}
+
 export interface Settings {
+  shutdown?: ShutdownInfo
   projectName: string
   reportTitle: string
   subtitle: string

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
 import type { ProjectResult } from '../engine/schedule'
 import { fromHours } from '../engine/schedule'
@@ -7,6 +7,8 @@ import type { SiteLayout } from '../layout/parse'
 import { C, locationTone } from './brand'
 import { fmtLong, fmtShort, fmtVariance, hours1, pct, varianceTone } from './format'
 import { totalAllLocations } from './summary'
+import { LEVEL_INFO, levelOf, nextUpdate, worst, type Level } from '../protocol/status'
+import { floatingNow } from '../model/settings'
 import { SUM_COL_NAMES, SUM_MAX_COL, SUM_MAX_ROW, SUM_MIN_COL, SUM_MIN_ROW, summaryCols } from './columns'
 
 const varColour = { late: C.red, early: C.blue, ok: C.black }
@@ -16,7 +18,9 @@ function Band({ children, bg = C.black, size = 11, pad = '4px 12px' }: { childre
 }
 
 /** `onSummary` (editing / the viewer) turns on the resize handles of the summary table; `zoom` is the page's on-screen scale. */
-export function Cover({ result, layouts, onSummary, zoom = 1 }: {
+export function Cover({ result, layouts, onSummary, zoom = 1, onLogUpdate }: {
+  /** Log "a status update was sent now" (the editable report only). */
+  onLogUpdate?: () => void
   result: ProjectResult; layouts: SiteLayout[]
   onSummary?: (cols: number[], rows: (number | null)[]) => void; zoom?: number
 }) {
@@ -33,7 +37,9 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
   const rowsH: (number | null)[] = Array.from({ length: nRows }, (_, i) => s.summaryRows?.[i] ?? null)
   const COLS = `${cols.map((w) => `${w}px`).join(' ')} minmax(160px, 1fr)`
   const ROWS = rowsH.map((h) => (h ? `${h}px` : 'auto')).join(' ')
-  const head = SUM_COL_NAMES.slice(0, 8)
+  const head = SUM_COL_NAMES.slice(0, 9)
+  const levels = result.locations.map((l) => levelOf(l))
+  const overall: Level = worst(levels)
 
   // ---- resize handles: pick a cell; thick lines on its edges drag the column (left / right) or the row (top / bottom) ----
   const grid = useRef<HTMLDivElement>(null)
@@ -135,6 +141,12 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
 </>, C.tint1)}
         {row('Possession window', <>{fmtLong(origin)} <span style={{ fontWeight: 400 }}>&nbsp;to&nbsp;</span> {fmtLong(s.possessionEnd)} <span style={{ marginLeft: 12 }}>= {hours1(durH)}</span></>, C.tint2)}
         {row('Elapsed / Remaining', <>{hours1(elapsed)} elapsed <span style={{ marginLeft: 18 }}>{hours1(remaining)} remaining</span></>, C.tint1)}
+        {(s.shutdown?.ref || s.shutdown?.manager) && row('Shutdown', <>{s.shutdown?.ref || '—'}<span style={{ fontWeight: 400, marginLeft: 18 }}>contractor responsible manager <b>{s.shutdown?.manager || '—'}</b></span></>, C.tint2)}
+        {row('SAR status level', <>
+          <span style={{ background: LEVEL_INFO[overall].bg, color: LEVEL_INFO[overall].fg, padding: '1px 10px', borderRadius: 2, fontWeight: 800 }}>{LEVEL_INFO[overall].label}</span>
+          <span style={{ fontWeight: 400, marginLeft: 10 }}>{LEVEL_INFO[overall].trigger} — {LEVEL_INFO[overall].requirement}</span>
+        </>, C.tint1)}
+        <UpdateRow last={s.shutdown?.lastUpdate} level={overall} label={labelStyle} onLog={onLogUpdate} />
       </div>
 
       <div style={{ marginTop: 12 }}><Band>SUMMARY &nbsp;-&nbsp; ALL LOCATIONS</Band></div>
@@ -145,17 +157,17 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
         {head.map((h, c) => (
           <div key={h} data-r={0} data-c={c} style={{ background: C.slate, color: '#fff', fontWeight: 700, fontSize: 9, textAlign: 'center', padding: '4px 2px', border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{h}</div>
         ))}
-        <div data-r={0} data-c={8} style={{ background: C.slate, color: '#fff', fontWeight: 700, fontSize: 9, textAlign: 'center', padding: '4px 2px', border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div data-r={0} data-c={9} style={{ background: C.slate, color: '#fff', fontWeight: 700, fontSize: 9, textAlign: 'center', padding: '4px 2px', border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           PROGRESS 0 - 100% &nbsp; coloured bar = actual % &nbsp; black line = DATA DATE
         </div>
 
         {result.locations.map((l, i) => {
           const tone = locationTone(l.status)
-          return <SummaryRow key={i} i={i} r={i + 1} name={l.name} status={l.status} tone={tone}
+          return <SummaryRow key={i} i={i} r={i + 1} name={l.name} status={l.status} level={levels[i]} tone={tone}
             pf={fmtShort(l.plannedFinish)} ff={fmtShort(l.forecastFinish)} variance={l.variance}
             plan={l.planPct} actual={l.actualPct} buffer={l.bufferToHandback} frac={dataDateFrac} />
         })}
-        <SummaryRow i={result.locations.length} r={result.locations.length + 1} total name="ALL LOCATIONS" status={total.status} tone={locationTone(total.status)}
+        <SummaryRow i={result.locations.length} r={result.locations.length + 1} total name="ALL LOCATIONS" status={total.status} level={overall} tone={locationTone(total.status)}
           pf={fmtShort(fromHours(total.plannedFinishH, origin))} ff={fmtShort(fromHours(total.forecastFinishH, origin))}
           variance={total.variance} plan={total.planPct} actual={total.actualPct} buffer={total.bufferToHandback} frac={dataDateFrac} />
         {rulers()}
@@ -169,7 +181,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1 }: {
 }
 
 interface RowProps {
-  i: number; r: number; name: string; status: string; tone: { bg: string; fg: string }; pf: string; ff: string
+  i: number; r: number; name: string; status: string; level: Level; tone: { bg: string; fg: string }; pf: string; ff: string
   variance: number; plan: number; actual: number; buffer: number; frac: number; total?: boolean
 }
 function SummaryRow(p: RowProps) {
@@ -185,6 +197,7 @@ function SummaryRow(p: RowProps) {
     <>
       <div {...at()} style={cell({ justifyContent: 'flex-start', fontWeight: 700, color: C.blue, fontSize: 11, borderTop: p.total ? `2px solid ${C.black}` : undefined })}>{p.name}</div>
       <div {...at()} style={cell({ background: p.tone.bg, color: p.tone.fg, fontWeight: 700 })}>{p.status}</div>
+      <div {...at()} style={cell({ background: LEVEL_INFO[p.level].bg, color: LEVEL_INFO[p.level].fg, fontWeight: 800, fontSize: 9 })}>{LEVEL_INFO[p.level].label}</div>
       <div {...at()} style={cell()}>{p.pf}</div>
       <div {...at()} style={cell({ fontWeight: 700 })}>{p.ff}</div>
       <div {...at()} style={cell({ fontWeight: 700, color: varColour[vt] })}>{fmtVariance(p.variance)}</div>
@@ -197,5 +210,25 @@ function SummaryRow(p: RowProps) {
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${p.frac * 100}%`, width: 2, background: C.black }} />
       </div>
     </>
+  )
+}
+
+/** Last status update, the next one due (§7: 2 h on plan, 1 h early warning / delay, 30 min critical) and whether it is overdue. */
+function UpdateRow({ last, level, label, onLog }: { last?: Date; level: Level; label: React.CSSProperties; onLog?: () => void }) {
+  const [now, setNow] = useState(() => floatingNow())
+  useEffect(() => { const t = setInterval(() => setNow(floatingNow()), 30_000); return () => clearInterval(t) }, [])
+  const next = nextUpdate(last, level)
+  const late = next ? now.getTime() > next.getTime() : false
+  const mins = next ? Math.round((next.getTime() - now.getTime()) / 60_000) : 0
+  return (
+    <div style={{ display: 'flex', background: C.tint2, padding: '3px 12px', fontSize: 11, alignItems: 'center' }}>
+      <span style={label}>Status update</span>
+      <span style={{ fontWeight: 700, color: C.black }}>
+        {last ? <>last {fmtLong(last)}</> : 'no update logged yet'}
+        <span style={{ fontWeight: 400, marginLeft: 14 }}>every {LEVEL_INFO[level].everyMin} min</span>
+        {next && <span style={{ marginLeft: 14, color: late ? C.red : C.black }}>next due {fmtLong(next)} {late ? `· OVERDUE ${-mins} min` : `· in ${mins} min`}</span>}
+        {onLog && <button className="no-print" style={{ marginLeft: 14, border: `1px solid ${C.blue}`, borderRadius: 3, background: '#fff', color: C.blue, fontWeight: 700, fontSize: 10, padding: '1px 8px', cursor: 'pointer' }} onClick={onLog}>Log update now</button>}
+      </span>
+    </div>
   )
 }
