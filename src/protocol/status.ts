@@ -18,8 +18,10 @@ export const LEVEL_INFO: Record<Level, { label: string; trigger: string; require
 }
 
 /** The level of one location: the worst thing that is true of it. */
-export function levelOf(l: Pick<LocationResult, 'bufferToHandback' | 'variance' | 'activities'>): Level {
+/** `notStarted`: the report time is not past the possession start yet: nothing can have slipped, so a plan that fits the window is Green (even a tight one). */
+export function levelOf(l: Pick<LocationResult, 'bufferToHandback' | 'variance' | 'activities'>, notStarted = false): Level {
   if (l.bufferToHandback < 0) return 'Red' // the forecast finish is past the handback
+  if (notStarted) return 'Green'
   if (l.variance > 0.1) return 'Orange' // the location forecasts later than planned: an actual delay
   const early = l.bufferToHandback < 2 || l.activities.some((a) => a.carried > 0.1) // some activity is already slipping, though the location finish is not yet moved
   return early ? 'Yellow' : 'Green'

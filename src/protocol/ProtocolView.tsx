@@ -63,7 +63,7 @@ export function ProtocolView({ project, result, onChange }: { project: Project; 
   const [ai, setAi] = useState<number | null>(null)
   const now = floatingNow()
   const s = project.settings
-  const levels = result.locations.map((l) => levelOf(l))
+  const levels = result.locations.map((l) => levelOf(l, result.cutoffH <= 0))
   const overall: Level = worst(levels)
   const total = totalAllLocations(result.locations)
   const lastOrNow = s.shutdown?.lastUpdate ?? now
@@ -82,7 +82,7 @@ export function ProtocolView({ project, result, onChange }: { project: Project; 
   const plan = proto.plans?.[String(locIdx)] ?? {}
   const st = proto.status ?? {}
   const manager = s.shutdown?.manager || '—'
-  const locLevel = loc ? levelOf(loc) : 'Green'
+  const locLevel = loc ? levelOf(loc, result.cutoffH <= 0) : 'Green'
   const incomplete = (ls: typeof acts) => ls.filter((a) => a.effectivePct < 1)
   const tab = (f: Form, label: string) => (
     <button key={f} onClick={() => setForm(f)} className={`rounded px-3 py-1 text-sm font-semibold ${form === f ? 'bg-[#00778B] text-white' : 'border border-slate-300 bg-white text-slate-700'}`}>{label}</button>

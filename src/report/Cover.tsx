@@ -39,7 +39,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1, onLogUpdate }: {
   const COLS = `${cols.map((w) => `${w}px`).join(' ')} minmax(160px, 1fr)`
   const ROWS = rowsH.map((h) => (h ? `${h}px` : 'auto')).join(' ')
   const head = SUM_COL_NAMES.slice(0, 9)
-  const levels = result.locations.map((l) => levelOf(l))
+  const levels = result.locations.map((l) => levelOf(l, result.cutoffH <= 0))
   const overall: Level = worst(levels)
 
   // ---- resize handles: pick a cell; thick lines on its edges drag the column (left / right) or the row (top / bottom) ----
