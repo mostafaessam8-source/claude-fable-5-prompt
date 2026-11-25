@@ -128,12 +128,13 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
     pl.getCell(r, 14).dataValidation = { type: 'list', allowBlank: true, formulae: [`Lists!$A$2:$A$${DELAY_CAUSES.length + 1}`] }
   }
   pl.autoFilter = { from: 'A1', to: { row: 1, column: PLAN_HEAD.length } }
-  pl.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+  pl.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '1:1', printArea: `A1:${String.fromCharCode(64 + PLAN_HEAD.length)}${(project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 40) + 1}` }
 
   // ---- the live sheets: Gantt (plan vs actual / forecast) and the protocol forms, all driven by formulas ----
   const acts = Math.max(150, (project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 0) + 30)
   const hours = Math.min(168, Math.max(24, Math.ceil(project ? (project.settings.unit === 'days' ? project.settings.duration * 24 : project.settings.duration) : 48)))
-  const g = addGantt(wb, { hours, acts })
+  const used = project ? project.locations.reduce((n, l) => n + l.activities.length, 0) : 40
+  const g = addGantt(wb, { hours, acts, used })
   addForms(wb, g, acts, { ref: project ? `${lay[0]?.code || 'L1'}-01` : 'C290-01', code: lay[0]?.code ?? 'C290' })
   wb.calcProperties = { fullCalcOnLoad: true }
   // ---- Lists ----
@@ -141,6 +142,7 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   li.getCell('A1').value = 'Delay cause'; li.getCell('A1').font = font(INK, 10, true)
   DELAY_CAUSES.forEach((c, i) => { li.getCell(i + 2, 1).value = c })
   li.getColumn(1).width = 40
+  li.pageSetup = { orientation: 'portrait', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
   li.getCell('C1').value = 'Status level'; li.getCell('C1').font = font(INK, 10, true)
   LEVELS.forEach((l, i) => { const c = li.getCell(i + 2, 3); c.value = LEVEL_INFO[l].label; c.fill = solid(LEVEL_INFO[l].bg); c.font = font(LEVEL_INFO[l].fg, 10, true) })
 
