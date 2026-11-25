@@ -52,7 +52,7 @@ describe('SAR plan template', () => {
     expect(wb.worksheets.map((w) => w.name)).toEqual(['Dashboard', 'Project', 'Locations', 'Plan', 'Gantt', 'Status Update', 'Delay Notification', 'Recovery Plan', 'Lists'])
     const f = (ws: string, a: string) => (wb.getWorksheet(ws)!.getCell(a).value as { formula?: string }).formula
     expect(f('Gantt', 'C4')).toMatch(/NOW\(\)/)
-    expect(f('Gantt', 'G16')).toMatch(/Plan!/) // row 7 is the culvert's header block, its first activity starts under it
+    expect(f('Gantt', 'G9')).toMatch(/Plan!/) // row 7 is the culvert's header block, its first activity starts under it
     expect(f('Status Update', 'B9')).toMatch(/SUMPRODUCT/)
     expect(wb.getWorksheet('Delay Notification')!.getCell('B6').value).toBe('C290-01')
     for (const w of wb.worksheets) expect(w.pageSetup.paperSize).toBe(9) // every sheet prints on A4
