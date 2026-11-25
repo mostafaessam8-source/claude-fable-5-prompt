@@ -53,3 +53,15 @@
 @media (max-width: 799px) { .report-wrap { overflow-x: auto; } .report-zoom { align-items: flex-start; } }
 
 @media (pointer: coarse) { .col-rz { width: 18px; } }
+
+/* ---- the SAR protocol forms (Protocol tab): A4 portrait pages ---- */
+.form-page { position: relative; width: 794px; min-height: 1123px; margin: 16px auto; background: #fff; color: #3D3935; font-family: Calibri, Inter, system-ui, sans-serif; font-size: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.25); padding-bottom: 60px; page: portrait; }
+.form-table { width: 100%; border-collapse: collapse; }
+.form-table th, .form-table td { border: 1px solid #C8C9C7; padding: 4px 8px; text-align: left; vertical-align: top; font-size: 11.5px; }
+.form-table tbody th { width: 36%; background: #F2F8F9; font-weight: 600; }
+.form-field { width: 100%; border: 1px dashed #9fb8bd; background: #fcfeff; font: inherit; padding: 2px 4px; resize: vertical; field-sizing: content; min-height: 1.6em; }
+@page portrait { size: 210mm 297mm; margin: 0; }
+@media print {
+  .protocol-wrap .form-page { margin: 0; box-shadow: none; break-after: page; width: 210mm; min-height: 297mm; }
+  .form-field { border: none; background: transparent; resize: none; }
+}

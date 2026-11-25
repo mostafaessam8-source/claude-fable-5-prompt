@@ -13,6 +13,18 @@ export interface ShutdownInfo {
   manager?: string
   /** When the last status update was logged (floating wall clock). */
   lastUpdate?: Date
+  /** The SAR document control block (header / footer of the report pages and the forms); blanks use the protocol's own values. */
+  doc?: { fn?: string; dept?: string; title?: string; docNo?: string; rev?: string; effective?: string }
+}
+
+/** What the contractor writes on the protocol forms (Appendix B, C, D); the rest of each form is filled from the tracker. */
+export interface ProtocolData {
+  /** Delay Notification, by "location:activity". */
+  notices?: Record<string, { impact?: string; recovery?: string; resources?: string; sarSupport?: string }>
+  /** Recovery Plan, by location index. */
+  plans?: Record<string, { criticalPath?: string; measures?: string; resources?: string; sarSupport?: string }>
+  /** Shutdown Status Update (the whole project). */
+  status?: { recovery?: string; sarSupport?: string; operational?: string }
 }
 
 export interface Settings {
@@ -97,6 +109,7 @@ export interface Project {
   locationCount: number
   activityRowsPerLocation: number
   locations: LocationInput[]
+  protocol?: ProtocolData
   /** Non-fatal things worth showing the user (§10). */
   warnings: string[]
   /** Which kind of workbook this came from; a CRP2 sheet has no predecessor links, so Claude reviews them. */

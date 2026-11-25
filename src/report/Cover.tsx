@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { SAR_LOGO_RATIO, SAR_LOGO_URL } from '../brand/logo'
 import type { ProjectResult } from '../engine/schedule'
 import { fromHours } from '../engine/schedule'
+import { DocFooter, DocHeader } from '../protocol/DocBlocks'
+import { docControl } from '../protocol/docControl'
 import { LayoutCards } from '../layout/LayoutCard'
 import type { SiteLayout } from '../layout/parse'
 import { C, locationTone } from './brand'
@@ -127,11 +128,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1, onLogUpdate }: {
 
   return (
     <>
-      {/* the SAR logo on white, with clear space of at least half its height on every side */}
-      <div style={{ background: '#fff', padding: '12px 14px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <img src={SAR_LOGO_URL} alt="SAR - Saudi Arabia Railways" style={{ height: 40, width: 40 * SAR_LOGO_RATIO, display: 'block' }} />
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: C.slate }}>SAR.COM.SA</span>
-      </div>
+      <DocHeader doc={docControl(s)} logoH={40} size={9} />
       <Band size={12} pad="5px 12px"><div style={{ textAlign: 'center' }}>{s.projectName}</div></Band>
       <div style={{ background: C.blue, color: '#fff', fontWeight: 800, fontSize: 24, textAlign: 'center', padding: '5px 0' }}>{s.reportTitle}</div>
       <div style={{ background: C.tint2, color: C.black, fontWeight: 700, fontSize: 11, textAlign: 'center', padding: '4px 0' }}>{s.subtitle}</div>
@@ -176,6 +173,7 @@ export function Cover({ result, layouts, onSummary, zoom = 1, onLogUpdate }: {
 
       <div style={{ marginTop: 14 }}><Band size={9} pad="4px 10px">SITE LAYOUT &nbsp;-&nbsp; SCHEMATIC OVERVIEW</Band></div>
       <LayoutCards layouts={layouts} />
+      <DocFooter doc={docControl(s)} page={1} />
     </>
   )
 }
