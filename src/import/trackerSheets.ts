@@ -233,28 +233,42 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
 /** A form sheet: SAR header, title, label | value rows (value = a formula or a yellow input cell), footer bar. */
 function form(wb: ExcelJS.Workbook, name: string, title: string, rows: { label: string; formula?: string; nf?: string; input?: boolean; height?: number }[], pre?: (ws: ExcelJS.Worksheet) => number) {
   const ws = wb.addWorksheet(name, { views: [{ showGridLines: false }] })
-  ws.columns = [{ width: 36 }, { width: 74 }, { width: 3 }, { width: 10 }]
+  ws.columns = [{ width: 34 }, { width: 78 }, { width: 2 }, { width: 10 }]
+  // SAR document header: function / department / title on the left, the logo flush right (absolute EMU offset, so it never overlaps the text)
   ws.mergeCells('A1:B1'); ws.getCell('A1').value = { formula: '"Function: "&Project!$B$13&"      Department: "&Project!$B$14' }; ws.getCell('A1').font = font(INK, 9, true)
   ws.mergeCells('A2:B2'); ws.getCell('A2').value = { formula: '"Document Title: "&Project!$B$15' }; ws.getCell('A2').font = font(INK, 9)
+  for (const c of ['A1', 'A2']) ws.getCell(c).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
   const logo = wb.addImage({ buffer: sarLogoBytes() as unknown as ExcelJS.Buffer, extension: 'png' })
-  ws.addImage(logo, { tl: { col: 1.74, row: 0.05 }, ext: { width: 175, height: Math.round(175 / SAR_LOGO_RATIO) } })
-  ws.getRow(1).height = 22; ws.getRow(2).height = 22
-  ws.mergeCells('A4:B4'); ws.getCell('A4').value = title; ws.getCell('A4').font = font(TEAL, 15, true); ws.getRow(4).height = 28
+  const lw = 150
+  ws.addImage(logo, { tl: { nativeCol: 1, nativeColOff: Math.round((78 * 7 + 5 - lw - 6) * 9525), nativeRow: 0, nativeRowOff: 4 * 9525 } as never, ext: { width: lw, height: Math.round(lw / SAR_LOGO_RATIO) } })
+  ws.getRow(1).height = 24; ws.getRow(2).height = 22; ws.getRow(3).height = 6
+  // title bar
+  ws.mergeCells('A4:B4'); const t = ws.getCell('A4'); t.value = title; t.font = font('#FFFFFF', 14, true); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+  ws.getCell('A4').fill = solid(TEAL); ws.getCell('B4').fill = solid(TEAL); ws.getRow(4).height = 32
+  ws.getRow(5).height = 8
   let r = pre ? pre(ws) : 6
   const rowOf: Record<string, number> = {}
+  const line = { style: 'thin' as const, color: { argb: 'FFB9CDD3' } }
+  const frame = { top: line, bottom: line, left: line, right: line }
+  let n = 0
   for (const row of rows) {
     const a = ws.getCell(r, 1), b = ws.getCell(r, 2)
-    a.value = row.label; a.font = font(INK, 10, true); a.fill = solid('#F2F8F9'); a.border = box; a.alignment = { vertical: 'top', horizontal: 'left', wrapText: true, indent: 1 }
-    b.border = box; b.alignment = { vertical: 'top', horizontal: 'left', wrapText: true, indent: 1 }
+    a.value = row.label; a.font = font(TEAL, 10, true); a.fill = solid('#E6F1F4'); a.border = frame; a.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 }
+    b.border = frame; b.alignment = { vertical: row.input ? 'top' : 'middle', horizontal: 'left', wrapText: true, indent: 1 }
     if (row.formula) b.value = { formula: row.formula }
     if (row.nf) b.numFmt = row.nf
     b.font = font(INK, 10)
-    if (row.input) b.fill = solid('#FFF2CC')
-    ws.getRow(r).height = row.height ?? (row.input ? 46 : 24)
+    b.fill = solid(row.input ? '#FFF2CC' : n % 2 ? '#F7FAFB' : '#FFFFFF')
+    ws.getRow(r).height = row.height ?? (row.input ? 46 : 25)
     rowOf[row.label] = r
-    r++
+    r++; n++
   }
-  ws.pageSetup = { orientation: 'portrait', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 1, margins: { left: 0.5, right: 0.5, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } }
+  // legend
+  const lg = ws.getCell(r + 1, 1); ws.mergeCells(r + 1, 1, r + 1, 2)
+  lg.value = 'Yellow cells: to be filled in by the contractor.   White / grey cells: calculated from the Plan sheet.'
+  lg.font = font('#6B7B80', 8); lg.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+  ws.pageSetup = { orientation: 'portrait', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 1, horizontalCentered: true, margins: { left: 0.5, right: 0.5, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } }
+  ws.headerFooter = { oddFooter: `&L${DOC_DEFAULTS.docNo}  Rev ${DOC_DEFAULTS.rev}  ${DOC_DEFAULTS.effective}&RPage &P of &N` }
   return { ws, rowOf, next: r }
 }
 
@@ -301,9 +315,9 @@ export function addForms(wb: ExcelJS.Workbook, g: ReturnType<typeof addGantt>, a
 
   // ---- Appendix B: Delay Notification (pick the activity by its Ref) ----
   const sel = (ws: ExcelJS.Worksheet, label: string, list: string) => {
-    ws.getCell(6, 1).value = label; ws.getCell(6, 1).font = font(TEAL, 10, true); ws.getCell(6, 1).fill = solid('#F2F8F9'); ws.getCell(6, 1).border = box
-    const c = ws.getCell(6, 2); c.fill = solid('#FFF2CC'); c.border = box; c.font = font(INK, 11, true); c.dataValidation = { type: 'list', allowBlank: false, formulae: [list] }
-    ws.getRow(6).height = 24
+    ws.getCell(6, 1).value = label; ws.getCell(6, 1).font = font('#FFFFFF', 10, true); ws.getCell(6, 1).fill = solid(INK); ws.getCell(6, 1).border = box; ws.getCell(6, 1).alignment = { vertical: 'middle', indent: 1 }
+    const c = ws.getCell(6, 2); c.fill = solid('#FFF2CC'); c.border = box; c.alignment = { vertical: 'middle', indent: 1 }; c.font = font(INK, 11, true); c.dataValidation = { type: 'list', allowBlank: false, formulae: [list] }
+    ws.getRow(6).height = 28; ws.getRow(7).height = 8
     return 8
   }
   const bSel = '$B$6'
