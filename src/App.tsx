@@ -205,7 +205,9 @@ export function App() {
   async function onPlanTemplate(withProject: boolean) {
     setError(null)
     try {
-      const bytes = withProject && project ? await buildPlanTemplate(project, layouts) : await buildPlanTemplate()
+      // each culvert's site layout card (the same picture as the report's cover) goes on its Gantt page
+      const cards = withProject && project ? await Promise.all(layouts.map((l) => cardsPng([l]).catch(() => undefined))) : undefined
+      const bytes = withProject && project ? await buildPlanTemplate(project, layouts, cards) : await buildPlanTemplate()
       download(withProject && project ? `${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Shutdown'}_SAR_Plan_Template.xlsx` : 'SAR_Shutdown_Plan_Template.xlsx', bytes as BlobPart, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     } catch (e) {
       setError(`Could not make the template: ${(e as Error).message}`)
