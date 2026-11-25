@@ -31,6 +31,13 @@ export interface ActivityResult {
   remarks: string
   /** Row height on the report page, when the user dragged it. */
   rowH?: number
+  /** Shutdown details, carried through from the input. */
+  crew?: string
+  equipment?: string
+  manpower?: number | null
+  holdPoint?: string
+  sarAttend?: boolean
+  delayCause?: string
   /** The link as entered: predecessor number (0 = the possession start), relationship and lag in hours. */
   pred: number
   rel: Rel
@@ -223,6 +230,7 @@ export function computeLocation(settings: Settings, loc: LocationInput): Locatio
       name: a.name,
       remarks: a.remarks.trim(),
       rowH: a.rowH,
+      crew: a.crew, equipment: a.equipment, manpower: a.manpower, holdPoint: a.holdPoint, sarAttend: a.sarAttend, delayCause: a.delayCause,
       pred: a.pred,
       rel: a.rel,
       lagH: a.lagH,

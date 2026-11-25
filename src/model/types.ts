@@ -62,6 +62,14 @@ export interface ActivityInput {
   pct: number | null
   remarks: string
   /** Height (px) of this activity's row on the report page, when dragged; absent = automatic. */
+  /** Shutdown details (SAR protocol): crew / team, equipment, manpower, hold point (inspection), whether SAR attends it. */
+  crew?: string
+  equipment?: string
+  manpower?: number | null
+  holdPoint?: string
+  sarAttend?: boolean
+  /** Why it is late (a Delay Cause from the list), for the delay notification. */
+  delayCause?: string
   rowH?: number
   /** Height (px) of this activity's row in the Activities tab, when dragged. */
   edH?: number

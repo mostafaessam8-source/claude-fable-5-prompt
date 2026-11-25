@@ -605,7 +605,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
             return [
               span(1, { color: C.slate, ...(planEditable ? { cursor: 'grab' } : {}) }, a.no,
                 planEditable ? { draggable: true, title: 'Drag to reorder', onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(a.no)); setDragNo(a.no) }, onDragEnd: () => { setDragNo(null); setDropK(null) } } : {}),
-              ed(2, a.name, a.name, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, cols[1], rowHs[k]) }, 'Double-click (or click when selected) to rename'),
+              ed(2, a.holdPoint ? <><b style={{ color: a.sarAttend ? C.red : C.blue }} title={`Hold point: ${a.holdPoint}${a.sarAttend ? ' (SAR attends)' : ''}`}>◆ </b>{a.name}</> : a.name, a.name, { justifyContent: 'flex-start', textAlign: 'left', fontWeight: 600, color: C.black, fontSize: fitFont(a.name, cols[1], rowHs[k]) }, 'Double-click (or click when selected) to rename'),
               span(3, { background: at.bg, color: at.fg, fontWeight: 700, fontSize: 7.5 }, a.status),
               ed(4, fmtDur(a.durationH), String(a.durationH), {}, 'Baseline duration in hours: double-click to edit'),
               ed(5, actDur == null ? '' : fmtDur(actDur), actDur == null ? '' : String(Math.round(actDur * 100) / 100), {}, 'Actual duration (finish − start): type hours to set the actual finish (needs an actual start)'),
