@@ -129,7 +129,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     ws.getCell(g2, 10).value = { formula: `IF(OR(${S}="",${F}=""),"",IF(${AF}<>"",1,${PC}))` }
     ws.getCell(g2, 12).value = { formula: `IF($H${g2}="","",$${L(H.VAR)}${g1})` }
     ws.mergeCells(g1, 11, g2, 11)
-    ws.getCell(g1, 11).value = { formula: `IF(OR(${S}="",${F}=""),"",IF(${AF}<>"",IF(${AF}<${F}-1/1440,"Completed - Ahead",IF(${AF}<=${F}+1/1440,"Completed - On Time","Completed - Delayed")),IF(${AS}<>"",IF($L${g2}<=0.1,"In Progress - On Track","In Progress - BEHIND"),IF(${CUT}<${S},"Not Started","NOT STARTED - LATE"))))` }
+    ws.getCell(g1, 11).value = { formula: `IF(OR(${S}="",${F}=""),"",IF(${AF}<>"",IF(${AF}<${F}-1/1440,"Completed - Ahead",IF(${AF}<=${F}+1/1440,"Completed - On Time","Completed - Delayed")),IF(${AS}<>"",IF($L${g2}<=0.1,"In Progress - On Track","In Progress - BEHIND"),IF(${CUT}<=${S},"Not Started","NOT STARTED - LATE"))))` }
     ws.getCell(g1, 11).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; ws.getCell(g1, 11).font = font(INK, 8, true)
     for (const [g, c] of [[g1, 7], [g1, 8], [g2, 7], [g2, 8]] as const) { ws.getCell(g, c).numFmt = DT_SHORT; ws.getCell(g, c).alignment = { horizontal: 'center', vertical: 'middle' } }
     ws.getCell(g2, 8).font = font('#5B6770', 9)
