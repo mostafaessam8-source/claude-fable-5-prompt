@@ -20,6 +20,7 @@ import { useNarrow } from './model/useNarrow'
 import { ReportView, type Selected } from './report/ReportView'
 import { ActivityPanel, PANEL_W } from './report/ActivityPanel'
 import { DATES_W, DatesPanel } from './report/DatesPanel'
+import { buildPlanTemplate, isPlanTemplate, parsePlanTemplate } from './import/planTemplate'
 import { ProtocolView } from './protocol/ProtocolView'
 import { LINKS_W, LinksPanel } from './report/LinksPanel'
 import { SettingsBar } from './SettingsBar'
@@ -118,7 +119,14 @@ export function App() {
     if (!file) return
     setError(null)
     try {
-      const p = await parseWorkbook(await file.arrayBuffer())
+      const buf = await file.arrayBuffer()
+      if (await isPlanTemplate(buf)) { // the SAR shutdown plan template: the contractor's plan in SAR's own format
+        const t = await parsePlanTemplate(buf)
+        history.reset({ project: t.project, layouts: t.layouts })
+        setTab('report')
+        return
+      }
+      const p = await parseWorkbook(buf)
       history.reset({ project: p, layouts: p.locations.map((l) => parseLayout(l.name, l.scope)) })
       setTab('report')
     } catch (e) {
@@ -193,6 +201,17 @@ export function App() {
     }
   }
 
+  /** The SAR shutdown plan template: blank (with an example), or filled with this project's plan to hand to the contractor. */
+  async function onPlanTemplate(withProject: boolean) {
+    setError(null)
+    try {
+      const bytes = withProject && project ? await buildPlanTemplate(project, layouts) : await buildPlanTemplate()
+      download(withProject && project ? `${project.settings.projectName.replace(/[^\w.-]+/g, '_') || 'Shutdown'}_SAR_Plan_Template.xlsx` : 'SAR_Shutdown_Plan_Template.xlsx', bytes as BlobPart, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    } catch (e) {
+      setError(`Could not make the template: ${(e as Error).message}`)
+    }
+  }
+
   async function onExport() {
     if (!project) return
     setError(null)
@@ -251,10 +270,12 @@ export function App() {
         )}
         {!OFFLINE && (
           <label className="cursor-pointer text-xs text-white/60 underline" title="Only needed the very first time: build a project from the Excel tracker">
-            new from Excel tracker
+            new from Excel tracker / SAR plan template
             <input type="file" accept=".xlsx" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
           </label>
         )}
+        {!OFFLINE && <button className="text-xs text-white/70 underline" onClick={() => onPlanTemplate(false)} title="The SAR Shutdown Plan template (.xlsx): the workbook a contractor fills to submit a shutdown plan; load it here with the link on the left">SAR plan template (blank)</button>}
+        {!OFFLINE && project && <button className="text-xs text-white/70 underline" onClick={() => onPlanTemplate(true)} title="This project's plan as a SAR plan template: for the contractor to edit and send back">plan as SAR template</button>}
         {OFFLINE && <span className="text-sm font-semibold text-[#F1B434]">Update copy</span>}
         <span className="flex-1" />
         {project && <button className="rounded border border-white/40 px-2 py-1 text-sm disabled:opacity-30" disabled={!history.canUndo} onClick={history.undo} title="Undo (Ctrl+Z)">↶ Undo</button>}
