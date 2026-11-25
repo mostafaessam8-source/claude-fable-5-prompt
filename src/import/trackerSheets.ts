@@ -19,7 +19,7 @@ const DT = 'dd-mmm-yyyy hh:mm'
 const DT_SHORT = 'dd-mmm hh:mm'
 export const PLAN_FIRST = 2 // first data row of the Plan sheet
 export const G_FIRST = 7 // first row under the header of the Gantt sheet
-export const BLOCK = 10 // rows of the header block above each culvert (title + layout picture + figures)
+export const BLOCK = 9 // rows of the header block above each culvert (title + layout picture + figures)
 
 export function colName(n: number): string {
   let s = ''
@@ -194,41 +194,47 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     const top = rowOf(bk.start) - BLOCK
     const last = top + BLOCK - 1
     if (bi > 0) ws.getRow(top - 1).addPageBreak()
-    ws.mergeCells(top, 1, top, gEnd)
-    const t = ws.getCell(top, 1)
-    t.value = bk.title || (bk.code ? `CULVERT ${bk.code}` : 'CULVERT')
-    t.font = font('#FFFFFF', 12, true); t.fill = solid(INK); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
-    ws.getRow(top).height = 22
-    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 14.5
-    for (let r = top + 1; r <= last; r++) for (let c = 1; c <= 12; c++) ws.getCell(r, c).fill = solid('#FFFFFF')
-    if (bk.card) {
-      const id = wb.addImage({ buffer: bk.card.data as unknown as ExcelJS.Buffer, extension: 'png' })
-      const w = 182
-      ws.addImage(id, { tl: { col: 0.12, row: top + 0.15 }, ext: { width: w, height: Math.round((w * bk.card.height) / bk.card.width) } })
-    }
-    // the culvert's figures, next to the picture (formulas over this culvert's rows)
+    // the culvert's header bar: its name, then the figures that matter (all formulas over this culvert's rows)
     const code = `"${bk.code.replace(/"/g, '""')}"`
     const w = range(H.W), pp = range(H.PP), ap = range(H.AP), fen = range(H.FEN), pf = range(H.PF), vr = range(H.VAR), cb = range(2)
     const mx = (c: string, fn: string) => `IFERROR(_xlfn.${fn}(${c},${cb},${code}),0)`
     const buf = `ROUND((Project!$B$11-${mx(fen, 'MAXIFS')})*24,1)`
-    const lvl = `IF(SUMPRODUCT((${cb}=${code})*${w})=0,"",IF(${buf}<0,"RED",IF($C$4<=Project!$B$10,"GREEN",IF(${mx(fen, 'MAXIFS')}>${mx(pf, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(vr, 'MAXIFS')}>0.1),"YELLOW","GREEN")))))`
     const wsum = `SUMPRODUCT((${cb}=${code})*${w})`
+    const lvlF = `IF(${wsum}=0,"",IF(${buf}<0,"RED",IF($C$4<=Project!$B$10,"GREEN",IF(${mx(fen, 'MAXIFS')}>${mx(pf, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(vr, 'MAXIFS')}>0.1),"YELLOW","GREEN")))))`
+    const dark = (c1: number, c2: number, v: ExcelJS.CellValue, size = 10, nf?: string, align: 'left' | 'center' = 'left') => {
+      if (c2 > c1) ws.mergeCells(top, c1, top, c2)
+      const x = ws.getCell(top, c1)
+      x.value = v; x.font = font('#FFFFFF', size, true); x.alignment = { vertical: 'middle', horizontal: align, indent: align === 'left' ? 1 : 0 }
+      if (nf) x.numFmt = nf
+      for (let c = c1; c <= c2; c++) ws.getCell(top, c).fill = solid(INK)
+    }
+    dark(1, 4, bk.title || (bk.code ? `CULVERT ${bk.code}` : 'CULVERT'), 12)
+    dark(5, 6, { formula: lvlF }, 11, undefined, 'center'); lvlCells.push(`E${top}`)
+    dark(7, 8, { formula: `IF(${wsum}=0,"","BUFFER "&TEXT(${buf},"0.0")&" h")` }, 10, undefined, 'center')
+    dark(9, 12, { formula: `IF(${wsum}=0,"","PLAN "&TEXT(SUMPRODUCT((${cb}=${code})*${w}*${pp})/${wsum},"0%")&"  ·  ACTUAL "&TEXT(SUMPRODUCT((${cb}=${code})*${w}*${ap})/${wsum},"0%"))` }, 10, undefined, 'center')
+    dark(g0, Math.min(gEnd, g0 + 23), { formula: `IF(${wsum}=0,"","FORECAST FINISH  "&TEXT(${mx(fen, 'MAXIFS')},"ddd dd-mmm hh:mm")&"      HAND-BACK  "&TEXT(Project!$B$11,"ddd dd-mmm hh:mm"))` }, 10)
+    if (gEnd >= g0 + 24) dark(g0 + 24, gEnd, { formula: `IF(${wsum}=0,"",COUNTIFS(${cb},${code},${vr},">0.1")&" OF "&COUNTIFS(${cb},${code},${w},">0")&" ACTIVITIES BEHIND PLAN")` }, 10)
+    ws.getRow(top).height = 24
+    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 14.5
+    for (let r = top + 1; r <= last; r++) for (let c = 1; c <= 12; c++) ws.getCell(r, c).fill = solid('#FFFFFF')
+    if (bk.card) {
+      const id = wb.addImage({ buffer: bk.card.data as unknown as ExcelJS.Buffer, extension: 'png' })
+      const wd = 170
+      ws.addImage(id, { tl: { col: 0.12, row: top + 0.12 }, ext: { width: wd, height: Math.round((wd * bk.card.height) / bk.card.width) } })
+    }
+    // beside the picture: the plan finish and the protocol's hold points
     const items: [string, string, string?][] = [
-      ['SAR LEVEL', lvl],
-      ['BUFFER TO HAND-BACK', `IF(${wsum}=0,"",${buf})`, '0.0" h"'],
-      ['PLANNED / ACTUAL', `IF(${wsum}=0,"",TEXT(SUMPRODUCT((${cb}=${code})*${w}*${pp})/${wsum},"0%")&"  /  "&TEXT(SUMPRODUCT((${cb}=${code})*${w}*${ap})/${wsum},"0%"))`],
-      ['FORECAST FINISH', `IF(${wsum}=0,"",${mx(fen, 'MAXIFS')})`, 'ddd dd-mmm hh:mm'],
-      ['HAND-BACK', 'Project!$B$11', 'ddd dd-mmm hh:mm'],
-      ['ACTIVITIES BEHIND PLAN', `IF(${wsum}=0,"",COUNTIFS(${cb},${code},${vr},">0.1")&" of "&COUNTIFS(${cb},${code},${w},">0"))`],
+      ['PLAN FINISH', `IF(${wsum}=0,"",${mx(pf, 'MAXIFS')})`, 'ddd dd-mmm hh:mm'],
+      ['HOLD POINTS', `COUNTIFS(Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code},Plan!$L$${PLAN_FIRST}:$L$${PLAN_FIRST + acts - 1},"<>")&"   (SAR attends "&COUNTIFS(Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code},Plan!$M$${PLAN_FIRST}:$M$${PLAN_FIRST + acts - 1},"Yes")&")"`],
+      ['MANPOWER (sum)', `SUMIFS(Plan!$G$${PLAN_FIRST}:$G$${PLAN_FIRST + acts - 1},Plan!$A$${PLAN_FIRST}:$A$${PLAN_FIRST + acts - 1},${code})`, '0'],
     ]
     items.forEach(([label, f, nf], k) => {
       const r = top + 1 + k
-      ws.mergeCells(r, 4, r, 6); ws.mergeCells(r, 7, r, 9)
+      ws.mergeCells(r, 4, r, 6); ws.mergeCells(r, 7, r, 10)
       const a = ws.getCell(r, 4), v = ws.getCell(r, 7)
       a.value = label; a.font = font(TEAL, 9, true); a.alignment = { vertical: 'middle', horizontal: 'right' }
       v.value = { formula: f }; v.font = font(INK, 10, true); v.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }; v.fill = solid('#E6F1F4')
       if (nf) v.numFmt = nf
-      if (k === 0) lvlCells.push(`G${r}`)
     })
   })
   for (const c of lvlCells) lvl(c, `$${c.replace(/(\d+)/, '$$$1')}`)
