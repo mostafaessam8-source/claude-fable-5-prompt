@@ -195,7 +195,7 @@ export async function writeDataInput(wb: ExcelJS.Workbook, project: Project, lay
       lock('O', { formula:
         `IF(OR($B${r}="",${k}>$O$10),"",IF($AB${r}=1,"! CHECK LINK",IF($V${r}=1,"! CHECK DATES",IF($Z${r}=1,"! CHECK DURATION",` +
         `IF($S${r}=1,IF($R${r}="","Completed",IF($R${r}<$D${r},"Completed - Ahead",IF($R${r}<=$D${r}+1/1440,"Completed - On Time","Completed - Delayed"))),` +
-        `IF($Q${r}<>"",IF($Y${r}<=0.1,"In Progress - On Track","In Progress - BEHIND"),IF($M$5<$C${r},"Not Started","NOT STARTED - LATE")))))))` },
+        `IF($Q${r}<>"",IF($Y${r}<=0.1,"In Progress - On Track","In Progress - BEHIND"),IF($M$5<=$C${r},"Not Started","NOT STARTED - LATE")))))))` },
         { fill: solid(COL.slate), font: font('#FFFFFF', 9, true) })
       lock('P', a?.remarks || null, { ...inSt(), alignment: left }, undefined, true)
 

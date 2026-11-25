@@ -136,7 +136,7 @@ export function computeActivityStatus(a: {
     return 'Completed - Delayed'
   }
   if (a.started) return a.carried <= 0.1 ? 'In Progress - On Track' : 'In Progress - BEHIND'
-  return a.cutoffH < a.plannedStartH ? 'Not Started' : 'NOT STARTED - LATE'
+  return a.cutoffH <= a.plannedStartH ? 'Not Started' : 'NOT STARTED - LATE'
 }
 
 export function computeLocationStatus(
