@@ -284,7 +284,8 @@ export function addForms(wb: ExcelJS.Workbook, g: ReturnType<typeof addGantt>, a
     { label: 'Cause', formula: `IFERROR(IF(INDEX(Plan!$N:$N,${m})="","— (pick it in the Plan sheet, column Delay cause)",INDEX(Plan!$N:$N,${m})),"")` },
     { label: 'Impact / Milestone', input: true },
     { label: 'Original Handback', formula: 'Project!$B$11', nf: DT },
-    { label: 'Current Forecast', formula: `IFERROR(${gv('H', 1)},"")`, nf: DT },
+    // the forecast finish of the culvert (when its work will really be done), not of this one activity
+    { label: 'Current Forecast', formula: `IFERROR(_xlfn.MAXIFS(${R(H.FEN)},${R(2)},INDEX(Plan!$A:$A,${m})),"")`, nf: DT },
     { label: 'Recovery Action', input: true },
     { label: 'Additional Resources', input: true },
     { label: 'SAR Support Required', input: true, height: 58 },
