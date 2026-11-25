@@ -447,7 +447,7 @@ export function LocationPage({ result, index, layout, selectedNo, onSelect, proj
           <span>ACTUAL {pct(loc.actualPct)}</span>
           <span>PLANNED {pct(loc.planPct)}</span>
           <span>PLAN FINISH {fmtShort(loc.plannedFinish)}</span>
-          {(() => { const lv = LEVEL_INFO[levelOf(loc)]; return <span style={{ background: lv.bg, color: lv.fg, fontWeight: 800, fontSize: 9, padding: '1px 8px', borderRadius: 2 }} title={`SAR protocol level: ${lv.trigger}`}>SAR {lv.label}</span> })()}
+          {(() => { const lv = LEVEL_INFO[levelOf(loc, result.cutoffH <= 0)]; return <span style={{ background: lv.bg, color: lv.fg, fontWeight: 800, fontSize: 9, padding: '1px 8px', borderRadius: 2 }} title={`SAR protocol level: ${lv.trigger}`}>SAR {lv.label}</span> })()}
           {(() => { // the buffer to hand-back, as a verdict: late (negative) / on time / ahead
             const b = loc.bufferToHandback
             const v = b < -0.05 ? { t: 'LATE', bg: C.red, fg: '#fff' } : b > 0.05 ? { t: 'AHEAD', bg: C.blue, fg: '#fff' } : { t: 'ON TIME', bg: C.amber, fg: C.black }

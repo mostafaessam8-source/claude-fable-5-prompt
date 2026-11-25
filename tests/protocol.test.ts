@@ -14,6 +14,13 @@ describe('protocol status levels', () => {
     const r = computeProject(project([{ durationH: 40 }], { cutoff: at(20) })).locations[0] // forecast 60 h in a 48 h window
     expect(levelOf(r)).toBe('Red')
   })
+  it('before the possession starts a plan that fits the window is green, however tight', () => {
+    const tight = computeProject(project([{ durationH: 47 }], { cutoff: at(0) })).locations[0]
+    expect(levelOf(tight)).toBe('Yellow')
+    expect(levelOf(tight, true)).toBe('Green')
+    const over = computeProject(project([{ durationH: 50 }], { cutoff: at(0) })).locations[0] // the plan itself overruns the window
+    expect(levelOf(over, true)).toBe('Red')
+  })
   it('worst of several and the next update interval', () => {
     expect(worst(['Green', 'Orange', 'Yellow'])).toBe('Orange')
     const last = new Date(Date.UTC(2026, 11, 4, 10, 0))

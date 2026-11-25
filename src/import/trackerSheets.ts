@@ -71,7 +71,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
   const CUT = '$C$4'
   lab(4, 4, 4, 'SAR LEVEL')
   const range = (c: number) => `$${L(c)}$${G_FIRST}:$${L(c)}$${lastRow}`
-  val(4, 5, 6, `IF(SUM(${range(H.W)})=0,"",IF($H$4<0,"RED",IF(MAX(${range(H.FEN)})>MAX(${range(H.PF)})+0.1/24,"ORANGE",IF(OR($H$4<2,MAX(${range(H.VAR)})>0.1),"YELLOW","GREEN"))))`)
+  val(4, 5, 6, `IF(SUM(${range(H.W)})=0,"",IF($H$4<0,"RED",IF($C$4<=Project!$B$10,"GREEN",IF(MAX(${range(H.FEN)})>MAX(${range(H.PF)})+0.1/24,"ORANGE",IF(OR($H$4<2,MAX(${range(H.VAR)})>0.1),"YELLOW","GREEN")))))`)
   lab(4, 7, 7, 'BUFFER (h)')
   val(4, 8, 8, `IF(SUM(${range(H.W)})=0,"",ROUND((Project!$B$11-MAX(${range(H.FEN)}))*24,1))`, '0.0')
   lab(4, 9, 9, 'POSSESSION')
@@ -199,11 +199,11 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     t.value = bk.title || (bk.code ? `CULVERT ${bk.code}` : 'CULVERT')
     t.font = font('#FFFFFF', 12, true); t.fill = solid(INK); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
     ws.getRow(top).height = 22
-    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 19.5
+    for (let r = top + 1; r <= last; r++) ws.getRow(r).height = 14.5
     for (let r = top + 1; r <= last; r++) for (let c = 1; c <= 12; c++) ws.getCell(r, c).fill = solid('#FFFFFF')
     if (bk.card) {
       const id = wb.addImage({ buffer: bk.card.data as unknown as ExcelJS.Buffer, extension: 'png' })
-      const w = 200
+      const w = 182
       ws.addImage(id, { tl: { col: 0.12, row: top + 0.15 }, ext: { width: w, height: Math.round((w * bk.card.height) / bk.card.width) } })
     }
     // the culvert's figures, next to the picture (formulas over this culvert's rows)
@@ -211,7 +211,7 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     const w = range(H.W), pp = range(H.PP), ap = range(H.AP), fen = range(H.FEN), pf = range(H.PF), vr = range(H.VAR), cb = range(2)
     const mx = (c: string, fn: string) => `IFERROR(_xlfn.${fn}(${c},${cb},${code}),0)`
     const buf = `ROUND((Project!$B$11-${mx(fen, 'MAXIFS')})*24,1)`
-    const lvl = `IF(SUMPRODUCT((${cb}=${code})*${w})=0,"",IF(${buf}<0,"RED",IF(${mx(fen, 'MAXIFS')}>${mx(pf, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(vr, 'MAXIFS')}>0.1),"YELLOW","GREEN"))))`
+    const lvl = `IF(SUMPRODUCT((${cb}=${code})*${w})=0,"",IF(${buf}<0,"RED",IF($C$4<=Project!$B$10,"GREEN",IF(${mx(fen, 'MAXIFS')}>${mx(pf, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(vr, 'MAXIFS')}>0.1),"YELLOW","GREEN")))))`
     const wsum = `SUMPRODUCT((${cb}=${code})*${w})`
     const items: [string, string, string?][] = [
       ['SAR LEVEL', lvl],
@@ -223,8 +223,8 @@ export function addGantt(wb: ExcelJS.Workbook, { hours, acts, used, blocks: give
     ]
     items.forEach(([label, f, nf], k) => {
       const r = top + 1 + k
-      ws.mergeCells(r, 5, r, 6); ws.mergeCells(r, 7, r, 9)
-      const a = ws.getCell(r, 5), v = ws.getCell(r, 7)
+      ws.mergeCells(r, 4, r, 6); ws.mergeCells(r, 7, r, 9)
+      const a = ws.getCell(r, 4), v = ws.getCell(r, 7)
       a.value = label; a.font = font(TEAL, 9, true); a.alignment = { vertical: 'middle', horizontal: 'right' }
       v.value = { formula: f }; v.font = font(INK, 10, true); v.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }; v.fill = solid('#E6F1F4')
       if (nf) v.numFmt = nf
@@ -346,7 +346,7 @@ export function addForms(wb: ExcelJS.Workbook, g: ReturnType<typeof addGantt>, a
   const mx = (col: number, fn: string) => `IFERROR(_xlfn.${fn}(${R(col)},${R(2)},${cs}),0)`
   const buf = `ROUND((Project!$B$11-${mx(H.FEN, 'MAXIFS')})*24,1)`
   const known = `COUNTIF(Locations!$A$2:$A$60,${cs})>0`
-  const levelC = `IF(NOT(${known}),"",IF(${buf}<0,"RED",IF(${mx(H.FEN, 'MAXIFS')}>${mx(H.PF, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(H.VAR, 'MAXIFS')}>0.1),"YELLOW","GREEN"))))`
+  const levelC = `IF(NOT(${known}),"",IF(${buf}<0,"RED",IF(Gantt!$C$4<=Project!$B$10,"GREEN",IF(${mx(H.FEN, 'MAXIFS')}>${mx(H.PF, 'MAXIFS')}+0.1/24,"ORANGE",IF(OR(${buf}<2,${mx(H.VAR, 'MAXIFS')}>0.1),"YELLOW","GREEN")))))`
   const c = form(wb, 'Recovery Plan', 'Appendix C – Recovery Plan Template', [
     { label: 'Project / Location', formula: `Project!$B$4&"  —  Culvert "&${cs}&IFERROR("  ("&INDEX(Locations!$B$2:$B$60,MATCH(${cs},Locations!$A$2:$A$60,0))&")","")` },
     { label: 'Current Status', formula: levelC },
