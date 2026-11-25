@@ -30,7 +30,7 @@ function slide(title) {
   step([{ name: "sec", fx: "fade" }, { name: "ttl", fx: "fade" }]);
   return s;
 }
-const card = (s, id, x, y, w, h, fill = CARD) => { s.addShape(pres.ShapeType.roundRect, { x, y, w, h, fill: { color: fill }, line: { color: fill, width: 0 }, rectRadius: 0.08, shadow: SHADOW, objectName: id }); return { name: id, fx: "wipe" }; };
+const card = (s, id, x, y, w, h, fill = CARD) => { s.addShape(pres.ShapeType.roundRect, { x, y, w, h, fill: { color: fill }, line: { color: fill, width: 0 }, rectRadius: 0.08, shadow: Object.assign({}, SHADOW), objectName: id }); return { name: id, fx: "wipe" }; };
 const rect = (s, id, x, y, w, h, fill) => { s.addShape(pres.ShapeType.rect, { x, y, w, h, fill: { color: fill }, line: { color: fill, width: 0 }, objectName: id }); return { name: id, fx: "wipe" }; };
 const text = (s, id, t, o) => { s.addText(t, TX(Object.assign({ objectName: id }, o))); return { name: id, fx: "fade" }; };
 const note = (s, t) => { s.addText(t, TX({ x: 0.85, y: 6.68, w: 11.6, h: 0.3, fontSize: 10, color: GREY, valign: "top", objectName: "note" })); step([{ name: "note", fx: "fade" }]); };
