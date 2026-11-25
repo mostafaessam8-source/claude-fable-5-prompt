@@ -254,11 +254,6 @@ function form(wb: ExcelJS.Workbook, name: string, title: string, rows: { label: 
     rowOf[row.label] = r
     r++
   }
-  const foot = r + 14
-  ws.mergeCells(foot, 1, foot, 2)
-  const f = ws.getCell(foot, 1)
-  f.value = { formula: '"Document No.: "&Project!$B$16&"        Rev. No.: "&Project!$B$17&"        Effective Date: "&Project!$B$18' }
-  f.font = font('#FFFFFF', 9, true); f.fill = solid(TEAL); f.alignment = { vertical: 'middle', indent: 1 }; ws.getRow(foot).height = 20
   ws.pageSetup = { orientation: 'portrait', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 1, margins: { left: 0.5, right: 0.5, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } }
   return { ws, rowOf, next: r }
 }
