@@ -14,6 +14,7 @@ import { DOC_DEFAULTS } from '../protocol/docControl'
 import { LEVELS, LEVEL_INFO } from '../protocol/status'
 import { box, center, font, left, solid } from '../export/styles'
 import type { CardsImage } from '../export/siteLayouts'
+import { addDashboard } from './dashboardSheet'
 import { addForms, addGantt, type GanttBlock } from './trackerSheets'
 import { date, ImportError, isBlank, num, plain, text, addUnits } from './cells'
 
@@ -43,6 +44,7 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
   const wb = new ExcelJS.Workbook()
   wb.creator = 'SAR Possession Tracker'
   const st = project?.settings
+  const dash = wb.addWorksheet('Dashboard') // the first sheet: filled once the Gantt is built
 
   // ---- Project ----
   const pj = wb.addWorksheet(SHEETS.project, { views: [{ showGridLines: false }] })
@@ -141,6 +143,7 @@ export async function buildPlanTemplate(project?: Project, layouts?: SiteLayout[
     ? project.locations.map((l, i) => { const b = { start: at, code: lay[i]?.code ?? '', title: `${(lay[i] ? composeName(lay[i]) : l.name).toUpperCase()}${lay[i] && composeScope(lay[i]) ? `   ·   ${composeScope(lay[i])}` : ''}`, card: cards?.[i] }; at += l.activities.length; return b })
     : [{ start: 0, code: lay[0]?.code ?? 'C290', title: `${composeName(lay[0]).toUpperCase()}   ·   ${composeScope(lay[0])}`, card: cards?.[0] }]
   const g = addGantt(wb, { hours, acts, used, blocks })
+  addDashboard(wb, dash, g, lay, cards)
   addForms(wb, g, acts, { ref: project ? `${lay[0]?.code || 'L1'}-01` : 'C290-01', code: lay[0]?.code ?? 'C290' })
   wb.calcProperties = { fullCalcOnLoad: true }
   // ---- Lists ----
